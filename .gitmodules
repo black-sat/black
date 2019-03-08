@@ -1,0 +1,9 @@
+[submodule "external/fmt"]
+	path = external/fmt
+	url = git@github.com:fmtlib/fmt.git
+[submodule "external/catch"]
+	path = external/catch
+	url = git@github.com:catchorg/Catch2.git
+[submodule "external/debug_assert"]
+	path = external/debug_assert
+	url = git@github.com:foonathan/debug_assert.git
