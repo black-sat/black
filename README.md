@@ -1,2 +1,2 @@
-# hostile
-LTL satisfiability checker
+# BLACK
+Bounded Ltl sAtisfiability ChecKer
