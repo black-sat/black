@@ -25,5 +25,5 @@ Setup instructions for macOS (coming soon for other systems).
      All tests passed (2 assertions in 1 test case)
 
    $ ./black
-    	Changing the world, one solver at the time...
-    	```
+   Changing the world, one solver at the time...
+   ```
