@@ -26,20 +26,19 @@
 
 #include <debug_assert.hpp>
 
-namespace black {
-namespace details {
+namespace black::details {
 
   // Settings for the customization of foonathan's DEBUG_ASSERT macro
-  struct black_assert
+  struct black_assert_t
     : debug_assert::default_handler,
       debug_assert::set_level<1> {};
 
 } // black::details
-} // black
 
-#define black_assert(Expr)  DEBUG_ASSERT(Expr, ::lvt2::details::lvt2_assert{})
-#define black_unreachable() DEBUG_UNREACHABLE(::lvt2::details::lvt2_assert{})
-#define black_assume(Expr)  DEBUG_ASSERT_ASSUME(Expr)
+#define black_assert(Expr) \
+  DEBUG_ASSERT(Expr, ::black::details::black_assert_t{})
+#define black_unreachable() \
+  DEBUG_UNREACHABLE(::black::details::black_assert_t{})
 
 
 #endif // BLACK_COMMON_H
