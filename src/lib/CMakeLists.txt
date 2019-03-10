@@ -20,6 +20,8 @@ set(
   -Wno-sign-conversion
   -Wno-global-constructors -Wno-extra-semi
   -Wno-unknown-warning-option
+  # TODO: Fix fmt to re-enable these warnings
+  -Wno-undef -Wno-missing-noreturn
 )
 
 set(
@@ -30,7 +32,7 @@ set(
 set(MSVC_WARNINGS /wd4068 /wd4702 /W4 /WX)
 
 target_compile_options(
-  lib INTERFACE 
+  lib INTERFACE
   "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNINGS}>"
   "$<$<CXX_COMPILER_ID:GNU>:${GNU_WARNINGS}>"
   "$<$<CXX_COMPILER_ID:Clang>:${CLANG_WARNINGS}>"
