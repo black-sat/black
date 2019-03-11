@@ -21,24 +21,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_COMMON_H
-#define BLACK_COMMON_H
+#ifndef BLACK_ALPHABET_HPP__
+#define BLACK_ALPHABET_HPP__
 
-#include <debug_assert.hpp>
+#include <black/logic/formula.hpp>
+
+#include <vector>
+#include <memory>
 
 namespace black::details {
 
-  // Settings for the customization of foonathan's DEBUG_ASSERT macro
-  struct black_assert_t
-    : debug_assert::default_handler,
-      debug_assert::set_level<1> {};
+  // This class manages an alphabet of propositional symbols and the allocation
+  // of all the formulas built on top of such symbols.
+  class alphabet
+  {
+  public:
+    alphabet() = default;
+    alphabet(alphabet const&) = delete;
 
-} // black::details
+    template<typename T, typename ...Args, REQUIRES(is_formula<T>)>
+    T *create(Args &&...args) {
+      auto ptr = std::make_unique<T>(*this, std::forward<Args>(args)...);
+      T *ret = ptr.get();
+      _formulas.push_back(std::move(ptr));
 
-#define black_assert(Expr) \
-  DEBUG_ASSERT(Expr, ::black::details::black_assert_t{})
-#define black_unreachable() \
-  DEBUG_UNREACHABLE(::black::details::black_assert_t{})
+      return ret;
+    }
 
+    atom var() { return atom{create<atom_t>()}; }
 
-#endif // BLACK_COMMON_H
+  private:
+    std::vector<std::unique_ptr<formula_t>> _formulas;
+  };
+
+}
+
+#endif // BLACK_ALPHABET_HPP__

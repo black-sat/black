@@ -27,7 +27,7 @@ Setup instructions for macOS (coming soon for other systems).
    `$ cd build && cmake ..`
 3. Build  
    `$ make`
-4. Run `./black` to run the built executable, and `tests/test` to run the test
+4. Run `./black` to run the built executable, and `tests/tests` to run the test
    suite  
    ```
    $ tests/tests

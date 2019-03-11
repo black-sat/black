@@ -8,23 +8,37 @@ project(black)
 add_subdirectory(external/debug_assert)
 add_subdirectory(external/fmt)
 
-# Black library
+#
+# Warnings
+#
+set(
+  CLANG_WARNINGS -Weverything -pedantic -Werror
+  -Wno-c++98-compat -Wno-c++98-compat-pedantic
+  -Wno-c++98-c++11-c++14-compat
+  -Wno-padded -Wno-weak-vtables -Wno-unknown-pragmas
+  -Wno-exit-time-destructors -Wno-switch-enum
+  -Wno-undefined-var-template
+  -Wno-undefined-func-template
+  -Wno-reserved-id-macro -Wno-deprecated
+  -Wno-old-style-cast -Wno-documentation
+  -Wno-documentation-unknown-command
+  -Wno-sign-conversion
+  -Wno-global-constructors -Wno-extra-semi
+  -Wno-unknown-warning-option
+  # TODO: Fix fmt to re-enable these warnings
+  -Wno-undef -Wno-missing-noreturn
+)
+
+set(
+  GNU_WARNINGS -Wall -Wextra -pedantic -Werror
+  -Wno-pragmas -Wno-unknown-pragmas
+)
+
+set(MSVC_WARNINGS /wd4068 /wd4702 /W4 /WX)
+
+# Black library and executble
 add_subdirectory(src/lib)
+add_subdirectory(src/executable)
 
 # Tests
 add_subdirectory(tests)
-
-#
-# Main black executable
-#
-set(black_sources
-  ${CMAKE_SOURCE_DIR}/src/black/main.cpp)
-
-add_executable(black ${black_sources})
-
-target_link_libraries(black lib)
-target_compile_features(black PRIVATE cxx_std_17)
-target_include_directories(black PRIVATE ${CMAKE_SOURCE_DIR}/src/black/include/)
-
-# External dependencies
-target_link_libraries(black debug_assert fmt)

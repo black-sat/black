@@ -25,8 +25,33 @@
 
 #include <fmt/format.h>
 
+#include <black/support/common.hpp>
+#include <black/logic/alphabet.hpp>
+#include <black/logic/formula.hpp>
+
 int main()
 {
+  using namespace black::details;
+
+  static_assert(is_nullary_formula<truth_t>);
+  static_assert(is_unary_formula<tomorrow_t>);
+  static_assert(is_binary_formula<conjunction_t>);
+
+  alphabet sigma;
+
+  atom p = sigma.var(), q = sigma.var();
+
+  formula f = conjunction(p, q);
+
+  f.match(
+    [](conjunction) { fmt::print("A conjunction\n"); },
+    [](atom)        { fmt::print("An atom\n");       },
+    [](truth)       { fmt::print("True\n");          },
+    [](auto) {
+      fmt::print("Something else\n");
+    }
+  );
+
   fmt::print("Changing the world, one solver at the time...\n");
 
   return 0;
