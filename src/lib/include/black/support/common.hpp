@@ -66,19 +66,16 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 #define REQUIRES(...) \
 typename BLACK_REQUIRES_FRESH = void, typename std::enable_if<::black::details::true_t<BLACK_REQUIRES_FRESH>::value && ::black::details::all(__VA_ARGS__), int>::type = 0
 
-#define BLACK_CONCAT__(x, y) BLACK_CONCAT_2__(x,y)
-#define BLACK_CONCAT_2__(x, y) x ## y
+#define BLACK_CONCAT(x, y) BLACK_CONCAT_2(x,y)
+#define BLACK_CONCAT_2(x, y) x ## y
 
 #define BLACK_REQUIRES_FRESH \
-  BLACK_CONCAT__(UNFULFILLED_TEMPLATE_REQUIREMENT_, __LINE__)
+  BLACK_CONCAT(UNFULFILLED_TEMPLATE_REQUIREMENT_, __LINE__)
 
 namespace black::details {
 
   template<typename T>
   struct true_t : std::true_type { };
-
-  template<typename T>
-  using void_t = void;
 
   template<typename T, bool Tb = T::value>
   constexpr bool metapredicate() {
@@ -120,12 +117,25 @@ namespace black::details {
   constexpr bool any(Args ...args) {
       return not all(neg(args)...);
   }
+
+  //
+  // Check if a type is hashable
+  // https://stackoverflow.com/questions/12753997
+  //
+  template <typename T, typename = void>
+  struct is_hashable_t : std::false_type { };
+
+  template <typename T>
+  struct is_hashable_t<T,
+    std::void_t<decltype(std::declval<std::hash<T>>()(std::declval<T>()))>>
+    : std::true_type { };
+
+  template <typename T>
+  constexpr bool is_hashable = is_hashable_t<T>::value;
 } // namespace black::details
 
 namespace black {
-
     using details::true_t;
-    using details::void_t;
 
     using details::neg;
     using details::all;

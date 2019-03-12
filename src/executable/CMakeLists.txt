@@ -3,11 +3,15 @@ cmake_minimum_required(VERSION 3.8)
 #
 # Main black executable
 #
+set(
+  EXECUTABLE_SRC
+  main.cpp
+)
+
 add_executable(executable main.cpp)
 
-target_link_libraries(executable black)
 target_compile_features(executable PRIVATE cxx_std_17)
-target_link_libraries(executable debug_assert fmt)
+target_link_libraries(executable black debug_assert fmt)
 target_compile_options(
   executable PRIVATE
   "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNINGS}>"

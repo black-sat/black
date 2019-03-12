@@ -5,10 +5,12 @@ cmake_minimum_required(VERSION 3.8)
 #   ...
 # )
 #
-# set (
-#   LIB_HEADERS
-#   ...
-# )
+set (
+ LIB_HEADERS
+ include/black/logic/alphabet.hpp
+ include/black/logic/formula.hpp
+ include/black/support/common.hpp
+)
 
 # Here adding the headers is redundant, but makes them appear in
 # project files made by IDE generators (Xcode, VS, ecc...)

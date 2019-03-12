@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 #include <iostream>
+#include <variant>
 
 #include <fmt/format.h>
 
@@ -29,30 +30,41 @@
 #include <black/logic/alphabet.hpp>
 #include <black/logic/formula.hpp>
 
+using namespace black;
+
+std::string print_formula(formula f);
+
+void prova(std::variant<until,since> v);
+
 int main()
 {
-  using namespace black::details;
-
-  static_assert(is_nullary_formula<truth_t>);
-  static_assert(is_unary_formula<tomorrow_t>);
-  static_assert(is_binary_formula<conjunction_t>);
-
   alphabet sigma;
 
-  atom p = sigma.var(), q = sigma.var();
+  atom p = sigma.var("p"), q = sigma.var("q");
 
-  formula f = conjunction(p, q);
+  formula f = (not p and q) or not q;
 
-  f.match(
-    [](conjunction) { fmt::print("A conjunction\n"); },
-    [](atom)        { fmt::print("An atom\n");       },
-    [](truth)       { fmt::print("True\n");          },
-    [](auto) {
-      fmt::print("Something else\n");
-    }
-  );
+  fmt::print("Formula: {}\n", print_formula(f));
 
   fmt::print("Changing the world, one solver at the time...\n");
 
   return 0;
+}
+
+std::string print_formula(formula f) {
+  return f.match(
+    [](atom a)       { return fmt::format("{}", a.name()); },
+    [](negation n)   { return fmt::format("!{}", print_formula(n.lhs())); },
+    [](conjunction c){
+      return fmt::format("({} and {})",
+                         print_formula(c.lhs()), print_formula(c.rhs()));
+    },
+    [](disjunction c){
+      return fmt::format("({} or {})",
+                         print_formula(c.lhs()), print_formula(c.rhs()));
+    },
+    [](auto) {
+      return fmt::format("<other>");
+    }
+  );
 }

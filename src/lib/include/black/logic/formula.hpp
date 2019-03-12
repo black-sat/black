@@ -104,6 +104,10 @@ private:
   type_t _type;
 };
 
+class atom_t;
+
+class atom_wrapper;
+
 template<typename>
 class nullary_wrapper;
 
@@ -115,11 +119,13 @@ class binary_wrapper;
 
 template<typename F>
 using wrapper_base =
+  std::conditional_t<std::is_same_v<F,atom_t>,
+  atom_wrapper,
   std::conditional_t<is_nullary_formula<F>,
     nullary_wrapper<F>,
     std::conditional_t<is_unary_formula<F>,
       unary_wrapper<F>,
-      binary_wrapper<F>>>;
+      binary_wrapper<F>>>>;
 
 template<typename F>
 class wrapper : public wrapper_base<F> { using wrapper_base<F>::wrapper_base; };
@@ -129,6 +135,8 @@ class nullary_wrapper {
   static_assert(is_formula<F>);
 
   friend class formula;
+
+  friend class atom_wrapper;
 
   template<typename T>
   friend class nullary_wrapper;
@@ -155,6 +163,8 @@ class unary_wrapper {
 
   friend class formula;
 
+  friend class atom_wrapper;
+
   template<typename T>
   friend class nullary_wrapper;
 
@@ -168,11 +178,9 @@ public:
   explicit unary_wrapper(F *f) : _formula(f) {}
   unary_wrapper(unary_wrapper const&) = default;
 
-  template<typename F1, typename F2, REQUIRES(is_formula<F1>, is_formula<F2>)>
-  unary_wrapper(wrapper<F1> f1, wrapper<F2> f2) {
-    black_assert(&f1.alphabet() == &f2.alphabet());
-
-    _formula = f1.alphabet().template create<F>(f1._formula, f2._formula);
+  template<typename F1, REQUIRES(is_formula<F1>)>
+  unary_wrapper(wrapper<F1> f) {
+    *this = f.alphabet().template create<unary_wrapper<F>>(f._formula);
     black_assert(_formula);
   }
 
@@ -188,6 +196,8 @@ class binary_wrapper {
   static_assert(is_formula<F>);
 
   friend class formula;
+
+  friend class atom_wrapper;
 
   template<typename T>
   friend class nullary_wrapper;
@@ -206,7 +216,8 @@ public:
   binary_wrapper(wrapper<F1> f1, wrapper<F2> f2) {
     black_assert(&f1.alphabet() == &f2.alphabet());
 
-    _formula = f1.alphabet().template create<F>(f1._formula, f2._formula);
+    *this = f1.alphabet().template create<binary_wrapper<F>>(f1._formula,
+                                                             f2._formula);
     black_assert(_formula);
   }
 
@@ -221,26 +232,27 @@ protected:
 template<typename W>
 struct unwrap_t;
 
-template<typename T>
-struct unwrap_t<wrapper<T>> {
+template<template<typename> class W, typename T>
+struct unwrap_t<W<T>> {
   using type = T;
 };
 
 template<typename W>
 using unwrap = typename unwrap_t<W>::type;
 
-#define REGISTER_FORMULA(Name, Arity)                              \
-  template<>                                                       \
-  struct is_formula_t<Name##_t> : std::true_type {};               \
-                                                                   \
-  template<>                                                       \
-  struct formula_type_t<Name##_t> :                                \
-    std::integral_constant<formula_t::type_t, formula_t::Name> {}; \
-                                                                   \
-  template<>                                                       \
-  struct is_##Arity##_formula_t<Name##_t> : std::true_type {};     \
-                                                                   \
-  using Name = wrapper<Name##_t>;
+#define REGISTER_FORMULA(Name, Arity)                                 \
+  template<>                                                          \
+  struct is_formula_t<Name##_t> : std::true_type {};                  \
+                                                                      \
+  template<>                                                          \
+  struct formula_type_t<Name##_t> :                                   \
+    std::integral_constant<formula_t::type_t, formula_t::Name> {};    \
+                                                                      \
+  template<>                                                          \
+  struct is_##Arity##_formula_t<Name##_t> : std::true_type {};        \
+                                                                      \
+  using Name = wrapper<Name##_t>;                                     \
+} namespace black { using details::Name; } namespace black::details {
 
 #define NULLARY(Name)                                       \
   class Name##_t : public formula_t {                       \
@@ -278,7 +290,6 @@ using unwrap = typename unwrap_t<W>::type;
 
 NULLARY(falsity)
 NULLARY(truth)
-NULLARY(atom)
 UNARY(negation)
 UNARY(tomorrow)
 UNARY(yesterday)
@@ -294,6 +305,43 @@ BINARY(until)
 BINARY(release)
 BINARY(since)
 BINARY(triggered)
+
+// The atom class is special because of the key field
+class atom_t : public formula_t {
+public:
+  atom_t(class alphabet &a, std::string const&name)
+  : formula_t(a, formula_t::atom), _name(name) {}
+
+  std::string_view name() const { return _name; }
+
+private:
+  std::string _name;
+};
+
+class atom_wrapper
+{
+  friend class formula;
+
+  template<typename T>
+  friend class nullary_wrapper;
+
+  template<typename T>
+  friend class unary_wrapper;
+
+  template<typename T>
+  friend class binary_wrapper;
+
+public:
+  explicit atom_wrapper(atom_t *f) : _formula(f) {}
+  atom_wrapper(atom_wrapper const&) = default;
+
+  class alphabet &alphabet() const { return _formula->alphabet(); }
+  std::string_view name() const { return _formula->name(); }
+
+private:
+  atom_t *_formula;
+};
+REGISTER_FORMULA(atom, nullary)
 
 #undef REGISTER_FORMULA
 #undef NULLARY
@@ -363,6 +411,26 @@ private:
   formula_t *_formula;
 };
 
+// operators to combine formulas
+
+template<typename F>
+negation operator !(wrapper<F> w1) {
+  return negation{w1};
+}
+
+#define BINARY_OP(Op, Ctor)                          \
+  template<typename F1, typename F2>                 \
+  Ctor operator Op(wrapper<F1> w1, wrapper<F2> w2) { \
+    return Ctor{w1, w2};                             \
+  }
+
+BINARY_OP(and,conjunction)
+BINARY_OP(or,disjunction)
+
 } // namespace black::details
+
+namespace black {
+  using details::formula;
+}
 
 #endif // BLACK_LOGIC_HPP_

@@ -19,7 +19,7 @@ set(
   -Wno-exit-time-destructors -Wno-switch-enum
   -Wno-undefined-var-template
   -Wno-undefined-func-template
-  -Wno-reserved-id-macro -Wno-deprecated
+  -Wno-deprecated
   -Wno-old-style-cast -Wno-documentation
   -Wno-documentation-unknown-command
   -Wno-sign-conversion
@@ -27,6 +27,7 @@ set(
   -Wno-unknown-warning-option
   # TODO: Fix fmt to re-enable these warnings
   -Wno-undef -Wno-missing-noreturn
+  -Wno-double-promotion
 )
 
 set(
