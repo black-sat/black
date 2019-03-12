@@ -9,6 +9,11 @@ add_subdirectory(external/debug_assert)
 add_subdirectory(external/fmt)
 
 #
+# SAT solvers
+#
+add_subdirectory(external/sat)
+
+#
 # Warnings
 #
 set(

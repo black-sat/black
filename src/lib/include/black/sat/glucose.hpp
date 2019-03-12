@@ -21,52 +21,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <iostream>
-#include <variant>
+#ifndef BLACK_GLUCOSE_H
+#define BLACK_GLUCOSE_H
 
-#include <fmt/format.h>
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wcomma"
+#pragma clang diagnostic ignored "-Wlogical-op-parentheses"
+#pragma clang diagnostic ignored "-Wfloat-equal"
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
+#pragma clang diagnostic ignored "-Wcast-qual"
+#pragma clang diagnostic ignored "-Wconversion"
+#pragma clang diagnostic ignored "-Wzero-length-array"
+#pragma clang diagnostic ignored "-Wnon-virtual-dtor"
+#pragma clang diagnostic ignored "-Wnewline-eof"
+#pragma clang diagnostic ignored "-Wunused-template"
 
-#include <black/support/common.hpp>
-#include <black/logic/alphabet.hpp>
-#include <black/logic/formula.hpp>
+#include <simp/SimpSolver.h>
 
-#include <black/sat/glucose.hpp>
+#pragma clang diagnostic pop
 
-using namespace black;
-
-std::string print_formula(formula f);
-
-void prova(std::variant<until,since> v);
-
-int main()
-{
-  alphabet sigma;
-
-  atom p = sigma.var("p"), q = sigma.var("q");
-
-  formula f = (not p and q) or not q;
-
-  fmt::print("Formula: {}\n", print_formula(f));
-
-  fmt::print("Changing the world, one solver at the time...\n");
-
-  return 0;
-}
-
-std::string print_formula(formula f) {
-  return f.match(
-    [](atom a)       { return fmt::format("{}", a.name()); },
-    [](negation n)   { return fmt::format("!{}", print_formula(n.lhs())); },
-    [](conjunction c){
-      return fmt::format("({} and {})",
-                         print_formula(c.lhs()), print_formula(c.rhs()));
-    },
-    [](disjunction c){
-      return fmt::format("({} or {})",
-                         print_formula(c.lhs()), print_formula(c.rhs()));
-    },
-    [](auto) {
-      return fmt::format("<other>");
-    }
-  );
-}
+#endif // BLACK_GLUCOSE_H

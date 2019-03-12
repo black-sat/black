@@ -18,7 +18,7 @@ set (
 
 add_library(black INTERFACE)
 
-target_link_libraries(black INTERFACE debug_assert fmt)
+target_link_libraries(black INTERFACE debug_assert fmt glucose)
 target_include_directories(black INTERFACE include)
 target_compile_features(black INTERFACE cxx_std_17)
 
