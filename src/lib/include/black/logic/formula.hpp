@@ -364,7 +364,7 @@ public:
   template<typename W, typename F = unwrap<W>, REQUIRES(is_formula<F>)>
   optional<W> cast() const {
     if(isa<W>())
-      return optional{W{static_cast<F*>(_formula)}};
+      return optional<W>{W{static_cast<F*>(_formula)}};
     return nullopt;
   }
 
