@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Nicola Gigante
+// (C) 2019 Luca Geatti 
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,29 +21,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic/alphabet.hpp>
-#include <black/encoding/encoding.hpp>
+#ifndef BLACK_ENCODING_HPP
+#define BLACK_ENCODING_HPP
 
-#include <fmt/format.h>
+#include <black/logic/formula.hpp>
 
-using namespace black;
+namespace black::details {
+  
+  class BlackSolver {
+    private:
+      // Current LTL formula to solve
+      formula frm;
+      formula to_xnf(formula f);
+    public:
+      // Class constructor
+      BlackSolver();
+      // Class constructor
+      BlackSolver(formula f);
+      // Conjoin the argument formula to the current one
+      void add_formula(formula f); 
+      // Check for satisfiability of frm and a model (it is sat)
+      bool solve(bool model_gen);
 
-int main()
-{
-  fmt::print("Changing the world, one solver at the time...\n");
+           
+  }; // end class Black Solver
 
-  alphabet sigma;
+} // end namespace black::details
 
-  atom p = sigma.var("p");
-
-  formula f = XF(p);
-
-  f.match(
-    [](tomorrow)  { fmt::print("`f` is a tomorrow\n");        },
-    [](unary)     { fmt::print("`f` is a unary operator\n");  },
-    [](binary)    { fmt::print("`f` is a binary operator\n"); },
-    [](otherwise) { fmt::print("`f` is something else\n");    }
-  );
-
-  return 0;
+// Names exported to the user
+namespace black {
+  //using details::solve;
 }
+
+#endif // BLACK_ENCODING_HPP

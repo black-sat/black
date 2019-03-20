@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Nicola Gigante
+// (C) 2019 Luca Geatti 
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,29 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic/alphabet.hpp>
-#include <black/encoding/encoding.hpp>
 
-#include <fmt/format.h>
 
-using namespace black;
 
-int main()
-{
-  fmt::print("Changing the world, one solver at the time...\n");
-
-  alphabet sigma;
-
-  atom p = sigma.var("p");
-
-  formula f = XF(p);
-
-  f.match(
-    [](tomorrow)  { fmt::print("`f` is a tomorrow\n");        },
-    [](unary)     { fmt::print("`f` is a unary operator\n");  },
-    [](binary)    { fmt::print("`f` is a binary operator\n"); },
-    [](otherwise) { fmt::print("`f` is something else\n");    }
-  );
-
-  return 0;
-}
