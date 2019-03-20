@@ -26,66 +26,45 @@
 
 #include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
+#include <black/logic/formula_storage.hpp>
 
 #include <unordered_map>
-#include <vector>
+#include <deque>
 #include <memory>
 
 namespace black::details {
 
-  // This class manages an alphabet of propositional symbols and the allocation
-  // of all the formulas built on top of such symbols.
-  class alphabet
+  class alphabet : protected formula_storage
   {
+    template<typename, typename>
+    friend struct handle_base;
+
   public:
     alphabet() = default;
-    alphabet(alphabet const&) = delete;
+    alphabet(alphabet const&) = delete; // Alphabets are non-copyable
+    alphabet(alphabet &&) = default; // but movable
 
-    atom var(std::string const&name)
-    {
-      if(auto it = _atoms.find(name); it != _atoms.end())
-        return atom{it->second};
-
-      return create<atom>(name);
+    struct boolean boolean(bool value) {
+      return value ? top() : bottom();
     }
 
-  private:
-    std::unordered_map<std::string, atom_t *> _atoms;
-    std::vector<std::unique_ptr<formula_t>> _formulas;
-
-    template<typename>
-    friend class unary_wrapper;
-
-    template<typename>
-    friend class binary_wrapper;
-
-    template<
-      typename W, typename F = unwrap<W>, typename ...Args,
-      REQUIRES(is_formula<F>)
-    >
-    W create(Args &&...args) {
-      auto ptr = std::make_unique<F>(*this, std::forward<Args>(args)...);
-      F *raw = ptr.get();
-      _formulas.push_back(std::move(ptr));
-
-      if constexpr (std::is_same_v<F,atom_t>) {
-        static_assert(sizeof...(Args) == 1);
-        register_atom(raw, std::forward<Args>(args)...);
-      }
-
-      return W{raw};
+    struct boolean top() {
+      return black::details::boolean{&_top};
+    }
+    struct boolean bottom() {
+      return black::details::boolean{&_bottom};
     }
 
-    template<typename ...Args>
-    void register_atom(atom_t *a, std::string const& name) {
-      _atoms.insert({name, a});
+    atom var(std::string const&name) {
+      return atom{allocate_formula<atom_t>(name)};
     }
   };
-
 } // namespace black::details
 
+// Names exported to the user
 namespace black {
   using details::alphabet;
 }
+
 
 #endif // BLACK_ALPHABET_HPP

@@ -21,416 +21,571 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_HPP_
-#define BLACK_LOGIC_HPP_
+#ifndef BLACK_LOGIC_FORMULA_HPP_
+#define BLACK_LOGIC_FORMULA_HPP_
 
 #include <type_traits>
+#include <array>
+#include <cstdint>
 
-namespace black::details {
-
-// Base formula type.
-//
-// All the specific types of formulae, derived from this base, are declared
-// at the bottom of the file with the NULLARY, UNARY, or BINARY macros
-// depending on the type of connective they represent.
-
-template<typename T>
-struct is_formula_t : std::false_type {};
-
-template<typename T>
-struct formula_type_t {};
-
-template<typename T>
-struct is_nullary_formula_t : std::false_type {};
-
-template<typename T>
-struct is_unary_formula_t : std::false_type {};
-
-template<typename T>
-struct is_binary_formula_t : std::false_type {};
-
-template<typename T>
-constexpr bool is_formula = is_formula_t<T>::value;
-
-template<typename T>
-constexpr auto formula_type = formula_type_t<T>::value;
-
-template<typename T>
-constexpr bool is_nullary_formula = is_nullary_formula_t<T>::value;
-
-template<typename T>
-constexpr bool is_unary_formula = is_unary_formula_t<T>::value;
-
-template<typename T>
-constexpr bool is_binary_formula = is_binary_formula_t<T>::value;
-
-class alphabet;
-
-class formula_t
+namespace black::details
 {
-public:
-  enum type_t {
-    falsity = 0,
-    truth,
-    atom,
-    negation,
-    tomorrow,
-    yesterday,
-    conjunction,
-    disjunction,
-    then,
-    iff,
-    until,
-    release,
-    always,
-    eventually,
-    past,
-    historically,
-    since,
-    triggered
+  class formula_storage; // forward declaration
+
+  // No virtual destructor, but remember to use static deleter in class alphabet
+  struct formula_base
+  {
+    enum class formula_type : uint8_t {
+      boolean,
+      atom,
+      unary,
+      binary
+    };
+
+    formula_storage &alphabet;
+    formula_type type{};
   };
 
-  formula_t(formula_t const&) = delete;
-
-protected:
-  formula_t(alphabet &alphabet, type_t t) : _alphabet(alphabet), _type(t) {}
-
-public:
-  type_t type() const { return _type; }
-  class alphabet &alphabet() const { return _alphabet; }
-
-private:
-  class alphabet &_alphabet;
-  type_t _type;
-};
-
-class atom_t;
-
-class atom_wrapper;
-
-template<typename>
-class nullary_wrapper;
-
-template<typename>
-class unary_wrapper;
-
-template<typename>
-class binary_wrapper;
-
-template<typename F>
-using wrapper_base =
-  std::conditional_t<std::is_same_v<F,atom_t>,
-  atom_wrapper,
-  std::conditional_t<is_nullary_formula<F>,
-    nullary_wrapper<F>,
-    std::conditional_t<is_unary_formula<F>,
-      unary_wrapper<F>,
-      binary_wrapper<F>>>>;
-
-template<typename F>
-class wrapper : public wrapper_base<F> { using wrapper_base<F>::wrapper_base; };
-
-template<typename F>
-class nullary_wrapper {
-  static_assert(is_formula<F>);
-
-  friend class formula;
-
-  friend class atom_wrapper;
-
-  template<typename T>
-  friend class nullary_wrapper;
-
-  template<typename T>
-  friend class unary_wrapper;
-
-  template<typename T>
-  friend class binary_wrapper;
-
-public:
-  explicit nullary_wrapper(F *f) : _formula(f) {}
-  nullary_wrapper(nullary_wrapper const&) = default;
-
-  alphabet &alphabet() const { return _formula->alphabet(); }
-
-protected:
-  F *_formula = nullptr;
-};
-
-template<typename F>
-class unary_wrapper {
-  static_assert(is_formula<F>);
-
-  friend class formula;
-
-  friend class atom_wrapper;
-
-  template<typename T>
-  friend class nullary_wrapper;
-
-  template<typename T>
-  friend class unary_wrapper;
-
-  template<typename T>
-  friend class binary_wrapper;
-
-public:
-  explicit unary_wrapper(F *f) : _formula(f) {}
-  unary_wrapper(unary_wrapper const&) = default;
-
-  template<typename F1, REQUIRES(is_formula<F1>)>
-  unary_wrapper(wrapper<F1> f) {
-    *this = f.alphabet().template create<unary_wrapper<F>>(f._formula);
-    black_assert(_formula);
-  }
-
-  alphabet &alphabet() const { return _formula->alphabet(); }
-  formula_t *lhs() const { return _formula->lhs; }
-
-protected:
-  F *_formula = nullptr;
-};
-
-template<typename F>
-class binary_wrapper {
-  static_assert(is_formula<F>);
-
-  friend class formula;
-
-  friend class atom_wrapper;
-
-  template<typename T>
-  friend class nullary_wrapper;
-
-  template<typename T>
-  friend class unary_wrapper;
-
-  template<typename T>
-  friend class binary_wrapper;
-
-public:
-  explicit binary_wrapper(F *f) : _formula(f) {}
-  binary_wrapper(binary_wrapper const&) = default;
-
-  template<typename F1, typename F2, REQUIRES(is_formula<F1>, is_formula<F2>)>
-  binary_wrapper(wrapper<F1> f1, wrapper<F2> f2) {
-    black_assert(&f1.alphabet() == &f2.alphabet());
-
-    *this = f1.alphabet().template create<binary_wrapper<F>>(f1._formula,
-                                                             f2._formula);
-    black_assert(_formula);
-  }
-
-  alphabet &alphabet() const { return _formula->alphabet(); }
-  formula_t *lhs() const { return _formula->lhs; }
-  formula_t *rhs() const { return _formula->rhs; }
-
-protected:
-  F *_formula = nullptr;
-};
-
-template<typename W>
-struct unwrap_t;
-
-template<template<typename> class W, typename T>
-struct unwrap_t<W<T>> {
-  using type = T;
-};
-
-template<typename W>
-using unwrap = typename unwrap_t<W>::type;
-
-#define REGISTER_FORMULA(Name, Arity)                                 \
-  template<>                                                          \
-  struct is_formula_t<Name##_t> : std::true_type {};                  \
-                                                                      \
-  template<>                                                          \
-  struct formula_type_t<Name##_t> :                                   \
-    std::integral_constant<formula_t::type_t, formula_t::Name> {};    \
-                                                                      \
-  template<>                                                          \
-  struct is_##Arity##_formula_t<Name##_t> : std::true_type {};        \
-                                                                      \
-  using Name = wrapper<Name##_t>;                                     \
-} namespace black { using details::Name; } namespace black::details {
-
-#define NULLARY(Name)                                       \
-  class Name##_t : public formula_t {                       \
-  public:                                                   \
-    Name##_t(class alphabet &a)                             \
-    : formula_t(a, formula_t::Name) {}                      \
-  };                                                        \
-  REGISTER_FORMULA(Name, nullary)
-
-#define UNARY(Name)                           \
-  class Name##_t : public formula_t {         \
-  public:                                     \
-    Name##_t(class alphabet &a, formula_t *l) \
-    : formula_t(a, formula_t::Name), lhs(l) { \
-      black_assert(lhs);                      \
-    }                                         \
-                                              \
-    formula_t *lhs;                           \
-  };                                          \
-  REGISTER_FORMULA(Name, unary)
-
-#define BINARY(Name)                                        \
-  class Name##_t : public formula_t {                       \
-  public:                                                   \
-    Name##_t(class alphabet &a, formula_t *l, formula_t *r) \
-    : formula_t(a, formula_t::Name), lhs(l), rhs(r) {       \
-        black_assert(lhs);                                  \
-        black_assert(rhs);                                  \
-      }                                                     \
-                                                            \
-    formula_t *lhs;                                         \
-    formula_t *rhs;                                         \
-  };                                                        \
-  REGISTER_FORMULA(Name, binary)
-
-NULLARY(falsity)
-NULLARY(truth)
-UNARY(negation)
-UNARY(tomorrow)
-UNARY(yesterday)
-UNARY(always)
-UNARY(eventually)
-UNARY(past)
-UNARY(historically)
-BINARY(conjunction)
-BINARY(disjunction)
-BINARY(then)
-BINARY(iff)
-BINARY(until)
-BINARY(release)
-BINARY(since)
-BINARY(triggered)
-
-// The atom class is special because of the key field
-class atom_t : public formula_t {
-public:
-  atom_t(class alphabet &a, std::string const&name)
-  : formula_t(a, formula_t::atom), _name(name) {}
-
-  std::string_view name() const { return _name; }
-
-private:
-  std::string _name;
-};
-
-class atom_wrapper
-{
-  friend class formula;
-
-  template<typename T>
-  friend class nullary_wrapper;
-
-  template<typename T>
-  friend class unary_wrapper;
-
-  template<typename T>
-  friend class binary_wrapper;
-
-public:
-  explicit atom_wrapper(atom_t *f) : _formula(f) {}
-  atom_wrapper(atom_wrapper const&) = default;
-
-  class alphabet &alphabet() const { return _formula->alphabet(); }
-  std::string_view name() const { return _formula->name(); }
-
-private:
-  atom_t *_formula;
-};
-REGISTER_FORMULA(atom, nullary)
-
-#undef REGISTER_FORMULA
-#undef NULLARY
-#undef UNARY
-#undef BINARY
-
-class formula {
-public:
-  formula(formula const&) = default;
-  formula(formula_t *f) : _formula(f) {}
-
-  template<typename F, REQUIRES(is_formula<F>)>
-  formula(wrapper<F> w) : _formula(w._formula) {}
-
-  template<typename W, typename F = unwrap<W>, REQUIRES(is_formula<F>)>
-  bool isa() const {
-    return _formula->type() == formula_type<F>;
-  }
-
-  template<typename W, typename F = unwrap<W>, REQUIRES(is_formula<F>)>
-  optional<W> cast() const {
-    if(isa<W>())
-      return optional<W>{W{static_cast<F*>(_formula)}};
-    return nullopt;
-  }
-
-  template<typename... Func>
-  auto match(Func &&...func)
+  struct boolean_t : formula_base
   {
-    #define MATCH_CASE(Name) \
-      case formula_t::Name: { \
-        optional<Name> casted = cast<Name>(); \
-        black_assert(casted); \
-        return std::invoke( \
-          overloaded { std::forward<Func>(func)...}, \
-          casted.value() \
-        ); \
-      } \
+    static const enum formula_type formula_type = formula_type::boolean;
 
-    switch(_formula->type())
-    {
-      MATCH_CASE(falsity)
-      MATCH_CASE(truth)
-      MATCH_CASE(atom)
-      MATCH_CASE(negation)
-      MATCH_CASE(tomorrow)
-      MATCH_CASE(yesterday)
-      MATCH_CASE(conjunction)
-      MATCH_CASE(disjunction)
-      MATCH_CASE(then)
-      MATCH_CASE(iff)
-      MATCH_CASE(until)
-      MATCH_CASE(release)
-      MATCH_CASE(always)
-      MATCH_CASE(eventually)
-      MATCH_CASE(past)
-      MATCH_CASE(historically)
-      MATCH_CASE(since)
-      MATCH_CASE(triggered)
+    boolean_t(formula_storage &sigma, bool v)
+      : formula_base{sigma, formula_type::boolean}, value(v) {}
+
+    bool value{};
+  };
+
+  struct atom_t : formula_base
+  {
+    static const enum formula_type formula_type = formula_type::atom;
+
+    atom_t(formula_storage &sigma, std::string const& n)
+      : formula_base{sigma, formula_type::atom}, name(n) {}
+
+    std::string name;
+  };
+
+  struct unary_t : formula_base
+  {
+    static const enum formula_type formula_type = formula_type::unary;
+
+    enum operator_type : uint8_t {
+      negation,
+      tomorrow,
+      yesterday,
+      always,
+      eventually,
+      past,
+      historically
+    };
+
+    unary_t(formula_storage &sigma, operator_type ot, formula_base const*f)
+      : formula_base{sigma, formula_type::unary}, op_type{ot}, operand{f} { }
+
+    operator_type op_type;
+    formula_base const*operand;
+  };
+
+  struct binary_t : formula_base
+  {
+    static const enum formula_type formula_type = formula_type::binary;
+
+    enum operator_type : uint8_t {
+      conjunction,
+      disjunction,
+      then,
+      iff,
+      until,
+      release,
+      since,
+      triggered
+    };
+
+    binary_t(formula_storage &sigma, operator_type type,
+              formula_base const*f1, formula_base const*f2)
+      : formula_base{sigma, formula_type::binary}, op_type(type),
+        left{f1}, right{f2} { }
+
+    operator_type op_type;
+    formula_base const*left;
+    formula_base const*right;
+  };
+
+  template<typename T, typename F = std::remove_cv_t<std::remove_pointer_t<T>>>
+  F const*formula_cast(formula_base const*f)
+  {
+    if(f->type == F::formula_type)
+      return static_cast<F const*>(f);
+    return nullptr;
+  }
+
+  /*
+   * Dummy type for default case in formula matchers
+   */
+  struct otherwise {};
+
+  // CRTP base class for handles
+  template<typename H, typename F>
+  struct handle_base
+  {
+    friend class formula;
+    friend class alphabet;
+
+    template<typename, typename>
+    friend struct handle_base;
+
+    handle_base(handle_base const&) = default;
+    handle_base(handle_base &&) = default;
+
+    template<typename H1, typename F1, typename H2, typename F2>
+    friend bool
+    operator==(handle_base<H1,F1> const&h1, handle_base<H2,F2> const&f2);
+
+    operator otherwise() const { return {}; }
+
+  protected:
+    using handled_formula_t = F;
+
+    explicit handle_base(F const*f) : _formula{f} {}
+
+    static optional<H> cast(formula_base const*f) {
+      if(auto ptr = formula_cast<typename H::handled_formula_t const*>(f); ptr)
+        return optional<H>{H{ptr}};
+      return nullopt;
     }
 
-    black_unreachable();
-    #undef MATCH_CASE
+    // Implemented after alphabet class
+    template<typename Arg, typename ...Args>
+    static F *allocate_formula(Arg&&, Args&& ...);
+
+    template<typename H2>
+    static F const* unwrap_handle(handle_base<H2, F> const& h) noexcept {
+      return h._formula;
+    }
+
+    F const*_formula;
+  };
+
+  template<typename H1, typename F1, typename H2, typename F2>
+  bool operator==(handle_base<H1,F1> const& h1, handle_base<H2,F2> const& h2) {
+    return static_cast<formula_base const*>(h1._formula) ==
+           static_cast<formula_base const*>(h2._formula);
   }
 
-private:
-  formula_t *_formula;
-};
-
-// operators to combine formulas
-
-template<typename F>
-negation operator !(wrapper<F> w1) {
-  return negation{w1};
-}
-
-#define BINARY_OP(Op, Ctor)                          \
-  template<typename F1, typename F2>                 \
-  Ctor operator Op(wrapper<F1> w1, wrapper<F2> w2) { \
-    return Ctor{w1, w2};                             \
+  template<typename H1, typename F1, typename H2, typename F2>
+  bool operator!=(handle_base<H1,F1> const& h1, handle_base<H2,F2> const& h2) {
+    return !(h1 == h2);
   }
 
-BINARY_OP(and,conjunction)
-BINARY_OP(or,disjunction)
+  /*
+   * trait to recognise handles
+   */
+  template<typename T>
+  class is_handle_t
+  {
+    template<typename H, typename F>
+    static std::true_type detect(handle_base<H, F> const&) {}
+    static std::false_type detect(...) {}
+
+  public:
+    static const bool value = decltype(detect(std::declval<T>()))::value;
+  };
+
+  template<typename T>
+  constexpr bool is_handle = is_handle_t<T>::value;
+
+  // Encoding the arity of each operator in the enum value
+  // Assumes the above three arities, so 2 bits to store a formula_arity value
+  constexpr uint8_t type_encoding_shift = 6;
+
+  template<typename T>
+  constexpr uint8_t combine_type(formula_base::formula_type type, T op_type) {
+    return
+      (to_underlying(type) << type_encoding_shift) & to_underlying(op_type);
+  }
+
+  #define enum_unary unary_t::operator_type
+  #define enum_binary binary_t::operator_type
+  #define declare_type(Name, Type) \
+    Name = combine_type(formula_base::formula_type::Type, enum_##Type::Name)
+
+  enum class formula_type : uint8_t {
+    boolean = to_underlying(formula_base::formula_type::boolean),
+    atom    = to_underlying(formula_base::formula_type::atom),
+    declare_type(negation,     unary),
+    declare_type(tomorrow,     unary),
+    declare_type(yesterday,    unary),
+    declare_type(always,       unary),
+    declare_type(eventually,   unary),
+    declare_type(past,         unary),
+    declare_type(historically, unary),
+    declare_type(conjunction,  binary),
+    declare_type(disjunction,  binary),
+    declare_type(then,         binary),
+    declare_type(iff,          binary),
+    declare_type(until,        binary),
+    declare_type(release,      binary),
+    declare_type(since,        binary),
+    declare_type(triggered,    binary)
+  };
+
+  #undef declare_type
+  #undef enum_binary
+  #undef enum_unary
+
+  // User-facing formula class
+  class formula
+  {
+    friend class formula_storage;
+    template<typename, typename>
+    friend struct handle_base;
+
+  public:
+    formula() = delete;
+    formula(formula const&) = default;
+
+    formula(formula_base const*f) : _formula{f} {}
+
+    using type = formula_type;
+
+    template<typename H, REQUIRES(is_handle<H>)>
+    formula(H const&h) : _formula(h._formula) {}
+
+    friend bool operator==(formula f1, formula f2);
+
+    type get_type() const {
+      if(auto *unary = formula_cast<unary_t const*>(_formula); unary)
+        return formula_type{combine_type(unary->type, unary->op_type)};
+      if(auto *binary = formula_cast<binary_t const*>(_formula); binary)
+        return formula_type{combine_type(binary->type, binary->op_type)};
+
+      return formula_type{to_underlying(_formula->type)};
+    }
+
+    template<typename H>
+    optional<H> to() const {
+      black_assert(_formula != nullptr);
+
+      return H::cast(_formula);
+    }
+
+    template<typename H>
+    bool is() const {
+      black_assert(_formula != nullptr);
+      return H::cast(_formula).has_value();
+    }
+
+    template<typename ...Cases>
+    auto match(Cases&&...) const;
+
+  private:
+    formula_base const*_formula;
+  };
+
+  inline bool operator==(formula f1, formula f2) {
+    return f1._formula == f2._formula;
+  }
+
+  inline bool operator!=(formula f1, formula f2) {
+    return !(f1 == f2);
+  }
+
+  /*
+   * trait to recognise handles and formulas
+   */
+  template<typename T>
+  constexpr bool is_formula = std::is_same_v<T,formula> || is_handle<T>;
+
+  /*
+   * handles for specific types of formulas
+   */
+  struct boolean
+    : handle_base<boolean, boolean_t>
+  {
+    friend class formula;
+    friend class alphabet;
+
+    using base_t = handle_base<boolean, boolean_t>;
+    using base_t::base_t;
+    friend base_t;
+
+    bool value() const { return _formula->value; }
+  };
+
+  struct atom : handle_base<atom, atom_t>
+  {
+    friend class formula;
+    friend class alphabet;
+
+    using base_t = handle_base<atom, atom_t>;
+    using base_t::base_t;
+    friend base_t;
+
+    std::string_view name() const { return _formula->name; }
+  };
+
+  struct unary
+    : handle_base<unary, unary_t>
+  {
+    friend class formula;
+    friend class alphabet;
+
+    using base_t = handle_base<unary, unary_t>;
+    using base_t::base_t;
+    friend base_t;
+
+    using operator_type = unary_t::operator_type;
+
+    template<typename H>
+    unary(handle_base<H,unary_t> const& h)
+      : base_t{unwrap_handle(h)} { }
+
+    template<typename F, REQUIRES(is_formula<F>)>
+    unary(operator_type t, F const& h) : base_t{allocate_formula(t, h)} { }
+
+    operator_type op_type() const { return _formula->op_type; }
+
+    formula operand() const {
+      return formula{_formula->operand};
+    }
+  };
+
+  struct binary
+    : handle_base<binary, binary_t>
+  {
+    friend class formula;
+    friend class alphabet;
+
+    using base_t = handle_base<binary, binary_t>;
+    using base_t::base_t;
+    friend base_t;
+
+    using operator_type = binary_t::operator_type;
+
+    template<typename H>
+    binary(handle_base<H,binary_t> const& h)
+      : base_t{unwrap_handle(h)} { }
+
+    template<typename F1, REQUIRES(is_formula<F1>),
+             typename F2, REQUIRES(is_formula<F2>)>
+    binary(operator_type t, F1 const& h1, F2 const& h2)
+      : base_t{allocate_formula(t, h1, h2)} { }
+
+    operator_type op_type() const { return _formula->op_type; }
+
+    formula left() const {
+      return formula{_formula->left};
+    }
+
+    formula right() const {
+      return formula{_formula->right};
+    }
+  };
+
+  /*
+   * Type-specific handles, similar to unary and binary, but with the operator
+   * known at compile-type
+   */
+  template<typename H, typename F, auto OT>
+  struct operator_base : handle_base<H, F>
+  {
+    friend class formula;
+    friend class alphabet;
+
+    using base_t = handle_base<H, F>;
+    using base_t::base_t;
+
+    formula operand() const { return formula{this->_formula->operand}; }
+
+  protected:
+    static optional<H> cast(formula_base const*f) {
+      if(auto ptr = formula_cast<F const*>(f); ptr && ptr->op_type == OT)
+        return optional<H>{H{ptr}};
+      return nullopt;
+    }
+  };
+
+  template<typename H, unary_t::operator_type OT>
+  struct unary_operator : operator_base<H, unary_t, OT>
+  {
+    using base_t = operator_base<H, unary_t, OT>;
+    using base_t::base_t;
+    using base_t::cast;
+
+    template<typename F, REQUIRES(is_formula<F>)>
+    explicit unary_operator(F const& h) : base_t{this->allocate_formula(OT, h)}
+    {
+      black_assert(this->_formula->type == formula_base::formula_type::unary);
+      black_assert(this->_formula->op_type == OT);
+    }
+  };
+
+  template<typename H, binary_t::operator_type OT>
+  struct binary_operator : operator_base<H, binary_t, OT>
+  {
+    using base_t = operator_base<H, binary_t, OT>;
+    using base_t::base_t;
+    using base_t::cast;
+
+    template<typename F1, REQUIRES(is_formula<F1>),
+             typename F2, REQUIRES(is_formula<F2>)>
+    binary_operator(F1 const& h1, F2 const& h2)
+      : base_t{this->allocate_formula(OT, h1, h2)}
+    {
+      black_assert(this->_formula->type == formula_base::formula_type::binary);
+      black_assert(this->_formula->op_type == OT);
+    }
+  };
+
+  #define declare_operator(Op, Arity)                                 \
+    struct Op : Arity##_operator<Op, Arity##_t::Op> {                 \
+      using base_t = Arity##_operator<Op, Arity##_t::Op>;             \
+      using base_t::base_t;                                           \
+      friend operator_base<Op, Arity##_t, Arity##_t::Op>;             \
+    };                                                                \
+  } namespace black { using details::Op; } namespace black::details { \
+
+  declare_operator(negation,     unary)
+  declare_operator(tomorrow,     unary)
+  declare_operator(yesterday,    unary)
+  declare_operator(always,       unary)
+  declare_operator(eventually,   unary)
+  declare_operator(past,         unary)
+  declare_operator(historically, unary)
+  declare_operator(conjunction, binary)
+  declare_operator(disjunction, binary)
+  declare_operator(then,        binary)
+  declare_operator(iff,         binary)
+  declare_operator(until,       binary)
+  declare_operator(release,     binary)
+  declare_operator(since,       binary)
+  declare_operator(triggered,   binary)
+
+  #undef declare_operator
+
+  /*
+   * Pattern matching on formulas
+   */
+  template<typename ...Cases>
+  auto formula::match(Cases&& ...cases) const
+  {
+    black_assert(_formula);
+    using formula_type = formula_base::formula_type;
+    using unary_type = unary_t::operator_type;
+    using binary_type = binary_t::operator_type;
+
+    #define match_case(Enum, H)                                       \
+      case Enum::H: {                                                 \
+        black_assert(is<H>());                                        \
+        return apply_first(std::make_tuple(*to<H>()), FWD(cases)...); \
+      }
+
+    switch(_formula->type) {
+      match_case(formula_type, boolean)
+      match_case(formula_type, atom)
+      case formula_type::unary:
+        switch(formula_cast<unary_t*>(_formula)->op_type) {
+          match_case(unary_type, negation)
+          match_case(unary_type, tomorrow)
+          match_case(unary_type, yesterday)
+          match_case(unary_type, always)
+          match_case(unary_type, eventually)
+          match_case(unary_type, past)
+          match_case(unary_type, historically)
+        }
+      case formula_type::binary:
+        switch(formula_cast<binary_t*>(_formula)->op_type) {
+          match_case(binary_type, conjunction)
+          match_case(binary_type, disjunction)
+          match_case(binary_type, then)
+          match_case(binary_type, iff)
+          match_case(binary_type, until)
+          match_case(binary_type, release)
+          match_case(binary_type, since)
+          match_case(binary_type, triggered)
+        }
+    }
+  }
+  #undef match_case
+
+  /*
+   * Operators
+   */
+   template<typename F, REQUIRES(is_formula<F>)>
+   auto operator !(F&& f) {
+     return negation(FWD(f));
+   }
+
+   template<
+    typename F1, REQUIRES(is_formula<F1>),
+    typename F2, REQUIRES(is_formula<F2>)
+    >
+   auto operator &&(F1&& f1, F2&& f2) {
+     return conjunction(FWD(f1), FWD(f2));
+   }
+
+   template<
+    typename F1, REQUIRES(is_formula<F1>),
+    typename F2, REQUIRES(is_formula<F2>)
+    >
+   auto operator ||(F1&& f1, F2&& f2) {
+     return disjunction(FWD(f1), FWD(f2));
+   }
+
+   //
+   // Helper functions akin to operators.
+   // Note: these are found by ADL, and are *not* exported by the `black`
+   //       namespace. This means the worringly generic names do not risk to
+   //       cause name clashes with user names
+   //
+   #define declare_unary_helper(Op, Type) \
+     template<typename F, REQUIRES(is_formula<F>)> \
+     Type Op(F&& f) { return Type(FWD(f)); }
+
+   declare_unary_helper(X, tomorrow)
+   declare_unary_helper(Y, yesterday)
+   declare_unary_helper(F, eventually)
+   declare_unary_helper(G, always)
+   declare_unary_helper(P, past)
+   declare_unary_helper(H, historically)
+
+   #undef declare_unary_helper
+
+   #define declare_binary_helper(Op, Type) \
+     template<typename F1, typename F2, \
+              REQUIRES(is_formula<F1>, is_formula<F2>)> \
+     Type Op(F1&& f1, F2&& f2) { return Type(FWD(f1), FWD(f2)); }
+
+   declare_binary_helper(U, until)
+   declare_binary_helper(S, since)
+   declare_binary_helper(R, release)
+   declare_binary_helper(T, triggered)
+
+   #undef declare_binary_helper
+
+   #define combine_unary_helpers(Op1, Op2) \
+     template<typename F, REQUIRES(is_formula<F>)> \
+     auto Op1##Op2(F&& f) { return Op1(Op2(FWD(f))); }
+
+   combine_unary_helpers(X,F)
+   combine_unary_helpers(X,G)
+   combine_unary_helpers(Y,P)
+   combine_unary_helpers(Y,H)
+   combine_unary_helpers(G,F)
+
+   #undef combine_unary_helpers
 
 } // namespace black::details
 
+// Names exported to the user
 namespace black {
+  using details::boolean;
+  using details::atom;
+  using details::unary;
+  using details::binary;
   using details::formula;
+  using details::otherwise;
 }
 
-#endif // BLACK_LOGIC_HPP_
+#endif // BLACK_LOGIC_FORMULA_HPP_

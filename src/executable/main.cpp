@@ -21,52 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <iostream>
-#include <variant>
-
 #include <fmt/format.h>
-
-#include <black/support/common.hpp>
-#include <black/logic/alphabet.hpp>
-#include <black/logic/formula.hpp>
-
-#include <black/sat/glucose.hpp>
-
-using namespace black;
-
-std::string print_formula(formula f);
-
-void prova(std::variant<until,since> v);
 
 int main()
 {
-  alphabet sigma;
-
-  atom p = sigma.var("p"), q = sigma.var("q");
-
-  formula f = (not p and q) or not q;
-
-  fmt::print("Formula: {}\n", print_formula(f));
-
   fmt::print("Changing the world, one solver at the time...\n");
 
   return 0;
-}
-
-std::string print_formula(formula f) {
-  return f.match(
-    [](atom a)       { return fmt::format("{}", a.name()); },
-    [](negation n)   { return fmt::format("!{}", print_formula(n.lhs())); },
-    [](conjunction c){
-      return fmt::format("({} and {})",
-                         print_formula(c.lhs()), print_formula(c.rhs()));
-    },
-    [](disjunction c){
-      return fmt::format("({} or {})",
-                         print_formula(c.lhs()), print_formula(c.rhs()));
-    },
-    [](auto) {
-      return fmt::format("<other>");
-    }
-  );
 }

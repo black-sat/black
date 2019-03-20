@@ -22,6 +22,8 @@ target_link_libraries(black INTERFACE debug_assert fmt glucose)
 target_include_directories(black INTERFACE include)
 target_compile_features(black INTERFACE cxx_std_17)
 
+target_compile_options(black INTERFACE -g)
+
 target_compile_options(
   black INTERFACE
   "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNINGS}>"

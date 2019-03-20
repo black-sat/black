@@ -56,9 +56,37 @@ namespace black::details {
 #define black_unreachable() \
   DEBUG_UNREACHABLE(::black::details::black_assert_t{})
 
-// Overload of callables, useful for ADT-like patterns
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+// Tool function to assert the validity of a pointer in an expression
+template<typename T>
+constexpr T *non_null(T *p) noexcept {
+  black_assert(p != nullptr);
+  return p;
+}
+
+namespace black::details {
+  // First-match-first-called apply function, used in formula matchers
+  template<typename ...Args, typename F>
+  auto apply_first(std::tuple<Args...> args, F f)
+    //-> decltype(std::apply(f, args))
+  {
+    return std::apply(f, args);
+  }
+
+  template<typename ...Args, typename F, typename ...Fs>
+  auto apply_first(std::tuple<Args...> args, F f, Fs ...fs)
+    // -> std::conditional_t<std::is_invocable_v<F, Args...>,
+    //      std::invoke_result_t<F, Args...>,
+    //      decltype(apply_first(args, fs...))>
+  {
+    if constexpr(std::is_invocable_v<F, Args...>) {
+      return std::apply(f, args);
+    } else
+      return apply_first(args, fs...);
+  }
+}
+
+// Shorthand for perfect forwarding
+#define FWD(a) std::forward<decltype(a)>(a)
 
 // The REQUIRES() macro, an easier to use wrapper around std::enable_if
 
@@ -66,11 +94,17 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 #define REQUIRES(...) \
 typename BLACK_REQUIRES_FRESH = void, typename std::enable_if<::black::details::true_t<BLACK_REQUIRES_FRESH>::value && ::black::details::all(__VA_ARGS__), int>::type = 0
 
+#define REQUIRES_OUT_OF_LINE(...) \
+typename BLACK_REQUIRES_FRESH, typename std::enable_if<::black::details::true_t<BLACK_REQUIRES_FRESH>::value && ::black::details::all(__VA_ARGS__), int>::type
+
 #define BLACK_CONCAT(x, y) BLACK_CONCAT_2(x,y)
 #define BLACK_CONCAT_2(x, y) x ## y
 
 #define BLACK_REQUIRES_FRESH \
   BLACK_CONCAT(UNFULFILLED_TEMPLATE_REQUIREMENT_, __LINE__)
+
+// Macro to require well-formedness of some dependent expression
+#define WELL_FORMED(Expr) typename = std::void_t<decltype(Expr)>
 
 namespace black::details {
 
@@ -132,6 +166,29 @@ namespace black::details {
 
   template <typename T>
   constexpr bool is_hashable = is_hashable_t<T>::value;
+
+  //
+  // Useful utilities to work with strongly-typed enums
+  //
+  template <typename E, REQUIRES(std::is_enum_v<E>)>
+  constexpr auto to_underlying(E e) noexcept
+  {
+      return static_cast<std::underlying_type_t<E>>(e);
+  }
+
+  template<typename E, REQUIRES(std::is_enum_v<E>)>
+  constexpr E from_underlying(std::underlying_type_t<E> v) noexcept {
+    return static_cast<E>(v);
+  }
+
+  // Utility to check equality of a variable number of parameters
+  // Useful for parameter packs
+  bool constexpr all_equal() { return true; }
+
+  template<typename Arg, typename ...Args>
+  bool constexpr all_equal(Arg &&arg, Args&& ...args) {
+    return ((std::forward<Arg>(arg) == std::forward<Args>(args)) && ...);
+  }
 } // namespace black::details
 
 namespace black {
