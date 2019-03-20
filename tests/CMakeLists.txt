@@ -5,6 +5,7 @@ target_include_directories(catch INTERFACE ${CMAKE_SOURCE_DIR}/external/catch/si
 
 set(
   TESTS
+  main.cpp
   formula.cpp
 )
 

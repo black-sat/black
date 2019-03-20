@@ -21,28 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic/alphabet.hpp>
+//
+// Main Catch2 test driver
+//
+#define CATCH_CONFIG_MAIN
 
-#include <fmt/format.h>
-
-using namespace black;
-
-int main()
-{
-  fmt::print("Changing the world, one solver at the time...\n");
-
-  alphabet sigma;
-
-  atom p = sigma.var("p");
-
-  formula f = XF(p);
-
-  f.match(
-    [](tomorrow)  { fmt::print("`f` is a tomorrow\n");        },
-    [](unary)     { fmt::print("`f` is a unary operator\n");  },
-    [](binary)    { fmt::print("`f` is a binary operator\n"); },
-    [](otherwise) { fmt::print("`f` is something else\n");    }
-  );
-
-  return 0;
-}
+#include <catch.hpp>

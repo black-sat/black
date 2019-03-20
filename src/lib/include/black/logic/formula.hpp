@@ -27,6 +27,7 @@
 #include <type_traits>
 #include <array>
 #include <cstdint>
+#include <string>
 
 namespace black::details
 {

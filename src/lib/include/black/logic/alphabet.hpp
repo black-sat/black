@@ -28,6 +28,7 @@
 #include <black/logic/formula.hpp>
 #include <black/logic/formula_storage.hpp>
 
+#include <string>
 #include <unordered_map>
 #include <deque>
 #include <memory>
