@@ -28,7 +28,7 @@
 #include <black/logic/formula.hpp>
 
 #include <deque>
-#include <map>
+#include <unordered_map>
 
 namespace black::details {
 
@@ -58,9 +58,9 @@ namespace black::details {
                                   formula_base const*>;
 
     // TODO: switch to std::unordered_map by implementing std::hash on tuples
-    std::map<std::string, atom_t*> _atoms_map;
-    std::map<unary_key,  unary_t*> _unaries_map;
-    std::map<binary_key, binary_t*> _binaries_map;
+    std::unordered_map<std::string, atom_t*> _atoms_map;
+    std::unordered_map<unary_key,  unary_t*> _unaries_map;
+    std::unordered_map<binary_key, binary_t*> _binaries_map;
 
   private:
     template<typename>

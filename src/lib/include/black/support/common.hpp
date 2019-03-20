@@ -191,6 +191,69 @@ namespace black::details {
   }
 } // namespace black::details
 
+//
+// std::hash specialization for tuples and pairs.
+// See https://stackoverflow.com/a/27952689/3206471
+// and https://stackoverflow.com/questions/35985960
+// for an explanation of the hashing function combination technique
+//
+namespace black::details {
+  inline size_t hash_combine(size_t lhs, size_t rhs) {
+    static_assert(sizeof(size_t) == 4 || sizeof(size_t) == 8);
+
+    if constexpr(sizeof(size_t) == 4) {
+      lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
+    } else if constexpr(sizeof(size_t) == 8) {
+      lhs ^= rhs + 0x9e3779b97f4a7c15 + (lhs << 6) + (lhs >> 2);
+    }
+
+    return lhs;
+  }
+
+  template<typename T, typename ...Ts, size_t ...Idx>
+  std::tuple<Ts...>
+  tuple_tail_impl(std::tuple<T,Ts...> const&t, std::index_sequence<Idx...>) {
+    return std::make_tuple(std::get<Idx + 1>(t)...);
+  }
+
+  template<typename T, typename ...Ts>
+  std::tuple<Ts...> tuple_tail(std::tuple<T, Ts...> const&t) {
+    return tuple_tail_impl(t, std::make_index_sequence<sizeof...(Ts)>{});
+  }
+}
+
+// NB: Declaring things in namespace std is allowed for specialization of
+// standard templates
+namespace std
+{
+  template<typename T>
+  struct hash<tuple<T>> {
+    size_t operator()(tuple<T> const&t) const {
+      return hash<T>{}(get<0>(t));
+    }
+  };
+
+  template<typename T, typename ...Ts>
+  struct hash<tuple<T,Ts...>> {
+    size_t operator()(tuple<T,Ts...> const&t) const {
+      using namespace ::black::details;
+
+      hash<T> h1;
+      hash<tuple<Ts...>> h2;
+
+      return hash_combine(h1(std::get<0>(t)), h2(tuple_tail(t)));
+    }
+  };
+
+  template<typename S, typename T>
+  struct hash<pair<S, T>>
+  {
+    size_t operator()(pair<S, T> const&v) const {
+      return hash<tuple<S,T>>{}(make_tuple(v.first,v.second));
+    }
+  };
+}
+
 namespace black {
     using details::true_t;
 
