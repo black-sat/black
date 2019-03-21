@@ -21,31 +21,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_ENCODING_HPP
-#define BLACK_ENCODING_HPP
+#ifndef BLACK_SOLVER_HPP
+#define BLACK_SOLVER_HPP
 
 #include <black/logic/formula.hpp>
 
 namespace black::details {
   
-  class BlackSolver {
+  class solver {
     private:
+      
       // Current LTL formula to solve
       formula frm;
-      formula to_xnf(formula f);
+     
     public:
+      
       // Class constructor
-      BlackSolver();
+      //solver();
+      
       // Class constructor
-      BlackSolver(formula f);
-      // Conjoin the argument formula to the current one
+      solver(formula f);
+      
+      // Conjoins the argument formula to the current one
       void add_formula(formula f); 
-      // Check for satisfiability of frm and a model (it is sat)
+      
+      // Check for satisfiability of frm and a model (if it is sat)
       bool solve(bool model_gen);
-
            
   }; // end class Black Solver
 
+  formula to_xnf(formula f);
 } // end namespace black::details
 
 // Names exported to the user
@@ -53,4 +58,4 @@ namespace black {
   //using details::solve;
 }
 
-#endif // BLACK_ENCODING_HPP
+#endif // SOLVER_HPP

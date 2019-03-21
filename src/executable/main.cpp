@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 #include <black/logic/alphabet.hpp>
-#include <black/encoding/encoding.hpp>
+#include <black/solver/solver.hpp>
 
 #include <fmt/format.h>
 
