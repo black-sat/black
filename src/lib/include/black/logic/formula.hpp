@@ -32,7 +32,6 @@
 #include <string>
 #include <optional>
 
-
 namespace black::details
 {
   class formula_storage; // forward declaration
@@ -76,7 +75,7 @@ namespace black::details
     static const enum formula_type formula_type = formula_type::unary;
 
     enum operator_type : uint8_t {
-      negation,
+      negation = 0,
       tomorrow,
       yesterday,
       always,
@@ -97,7 +96,7 @@ namespace black::details
     static const enum formula_type formula_type = formula_type::binary;
 
     enum operator_type : uint8_t {
-      conjunction,
+      conjunction = 0,
       disjunction,
       then,
       iff,

@@ -52,11 +52,12 @@ namespace black::details {
     struct boolean top() {
       return black::details::boolean{&_top};
     }
+
     struct boolean bottom() {
       return black::details::boolean{&_bottom};
     }
 
-    template<typename T, REQUIRES(is_hashable<T> && !is_tuple<T>)>
+    template<typename T, REQUIRES(is_hashable<T>)>
     atom var(T&& label) {
       if constexpr(std::is_convertible_v<T,std::string>) {
         return atom{allocate_formula<atom_t>(std::string{FWD(label)})};
@@ -64,8 +65,6 @@ namespace black::details {
         return atom{allocate_formula<atom_t>(FWD(label))};
       }
     }
-
-
   };
 } // namespace black::details
 
