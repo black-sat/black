@@ -58,7 +58,7 @@ namespace black::details {
                                   formula_base const*>;
 
     // TODO: switch to std::unordered_map by implementing std::hash on tuples
-    std::unordered_map<std::string, atom_t*> _atoms_map;
+    std::unordered_map<any_hashable, atom_t*> _atoms_map;
     std::unordered_map<unary_key,  unary_t*> _unaries_map;
     std::unordered_map<binary_key, binary_t*> _binaries_map;
 
@@ -66,13 +66,16 @@ namespace black::details {
     template<typename>
     struct _tag {};
 
-    atom_t *allocate(_tag<atom_t>, std::string const&name)
+    template<typename T, REQUIRES(is_hashable<T>)>
+    atom_t *allocate(_tag<atom_t>, T&& _label)
     {
-      if(auto it = _atoms_map.find(name); it != _atoms_map.end())
+      any_hashable label{FWD(_label)};
+
+      if(auto it = _atoms_map.find(label); it != _atoms_map.end())
         return it->second;
 
-      atom_t *a = &_atoms.emplace_back(*this, name);
-      _atoms_map.insert({name, a});
+      atom_t *a = &_atoms.emplace_back(*this, label);
+      _atoms_map.insert({label, a});
 
       return a;
     }

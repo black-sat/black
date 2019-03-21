@@ -61,10 +61,10 @@ namespace black::details
   {
     static const enum formula_type formula_type = formula_type::atom;
 
-    atom_t(formula_storage &sigma, std::string const& n)
-      : formula_base{sigma, formula_type::atom}, name(n) {}
+    atom_t(formula_storage &_sigma, any_hashable const& _label)
+      : formula_base{_sigma, formula_type::atom}, label{_label} {}
 
-    std::string name;
+    any_hashable label;
   };
 
   struct unary_t : formula_base
@@ -280,6 +280,10 @@ namespace black::details
     template<typename ...Cases>
     auto match(Cases&&...) const;
 
+    size_t hash() const {
+      return std::hash<formula_base const*>{}(_formula);
+    }
+
   private:
     formula_base const*_formula;
   };
@@ -291,6 +295,20 @@ namespace black::details
   inline bool operator!=(formula f1, formula f2) {
     return !(f1 == f2);
   }
+
+  //
+  // std::hash specialization for std::formula
+  //
+} namespace std {
+
+  template<>
+  struct hash<black::details::formula> {
+    size_t operator()(black::details::formula const&f) {
+      return f.hash();
+    }
+  };
+
+} namespace black::details {
 
   /*
    * trait to recognise handles and formulas
@@ -323,7 +341,10 @@ namespace black::details
     using base_t::base_t;
     friend base_t;
 
-    std::string_view name() const { return _formula->name; }
+    std::any label() const { return _formula->label.any(); }
+
+    template<typename T>
+    std::optional<T> label() const { return _formula->label.to<T>(); }
   };
 
   struct unary

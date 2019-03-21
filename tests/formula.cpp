@@ -25,7 +25,10 @@
 
 #include <black/logic/alphabet.hpp>
 
+#include <string>
+
 using namespace black;
+using namespace std::literals;
 
 TEST_CASE("Handles")
 {
@@ -33,14 +36,16 @@ TEST_CASE("Handles")
 
   boolean top = sigma.top();
   boolean bottom = sigma.bottom();
+
+  // requesting atoms with different types
   atom p = sigma.var("p");
-  atom q = sigma.var("q");
+  atom q = sigma.var(42);
 
   SECTION("Basic booleans and atoms allocation") {
     REQUIRE(top.value());
     REQUIRE(!bottom.value());
-    REQUIRE(p.name() == "p");
-    REQUIRE(q.name() == "q");
+    REQUIRE(p.label<std::string>().value() == "p");
+    REQUIRE(q.label<int>().value() == 42);
     REQUIRE(p == p);
     REQUIRE(p != q);
 
@@ -78,7 +83,7 @@ TEST_CASE("Handles")
     REQUIRE(top2 == top);
     REQUIRE(p2 == p);
 
-    REQUIRE(p2.name() == "p");
+    REQUIRE(p2.label<std::string>().value() == "p");
   }
 
   SECTION("Unary and binary formulas construction") {

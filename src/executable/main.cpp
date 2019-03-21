@@ -23,10 +23,11 @@
 
 #include <black/logic/alphabet.hpp>
 #include <black/encoding/encoding.hpp>
+#include <black/support/common.hpp>
 
 #include <fmt/format.h>
 
-using namespace black;
+using namespace black::details;
 
 int main()
 {
@@ -35,15 +36,21 @@ int main()
   alphabet sigma;
 
   atom p = sigma.var("p");
+  atom q = sigma.var("q");
 
-  formula f = XF(p);
+  formula f = XF(p) || !q;
 
-  f.match(
-    [](tomorrow)  { fmt::print("`f` is a tomorrow\n");        },
-    [](unary)     { fmt::print("`f` is a unary operator\n");  },
-    [](binary)    { fmt::print("`f` is a binary operator\n"); },
-    [](otherwise) { fmt::print("`f` is something else\n");    }
+  formula groundf = sigma.var(f);
+
+  std::string type = groundf.match(
+    [](atom)      { return "atom";     },
+    [](tomorrow)  { return "tomorrow"; },
+    [](unary)     { return "unary";    },
+    [](binary)    { return "binary";   },
+    [](otherwise) { return "<other>";  }
   );
+
+  fmt::print("The formula is a `{}`\n", type);
 
   return 0;
 }

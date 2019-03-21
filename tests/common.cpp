@@ -28,6 +28,8 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <vector>
+#include <cstring>
 
 TEST_CASE("Hashing functions for tuples")
 {
@@ -49,5 +51,80 @@ TEST_CASE("Hashing functions for tuples")
     auto it = map.find(nkey);
 
     REQUIRE(it == map.end());
+  }
+}
+
+TEST_CASE("any_hashable class")
+{
+  using namespace black::details;
+
+  static_assert(is_hashable<int&>);
+
+  SECTION("Base types") {
+    int i = 42;
+    any_hashable h{i};
+
+    std::hash<int> int_hash;
+    std::hash<any_hashable> any_hash;
+
+    REQUIRE(any_hash(h) == int_hash(i));
+
+    std::optional opt = h.to<int>();
+
+    REQUIRE(opt.has_value());
+    REQUIRE(*opt == 42);
+
+    h = &i; // reassign with different type
+    std::optional opt2 = h.to<int*>();
+
+    REQUIRE(opt2.has_value());
+    REQUIRE(*opt2 == &i);
+  }
+
+  SECTION("C strings") {
+    char const* str = "hello";
+
+    any_hashable h{str};
+
+    std::optional opt = h.to<char const*>();
+
+    REQUIRE(opt.has_value());
+    REQUIRE(std::strcmp(*opt, "hello") == 0);
+    REQUIRE(*opt == str);
+  }
+
+  SECTION("Class types") {
+    std::string s = "hello";
+    std::vector<bool> v = {true,false,true,false};
+
+    SECTION("By value") {
+      any_hashable h{s};
+
+      std::optional opt = h.to<std::string>();
+
+      REQUIRE(opt.has_value());
+      REQUIRE(*opt == s);
+
+      h = v; // reassignment
+      std::optional opt2 = h.to<std::vector<bool>>();
+
+      REQUIRE(opt2.has_value());
+      REQUIRE(*opt2 == std::vector<bool>{true,false,true,false});
+    }
+
+    SECTION("By move") {
+      any_hashable h{std::move(s)};
+
+      std::optional opt = h.to<std::string>();
+
+      REQUIRE(opt.has_value());
+      REQUIRE(*opt == "hello");
+
+      h = std::move(v); // reassignment
+      std::optional opt2 = h.to<std::vector<bool>>();
+
+      REQUIRE(opt2.has_value());
+      REQUIRE(*opt2 == std::vector<bool>{true,false,true,false});
+    }
   }
 }

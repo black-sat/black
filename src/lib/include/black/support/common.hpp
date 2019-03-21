@@ -28,6 +28,7 @@
 
 #include <optional>
 #include <type_traits>
+#include <any>
 
 
 // Include in the details namespace some commonly used type.
@@ -153,21 +154,6 @@ namespace black::details {
   }
 
   //
-  // Check if a type is hashable
-  // https://stackoverflow.com/questions/12753997
-  //
-  template <typename T, typename = void>
-  struct is_hashable_t : std::false_type { };
-
-  template <typename T>
-  struct is_hashable_t<T,
-    std::void_t<decltype(std::declval<std::hash<T>>()(std::declval<T>()))>>
-    : std::true_type { };
-
-  template <typename T>
-  constexpr bool is_hashable = is_hashable_t<T>::value;
-
-  //
   // Useful utilities to work with strongly-typed enums
   //
   template <typename E, REQUIRES(std::is_enum_v<E>)>
@@ -254,14 +240,145 @@ namespace std
   };
 }
 
-namespace black {
-    using details::true_t;
+namespace black::details
+{
+  //
+  // Trait to detect whether a type is convertible to a tuple of some arbitrary
+  // types
+  //
+  template<typename T>
+  struct is_tuple_t : std::false_type {};
 
-    using details::neg;
-    using details::all;
-    using details::any;
+  template<typename ...Args>
+  struct is_tuple_t<std::tuple<Args...>> : std::true_type {};
 
-    using details::same_type;
+  template<typename T>
+  constexpr bool is_tuple = is_tuple_t<std::decay_t<T>>::value;
+
+  //
+  // Check if a type is hashable
+  // https://stackoverflow.com/questions/12753997
+  //
+  // TODO: check for proper enabled specializations
+  //
+  template <typename T, typename = void>
+  struct is_hashable_t : std::false_type { };
+
+  template <typename T>
+  struct is_hashable_t<T,
+    std::void_t<
+      decltype(std::declval<std::hash<std::decay_t<T>>>()(std::declval<T>()))
+    >
+  > : std::true_type { };
+
+  template <typename T>
+  constexpr bool is_hashable = is_hashable_t<T>::value;
+
+  //
+  // Type-erased hashable value
+  //
+  class any_hashable
+  {
+  public:
+    any_hashable() = default;
+    any_hashable(any_hashable const&) = default;
+    any_hashable(any_hashable&&) = default;
+
+    template<
+      typename T,
+      REQUIRES(!std::is_convertible_v<T, any_hashable>),
+      REQUIRES(is_hashable<std::decay_t<T>>)
+    >
+    explicit any_hashable(T&& value)
+      : _any(FWD(value)), _hash(make_hasher(value)), _cmp(make_cmp(value)) {}
+
+    size_t hash() const {
+      black_assert(_any.has_value());
+      return _hash(_any);
+    }
+
+    any_hashable &operator=(any_hashable const&) = default;
+    any_hashable &operator=(any_hashable&&) = default;
+
+    bool operator==(any_hashable const&other) const {
+      return _cmp(_any, other);
+    }
+
+    template<typename T, REQUIRES(is_hashable<std::decay_t<T>>)>
+    any_hashable &operator=(T&& value) {
+      _any = FWD(value);
+      _hash = make_hasher(value);
+      _cmp = make_cmp(value);
+      return *this;
+    }
+
+    template<typename T>
+    bool is() const {
+      return std::any_cast<T>(&_any) != nullptr;
+    }
+
+    template<typename T>
+    optional<T> to() const & {
+      if(T const*ptr = std::any_cast<T>(&_any); ptr)
+        return optional<T>{*ptr};
+      return nullopt;
+    }
+
+    template<typename T>
+    optional<T> to() && {
+      if(T const*ptr = std::any_cast<T>(&_any); ptr)
+        return optional<T>{std::move(*ptr)};
+      return nullopt;
+    }
+
+    template<typename T>
+    T const* get() const & { return std::any_cast<T>(&_any); }
+
+    template<typename T>
+    T *get() & { return std::any_cast<T>(&_any); }
+
+    std::any const&any() const { return _any; }
+
+  private:
+    using hasher_t = size_t (*)(std::any const&);
+    using comparator_t = bool (*)(std::any const&, any_hashable const&);
+
+    std::any _any;
+    hasher_t _hash;
+    comparator_t _cmp;
+
+    template<typename T>
+    hasher_t make_hasher(T const&) {
+      return [](std::any const&me) -> size_t {
+        T const *v = std::any_cast<T>(&me);
+        black_assert(v != nullptr);
+
+        return std::hash<T>{}(*v);
+      };
+    }
+
+    template<typename T>
+    comparator_t make_cmp(T const&) {
+      return [](std::any const&me, any_hashable const&other) -> bool {
+        T const* v = std::any_cast<T>(&me);
+        T const* otherv = other.get<T>();
+
+        black_assert(v != nullptr);
+
+        return otherv != nullptr && *v == *otherv;
+      };
+    }
+  };
+}
+
+// std::hash specialization for any_hashable
+namespace std {
+  template<>
+  struct hash<black::details::any_hashable> {
+    size_t operator()(black::details::any_hashable const&h) const {
+      return h.hash();
+    }
+  };
 }
 
 

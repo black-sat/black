@@ -56,9 +56,16 @@ namespace black::details {
       return black::details::boolean{&_bottom};
     }
 
-    atom var(std::string const&name) {
-      return atom{allocate_formula<atom_t>(name)};
+    template<typename T, REQUIRES(is_hashable<T> && !is_tuple<T>)>
+    atom var(T&& label) {
+      if constexpr(std::is_convertible_v<T,std::string>) {
+        return atom{allocate_formula<atom_t>(std::string{FWD(label)})};
+      } else {
+        return atom{allocate_formula<atom_t>(FWD(label))};
+      }
     }
+
+
   };
 } // namespace black::details
 
