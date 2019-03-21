@@ -59,7 +59,7 @@ namespace black::details {
 
     // TODO: switch to std::unordered_map by implementing std::hash on tuples
     std::unordered_map<any_hashable, atom_t*> _atoms_map;
-    std::unordered_map<unary_key,  unary_t*> _unaries_map;
+    std::unordered_map<unary_key,   unary_t*> _unaries_map;
     std::unordered_map<binary_key, binary_t*> _binaries_map;
 
   private:

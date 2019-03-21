@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Luca Geatti 
+// (C) 2019 Luca Geatti
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@
 #include <black/solver/solver.hpp>
 
 namespace black::details {
-  
+
   // Class constructor
   //solver::solver() : frm(top()) {}
 
@@ -51,15 +51,15 @@ namespace black::details {
       [&](boolean)      { return f; },
       [&](atom)         { return f; },
       [&](tomorrow)     { return f; },
-      [&](negation)     { return formula{!to_xnf(f)}; },
-      [](conjunction c) { return formula{to_xnf(c.left()) && to_xnf(c.right())}; }, 
+      [](negation n)     { return formula{!to_xnf(n.operand())}; },
+      [](conjunction c) { return formula{to_xnf(c.left()) && to_xnf(c.right())}; },
       [](disjunction d) { return formula{to_xnf(d.left()) || to_xnf(d.right())}; },
-      [](until u)       { 
+      [](until u)       {
                           return formula{to_xnf(u.right()) || (to_xnf(u.left()) && X(u))};
                         },
       [](eventually e)  { return formula{to_xnf(e.operand()) || X(e)}; },
       [](always a)      { return formula{to_xnf(a.operand()) && X(a)}; },
-      [](release r)     { 
+      [](release r)     {
                           return formula{to_xnf(r.right()) && (to_xnf(r.left()) || X(r))};
                         },
       // TODO: past operators
@@ -69,5 +69,3 @@ namespace black::details {
 
 
 } // end namespace black::details
-
-
