@@ -2,14 +2,14 @@ cmake_minimum_required(VERSION 3.8)
 
 set (
    LIB_SRC
-   src/encoding/encoding.cpp
+   src/solver/solver.cpp
  )
 
 set (
  LIB_HEADERS
  include/black/logic/alphabet.hpp
  include/black/logic/formula.hpp
- include/black/encoding/encoding.hpp
+ include/black/solver/solver.hpp
  include/black/support/common.hpp
 )
 

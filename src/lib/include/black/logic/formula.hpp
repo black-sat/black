@@ -24,10 +24,14 @@
 #ifndef BLACK_LOGIC_FORMULA_HPP_
 #define BLACK_LOGIC_FORMULA_HPP_
 
+#include <black/support/common.hpp>
+
 #include <type_traits>
 #include <array>
 #include <cstdint>
 #include <string>
+#include <optional>
+
 
 namespace black::details
 {
@@ -314,7 +318,7 @@ namespace black::details
    * trait to recognise handles and formulas
    */
   template<typename T>
-  constexpr bool is_formula = std::is_same_v<T,formula> || is_handle<T>;
+  constexpr bool is_formula = std::is_convertible_v<T,formula> || is_handle<T>;
 
   /*
    * handles for specific types of formulas
@@ -460,11 +464,28 @@ namespace black::details
     }
   };
 
+  #define declare_unary_operator_methods \
+    formula operand() const { 			 \
+      return formula{_formula->operand}; \
+    }
+
+  #define declare_binary_operator_methods  \
+    formula left() const {                 \
+      return formula{_formula->left};      \
+    }                                      \
+                                           \
+    formula right() const {                \
+      return formula{_formula->right};     \
+    }
+
+
   #define declare_operator(Op, Arity)                                 \
     struct Op : Arity##_operator<Op, Arity##_t::Op> {                 \
       using base_t = Arity##_operator<Op, Arity##_t::Op>;             \
       using base_t::base_t;                                           \
       friend operator_base<Op, Arity##_t, Arity##_t::Op>;             \
+																	  \
+      declare_##Arity##_operator_methods 							  \
     };                                                                \
   } namespace black { using details::Op; } namespace black::details { \
 
