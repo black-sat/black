@@ -47,13 +47,11 @@ namespace black::details {
     while(true){
       // Generating the k-unraveling
       encoding = encoding && k_unraveling(k);
-      
+      if(!is_sat(encoding)){
+        return false;
+      }
       k++;
-      break;
     } // end while(true)
-
-
-    return false;
   }
   
 
@@ -63,9 +61,9 @@ namespace black::details {
     // Copy of the X-requests generated in phase k-1.
     std::vector<unary> current_xreq = xrequests;
     if(k==0){
-      xrequests.clear();
       return to_ground_xnf(frm,k);
     }else{
+      xrequests.clear(); // clears all the X-requests from the vector
       formula big_and = alpha.boolean(true);
       for(auto it = current_xreq.begin(); it != current_xreq.end(); it++){
         // X(alpha)_P^{k-1}
@@ -75,7 +73,6 @@ namespace black::details {
         // left_hand IFF right_hand
         big_and = big_and && iff(left_hand, right_hand);
       }
-      xrequests.clear(); // clears all the X-requests from the vector
       return big_and;  
     }
   }
@@ -114,6 +111,16 @@ namespace black::details {
     );
   }
 
+
+
+  bool solver::is_sat(formula /*encoding*/) {
+    // Transformation to CNF
+    // ...
+    // Call to Glucose
+    // ...
+    bool res = true;
+    return res;
+  }
 
 
 

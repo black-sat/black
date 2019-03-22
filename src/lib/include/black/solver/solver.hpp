@@ -51,7 +51,10 @@ namespace black::details {
       
       // Generates the Next Normal Form of f
       formula to_ground_xnf(formula f, int k);
-    
+      
+      // Calls glucose to check if the boolean formula is sat
+      bool is_sat(formula f);
+
     public:
       
       // Class constructor
