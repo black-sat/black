@@ -48,7 +48,7 @@ TEST_CASE("Rountrip of parser and pretty-printer")
 
   for(formula f : tests) {
     DYNAMIC_SECTION("Roundtrip for formula: " << f) {
-      auto result = parse_formula(sigma, to_string(f), [](auto) {});
+      auto result = parse_formula(sigma, to_string(f));
 
       REQUIRE(result.has_value());
       CHECK(*result == f);

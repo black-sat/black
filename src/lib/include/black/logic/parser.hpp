@@ -69,6 +69,11 @@ namespace black::details
   parse_formula(alphabet &sigma, std::string const&s,
                 parser::error_handler error);
 
+  inline std::optional<formula>
+  parse_formula(alphabet &sigma, std::string const&s) {
+    return parse_formula(sigma, s, [](auto){});
+  }
+
   std::string to_string(formula f);
 
   inline std::ostream &operator<<(std::ostream &stream, formula const&f) {
