@@ -631,3 +631,5 @@ namespace black {
 }
 
 #endif // BLACK_LOGIC_FORMULA_HPP_
+
+#include <black/logic/formula_storage.hpp>
