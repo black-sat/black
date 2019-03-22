@@ -203,16 +203,38 @@ namespace black::details
   // Assumes the above three arities, so 2 bits to store a formula_arity value
   constexpr uint8_t type_encoding_shift = 6;
 
+  enum class formula_type : uint8_t;
+
   template<typename T>
-  constexpr uint8_t combine_type(formula_base::formula_type type, T op_type) {
-    return
-      (to_underlying(type) << type_encoding_shift) & to_underlying(op_type);
+  struct formula_base_type_of_op {};
+
+  template<>
+  struct formula_base_type_of_op<unary_t::operator_type> {
+    static const auto value = formula_base::formula_type::unary;
+  };
+
+  template<>
+  struct formula_base_type_of_op<binary_t::operator_type> {
+    static const auto value = formula_base::formula_type::binary;
+  };
+
+  template<typename R = formula_type, typename T>
+  constexpr R op_to_formula_type(T op_type) {
+    return static_cast<R>(
+      (to_underlying(formula_base_type_of_op<T>::value) << type_encoding_shift)
+        & to_underlying(op_type)
+    );
+  }
+
+  template<typename R = formula_type>
+  constexpr formula_type op_to_formula_type(formula_base::formula_type type) {
+    return static_cast<R>(type);
   }
 
   #define enum_unary unary_t::operator_type
   #define enum_binary binary_t::operator_type
   #define declare_type(Name, Type) \
-    Name = combine_type(formula_base::formula_type::Type, enum_##Type::Name)
+    Name = op_to_formula_type<uint8_t>(enum_##Type::Name)
 
   enum class formula_type : uint8_t {
     boolean = to_underlying(formula_base::formula_type::boolean),
@@ -260,9 +282,9 @@ namespace black::details
 
     type get_type() const {
       if(auto *unary = formula_cast<unary_t const*>(_formula); unary)
-        return formula_type{combine_type(unary->type, unary->op_type)};
+        return op_to_formula_type(unary->op_type);
       if(auto *binary = formula_cast<binary_t const*>(_formula); binary)
-        return formula_type{combine_type(binary->type, binary->op_type)};
+        return op_to_formula_type(binary->op_type);
 
       return formula_type{to_underlying(_formula->type)};
     }
@@ -369,6 +391,8 @@ namespace black::details
     template<typename F, REQUIRES(is_formula<F>)>
     unary(operator_type t, F const& h) : base_t{allocate_formula(t, h)} { }
 
+    formula_type type() const { return op_to_formula_type(_formula->op_type); }
+
     operator_type op_type() const { return _formula->op_type; }
 
     formula operand() const {
@@ -396,6 +420,8 @@ namespace black::details
              typename F2, REQUIRES(is_formula<F2>)>
     binary(operator_type t, F1 const& h1, F2 const& h2)
       : base_t{allocate_formula(t, h1, h2)} { }
+
+    formula_type type() const { return op_to_formula_type(_formula->op_type); }
 
     operator_type op_type() const { return _formula->op_type; }
 
@@ -607,8 +633,8 @@ namespace black::details
    #undef declare_binary_helper
 
    #define combine_unary_helpers(Op1, Op2) \
-     template<typename F, REQUIRES(is_formula<F>)> \
-     auto Op1##Op2(F&& f) { return Op1(Op2(FWD(f))); }
+     template<typename FormulaType, REQUIRES(is_formula<FormulaType>)> \
+     auto Op1##Op2(FormulaType&& f) { return Op1(Op2(FWD(f))); }
 
    combine_unary_helpers(X,F)
    combine_unary_helpers(X,G)

@@ -8,6 +8,7 @@ set(
   main.cpp
   common.cpp
   formula.cpp
+  parser.cpp
 )
 
 add_executable(tests ${TESTS})

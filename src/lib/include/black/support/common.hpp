@@ -55,7 +55,8 @@ namespace black::details {
 #define black_assert(Expr) \
   DEBUG_ASSERT(Expr, ::black::details::black_assert_t{})
 #define black_unreachable() \
-  DEBUG_UNREACHABLE(::black::details::black_assert_t{})
+  DEBUG_UNREACHABLE(::black::details::black_assert_t{});\
+  DEBUG_ASSERT_MARK_UNREACHABLE;
 
 // Tool function to assert the validity of a pointer in an expression
 template<typename T>
@@ -160,6 +161,12 @@ namespace black::details {
   constexpr auto to_underlying(E e) noexcept
   {
       return static_cast<std::underlying_type_t<E>>(e);
+  }
+
+  template <typename E, REQUIRES(std::is_integral_v<E>)>
+  constexpr auto to_underlying(E e) noexcept
+  {
+      return static_cast<E>(e);
   }
 
   template<typename E, REQUIRES(std::is_enum_v<E>)>

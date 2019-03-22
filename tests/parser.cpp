@@ -21,36 +21,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <ostream>
+
 #include <black/logic/alphabet.hpp>
 #include <black/logic/parser.hpp>
-#include <black/solver/solver.hpp>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <catch.hpp>
 
-using namespace black::details;
+using namespace black;
 
-inline void parsing_error(std::string const&s) {
-  fmt::print("Error parsing formula: {}\n", s);
-}
-
-int main()
+TEST_CASE("Rountrip of parser and pretty-printer")
 {
-  fmt::print("Changing the world, one solver at the time...\n");
-
   alphabet sigma;
 
-  while(!std::cin.eof()) {
-    std::string line;
+  atom p = sigma.var("p");
+  atom q = sigma.var("q");
 
-    fmt::print("Please enter formula: ");
-    std::getline(std::cin, line);
+  std::vector<formula> tests = {
+    p, !p, X(p), F(p), G(p), P(p), H(p), XF(p), GF(p), XG(p),
+    p && q, p || q, U(p,q), S(p,q), R(p,q), T(p,q),
+    p && (X(U(p,q)) || XF(!q)),
+    p && then(Y(S(p,q)), GF(!p)),
+    U(p, !(GF(q))),
+    !(iff(p || q, !q && p))
+  };
 
-    std::optional<formula> f = parse_formula(sigma, line, parsing_error);
+  for(formula f : tests) {
+    DYNAMIC_SECTION("Roundtrip for formula: " << f) {
+      auto result = parse_formula(sigma, to_string(f), [](auto) {});
 
-    if(f)
-      fmt::print("Parsed formula: {}\n", *f);
+      REQUIRE(result.has_value());
+      CHECK(*result == f);
+    }
   }
-
-  return 0;
 }

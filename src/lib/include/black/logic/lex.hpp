@@ -63,67 +63,115 @@ namespace black::details
       right_paren
     };
 
-    token(token_type t) : type(t) {
+    constexpr token(token_type t) : type(t) {
       black_assert(t != token::boolean);
       black_assert(t != token::atom);
     }
-    token(bool b) : type(token::boolean), data(b) {}
+    constexpr token(bool b) : type(token::boolean), data(b) {}
     token(std::string a) : type(token::atom), data(std::move(a)) {}
+
+    bool is_logical_symbol() const {
+      return to_underlying(type) <= to_underlying(triggered);
+    }
+
+    bool is_unary_op() const {
+      return to_underlying(type) >= to_underlying(negation) &&
+             to_underlying(type) <= to_underlying(historically);
+    }
+
+    bool is_binary_op() const {
+      return to_underlying(type) >= to_underlying(conjunction) &&
+             to_underlying(type) <= to_underlying(triggered);
+    }
+
+    constexpr std::optional<formula::type> formula_type() const;
+
+    constexpr std::optional<unary::operator_type> unary_type() const;
+
+    constexpr std::optional<binary::operator_type> binary_type() const;
 
     token_type type;
     std::variant<std::monostate, bool, std::string> data;
   };
 
-  constexpr int binary_precedence(binary::operator_type bintype) {
-    // Attention: this must remain in sync with binary::operator_type
-    constexpr int binops[] = {
-      30, // conjunction
-      20, // disjunction
-      40, // then
-      40, // iff
-      50, // until
-      50, // release
-      50, // since
-      50  // triggered
+  constexpr std::string_view to_string(unary::operator_type const& t) {
+    constexpr std::string_view toks[] = {
+      "!", // negation
+      "X", // tomorrow
+      "Y", // yesterday
+      "G", // always
+      "F", // eventually
+      "P", // past
+      "H", // historically
     };
 
-    return binops[to_underlying(bintype)];
+    black_assert(to_underlying(t) < sizeof(toks));
+
+    return toks[to_underlying(t)];
+  }
+
+  constexpr std::string_view to_string(binary::operator_type const& t) {
+    constexpr std::string_view toks[] = {
+      "&&",  // conjunction
+      "||",  // disjunction
+      "->",  // then
+      "<->", // iff
+      "U",   // until
+      "R",   // release
+      "S",   // since
+      "T",   // triggered
+    };
+
+    black_assert(to_underlying(t) < sizeof(toks));
+
+    return toks[to_underlying(t)];
   }
 
   constexpr std::string_view to_string(token const &tok)
   {
-    constexpr std::string_view toks[] = {
-      // atoms and boolean printed separately
-      "!", // negation,
-      "X", // tomorrow,
-      "Y", // yesterday,
-      "H", // always,
-      "F", // eventually,
-      "P", // past,
-      "H", // historically,
-      "&&", // conjunction,
-      "||", // disjunction,
-      "->", // then,
-      "<->", // iff,
-      "U", // until,
-      "R", // release,
-      "S", // since,
-      "T", // triggered,
-      "(", // left_paren,
-      ")"  // right_paren
-    };
-
     switch(tok.type) {
       case token::boolean:
-        std::cout << "tok.data index: " << tok.data.index() << "\n";
         black_assert(std::holds_alternative<bool>(tok.data));
         return std::get<bool>(tok.data) ? "true" : "false";
       case token::atom:
         black_assert(std::holds_alternative<std::string>(tok.data));
         return std::get<std::string>(tok.data);
+      case token::left_paren:
+        return "(";
+      case token::right_paren:
+        return ")";
       default:
-        return toks[to_underlying(tok.type) - 2];
+        if(tok.is_unary_op())
+          return to_string(*tok.unary_type());
+        else if(tok.is_binary_op())
+          return to_string(*tok.binary_type());
     }
+    black_unreachable();
+  }
+
+  constexpr std::optional<formula::type> token::formula_type() const {
+    if(is_logical_symbol())
+      return {formula::type{to_underlying(type)}};
+    return {};
+  }
+
+  constexpr std::optional<unary::operator_type> token::unary_type() const {
+    uint8_t u = to_underlying(type);
+    if(is_unary_op()) {
+      uint8_t v = u - uint8_t(token_type::negation);
+      return {from_underlying<unary::operator_type>(v)};
+    }
+
+    return {};
+  }
+
+  constexpr std::optional<binary::operator_type> token::binary_type() const {
+    uint8_t u = to_underlying(type);
+    if(is_binary_op()) {
+      uint8_t v = u - uint8_t(token_type::conjunction);
+      return {from_underlying<binary::operator_type>(v)};
+    }
+    return {};
   }
 
   class lexer

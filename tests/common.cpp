@@ -31,6 +31,18 @@
 #include <vector>
 #include <cstring>
 
+//
+// Static checks before any actual test case
+//
+
+// Consistency of enums
+namespace static_checks {
+  
+}
+
+//
+// Test cases
+//
 TEST_CASE("Hashing functions for tuples")
 {
   using key_type = std::tuple<int, char, char>;

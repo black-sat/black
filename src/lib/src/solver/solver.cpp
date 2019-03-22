@@ -63,7 +63,7 @@ namespace black::details {
                           return formula{to_xnf(r.right()) && (to_xnf(r.left()) || X(r))};
                         },
       // TODO: past operators
-      [&](otherwise) { black_unreachable(); return f; }
+      [&](otherwise) -> formula { black_unreachable(); }
     );
   }
 

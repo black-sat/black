@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.8)
 set (
    LIB_SRC
    src/logic/lex.cpp
+   src/logic/parser.cpp
    src/solver/solver.cpp
  )
 
@@ -11,6 +12,7 @@ set (
  include/black/logic/alphabet.hpp
  include/black/logic/formula.hpp
  include/black/logic/lex.hpp
+ include/black/logic/parser.hpp
  include/black/solver/solver.hpp
  include/black/support/common.hpp
 )
@@ -19,7 +21,8 @@ set (
 # project files made by IDE generators (Xcode, VS, ecc...)
 add_library (black STATIC ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PUBLIC debug_assert fmt glucose)
+target_link_libraries(black PUBLIC debug_assert)
+target_link_libraries(black PRIVATE fmt glucose)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
 
