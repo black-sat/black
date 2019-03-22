@@ -60,10 +60,10 @@ namespace black::details {
   formula solver::k_unraveling(int k) {
     // Copy of the X-requests generated in phase k-1.
     std::vector<unary> current_xreq = xrequests;
+    xrequests.clear(); // clears all the X-requests from the vector
     if(k==0){
       return to_ground_xnf(frm,k);
     }else{
-      xrequests.clear(); // clears all the X-requests from the vector
       formula big_and = alpha.boolean(true);
       for(auto it = current_xreq.begin(); it != current_xreq.end(); it++){
         // X(alpha)_P^{k-1}
