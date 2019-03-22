@@ -29,43 +29,93 @@ namespace black::details {
   //solver::solver() : frm(top()) {}
 
   // Class constructor
-  solver::solver(formula f) : frm(f) {}
+  solver::solver(alphabet &a, formula f) : 
+    alpha(a),
+    frm(f)
+  {}
 
   // Conjoins the argument formula to the current one
   void solver::add_formula(formula f) {
     frm = frm && f;
   }
 
-  // Check for satisfiability of frm and a model (if it is sat)
+  // Checks for satisfiability of frm and 
+  // returns a model (if it is sat)
   bool solver::solve(bool = false) {
-    [[maybe_unused]]
-    formula xnf_frm = to_xnf(frm);
+    int k=0;
+    formula encoding = alpha.boolean(true);
+    while(true){
+      // Generating the k-unraveling
+      encoding = encoding && k_unraveling(k);
+      
+      k++;
+      break;
+    } // end while(true)
+
 
     return false;
   }
+  
+
+
+  // Generates the k-unraveling for the given k.
+  formula solver::k_unraveling(int k) {
+    // Copy of the X-requests generated in phase k-1.
+    std::vector<unary> current_xreq = xrequests;
+    if(k==0){
+      xrequests.clear();
+      return to_ground_xnf(frm,k);
+    }else{
+      formula big_and = alpha.boolean(true);
+      for(auto it = current_xreq.begin(); it != current_xreq.end(); it++){
+        // X(alpha)_P^{k-1}
+        formula left_hand = alpha.var(std::pair<formula,int>(formula{*it},k-1));
+        // xnf(\alpha)_P^{k}
+        formula right_hand = to_ground_xnf((*it).operand(),k); 
+        // left_hand IFF right_hand
+        big_and = big_and && iff(left_hand, right_hand);
+      }
+      xrequests.clear(); // clears all the X-requests from the vector
+      return big_and;  
+    }
+  }
+
 
   // Turns the current formula into Next Normal Form
-  formula to_xnf(formula f) {
+  formula solver::to_ground_xnf(formula f, int k) {
     return f.match(
       // Future Operators
       [&](boolean)      { return f; },
       [&](atom)         { return f; },
-      [&](tomorrow)     { return f; },
-      [](negation n)     { return formula{!to_xnf(n.operand())}; },
-      [](conjunction c) { return formula{to_xnf(c.left()) && to_xnf(c.right())}; },
-      [](disjunction d) { return formula{to_xnf(d.left()) || to_xnf(d.right())}; },
-      [](until u)       {
-                          return formula{to_xnf(u.right()) || (to_xnf(u.left()) && X(u))};
+      [&,k](tomorrow t)   { xrequests.push_back(t);
+                          return formula{alpha.var(std::pair<formula,int>(formula{t},k))}; },
+      [this,k](negation n)    { return formula{!to_ground_xnf(n.operand(),k)}; },
+      [this,k](conjunction c) { return formula{to_ground_xnf(c.left(),k) && to_ground_xnf(c.right(),k)}; },
+      [this,k](disjunction d) { return formula{to_ground_xnf(d.left(),k) || to_ground_xnf(d.right(),k)}; },
+      [this,k](until u) { xrequests.push_back(X(u));
+                        return formula{to_ground_xnf(u.right(),k) || 
+                                 (to_ground_xnf(u.left(),k) && alpha.var(std::pair<formula,int>(formula{X(u)},k)) 
+                      )};},
+      [this,k](eventually e) { xrequests.push_back(X(e));
+                             return formula{to_ground_xnf(e.operand(),k) || 
+                             alpha.var(std::pair<formula,int>(formula{X(e)},k))};
+                           },
+      [this,k](always a)  { xrequests.push_back(X(a));
+                          return formula{to_ground_xnf(a.operand(),k) 
+                          && alpha.var(std::pair<formula,int>(formula{X(a)},k))};
                         },
-      [](eventually e)  { return formula{to_xnf(e.operand()) || X(e)}; },
-      [](always a)      { return formula{to_xnf(a.operand()) && X(a)}; },
-      [](release r)     {
-                          return formula{to_xnf(r.right()) && (to_xnf(r.left()) || X(r))};
+      [this,k](release r) { xrequests.push_back(X(r));
+                          return formula{to_ground_xnf(r.right(),k) && 
+                                 (to_ground_xnf(r.left(),k) || 
+                                 alpha.var(std::pair<formula,int>(formula{X(r)},k)))};
                         },
       // TODO: past operators
       [&](otherwise) { black_unreachable(); return f; }
     );
   }
+
+
+
 
 
 } // end namespace black::details

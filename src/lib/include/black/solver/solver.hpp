@@ -25,37 +25,55 @@
 #define BLACK_SOLVER_HPP
 
 #include <black/logic/formula.hpp>
+#include <black/logic/alphabet.hpp>
+#include <vector>
+#include <utility>
 
 namespace black::details {
   
   class solver {
     private:
       
+      // Reference to the original alphabet
+      alphabet& alpha;
+      
       // Current LTL formula to solve
       formula frm;
-     
+      
+      // Vector of all the X-requests of step k
+      std::vector<unary> xrequests; 
+      
+      // Vector of all the X-eventualities of step k
+      std::vector<unary> xeventualities;
+
+      // Generates the k-unraveling for the given k
+      formula k_unraveling(int k); 
+      
+      // Generates the Next Normal Form of f
+      formula to_ground_xnf(formula f, int k);
+    
     public:
       
       // Class constructor
       //solver();
       
       // Class constructor
-      solver(formula f);
+      solver(alphabet &a, formula f);
       
       // Conjoins the argument formula to the current one
       void add_formula(formula f); 
       
-      // Check for satisfiability of frm and a model (if it is sat)
+      // Check for satisfiability of frm and 
+      // returns a model (if it is sat)
       bool solve(bool model_gen);
            
   }; // end class Black Solver
 
-  formula to_xnf(formula f);
 } // end namespace black::details
 
 // Names exported to the user
 namespace black {
-  //using details::solve;
+  using details::solver;
 }
 
 #endif // SOLVER_HPP

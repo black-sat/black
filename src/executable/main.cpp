@@ -50,6 +50,9 @@ int main()
   );
 
   fmt::print("The formula is a `{}`\n", type);
+  
+  // Using BLACK solver
+  solver slv(sigma,f);
 
   return 0;
 }
