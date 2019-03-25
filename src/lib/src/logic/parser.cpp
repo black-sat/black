@@ -43,7 +43,7 @@ namespace black::details
           auto arg = u.operand();
           auto sarg = arg.is<binary>() ? fmt::format("({})", to_string(arg))
                                        : fmt::format("{}", to_string(arg));
-          return fmt::format("{}{}", to_string(u.op_type()), sarg);
+          return fmt::format("{}{}", to_string(u.type()), sarg);
         },
         [](binary b) {
           auto lhs = b.left(), rhs = b.right();
@@ -51,7 +51,7 @@ namespace black::details
                                        : fmt::format("{}", to_string(lhs));
           auto srhs = rhs.is<binary>() ? fmt::format("({})", to_string(rhs))
                                        : fmt::format("{}", to_string(rhs));
-          return fmt::format("{} {} {}", slhs, to_string(b.op_type()), srhs);
+          return fmt::format("{} {} {}", slhs, to_string(b.type()), srhs);
         },
         [](otherwise) {
           return "boh"s;
