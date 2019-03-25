@@ -28,7 +28,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
-using namespace black::details;
+using namespace black;
 
 inline void parsing_error(std::string const&s) {
   fmt::print("Error parsing formula: {}\n", s);

@@ -21,8 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_ALPHABET_STORAGE_HPP
-#define BLACK_ALPHABET_STORAGE_HPP
+#ifndef BLACK_ALPHABET_IMPL_HPP
+#define BLACK_ALPHABET_IMPL_HPP
 
 #include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
@@ -32,22 +32,21 @@
 
 namespace black::details {
 
-  class formula_storage
+  struct alphabet_impl
   {
-  public:
-    formula_storage()
-      : _top(*this, true), _bottom(*this, false) {}
+    alphabet_impl(alphabet &sigma)
+      : _sigma{sigma}, _top{sigma, true}, _bottom{sigma, false} {}
 
     template<typename F, typename ...Args>
     F *allocate_formula(Args&& ...args) {
       return allocate(_tag<F>{}, FWD(args)...);
     }
 
-  protected:
+    alphabet            &_sigma;
+
     boolean_t            _top;
     boolean_t            _bottom;
 
-  private:
     std::deque<atom_t>   _atoms;
     std::deque<unary_t>  _unaries;
     std::deque<binary_t> _binaries;
@@ -74,7 +73,7 @@ namespace black::details {
       if(auto it = _atoms_map.find(label); it != _atoms_map.end())
         return it->second;
 
-      atom_t *a = &_atoms.emplace_back(*this, label);
+      atom_t *a = &_atoms.emplace_back(_sigma, label);
       _atoms_map.insert({label, a});
 
       return a;
@@ -86,7 +85,7 @@ namespace black::details {
       if(auto it = _unaries_map.find({t, arg}); it != _unaries_map.end())
         return it->second;
 
-      unary_t *f = &_unaries.emplace_back(*this, t, arg);
+      unary_t *f = &_unaries.emplace_back(_sigma, t, arg);
       _unaries_map.insert({{t, arg}, f});
 
       return f;
@@ -100,7 +99,7 @@ namespace black::details {
       if(it != _binaries_map.end())
         return it->second;
 
-      binary_t *f = &_binaries.emplace_back(*this, t, arg1, arg2);
+      binary_t *f = &_binaries.emplace_back(_sigma, t, arg1, arg2);
       _binaries_map.insert({{t, arg1, arg2}, f});
 
       return f;
@@ -108,17 +107,47 @@ namespace black::details {
   };
 
   // Out-of-line implementation from the handle class in formula.hpp,
-  // to have a complete formula_storage type
+  // to have a complete alphabet_impl type
   template<typename H, typename F>
   template<typename Arg, typename ...Args>
   F *handle_base<H, F>::allocate_formula(Arg&& arg, Args&& ...args)
   {
     black_assert(all_equal(&FWD(args)._formula->alphabet...));
-    formula_storage &sigma =
-      std::get<0>(std::tuple{FWD(args)...})._formula->alphabet;
+    auto const&sigma =
+      std::get<0>(std::tuple{FWD(args)...})._formula->alphabet._impl;
 
-    return sigma.allocate_formula<F>(FWD(arg), FWD(args)._formula...);
+    return sigma->template allocate_formula<F>(FWD(arg), FWD(args)._formula...);
   }
-}
+} // namespace black::details
 
-#endif // BLACK_ALPHABET_STORAGE_HPP
+namespace black {
+  //
+  // Out-of-line definitions of methods of class `alphabet`
+  //
+  inline alphabet::alphabet()
+    : _impl{std::make_unique<details::alphabet_impl>(*this)} {}
+
+  inline boolean alphabet::boolean(bool value) {
+    return value ? top() : bottom();
+  }
+
+  inline boolean alphabet::top() {
+    return black::details::boolean{&_impl->_top};
+  }
+
+  inline boolean alphabet::bottom() {
+    return black::details::boolean{&_impl->_bottom};
+  }
+
+  template<typename T, REQUIRES_OUT_OF_LINE(details::is_hashable<T>)>
+  inline atom alphabet::var(T&& label) {
+    using namespace details;
+    if constexpr(std::is_convertible_v<T,std::string>) {
+      return atom{_impl->allocate_formula<atom_t>(std::string{FWD(label)})};
+    } else {
+      return atom{_impl->allocate_formula<atom_t>(FWD(label))};
+    }
+  }
+} // namespace black
+
+#endif // BLACK_ALPHABET_IMPL_HPP

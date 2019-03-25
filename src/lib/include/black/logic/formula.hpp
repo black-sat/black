@@ -29,7 +29,7 @@
 #include <black/internal/formula_base.hpp>
 
 namespace black::details
-{
+{  
   class formula
   {
   public:
@@ -40,12 +40,17 @@ namespace black::details
     //
     formula() = delete;
     formula(formula const&) = default;
+    formula(formula &&) = default;
 
     // Equality operators.
     // Two `formula` objects compare equal iff they represent two
     // syntactically identical formulas
     friend bool operator==(formula f1, formula f2);
     friend bool operator!=(formula f1, formula f2);
+
+    // Default assignment operators.
+    formula &operator=(formula const&) = default;
+    formula &operator=(formula &&) = default;
 
     // Enumeration of possible kinds of formulas
     using type = formula_type;

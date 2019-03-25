@@ -37,9 +37,12 @@
 #include <string>
 #include <optional>
 
+namespace black {
+  class alphabet;
+}
+
 namespace black::details
 {
-  class formula_storage; // forward declaration
   class formula;
 
   // No virtual destructor, but remember to use static deleter in class alphabet
@@ -52,7 +55,7 @@ namespace black::details
       binary
     };
 
-    formula_storage &alphabet;
+    class alphabet &alphabet;
     formula_type type{};
   };
 
@@ -60,7 +63,7 @@ namespace black::details
   {
     static const enum formula_type formula_type = formula_type::boolean;
 
-    boolean_t(formula_storage &sigma, bool v)
+    boolean_t(class alphabet &sigma, bool v)
       : formula_base{sigma, formula_type::boolean}, value(v) {}
 
     bool value{};
@@ -70,7 +73,7 @@ namespace black::details
   {
     static const enum formula_type formula_type = formula_type::atom;
 
-    atom_t(formula_storage &_sigma, any_hashable const& _label)
+    atom_t(class alphabet &_sigma, any_hashable const& _label)
       : formula_base{_sigma, formula_type::atom}, label{_label} {}
 
     any_hashable label;
@@ -90,7 +93,7 @@ namespace black::details
       historically
     };
 
-    unary_t(formula_storage &sigma, operator_type ot, formula_base const*f)
+    unary_t(class alphabet &sigma, operator_type ot, formula_base const*f)
       : formula_base{sigma, formula_type::unary}, op_type{ot}, operand{f} { }
 
     operator_type op_type;
@@ -112,7 +115,7 @@ namespace black::details
       triggered
     };
 
-    binary_t(formula_storage &sigma, operator_type type,
+    binary_t(class alphabet &sigma, operator_type type,
               formula_base const*f1, formula_base const*f2)
       : formula_base{sigma, formula_type::binary}, op_type(type),
         left{f1}, right{f2} { }
@@ -253,5 +256,3 @@ namespace black::details
 } // namespace black::details
 
 #endif // BLACK_LOGIC_FORMULA_BASE_HPP_
-
-#include <black/logic/formula_storage.hpp>

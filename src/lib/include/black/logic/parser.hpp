@@ -109,4 +109,11 @@ namespace black::details
 
 } // namespace black::details
 
+// Exported names
+namespace black {
+  using details::parser;
+  using details::parse_formula;
+  using details::to_string;
+}
+
 #endif // PARSER_H_

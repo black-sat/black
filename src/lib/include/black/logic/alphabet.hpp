@@ -26,52 +26,56 @@
 
 #include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
-#include <black/logic/formula_storage.hpp>
 
 #include <string>
 #include <unordered_map>
 #include <deque>
 #include <memory>
 
-namespace black::details {
+namespace black {
 
-  class alphabet : protected formula_storage
+  namespace details {
+    struct alphabet_impl;
+  }
+
+  //
+  // The alphabet class is the only entry point to create formulas.
+  //
+  // The only way to build formulas is to request some atom from the alphabet,
+  // and then combine them using the logical operators defined in <formula.hpp>
+  //
+  // The alphabet handles memory management for formulas: memory allocated for
+  // formulas is alive as long as the corresponding alphabet object is alive.
+  //
+  class alphabet
   {
-    template<typename, typename>
-    friend struct handle_base;
-
   public:
-    alphabet() = default;
+    alphabet();
     alphabet(alphabet const&) = delete; // Alphabets are non-copyable
     alphabet(alphabet &&) = default; // but movable
 
-    struct boolean boolean(bool value) {
-      return value ? top() : bottom();
-    }
+    // Entry point to obtain a trivially true or trivially false boolean formula
+    struct boolean boolean(bool value);
 
-    struct boolean top() {
-      return black::details::boolean{&_top};
-    }
+    // Shortcuts for boolean(true) and boolean(false)
+    struct boolean top();
+    struct boolean bottom();
 
-    struct boolean bottom() {
-      return black::details::boolean{&_bottom};
-    }
+    // Entry point to obtain an atomic formula, i.e., a proposition variable
+    // Atoms can be labelled by a piece of data of any type T, as long as
+    // T is Hashable (see the std::unordered_map documentation for reference)
+    template<typename T, REQUIRES(details::is_hashable<T>)>
+    atom var(T&& label);
 
-    template<typename T, REQUIRES(is_hashable<T>)>
-    atom var(T&& label) {
-      if constexpr(std::is_convertible_v<T,std::string>) {
-        return atom{allocate_formula<atom_t>(std::string{FWD(label)})};
-      } else {
-        return atom{allocate_formula<atom_t>(FWD(label))};
-      }
-    }
+  private:
+    std::unique_ptr<details::alphabet_impl> _impl;
+
+    template<typename, typename>
+    friend struct details::handle_base;
   };
-} // namespace black::details
 
-// Names exported to the user
-namespace black {
-  using details::alphabet;
-}
+} // namespace black
 
+#include <black/internal/alphabet_impl.hpp>
 
 #endif // BLACK_ALPHABET_HPP
