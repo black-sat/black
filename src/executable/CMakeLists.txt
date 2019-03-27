@@ -11,7 +11,7 @@ set(
 add_executable(executable main.cpp)
 
 target_compile_features(executable PRIVATE cxx_std_17)
-target_link_libraries(executable black debug_assert fmt glucose)
+target_link_libraries(executable black debug_assert fmt solvers)
 target_compile_options(
   executable PRIVATE
   "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNINGS}>"

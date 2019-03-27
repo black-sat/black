@@ -22,7 +22,7 @@ set (
 add_library (black STATIC ${LIB_SRC} ${LIB_HEADERS})
 
 target_link_libraries(black PUBLIC debug_assert)
-target_link_libraries(black PRIVATE fmt glucose)
+target_link_libraries(black PRIVATE fmt solvers)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
 

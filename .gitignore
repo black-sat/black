@@ -202,3 +202,7 @@ tags
 [._]*.un~
 
 # End of https://www.gitignore.io/api/vim
+
+
+## External dependencies that we cannot redistribute
+external/sat/mathsat5
