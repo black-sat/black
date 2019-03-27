@@ -30,12 +30,29 @@ target_compile_options(
 ##
 ## MathSAT 5 solver
 ##
+
+## MathSAT depends on GMP, let's find it first
+## TODO: give CMake option to set custom gmp path
+find_path(GMP_INCLUDES NAMES gmp.h)
+find_library(GMP_LIBRARY NAMES gmp)
+find_library(GMPXX_LIBRARY NAMES gmpxx)
+
+add_library(gmp SHARED IMPORTED)
+set_property(TARGET gmp PROPERTY IMPORTED_LOCATION ${GMP_LIBRARY})
+target_include_directories(gmp INTERFACE ${GMP_INCLUDES})
+
+add_library(gmpxx SHARED IMPORTED)
+set_property(TARGET gmpxx PROPERTY IMPORTED_LOCATION ${GMPXX_LIBRARY})
+target_include_directories(gmpxx INTERFACE ${GMP_INCLUDES})
+
+## MathSAT imported library
 add_library(mathsat5 STATIC IMPORTED)
 set_property(
   TARGET mathsat5
   PROPERTY IMPORTED_LOCATION
     ${CMAKE_SOURCE_DIR}/external/sat/mathsat5/lib/libmathsat.a
 )
+
 target_link_libraries(mathsat5 INTERFACE gmpxx gmp)
 target_include_directories(mathsat5 INTERFACE mathsat5/include/)
 
