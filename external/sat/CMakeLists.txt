@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 
+##
+## Glucose SAT solver
+##
 set(
   GLUCOSE_SRC
   glucose/core/Solver.cc
@@ -8,9 +11,8 @@ set(
   glucose/utils/System.cc
 )
 
-add_library (solvers STATIC ${GLUCOSE_SRC})
-target_include_directories(solvers PUBLIC glucose/)
-target_include_directories(solvers PUBLIC mathsat5/include/)
+add_library (glucose STATIC ${GLUCOSE_SRC})
+target_include_directories(glucose PUBLIC glucose/)
 
 set(
   GLUCOSE_CLANG_WARNINGS
@@ -19,18 +21,28 @@ set(
 )
 
 target_compile_options(
-  solvers PRIVATE
+  glucose PRIVATE
   # "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNINGS}>"
   # "$<$<CXX_COMPILER_ID:GNU>:${GNU_WARNINGS}>"
   "$<$<CXX_COMPILER_ID:Clang>:${GLUCOSE_CLANG_WARNINGS}>"
 )
 
-set(MATHSAT_DIR ${CMAKE_SOURCE_DIR}/external/sat/mathsat5)
-
+##
+## MathSAT 5 solver
+##
 add_library(mathsat5 STATIC IMPORTED)
 set_property(
   TARGET mathsat5
-  PROPERTY IMPORTED_LOCATION ${MATHSAT_DIR}/lib/libmathsat.a
+  PROPERTY IMPORTED_LOCATION
+    ${CMAKE_SOURCE_DIR}/external/sat/mathsat5/lib/libmathsat.a
 )
+target_link_libraries(mathsat5 INTERFACE gmpxx gmp)
+target_include_directories(mathsat5 INTERFACE mathsat5/include/)
 
-target_link_libraries(solvers PUBLIC mathsat5 gmpxx gmp)
+##
+## Interface target to link all available solvers
+##
+## TODO: Add CMake flags to choose which solvers to link
+##
+add_library(solvers INTERFACE)
+target_link_libraries(solvers INTERFACE glucose mathsat5)
