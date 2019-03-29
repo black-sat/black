@@ -237,7 +237,7 @@ namespace black::details
       match_case(formula_type, boolean)
       match_case(formula_type, atom)
       case formula_type::unary:
-        switch(formula_cast<unary_t*>(_formula)->op_type) {
+        switch(formula_cast<unary_t const*>(_formula)->op_type) {
           match_case(unary_type, negation)
           match_case(unary_type, tomorrow)
           match_case(unary_type, yesterday)
@@ -247,7 +247,7 @@ namespace black::details
           match_case(unary_type, historically)
         }
       case formula_type::binary:
-        switch(formula_cast<binary_t*>(_formula)->op_type) {
+        switch(formula_cast<binary_t const*>(_formula)->op_type) {
           match_case(binary_type, conjunction)
           match_case(binary_type, disjunction)
           match_case(binary_type, then)
@@ -259,6 +259,7 @@ namespace black::details
         }
     }
     #undef match_case
+    black_unreachable();
   }
 
   //

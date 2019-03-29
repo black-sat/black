@@ -79,7 +79,7 @@ namespace black::details {
       else // first iteration
         encoding = k_unraveling(k);
 
-      fmt::print("{}-unraveling: {}\n", k, to_string(encoding));
+      //fmt::print("{}-unraveling: {}\n", k, to_string(encoding));
 
       if(!is_sat(encoding))
         return false;
@@ -87,7 +87,7 @@ namespace black::details {
       // Generating EMPTY and LOOP
       formula looped = encoding && empty_and_loop(k); // TODO push()
 
-      fmt::print("{}-unraveling + Loop: {}\n", k, to_string(looped));
+      //fmt::print("{}-unraveling + Loop: {}\n", k, to_string(looped));
 
       // if 'encoding' is sat, then stop with SAT.
       if(is_sat(looped))
@@ -215,7 +215,7 @@ namespace black::details {
     //std::swap(current_xreq, xrequests);
 
     if(k==0)
-      return to_ground_xnf(frm,k);
+      return to_ground_xnf(frm,k,true);
 
     formula big_and = alpha.top();
     //for(auto it = current_xreq.begin(); it != current_xreq.end(); it++){
@@ -223,7 +223,7 @@ namespace black::details {
       // X(alpha)_P^{k-1}
       formula left_hand = alpha.var(std::pair(formula{xreq},k-1));
       // xnf(\alpha)_P^{k}
-      formula right_hand = to_ground_xnf(xreq.operand(),k);
+      formula right_hand = to_ground_xnf(xreq.operand(),k,true);
       // left_hand IFF right_hand
       big_and = big_and && iff(left_hand, right_hand);
     }
@@ -235,32 +235,82 @@ namespace black::details {
   formula solver::to_ground_xnf(formula f, int k, bool update) {
     return f.match(
       // Future Operators
-      [=](boolean)        { return f; },
-      [=](atom a)         { return formula{alpha.var(std::pair<formula,int>(formula{a},k))}; },
-      [=](tomorrow t)   { if(update) { xrequests.push_back(t); }
-                            return formula{alpha.var(std::pair<formula,int>(formula{t},k))}; },
-      [this,k](negation n)    { return formula{!to_ground_xnf(n.operand(),k)}; },
-      [this,k](conjunction c) { return formula{to_ground_xnf(c.left(),k) && to_ground_xnf(c.right(),k)}; },
-      [this,k](disjunction d) { return formula{to_ground_xnf(d.left(),k) || to_ground_xnf(d.right(),k)}; },
-      [=](until u) { if(update) { xrequests.push_back(X(u)); }
-                          return formula{to_ground_xnf(u.right(),k) ||
-                                 (to_ground_xnf(u.left(),k) && alpha.var(std::pair<formula,int>(formula{X(u)},k))
-                         )};},
-      [=](eventually e) { if(update) {xrequests.push_back(X(e)); }
-                             return formula{to_ground_xnf(e.operand(),k) ||
-                             alpha.var(std::pair<formula,int>(formula{X(e)},k))};
-                           },
-      [=](always a)  { if(update) {xrequests.push_back(X(a)); }
-                          return formula{to_ground_xnf(a.operand(),k)
-                          && alpha.var(std::pair<formula,int>(formula{X(a)},k))};
-                        },
-      [=](release r) { if(update) {xrequests.push_back(X(r)); }
-                            return formula{to_ground_xnf(r.right(),k) &&
-                                 (to_ground_xnf(r.left(),k) ||
-                                 alpha.var(std::pair<formula,int>(formula{X(r)},k)))};
-                        },
+      [&](boolean)        { return f; },
+      [&](atom a)         { return formula{alpha.var(std::pair<formula,int>(formula{a},k))}; },
+      [&,this](tomorrow t)   {
+        if(update)
+          xrequests.push_back(t);
+        return formula{alpha.var(std::pair<formula,int>(formula{t},k))};
+      },
+      [&](negation n)    {
+        return formula{!to_ground_xnf(n.operand(),k, update)};
+      },
+      [&](conjunction c) {
+        return formula{
+          to_ground_xnf(c.left(),k,update) &&
+          to_ground_xnf(c.right(),k,update)
+        };
+      },
+      [&](disjunction d) {
+        return formula{
+          to_ground_xnf(d.left(),k,update) ||
+          to_ground_xnf(d.right(),k,update)
+        };
+      },
+      [&](then d) {
+        return formula{then(
+          to_ground_xnf(d.left(),k,update),
+          to_ground_xnf(d.right(),k,update)
+        )};
+      },
+      [&](iff d) {
+        return formula{iff(
+          to_ground_xnf(d.left(),k,update),
+          to_ground_xnf(d.right(),k,update)
+        )};
+      },
+      [&,this](until u) {
+        if(update)
+          xrequests.push_back(X(u));
+
+        return
+          formula{to_ground_xnf(u.right(),k,update) ||
+            (to_ground_xnf(u.left(),k,update) &&
+              alpha.var(std::pair<formula,int>(formula{X(u)},k)))
+          };
+      },
+      [&,this](eventually e) {
+        if(update)
+          xrequests.push_back(X(e));
+        return
+          formula{
+            to_ground_xnf(e.operand(),k,update) ||
+            alpha.var(std::pair<formula,int>(formula{X(e)},k))
+          };
+      },
+      [&,this](always a) {
+        if(update)
+          xrequests.push_back(X(a));
+        return
+          formula{
+            to_ground_xnf(a.operand(),k,update) &&
+            alpha.var(std::pair<formula,int>(formula{X(a)},k))
+          };
+      },
+      [&,this](release r) {
+        if(update)
+          xrequests.push_back(X(r));
+        return formula{
+          to_ground_xnf(r.right(),k,update) &&
+          (to_ground_xnf(r.left(),k,update) ||
+            alpha.var(std::pair<formula,int>(formula{X(r)},k)))
+        };
+      },
       // TODO: past operators
-      [](otherwise) -> formula { black_unreachable(); }
+      [&](otherwise) -> formula {
+        fmt::print("unrecognized formula: {}\n", to_string(f));
+        black_unreachable();
+      }
     );
   }
 

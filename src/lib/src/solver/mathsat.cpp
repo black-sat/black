@@ -85,7 +85,6 @@ namespace black::details {
           );
       },
       [&](otherwise) -> msat_term {
-        fmt::print("Che cazzo di formula è questa?\n{}\n", to_string(f));
         black_unreachable();
       }
     );

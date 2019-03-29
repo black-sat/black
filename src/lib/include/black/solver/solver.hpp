@@ -71,7 +71,7 @@ namespace black::details {
       formula k_unraveling(int k);
 
       // Generates the Next Normal Form of f
-      formula to_ground_xnf(formula f, int k, bool update=true);
+      formula to_ground_xnf(formula f, int k, bool update);
 
       // Calls glucose to check if the boolean formula is sat
       bool is_sat(formula f);

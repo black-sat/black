@@ -94,7 +94,9 @@ namespace black::details
     };
 
     unary_t(class alphabet &sigma, operator_type ot, formula_base const*f)
-      : formula_base{sigma, formula_type::unary}, op_type{ot}, operand{f} { }
+      : formula_base{sigma, formula_type::unary}, op_type{ot}, operand{f} {
+      black_assert(f != nullptr);
+    }
 
     operator_type op_type;
     formula_base const*operand;
@@ -118,7 +120,10 @@ namespace black::details
     binary_t(class alphabet &sigma, operator_type type,
               formula_base const*f1, formula_base const*f2)
       : formula_base{sigma, formula_type::binary}, op_type(type),
-        left{f1}, right{f2} { }
+        left{f1}, right{f2} {
+      black_assert(f1 != nullptr);
+      black_assert(f2 != nullptr);
+    }
 
     operator_type op_type;
     formula_base const*left;
@@ -128,6 +133,7 @@ namespace black::details
   template<typename T, typename F = std::remove_cv_t<std::remove_pointer_t<T>>>
   F const*formula_cast(formula_base const*f)
   {
+    black_assert(f != nullptr);
     if(f->type == F::formula_type)
       return static_cast<F const*>(f);
     return nullptr;
@@ -148,7 +154,11 @@ namespace black::details
     handle_base(handle_base const&) = default;
     handle_base(handle_base &&) = default;
 
-    explicit handle_base(F const*f) : _formula{f} {}
+    explicit handle_base(F const*f) : _formula{f} {
+      black_assert(_formula);
+    }
+
+    handle_base &operator=(handle_base const&h) = default;
 
     operator otherwise() const { return {}; }
 
@@ -166,11 +176,6 @@ namespace black::details
     // Implemented after alphabet class
     template<typename Arg, typename ...Args>
     static F *allocate_formula(Arg&&, Args&& ...);
-
-    template<typename H2>
-    static F const* unwrap_handle(handle_base<H2, F> const& h) noexcept {
-      return h._formula;
-    }
 
     F const*_formula;
   };

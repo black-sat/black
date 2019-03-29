@@ -47,4 +47,4 @@ add_subdirectory(src/lib)
 add_subdirectory(src/executable)
 
 # Tests
-add_subdirectory(tests)
+add_subdirectory(tests/units)

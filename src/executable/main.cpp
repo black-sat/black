@@ -28,15 +28,23 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <fstream>
+#include <iostream>
+#include <string>
+using namespace std::literals;
+
 using namespace black;
 
-inline void parsing_error(std::string const&s) {
-  fmt::print("Error parsing formula: {}\n", s);
+inline void report_error(std::string const&s) {
+  std::cerr << fmt::format("Error parsing formula: {}\n", s);
 }
 
-int main()
+int batch(std::string filename);
+
+int main(int argc, char **argv)
 {
-  fmt::print("Changing the world, one solver at the time...\n");
+  if(argc >= 3 && argv[1] == "-f"s)
+    return batch(argv[2]);
 
   alphabet sigma;
   solver slv(sigma);
@@ -47,12 +55,13 @@ int main()
     fmt::print("Please enter formula: ");
     std::getline(std::cin, line);
 
-    std::optional<formula> f = parse_formula(sigma, line, parsing_error);
+    std::optional<formula> f = parse_formula(sigma, line, report_error);
 
     if(!f)
       continue;
 
     fmt::print("Parsed formula: {}\n", *f);
+
     slv.add_formula(*f);
     bool res = slv.bsc();
 
@@ -65,4 +74,29 @@ int main()
   }
 
   return 0;
+}
+
+int batch(std::string filename) {
+  std::ifstream file(filename);
+
+  if(!file.good()) {
+    std::cerr << fmt::format("Unable to open file: {}\n", filename);
+    return 1;
+  }
+
+  std::string line;
+  std::getline(file, line);
+
+  alphabet sigma;
+
+  std::optional<formula> f = parse_formula(sigma, line, report_error);
+
+  if(!f)
+    return 1;
+
+  solver slv(sigma);
+
+  slv.add_formula(*f);
+
+  return int{! slv.bsc()};
 }
