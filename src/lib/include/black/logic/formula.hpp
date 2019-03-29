@@ -92,7 +92,8 @@ namespace black::details
 
   // Public constructor, but for internal use
   public:
-    formula(formula_base const*f) : _formula{f} {}
+    formula(std::nullptr_t) = delete;
+    explicit formula(formula_base const*f) : _formula{f} {}
   };
 
   /*

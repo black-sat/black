@@ -33,6 +33,9 @@ namespace black::details
         [&](atom a) {
           if(auto name = a.label<std::string>(); name.has_value())
             return *name;
+          if(auto fname = a.label<std::pair<formula,int>>(); fname.has_value())
+            return
+              fmt::format("<{},{}>", to_string(fname->first), fname->second);
           else
             return "<?>"s;
         },
