@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Luca Geatti 
+// (C) 2019 Luca Geatti
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,46 +30,82 @@
 #include <utility>
 
 namespace black::details {
-  
+
   class solver {
     private:
-      
+
       // Reference to the original alphabet
       alphabet& alpha;
-      
+
       // Current LTL formula to solve
       formula frm;
-      
+
       // Vector of all the X-requests of step k
-      std::vector<unary> xrequests; 
-      
-      // Vector of all the X-eventualities of step k
-      std::vector<unary> xeventualities;
+      std::vector<tomorrow> xrequests;
+
+      // Extract the x-eventuality from an x-request
+      std::optional<formula> get_xev(tomorrow xreq);
+
+      // Generates the PRUNE encoding
+      formula prune(int k);
+
+      // Generates the _lPRUNE_j^k encoding
+      formula l_j_k_prune(int l, int j, int k);
+
+      // Generates the EMPTY and LOOP encoding
+      formula empty_and_loop(int k);
+
+      // Generates the encoding for EMPTY_k
+      formula k_empty(int k);
+
+      // Generates the encoding for LOOP_k
+      formula k_loop(int k);
+
+      // Generates the encoding for _lP_k
+      formula l_to_k_period(int l, int k);
+
+      // Generates the encoding for _lL_k
+      formula l_to_k_loop(int l, int k);
 
       // Generates the k-unraveling for the given k
-      formula k_unraveling(int k); 
-      
+      formula k_unraveling(int k);
+
       // Generates the Next Normal Form of f
-      formula to_ground_xnf(formula f, int k);
-      
+      formula to_ground_xnf(formula f, int k, bool update=true);
+
       // Calls glucose to check if the boolean formula is sat
       bool is_sat(formula f);
 
+      // Simple implementation of an allSAT solver
+      formula all_sat(formula f);
+
     public:
-      
+
       // Class constructor
-      //solver();
-      
+      solver(alphabet &a)
+        : alpha(a), frm(a.top()) { }
+
       // Class constructor
-      solver(alphabet &a, formula f);
-      
+      solver(alphabet &a, formula f)
+        : alpha(a), frm(f) { }
+
       // Conjoins the argument formula to the current one
-      void add_formula(formula f); 
-      
-      // Check for satisfiability of frm and 
+      void add_formula(formula f) {
+        if( frm == alpha.top() )
+          frm = f;
+        else
+          frm = frm && f;
+      }
+
+      // Clears the input formula, setting it to True
+      void clear() { frm = alpha.top(); }
+
+      // Check for satisfiability of frm and
       // returns a model (if it is sat)
-      bool solve(bool model_gen);
-           
+      formula solve(bool model_gen);
+
+      bool bsc();
+
   }; // end class Black Solver
 
 } // end namespace black::details

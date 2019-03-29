@@ -21,107 +21,271 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <black/logic/parser.hpp>
 #include <black/solver/solver.hpp>
+#include <black/solver/mathsat.hpp>
+
+#include <fmt/format.h>
 
 namespace black::details {
 
-  // Class constructor
-  //solver::solver() : frm(top()) {}
-
-  // Class constructor
-  solver::solver(alphabet &a, formula f) : 
-    alpha(a),
-    frm(f)
-  {}
-
-  // Conjoins the argument formula to the current one
-  void solver::add_formula(formula f) {
-    frm = frm && f;
+  /*
+   * Main algorithm for the solver.
+   */
+  formula solver::solve(bool = false) {
+    int k=0;
+    formula encoding = alpha.top();
+    formula tree = alpha.top();
+    while(k<2){
+      // Generating the k-unraveling
+      if(k)
+        encoding = encoding && k_unraveling(k);
+      else // first iteration
+        encoding = k_unraveling(k);
+      // Copy of the encoding
+      tree = encoding;
+      // if 'encoding' is unsat, then stop with UNSAT.
+      if(!is_sat(encoding)) {
+        black_unreachable();
+      } else { // continue to check EMPTY and LOOP.
+        // Generating EMPTY and LOOP
+        encoding = encoding && empty_and_loop(k); // TODO push()
+        // if 'encoding' is sat, then stop with SAT.
+        if(is_sat(encoding)) {
+          black_unreachable();
+        } else { // generate the PRUNE.
+          // Computing allSAT of 'tree & PRUNE^k'
+          formula all_models = all_sat(tree && prune(k));
+          // Fixing the negation of 'all_models'
+          encoding = tree && !all_models;
+          // Incrementing 'k' for the next iteration
+          k++;
+        }
+      }
+    } // end while(true)
+    return encoding;
   }
 
-  // Checks for satisfiability of frm and 
-  // returns a model (if it is sat)
-  bool solver::solve(bool = false) {
+
+  bool solver::bsc()
+  {
     int k=0;
-    formula encoding = alpha.boolean(true);
+    formula encoding = alpha.top();
+
     while(true){
       // Generating the k-unraveling
-      encoding = encoding && k_unraveling(k);
-      if(!is_sat(encoding)){
+      if(k)
+        encoding = encoding && k_unraveling(k);
+      else // first iteration
+        encoding = k_unraveling(k);
+
+      fmt::print("{}-unraveling: {}\n", k, to_string(encoding));
+
+      if(!is_sat(encoding))
         return false;
-      }
+
+      // Generating EMPTY and LOOP
+      formula looped = encoding && empty_and_loop(k); // TODO push()
+
+      fmt::print("{}-unraveling + Loop: {}\n", k, to_string(looped));
+
+      // if 'encoding' is sat, then stop with SAT.
+      if(is_sat(looped))
+        return true;
+
       k++;
-    } // end while(true)
+    }
   }
-  
+
+
+  // Generates the PRUNE encoding
+  formula solver::prune(int k) {
+    formula k_prune = alpha.bottom();
+    for(int l=0; l<k-1; l++) {
+      formula k_prune_inner = alpha.bottom();
+      for(int j=l+1; j<k; j++) {
+        formula llp = l_to_k_loop(l,j) && l_to_k_loop(j,k) && l_j_k_prune(l,j,k);
+        k_prune_inner = k_prune_inner || llp;
+      }
+      k_prune = k_prune || k_prune_inner;
+    }
+    return k_prune;
+  }
+
+
+  // Generates the _lPRUNE_j^k encoding
+  formula solver::l_j_k_prune(int l, int j, int k) {
+    formula prune = alpha.top();
+    for(tomorrow xreq : xrequests) {
+      // If the X-requests is an X-eventuality
+      if(auto req = get_xev(xreq); req) {
+        // Creating the encoding
+        formula first_conj = alpha.var(std::pair(formula{xreq},k));
+        formula inner_impl = alpha.bottom();
+        for(int i=j+1; i<=k; i++) {
+          formula xnf_req = to_ground_xnf(*req, i, false);
+          inner_impl = inner_impl || xnf_req;
+        }
+        first_conj = first_conj && inner_impl;
+        formula second_conj = alpha.bottom();
+        for(int i=l+1; i<=j; i++) {
+          formula xnf_req = to_ground_xnf(*req, i, false);
+          second_conj = second_conj || xnf_req;
+        }
+        prune = prune && then(first_conj, second_conj);
+      }
+    }
+    return prune;
+  }
+
+
+  // Generates the EMPTY and LOOP encoding
+  formula solver::empty_and_loop(int k) {
+    return k_empty(k) || k_loop(k);
+  }
+
+
+
+  // Generates the encoding for EMPTY_k
+  formula solver::k_empty(int k) {
+    formula k_empty = alpha.top();
+    for(auto it = xrequests.begin(); it != xrequests.end(); it++) {
+      k_empty = k_empty && (!( alpha.var(std::pair<formula,int>(formula{*it},k)) ));
+    }
+    return k_empty;
+  }
+
+  std::optional<formula> solver::get_xev(tomorrow xreq) {
+    return xreq.operand().match(
+      [](eventually e) { return std::optional{e.operand()}; },
+      [](until u) { return std::optional{u.right()}; },
+      [](otherwise) { return std::optional<formula>{std::nullopt}; }
+    );
+  }
+
+  // Generates the encoding for LOOP_k
+  formula solver::k_loop(int k) {
+    formula k_loop = alpha.bottom();
+    for(int l=0; l<k; l++) {
+      k_loop = k_loop || (l_to_k_loop(l,k) && l_to_k_period(l,k));
+    }
+    return k_loop;
+  }
+
+
+  // Generates the encoding for _lP_k
+  formula solver::l_to_k_period(int l, int k) {
+    formula period_lk = alpha.top();
+    for(tomorrow xreq : xrequests) {
+      // If the X-requests is an X-eventuality
+      if(auto req = get_xev(xreq); req) {
+        // Creating the encoding
+        formula atom_phi_k = alpha.var( std::pair(formula{xreq},k) );
+        formula body_impl = alpha.bottom();
+        for(int i=l+1; i<=k; i++) {
+          formula req_atom_i = to_ground_xnf(*req, i, false);
+          body_impl = body_impl || req_atom_i;
+        }
+        period_lk = period_lk && then(atom_phi_k, body_impl);
+      }
+    }
+    return period_lk;
+  }
+
+
+  // Generates the encoding for _lL_k
+  formula solver::l_to_k_loop(int l, int k) {
+    formula loop_lk = alpha.top();
+    //for(auto it = xrequests.begin(); it != xrequests.end(); it++) {
+    for(tomorrow xreq : xrequests) {
+      formula first_atom = alpha.var( std::pair(formula{xreq},l) );
+      formula second_atom = alpha.var( std::pair(formula{xreq},k) );
+      // big and formula
+      loop_lk = loop_lk && iff(first_atom,second_atom);
+    }
+    return loop_lk;
+  }
 
 
   // Generates the k-unraveling for the given k.
   formula solver::k_unraveling(int k) {
     // Copy of the X-requests generated in phase k-1.
-    std::vector<unary> current_xreq = xrequests;
-    xrequests.clear(); // clears all the X-requests from the vector
-    if(k==0){
+    // clears all the X-requests from the vector
+    std::vector<tomorrow> current_xreq = std::move(xrequests);
+    //std::swap(current_xreq, xrequests);
+
+    if(k==0)
       return to_ground_xnf(frm,k);
-    }else{
-      formula big_and = alpha.boolean(true);
-      for(auto it = current_xreq.begin(); it != current_xreq.end(); it++){
-        // X(alpha)_P^{k-1}
-        formula left_hand = alpha.var(std::pair<formula,int>(formula{*it},k-1));
-        // xnf(\alpha)_P^{k}
-        formula right_hand = to_ground_xnf((*it).operand(),k); 
-        // left_hand IFF right_hand
-        big_and = big_and && iff(left_hand, right_hand);
-      }
-      return big_and;  
+
+    formula big_and = alpha.top();
+    //for(auto it = current_xreq.begin(); it != current_xreq.end(); it++){
+    for(tomorrow xreq : current_xreq) {
+      // X(alpha)_P^{k-1}
+      formula left_hand = alpha.var(std::pair(formula{xreq},k-1));
+      // xnf(\alpha)_P^{k}
+      formula right_hand = to_ground_xnf(xreq.operand(),k);
+      // left_hand IFF right_hand
+      big_and = big_and && iff(left_hand, right_hand);
     }
+    return big_and;
   }
 
 
   // Turns the current formula into Next Normal Form
-  formula solver::to_ground_xnf(formula f, int k) {
+  formula solver::to_ground_xnf(formula f, int k, bool update) {
     return f.match(
       // Future Operators
-      [&](boolean)      { return f; },
-      [&](atom)         { return f; },
-      [&,k](tomorrow t)   { xrequests.push_back(t);
-                          return formula{alpha.var(std::pair<formula,int>(formula{t},k))}; },
+      [=](boolean)        { return f; },
+      [=](atom a)         { return formula{alpha.var(std::pair<formula,int>(formula{a},k))}; },
+      [=](tomorrow t)   { if(update) { xrequests.push_back(t); }
+                            return formula{alpha.var(std::pair<formula,int>(formula{t},k))}; },
       [this,k](negation n)    { return formula{!to_ground_xnf(n.operand(),k)}; },
       [this,k](conjunction c) { return formula{to_ground_xnf(c.left(),k) && to_ground_xnf(c.right(),k)}; },
       [this,k](disjunction d) { return formula{to_ground_xnf(d.left(),k) || to_ground_xnf(d.right(),k)}; },
-      [this,k](until u) { xrequests.push_back(X(u));
-                        return formula{to_ground_xnf(u.right(),k) || 
-                                 (to_ground_xnf(u.left(),k) && alpha.var(std::pair<formula,int>(formula{X(u)},k)) 
-                      )};},
-      [this,k](eventually e) { xrequests.push_back(X(e));
-                             return formula{to_ground_xnf(e.operand(),k) || 
+      [=](until u) { if(update) { xrequests.push_back(X(u)); }
+                          return formula{to_ground_xnf(u.right(),k) ||
+                                 (to_ground_xnf(u.left(),k) && alpha.var(std::pair<formula,int>(formula{X(u)},k))
+                         )};},
+      [=](eventually e) { if(update) {xrequests.push_back(X(e)); }
+                             return formula{to_ground_xnf(e.operand(),k) ||
                              alpha.var(std::pair<formula,int>(formula{X(e)},k))};
                            },
-      [this,k](always a)  { xrequests.push_back(X(a));
-                          return formula{to_ground_xnf(a.operand(),k) 
+      [=](always a)  { if(update) {xrequests.push_back(X(a)); }
+                          return formula{to_ground_xnf(a.operand(),k)
                           && alpha.var(std::pair<formula,int>(formula{X(a)},k))};
                         },
-      [this,k](release r) { xrequests.push_back(X(r));
-                          return formula{to_ground_xnf(r.right(),k) && 
-                                 (to_ground_xnf(r.left(),k) || 
+      [=](release r) { if(update) {xrequests.push_back(X(r)); }
+                            return formula{to_ground_xnf(r.right(),k) &&
+                                 (to_ground_xnf(r.left(),k) ||
                                  alpha.var(std::pair<formula,int>(formula{X(r)},k)))};
                         },
       // TODO: past operators
-      [&](otherwise) -> formula { black_unreachable(); }
+      [](otherwise) -> formula { black_unreachable(); }
     );
   }
 
 
 
-  bool solver::is_sat(formula /*encoding*/) {
-    // Transformation to CNF
-    // ...
-    // Call to Glucose
-    // ...
-    bool res = true;
-    return res;
+  bool solver::is_sat(formula encoding)
+  {
+    msat_env env = mathsat_init();
+
+    msat_term msat_formula = to_mathsat(env, encoding);
+
+    msat_assert_formula(env, msat_formula);
+
+    msat_result res = msat_solve(env);
+
+    msat_destroy_env(env);
+
+    return (res == MSAT_SAT);
   }
 
+
+  // Simple implementation of an allSAT solver.
+  formula solver::all_sat(formula) {
+    return alpha.bottom();
+  }
 
 
 

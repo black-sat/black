@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Nicola Gigante
+// (C) 2019 Luca Geatti
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,48 +21,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic/alphabet.hpp>
-#include <black/logic/parser.hpp>
-#include <black/solver/solver.hpp>
+#ifndef BLACK_SOLVER_MATHSAT_HPP
+#define BLACK_SOLVER_MATHSAT_HPP
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <black/logic/formula.hpp>
+#include <mathsat.h>
 
-using namespace black;
+namespace black::details {
 
-inline void parsing_error(std::string const&s) {
-  fmt::print("Error parsing formula: {}\n", s);
+  msat_env mathsat_init();
+
+  msat_term to_mathsat(msat_env, formula);
+
 }
 
-int main()
-{
-  fmt::print("Changing the world, one solver at the time...\n");
-
-  alphabet sigma;
-  solver slv(sigma);
-
-  while(!std::cin.eof()) {
-    std::string line;
-
-    fmt::print("Please enter formula: ");
-    std::getline(std::cin, line);
-
-    std::optional<formula> f = parse_formula(sigma, line, parsing_error);
-
-    if(!f)
-      continue;
-
-    fmt::print("Parsed formula: {}\n", *f);
-    slv.add_formula(*f);
-    bool res = slv.bsc();
-
-    if(res)
-      fmt::print("Hoooraay!\n");
-    else
-      fmt::print("Boooooh!\n");
-
-    slv.clear();
-  }
-
-  return 0;
-}
+#endif // BLACK_SOLVER_MATHSAT_HPP

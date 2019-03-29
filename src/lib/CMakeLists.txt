@@ -5,6 +5,7 @@ set (
    src/logic/lex.cpp
    src/logic/parser.cpp
    src/solver/solver.cpp
+   src/solver/mathsat.cpp
  )
 
 set (
