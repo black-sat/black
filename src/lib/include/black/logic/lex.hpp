@@ -86,15 +86,15 @@ namespace black::details
 
     constexpr std::optional<formula::type> formula_type() const;
 
-    constexpr std::optional<unary::operator_type> unary_type() const;
+    constexpr std::optional<unary::type> unary_type() const;
 
-    constexpr std::optional<binary::operator_type> binary_type() const;
+    constexpr std::optional<binary::type> binary_type() const;
 
     token_type type;
     std::variant<std::monostate, bool, std::string> data;
   };
 
-  constexpr std::string_view to_string(unary::operator_type const& t) {
+  constexpr std::string_view to_string(unary::type const& t) {
     constexpr std::string_view toks[] = {
       "!", // negation
       "X", // tomorrow
@@ -110,7 +110,7 @@ namespace black::details
     return toks[to_underlying(t)];
   }
 
-  constexpr std::string_view to_string(binary::operator_type const& t) {
+  constexpr std::string_view to_string(binary::type const& t) {
     constexpr std::string_view toks[] = {
       "&&",  // conjunction
       "||",  // disjunction
@@ -155,21 +155,21 @@ namespace black::details
     return {};
   }
 
-  constexpr std::optional<unary::operator_type> token::unary_type() const {
+  constexpr std::optional<unary::type> token::unary_type() const {
     uint8_t u = to_underlying(type);
     if(is_unary_op()) {
       uint8_t v = u - uint8_t(token_type::negation);
-      return {from_underlying<unary::operator_type>(v)};
+      return {static_cast<unary::type>(v)};
     }
 
     return {};
   }
 
-  constexpr std::optional<binary::operator_type> token::binary_type() const {
+  constexpr std::optional<binary::type> token::binary_type() const {
     uint8_t u = to_underlying(type);
     if(is_binary_op()) {
       uint8_t v = u - uint8_t(token_type::conjunction);
-      return {from_underlying<binary::operator_type>(v)};
+      return {static_cast<binary::type>(v)};
     }
     return {};
   }

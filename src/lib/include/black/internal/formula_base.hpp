@@ -45,21 +45,32 @@ namespace black::details
 {
   class formula;
 
+  constexpr bool is_boolean_type(formula_type type) {
+    return type == formula_type::boolean;
+  }
+
+  constexpr bool is_atom_type(formula_type type) {
+    return type == formula_type::atom;
+  }
+
+  constexpr bool is_unary_type(formula_type type) {
+    return to_underlying(type) >= to_underlying(formula_type::negation) &&
+           to_underlying(type) <= to_underlying(formula_type::historically);
+  }
+
+  constexpr bool is_binary_type(formula_type type) {
+    return to_underlying(type) >= to_underlying(formula_type::conjunction) &&
+           to_underlying(type) <= to_underlying(formula_type::triggered);
+  }
+
   struct formula_base
   {
-    enum class formula_type : uint8_t {
-      boolean,
-      atom,
-      unary,
-      binary
-    };
-
     formula_type type{};
   };
 
   struct boolean_t : formula_base
   {
-    static const enum formula_type formula_type = formula_type::boolean;
+    static constexpr auto accepts_type = is_boolean_type;
 
     boolean_t(bool v)
       : formula_base{formula_type::boolean}, value(v) {}
@@ -69,7 +80,7 @@ namespace black::details
 
   struct atom_t : formula_base
   {
-    static const enum formula_type formula_type = formula_type::atom;
+    static constexpr auto accepts_type = is_atom_type;
 
     atom_t(any_hashable const& _label)
       : formula_base{formula_type::atom}, label{_label} {}
@@ -79,50 +90,30 @@ namespace black::details
 
   struct unary_t : formula_base
   {
-    static const enum formula_type formula_type = formula_type::unary;
+    static constexpr auto accepts_type = is_unary_type;
 
-    enum operator_type : uint8_t {
-      negation = 0,
-      tomorrow,
-      yesterday,
-      always,
-      eventually,
-      past,
-      historically
-    };
-
-    unary_t(operator_type ot, formula_base const*f)
-      : formula_base{formula_type::unary}, op_type{ot}, operand{f} {
+    unary_t(formula_type t, formula_base const*f)
+      : formula_base{t}, operand{f}
+    {
+      black_assert(is_unary_type(t));
       black_assert(f != nullptr);
     }
 
-    operator_type op_type;
     formula_base const*operand;
   };
 
   struct binary_t : formula_base
   {
-    static const enum formula_type formula_type = formula_type::binary;
+    static constexpr auto accepts_type = is_binary_type;
 
-    enum operator_type : uint8_t {
-      conjunction = 0,
-      disjunction,
-      then,
-      iff,
-      until,
-      release,
-      since,
-      triggered
-    };
-
-    binary_t(operator_type type, formula_base const*f1, formula_base const*f2)
-      : formula_base{formula_type::binary}, op_type(type),
-        left{f1}, right{f2} {
+    binary_t(formula_type t, formula_base const*f1, formula_base const*f2)
+      : formula_base{t}, left{f1}, right{f2}
+    {
+      black_assert(is_binary_type(t));
       black_assert(f1 != nullptr);
       black_assert(f2 != nullptr);
     }
 
-    operator_type op_type;
     formula_base const*left;
     formula_base const*right;
   };
@@ -131,7 +122,7 @@ namespace black::details
   F const*formula_cast(formula_base const*f)
   {
     black_assert(f != nullptr);
-    if(f->type == F::formula_type)
+    if(F::accepts_type(f->type))
       return static_cast<F const*>(f);
     return nullptr;
   }
@@ -173,79 +164,18 @@ namespace black::details
     }
 
     // Implemented after alphabet class
-    template<typename Arg>
+    template<typename FType, typename Arg>
     static std::pair<alphabet *, unary_t *>
-    allocate_unary(unary_t::operator_type type, Arg const&arg);
+    allocate_unary(FType type, Arg const&arg);
 
-    template<typename Arg1, typename Arg2>
+    template<typename FType, typename Arg1, typename Arg2>
     static std::pair<alphabet *, binary_t *>
-    allocate_binary(binary_t::operator_type type,
-                   Arg1 const&arg1, Arg2 const&arg2);
+    allocate_binary(FType type,
+                    Arg1 const&arg1, Arg2 const&arg2);
 
     alphabet *_alphabet;
     F const*_formula;
   };
-
-  // Encoding the arity of each operator in the enum value
-  // Assumes the above three arities, so 2 bits to store a formula_arity value
-  constexpr uint8_t type_encoding_shift = 6;
-
-  enum class formula_type : uint8_t;
-
-  template<typename T>
-  struct formula_base_type_of_op {};
-
-  template<>
-  struct formula_base_type_of_op<unary_t::operator_type> {
-    static const auto value = formula_base::formula_type::unary;
-  };
-
-  template<>
-  struct formula_base_type_of_op<binary_t::operator_type> {
-    static const auto value = formula_base::formula_type::binary;
-  };
-
-  template<typename R = formula_type, typename T>
-  constexpr R op_to_formula_type(T op_type) {
-    return static_cast<R>(
-      (to_underlying(formula_base_type_of_op<T>::value) << type_encoding_shift)
-        & to_underlying(op_type)
-    );
-  }
-
-  template<typename R = formula_type>
-  constexpr formula_type op_to_formula_type(formula_base::formula_type type) {
-    return static_cast<R>(type);
-  }
-
-  #define enum_unary unary_t::operator_type
-  #define enum_binary binary_t::operator_type
-  #define declare_type(Name, Type) \
-    Name = op_to_formula_type<uint8_t>(enum_##Type::Name)
-
-  enum class formula_type : uint8_t {
-    boolean = to_underlying(formula_base::formula_type::boolean),
-    atom    = to_underlying(formula_base::formula_type::atom),
-    declare_type(negation,     unary),
-    declare_type(tomorrow,     unary),
-    declare_type(yesterday,    unary),
-    declare_type(always,       unary),
-    declare_type(eventually,   unary),
-    declare_type(past,         unary),
-    declare_type(historically, unary),
-    declare_type(conjunction,  binary),
-    declare_type(disjunction,  binary),
-    declare_type(then,         binary),
-    declare_type(iff,          binary),
-    declare_type(until,        binary),
-    declare_type(release,      binary),
-    declare_type(since,        binary),
-    declare_type(triggered,    binary)
-  };
-
-  #undef declare_type
-  #undef enum_binary
-  #undef enum_unary
 
 } // namespace black::details
 

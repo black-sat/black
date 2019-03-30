@@ -51,8 +51,8 @@ namespace black::details {
     std::deque<unary_t>  _unaries;
     std::deque<binary_t> _binaries;
 
-    using unary_key = std::tuple<unary_t::operator_type, formula_base const*>;
-    using binary_key = std::tuple<binary_t::operator_type,
+    using unary_key = std::tuple<unary::type, formula_base const*>;
+    using binary_key = std::tuple<binary::type,
                                   formula_base const*,
                                   formula_base const*>;
 
@@ -80,27 +80,29 @@ namespace black::details {
     }
 
     unary_t *
-    allocate(_tag<unary_t>, unary_t::operator_type t, formula_base const* arg)
+    allocate(_tag<unary_t>, unary::type type, formula_base const* arg)
     {
-      if(auto it = _unaries_map.find({t, arg}); it != _unaries_map.end())
+      if(auto it = _unaries_map.find({type, arg}); it != _unaries_map.end())
         return it->second;
 
-      unary_t *f = &_unaries.emplace_back(t, arg);
-      _unaries_map.insert({{t, arg}, f});
+      unary_t *f =
+        &_unaries.emplace_back(static_cast<formula_type>(type), arg);
+      _unaries_map.insert({{type, arg}, f});
 
       return f;
     }
 
     binary_t *
-    allocate(_tag<binary_t>, binary_t::operator_type t,
+    allocate(_tag<binary_t>, binary::type type,
              formula_base const* arg1, formula_base const* arg2)
     {
-      auto it = _binaries_map.find({t, arg1, arg2});
+      auto it = _binaries_map.find({type, arg1, arg2});
       if(it != _binaries_map.end())
         return it->second;
 
-      binary_t *f = &_binaries.emplace_back(t, arg1, arg2);
-      _binaries_map.insert({{t, arg1, arg2}, f});
+      binary_t *f =
+        &_binaries.emplace_back(static_cast<formula_type>(type), arg1, arg2);
+      _binaries_map.insert({{type, arg1, arg2}, f});
 
       return f;
     }
@@ -109,10 +111,13 @@ namespace black::details {
   // Out-of-line implementation from the handle class in formula.hpp,
   // to have a complete alphabet_impl type
   template<typename H, typename F>
-  template<typename Arg>
+  template<typename FType, typename Arg>
   std::pair<alphabet *, unary_t *>
-  handle_base<H, F>::allocate_unary(unary_t::operator_type type, Arg const&arg)
+  handle_base<H, F>::allocate_unary(FType type, Arg const&arg)
   {
+    // The type is templated only because of circularity problems
+    static_assert(std::is_same_v<FType, unary::type>);
+
     // Get the alphabet from the argument
     alphabet *sigma = arg._alphabet;
 
@@ -124,11 +129,14 @@ namespace black::details {
   }
 
   template<typename H, typename F>
-  template<typename Arg1, typename Arg2>
+  template<typename FType, typename Arg1, typename Arg2>
   std::pair<alphabet *, binary_t *>
-  handle_base<H, F>::allocate_binary(binary_t::operator_type type,
-                                    Arg1 const&arg1, Arg2 const&arg2)
+  handle_base<H, F>::allocate_binary(FType type,
+                                     Arg1 const&arg1, Arg2 const&arg2)
   {
+    // The type is templated only because of circularity problems
+    static_assert(std::is_same_v<FType, binary::type>);
+
     // Check that both arguments come from the same alphabet
     black_assert(arg1._alphabet == arg2._alphabet);
 

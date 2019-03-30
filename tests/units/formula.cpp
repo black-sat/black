@@ -87,9 +87,9 @@ TEST_CASE("Handles")
   }
 
   SECTION("Unary and binary formulas construction") {
-    formula fnotp  = unary(unary::operator_type::negation, p);
-    formula fnotp2 = unary(unary::operator_type::negation, fp);
-    formula fnotq  = unary(unary::operator_type::negation, fq);
+    formula fnotp  = unary(unary::type::negation, p);
+    formula fnotp2 = unary(unary::type::negation, fp);
+    formula fnotq  = unary(unary::type::negation, fq);
 
     REQUIRE(fnotp != fnotq);
     REQUIRE(fnotp == fnotp2); // not implemented yet

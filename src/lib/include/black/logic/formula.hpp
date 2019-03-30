@@ -26,6 +26,35 @@
 
 #include <optional>
 
+namespace black::details {
+  //
+  // Enumeration of known types of formulas.
+  // This type is not exported directly from the `black` namespace.
+  // Instead, refer to it as formula::type, as declared below.
+  //
+  enum class formula_type : uint8_t {
+    boolean = 1,
+    atom,
+    // unary formulas
+    negation,
+    tomorrow,
+    yesterday,
+    always,
+    eventually,
+    past,
+    historically,
+    // binary formulas
+    conjunction,
+    disjunction,
+    then,
+    iff,
+    until,
+    release,
+    since,
+    triggered
+  };
+}
+
 #include <black/internal/formula_base.hpp>
 
 namespace black::details
@@ -52,7 +81,7 @@ namespace black::details
     formula &operator=(formula const&) = default;
     formula &operator=(formula &&) = default;
 
-    // Enumeration of possible kinds of formulas
+    // Enumeration of possible types of formulas, as declared above
     using type = formula_type;
 
     // Gets to the type of the represented formula
@@ -130,13 +159,21 @@ namespace black::details
     using handle_base<unary, unary_t>::handle_base;
 
     // enumeration of possible unary operators
-    using operator_type = unary_t::operator_type;
+    enum class type : uint8_t {
+      negation     = to_underlying(formula::type::negation),
+      tomorrow,
+      yesterday,
+      always,
+      eventually,
+      past,
+      historically
+    };
 
     // Constructor: takes the type of operator and the argument formula
-    unary(operator_type t, formula f);
+    unary(type t, formula f);
 
     // Actual type of unary operator represented by the object
-    operator_type type() const;
+    enum type formula_type() const;
 
     // Argument of the operator
     formula operand() const;
@@ -148,13 +185,22 @@ namespace black::details
     using handle_base<binary, binary_t>::handle_base;
 
     // enumeration of possible binary operators
-    using operator_type = binary_t::operator_type;
+    enum class type : uint8_t {
+      conjunction = to_underlying(formula::type::conjunction),
+      disjunction,
+      then,
+      iff,
+      until,
+      release,
+      since,
+      triggered
+    };
 
     // Constructor: takes the type of operator and the two argument formulas
-    binary(operator_type t, formula f1, formula f2);
+    binary(type t, formula f1, formula f2);
 
     // Actual type of binary operator represented by the object
-    operator_type type() const;
+    type formula_type() const;
 
     // Left hand side of the binary operator
     formula left() const;
