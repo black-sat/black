@@ -38,14 +38,13 @@
 #include <optional>
 
 namespace black {
-  class alphabet;
+  class alphabet; // forward declaration, declared in alphabet.hpp
 }
 
 namespace black::details
 {
   class formula;
 
-  // No virtual destructor, but remember to use static deleter in class alphabet
   struct formula_base
   {
     enum class formula_type : uint8_t {
@@ -55,7 +54,6 @@ namespace black::details
       binary
     };
 
-    class alphabet &alphabet;
     formula_type type{};
   };
 
@@ -63,8 +61,8 @@ namespace black::details
   {
     static const enum formula_type formula_type = formula_type::boolean;
 
-    boolean_t(class alphabet &sigma, bool v)
-      : formula_base{sigma, formula_type::boolean}, value(v) {}
+    boolean_t(bool v)
+      : formula_base{formula_type::boolean}, value(v) {}
 
     bool value{};
   };
@@ -73,8 +71,8 @@ namespace black::details
   {
     static const enum formula_type formula_type = formula_type::atom;
 
-    atom_t(class alphabet &_sigma, any_hashable const& _label)
-      : formula_base{_sigma, formula_type::atom}, label{_label} {}
+    atom_t(any_hashable const& _label)
+      : formula_base{formula_type::atom}, label{_label} {}
 
     any_hashable label;
   };
@@ -93,8 +91,8 @@ namespace black::details
       historically
     };
 
-    unary_t(class alphabet &sigma, operator_type ot, formula_base const*f)
-      : formula_base{sigma, formula_type::unary}, op_type{ot}, operand{f} {
+    unary_t(operator_type ot, formula_base const*f)
+      : formula_base{formula_type::unary}, op_type{ot}, operand{f} {
       black_assert(f != nullptr);
     }
 
@@ -117,9 +115,8 @@ namespace black::details
       triggered
     };
 
-    binary_t(class alphabet &sigma, operator_type type,
-              formula_base const*f1, formula_base const*f2)
-      : formula_base{sigma, formula_type::binary}, op_type(type),
+    binary_t(operator_type type, formula_base const*f1, formula_base const*f2)
+      : formula_base{formula_type::binary}, op_type(type),
         left{f1}, right{f2} {
       black_assert(f1 != nullptr);
       black_assert(f2 != nullptr);
@@ -154,11 +151,13 @@ namespace black::details
     handle_base(handle_base const&) = default;
     handle_base(handle_base &&) = default;
 
-    explicit handle_base(F const*f) : _formula{f} {
-      black_assert(_formula);
-    }
+    handle_base(alphabet *sigma, F const*f) : _alphabet{sigma}, _formula{f}
+    { black_assert(_formula); }
 
-    handle_base &operator=(handle_base const&h) = default;
+    // This constructor takes a tuple instead of two arguments in order to
+    // directly receive the return value of allocate_formula() below
+    handle_base(std::pair<alphabet *, F const*> args)
+      : handle_base{args.first, args.second} { }
 
     operator otherwise() const { return {}; }
 
@@ -167,35 +166,25 @@ namespace black::details
   protected:
     using handled_formula_t = F;
 
-    static optional<H> cast(formula_base const*f) {
+    static optional<H> cast(alphabet *sigma, formula_base const*f) {
       if(auto ptr = formula_cast<typename H::handled_formula_t const*>(f); ptr)
-        return optional<H>{H{ptr}};
+        return optional<H>{H{sigma, ptr}};
       return nullopt;
     }
 
     // Implemented after alphabet class
-    template<typename Arg, typename ...Args>
-    static F *allocate_formula(Arg&&, Args&& ...);
+    template<typename Arg>
+    static std::pair<alphabet *, unary_t *>
+    allocate_unary(unary_t::operator_type type, Arg const&arg);
 
+    template<typename Arg1, typename Arg2>
+    static std::pair<alphabet *, binary_t *>
+    allocate_binary(binary_t::operator_type type,
+                   Arg1 const&arg1, Arg2 const&arg2);
+
+    alphabet *_alphabet;
     F const*_formula;
   };
-
-  /*
-   * trait to recognise handles
-   */
-  template<typename T>
-  class is_handle_t
-  {
-    template<typename H, typename F>
-    static std::true_type detect(handle_base<H, F> const&) {}
-    static std::false_type detect(...) {}
-
-  public:
-    static const bool value = decltype(detect(std::declval<T>()))::value;
-  };
-
-  template<typename T>
-  constexpr bool is_handle = is_handle_t<T>::value;
 
   // Encoding the arity of each operator in the enum value
   // Assumes the above three arities, so 2 bits to store a formula_arity value

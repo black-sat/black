@@ -34,15 +34,15 @@ namespace black::details {
 
   struct alphabet_impl
   {
-    alphabet_impl(alphabet &sigma)
-      : _sigma{sigma}, _top{sigma, true}, _bottom{sigma, false} {}
+    alphabet_impl(alphabet *sigma)
+      : _sigma{sigma}, _top{true}, _bottom{false} {}
 
     template<typename F, typename ...Args>
     F *allocate_formula(Args&& ...args) {
       return allocate(_tag<F>{}, FWD(args)...);
     }
 
-    alphabet            &_sigma;
+    alphabet            *_sigma;
 
     boolean_t            _top;
     boolean_t            _bottom;
@@ -73,7 +73,7 @@ namespace black::details {
       if(auto it = _atoms_map.find(label); it != _atoms_map.end())
         return it->second;
 
-      atom_t *a = &_atoms.emplace_back(_sigma, label);
+      atom_t *a = &_atoms.emplace_back(label);
       _atoms_map.insert({label, a});
 
       return a;
@@ -85,7 +85,7 @@ namespace black::details {
       if(auto it = _unaries_map.find({t, arg}); it != _unaries_map.end())
         return it->second;
 
-      unary_t *f = &_unaries.emplace_back(_sigma, t, arg);
+      unary_t *f = &_unaries.emplace_back(t, arg);
       _unaries_map.insert({{t, arg}, f});
 
       return f;
@@ -99,7 +99,7 @@ namespace black::details {
       if(it != _binaries_map.end())
         return it->second;
 
-      binary_t *f = &_binaries.emplace_back(_sigma, t, arg1, arg2);
+      binary_t *f = &_binaries.emplace_back(t, arg1, arg2);
       _binaries_map.insert({{t, arg1, arg2}, f});
 
       return f;
@@ -109,14 +109,38 @@ namespace black::details {
   // Out-of-line implementation from the handle class in formula.hpp,
   // to have a complete alphabet_impl type
   template<typename H, typename F>
-  template<typename Arg, typename ...Args>
-  F *handle_base<H, F>::allocate_formula(Arg&& arg, Args&& ...args)
+  template<typename Arg>
+  std::pair<alphabet *, unary_t *>
+  handle_base<H, F>::allocate_unary(unary_t::operator_type type, Arg const&arg)
   {
-    black_assert(all_equal(&FWD(args)._formula->alphabet...));
-    auto const&sigma =
-      std::get<0>(std::tuple{FWD(args)...})._formula->alphabet._impl;
+    // Get the alphabet from the argument
+    alphabet *sigma = arg._alphabet;
 
-    return sigma->template allocate_formula<F>(FWD(arg), FWD(args)._formula...);
+    // Ask the alphabet to actually allocate the formula
+    unary_t *object =
+      sigma->_impl->template allocate_formula<unary_t>(type, arg._formula);
+
+    return {sigma, object};
+  }
+
+  template<typename H, typename F>
+  template<typename Arg1, typename Arg2>
+  std::pair<alphabet *, binary_t *>
+  handle_base<H, F>::allocate_binary(binary_t::operator_type type,
+                                    Arg1 const&arg1, Arg2 const&arg2)
+  {
+    // Check that both arguments come from the same alphabet
+    black_assert(arg1._alphabet == arg2._alphabet);
+
+    // Get the alphabet from the first argument (same as the second, by now)
+    alphabet *sigma = arg1._alphabet;
+
+    // Ask the alphabet to actually allocate the formula
+    binary_t *object = sigma->_impl->template allocate_formula<binary_t>(
+      type, arg1._formula, arg2._formula
+    );
+
+    return {sigma, object};
   }
 } // namespace black::details
 
@@ -125,27 +149,28 @@ namespace black {
   // Out-of-line definitions of methods of class `alphabet`
   //
   inline alphabet::alphabet()
-    : _impl{std::make_unique<details::alphabet_impl>(*this)} {}
+    : _impl{std::make_unique<details::alphabet_impl>(this)} {}
 
   inline boolean alphabet::boolean(bool value) {
     return value ? top() : bottom();
   }
 
   inline boolean alphabet::top() {
-    return black::details::boolean{&_impl->_top};
+    return black::details::boolean{this, &_impl->_top};
   }
 
   inline boolean alphabet::bottom() {
-    return black::details::boolean{&_impl->_bottom};
+    return black::details::boolean{this, &_impl->_bottom};
   }
 
   template<typename T, REQUIRES_OUT_OF_LINE(details::is_hashable<T>)>
   inline atom alphabet::var(T&& label) {
     using namespace details;
     if constexpr(std::is_convertible_v<T,std::string>) {
-      return atom{_impl->allocate_formula<atom_t>(std::string{FWD(label)})};
+      return
+        atom{this, _impl->allocate_formula<atom_t>(std::string{FWD(label)})};
     } else {
-      return atom{_impl->allocate_formula<atom_t>(FWD(label))};
+      return atom{this, _impl->allocate_formula<atom_t>(FWD(label))};
     }
   }
 } // namespace black

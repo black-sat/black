@@ -29,7 +29,7 @@
 #include <black/internal/formula_base.hpp>
 
 namespace black::details
-{  
+{
   class formula
   {
   public:
@@ -85,15 +85,16 @@ namespace black::details
     size_t hash() const;
 
   private:
-    formula_base const*_formula;
+    alphabet *_alphabet; // the alphabet the formula comes from
+    formula_base const*_formula; // concrete object representing the formula
 
     template<typename, typename>
     friend struct handle_base;
 
   // Public constructor, but for internal use
   public:
-    formula(std::nullptr_t) = delete;
-    explicit formula(formula_base const*f) : _formula{f} {}
+    explicit formula(alphabet *sigma, formula_base const*f)
+      : _alphabet{sigma}, _formula{f} { black_assert(f != nullptr); }
   };
 
   /*

@@ -55,13 +55,13 @@ namespace black::details
   optional<H> formula::to() const {
     black_assert(_formula != nullptr);
 
-    return H::cast(_formula);
+    return H::cast(_alphabet, _formula);
   }
 
   template<typename H>
   bool formula::is() const {
     black_assert(_formula != nullptr);
-    return H::cast(_formula).has_value();
+    return H::cast(_alphabet, _formula).has_value();
   }
 
   inline size_t formula::hash() const {
@@ -91,7 +91,7 @@ namespace black::details
   // struct handle_base
   template<typename H, typename F>
   handle_base<H,F>::operator formula() const {
-    return formula{this->_formula};
+    return formula{this->_alphabet, this->_formula};
   }
 
   // struct atom
@@ -106,30 +106,30 @@ namespace black::details
 
   // struct unary
   inline unary::unary(operator_type t, formula f)
-    : handle_base<unary, unary_t>{allocate_formula(t, f)} { }
+    : handle_base<unary, unary_t>{allocate_unary(t, f)} { }
 
   inline unary_t::operator_type unary::type() const {
     return _formula->op_type;
   }
 
   inline formula unary::operand() const {
-    return formula{_formula->operand};
+    return formula{_alphabet, _formula->operand};
   }
 
   // struct binary
   inline binary::binary(operator_type t, formula f1, formula f2)
-    : handle_base<binary, binary_t>{allocate_formula(t, f1, f2)} { }
+    : handle_base<binary, binary_t>{allocate_binary(t, f1, f2)} { }
 
   inline binary_t::operator_type binary::type() const {
     return _formula->op_type;
   }
 
   inline formula binary::left() const {
-    return formula{_formula->left};
+    return formula{_alphabet, _formula->left};
   }
 
   inline formula binary::right() const {
-    return formula{_formula->right};
+    return formula{_alphabet, _formula->right};
   }
 
   /*
@@ -146,9 +146,9 @@ namespace black::details
     using base_t::base_t;
 
   protected:
-    static optional<H> cast(formula_base const*f) {
+    static optional<H> cast(alphabet *sigma, formula_base const*f) {
       if(auto ptr = formula_cast<F const*>(f); ptr && ptr->op_type == OT)
-        return optional<H>{H{ptr}};
+        return optional<H>{H{sigma, ptr}};
       return nullopt;
     }
   };
@@ -159,15 +159,17 @@ namespace black::details
     using base_t = operator_base<H, unary_t, OT>;
     using base_t::base_t;
 
-    explicit unary_operator(formula f) : base_t{this->allocate_formula(OT, f)}
+    explicit unary_operator(formula f) : base_t{this->allocate_unary(OT, f)}
     {
       black_assert(this->_formula->type == formula_base::formula_type::unary);
       black_assert(this->_formula->op_type == OT);
     }
 
-    operator unary() const { return unary{this->_formula}; }
+    operator unary() const { return unary{this->_alphabet, this->_formula}; }
 
-    formula operand() const { return formula{this->_formula->operand}; }
+    formula operand() const {
+      return formula{this->_alphabet, this->_formula->operand};
+    }
   };
 
   template<typename H, binary_t::operator_type OT>
@@ -177,17 +179,21 @@ namespace black::details
     using base_t::base_t;
 
     binary_operator(formula f1, formula f2)
-      : base_t{this->allocate_formula(OT, f1, f2)}
+      : base_t{this->allocate_binary(OT, f1, f2)}
     {
       black_assert(this->_formula->type == formula_base::formula_type::binary);
       black_assert(this->_formula->op_type == OT);
     }
 
-    operator binary() const { return binary{this->_formula}; }
+    operator binary() const { return binary{this->_alphabet, this->_formula}; }
 
-    formula left() const { return formula{this->_formula->left}; }
+    formula left() const {
+      return formula{this->_alphabet, this->_formula->left};
+    }
 
-    formula right() const { return formula{this->_formula->right}; }
+    formula right() const {
+      return formula{this->_alphabet, this->_formula->right}; 
+    }
   };
 
   #define declare_operator(Op, Arity)                                 \
