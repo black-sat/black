@@ -10,7 +10,10 @@ die() {
 
 cd $(git rev-parse --show-toplevel)
 
-sat_tests=$(cat ./tests/formulas/tests.index | grep -v UNSAT | cut -d';' -f 1)
+# SAT formulae only
+#sat_tests=$(cat ./tests/formulas/tests.index | grep -v UNSAT | cut -d';' -f 1)
+# All the formulae in the test set
+sat_tests=$(cat ./tests/formulas/tests.index | cut -d';' -f 1)
 
 n=$(wc -l <(echo sat_tests) | awk '{print $1}')
 

@@ -65,8 +65,8 @@ int main(int argc, char **argv)
     slv.add_formula(*f);
     //bool res = slv.bsc();
     //bool res = slv.inc_bsc();
-    //bool res = slv.bsc_prune();
-    bool res = slv.inc_bsc_prune();
+    bool res = slv.bsc_prune();
+    //bool res = slv.inc_bsc_prune();
 
     if(res)
       fmt::print("Hoooraay!\n");
@@ -100,6 +100,13 @@ int batch(std::string filename) {
   solver slv(sigma);
 
   slv.add_formula(*f);
+  
+  //int res = int{! slv.bsc()};
+  //int res = int{! slv.inc_bsc()};
+  int res = int{! slv.bsc_prune()};
+  //int res = int{! slv.inc_bsc_prune()};
+  
+  slv.clear();
 
-  return int{! slv.bsc()};
+  return res;
 }
