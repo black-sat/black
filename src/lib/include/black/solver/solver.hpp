@@ -26,6 +26,7 @@
 
 #include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
+#include <black/solver/mathsat.hpp>
 #include <vector>
 #include <utility>
 
@@ -39,6 +40,9 @@ namespace black::details {
 
       // Current LTL formula to solve
       formula frm;
+
+      // MathSAT environment
+      msat_env env;
 
       // Vector of all the X-requests of step k
       std::vector<tomorrow> xrequests;
@@ -73,21 +77,28 @@ namespace black::details {
       // Generates the Next Normal Form of f
       formula to_ground_xnf(formula f, int k, bool update);
 
-      // Calls glucose to check if the boolean formula is sat
+      // Calls the SAT-solver to check if the boolean formula is sat
       bool is_sat(formula f);
 
+      // Calls the SAT-solver to check if the current formula in its
+      // environment is SAT.
+      bool is_sat();
+
       // Simple implementation of an allSAT solver
-      formula all_sat(formula f);
+      formula all_sat(formula, formula);
+      
+      // Incremental version of assert.
+      void add_to_msat(formula);
 
     public:
 
       // Class constructor
       solver(alphabet &a)
-        : alpha(a), frm(a.top()) { }
+        : alpha(a), frm(a.top()), env(mathsat_init()) { }
 
       // Class constructor
       solver(alphabet &a, formula f)
-        : alpha(a), frm(f) { }
+        : alpha(a), frm(f), env(mathsat_init()) { }
 
       // Conjoins the argument formula to the current one
       void add_formula(formula f) {
@@ -98,12 +109,28 @@ namespace black::details {
       }
 
       // Clears the input formula, setting it to True
-      void clear() { frm = alpha.top(); }
+      void clear() { 
+        frm = alpha.top(); 
+        msat_destroy_env(env); 
+        env = mathsat_init();
+      }
 
-      // Check for satisfiability of frm and
-      // returns a model (if it is sat)
-      formula solve(bool model_gen);
+      // Incremental version of 'solve' 
+      bool inc_solve();
+      
+      // Main algorithm (allSAT-based)
+      bool solve();
+      
+      // Incremental version of 'bsc_prune'
+      bool inc_bsc_prune();
+      
+      // BSC augmented with the PRUNE rule
+      bool bsc_prune();
+      
+      // Incremental version of BSC.
+      bool inc_bsc();
 
+      // Naive (non terminating) algorithm for BSC
       bool bsc();
 
   }; // end class Black Solver

@@ -37,7 +37,10 @@ namespace black::details {
 
     return env;
   }
+  
+  
 
+  // TODO: add desharing.
   msat_term to_mathsat(msat_env env, formula f) {
     return f.match(
       [&](boolean b) {
