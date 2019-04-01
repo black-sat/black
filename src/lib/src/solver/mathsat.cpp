@@ -92,5 +92,31 @@ namespace black::details {
       }
     );
   }
+  
+
+  void print_model(msat_env env)
+  {
+    /* we use a model iterator to retrieve the model values for all the
+     * variables, and the necessary function instantiations */
+    msat_model_iterator iter = msat_create_model_iterator(env);
+    assert(!MSAT_ERROR_MODEL_ITERATOR(iter));
+
+    printf("Model:\n");
+    while (msat_model_iterator_has_next(iter)) {
+        msat_term t, v;
+        char *s;
+        msat_model_iterator_next(iter, &t, &v);
+        s = msat_term_repr(t);
+        assert(s);
+        printf(" %s = ", s);
+        msat_free(s);
+        s = msat_term_repr(v);
+        assert(s);
+        printf("%s\n", s);
+        msat_free(s);
+    }
+    msat_destroy_model_iterator(iter);
+  }
+
 
 }

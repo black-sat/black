@@ -32,6 +32,8 @@ namespace black::details {
   msat_env mathsat_init();
 
   msat_term to_mathsat(msat_env, formula);
+  
+  void print_model(msat_env);
 
 }
 

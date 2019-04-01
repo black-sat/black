@@ -521,4 +521,6 @@ namespace black::details {
     msat_assert_formula(env, to_mathsat(env,f));
   }
 
+
+
 } // end namespace black::details
