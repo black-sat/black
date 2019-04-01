@@ -1,30 +1,39 @@
 #!/bin/bash
 
 errors=0
+crashes=0
 
 die() {
-  echo "Wrong reply for $1"
-  #exit 1
   errors=$((errors+1))
 }
 
 cd $(git rev-parse --show-toplevel)
 
-# SAT formulae only
-#sat_tests=$(cat ./tests/formulas/tests.index | grep -v UNSAT | cut -d';' -f 1)
-# UNSAT formulae only
-sat_tests=$(cat ./tests/formulas/tests.index | grep -v ';SAT' | cut -d';' -f 1)
-# All the formulae in the test set
-#sat_tests=$(cat ./tests/formulas/tests.index | cut -d';' -f 1)
+tests=./tests/formulas/tests.index
 
-n=$(wc -l <(echo $sat_tests) | awk '{print $1}')
+n=$(cat $tests | wc -l | sed 's/ //g')
 
 i=1
 
-for f in $sat_tests; do
-  echo "Formula $i/$n: $f"
-  ./build/black -f ./tests/formulas/$f || die $f
+for line in $(cat $tests); do
+  file=$(echo $line | cut -d';' -f1)
+  answer=$(echo $line | cut -d';' -f2)
+  echo "Formula $i/$n: $file"
+  result=$(./build/black -f ./tests/formulas/$file 2>/dev/null || die $file)
+  if [ "$result" != "$answer" ];
+  then
+    errors=$((errors+1))
+    wrong_files=$(echo "$wrong_files;$file")
+  fi
   i=$((i+1))
 done
 
 echo "Wrong replies: $errors"
+
+if [ "$errors" -gt 0 ]; then
+  echo "Wrong files:"
+  IFS=';'
+  for f in ${wrong_files:1}; do
+    echo "- $f"
+  done
+fi

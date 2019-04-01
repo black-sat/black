@@ -33,26 +33,26 @@ namespace black::details {
 
 
   /*
-   * Incremental version of 'solve' 
+   * Incremental version of 'solve'
    */
-  bool solver::inc_solve() 
+  bool solver::inc_solve()
   {
     int k=0;
     while(true){
       // Generating the k-unraveling
       add_to_msat(k_unraveling(k));
       // if 'encoding' is unsat, then stop with UNSAT.
-      if(!is_sat()) 
-        return false;  
+      if(!is_sat())
+        return false;
 
       // else, continue to check EMPTY and LOOP.
       // Generating EMPTY and LOOP
       msat_push_backtrack_point(env);
       add_to_msat(empty_and_loop(k));
       // if 'encoding' is sat, then stop with SAT.
-      if(is_sat()) 
+      if(is_sat())
         return true;
-      
+
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & PRUNE^k'
       msat_pop_backtrack_point(env);
@@ -68,7 +68,7 @@ namespace black::details {
   /*
    * Main algorithm (allSAT-based) for the solver.
    */
-  bool solver::solve() 
+  bool solver::solve()
   {
     int k=0;
     formula encoding = alpha.top();
@@ -79,16 +79,16 @@ namespace black::details {
       else // first iteration
         encoding = k_unraveling(k);
       // if 'encoding' is unsat, then stop with UNSAT.
-      if(!is_sat(encoding)) 
-        return false;  
+      if(!is_sat(encoding))
+        return false;
 
       // else, continue to check EMPTY and LOOP.
       // Generating EMPTY and LOOP
       formula looped = encoding && empty_and_loop(k);
       // if 'encoding' is sat, then stop with SAT.
-      if(is_sat(looped)) 
+      if(is_sat(looped))
         return true;
-      
+
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & PRUNE^k'
       formula all_models = all_sat(encoding && prune(k), alpha.bottom());
@@ -111,24 +111,24 @@ namespace black::details {
       // Generating the k-unraveling
       add_to_msat(k_unraveling(k));
       // if 'encoding' is unsat, then stop with UNSAT.
-      if(!is_sat()) 
+      if(!is_sat())
         return false;
-      
+
       // else, continue to check EMPTY and LOOP.
       // Generating EMPTY and LOOP
       msat_push_backtrack_point(env);
       add_to_msat(empty_and_loop(k));
       // if 'encoding' is sat, then stop with SAT.
-      if(is_sat()) 
+      if(is_sat())
         return true;
-      
+
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & not PRUNE^k'
       msat_pop_backtrack_point(env);
       add_to_msat( !prune(k) );
-      if(!is_sat()) 
+      if(!is_sat())
         return false;
-      
+
       // else, increment k
       k++;
     } // end while(true)
@@ -150,23 +150,23 @@ namespace black::details {
       else // first iteration
         encoding = k_unraveling(k);
       // if 'encoding' is unsat, then stop with UNSAT.
-      if(!is_sat(encoding)) 
+      if(!is_sat(encoding))
         return false;
-      
-      
+
+
       // else, continue to check EMPTY and LOOP.
       // Generating EMPTY and LOOP
       formula looped = encoding && empty_and_loop(k);
       // if 'encoding' is sat, then stop with SAT.
-      if(is_sat(looped)) 
+      if(is_sat(looped))
         return true;
-      
+
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & not PRUNE^k'
       encoding = encoding && ( !prune(k) );
-      if(!is_sat(encoding)) 
+      if(!is_sat(encoding))
         return false;
-      
+
       // else, increment k
       k++;
     } // end while(true)
@@ -174,19 +174,19 @@ namespace black::details {
 
 
 
-  
+
   /*
    * Incremental version of BSC.
    */
   bool solver::inc_bsc()
   {
     int k=0;
-    
+
     while(true){
       // Generating the k-unraveling
       add_to_msat(k_unraveling(k));
 
-      if(!is_sat()) 
+      if(!is_sat())
         return false;
 
       // Generating EMPTY and LOOP
@@ -194,13 +194,13 @@ namespace black::details {
       add_to_msat(empty_and_loop(k));
 
       // if 'encoding' is sat, then stop with SAT.
-      if(is_sat()) 
+      if(is_sat())
         return true;
-      
+
       msat_pop_backtrack_point(env);
       k++;
     }
-    
+
   }
 
 
@@ -208,13 +208,13 @@ namespace black::details {
 
   /*
    * Naive (not terminating) algorithm for Bounded
-   * Satisfiability Checking. 
+   * Satisfiability Checking.
    */
   bool solver::bsc()
   {
     int k=0;
     formula encoding = alpha.top();
-    
+
     while(true){
       // Generating the k-unraveling
       if(k)
@@ -224,7 +224,7 @@ namespace black::details {
 
       //fmt::print("{}-unraveling: {}\n", k, to_string(encoding));
 
-      if(!is_sat(encoding)) 
+      if(!is_sat(encoding))
         return false;
 
       // Generating EMPTY and LOOP
@@ -233,7 +233,7 @@ namespace black::details {
       //fmt::print("{}-unraveling + Loop: {}\n", k, to_string(looped));
 
       // if 'encoding' is sat, then stop with SAT.
-      if(is_sat(looped)) 
+      if(is_sat(looped))
         return true;
 
       k++;
@@ -468,21 +468,21 @@ namespace black::details {
     msat_pop_backtrack_point(env);
     return (res == MSAT_SAT);
   }
-  
-  
-  
+
+
+
   // Asks MathSAT for the satisfiability of current formula
   bool solver::is_sat()
   {
     msat_result res = msat_solve(env);
     return (res == MSAT_SAT);
   }
-  
-  
-  
+
+
+
   // Asks MathSAT for a model (if any) of current formula
   // The result is given as a cube.
-  formula solver::get_model(formula f) {
+  formula solver::get_model(formula) {
     formula mdl = alpha.top();
     return mdl;
   }

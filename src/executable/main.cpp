@@ -100,13 +100,18 @@ int batch(std::string filename) {
   solver slv(sigma);
 
   slv.add_formula(*f);
-  
+
   //int res = int{! slv.bsc()};
   //int res = int{! slv.inc_bsc()};
-  int res = int{! slv.bsc_prune()};
+  bool res = slv.bsc_prune();
   //int res = int{! slv.inc_bsc_prune()};
-  
-  slv.clear();
 
-  return ! res;
+  if(res)
+    fmt::print("SAT");
+  else
+    fmt::print("UNSAT");
+
+  slv.clear();
+  
+  return 0;
 }
