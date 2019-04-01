@@ -87,8 +87,17 @@ namespace black::details {
       // Simple implementation of an allSAT solver
       formula all_sat(formula, formula);
       
+      // Incremental version of 'all_sat()'.
+      formula all_sat(formula);
+      
       // Incremental version of assert.
       void add_to_msat(formula);
+      
+      // Returns the model (if any) of given formula
+      formula get_model(formula);
+      
+      // Incremental version of 'get_model()'
+      formula get_model();
 
     public:
 

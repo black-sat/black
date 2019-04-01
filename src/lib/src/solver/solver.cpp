@@ -2,6 +2,7 @@
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
 // (C) 2019 Luca Geatti
+// (C) 2019 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -55,7 +56,7 @@ namespace black::details {
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & PRUNE^k'
       msat_pop_backtrack_point(env);
-      formula all_models = all_sat(encoding && prune(k), alpha.bottom());
+      formula all_models = all_sat(alpha.bottom());
       // Fixing the negation of 'all_models'
       add_to_msat( !all_models );
       // Incrementing 'k' for the next iteration
@@ -183,7 +184,7 @@ namespace black::details {
     
     while(true){
       // Generating the k-unraveling
-      add_to_msat(k_unraveling(k))
+      add_to_msat(k_unraveling(k));
 
       if(!is_sat()) 
         return false;
@@ -482,9 +483,16 @@ namespace black::details {
   
   // Asks MathSAT for a model (if any) of current formula
   // The result is given as a cube.
-  formula get_model(formula f) {
-    mdl = alpha.top();
-    
+  formula solver::get_model(formula f) {
+    formula mdl = alpha.top();
+    return mdl;
+  }
+
+
+  // Incremental version of 'get_model'.
+  formula solver::get_model() {
+    formula mdl = alpha.top();
+    return mdl;
   }
 
 
@@ -498,9 +506,20 @@ namespace black::details {
   }
 
 
-  void add_to_msat(formula f)
+  // Incremental version of 'all_sat()'
+  formula solver::all_sat(formula models) {
+    if(is_sat()) {
+      formula sigma = get_model();
+      add_to_msat(!sigma);
+      return all_sat(models || sigma);
+    }
+    return models;
+  }
+
+
+  void solver::add_to_msat(formula f)
   {
-    return msat_assert_formula(env, to_mathsat(env,f));
+    msat_assert_formula(env, to_mathsat(env,f));
   }
 
 } // end namespace black::details
