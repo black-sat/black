@@ -108,5 +108,5 @@ int batch(std::string filename) {
   
   slv.clear();
 
-  return res;
+  return ! res;
 }
