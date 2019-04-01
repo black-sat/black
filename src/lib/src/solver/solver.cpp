@@ -461,12 +461,11 @@ namespace black::details {
   // Asks MathSAT for the satisfiability of current formula
   bool solver::is_sat(formula encoding)
   {
+    msat_push_backtrack_point(env);
     msat_term msat_formula = to_mathsat(env, encoding);
-    
     msat_assert_formula(env, msat_formula);
-
     msat_result res = msat_solve(env);
-
+    msat_pop_backtrack_point(env);
     return (res == MSAT_SAT);
   }
   

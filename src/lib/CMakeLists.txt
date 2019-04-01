@@ -13,9 +13,9 @@ find_library(
   NAMES libclang_rt.asan_osx_dynamic.dylib
   PATHS "${LLVM_PATH}/lib/clang/${LLVM_VERSION}/lib/darwin/")
 
-add_library(asan SHARED IMPORTED GLOBAL)
-set_property(TARGET asan PROPERTY IMPORTED_LOCATION ${ASAN_LIBRARY})
-target_compile_options(asan INTERFACE "-fsanitize=address")
+#add_library(asan SHARED IMPORTED GLOBAL)
+#set_property(TARGET asan PROPERTY IMPORTED_LOCATION ${ASAN_LIBRARY})
+#target_compile_options(asan INTERFACE "-fsanitize=address")
 
 
 find_library(
@@ -60,7 +60,7 @@ target_compile_features(black PUBLIC cxx_std_17)
 
 target_compile_options(black PUBLIC "-g")
 
-target_link_libraries(black PUBLIC asan)
+#target_link_libraries(black PUBLIC asan)
 
 target_compile_options(
   black PUBLIC

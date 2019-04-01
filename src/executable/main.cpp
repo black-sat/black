@@ -63,7 +63,10 @@ int main(int argc, char **argv)
     fmt::print("Parsed formula: {}\n", *f);
 
     slv.add_formula(*f);
-    bool res = slv.bsc();
+    //bool res = slv.bsc();
+    //bool res = slv.inc_bsc();
+    //bool res = slv.bsc_prune();
+    bool res = slv.inc_bsc_prune();
 
     if(res)
       fmt::print("Hoooraay!\n");
