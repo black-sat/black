@@ -170,8 +170,7 @@ namespace black::details
 
     template<typename FType, typename Arg1, typename Arg2>
     static std::pair<alphabet *, binary_t *>
-    allocate_binary(FType type,
-                    Arg1 const&arg1, Arg2 const&arg2);
+    allocate_binary(FType type, Arg1 const&arg1, Arg2 const&arg2);
 
     alphabet *_alphabet;
     F const*_formula;

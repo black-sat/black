@@ -56,9 +56,6 @@ namespace black::details
                                        : fmt::format("{}", to_string(rhs));
           return
             fmt::format("{} {} {}", slhs, to_string(b.formula_type()), srhs);
-        },
-        [](otherwise) {
-          return "boh"s;
         }
       );
     }
