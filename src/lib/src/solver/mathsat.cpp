@@ -33,6 +33,7 @@ namespace black::details {
   msat_env mathsat_init() {
     msat_config cfg = msat_create_config();
     msat_set_option(cfg, "model_generation", "true");
+    msat_set_option(cfg, "unsat_core_generation","3");
     msat_env env = msat_create_env(cfg);
 
     return env;
@@ -44,7 +45,8 @@ namespace black::details {
   msat_term to_mathsat(msat_env env, formula f) {
     return f.match(
       [&](boolean b) {
-        return b.value() ? msat_make_true(env) : msat_make_false(env);
+        msat_term res = b.value() ? msat_make_true(env) : msat_make_false(env);
+        return res;
       },
       [&](atom a) {
         std::string name;
@@ -53,39 +55,45 @@ namespace black::details {
         else
           if(auto fname = a.label<std::pair<formula,int>>(); fname.has_value())
           name = fmt::format("<{},{}>", to_string(fname->first), fname->second);
-
-        msat_decl msat_atom =
+        
+        msat_decl msat_atom = 
           msat_declare_function(env, name.c_str(), msat_get_bool_type(env));
-        return msat_make_constant(env, msat_atom);
+        msat_term res = msat_make_constant(env, msat_atom);
+        return res;
       },
       [&](negation n) {
-        return msat_make_not(env, to_mathsat(env, n.operand()));
+        msat_term res = msat_make_not(env, to_mathsat(env, n.operand()));
+        return res;
       },
       [&](conjunction c) {
-        return
+        msat_term res = 
           msat_make_and(env,
             to_mathsat(env, c.left()),
             to_mathsat(env, c.right()));
+        return res;
       },
-      [&](disjunction c) {
-        return
+      [&](disjunction d) {
+        msat_term res = 
           msat_make_or(env,
-            to_mathsat(env, c.left()),
-            to_mathsat(env, c.right()));
+            to_mathsat(env, d.left()),
+            to_mathsat(env, d.right()));
+        return res;
       },
       [&](then t) {
-        return
+        msat_term res = 
           msat_make_or(env,
             msat_make_not(env, to_mathsat(env, t.left())),
             to_mathsat(env, t.right())
           );
+        return res;
       },
       [&](iff i) {
-        return
+        msat_term res = 
           msat_make_iff(env,
             to_mathsat(env, i.left()),
             to_mathsat(env, i.right())
           );
+        return res;
       },
       [&](otherwise) -> msat_term {
         black_unreachable();
@@ -100,8 +108,8 @@ namespace black::details {
      * variables, and the necessary function instantiations */
     msat_model_iterator iter = msat_create_model_iterator(env);
     assert(!MSAT_ERROR_MODEL_ITERATOR(iter));
-
-    printf("Model:\n");
+    
+    fmt::print("Model:\n");
     while (msat_model_iterator_has_next(iter)) {
         msat_term t, v;
         char *s;

@@ -149,14 +149,15 @@ namespace black::details {
         encoding = encoding && k_unraveling(k);
       else // first iteration
         encoding = k_unraveling(k);
+      //fmt::print("{}-unraveling: {}\n", k, to_string(encoding));
       // if 'encoding' is unsat, then stop with UNSAT.
       if(!is_sat(encoding))
         return false;
 
-
       // else, continue to check EMPTY and LOOP.
       // Generating EMPTY and LOOP
       formula looped = encoding && empty_and_loop(k);
+      //fmt::print("{}-looped: {}\n", k, to_string(looped));
       // if 'encoding' is sat, then stop with SAT.
       if(is_sat(looped))
         return true;
@@ -353,8 +354,9 @@ namespace black::details {
   // Generates the k-unraveling for the given k.
   formula solver::k_unraveling(int k) {
     // Copy of the X-requests generated in phase k-1.
-    // clears all the X-requests from the vector
+    // Clear all the X-requests from the vector
     std::vector<tomorrow> current_xreq = std::move(xrequests);
+    //std::vector<tomorrow> current_xreq;
     //std::swap(current_xreq, xrequests);
 
     if(k==0)
@@ -376,10 +378,15 @@ namespace black::details {
 
   // Turns the current formula into Next Normal Form
   formula solver::to_ground_xnf(formula f, int k, bool update) {
+    // FIRST: transformation in NNF. SECOND: transformation in xnf
     return f.match(
       // Future Operators
-      [&](boolean)        { return f; },
-      [&](atom a)         { return formula{alpha.var(std::pair<formula,int>(formula{a},k))}; },
+      [&](boolean)        { 
+        return f; 
+      },
+      [&](atom a)         { 
+          return formula{alpha.var(std::pair<formula,int>(formula{a},k))}; 
+      },
       [&,this](tomorrow t)   {
         if(update)
           xrequests.push_back(t);
@@ -444,13 +451,159 @@ namespace black::details {
         if(update)
           xrequests.push_back(X(r));
         return formula{
-          to_ground_xnf(r.right(),k,update) &&
-          (to_ground_xnf(r.left(),k,update) ||
-            alpha.var(std::pair<formula,int>(formula{X(r)},k)))
+          (to_ground_xnf(r.left(),k,update) &&
+           to_ground_xnf(r.right(),k,update))
+            ||
+          (to_ground_xnf(r.right(),k,update) &&
+           alpha.var(std::pair<formula,int>(formula{X(r)},k)))
         };
       },
       // TODO: past operators
       [&](otherwise) -> formula {
+        fmt::print("unrecognized formula: {}\n", to_string(f));
+        black_unreachable();
+      }
+    );
+  }
+
+
+
+  // Transformation in NNF
+  formula solver::to_nnf(formula f) 
+  {
+    return f.match(
+      // Future Operators
+      [&](boolean)      { 
+        return f; 
+      },
+      [&](atom a)       { 
+        return formula{a}; 
+      },
+      [&](tomorrow t)   {
+        return formula{X( to_nnf(t.operand())  )};
+      },
+      [&](conjunction c) {
+        return formula{
+          to_nnf(c.left()) &&
+          to_nnf(c.right())
+        };
+      },
+      [&](disjunction d) {
+        return formula{
+          to_nnf(d.left()) ||
+          to_nnf(d.right())
+        };
+      },
+      [&](then d) {
+        return formula{then(
+          to_nnf(d.left()),
+          to_nnf(d.right())
+        )};
+      },
+      [&](iff d) {
+        return formula{iff(
+          to_nnf(d.left()),
+          to_nnf(d.right())
+        )};
+      },
+      [&](until u) {
+        return formula{until(
+          to_nnf(u.left()),
+          to_nnf(u.right())  
+        )};
+      },
+      [&](eventually e) {
+        return formula{eventually(
+          to_nnf(e.operand())  
+        )};
+      },
+      [&](always a) {
+        return formula{always(
+          to_nnf(a.operand())  
+        )};
+      },
+      [&](release r) {
+        return formula{release(
+          to_nnf(r.left()),
+          to_nnf(r.right())
+        )};
+      },
+      // Push the negation down to literals
+      [&](negation n)    {
+        // "match" function "n.operand()"
+        return n.operand().match(
+          // Future Operators
+          [&](boolean)      { 
+            return f; 
+          },
+          [&](atom a)       { 
+            return f; 
+          },
+          [&](tomorrow t)   {
+            return formula{X( to_nnf( ! t.operand()) )};
+          },
+          [&](conjunction c) {
+            return formula{
+              to_nnf(! c.left()) ||
+              to_nnf(! c.right())
+            };
+          },
+          [&](disjunction d) {
+            return formula{
+              to_nnf(! d.left()) &&
+              to_nnf(! d.right())
+            };
+          },
+          [&](then d) {
+            return formula{
+              to_nnf(d.left()) && 
+              to_nnf(! d.right())
+            };
+          },
+          [&](iff d) {
+            return formula{
+              (to_nnf(d.left()) &&
+               to_nnf(! d.right()))
+                ||
+              (to_nnf(! d.left()) &&
+               to_nnf(d.right()))
+            };
+          },
+          [&](until u) {
+            return formula{release(
+              to_nnf(! u.left()),
+              to_nnf(! u.right())  
+            )};
+          },
+          [&](eventually e) {
+            return formula{always(
+              to_nnf(! e.operand())  
+            )};
+          },
+          [&](always a) {
+            return formula{eventually(
+              to_nnf(! a.operand())  
+            )};
+          },
+          [&](release r) {
+            return formula{until(
+              to_nnf(! r.left()),
+              to_nnf(! r.right())
+            )};
+          },
+          // Double negation 
+          [&](negation n) {
+            return to_nnf(n.operand()); 
+          },
+          // TODO: past operators
+          [&,this](otherwise) -> formula {
+            fmt::print("unrecognized formula: {}\n", to_string(f));
+            black_unreachable();
+          }
+        );
+      },
+      // TODO: past operators
+      [&,this](otherwise) -> formula {
         fmt::print("unrecognized formula: {}\n", to_string(f));
         black_unreachable();
       }
@@ -465,6 +618,8 @@ namespace black::details {
     msat_term msat_formula = to_mathsat(env, encoding);
     msat_assert_formula(env, msat_formula);
     msat_result res = msat_solve(env);
+    //if(res == MSAT_SAT)
+    //  print_model(env);
     msat_pop_backtrack_point(env);
     return (res == MSAT_SAT);
   }

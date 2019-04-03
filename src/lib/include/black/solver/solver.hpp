@@ -76,6 +76,9 @@ namespace black::details {
 
       // Generates the Next Normal Form of f
       formula to_ground_xnf(formula f, int k, bool update);
+      
+      // Transformation in NNF
+      formula to_nnf(formula);
 
       // Calls the SAT-solver to check if the boolean formula is sat
       bool is_sat(formula f);
@@ -107,10 +110,11 @@ namespace black::details {
 
       // Class constructor
       solver(alphabet &a, formula f)
-        : alpha(a), frm(f), env(mathsat_init()) { }
+        : alpha(a), frm(to_nnf(f)), env(mathsat_init()) { }
 
       // Conjoins the argument formula to the current one
       void add_formula(formula f) {
+        f = to_nnf(f);
         if( frm == alpha.top() )
           frm = f;
         else
