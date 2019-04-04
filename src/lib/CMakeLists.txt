@@ -28,6 +28,10 @@ set_property(TARGET ubsan PROPERTY IMPORTED_LOCATION ${UBSAN_LIBRARY})
 target_compile_options(ubsan INTERFACE "-fsanitize=undefined")
 
 
+add_library(sanitizer INTERFACE)
+#target_link_libraries(sanitizer INTERFACE asan)
+target_link_libraries(sanitizer INTERFACE ubsan)
+
 #
 # black library
 #
@@ -60,7 +64,7 @@ target_compile_features(black PUBLIC cxx_std_17)
 
 target_compile_options(black PUBLIC "-g")
 
-#target_link_libraries(black PUBLIC asan)
+target_link_libraries(black PUBLIC sanitizer)
 
 target_compile_options(
   black PUBLIC

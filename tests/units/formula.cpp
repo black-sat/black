@@ -26,6 +26,7 @@
 #include <black/logic/alphabet.hpp>
 
 #include <string>
+#include <string_view>
 
 using namespace black;
 using namespace std::literals;
@@ -39,17 +40,19 @@ TEST_CASE("Handles")
 
   // requesting atoms with different types
   atom p = sigma.var("p");
-  atom q = sigma.var(42);
+  atom q = sigma.var("q"sv);
+  atom ftwo = sigma.var(42);
 
   SECTION("Basic booleans and atoms allocation") {
     REQUIRE(top.value());
     REQUIRE(!bottom.value());
     REQUIRE(p.label<std::string>().value() == "p");
-    REQUIRE(q.label<int>().value() == 42);
+    REQUIRE(q.label<std::string>().value() == "q");
+    REQUIRE(ftwo.label<int>().value() == 42);
     REQUIRE(p == p);
     REQUIRE(p != q);
 
-    atom another = sigma.var("p");
+    atom another = sigma.var("p"sv);
 
     REQUIRE(another == p);
   }

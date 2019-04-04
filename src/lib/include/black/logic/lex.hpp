@@ -25,76 +25,66 @@
 
 #include <optional>
 #include <variant>
+#include <vector>
 
 namespace black::details
 {
   #define declare_token(Name) Name = formula::type,
 
-  struct token {
-
-    // Type of recognised tokens.
-    // WARNING: Keep the order in synch with formula::type
-    enum token_type : uint8_t {
-      // atomic formulas
-      boolean,
+  // Type representing tokens generated from the lexer.
+  // WARNING: tokens must not outlive their originating lexer object.
+  struct token
+  {
+    enum class type : uint8_t {
+      boolean = 0,
       atom,
-      negation,
+      unary_operator,
+      binary_operator,
+      punctuation
+    };
 
-      // unary operators
-      tomorrow,
-      yesterday,
-      always,
-      eventually,
-      past,
-      historically,
-
-      // binary operators
-      conjunction,
-      disjunction,
-      then,
-      iff,
-      until,
-      release,
-      since,
-      triggered,
-
+    // Type of non-logical tokens. Only parens, for now.
+    enum class punctuation : uint8_t {
       // non-logical tokens
       left_paren,
       right_paren
     };
 
-    constexpr token(token_type t) : type(t) {
-      black_assert(t != token::boolean);
-      black_assert(t != token::atom);
-    }
-    constexpr token(bool b) : type(token::boolean), data(b) {}
-    token(std::string a) : type(token::atom), data(std::move(a)) {}
+    constexpr token(bool b)               : _data{b} { }
+    constexpr token(std::string_view s)   : _data{s} { }
+    constexpr token(unary::type t)        : _data{t} { }
+    constexpr token(binary::type t)       : _data{t} { }
+    constexpr token(punctuation s) : _data{s} { }
 
-    bool is_logical_symbol() const {
-      return to_underlying(type) <= to_underlying(triggered);
-    }
-
-    bool is_unary_op() const {
-      return to_underlying(type) >= to_underlying(negation) &&
-             to_underlying(type) <= to_underlying(historically);
+    template<typename T>
+    constexpr bool is() const {
+      return std::holds_alternative<T>(_data);
     }
 
-    bool is_binary_op() const {
-      return to_underlying(type) >= to_underlying(conjunction) &&
-             to_underlying(type) <= to_underlying(triggered);
+    template<typename T>
+    constexpr std::optional<T> data() const {
+      if(auto p = std::get_if<T>(&_data); p)
+        return {*p};
+      return std::nullopt;
     }
 
-    constexpr std::optional<formula::type> formula_type() const;
+    type token_type() const { return static_cast<type>(_data.index()); }
 
-    constexpr std::optional<unary::type> unary_type() const;
+    friend constexpr std::string_view to_string(token const &tok);
 
-    constexpr std::optional<binary::type> binary_type() const;
-
-    token_type type;
-    std::variant<std::monostate, bool, std::string> data;
+  private:
+    // data related to recognized tokens
+    std::variant<
+      bool,             // booleans
+      std::string_view, // atoms
+      unary::type,      // unary operator
+      binary::type,     // binary operator
+      punctuation       // any non-logical token
+    > _data;
   };
 
-  constexpr std::string_view to_string(unary::type const& t) {
+  constexpr std::string_view to_string(unary::type const& t)
+  {
     constexpr std::string_view toks[] = {
       "!", // negation
       "X", // tomorrow
@@ -105,9 +95,7 @@ namespace black::details
       "H", // historically
     };
 
-    black_assert(to_underlying(t) < sizeof(toks));
-
-    return toks[to_underlying(t)];
+    return toks[to_underlying(t) - to_underlying(unary::type::negation)];
   }
 
   constexpr std::string_view to_string(binary::type const& t) {
@@ -122,56 +110,27 @@ namespace black::details
       "T",   // triggered
     };
 
-    black_assert(to_underlying(t) < sizeof(toks));
-
-    return toks[to_underlying(t)];
+    return toks[to_underlying(t) - to_underlying(binary::type::conjunction)];
   }
 
   constexpr std::string_view to_string(token const &tok)
   {
-    switch(tok.type) {
-      case token::boolean:
-        black_assert(std::holds_alternative<bool>(tok.data));
-        return std::get<bool>(tok.data) ? "true" : "false";
-      case token::atom:
-        black_assert(std::holds_alternative<std::string>(tok.data));
-        return std::get<std::string>(tok.data);
-      case token::left_paren:
-        return "(";
-      case token::right_paren:
-        return ")";
-      default:
-        if(tok.is_unary_op())
-          return to_string(*tok.unary_type());
-        else if(tok.is_binary_op())
-          return to_string(*tok.binary_type());
-    }
-    black_unreachable();
-  }
+    using namespace std::literals;
 
-  constexpr std::optional<formula::type> token::formula_type() const {
-    if(is_logical_symbol())
-      return {formula::type{to_underlying(type)}};
-    return {};
-  }
-
-  constexpr std::optional<unary::type> token::unary_type() const {
-    uint8_t u = to_underlying(type);
-    if(is_unary_op()) {
-      uint8_t v = u - uint8_t(token_type::negation);
-      return {static_cast<unary::type>(v)};
-    }
-
-    return {};
-  }
-
-  constexpr std::optional<binary::type> token::binary_type() const {
-    uint8_t u = to_underlying(type);
-    if(is_binary_op()) {
-      uint8_t v = u - uint8_t(token_type::conjunction);
-      return {static_cast<binary::type>(v)};
-    }
-    return {};
+    return std::visit( overloaded {
+      [](bool b)             { return b ? "true"sv : "false"sv; },
+      [](std::string_view s) { return s; },
+      [](unary::type t)      { return to_string(t); },
+      [](binary::type t)     { return to_string(t); },
+      [](token::punctuation s) {
+        switch(s) {
+          case token::punctuation::left_paren:
+            return "("sv;
+          case token::punctuation::right_paren:
+            return ")"sv;
+        }
+      }
+    }, tok._data);
   }
 
   class lexer
@@ -183,9 +142,12 @@ namespace black::details
 
   private:
     std::optional<token> _lex();
+    std::optional<token> _keyword(std::istream &stream);
 
     std::optional<token> _token = std::nullopt;
     std::istream &_stream;
+
+    std::vector<std::string> _lexed_keywords;
   };
 
   std::ostream &operator<<(std::ostream &s, token const &t);

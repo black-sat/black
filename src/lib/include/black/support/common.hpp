@@ -58,13 +58,6 @@ namespace black::details {
   DEBUG_UNREACHABLE(::black::details::black_assert_t{});\
   DEBUG_ASSERT_MARK_UNREACHABLE;
 
-// Tool function to assert the validity of a pointer in an expression
-template<typename T>
-constexpr T *non_null(T *p) noexcept {
-  black_assert(p != nullptr);
-  return p;
-}
-
 namespace black::details {
   // First-match-first-called apply function, used in formula matchers
   template<typename ...Args, typename F>
@@ -85,6 +78,11 @@ namespace black::details {
     } else
       return apply_first(args, fs...);
   }
+
+  // Simple utility to get the overloading of multiple lambdas (for example)
+  // not used for formula::match but useful to work with std::visit
+  template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+  template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 }
 
 // Shorthand for perfect forwarding

@@ -84,9 +84,9 @@ namespace black::details
     return _lex.peek();
   }
 
-  optional<token> parser::peek(token::token_type t, std::string const&err) {
+  optional<token> parser::peek(token::type t, std::string const&err) {
     auto tok = peek();
-    if(!tok || tok->type != t)
+    if(!tok || tok->token_type() != t)
       return error("Expected " + err);
 
     return tok;
@@ -99,7 +99,7 @@ namespace black::details
     return tok;
   }
 
-  optional<token> parser::consume(token::token_type t, std::string const&err) {
+  optional<token> parser::consume(token::type t, std::string const&err) {
     auto tok = peek(t, err);
     if(tok)
       _lex.get();
@@ -121,7 +121,7 @@ namespace black::details
 
   std::optional<formula> parser::parse_binary_rhs(int prec, formula lhs) {
     while(1) {
-      if(!peek() || precedence(peek()->type) < prec)
+      if(!peek() || precedence(*peek()) < prec)
          return {lhs};
 
       token op = *consume();
@@ -130,45 +130,47 @@ namespace black::details
       if(!rhs)
         return {};
 
-      if(!peek() || precedence(op.type) < precedence(peek()->type)) {
+      if(!peek() || precedence(op) < precedence(*peek())) {
         rhs = parse_binary_rhs(prec + 1, *rhs);
         if(!rhs)
           return {};
       }
 
-      black_assert(op.is_binary_op());
-      lhs = binary(*op.binary_type(), lhs, *rhs);
+      black_assert(op.is<binary::type>());
+      lhs = binary(*op.data<binary::type>(), lhs, *rhs);
     }
   }
 
   std::optional<formula> parser::parse_atom()
   {
     // Assume we are on an atom
-    black_assert(peek() && peek()->type == token::atom);
+    black_assert(peek() && peek()->token_type() == token::type::atom);
 
     std::optional<token> tok = consume();
 
     black_assert(tok);
-    black_assert(tok->type == token::atom);
-    black_assert(std::holds_alternative<std::string>(tok->data));
+    black_assert(tok->token_type() == token::type::atom);
 
-    return _alphabet.var(std::get<std::string>(tok->data));
+    return _alphabet.var(*tok->data<std::string_view>());
   }
 
   std::optional<formula> parser::parse_unary()
   {
     std::optional<token> op = consume(); // consume unary op
-    black_assert(op && op->is_unary_op());
+    black_assert(op && op->is<unary::type>());
 
     std::optional<formula> formula = parse_primary();
     if(!formula)
       return {};
 
-    return unary(*op->unary_type(), *formula);
+    return unary(*op->data<unary::type>(), *formula);
   }
 
   std::optional<formula> parser::parse_parens() {
-    black_assert(peek() && peek()->type == token::left_paren);
+    black_assert(peek());
+    black_assert(peek()->is<token::punctuation>());
+    black_assert(
+      peek()->data<token::punctuation>() == token::punctuation::left_paren);
 
     consume(); // Consume left paren '('
 
@@ -176,7 +178,7 @@ namespace black::details
     if(!formula)
       return {};
 
-    if(!consume(token::right_paren, "')'"))
+    if(!consume(token::type::punctuation, "')'"))
       return {};
 
     return formula;
@@ -186,12 +188,13 @@ namespace black::details
     if(!peek())
       return {};
 
-    if(peek()->type == token::atom)
+    if(peek()->token_type() == token::type::atom)
       return parse_atom();
-    if(peek()->is_unary_op())
+    if(peek()->is<unary::type>())
       return parse_unary();
-    if(peek()->type == token::left_paren)
-      return parse_parens();
+    if(peek()->is<token::punctuation>() &&
+       peek()->data<token::punctuation>() == token::punctuation::left_paren)
+       return parse_parens();
 
     return error("Expected formula");
   }

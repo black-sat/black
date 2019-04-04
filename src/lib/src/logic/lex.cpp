@@ -31,34 +31,34 @@ namespace black::details
       switch (ch) {
         case '(':
           s.get();
-          return token{token::left_paren};
+          return token{token::punctuation::left_paren};
         case ')':
           s.get();
-          return token{token::right_paren};
+          return token{token::punctuation::right_paren};
         case '!':
         case '~':
           s.get();
-          return token{token::negation};
+          return token{unary::type::negation};
         // '&' or '&&'
         case '&':
           s.get();
           if (s.peek() == '&')
             s.get();
-          return token{token::conjunction};
+          return token{binary::type::conjunction};
 
         // '|' or '||'
         case '|':
           s.get();
           if (s.peek() == '|')
             s.get();
-          return token{token::disjunction};
+          return token{binary::type::disjunction};
 
         // '->'
         case '-':
           s.get();
           if (s.peek() == '>') {
             s.get();
-            return token{token::then};
+            return token{binary::type::then};
           }
           return std::nullopt;
 
@@ -67,10 +67,10 @@ namespace black::details
           s.get();
           if (s.peek() == '>') {
             s.get();
-            return token{token::then};
+            return token{binary::type::then};
           }
           else {
-            return token{token::iff};
+            return token{binary::type::iff};
           }
 
         // '<->' or '<=>' or '<>'
@@ -81,8 +81,8 @@ namespace black::details
 
           if (s.peek() == '>') {
             s.get();
-            return ch != '<' ? token{token::iff}
-                             : token{token::eventually};
+            return ch != '<' ? token{binary::type::iff}
+                             : token{unary::type::eventually};
           }
           return std::nullopt;
 
@@ -90,55 +90,70 @@ namespace black::details
           s.get();
           if (s.peek() == ']') {
             s.get();
-            return token{token::always};
+            return token{unary::type::always};
           }
           return std::nullopt;
       }
 
       return std::nullopt;
     }
-
-    std::optional<token> keyword(std::istream &s)
-    {
-      static const std::map<std::string, token::token_type> keywords = {
-        {"NOT", token::negation},    {"AND",  token::conjunction},
-        {"OR",  token::disjunction}, {"THEN", token::then},
-        {"IFF", token::iff},         {"X",    token::tomorrow},
-        {"U",   token::until},       {"R",    token::release},
-        {"V",   token::release},     {"G",    token::always},
-        {"F",   token::eventually},  {"Y",    token::yesterday},
-        {"S",   token::since},       {"T",    token::triggered},
-        {"P",   token::past},        {"H",    token::historically}
-      };
-
-      std::string kw;
-
-      if (!s.good())
-        return std::nullopt;
-
-      if (isalpha(s.peek())) {
-        kw += char(s.peek());
-        s.get();
-
-        if (auto it = keywords.find(kw); it != keywords.end())
-          return token{it->second};
-      } else
-        return std::nullopt;
-
-      while (s.good() && isalnum(s.peek())) {
-        kw += char(s.peek());
-        s.get();
-
-        if (auto it = keywords.find(kw); it != keywords.end())
-          return token{it->second};
-      }
-      if (!s.good() && !s.eof())
-        return std::nullopt;
-
-      return token{kw};
-    }
-
   }  // namespace
+
+  std::optional<token> lexer::_keyword(std::istream &stream)
+  {
+    static constexpr std::pair<std::string_view, token> keywords[] = {
+      {"NOT",  token{unary::type::negation}},
+      {"X",    token{unary::type::tomorrow}},
+      {"Y",    token{unary::type::yesterday}},
+      {"F",    token{unary::type::eventually}},
+      {"G",    token{unary::type::always}},
+      {"P",    token{unary::type::past}},
+      {"H",    token{unary::type::historically}},
+      {"AND",  token{binary::type::conjunction}},
+      {"OR",   token{binary::type::disjunction}},
+      {"THEN", token{binary::type::then}},
+      {"IFF",  token{binary::type::iff}},
+      {"U",    token{binary::type::until}},
+      {"R",    token{binary::type::release}},
+      {"V",    token{binary::type::release}},
+      {"S",    token{binary::type::since}},
+      {"T",    token{binary::type::triggered}}
+    };
+
+    static constexpr auto find = [](std::string_view s) {
+      return
+        std::find_if(std::begin(keywords), std::end(keywords), [=](auto p) {
+          return p.first == s;
+        });
+    };
+
+    std::string kw;
+
+    if (!stream.good())
+      return std::nullopt;
+
+    if (isalpha(stream.peek())) {
+      kw += char(stream.peek());
+      stream.get();
+
+      if(auto it = find(kw); it != std::end(keywords))
+        return token{it->second};
+    } else
+      return std::nullopt;
+
+    while (stream.good() && isalnum(stream.peek())) {
+      kw += char(stream.peek());
+      stream.get();
+
+      if(auto it = find(kw); it != std::end(keywords))
+        return token{it->second};
+    }
+    if (!stream.good() && !stream.eof())
+      return std::nullopt;
+
+    _lexed_keywords.push_back(std::move(kw));
+    return token{std::string_view{_lexed_keywords.back()}};
+  }
 
   std::optional<token> lexer::_lex()
   {
@@ -152,7 +167,7 @@ namespace black::details
     if(std::optional<token> t = symbol(_stream); t)
       return t;
 
-    return keyword(_stream);
+    return _keyword(_stream);
   }
 
 }  // namespace black::details
