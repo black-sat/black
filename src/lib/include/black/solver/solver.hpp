@@ -32,6 +32,12 @@
 
 namespace black::details {
 
+  // Auxiliary functions
+
+  // Transformation in NNF
+  formula to_nnf(formula);
+
+  // main solver class
   class solver {
     private:
 
@@ -76,9 +82,6 @@ namespace black::details {
 
       // Generates the Next Normal Form of f
       formula to_ground_xnf(formula f, int k, bool update);
-      
-      // Transformation in NNF
-      formula to_nnf(formula);
 
       // Calls the SAT-solver to check if the boolean formula is sat
       bool is_sat(formula f);
@@ -89,16 +92,16 @@ namespace black::details {
 
       // Simple implementation of an allSAT solver
       formula all_sat(formula, formula);
-      
+
       // Incremental version of 'all_sat()'.
       formula all_sat(formula);
-      
+
       // Incremental version of assert.
       void add_to_msat(formula);
-      
+
       // Returns the model (if any) of given formula
       formula get_model(formula);
-      
+
       // Incremental version of 'get_model()'
       formula get_model();
 
@@ -122,24 +125,24 @@ namespace black::details {
       }
 
       // Clears the input formula, setting it to True
-      void clear() { 
-        frm = alpha.top(); 
-        msat_destroy_env(env); 
+      void clear() {
+        frm = alpha.top();
+        msat_destroy_env(env);
         env = mathsat_init();
       }
 
-      // Incremental version of 'solve' 
+      // Incremental version of 'solve'
       bool inc_solve();
-      
+
       // Main algorithm (allSAT-based)
       bool solve();
-      
+
       // Incremental version of 'bsc_prune'
       bool inc_bsc_prune();
-      
+
       // BSC augmented with the PRUNE rule
       bool bsc_prune();
-      
+
       // Incremental version of BSC.
       bool inc_bsc();
 

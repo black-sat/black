@@ -466,146 +466,80 @@ namespace black::details {
     );
   }
 
+  // Dual operators for use in to_nnf()
+  static constexpr unary::type dual(unary::type t) {
+    switch(t) {
+      case unary::type::negation:
+      case unary::type::tomorrow:
+      case unary::type::yesterday:
+        return t;
+      case unary::type::always:
+        return unary::type::eventually;
+      case unary::type::eventually:
+        return unary::type::always;
+      case unary::type::historically:
+        return unary::type::past;
+      case unary::type::past:
+        return unary::type::historically;
+    }
+  }
 
+  static constexpr binary::type dual(binary::type t)
+  {
+    switch(t) {
+      case binary::type::conjunction:
+        return binary::type::disjunction;
+      case binary::type::disjunction:
+        return binary::type::conjunction;
+      case binary::type::until:
+        return binary::type::release;
+      case binary::type::release:
+        return binary::type::until;
+      case binary::type::since:
+        return binary::type::triggered;
+      case binary::type::triggered:
+        return binary::type::since;
+      case binary::type::iff:
+      case binary::type::then:
+        black_unreachable(); // these two operators do not have simple duals
+    }
+  }
 
   // Transformation in NNF
-  formula solver::to_nnf(formula f)
+  formula to_nnf(formula f)
   {
     return f.match(
-      // Future Operators
-      [&](boolean)      {
-        return f;
-      },
-      [&](atom)       {
-        return f;
-      },
-      [&](tomorrow t)   {
-        return formula{X( to_nnf(t.operand())  )};
-      },
-      [&](conjunction c) {
-        return formula{
-          to_nnf(c.left()) &&
-          to_nnf(c.right())
-        };
-      },
-      [&](disjunction d) {
-        return formula{
-          to_nnf(d.left()) ||
-          to_nnf(d.right())
-        };
-      },
-      [&](then d) {
-        return formula{then(
-          to_nnf(d.left()),
-          to_nnf(d.right())
-        )};
-      },
-      [&](iff d) {
-        return formula{iff(
-          to_nnf(d.left()),
-          to_nnf(d.right())
-        )};
-      },
-      [&](until u) {
-        return formula{until(
-          to_nnf(u.left()),
-          to_nnf(u.right())
-        )};
-      },
-      [&](eventually e) {
-        return formula{eventually(
-          to_nnf(e.operand())
-        )};
-      },
-      [&](always a) {
-        return formula{always(
-          to_nnf(a.operand())
-        )};
-      },
-      [&](release r) {
-        return formula{release(
-          to_nnf(r.left()),
-          to_nnf(r.right())
-        )};
-      },
+      [](boolean b) -> formula { return b; },
+      [](atom a)    -> formula { return a; },
       // Push the negation down to literals
-      [&](negation n)    {
-        // "match" function "n.operand()"
+      [](negation n) {
         return n.operand().match(
-          // Future Operators
-          [&](boolean)      {
-            return f;
-          },
-          [&](atom)       {
-            return f;
-          },
-          [&](tomorrow t)   {
-            return formula{X( to_nnf( ! t.operand()) )};
-          },
-          [&](conjunction c) {
-            return formula{
-              to_nnf(! c.left()) ||
-              to_nnf(! c.right())
-            };
-          },
-          [&](disjunction d) {
-            return formula{
-              to_nnf(! d.left()) &&
-              to_nnf(! d.right())
-            };
-          },
-          [&](then d) {
-            return formula{
-              to_nnf(d.left()) &&
-              to_nnf(! d.right())
-            };
-          },
-          [&](iff d) {
-            return formula{
-              (to_nnf(d.left()) &&
-               to_nnf(! d.right()))
-                ||
-              (to_nnf(! d.left()) &&
-               to_nnf(d.right()))
-            };
-          },
-          [&](until u) {
-            return formula{release(
-              to_nnf(! u.left()),
-              to_nnf(! u.right())
-            )};
-          },
-          [&](eventually e) {
-            return formula{always(
-              to_nnf(! e.operand())
-            )};
-          },
-          [&](always a) {
-            return formula{eventually(
-              to_nnf(! a.operand())
-            )};
-          },
-          [&](release r) {
-            return formula{until(
-              to_nnf(! r.left()),
-              to_nnf(! r.right())
-            )};
-          },
-          // Double negation
-          [&](negation n2) {
+          [](boolean b) -> formula { return b; },
+          [](atom a)    -> formula { return a; },
+          [](negation n2) { // special case for double negation
             return to_nnf(n2.operand());
           },
-          // TODO: past operators
-          [&](otherwise) -> formula {
-            fmt::print("unrecognized formula: {}\n", to_string(f));
-            black_unreachable();
+          [](unary u) -> formula {
+            return unary(dual(u.formula_type()), to_nnf(!u.operand()));
+          },
+          [](then d) -> formula {
+            return to_nnf(d.left()) && to_nnf(! d.right());
+          },
+          [](iff d) -> formula {
+            return iff(to_nnf(!d.left()), to_nnf(d.right()));
+          },
+          [](binary b) -> formula {
+            return binary(dual(b.formula_type()),
+                          to_nnf(!b.left()), to_nnf(b.right()));
           }
         );
       },
-      // TODO: past operators
-      [&](otherwise) -> formula {
-        fmt::print("unrecognized formula: {}\n", to_string(f));
-        black_unreachable();
+      // other cases: just push recurse down the formula
+      [&](unary u) -> formula {
+        return unary(u.formula_type(), to_nnf(u.operand()));
+      },
+      [](binary b) -> formula {
+        return binary(b.formula_type(), to_nnf(b.left()), to_nnf(b.right()));
       }
     );
   }
