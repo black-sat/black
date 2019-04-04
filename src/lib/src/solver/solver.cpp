@@ -514,8 +514,8 @@ namespace black::details {
       // Push the negation down to literals
       [](negation n) {
         return n.operand().match(
-          [](boolean b) -> formula { return b; },
-          [](atom a)    -> formula { return a; },
+          [](boolean b) -> formula { return !b; },
+          [](atom a)    -> formula { return !a; },
           [](negation n2) { // special case for double negation
             return to_nnf(n2.operand());
           },

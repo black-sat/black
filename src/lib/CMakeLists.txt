@@ -62,9 +62,9 @@ target_link_libraries(black PRIVATE fmt solvers)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
 
-target_compile_options(black PUBLIC "-g")
+target_compile_options(black PUBLIC -O1 -g)
 
-target_link_libraries(black PUBLIC sanitizer)
+#target_link_libraries(black PUBLIC sanitizer)
 
 target_compile_options(
   black PUBLIC

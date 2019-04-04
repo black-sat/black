@@ -18,12 +18,15 @@ i=1
 for line in $(cat $tests); do
   file=$(echo $line | cut -d';' -f1)
   answer=$(echo $line | cut -d';' -f2)
-  echo "Formula $i/$n: $file"
+  echo -n "Formula $i/$n: $file"
   result=$(./build/black -f ./tests/formulas/$file 2>/dev/null || die $file)
   if [ "$result" != "$answer" ];
   then
     errors=$((errors+1))
     wrong_files=$(echo "$wrong_files;$file")
+    echo " - FAILED"
+  else
+    echo " - OK"
   fi
   i=$((i+1))
 done
