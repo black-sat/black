@@ -43,25 +43,20 @@ namespace black::details
   }
 
   inline formula::type formula::formula_type() const {
-    if(auto *unary = formula_cast<unary_t const*>(_formula); unary)
-      return op_to_formula_type(unary->op_type);
-    if(auto *binary = formula_cast<binary_t const*>(_formula); binary)
-      return op_to_formula_type(binary->op_type);
-
-    return type{to_underlying(_formula->type)};
+    return _formula->type;
   }
 
   template<typename H>
   optional<H> formula::to() const {
     black_assert(_formula != nullptr);
 
-    return H::cast(_formula);
+    return H::cast(_alphabet, _formula);
   }
 
   template<typename H>
   bool formula::is() const {
     black_assert(_formula != nullptr);
-    return H::cast(_formula).has_value();
+    return H::cast(_alphabet, _formula).has_value();
   }
 
   inline size_t formula::hash() const {
@@ -91,7 +86,7 @@ namespace black::details
   // struct handle_base
   template<typename H, typename F>
   handle_base<H,F>::operator formula() const {
-    return formula{this->_formula};
+    return formula{this->_alphabet, this->_formula};
   }
 
   // struct atom
@@ -105,31 +100,33 @@ namespace black::details
   }
 
   // struct unary
-  inline unary::unary(operator_type t, formula f)
-    : handle_base<unary, unary_t>{allocate_formula(t, f)} { }
+  inline unary::unary(type t, formula f)
+    : handle_base<unary, unary_t>{allocate_unary(t, f)} { }
 
-  inline unary_t::operator_type unary::type() const {
-    return _formula->op_type;
+  inline unary::type unary::formula_type() const {
+    black_assert(is_unary_type(_formula->type));
+    return static_cast<unary::type>(_formula->type);
   }
 
   inline formula unary::operand() const {
-    return formula{_formula->operand};
+    return formula{_alphabet, _formula->operand};
   }
 
   // struct binary
-  inline binary::binary(operator_type t, formula f1, formula f2)
-    : handle_base<binary, binary_t>{allocate_formula(t, f1, f2)} { }
+  inline binary::binary(type t, formula f1, formula f2)
+    : handle_base<binary, binary_t>{allocate_binary(t, f1, f2)} { }
 
-  inline binary_t::operator_type binary::type() const {
-    return _formula->op_type;
+  inline binary::type binary::formula_type() const {
+    black_assert(is_unary_type(_formula->type));
+    return static_cast<binary::type>(_formula->type);
   }
 
   inline formula binary::left() const {
-    return formula{_formula->left};
+    return formula{_alphabet, _formula->left};
   }
 
   inline formula binary::right() const {
-    return formula{_formula->right};
+    return formula{_alphabet, _formula->right};
   }
 
   /*
@@ -146,55 +143,62 @@ namespace black::details
     using base_t::base_t;
 
   protected:
-    static optional<H> cast(formula_base const*f) {
-      if(auto ptr = formula_cast<F const*>(f); ptr && ptr->op_type == OT)
-        return optional<H>{H{ptr}};
+    static optional<H> cast(alphabet *sigma, formula_base const*f) {
+      auto ptr = formula_cast<F const*>(f);
+      if( ptr && ptr->type == static_cast<formula_type>(OT))
+        return optional<H>{H{sigma, ptr}};
       return nullopt;
     }
   };
 
-  template<typename H, unary_t::operator_type OT>
+  template<typename H, unary::type OT>
   struct unary_operator : operator_base<H, unary_t, OT>
   {
     using base_t = operator_base<H, unary_t, OT>;
     using base_t::base_t;
 
-    explicit unary_operator(formula f) : base_t{this->allocate_formula(OT, f)}
+    explicit unary_operator(formula f) : base_t{this->allocate_unary(OT, f)}
     {
-      black_assert(this->_formula->type == formula_base::formula_type::unary);
-      black_assert(this->_formula->op_type == OT);
+      black_assert(is_unary_type(this->_formula->type));
+      black_assert(this->_formula->type == static_cast<formula_type>(OT));
     }
 
-    operator unary() const { return unary{this->_formula}; }
+    operator unary() const { return unary{this->_alphabet, this->_formula}; }
 
-    formula operand() const { return formula{this->_formula->operand}; }
+    formula operand() const {
+      return formula{this->_alphabet, this->_formula->operand};
+    }
   };
 
-  template<typename H, binary_t::operator_type OT>
+  template<typename H, binary::type OT>
   struct binary_operator : operator_base<H, binary_t, OT>
   {
     using base_t = operator_base<H, binary_t, OT>;
     using base_t::base_t;
 
     binary_operator(formula f1, formula f2)
-      : base_t{this->allocate_formula(OT, f1, f2)}
+      : base_t{this->allocate_binary(OT, f1, f2)}
     {
-      black_assert(this->_formula->type == formula_base::formula_type::binary);
-      black_assert(this->_formula->op_type == OT);
+      black_assert(is_binary_type(this->_formula->type));
+      black_assert(this->_formula->type == static_cast<formula_type>(OT));
     }
 
-    operator binary() const { return binary{this->_formula}; }
+    operator binary() const { return binary{this->_alphabet, this->_formula}; }
 
-    formula left() const { return formula{this->_formula->left}; }
+    formula left() const {
+      return formula{this->_alphabet, this->_formula->left};
+    }
 
-    formula right() const { return formula{this->_formula->right}; }
+    formula right() const {
+      return formula{this->_alphabet, this->_formula->right};
+    }
   };
 
   #define declare_operator(Op, Arity)                                 \
-    struct Op : Arity##_operator<Op, Arity##_t::Op> {                 \
-      using base_t = Arity##_operator<Op, Arity##_t::Op>;             \
+    struct Op : Arity##_operator<Op, Arity::type::Op> {                 \
+      using base_t = Arity##_operator<Op, Arity::type::Op>;             \
       using base_t::base_t;                                           \
-      friend operator_base<Op, Arity##_t, Arity##_t::Op>;             \
+      friend operator_base<Op, Arity##_t, Arity::type::Op>;             \
     };                                                                \
   } namespace black { using details::Op; } namespace black::details { \
 
@@ -223,40 +227,31 @@ namespace black::details
   auto formula::match(Cases&& ...cases) const
   {
     black_assert(_formula);
-    using formula_type = formula_base::formula_type;
-    using unary_type = unary_t::operator_type;
-    using binary_type = binary_t::operator_type;
 
-    #define match_case(Enum, H)                                       \
-      case Enum::H: {                                                 \
+    #define match_case(H)                                             \
+      case formula_type::H: {                                         \
         black_assert(is<H>());                                        \
         return apply_first(std::make_tuple(*to<H>()), FWD(cases)...); \
       }
 
     switch(_formula->type) {
-      match_case(formula_type, boolean)
-      match_case(formula_type, atom)
-      case formula_type::unary:
-        switch(formula_cast<unary_t const*>(_formula)->op_type) {
-          match_case(unary_type, negation)
-          match_case(unary_type, tomorrow)
-          match_case(unary_type, yesterday)
-          match_case(unary_type, always)
-          match_case(unary_type, eventually)
-          match_case(unary_type, past)
-          match_case(unary_type, historically)
-        }
-      case formula_type::binary:
-        switch(formula_cast<binary_t const*>(_formula)->op_type) {
-          match_case(binary_type, conjunction)
-          match_case(binary_type, disjunction)
-          match_case(binary_type, then)
-          match_case(binary_type, iff)
-          match_case(binary_type, until)
-          match_case(binary_type, release)
-          match_case(binary_type, since)
-          match_case(binary_type, triggered)
-        }
+      match_case(boolean)
+      match_case(atom)
+      match_case(negation)
+      match_case(tomorrow)
+      match_case(yesterday)
+      match_case(always)
+      match_case(eventually)
+      match_case(past)
+      match_case(historically)
+      match_case(conjunction)
+      match_case(disjunction)
+      match_case(then)
+      match_case(iff)
+      match_case(until)
+      match_case(release)
+      match_case(since)
+      match_case(triggered)
     }
     #undef match_case
     black_unreachable();
