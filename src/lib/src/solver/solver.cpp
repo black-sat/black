@@ -381,11 +381,11 @@ namespace black::details {
     // FIRST: transformation in NNF. SECOND: transformation in xnf
     return f.match(
       // Future Operators
-      [&](boolean)        { 
-        return f; 
+      [&](boolean)        {
+        return f;
       },
-      [&](atom a)         { 
-          return formula{alpha.var(std::pair<formula,int>(formula{a},k))}; 
+      [&](atom a)         {
+          return formula{alpha.var(std::pair<formula,int>(formula{a},k))};
       },
       [&,this](tomorrow t)   {
         if(update)
@@ -469,15 +469,15 @@ namespace black::details {
 
 
   // Transformation in NNF
-  formula solver::to_nnf(formula f) 
+  formula solver::to_nnf(formula f)
   {
     return f.match(
       // Future Operators
-      [&](boolean)      { 
-        return f; 
+      [&](boolean)      {
+        return f;
       },
-      [&](atom a)       { 
-        return formula{a}; 
+      [&](atom)       {
+        return f;
       },
       [&](tomorrow t)   {
         return formula{X( to_nnf(t.operand())  )};
@@ -509,17 +509,17 @@ namespace black::details {
       [&](until u) {
         return formula{until(
           to_nnf(u.left()),
-          to_nnf(u.right())  
+          to_nnf(u.right())
         )};
       },
       [&](eventually e) {
         return formula{eventually(
-          to_nnf(e.operand())  
+          to_nnf(e.operand())
         )};
       },
       [&](always a) {
         return formula{always(
-          to_nnf(a.operand())  
+          to_nnf(a.operand())
         )};
       },
       [&](release r) {
@@ -533,11 +533,11 @@ namespace black::details {
         // "match" function "n.operand()"
         return n.operand().match(
           // Future Operators
-          [&](boolean)      { 
-            return f; 
+          [&](boolean)      {
+            return f;
           },
-          [&](atom a)       { 
-            return f; 
+          [&](atom)       {
+            return f;
           },
           [&](tomorrow t)   {
             return formula{X( to_nnf( ! t.operand()) )};
@@ -556,7 +556,7 @@ namespace black::details {
           },
           [&](then d) {
             return formula{
-              to_nnf(d.left()) && 
+              to_nnf(d.left()) &&
               to_nnf(! d.right())
             };
           },
@@ -572,17 +572,17 @@ namespace black::details {
           [&](until u) {
             return formula{release(
               to_nnf(! u.left()),
-              to_nnf(! u.right())  
+              to_nnf(! u.right())
             )};
           },
           [&](eventually e) {
             return formula{always(
-              to_nnf(! e.operand())  
+              to_nnf(! e.operand())
             )};
           },
           [&](always a) {
             return formula{eventually(
-              to_nnf(! a.operand())  
+              to_nnf(! a.operand())
             )};
           },
           [&](release r) {
@@ -591,19 +591,19 @@ namespace black::details {
               to_nnf(! r.right())
             )};
           },
-          // Double negation 
-          [&](negation n) {
-            return to_nnf(n.operand()); 
+          // Double negation
+          [&](negation n2) {
+            return to_nnf(n2.operand());
           },
           // TODO: past operators
-          [&,this](otherwise) -> formula {
+          [&](otherwise) -> formula {
             fmt::print("unrecognized formula: {}\n", to_string(f));
             black_unreachable();
           }
         );
       },
       // TODO: past operators
-      [&,this](otherwise) -> formula {
+      [&](otherwise) -> formula {
         fmt::print("unrecognized formula: {}\n", to_string(f));
         black_unreachable();
       }
