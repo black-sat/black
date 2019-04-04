@@ -65,6 +65,8 @@ namespace black::details
 
   struct formula_base
   {
+    formula_base(formula_type t) : type{t} { }
+    
     formula_type type{};
   };
 

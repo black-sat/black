@@ -174,7 +174,7 @@ namespace black {
   template<typename T, REQUIRES_OUT_OF_LINE(details::is_hashable<T>)>
   inline atom alphabet::var(T&& label) {
     using namespace details;
-    if constexpr(std::is_convertible_v<T,std::string>) {
+    if constexpr(std::is_constructible_v<std::string,T>) {
       return
         atom{this, _impl->allocate_formula<atom_t>(std::string{FWD(label)})};
     } else {

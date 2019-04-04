@@ -43,13 +43,11 @@ namespace black::details
 
     std::optional<formula> parse();
 
-    static constexpr std::optional<int> precedence(token::token_type type);
-
   private:
     std::optional<token> peek();
     std::optional<token> consume();
-    std::optional<token> peek(token::token_type, std::string const&err);
-    std::optional<token> consume(token::token_type, std::string const&err);
+    std::optional<token> peek(token::type, std::string const&err);
+    std::optional<token> consume(token::type, std::string const&err);
     std::nullopt_t error(std::string const&s);
 
     std::optional<formula> parse_binary_rhs(int precedence, formula lhs);
@@ -80,18 +78,10 @@ namespace black::details
     return (stream << to_string(f));
   }
 
-  constexpr std::optional<int> parser::precedence(token::token_type type) {
+  constexpr std::optional<int> precedence(token const&tok)
+  {
     // Attention: this must remain in sync with token::token_type
-    constexpr std::optional<int> binops[] = {
-      {},   // boolean
-      {},   // atom
-      {},   // negation
-      {},   // tomorrow
-      {},   // yesterday
-      {},   // always
-      {},   // eventually
-      {},   // past
-      {},   // historically
+    constexpr std::optional<int> ops[] = {
       {30}, // conjunction
       {20}, // disjunction
       {40}, // then
@@ -100,11 +90,12 @@ namespace black::details
       {50}, // release
       {50}, // since
       {50}, // triggered
-      {},   // left_paren
-      {},   // right_paren
     };
 
-    return binops[to_underlying(type)];
+    if(auto t = tok.data<binary::type>(); t)
+      return ops[to_underlying(*t) - to_underlying(binary::type::conjunction)];
+
+    return std::nullopt;
   }
 
 } // namespace black::details

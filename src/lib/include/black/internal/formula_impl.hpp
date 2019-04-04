@@ -117,7 +117,7 @@ namespace black::details
     : handle_base<binary, binary_t>{allocate_binary(t, f1, f2)} { }
 
   inline binary::type binary::formula_type() const {
-    black_assert(is_unary_type(_formula->type));
+    black_assert(is_binary_type(_formula->type));
     return static_cast<binary::type>(_formula->type);
   }
 
