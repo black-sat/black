@@ -1,1 +1,5 @@
 rozier/formulas/n3/P0.5/L40/P0.5N3L40_4.pltl
+rozier/formulas/n3/P0.5/L90/P0.5N3L90_1.pltl
+rozier/formulas/n3/P0.5/L90/P0.5N3L90_2.pltl
+rozier/formulas/n4/P0.3/L60/P0.333333333333333N4L60_2.pltl
+rozier/formulas/n5/P0.7/L60/P0.7N5L60_1.pltl

@@ -121,6 +121,11 @@ namespace black::details
     //
     msat_term to_sat() const;
 
+    //
+    // Get a lightweight, opaque, printable unique identifier for the formula
+    //
+    formula_id unique_id() const;
+
   private:
     class alphabet *_alphabet; // the alphabet the formula comes from
     formula_base *_formula; // concrete object representing the formula

@@ -47,16 +47,10 @@ namespace black::details {
       },
       [](atom a) {
         msat_env env = a.alphabet()->mathsat_env();
-        std::string name;
-
-        if(auto aname = a.label<std::string>(); aname.has_value())
-          name = *aname;
-        else
-          if(auto fname = a.label<std::pair<formula,int>>(); fname.has_value())
-          name = fmt::format("<{},{}>", to_string(fname->first), fname->second);
 
         msat_decl msat_atom =
-          msat_declare_function(env, name.c_str(), msat_get_bool_type(env));
+          msat_declare_function(env, to_string(a.unique_id()).c_str(),
+          msat_get_bool_type(env));
 
         return msat_make_constant(env, msat_atom);
       },

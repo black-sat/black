@@ -70,6 +70,19 @@ namespace black::details
   // Implementation of formula::to_sat() under alphabet's in alphabet_impl.hpp
   // Implementation of formula::match() below, after handles
 
+  /*
+   * Opaque id for formulas
+   */
+  enum class formula_id : uintptr_t;
+
+  inline formula_id formula::unique_id() const {
+    return static_cast<formula_id>(reinterpret_cast<uintptr_t>(_formula));
+  }
+
+  inline std::string to_string(formula_id id) {
+    return std::to_string(static_cast<uintptr_t>(id));
+  }
+
   //
   // std::hash specialization for class `formula`
   //
@@ -97,6 +110,11 @@ namespace black::details
   template<typename H, typename F>
   alphabet *handle_base<H,F>::alphabet() const {
     return _alphabet;
+  }
+
+  template<typename H, typename F>
+  formula_id handle_base<H,F>::unique_id() const {
+    return formula{*this}.unique_id();
   }
 
   // struct atom

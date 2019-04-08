@@ -136,6 +136,11 @@ namespace black::details
    */
   struct otherwise {};
 
+  /*
+   * Unique opaque id for formulas
+   */
+  enum class formula_id : uintptr_t;
+
   // CRTP base class for handles
   template<typename H, typename F>
   struct handle_base
@@ -159,6 +164,8 @@ namespace black::details
     operator formula() const;
 
     class alphabet *alphabet() const;
+
+    formula_id unique_id() const;
 
   protected:
     using handled_formula_t = F;
