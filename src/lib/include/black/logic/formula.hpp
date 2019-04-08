@@ -87,6 +87,9 @@ namespace black::details
     // Gets to the type of the represented formula
     type formula_type() const;
 
+    // Gets the alphabet that manages this formula
+    class alphabet *alphabet() const;
+
     //
     // The to() function converts a formula into a specific kind of
     // formula type. For example:
@@ -113,16 +116,21 @@ namespace black::details
     // Used for the implementation of `std::hash<formula>`, rarely needed alone.
     size_t hash() const;
 
+    //
+    // Translate the formula into MathSAT format
+    //
+    msat_term to_sat() const;
+
   private:
-    alphabet *_alphabet; // the alphabet the formula comes from
-    formula_base const*_formula; // concrete object representing the formula
+    class alphabet *_alphabet; // the alphabet the formula comes from
+    formula_base *_formula; // concrete object representing the formula
 
     template<typename, typename>
     friend struct handle_base;
 
   // Public constructor, but for internal use
   public:
-    explicit formula(alphabet *sigma, formula_base const*f)
+    explicit formula(class alphabet *sigma, formula_base *f)
       : _alphabet{sigma}, _formula{f} { black_assert(f != nullptr); }
   };
 

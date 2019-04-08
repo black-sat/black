@@ -7,6 +7,7 @@ project(black)
 #
 add_subdirectory(external/debug_assert)
 add_subdirectory(external/fmt)
+add_subdirectory(external/remotery)
 
 #
 # SAT solvers

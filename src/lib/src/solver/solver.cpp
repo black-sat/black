@@ -28,6 +28,8 @@
 
 #include <fmt/format.h>
 
+#include <Remotery.h>
+
 namespace black::details {
 
 
@@ -38,6 +40,10 @@ namespace black::details {
   bool solver::inc_solve()
   {
     int k=0;
+
+    msat_env env = _alpha.mathsat_env();
+    msat_reset_env(env);
+
     while(true){
       // Generating the k-unraveling
       add_to_msat(k_unraveling(k));
@@ -56,7 +62,7 @@ namespace black::details {
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & PRUNE^k'
       msat_pop_backtrack_point(env);
-      formula all_models = all_sat(alpha.bottom());
+      formula all_models = all_sat(_alpha.bottom());
       // Fixing the negation of 'all_models'
       add_to_msat( !all_models );
       // Incrementing 'k' for the next iteration
@@ -71,7 +77,7 @@ namespace black::details {
   bool solver::solve()
   {
     int k=0;
-    formula encoding = alpha.top();
+    formula encoding = _alpha.top();
     while(true){
       // Generating the k-unraveling
       if(k)
@@ -91,7 +97,7 @@ namespace black::details {
 
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & PRUNE^k'
-      formula all_models = all_sat(encoding && prune(k), alpha.bottom());
+      formula all_models = all_sat(encoding && prune(k), _alpha.bottom());
       // Fixing the negation of 'all_models'
       encoding = encoding && !all_models;
       // Incrementing 'k' for the next iteration
@@ -107,6 +113,10 @@ namespace black::details {
   bool solver::inc_bsc_prune()
   {
     int k=0;
+
+    msat_env env = _alpha.mathsat_env();
+    msat_reset_env(env);
+
     while(true){
       // Generating the k-unraveling
       add_to_msat(k_unraveling(k));
@@ -142,31 +152,46 @@ namespace black::details {
   bool solver::bsc_prune()
   {
     int k=0;
-    formula encoding = alpha.top();
+    formula encoding = _alpha.top();
+
+    msat_env env = _alpha.mathsat_env();
+    msat_reset_env(env);
+
     while(true){
-      // Generating the k-unraveling
+      rmt_ScopedCPUSample(main_loop, RMTSF_Aggregate);
+      rmt_LogText(fmt::format("k: {}\n", k).c_str());
+
       if(k)
         encoding = encoding && k_unraveling(k);
       else // first iteration
         encoding = k_unraveling(k);
       //fmt::print("{}-unraveling: {}\n", k, to_string(encoding));
       // if 'encoding' is unsat, then stop with UNSAT.
-      if(!is_sat(encoding))
-        return false;
-
+      {
+        rmt_ScopedCPUSample(is_sat, RMTSF_Aggregate);
+        if(!is_sat(encoding))
+          return false;
+      }
       // else, continue to check EMPTY and LOOP.
       // Generating EMPTY and LOOP
       formula looped = encoding && empty_and_loop(k);
       //fmt::print("{}-looped: {}\n", k, to_string(looped));
       // if 'encoding' is sat, then stop with SAT.
-      if(is_sat(looped))
-        return true;
+      {
+        rmt_ScopedCPUSample(is_sat_with_loop, RMTSF_Aggregate);
+        if(is_sat(looped))
+          return true;
+      }
 
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & not PRUNE^k'
       encoding = encoding && ( !prune(k) );
-      if(!is_sat(encoding))
-        return false;
+
+      {
+        rmt_ScopedCPUSample(is_sat_with_prune, RMTSF_Aggregate);
+        if(!is_sat(encoding))
+          return false;
+      }
 
       // else, increment k
       k++;
@@ -182,6 +207,9 @@ namespace black::details {
   bool solver::inc_bsc()
   {
     int k=0;
+
+    msat_env env = _alpha.mathsat_env();
+    msat_reset_env(env);
 
     while(true){
       // Generating the k-unraveling
@@ -214,7 +242,9 @@ namespace black::details {
   bool solver::bsc()
   {
     int k=0;
-    formula encoding = alpha.top();
+    formula encoding = _alpha.top();
+
+    msat_reset_env(_alpha.mathsat_env());
 
     while(true){
       // Generating the k-unraveling
@@ -244,9 +274,11 @@ namespace black::details {
 
   // Generates the PRUNE encoding
   formula solver::prune(int k) {
-    formula k_prune = alpha.bottom();
+    rmt_ScopedCPUSample(prune, RMTSF_Aggregate);
+
+    formula k_prune = _alpha.bottom();
     for(int l=0; l<k-1; l++) {
-      formula k_prune_inner = alpha.bottom();
+      formula k_prune_inner = _alpha.bottom();
       for(int j=l+1; j<k; j++) {
         formula llp = l_to_k_loop(l,j) && l_to_k_loop(j,k) && l_j_k_prune(l,j,k);
         k_prune_inner = k_prune_inner || llp;
@@ -259,19 +291,19 @@ namespace black::details {
 
   // Generates the _lPRUNE_j^k encoding
   formula solver::l_j_k_prune(int l, int j, int k) {
-    formula prune = alpha.top();
-    for(tomorrow xreq : xrequests) {
+    formula prune = _alpha.top();
+    for(tomorrow xreq : _xrequests) {
       // If the X-requests is an X-eventuality
       if(auto req = get_xev(xreq); req) {
         // Creating the encoding
-        formula first_conj = alpha.var(std::pair(formula{xreq},k));
-        formula inner_impl = alpha.bottom();
+        formula first_conj = _alpha.var(std::pair(formula{xreq},k));
+        formula inner_impl = _alpha.bottom();
         for(int i=j+1; i<=k; i++) {
           formula xnf_req = to_ground_xnf(*req, i, false);
           inner_impl = inner_impl || xnf_req;
         }
         first_conj = first_conj && inner_impl;
-        formula second_conj = alpha.bottom();
+        formula second_conj = _alpha.bottom();
         for(int i=l+1; i<=j; i++) {
           formula xnf_req = to_ground_xnf(*req, i, false);
           second_conj = second_conj || xnf_req;
@@ -285,6 +317,7 @@ namespace black::details {
 
   // Generates the EMPTY and LOOP encoding
   formula solver::empty_and_loop(int k) {
+    rmt_ScopedCPUSample(empty_and_loop, RMTSF_Aggregate);
     return k_empty(k) || k_loop(k);
   }
 
@@ -292,9 +325,9 @@ namespace black::details {
 
   // Generates the encoding for EMPTY_k
   formula solver::k_empty(int k) {
-    formula k_empty = alpha.top();
-    for(auto it = xrequests.begin(); it != xrequests.end(); it++) {
-      k_empty = k_empty && (!( alpha.var(std::pair<formula,int>(formula{*it},k)) ));
+    formula k_empty = _alpha.top();
+    for(auto it = _xrequests.begin(); it != _xrequests.end(); it++) {
+      k_empty = k_empty && (!( _alpha.var(std::pair<formula,int>(formula{*it},k)) ));
     }
     return k_empty;
   }
@@ -309,7 +342,7 @@ namespace black::details {
 
   // Generates the encoding for LOOP_k
   formula solver::k_loop(int k) {
-    formula k_loop = alpha.bottom();
+    formula k_loop = _alpha.bottom();
     for(int l=0; l<k; l++) {
       k_loop = k_loop || (l_to_k_loop(l,k) && l_to_k_period(l,k));
     }
@@ -319,13 +352,13 @@ namespace black::details {
 
   // Generates the encoding for _lP_k
   formula solver::l_to_k_period(int l, int k) {
-    formula period_lk = alpha.top();
-    for(tomorrow xreq : xrequests) {
+    formula period_lk = _alpha.top();
+    for(tomorrow xreq : _xrequests) {
       // If the X-requests is an X-eventuality
       if(auto req = get_xev(xreq); req) {
         // Creating the encoding
-        formula atom_phi_k = alpha.var( std::pair(formula{xreq},k) );
-        formula body_impl = alpha.bottom();
+        formula atom_phi_k = _alpha.var( std::pair(formula{xreq},k) );
+        formula body_impl = _alpha.bottom();
         for(int i=l+1; i<=k; i++) {
           formula req_atom_i = to_ground_xnf(*req, i, false);
           body_impl = body_impl || req_atom_i;
@@ -339,11 +372,11 @@ namespace black::details {
 
   // Generates the encoding for _lL_k
   formula solver::l_to_k_loop(int l, int k) {
-    formula loop_lk = alpha.top();
-    //for(auto it = xrequests.begin(); it != xrequests.end(); it++) {
-    for(tomorrow xreq : xrequests) {
-      formula first_atom = alpha.var( std::pair(formula{xreq},l) );
-      formula second_atom = alpha.var( std::pair(formula{xreq},k) );
+    formula loop_lk = _alpha.top();
+    //for(auto it = _xrequests.begin(); it != _xrequests.end(); it++) {
+    for(tomorrow xreq : _xrequests) {
+      formula first_atom = _alpha.var( std::pair(formula{xreq},l) );
+      formula second_atom = _alpha.var( std::pair(formula{xreq},k) );
       // big and formula
       loop_lk = loop_lk && iff(first_atom,second_atom);
     }
@@ -353,21 +386,22 @@ namespace black::details {
 
   // Generates the k-unraveling for the given k.
   formula solver::k_unraveling(int k) {
+    rmt_ScopedCPUSample(k_unraveling, RMTSF_Aggregate);
     // Copy of the X-requests generated in phase k-1.
     // Clear all the X-requests from the vector
-    std::vector<tomorrow> current_xreq = std::move(xrequests);
+    std::vector<tomorrow> current_xreq = std::move(_xrequests);
     //std::vector<tomorrow> current_xreq;
-    //std::swap(current_xreq, xrequests);
+    //std::swap(current_xreq, _xrequests);
 
     if(k==0)
-      return to_ground_xnf(frm,k,true);
+      return to_ground_xnf(_frm,k,true);
 
-    formula big_and = alpha.top();
+    formula big_and = _alpha.top();
     //for(auto it = current_xreq.begin(); it != current_xreq.end(); it++){
     for(tomorrow xreq : current_xreq) {
-      // X(alpha)_P^{k-1}
-      formula left_hand = alpha.var(std::pair(formula{xreq},k-1));
-      // xnf(\alpha)_P^{k}
+      // X(_alpha)_P^{k-1}
+      formula left_hand = _alpha.var(std::pair(formula{xreq},k-1));
+      // xnf(\_alpha)_P^{k}
       formula right_hand = to_ground_xnf(xreq.operand(),k,true);
       // left_hand IFF right_hand
       big_and = big_and && iff(left_hand, right_hand);
@@ -385,12 +419,12 @@ namespace black::details {
         return f;
       },
       [&](atom a)         {
-          return formula{alpha.var(std::pair<formula,int>(formula{a},k))};
+          return formula{_alpha.var(std::pair<formula,int>(formula{a},k))};
       },
       [&,this](tomorrow t)   {
         if(update)
-          xrequests.push_back(t);
-        return formula{alpha.var(std::pair<formula,int>(formula{t},k))};
+          _xrequests.push_back(t);
+        return formula{_alpha.var(std::pair<formula,int>(formula{t},k))};
       },
       [&](negation n)    {
         return formula{!to_ground_xnf(n.operand(),k, update)};
@@ -421,41 +455,41 @@ namespace black::details {
       },
       [&,this](until u) {
         if(update)
-          xrequests.push_back(X(u));
+          _xrequests.push_back(X(u));
 
         return
           formula{to_ground_xnf(u.right(),k,update) ||
             (to_ground_xnf(u.left(),k,update) &&
-              alpha.var(std::pair<formula,int>(formula{X(u)},k)))
+              _alpha.var(std::pair<formula,int>(formula{X(u)},k)))
           };
       },
       [&,this](eventually e) {
         if(update)
-          xrequests.push_back(X(e));
+          _xrequests.push_back(X(e));
         return
           formula{
             to_ground_xnf(e.operand(),k,update) ||
-            alpha.var(std::pair<formula,int>(formula{X(e)},k))
+            _alpha.var(std::pair<formula,int>(formula{X(e)},k))
           };
       },
       [&,this](always a) {
         if(update)
-          xrequests.push_back(X(a));
+          _xrequests.push_back(X(a));
         return
           formula{
             to_ground_xnf(a.operand(),k,update) &&
-            alpha.var(std::pair<formula,int>(formula{X(a)},k))
+            _alpha.var(std::pair<formula,int>(formula{X(a)},k))
           };
       },
       [&,this](release r) {
         if(update)
-          xrequests.push_back(X(r));
+          _xrequests.push_back(X(r));
         return formula{
           (to_ground_xnf(r.left(),k,update) &&
            to_ground_xnf(r.right(),k,update))
             ||
           (to_ground_xnf(r.right(),k,update) &&
-           alpha.var(std::pair<formula,int>(formula{X(r)},k)))
+           _alpha.var(std::pair<formula,int>(formula{X(r)},k)))
         };
       },
       // TODO: past operators
@@ -534,7 +568,7 @@ namespace black::details {
           }
         );
       },
-      // other cases: just push recurse down the formula
+      // other cases: just recurse down the formula
       [&](unary u) -> formula {
         return unary(u.formula_type(), to_nnf(u.operand()));
       },
@@ -548,13 +582,27 @@ namespace black::details {
   // Asks MathSAT for the satisfiability of current formula
   bool solver::is_sat(formula encoding)
   {
-    msat_push_backtrack_point(env);
-    msat_term msat_formula = to_mathsat(env, encoding);
-    msat_assert_formula(env, msat_formula);
-    msat_result res = msat_solve(env);
-    //if(res == MSAT_SAT)
-    //  print_model(env);
-    msat_pop_backtrack_point(env);
+    msat_env env = _alpha.mathsat_env();
+
+    rmt_BeginCPUSample(to_sat, RMTSF_Aggregate);
+    msat_term term = encoding.to_sat();
+    rmt_EndCPUSample();
+
+    msat_result res;
+    {
+      rmt_ScopedCPUSample(msat_solve, RMTSF_Aggregate);
+
+      msat_push_backtrack_point(env);
+      msat_assert_formula(env, term);
+
+      res = msat_solve(env);
+
+      {
+        rmt_ScopedCPUSample(msat_pop_btpoint, RMTSF_Aggregate);
+        msat_pop_backtrack_point(env);
+      }
+    }
+
     return (res == MSAT_SAT);
   }
 
@@ -563,7 +611,7 @@ namespace black::details {
   // Asks MathSAT for the satisfiability of current formula
   bool solver::is_sat()
   {
-    msat_result res = msat_solve(env);
+    msat_result res = msat_solve(_alpha.mathsat_env());
     return (res == MSAT_SAT);
   }
 
@@ -572,14 +620,14 @@ namespace black::details {
   // Asks MathSAT for a model (if any) of current formula
   // The result is given as a cube.
   formula solver::get_model(formula) {
-    formula mdl = alpha.top();
+    formula mdl = _alpha.top();
     return mdl;
   }
 
 
   // Incremental version of 'get_model'.
   formula solver::get_model() {
-    formula mdl = alpha.top();
+    formula mdl = _alpha.top();
     return mdl;
   }
 
@@ -607,7 +655,8 @@ namespace black::details {
 
   void solver::add_to_msat(formula f)
   {
-    msat_assert_formula(env, to_mathsat(env,f));
+    msat_env env = _alpha.mathsat_env();
+    msat_assert_formula(env, f.to_sat());
   }
 
 

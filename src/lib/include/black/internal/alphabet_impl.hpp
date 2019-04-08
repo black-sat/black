@@ -26,6 +26,7 @@
 
 #include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
+#include <black/solver/mathsat.hpp>
 
 #include <deque>
 #include <unordered_map>
@@ -34,8 +35,7 @@ namespace black::details {
 
   struct alphabet_impl
   {
-    alphabet_impl(alphabet *sigma)
-      : _sigma{sigma}, _top{true}, _bottom{false} {}
+    alphabet_impl(alphabet *sigma) : _sigma{sigma} {}
 
     template<typename F, typename ...Args>
     F *allocate_formula(Args&& ...args) {
@@ -44,22 +44,25 @@ namespace black::details {
 
     alphabet            *_sigma;
 
-    boolean_t            _top;
-    boolean_t            _bottom;
+    boolean_t            _top{true};
+    boolean_t            _bottom{false};
 
     std::deque<atom_t>   _atoms;
     std::deque<unary_t>  _unaries;
     std::deque<binary_t> _binaries;
 
-    using unary_key = std::tuple<unary::type, formula_base const*>;
+    using unary_key = std::tuple<unary::type, formula_base*>;
     using binary_key = std::tuple<binary::type,
-                                  formula_base const*,
-                                  formula_base const*>;
+                                  formula_base*,
+                                  formula_base*>;
 
-    // TODO: switch to std::unordered_map by implementing std::hash on tuples
     std::unordered_map<any_hashable, atom_t*> _atoms_map;
     std::unordered_map<unary_key,   unary_t*> _unaries_map;
     std::unordered_map<binary_key, binary_t*> _binaries_map;
+
+    // MathSAT environment object
+    // TODO: decouple formula construction code from the SAT solver
+    msat_env _msat_env = mathsat_init();
 
   private:
     template<typename>
@@ -80,7 +83,7 @@ namespace black::details {
     }
 
     unary_t *
-    allocate(_tag<unary_t>, unary::type type, formula_base const* arg)
+    allocate(_tag<unary_t>, unary::type type, formula_base* arg)
     {
       if(auto it = _unaries_map.find({type, arg}); it != _unaries_map.end())
         return it->second;
@@ -94,7 +97,7 @@ namespace black::details {
 
     binary_t *
     allocate(_tag<binary_t>, binary::type type,
-             formula_base const* arg1, formula_base const* arg2)
+             formula_base* arg1, formula_base* arg2)
     {
       auto it = _binaries_map.find({type, arg1, arg2});
       if(it != _binaries_map.end())
@@ -119,7 +122,7 @@ namespace black::details {
     static_assert(std::is_same_v<FType, unary::type>);
 
     // Get the alphabet from the argument
-    alphabet *sigma = arg._alphabet;
+    class alphabet *sigma = arg._alphabet;
 
     // Ask the alphabet to actually allocate the formula
     unary_t *object =
@@ -141,7 +144,7 @@ namespace black::details {
     black_assert(arg1._alphabet == arg2._alphabet);
 
     // Get the alphabet from the first argument (same as the second, by now)
-    alphabet *sigma = arg1._alphabet;
+    class alphabet *sigma = arg1._alphabet;
 
     // Ask the alphabet to actually allocate the formula
     binary_t *object = sigma->_impl->template allocate_formula<binary_t>(
@@ -181,6 +184,23 @@ namespace black {
       return atom{this, _impl->allocate_formula<atom_t>(FWD(label))};
     }
   }
+
+  inline msat_env alphabet::mathsat_env() const {
+    return _impl->_msat_env;
+  }
+
+  namespace details {
+    inline msat_term formula::to_sat() const {
+      // TODO: check if the formula is propositional-only
+      // TODO: check that the environment of the alphabet is the same
+      if(MSAT_ERROR_TERM(_formula->encoding))
+        _formula->encoding = to_mathsat(*this);
+
+      black_assert(!MSAT_ERROR_TERM(_formula->encoding));
+      return _formula->encoding;
+    }
+  }
+
 } // namespace black
 
 #endif // BLACK_ALPHABET_IMPL_HPP

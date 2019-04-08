@@ -46,6 +46,10 @@ namespace black::details
     return _formula->type;
   }
 
+  inline alphabet *formula::alphabet() const {
+    return _alphabet;
+  }
+
   template<typename H>
   optional<H> formula::to() const {
     black_assert(_formula != nullptr);
@@ -60,9 +64,10 @@ namespace black::details
   }
 
   inline size_t formula::hash() const {
-    return std::hash<formula_base const*>{}(_formula);
+    return std::hash<formula_base*>{}(_formula);
   }
 
+  // Implementation of formula::to_sat() under alphabet's in alphabet_impl.hpp
   // Implementation of formula::match() below, after handles
 
   //
@@ -87,6 +92,11 @@ namespace black::details
   template<typename H, typename F>
   handle_base<H,F>::operator formula() const {
     return formula{this->_alphabet, this->_formula};
+  }
+
+  template<typename H, typename F>
+  alphabet *handle_base<H,F>::alphabet() const {
+    return _alphabet;
   }
 
   // struct atom
@@ -143,8 +153,8 @@ namespace black::details
     using base_t::base_t;
 
   protected:
-    static optional<H> cast(alphabet *sigma, formula_base const*f) {
-      auto ptr = formula_cast<F const*>(f);
+    static optional<H> cast(alphabet *sigma, formula_base *f) {
+      auto ptr = formula_cast<F *>(f);
       if( ptr && ptr->type == static_cast<formula_type>(OT))
         return optional<H>{H{sigma, ptr}};
       return nullopt;

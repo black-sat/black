@@ -39,17 +39,16 @@ namespace black::details {
     return env;
   }
 
-
-
-  // TODO: add desharing.
-  msat_term to_mathsat(msat_env env, formula f) {
+  msat_term to_mathsat(formula f) {
     return f.match(
-      [&](boolean b) {
-        msat_term res = b.value() ? msat_make_true(env) : msat_make_false(env);
-        return res;
+      [](boolean b) {
+        msat_env env = b.alphabet()->mathsat_env();
+        return b.value() ? msat_make_true(env) : msat_make_false(env);
       },
-      [&](atom a) {
+      [](atom a) {
+        msat_env env = a.alphabet()->mathsat_env();
         std::string name;
+
         if(auto aname = a.label<std::string>(); aname.has_value())
           name = *aname;
         else
@@ -58,44 +57,33 @@ namespace black::details {
 
         msat_decl msat_atom =
           msat_declare_function(env, name.c_str(), msat_get_bool_type(env));
-        msat_term res = msat_make_constant(env, msat_atom);
-        return res;
+
+        return msat_make_constant(env, msat_atom);
       },
-      [&](negation n) {
-        msat_term res = msat_make_not(env, to_mathsat(env, n.operand()));
-        return res;
+      [](negation n) {
+        msat_env env = n.alphabet()->mathsat_env();
+        return msat_make_not(env, n.operand().to_sat());
       },
-      [&](conjunction c) {
-        msat_term res =
-          msat_make_and(env,
-            to_mathsat(env, c.left()),
-            to_mathsat(env, c.right()));
-        return res;
+      [](conjunction c) {
+        msat_env env = c.alphabet()->mathsat_env();
+        return msat_make_and(env, c.left().to_sat(), c.right().to_sat());
       },
-      [&](disjunction d) {
-        msat_term res =
+      [](disjunction d) {
+        msat_env env = d.alphabet()->mathsat_env();
+        return msat_make_or(env, d.left().to_sat(), d.right().to_sat());
+      },
+      [](then t) {
+        msat_env env = t.alphabet()->mathsat_env();
+        return
           msat_make_or(env,
-            to_mathsat(env, d.left()),
-            to_mathsat(env, d.right()));
-        return res;
-      },
-      [&](then t) {
-        msat_term res =
-          msat_make_or(env,
-            msat_make_not(env, to_mathsat(env, t.left())),
-            to_mathsat(env, t.right())
+            msat_make_not(env, t.left().to_sat()), t.right().to_sat()
           );
-        return res;
       },
-      [&](iff i) {
-        msat_term res =
-          msat_make_iff(env,
-            to_mathsat(env, i.left()),
-            to_mathsat(env, i.right())
-          );
-        return res;
+      [](iff i) {
+        msat_env env = i.alphabet()->mathsat_env();
+        return msat_make_iff(env, i.left().to_sat(), i.right().to_sat());
       },
-      [&](otherwise) -> msat_term {
+      [](otherwise) -> msat_term {
         black_unreachable();
       }
     );

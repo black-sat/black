@@ -41,17 +41,14 @@ namespace black::details {
   class solver {
     private:
 
-      // Reference to the original alphabet
-      alphabet& alpha;
+      // Reference to the original _alphabet
+      alphabet& _alpha;
 
       // Current LTL formula to solve
-      formula frm;
-
-      // MathSAT environment
-      msat_env env;
+      formula _frm;
 
       // Vector of all the X-requests of step k
-      std::vector<tomorrow> xrequests;
+      std::vector<tomorrow> _xrequests;
 
       // Extract the x-eventuality from an x-request
       std::optional<formula> get_xev(tomorrow xreq);
@@ -109,26 +106,23 @@ namespace black::details {
 
       // Class constructor
       solver(alphabet &a)
-        : alpha(a), frm(a.top()), env(mathsat_init()) { }
+        : _alpha(a), _frm(a.top()) { }
 
       // Class constructor
       solver(alphabet &a, formula f)
-        : alpha(a), frm(to_nnf(f)), env(mathsat_init()) { }
+        : _alpha(a), _frm(to_nnf(f)) { }
 
       // Conjoins the argument formula to the current one
       void add_formula(formula f) {
         f = to_nnf(f);
-        if( frm == alpha.top() )
-          frm = f;
+        if( _frm == _alpha.top() )
+          _frm = f;
         else
-          frm = frm && f;
+          _frm = _frm && f;
       }
 
-      // Clears the input formula, setting it to True
       void clear() {
-        frm = alpha.top();
-        msat_destroy_env(env);
-        env = mathsat_init();
+        _frm = _alpha.top();
       }
 
       // Incremental version of 'solve'

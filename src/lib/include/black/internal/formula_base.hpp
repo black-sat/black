@@ -25,11 +25,12 @@
 #define BLACK_LOGIC_FORMULA_BASE_HPP_
 
 #ifndef BLACK_LOGIC_FORMULA_HPP_
-  #error "This header file cannot included alone, "\
+  #error "This header file cannot be included alone, "\
          "please include <black/logic/formula.hpp> instead"
 #endif
 
 #include <black/support/common.hpp>
+#include <black/solver/mathsat.hpp>
 
 #include <type_traits>
 #include <array>
@@ -66,8 +67,9 @@ namespace black::details
   struct formula_base
   {
     formula_base(formula_type t) : type{t} { }
-    
-    formula_type type{};
+
+    const formula_type type{};
+    msat_term encoding{};
   };
 
   struct boolean_t : formula_base
@@ -94,21 +96,21 @@ namespace black::details
   {
     static constexpr auto accepts_type = is_unary_type;
 
-    unary_t(formula_type t, formula_base const*f)
+    unary_t(formula_type t, formula_base*f)
       : formula_base{t}, operand{f}
     {
       black_assert(is_unary_type(t));
       black_assert(f != nullptr);
     }
 
-    formula_base const*operand;
+    formula_base*operand;
   };
 
   struct binary_t : formula_base
   {
     static constexpr auto accepts_type = is_binary_type;
 
-    binary_t(formula_type t, formula_base const*f1, formula_base const*f2)
+    binary_t(formula_type t, formula_base*f1, formula_base*f2)
       : formula_base{t}, left{f1}, right{f2}
     {
       black_assert(is_binary_type(t));
@@ -116,16 +118,16 @@ namespace black::details
       black_assert(f2 != nullptr);
     }
 
-    formula_base const*left;
-    formula_base const*right;
+    formula_base*left;
+    formula_base*right;
   };
 
-  template<typename T, typename F = std::remove_cv_t<std::remove_pointer_t<T>>>
-  F const*formula_cast(formula_base const*f)
+  template<typename T, typename F = std::remove_pointer_t<T>>
+  F *formula_cast(formula_base *f)
   {
     black_assert(f != nullptr);
     if(F::accepts_type(f->type))
-      return static_cast<F const*>(f);
+      return static_cast<F *>(f);
     return nullptr;
   }
 
@@ -144,38 +146,40 @@ namespace black::details
     handle_base(handle_base const&) = default;
     handle_base(handle_base &&) = default;
 
-    handle_base(alphabet *sigma, F const*f) : _alphabet{sigma}, _formula{f}
+    handle_base(alphabet *sigma, F *f) : _alphabet{sigma}, _formula{f}
     { black_assert(_formula); }
 
     // This constructor takes a tuple instead of two arguments in order to
     // directly receive the return value of allocate_formula() below
-    handle_base(std::pair<alphabet *, F const*> args)
+    handle_base(std::pair<alphabet *, F *> args)
       : handle_base{args.first, args.second} { }
 
     operator otherwise() const { return {}; }
 
     operator formula() const;
 
+    class alphabet *alphabet() const;
+
   protected:
     using handled_formula_t = F;
 
-    static optional<H> cast(alphabet *sigma, formula_base const*f) {
-      if(auto ptr = formula_cast<typename H::handled_formula_t const*>(f); ptr)
+    static optional<H> cast(class alphabet *sigma, formula_base *f) {
+      if(auto ptr = formula_cast<typename H::handled_formula_t *>(f); ptr)
         return optional<H>{H{sigma, ptr}};
       return nullopt;
     }
 
     // Implemented after alphabet class
     template<typename FType, typename Arg>
-    static std::pair<alphabet *, unary_t *>
+    static std::pair<class alphabet *, unary_t *>
     allocate_unary(FType type, Arg const&arg);
 
     template<typename FType, typename Arg1, typename Arg2>
-    static std::pair<alphabet *, binary_t *>
+    static std::pair<class alphabet *, binary_t *>
     allocate_binary(FType type, Arg1 const&arg1, Arg2 const&arg2);
 
-    alphabet *_alphabet;
-    F const*_formula;
+    class alphabet *_alphabet;
+    F *_formula;
   };
 
 } // namespace black::details

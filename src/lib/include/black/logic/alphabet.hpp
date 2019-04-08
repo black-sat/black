@@ -26,6 +26,7 @@
 
 #include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
+#include <black/solver/mathsat.hpp>
 
 #include <string>
 #include <unordered_map>
@@ -66,6 +67,9 @@ namespace black {
     // T is Hashable (see the std::unordered_map documentation for reference)
     template<typename T, REQUIRES(details::is_hashable<T>)>
     atom var(T&& label);
+
+    // Returns the MathSAT environment object used by formula->to_sat()
+    msat_env mathsat_env() const;
 
   private:
     std::unique_ptr<details::alphabet_impl> _impl;

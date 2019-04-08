@@ -28,9 +28,12 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <Remotery.h>
+
 #include <fstream>
 #include <iostream>
 #include <string>
+
 using namespace std::literals;
 
 using namespace black;
@@ -41,8 +44,17 @@ inline void report_error(std::string const&s) {
 
 int batch(std::string filename);
 
+static Remotery *rmt;
+
 int main(int argc, char **argv)
 {
+  rmtError error = rmt_CreateGlobalInstance(&rmt);
+
+  if( RMT_ERROR_NONE != error) {
+	  fmt::print("Error launching Remotery: {}\n", error);
+    return -1;
+  }
+
   if(argc >= 3 && argv[1] == "-f"s)
     return batch(argv[2]);
 
@@ -76,6 +88,8 @@ int main(int argc, char **argv)
     slv.clear();
   }
 
+  rmt_DestroyGlobalInstance(rmt);
+
   return 0;
 }
 
@@ -102,8 +116,10 @@ int batch(std::string filename) {
   slv.add_formula(*f);
 
   //int res = int{! slv.bsc()};
-  //int res = int{! slv.inc_bsc()};
+  rmt_LogText("start solving");
   bool res = slv.bsc_prune();
+  rmt_LogText("end");
+  //bool res = slv.bsc_prune();
   //int res = int{! slv.inc_bsc_prune()};
 
   if(res)
@@ -111,7 +127,7 @@ int batch(std::string filename) {
   else
     fmt::print("UNSAT");
 
-  slv.clear();
-  
+  rmt_DestroyGlobalInstance(rmt);
+
   return 0;
 }

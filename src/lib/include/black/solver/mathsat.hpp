@@ -24,15 +24,16 @@
 #ifndef BLACK_SOLVER_MATHSAT_HPP
 #define BLACK_SOLVER_MATHSAT_HPP
 
-#include <black/logic/formula.hpp>
 #include <mathsat.h>
 
 namespace black::details {
 
+  class formula;
+
   msat_env mathsat_init();
 
-  msat_term to_mathsat(msat_env, formula);
-  
+  msat_term to_mathsat(formula);
+
   void print_model(msat_env);
 
 }
