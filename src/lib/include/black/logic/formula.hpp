@@ -130,6 +130,8 @@ namespace black::details
     class alphabet *_alphabet; // the alphabet the formula comes from
     formula_base *_formula; // concrete object representing the formula
 
+    friend struct formula_base;
+
     template<typename, typename>
     friend struct handle_base;
 

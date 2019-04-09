@@ -28,6 +28,8 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#define RMT_ENABLED 0
+
 #include <Remotery.h>
 
 #include <fstream>
@@ -44,6 +46,7 @@ inline void report_error(std::string const&s) {
 
 int batch(std::string filename, int k);
 
+[[maybe_unused]]
 static Remotery *rmt;
 
 int main(int argc, char **argv)
@@ -91,7 +94,7 @@ int main(int argc, char **argv)
     fmt::print("Parsed formula (nnf): {}\n", to_nnf(*f));
 
     slv.add_formula(*f);
-    bool res = slv.bsc();
+    bool res = slv.bsc_prune();
     //bool res = slv.inc_bsc();
     //bool res = slv.inc_bsc_prune();
     //bool res = slv.inc_bsc_prune();
@@ -127,7 +130,7 @@ int batch(std::string filename, int k) {
   if(!f)
     return 1;
 
-  fmt::print("Parsed formula (nnf): {}\n", to_nnf(*f));
+  //fmt::print("Parsed formula (nnf): {}\n", to_nnf(*f));
 
   solver slv(sigma);
 
@@ -135,7 +138,7 @@ int batch(std::string filename, int k) {
 
   //int res = int{! slv.bsc()};
   rmt_LogText("start solving");
-  bool res = slv.bsc(k);
+  bool res = slv.bsc_prune(k);
   rmt_LogText("end");
   //bool res = slv.bsc_prune();
   //int res = int{! slv.inc_bsc_prune()};

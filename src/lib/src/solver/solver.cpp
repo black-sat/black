@@ -28,6 +28,8 @@
 
 #include <fmt/format.h>
 
+#define RMT_ENABLED 0
+
 #include <Remotery.h>
 
 namespace black::details {
@@ -164,52 +166,58 @@ namespace black::details {
   /*
    * BSC augmented with the PRUNE rule.
    */
-  bool solver::bsc_prune()
+  bool solver::bsc_prune(int k_max)
   {
-    int k=0;
     formula encoding = _alpha.top();
 
     msat_env env = _alpha.mathsat_env();
     msat_reset_env(env);
 
-    while(true){
-      rmt_ScopedCPUSample(main_loop, RMTSF_Aggregate);
-      rmt_LogText(fmt::format("k: {}\n", k).c_str());
+    for(int k = 0; k <= k_max; ++k){
+      rmt_ScopedCPUSample(main_loop, 0);
+      //fmt::print("k: {}\n", k);
 
       if(k)
         encoding = encoding && k_unraveling(k);
       else // first iteration
         encoding = k_unraveling(k);
+
+      //fmt::print("{}-unraveling: {}\n", k, to_string(encoding));
       // if 'encoding' is unsat, then stop with UNSAT.
       {
-        rmt_ScopedCPUSample(is_sat, RMTSF_Aggregate);
+        rmt_ScopedCPUSample(is_sat, 0);
         if(!is_sat(encoding))
           return false;
       }
       // else, continue to check EMPTY and LOOP.
       // Generating EMPTY and LOOP
-      formula looped = encoding && empty_and_loop(k);
+      formula empty = k_empty(k);
+      formula loop = k_loop(k);
+
+      //fmt::print("{}-empty: {}\n", k, to_string(empty));
+      //fmt::print("{}-loop: {}\n", k, to_string(loop));
 
       // if 'encoding' is sat, then stop with SAT.
       {
-        rmt_ScopedCPUSample(is_sat_with_loop, RMTSF_Aggregate);
-        if(is_sat(looped))
+        rmt_ScopedCPUSample(is_sat_with_loop, 0);
+        if(is_sat(encoding && (empty || loop)))
           return true;
       }
 
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & not PRUNE^k'
-      encoding = encoding && ( !prune(k) );
+      formula prune = this->prune(k);
+      //fmt::print("{}-prune: {}\n", k, to_string(prune));
 
+      encoding = encoding && !prune;
       {
-        rmt_ScopedCPUSample(is_sat_with_prune, RMTSF_Aggregate);
+        rmt_ScopedCPUSample(is_sat_with_prune, 0);
         if(!is_sat(encoding))
           return false;
       }
-
-      // else, increment k
-      k++;
     } // end while(true)
+
+    return false;
   }
 
 
@@ -262,24 +270,29 @@ namespace black::details {
     msat_reset_env(_alpha.mathsat_env());
 
     for(; k <= k_max; ++k){
+      rmt_ScopedCPUSample(main_loop, 0)
       // Generating the k-unraveling
       if(k)
         encoding = encoding && k_unraveling(k);
       else // first iteration
         encoding = k_unraveling(k);
 
+      rmt_BeginCPUSample(is_sat, 0);
       if(!is_sat(encoding))
         return false;
+      rmt_EndCPUSample();
 
       // Generating EMPTY and LOOP
       loop = k_loop(k);
       formula looped = encoding && (k_empty(k) || loop);
 
+      rmt_BeginCPUSample(is_sat_with_loop, 0);
       // if 'encoding' is sat, then stop with SAT.
       if(is_sat(looped))
         return true;
+      rmt_EndCPUSample();
 
-      fmt::print("k: {}\n", k);
+      //fmt::print("k: {}\n", k);
     }
 
     return false;
@@ -575,7 +588,7 @@ namespace black::details {
           },
           [](binary b) -> formula {
             return binary(dual(b.formula_type()),
-                          to_nnf(!b.left()), to_nnf(b.right()));
+                          to_nnf(!b.left()), to_nnf(!b.right()));
           }
         );
       },
@@ -605,13 +618,8 @@ namespace black::details {
 
       //msat_push_backtrack_point(env);
       msat_assert_formula(env, term);
-
       res = msat_solve(env);
-
-      //{
-        //rmt_ScopedCPUSample(msat_pop_btpoint, RMTSF_Aggregate);
-        msat_reset_env(env);
-      //}
+      msat_reset_env(env);
     }
 
     return (res == MSAT_SAT);

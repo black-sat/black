@@ -66,10 +66,10 @@ namespace black::details
 
   struct formula_base
   {
-    formula_base(formula_type t) : type{t} { }
+    formula_base(formula_type t);
 
-    const formula_type type{};
     msat_term encoding{};
+    const formula_type type{};
   };
 
   struct boolean_t : formula_base
@@ -96,14 +96,14 @@ namespace black::details
   {
     static constexpr auto accepts_type = is_unary_type;
 
-    unary_t(formula_type t, formula_base*f)
+    unary_t(formula_type t, formula_base *f)
       : formula_base{t}, operand{f}
     {
       black_assert(is_unary_type(t));
       black_assert(f != nullptr);
     }
 
-    formula_base*operand;
+    formula_base *operand;
   };
 
   struct binary_t : formula_base

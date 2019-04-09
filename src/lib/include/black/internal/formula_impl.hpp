@@ -32,6 +32,11 @@
 namespace black::details
 {
   /*
+   * Out-of-line definitions for class `formula_base`
+   */
+  inline formula_base::formula_base(formula_type t) : type{t} { }
+
+  /*
    * Out-of-line definitions for class `formula`
    */
   inline bool operator==(formula f1, formula f2) {

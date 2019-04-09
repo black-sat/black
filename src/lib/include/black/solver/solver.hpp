@@ -137,7 +137,7 @@ namespace black::details {
       bool inc_bsc_prune();
 
       // BSC augmented with the PRUNE rule
-      bool bsc_prune();
+      bool bsc_prune(int k_max = std::numeric_limits<int>::max());
 
       // Incremental version of BSC.
       bool inc_bsc();
