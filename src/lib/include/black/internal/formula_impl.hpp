@@ -90,7 +90,7 @@ namespace black::details
 
   template<>
   struct hash<black::details::formula> {
-    size_t operator()(black::details::formula const&f) {
+    size_t operator()(black::details::formula const&f) const {
       return f.hash();
     }
   };
@@ -320,8 +320,5 @@ namespace black::details
   inline auto YP(formula f) { return Y(P(f)); }
   inline auto YH(formula f) { return Y(H(f)); }
 }
-
-
-
 
 #endif // BLACK_LOGIC_FORMULA_IMPL_HPP_

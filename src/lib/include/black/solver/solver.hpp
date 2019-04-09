@@ -27,8 +27,10 @@
 #include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
 #include <black/solver/mathsat.hpp>
+
 #include <vector>
 #include <utility>
+#include <limits>
 
 namespace black::details {
 
@@ -141,7 +143,7 @@ namespace black::details {
       bool inc_bsc();
 
       // Naive (non terminating) algorithm for BSC
-      bool bsc();
+      bool bsc(int k_max = std::numeric_limits<int>::max());
 
   }; // end class Black Solver
 

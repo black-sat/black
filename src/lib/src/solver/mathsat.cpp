@@ -39,6 +39,25 @@ namespace black::details {
     return env;
   }
 
+  //
+  // TODO: generalize efficient match of nested conjunctions/disjunctions
+  //
+  static inline msat_term to_mathsat(conjunction c)
+  {
+    msat_env env = c.alphabet()->mathsat_env();
+    msat_term acc = msat_make_true(env);
+
+    formula next = c;
+    std::optional<conjunction> cnext{c};
+    do {
+      formula left = cnext->left();
+      next = cnext->right();
+      acc = msat_make_and(env, acc, left.to_sat());
+    } while((cnext = next.to<conjunction>()));
+
+    return msat_make_and(env, acc, next.to_sat());
+  }
+
   msat_term to_mathsat(formula f) {
     return f.match(
       [](boolean b) {
@@ -59,8 +78,7 @@ namespace black::details {
         return msat_make_not(env, n.operand().to_sat());
       },
       [](conjunction c) {
-        msat_env env = c.alphabet()->mathsat_env();
-        return msat_make_and(env, c.left().to_sat(), c.right().to_sat());
+        return to_mathsat(c);
       },
       [](disjunction d) {
         msat_env env = d.alphabet()->mathsat_env();

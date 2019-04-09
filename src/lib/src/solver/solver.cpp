@@ -118,27 +118,42 @@ namespace black::details {
     msat_reset_env(env);
 
     while(true){
+      rmt_ScopedCPUSample(main_loop, 0);
       // Generating the k-unraveling
       add_to_msat(k_unraveling(k));
       // if 'encoding' is unsat, then stop with UNSAT.
-      if(!is_sat())
-        return false;
-
+      {
+        rmt_ScopedCPUSample(is_sat, 0);
+        if(!is_sat())
+          return false;
+      }
       // else, continue to check EMPTY and LOOP.
       // Generating EMPTY and LOOP
-      msat_push_backtrack_point(env);
-      add_to_msat(empty_and_loop(k));
-      // if 'encoding' is sat, then stop with SAT.
-      if(is_sat())
-        return true;
+      {
+        rmt_ScopedCPUSample(is_sat_with_loop, 0);
+
+        msat_push_backtrack_point(env);
+        add_to_msat(empty_and_loop(k));
+        // if 'encoding' is sat, then stop with SAT.
+        if(is_sat())
+          return true;
+        {
+          rmt_ScopedCPUSample(pop_breakpoint, 0);
+          msat_pop_backtrack_point(env);
+        }
+      }
 
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & not PRUNE^k'
-      msat_pop_backtrack_point(env);
-      add_to_msat( !prune(k) );
-      if(!is_sat())
-        return false;
 
+      {
+        rmt_ScopedCPUSample(is_sat_with_prune, 0);
+        add_to_msat( !prune(k) );
+        if(!is_sat())
+          return false;
+      }
+
+      rmt_LogText(fmt::format("k: {}\n", k).c_str());
       // else, increment k
       k++;
     } // end while(true)
@@ -165,7 +180,6 @@ namespace black::details {
         encoding = encoding && k_unraveling(k);
       else // first iteration
         encoding = k_unraveling(k);
-      //fmt::print("{}-unraveling: {}\n", k, to_string(encoding));
       // if 'encoding' is unsat, then stop with UNSAT.
       {
         rmt_ScopedCPUSample(is_sat, RMTSF_Aggregate);
@@ -175,7 +189,7 @@ namespace black::details {
       // else, continue to check EMPTY and LOOP.
       // Generating EMPTY and LOOP
       formula looped = encoding && empty_and_loop(k);
-      //fmt::print("{}-looped: {}\n", k, to_string(looped));
+
       // if 'encoding' is sat, then stop with SAT.
       {
         rmt_ScopedCPUSample(is_sat_with_loop, RMTSF_Aggregate);
@@ -239,36 +253,36 @@ namespace black::details {
    * Naive (not terminating) algorithm for Bounded
    * Satisfiability Checking.
    */
-  bool solver::bsc()
+  bool solver::bsc(int k_max)
   {
-    int k=0;
     formula encoding = _alpha.top();
+    formula loop = _alpha.top();
+    int k = 0;
 
     msat_reset_env(_alpha.mathsat_env());
 
-    while(true){
+    for(; k <= k_max; ++k){
       // Generating the k-unraveling
       if(k)
         encoding = encoding && k_unraveling(k);
       else // first iteration
         encoding = k_unraveling(k);
 
-      //fmt::print("{}-unraveling: {}\n", k, to_string(encoding));
-
       if(!is_sat(encoding))
         return false;
 
       // Generating EMPTY and LOOP
-      formula looped = encoding && empty_and_loop(k);
-
-      //fmt::print("{}-unraveling + Loop: {}\n", k, to_string(looped));
+      loop = k_loop(k);
+      formula looped = encoding && (k_empty(k) || loop);
 
       // if 'encoding' is sat, then stop with SAT.
       if(is_sat(looped))
         return true;
 
-      k++;
+      fmt::print("k: {}\n", k);
     }
+
+    return false;
   }
 
 
@@ -387,17 +401,14 @@ namespace black::details {
   // Generates the k-unraveling for the given k.
   formula solver::k_unraveling(int k) {
     rmt_ScopedCPUSample(k_unraveling, RMTSF_Aggregate);
-    // Copy of the X-requests generated in phase k-1.
+    // Keep the X-requests generated in phase k-1.
     // Clear all the X-requests from the vector
     std::vector<tomorrow> current_xreq = std::move(_xrequests);
-    //std::vector<tomorrow> current_xreq;
-    //std::swap(current_xreq, _xrequests);
 
     if(k==0)
       return to_ground_xnf(_frm,k,true);
 
     formula big_and = _alpha.top();
-    //for(auto it = current_xreq.begin(); it != current_xreq.end(); it++){
     for(tomorrow xreq : current_xreq) {
       // X(_alpha)_P^{k-1}
       formula left_hand = _alpha.var(std::pair(formula{xreq},k-1));
@@ -592,15 +603,15 @@ namespace black::details {
     {
       rmt_ScopedCPUSample(msat_solve, RMTSF_Aggregate);
 
-      msat_push_backtrack_point(env);
+      //msat_push_backtrack_point(env);
       msat_assert_formula(env, term);
 
       res = msat_solve(env);
 
-      {
-        rmt_ScopedCPUSample(msat_pop_btpoint, RMTSF_Aggregate);
-        msat_pop_backtrack_point(env);
-      }
+      //{
+        //rmt_ScopedCPUSample(msat_pop_btpoint, RMTSF_Aggregate);
+        msat_reset_env(env);
+      //}
     }
 
     return (res == MSAT_SAT);

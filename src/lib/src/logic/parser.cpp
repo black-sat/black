@@ -26,6 +26,17 @@
 namespace black::details
 {
   namespace {
+
+    inline std::string parens_if_needed(formula parent, formula arg) {
+      bool parens = false;
+      if(arg.is<binary>()) {
+        parens = (!parent.is<conjunction>() && !parent.is<disjunction>())
+              || (parent.formula_type() != arg.formula_type());
+      }
+
+      return fmt::format(parens ? "({})" : "{}", to_string(arg));
+    }
+
     std::string to_string_impl(formula f, std::optional<int>)
     {
       using namespace std::literals;
@@ -44,18 +55,17 @@ namespace black::details
         },
         [](unary u) {
           auto arg = u.operand();
-          auto sarg = arg.is<binary>() ? fmt::format("({})", to_string(arg))
-                                       : fmt::format("{}", to_string(arg));
-          return fmt::format("{}{}", to_string(u.formula_type()), sarg);
+          return fmt::format("{}{}",
+                             to_string(u.formula_type()),
+                             parens_if_needed(u, arg));
         },
         [](binary b) {
           auto lhs = b.left(), rhs = b.right();
-          auto slhs = lhs.is<binary>() ? fmt::format("({})", to_string(lhs))
-                                       : fmt::format("{}", to_string(lhs));
-          auto srhs = rhs.is<binary>() ? fmt::format("({})", to_string(rhs))
-                                       : fmt::format("{}", to_string(rhs));
           return
-            fmt::format("{} {} {}", slhs, to_string(b.formula_type()), srhs);
+            fmt::format("{} {} {}",
+                        parens_if_needed(b, lhs),
+                        to_string(b.formula_type()),
+                        parens_if_needed(b, rhs));
         }
       );
     }

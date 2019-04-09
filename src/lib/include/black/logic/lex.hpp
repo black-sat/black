@@ -100,8 +100,8 @@ namespace black::details
 
   constexpr std::string_view to_string(binary::type const& t) {
     constexpr std::string_view toks[] = {
-      "&&",  // conjunction
-      "||",  // disjunction
+      "&",   // conjunction
+      "|",   // disjunction
       "->",  // then
       "<->", // iff
       "U",   // until

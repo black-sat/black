@@ -148,9 +148,6 @@ namespace black::details
     friend class formula;
     friend class alphabet;
 
-    handle_base(handle_base const&) = default;
-    handle_base(handle_base &&) = default;
-
     handle_base(alphabet *sigma, F *f) : _alphabet{sigma}, _formula{f}
     { black_assert(_formula); }
 

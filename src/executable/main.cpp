@@ -42,7 +42,7 @@ inline void report_error(std::string const&s) {
   std::cerr << fmt::format("Error parsing formula: {}\n", s);
 }
 
-int batch(std::string filename);
+int batch(std::string filename, int k);
 
 static Remotery *rmt;
 
@@ -56,7 +56,23 @@ int main(int argc, char **argv)
   }
 
   if(argc >= 3 && argv[1] == "-f"s)
-    return batch(argv[2]);
+  {
+    int k = std::numeric_limits<int>::max();
+    char *filename = argv[2];
+
+    if(argc >= 4) {
+      filename = argv[3];
+      try {
+        k = std::stoi(argv[2]);
+      }catch(...){
+        fmt::print("The specified depth is not a number: `{}`\n", argv[2]);
+        return -1;
+      }
+    }
+
+    return batch(filename, k);
+  }
+
 
   alphabet sigma;
   solver slv(sigma);
@@ -72,12 +88,12 @@ int main(int argc, char **argv)
     if(!f)
       continue;
 
-    fmt::print("Parsed formula: {}\n", *f);
+    fmt::print("Parsed formula (nnf): {}\n", to_nnf(*f));
 
     slv.add_formula(*f);
-    //bool res = slv.bsc();
+    bool res = slv.bsc();
     //bool res = slv.inc_bsc();
-    bool res = slv.bsc_prune();
+    //bool res = slv.inc_bsc_prune();
     //bool res = slv.inc_bsc_prune();
 
     if(res)
@@ -93,7 +109,7 @@ int main(int argc, char **argv)
   return 0;
 }
 
-int batch(std::string filename) {
+int batch(std::string filename, int k) {
   std::ifstream file(filename);
 
   if(!file.good()) {
@@ -111,13 +127,15 @@ int batch(std::string filename) {
   if(!f)
     return 1;
 
+  fmt::print("Parsed formula (nnf): {}\n", to_nnf(*f));
+
   solver slv(sigma);
 
   slv.add_formula(*f);
 
   //int res = int{! slv.bsc()};
   rmt_LogText("start solving");
-  bool res = slv.bsc_prune();
+  bool res = slv.bsc(k);
   rmt_LogText("end");
   //bool res = slv.bsc_prune();
   //int res = int{! slv.inc_bsc_prune()};
