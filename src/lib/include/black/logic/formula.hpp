@@ -293,6 +293,7 @@ namespace black {
   using details::unary;
   using details::binary;
   using details::formula;
+  using details::formula_id;
   using details::otherwise;
 }
 

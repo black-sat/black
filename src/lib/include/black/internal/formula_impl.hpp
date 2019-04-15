@@ -29,6 +29,8 @@
          "please include <black/logic/formula.hpp> instead"
 #endif
 
+#include <charconv>
+
 namespace black::details
 {
   /*
@@ -86,6 +88,20 @@ namespace black::details
 
   inline std::string to_string(formula_id id) {
     return std::to_string(static_cast<uintptr_t>(id));
+  }
+
+  inline std::optional<formula_id> id_from_string(std::string_view str)
+  {
+    try {
+      uintptr_t p = 0;
+      auto [last, err] =
+        std::from_chars(str.data(), str.data() + str.size(), p);
+
+      if(*last == '\0')
+        return {static_cast<formula_id>(p)};
+    }catch(...) {}
+
+    return {};
   }
 
   //

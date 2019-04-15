@@ -185,6 +185,12 @@ namespace black {
     }
   }
 
+  inline formula alphabet::from_id(formula_id id) {
+    using namespace details;
+    return
+    formula{this, reinterpret_cast<formula_base *>(static_cast<uintptr_t>(id))};
+  }
+
   inline msat_env alphabet::mathsat_env() const {
     return _impl->_msat_env;
   }

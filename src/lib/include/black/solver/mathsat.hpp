@@ -26,15 +26,19 @@
 
 #include <mathsat.h>
 
-namespace black::details {
+namespace black {
+  class alphabet;
+}
 
+namespace black::details
+{
   class formula;
 
   msat_env mathsat_init();
 
   msat_term to_mathsat(formula);
 
-  void print_model(msat_env);
+  void print_mathsat_model(alphabet &);
 
 }
 

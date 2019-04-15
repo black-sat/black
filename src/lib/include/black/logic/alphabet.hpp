@@ -68,6 +68,9 @@ namespace black {
     template<typename T, REQUIRES(details::is_hashable<T>)>
     atom var(T&& label);
 
+    // Function to obtain a formula given its unique id
+    formula from_id(formula_id);
+
     // Returns the MathSAT environment object used by formula->to_sat()
     msat_env mathsat_env() const;
 

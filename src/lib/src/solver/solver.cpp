@@ -182,7 +182,7 @@ namespace black::details {
       else // first iteration
         encoding = k_unraveling(k);
 
-      fmt::print("{}-unraveling: {}\n", k, to_string(encoding));
+      fmt::print("Testing {}-unraveling: {}\n", k, to_string(encoding));
       // if 'encoding' is unsat, then stop with UNSAT.
       {
         rmt_ScopedCPUSample(is_sat, 0);
@@ -196,18 +196,16 @@ namespace black::details {
 
       // if 'encoding' is sat, then stop with SAT.
       {
+        fmt::print("Testing {0}-unraveling + {0}-empty: {1}\n", k,
+                   to_string(empty));
         rmt_ScopedCPUSample(is_sat_with_loop, 0);
-        if(is_sat(encoding && empty)) {
-          fmt::print("{}-empty: {}\n", k, to_string(empty));
-          fmt::print("SAT per empty\n");
+        if(is_sat(encoding && empty))
           return true;
-        }
 
-        if(is_sat(encoding && loop)) {
-          fmt::print("{}-loop: {}\n", k, to_string(loop));
-          fmt::print("SAT per loop\n");
+        fmt::print("Testing {0}-unraveling + {0}-loop: {1}\n", k,
+                   to_string(empty));
+        if(is_sat(encoding && loop))
           return true;
-        }
       }
 
       // else, generate the PRUNE
@@ -625,6 +623,8 @@ namespace black::details {
       //msat_push_backtrack_point(env);
       msat_assert_formula(env, term);
       res = msat_solve(env);
+      if(res == MSAT_SAT)
+        print_mathsat_model(_alpha);
       msat_reset_env(env);
     }
 
