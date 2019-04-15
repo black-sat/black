@@ -175,14 +175,14 @@ namespace black::details {
 
     for(int k = 0; k <= k_max; ++k){
       rmt_ScopedCPUSample(main_loop, 0);
-      //fmt::print("k: {}\n", k);
+      fmt::print("k: {}\n", k);
 
       if(k)
         encoding = encoding && k_unraveling(k);
       else // first iteration
         encoding = k_unraveling(k);
 
-      //fmt::print("{}-unraveling: {}\n", k, to_string(encoding));
+      fmt::print("{}-unraveling: {}\n", k, to_string(encoding));
       // if 'encoding' is unsat, then stop with UNSAT.
       {
         rmt_ScopedCPUSample(is_sat, 0);
@@ -194,14 +194,20 @@ namespace black::details {
       formula empty = k_empty(k);
       formula loop = k_loop(k);
 
-      //fmt::print("{}-empty: {}\n", k, to_string(empty));
-      //fmt::print("{}-loop: {}\n", k, to_string(loop));
-
       // if 'encoding' is sat, then stop with SAT.
       {
         rmt_ScopedCPUSample(is_sat_with_loop, 0);
-        if(is_sat(encoding && (empty || loop)))
+        if(is_sat(encoding && empty)) {
+          fmt::print("{}-empty: {}\n", k, to_string(empty));
+          fmt::print("SAT per empty\n");
           return true;
+        }
+
+        if(is_sat(encoding && loop)) {
+          fmt::print("{}-loop: {}\n", k, to_string(loop));
+          fmt::print("SAT per loop\n");
+          return true;
+        }
       }
 
       // else, generate the PRUNE
@@ -393,6 +399,7 @@ namespace black::details {
         period_lk = period_lk && then(atom_phi_k, body_impl);
       }
     }
+    fmt::print("{}-to-{}-period: {}\n", l, k, to_string(period_lk));
     return period_lk;
   }
 
@@ -509,10 +516,9 @@ namespace black::details {
         if(update)
           _xrequests.push_back(X(r));
         return formula{
-          (to_ground_xnf(r.left(),k,update) &&
-           to_ground_xnf(r.right(),k,update))
-            ||
-          (to_ground_xnf(r.right(),k,update) &&
+          (to_ground_xnf(r.right(),k,update))
+            &&
+          (to_ground_xnf(r.left(),k,update) ||
            _alpha.var(std::pair<formula,int>(formula{X(r)},k)))
         };
       },
