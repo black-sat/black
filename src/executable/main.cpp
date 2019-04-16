@@ -130,7 +130,7 @@ int batch(std::string filename, int k) {
   if(!f)
     return 1;
 
-  //fmt::print("Parsed formula (nnf): {}\n", to_nnf(*f));
+  //fmt::print("Parsed formula (nnf):\n   {}\n", to_nnf(*f));
 
   solver slv(sigma);
 

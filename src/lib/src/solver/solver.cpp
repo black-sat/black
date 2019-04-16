@@ -182,7 +182,7 @@ namespace black::details {
       else // first iteration
         encoding = k_unraveling(k);
 
-      fmt::print("Testing {}-unraveling: {}\n", k, to_string(encoding));
+      //fmt::print("Testing {}-unraveling:\n   {}\n", k, to_string(encoding));
       // if 'encoding' is unsat, then stop with UNSAT.
       {
         rmt_ScopedCPUSample(is_sat, 0);
@@ -196,14 +196,14 @@ namespace black::details {
 
       // if 'encoding' is sat, then stop with SAT.
       {
-        fmt::print("Testing {0}-unraveling + {0}-empty: {1}\n", k,
-                   to_string(empty));
+        // fmt::print("Testing {0}-unraveling + {0}-empty:\n   {1}\n", k,
+        //            to_string(empty));
         rmt_ScopedCPUSample(is_sat_with_loop, 0);
         if(is_sat(encoding && empty))
           return true;
 
-        fmt::print("Testing {0}-unraveling + {0}-loop: {1}\n", k,
-                   to_string(empty));
+        // fmt::print("Testing {0}-unraveling + {0}-loop:\n   {1}\n", k,
+        //            to_string(loop));
         if(is_sat(encoding && loop))
           return true;
       }
@@ -211,11 +211,10 @@ namespace black::details {
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & not PRUNE^k'
       formula prune = this->prune(k);
-      //fmt::print("{}-prune: {}\n", k, to_string(prune));
-
       encoding = encoding && !prune;
       {
         rmt_ScopedCPUSample(is_sat_with_prune, 0);
+        //fmt::print("Testing {0}-unraveling + {0}-prune:\n   {1}\n", k, to_string(prune));
         if(!is_sat(encoding))
           return false;
       }
@@ -397,7 +396,7 @@ namespace black::details {
         period_lk = period_lk && then(atom_phi_k, body_impl);
       }
     }
-    fmt::print("{}-to-{}-period: {}\n", l, k, to_string(period_lk));
+    //fmt::print("{}-to-{}-period: {}\n", l, k, to_string(period_lk));
     return period_lk;
   }
 
@@ -421,13 +420,13 @@ namespace black::details {
     rmt_ScopedCPUSample(k_unraveling, RMTSF_Aggregate);
     // Keep the X-requests generated in phase k-1.
     // Clear all the X-requests from the vector
-    std::vector<tomorrow> current_xreq = std::move(_xrequests);
+    _xrequests.clear();
 
     if(k==0)
       return to_ground_xnf(_frm,k,true);
 
     formula big_and = _alpha.top();
-    for(tomorrow xreq : current_xreq) {
+    for(tomorrow xreq : _xclosure) {
       // X(_alpha)_P^{k-1}
       formula left_hand = _alpha.var(std::pair(formula{xreq},k-1));
       // xnf(\_alpha)_P^{k}
@@ -606,6 +605,28 @@ namespace black::details {
     );
   }
 
+  void solver::add_xclosure(formula f)
+  {
+    f.match(
+      [&](tomorrow t)   { _xclosure.push_back(t); },
+      [&](until u)      { _xclosure.push_back(X(u)); },
+      [&](release r)    { _xclosure.push_back(X(r)); },
+      [&](always a)     { _xclosure.push_back(X(a)); },
+      [&](eventually e) { _xclosure.push_back(X(e)); },
+      [](otherwise)     { }
+    );
+
+    f.match(
+      [&](unary u) {
+        add_xclosure(u.operand());
+      },
+      [&](binary b) {
+        add_xclosure(b.left());
+        add_xclosure(b.right());
+      },
+      [](otherwise) { }
+    );
+  }
 
   // Asks MathSAT for the satisfiability of current formula
   bool solver::is_sat(formula encoding)
@@ -623,8 +644,8 @@ namespace black::details {
       //msat_push_backtrack_point(env);
       msat_assert_formula(env, term);
       res = msat_solve(env);
-      if(res == MSAT_SAT)
-        print_mathsat_model(_alpha);
+      // if(res == MSAT_SAT)
+      //   print_mathsat_model(_alpha);
       msat_reset_env(env);
     }
 

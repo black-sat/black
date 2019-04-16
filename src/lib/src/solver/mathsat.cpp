@@ -30,6 +30,8 @@
 
 #include <fmt/format.h>
 
+#include <string>
+
 namespace black::details {
 
   msat_env mathsat_init() {
@@ -106,6 +108,7 @@ namespace black::details {
 
   void print_mathsat_model(alphabet &sigma)
   {
+    using namespace std::literals;
     /* we use a model iterator to retrieve the model values for all the
      * variables, and the necessary function instantiations */
     msat_env env = sigma.mathsat_env();
@@ -123,11 +126,11 @@ namespace black::details {
 
       formula f = sigma.from_id(*id);
 
-      fmt::print("{} = ", to_string(f));
       msat_free(s);
       s = msat_term_repr(v);
-      assert(s);
-      printf("%s\n", s);
+      if(s == "`true`"s) {
+        fmt::print("   {}\n", to_string(f));
+      }
       msat_free(s);
     }
     msat_destroy_model_iterator(iter);

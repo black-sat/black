@@ -31,6 +31,7 @@
 #include <vector>
 #include <utility>
 #include <limits>
+#include <unordered_set>
 
 namespace black::details {
 
@@ -51,6 +52,10 @@ namespace black::details {
 
       // Vector of all the X-requests of step k
       std::vector<tomorrow> _xrequests;
+
+      // X-requests from the closure of the formula
+      // TODO: specialize to std::unordered_set<tomorrow>
+      std::vector<tomorrow> _xclosure;
 
       // Extract the x-eventuality from an x-request
       std::optional<formula> get_xev(tomorrow xreq);
@@ -81,6 +86,9 @@ namespace black::details {
 
       // Generates the Next Normal Form of f
       formula to_ground_xnf(formula f, int k, bool update);
+
+      // X-requests from the formula's closure
+      void add_xclosure(formula f);
 
       // Calls the SAT-solver to check if the boolean formula is sat
       bool is_sat(formula f);
@@ -117,6 +125,7 @@ namespace black::details {
       // Conjoins the argument formula to the current one
       void add_formula(formula f) {
         f = to_nnf(f);
+        add_xclosure(f);
         if( _frm == _alpha.top() )
           _frm = f;
         else
@@ -125,6 +134,8 @@ namespace black::details {
 
       void clear() {
         _frm = _alpha.top();
+        _xrequests.clear();
+        _xclosure.clear();
       }
 
       // Incremental version of 'solve'

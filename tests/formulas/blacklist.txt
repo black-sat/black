@@ -1,8 +1,27 @@
 
 Timeouts:
-- rozier/formulas/n1/P0.7/L70/P0.7N1L70_1.pltl;UNSAT
 - rozier/formulas/n5/P0.7/L60/P0.7N5L60_1.pltl;UNSAT
 - rozier/formulas/n2/P0.5/L90/P0.5N2L90_3.pltl;UNSAT
+- rozier/counter/counterCarry/counterCarry2.pltl;SAT
+- rozier/counter/counterCarry/counterCarry3.pltl;SAT
+- rozier/counter/counterCarry/counterCarry4.pltl;SAT
+- rozier/counter/counterCarry/counterCarry5.pltl;SAT
+- rozier/counter/counterCarry/counterCarry6.pltl;SAT
+- rozier/counter/counterCarry/counterCarry7.pltl;SAT
+- rozier/counter/counterCarry/counterCarry8.pltl;SAT
+- rozier/counter/counterCarry/counterCarry9.pltl;SAT
+- rozier/counter/counterLinear/counterLinear2.pltl;SAT
+- rozier/counter/counterLinear/counterLinear3.pltl;SAT
+- rozier/counter/counterLinear/counterLinear4.pltl;SAT
+- rozier/counter/counterLinear/counterLinear5.pltl;SAT
+- rozier/counter/counterCarryLinear/counterCarryLinear2.pltl;SAT
+- rozier/counter/counterCarryLinear/counterCarryLinear3.pltl;SAT
+- rozier/counter/counterCarryLinear/counterCarryLinear4.pltl;SAT
+- rozier/counter/counterCarryLinear/counterCarryLinear5.pltl;SAT
+- rozier/counter/counterCarryLinear/counterCarryLinear6.pltl;SAT
+- rozier/counter/counterCarryLinear/counterCarryLinear7.pltl;SAT
+- rozier/counter/counterCarryLinear/counterCarryLinear8.pltl;SAT
+- rozier/counter/counterCarryLinear/counterCarryLinear9.pltl;SAT
 
 Wrong answers:
 - forobots/forobotsr1f0_TRUE.pltl
