@@ -18,6 +18,7 @@
 #include "black/logic/lex.hpp"
 
 #include <map>
+#include <algorithm>
 #include <iostream>
 
 namespace black::details

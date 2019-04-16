@@ -57,6 +57,10 @@ namespace black::details {
 
 #include <black/internal/formula_base.hpp>
 
+namespace black {
+  class alphabet;
+}
+
 namespace black::details
 {
   class formula
@@ -82,13 +86,13 @@ namespace black::details
     formula &operator=(formula &&) = default;
 
     // Enumeration of possible types of formulas, as declared above
-    using type = formula_type;
+    using type = black::details::formula_type;
 
     // Gets to the type of the represented formula
     type formula_type() const;
 
     // Gets the alphabet that manages this formula
-    class alphabet *alphabet() const;
+    black::alphabet *alphabet() const;
 
     //
     // The to() function converts a formula into a specific kind of
@@ -127,7 +131,7 @@ namespace black::details
     formula_id unique_id() const;
 
   private:
-    class alphabet *_alphabet; // the alphabet the formula comes from
+    black::alphabet *_alphabet; // the alphabet the formula comes from
     formula_base *_formula; // concrete object representing the formula
 
     friend struct formula_base;
@@ -137,7 +141,7 @@ namespace black::details
 
   // Public constructor, but for internal use
   public:
-    explicit formula(class alphabet *sigma, formula_base *f)
+    explicit formula(black::alphabet *sigma, formula_base *f)
       : _alphabet{sigma}, _formula{f} { black_assert(f != nullptr); }
   };
 

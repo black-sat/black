@@ -30,7 +30,7 @@
 #endif
 
 #include <black/support/common.hpp>
-#include <black/solver/mathsat.hpp>
+#include <black/sat/mathsat.hpp>
 
 #include <type_traits>
 #include <array>
@@ -146,28 +146,28 @@ namespace black::details
   struct handle_base
   {
     friend class formula;
-    friend class alphabet;
+    friend class black::alphabet;
 
-    handle_base(alphabet *sigma, F *f) : _alphabet{sigma}, _formula{f}
+    handle_base(black::alphabet *sigma, F *f) : _alphabet{sigma}, _formula{f}
     { black_assert(_formula); }
 
     // This constructor takes a tuple instead of two arguments in order to
     // directly receive the return value of allocate_formula() below
-    handle_base(std::pair<alphabet *, F *> args)
+    handle_base(std::pair<black::alphabet *, F *> args)
       : handle_base{args.first, args.second} { }
 
     operator otherwise() const { return {}; }
 
     operator formula() const;
 
-    class alphabet *alphabet() const;
+    black::alphabet *alphabet() const;
 
     formula_id unique_id() const;
 
   protected:
     using handled_formula_t = F;
 
-    static optional<H> cast(class alphabet *sigma, formula_base *f) {
+    static optional<H> cast(black::alphabet *sigma, formula_base *f) {
       if(auto ptr = formula_cast<typename H::handled_formula_t *>(f); ptr)
         return optional<H>{H{sigma, ptr}};
       return nullopt;
@@ -175,14 +175,14 @@ namespace black::details
 
     // Implemented after alphabet class
     template<typename FType, typename Arg>
-    static std::pair<class alphabet *, unary_t *>
+    static std::pair<black::alphabet *, unary_t *>
     allocate_unary(FType type, Arg const&arg);
 
     template<typename FType, typename Arg1, typename Arg2>
-    static std::pair<class alphabet *, binary_t *>
+    static std::pair<black::alphabet *, binary_t *>
     allocate_binary(FType type, Arg1 const&arg1, Arg2 const&arg2);
 
-    class alphabet *_alphabet;
+    black::alphabet *_alphabet;
     F *_formula;
   };
 

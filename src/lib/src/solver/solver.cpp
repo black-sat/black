@@ -24,7 +24,7 @@
 
 #include <black/logic/parser.hpp>
 #include <black/solver/solver.hpp>
-#include <black/solver/mathsat.hpp>
+#include <black/sat/mathsat.hpp>
 
 #include <fmt/format.h>
 
@@ -538,11 +538,12 @@ namespace black::details {
         return unary::type::eventually;
       case unary::type::eventually:
         return unary::type::always;
-      case unary::type::historically:
-        return unary::type::past;
       case unary::type::past:
         return unary::type::historically;
+      case unary::type::historically:
+        return unary::type::past;
     }
+    black_unreachable();
   }
 
   static constexpr binary::type dual(binary::type t)
@@ -564,6 +565,7 @@ namespace black::details {
       case binary::type::then:
         black_unreachable(); // these two operators do not have simple duals
     }
+    black_unreachable();
   }
 
   // Transformation in NNF

@@ -15,7 +15,8 @@ find_library(
 
 add_library(asan SHARED IMPORTED GLOBAL)
 set_property(TARGET asan PROPERTY IMPORTED_LOCATION ${ASAN_LIBRARY})
-target_compile_options(asan INTERFACE "-fsanitize=address")
+
+set_property(TARGET asan APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "-fsanitize=address")
 
 
 find_library(
@@ -25,12 +26,11 @@ find_library(
 
 add_library(ubsan SHARED IMPORTED GLOBAL)
 set_property(TARGET ubsan PROPERTY IMPORTED_LOCATION ${UBSAN_LIBRARY})
-target_compile_options(ubsan INTERFACE "-fsanitize=undefined")
+set_property(TARGET ubsan APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "-fsanitize=undefine")
 
 
 add_library(sanitizer INTERFACE)
 target_link_libraries(sanitizer INTERFACE asan)
-#target_link_libraries(sanitizer INTERFACE ubsan)
 
 #
 # black library
@@ -39,18 +39,20 @@ set (
    LIB_SRC
    src/logic/lex.cpp
    src/logic/parser.cpp
+   src/sat/mathsat.cpp
    src/solver/solver.cpp
-   src/solver/mathsat.cpp
  )
 
 set (
  LIB_HEADERS
+ include/black/support/common.hpp
  include/black/logic/alphabet.hpp
  include/black/logic/formula.hpp
  include/black/logic/lex.hpp
  include/black/logic/parser.hpp
+ include/black/sat/glucose.hpp
+ include/black/sat/mathsat.hpp
  include/black/solver/solver.hpp
- include/black/support/common.hpp
 )
 
 # Here adding the headers is redundant, but makes them appear in

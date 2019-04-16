@@ -12,18 +12,15 @@ set(
 )
 
 add_library (glucose STATIC ${GLUCOSE_SRC})
-target_include_directories(glucose PUBLIC glucose/)
+target_include_directories(glucose SYSTEM PUBLIC glucose/)
 
 set(
   GLUCOSE_CLANG_WARNINGS
-  -Wno-logical-op-parentheses
   -Wno-dangling-else
 )
 
 target_compile_options(
   glucose PRIVATE
-  # "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNINGS}>"
-  # "$<$<CXX_COMPILER_ID:GNU>:${GNU_WARNINGS}>"
   "$<$<CXX_COMPILER_ID:Clang>:${GLUCOSE_CLANG_WARNINGS}>"
 )
 
@@ -34,32 +31,33 @@ target_compile_options(
 ## MathSAT depends on GMP, let's find it first
 ## TODO: give CMake option to set custom gmp path
 find_path(GMP_INCLUDES NAMES gmp.h)
+find_path(GMPXX_INCLUDES NAMES gmpxx.h)
 find_library(GMP_LIBRARY NAMES gmp)
 find_library(GMPXX_LIBRARY NAMES gmpxx)
 
 add_library(gmp SHARED IMPORTED)
 set_property(TARGET gmp PROPERTY IMPORTED_LOCATION ${GMP_LIBRARY})
-target_include_directories(gmp INTERFACE ${GMP_INCLUDES})
 
 add_library(gmpxx SHARED IMPORTED)
 set_property(TARGET gmpxx PROPERTY IMPORTED_LOCATION ${GMPXX_LIBRARY})
-target_include_directories(gmpxx INTERFACE ${GMP_INCLUDES})
 
 ## MathSAT imported library
+set(MATHSAT_DIR ${CMAKE_SOURCE_DIR}/external/sat/mathsat5)
 add_library(mathsat5 STATIC IMPORTED)
 set_property(
   TARGET mathsat5
   PROPERTY IMPORTED_LOCATION
-    ${CMAKE_SOURCE_DIR}/external/sat/mathsat5/lib/libmathsat.a
+    ${MATHSAT_DIR}/lib/libmathsat.a
 )
-
-target_link_libraries(mathsat5 INTERFACE gmpxx gmp)
-target_include_directories(mathsat5 INTERFACE mathsat5/include/)
 
 ##
 ## Interface target to link all available solvers
+## We set options and directories here instead of the single subtargets because
+## of a bug in CMake 3.10 (for Ubuntu 18.04)
 ##
 ## TODO: Add CMake flags to choose which solvers to link
 ##
 add_library(solvers INTERFACE)
-target_link_libraries(solvers INTERFACE glucose mathsat5)
+target_link_libraries(solvers INTERFACE glucose mathsat5 gmpxx gmp)
+target_include_directories(solvers SYSTEM
+  INTERFACE ${MATHSAT_DIR}/include ${GMP_INCLUDES} ${GMPXX_INCLUDES})

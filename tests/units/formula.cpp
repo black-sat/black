@@ -128,11 +128,11 @@ TEST_CASE("Handles")
   {
     auto match = [&](formula f) {
       return f.match(
-        [](negation)    { return "negation";    },
-        [](unary)       { return "unary";       },
-        [](conjunction) { return "conjunction"; },
-        [](binary)      { return "binary";      },
-        [](otherwise)   { return "<unknown>";   }
+        [](negation)    { return "negation"s;    },
+        [](unary)       { return "unary"s;       },
+        [](conjunction) { return "conjunction"s; },
+        [](binary)      { return "binary"s;      },
+        [](otherwise)   { return "<unknown>"s;   }
       );
     };
 
@@ -141,9 +141,9 @@ TEST_CASE("Handles")
     REQUIRE(t.is<tomorrow>());
     REQUIRE(!t.is<negation>());
 
-    REQUIRE(match(!p)          == "negation");
-    REQUIRE(match(tomorrow(p)) == "unary");
-    REQUIRE(match(p && q)      == "conjunction");
-    REQUIRE(match(p || q)      == "binary");
+    REQUIRE(match(!p)          == "negation"s);
+    REQUIRE(match(tomorrow(p)) == "unary"s);
+    REQUIRE(match(p && q)      == "conjunction"s);
+    REQUIRE(match(p || q)      == "binary"s);
   }
 }
