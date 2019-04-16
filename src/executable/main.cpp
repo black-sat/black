@@ -94,7 +94,7 @@ int main(int argc, char **argv)
     fmt::print("Parsed formula (nnf): {}\n", to_nnf(*f));
 
     slv.add_formula(*f);
-    bool res = slv.bsc_prune();
+    bool res = slv.inc_bsc_prune();
     //bool res = slv.inc_bsc();
     //bool res = slv.inc_bsc_prune();
     //bool res = slv.inc_bsc_prune();
@@ -138,7 +138,7 @@ int batch(std::string filename, int k) {
 
   //int res = int{! slv.bsc()};
   rmt_LogText("start solving");
-  bool res = slv.bsc_prune(k);
+  bool res = slv.inc_bsc_prune(k);
   rmt_LogText("end");
   //bool res = slv.bsc_prune();
   //int res = int{! slv.inc_bsc_prune()};

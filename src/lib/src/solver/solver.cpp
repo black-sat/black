@@ -112,14 +112,14 @@ namespace black::details {
   /*
    * Incremental version of 'bsc_prune'
    */
-  bool solver::inc_bsc_prune()
+  bool solver::inc_bsc_prune(int k_max)
   {
-    int k=0;
-
     msat_env env = _alpha.mathsat_env();
     msat_reset_env(env);
 
-    while(true){
+    for(int k=0; k <= k_max; ++k)
+    {
+      //fmt::print("k: {}\n", k);
       rmt_ScopedCPUSample(main_loop, 0);
       // Generating the k-unraveling
       add_to_msat(k_unraveling(k));
@@ -156,9 +156,9 @@ namespace black::details {
       }
 
       rmt_LogText(fmt::format("k: {}\n", k).c_str());
-      // else, increment k
-      k++;
     } // end while(true)
+
+    return false;
   }
 
 
