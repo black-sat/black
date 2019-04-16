@@ -23,7 +23,7 @@
 // SOFTWARE.
 
 
-#include <black/solver/mathsat.hpp>
+#include <black/sat/mathsat.hpp>
 #include <black/logic/alphabet.hpp>
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>

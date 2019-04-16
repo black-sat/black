@@ -38,7 +38,7 @@ set(
 
 set(
   GNU_WARNINGS -Wall -Wextra -pedantic -Werror
-  -Wno-pragmas -Wno-unknown-pragmas
+  -Wno-pragmas -Wno-unknown-pragmas -Wno-unused-but-set-parameter
 )
 
 set(MSVC_WARNINGS /wd4068 /wd4702 /W4 /WX)

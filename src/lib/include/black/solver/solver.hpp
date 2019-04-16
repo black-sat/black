@@ -26,7 +26,7 @@
 
 #include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
-#include <black/solver/mathsat.hpp>
+#include <black/sat/mathsat.hpp>
 
 #include <vector>
 #include <utility>

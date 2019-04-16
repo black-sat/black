@@ -39,18 +39,20 @@ set (
    LIB_SRC
    src/logic/lex.cpp
    src/logic/parser.cpp
+   src/sat/mathsat.cpp
    src/solver/solver.cpp
-   src/solver/mathsat.cpp
  )
 
 set (
  LIB_HEADERS
+ include/black/support/common.hpp
  include/black/logic/alphabet.hpp
  include/black/logic/formula.hpp
  include/black/logic/lex.hpp
  include/black/logic/parser.hpp
+ include/black/sat/glucose.hpp
+ include/black/sat/mathsat.hpp
  include/black/solver/solver.hpp
- include/black/support/common.hpp
 )
 
 # Here adding the headers is redundant, but makes them appear in

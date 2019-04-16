@@ -12,18 +12,15 @@ set(
 )
 
 add_library (glucose STATIC ${GLUCOSE_SRC})
-target_include_directories(glucose PUBLIC glucose/)
+target_include_directories(glucose SYSTEM PUBLIC glucose/)
 
 set(
   GLUCOSE_CLANG_WARNINGS
-  -Wno-logical-op-parentheses
   -Wno-dangling-else
 )
 
 target_compile_options(
   glucose PRIVATE
-  # "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNINGS}>"
-  # "$<$<CXX_COMPILER_ID:GNU>:${GNU_WARNINGS}>"
   "$<$<CXX_COMPILER_ID:Clang>:${GLUCOSE_CLANG_WARNINGS}>"
 )
 
@@ -39,11 +36,11 @@ find_library(GMPXX_LIBRARY NAMES gmpxx)
 
 add_library(gmp SHARED IMPORTED)
 set_property(TARGET gmp PROPERTY IMPORTED_LOCATION ${GMP_LIBRARY})
-target_include_directories(gmp INTERFACE ${GMP_INCLUDES})
+target_include_directories(gmp SYSTEM INTERFACE ${GMP_INCLUDES})
 
 add_library(gmpxx SHARED IMPORTED)
 set_property(TARGET gmpxx PROPERTY IMPORTED_LOCATION ${GMPXX_LIBRARY})
-target_include_directories(gmpxx INTERFACE ${GMP_INCLUDES})
+target_include_directories(gmpxx SYSTEM INTERFACE ${GMP_INCLUDES})
 
 ## MathSAT imported library
 add_library(mathsat5 STATIC IMPORTED)
@@ -54,7 +51,7 @@ set_property(
 )
 
 target_link_libraries(mathsat5 INTERFACE gmpxx gmp)
-target_include_directories(mathsat5 INTERFACE mathsat5/include/)
+target_include_directories(mathsat5 SYSTEM INTERFACE mathsat5/include/)
 
 ##
 ## Interface target to link all available solvers

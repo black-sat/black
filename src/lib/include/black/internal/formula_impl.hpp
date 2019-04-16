@@ -186,7 +186,7 @@ namespace black::details
   struct operator_base : handle_base<H, F>
   {
     friend class formula;
-    friend class alphabet;
+    friend class black::alphabet;
 
     using base_t = handle_base<H, F>;
     using base_t::base_t;

@@ -26,7 +26,7 @@
 
 #include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
-#include <black/solver/mathsat.hpp>
+#include <black/sat/mathsat.hpp>
 
 #include <deque>
 #include <unordered_map>
@@ -115,14 +115,14 @@ namespace black::details {
   // to have a complete alphabet_impl type
   template<typename H, typename F>
   template<typename FType, typename Arg>
-  std::pair<alphabet *, unary_t *>
+  std::pair<black::alphabet *, unary_t *>
   handle_base<H, F>::allocate_unary(FType type, Arg const&arg)
   {
     // The type is templated only because of circularity problems
     static_assert(std::is_same_v<FType, unary::type>);
 
     // Get the alphabet from the argument
-    class alphabet *sigma = arg._alphabet;
+    black::alphabet *sigma = arg._alphabet;
 
     // Ask the alphabet to actually allocate the formula
     unary_t *object =
@@ -133,7 +133,7 @@ namespace black::details {
 
   template<typename H, typename F>
   template<typename FType, typename Arg1, typename Arg2>
-  std::pair<alphabet *, binary_t *>
+  std::pair<black::alphabet *, binary_t *>
   handle_base<H, F>::allocate_binary(FType type,
                                      Arg1 const&arg1, Arg2 const&arg2)
   {
@@ -144,7 +144,7 @@ namespace black::details {
     black_assert(arg1._alphabet == arg2._alphabet);
 
     // Get the alphabet from the first argument (same as the second, by now)
-    class alphabet *sigma = arg1._alphabet;
+    black::alphabet *sigma = arg1._alphabet;
 
     // Ask the alphabet to actually allocate the formula
     binary_t *object = sigma->_impl->template allocate_formula<binary_t>(

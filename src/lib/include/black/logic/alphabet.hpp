@@ -26,7 +26,7 @@
 
 #include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
-#include <black/solver/mathsat.hpp>
+#include <black/sat/mathsat.hpp>
 
 #include <string>
 #include <unordered_map>
