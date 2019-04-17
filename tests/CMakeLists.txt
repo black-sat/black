@@ -61,12 +61,23 @@ foreach(TEST IN LISTS TESTS)
   list(GET TEST 1 RESULT)
 
   add_test(
-    NAME ${FILE}:${RESULT}
+    NAME "${FILE}:${RESULT}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/formulas"
     COMMAND
       /bin/bash -c
-      "test $($<TARGET_FILE:executable> -f '${FILE}') = '${RESULT}'"
+      "$<TARGET_FILE:executable> -f '${FILE}' | grep '^${RESULT}'"
   )
+
+  add_test(
+    NAME "xmv:${FILE}:${RESULT}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/formulas"
+    COMMAND
+      /bin/bash -c
+      "./run-xmv.sh '${FILE}' | grep '^${RESULT}'"
+  )
+
+  #set_tests_properties("xmv:${FILE}:${RESULT}" PROPERTIES DISABLED ON)
+
 endforeach()
 
 add_custom_target(sat_tests COMMAND ${CMAKE_CTEST_COMMAND} -R :SAT)

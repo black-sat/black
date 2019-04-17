@@ -100,9 +100,9 @@ int main(int argc, char **argv)
     //bool res = slv.inc_bsc_prune();
 
     if(res)
-      fmt::print("Hoooraay!\n");
+      fmt::print("The formula is SAT!\n");
     else
-      fmt::print("Boooooh!\n");
+      fmt::print("The formula is UNSAT!\n");
 
     slv.clear();
   }
@@ -144,9 +144,9 @@ int batch(std::string_view argv0, std::string filename, int k) {
   //int res = int{! slv.inc_bsc_prune()};
 
   if(res)
-    fmt::print("SAT");
+    fmt::print("SAT\n");
   else
-    fmt::print("UNSAT");
+    fmt::print("UNSAT\n");
 
   rmt_DestroyGlobalInstance(rmt);
 
