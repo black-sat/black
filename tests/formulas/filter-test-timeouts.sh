@@ -1,26 +1,18 @@
 #!/bin/bash
 
 #
-# This script processes a CSV file obtained by StarExec 'job information' 
-# command and extract all and only the benchmarks that complete in at most 3 
+# This script processes a CSV file obtained by StarExec 'job information'
+# command and extract all and only the benchmarks that complete in at most 3
 # seconds.
 #
 # The output file format is suitable to be parsed by CMakeLists.txt when
-# configuring CTest, i.e. each line is a test file followed by "SAT" or 
+# configuring CTest, i.e. each line is a test file followed by "SAT" or
 # "UNSAT", separated by a semicolon
 #
 
-
-die() {
-  echo \
-This script must be executed from the root directory of leviathan\'s source \
-tree. 1>&2
-  exit 1
-}
-
 # Wrapper for the timeout command
 mytimeout()
-{  
+{
   # The command has a different name when installed by Homebrew
   command=timeout
   [ "$(uname)" = "Darwin" ] && command=gtimeout
@@ -32,22 +24,24 @@ mytimeout()
   [ $? -ne 124 -a $? -ne 137 ] && return 0 || return 1
 }
 
-# Check that we run from the topmost source dir
-[ -d .git ] || die
+# Run from the topmost source dir
+cd $(git rev-parse --show-toplevel)
 
-while IFS=", " read -r -a LINE; do
+summaryfile=tests/formulas/starexec/NuSMV-30min.csv
+
+cat $summaryfile | grep BMC | while IFS=", " read -r -a LINE; do
   # Parse the line
-  filename=${LINE[0]}
-  result=${LINE[8]}
+  filename=$(echo ${LINE[0]} | sed 's/ATVA11pltl-orig\///g')
+  result=$(echo ${LINE[8]} | sed 's/UNS/UNSAT/')
 
   # Discard CSV header
-  [ $filename != "benchmark" ] || continue
+  [ "$filename" != "benchmark" ] || continue
 
   # Discard entries with unknown result
-  [ $result != "UNK" ] || continue
+  [ "$result" != "UNK" -a "$result" != "--" ] || continue
 
   # Launch checker
-  if mytimeout ./bin/checker --verbosity 0 "$filename"; then
-    echo "$filename;$result" | sed 's/UNS/UNSAT/'
+  if mytimeout ./build/black -f "./tests/formulas/$filename" > /dev/null; then
+    echo "$filename;$result"
   fi
-done 
+done

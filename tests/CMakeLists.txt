@@ -22,24 +22,52 @@
 # SOFTWARE.
 
 #
-# Main black executable
+# Unit testing with Catch2
 #
+add_library(catch INTERFACE)
+target_include_directories(catch INTERFACE ${CMAKE_SOURCE_DIR}/external/catch/single_include/catch2)
+
 set(
-  EXECUTABLE_SRC
-  main.cpp
+  UNIT_TESTS
+  units/main.cpp
+  units/common.cpp
+  units/formula.cpp
+  units/parser.cpp
 )
 
-add_executable(executable main.cpp)
+add_executable(unit_tests ${UNIT_TESTS})
+target_link_libraries(unit_tests black catch)
 
-target_compile_features(executable PRIVATE cxx_std_17)
-target_link_libraries(executable black debug_assert fmt solvers)
 target_compile_options(
-  executable PRIVATE
-  "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNINGS}>"
+  unit_tests PUBLIC
   "$<$<CXX_COMPILER_ID:GNU>:${GNU_WARNINGS}>"
   "$<$<CXX_COMPILER_ID:Clang>:${CLANG_WARNINGS}>"
 )
 
+add_test(NAME unit_tests COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
 
-set_property(TARGET executable PROPERTY OUTPUT_NAME black)
-set_property(TARGET executable PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+message("-- Configuring tests")
+
+file(STRINGS formulas/tests.index TESTS)
+
+list(LENGTH TESTS TESTSLENGTH)
+message("-- Found ${TESTSLENGTH} test formulas")
+
+#
+# Formulas test set
+#
+foreach(TEST IN LISTS TESTS)
+  list(GET TEST 0 FILE)
+  list(GET TEST 1 RESULT)
+
+  add_test(
+    NAME ${FILE}:${RESULT}
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/formulas"
+    COMMAND
+      /bin/bash -c
+      "test $($<TARGET_FILE:executable> -f '${FILE}') = '${RESULT}'"
+  )
+endforeach()
+
+add_custom_target(sat_tests COMMAND ${CMAKE_CTEST_COMMAND} -R :SAT)
+add_custom_target(unsat_tests COMMAND ${CMAKE_CTEST_COMMAND} -R :UNSAT)

@@ -44,7 +44,7 @@ inline void report_error(std::string const&s) {
   std::cerr << fmt::format("Error parsing formula: {}\n", s);
 }
 
-int batch(std::string filename, int k);
+int batch(std::string_view argv0, std::string filename, int k);
 
 [[maybe_unused]]
 static Remotery *rmt;
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
       }
     }
 
-    return batch(filename, k);
+    return batch(argv[0], filename, k);
   }
 
 
@@ -112,11 +112,11 @@ int main(int argc, char **argv)
   return 0;
 }
 
-int batch(std::string filename, int k) {
+int batch(std::string_view argv0, std::string filename, int k) {
   std::ifstream file(filename);
 
   if(!file.good()) {
-    std::cerr << fmt::format("Unable to open file: {}\n", filename);
+    std::cerr << fmt::format("{}: Unable to open file: {}\n", argv0, filename);
     return 1;
   }
 

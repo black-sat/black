@@ -23,12 +23,6 @@ Timeouts:
 - rozier/counter/counterCarryLinear/counterCarryLinear8.pltl;SAT
 - rozier/counter/counterCarryLinear/counterCarryLinear9.pltl;SAT
 
-Wrong answers:
+Parsing problems
 - forobots/forobotsr1f0_TRUE.pltl
-- rozier/formulas/n1/P0.3/L50/P0.333333333333333N1L50_6.pltl
-- rozier/formulas/n1/P0.5/L100/P0.5N1L100_9.pltl
-- rozier/formulas/n1/P0.5/L20/P0.5N1L20_1.pltl
-
-
-Current time:
- 35,87s user 35,76s system 87% cpu 1:22,00 total
+- anzu/genbuf/genbuf_cl/spec_cl_1.pltl and family
