@@ -2454,13 +2454,13 @@ alaska/lift/lift_b/lift_b_9.pltl;SAT
 alaska/lift/lift_b_l/lift_b_l_2.pltl;UNSAT
 alaska/lift/lift_b_f_l/lift_b_f_l_2.pltl;SAT
 alaska/lift/lift_b_f_l/lift_b_f_l_3.pltl;SAT
-alaska/lift/lift_b_f_l/lift_b_f_l_4.pltl;SAT
-alaska/lift/lift_b_f_l/lift_b_f_l_5.pltl;SAT
+alaska/lift/lift_b_f_l/lift_b_f_l_4.pltl;UNSAT
+alaska/lift/lift_b_f_l/lift_b_f_l_5.pltl;UNSAT
 alaska/lift/lift_b_f_l/lift_b_f_l_6.pltl;UNSAT
 alaska/lift/lift_f_l/lift_f_l_2.pltl;SAT
 alaska/lift/lift_f_l/lift_f_l_3.pltl;SAT
-alaska/lift/lift_f_l/lift_f_l_4.pltl;SAT
-alaska/lift/lift_f_l/lift_f_l_5.pltl;SAT
+alaska/lift/lift_f_l/lift_f_l_4.pltl;UNSAT
+alaska/lift/lift_f_l/lift_f_l_5.pltl;UNSAT
 alaska/lift/lift_f_l/lift_f_l_6.pltl;UNSAT
 alaska/lift/lift_f/lift_f_10.pltl;SAT
 alaska/lift/lift_f/lift_f_11.pltl;SAT
