@@ -1,15 +1,3 @@
-Wrong answers (w.r.t. nuXmv):
-- alaska/lift/lift_b_f_l/lift_b_f_l_4.pltl:UNSAT
-- alaska/lift/lift_b_f_l/lift_b_f_l_5.pltl:UNSAT
-- alaska/lift/lift_b_f_l/lift_b_f_l_6.pltl:UNSAT
-- alaska/lift/lift_f_l/lift_f_l_4.pltl:UNSAT
-- alaska/lift/lift_f_l/lift_f_l_5.pltl:UNSAT
-- alaska/lift/lift_f_l/lift_f_l_6.pltl:UNSAT
-- rozier/counter/counterCarry/counterCarry3.pltl:UNSAT
-- rozier/counter/counter/counter3.pltl:UNSAT
-- rozier/counter/counterLinear/counterLinear3.pltl:UNSAT
-- rozier/counter/counterCarryLinear/counterCarryLinear3.pltl:UNSAT
-
 Parsing problems:
 - anzu/amba/amba_c/spec_c_10.pltl:SAT
 - anzu/amba/amba_c/spec_c_11.pltl:SAT
