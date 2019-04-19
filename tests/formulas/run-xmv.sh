@@ -32,7 +32,6 @@ END
     sed 's/(\(.*\))/   \1 : boolean;/'
 
   formula=$(cat $1 | sed 's/=>/->/g;s/~/!/g;s/True/TRUE/g;s/False/FALSE/g')
-  formula=$(echo $formula | sed 's/X/X /g;s/F/F /g;s/G/G /g')
 
   echo "LTLSPEC !($formula)"
 }

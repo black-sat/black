@@ -76,6 +76,8 @@ foreach(TEST IN LISTS TESTS)
       "./run-xmv.sh '${FILE}' | grep '^${RESULT}'"
   )
 
+  set_tests_properties("xmv:${FILE}:${RESULT}" PROPERTIES TIMEOUT 300)
+
   #set_tests_properties("xmv:${FILE}:${RESULT}" PROPERTIES DISABLED ON)
 
 endforeach()
