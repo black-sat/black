@@ -142,12 +142,12 @@ namespace black::details
 
   private:
     std::optional<token> _lex();
-    std::optional<token> _keyword(std::istream &stream);
+    std::optional<token> _identifier();
 
     std::optional<token> _token = std::nullopt;
     std::istream &_stream;
 
-    std::vector<std::string> _lexed_keywords;
+    std::vector<std::string> _lexed_identifiers;
   };
 
   std::ostream &operator<<(std::ostream &s, token const &t);

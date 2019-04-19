@@ -96,13 +96,14 @@ namespace black::details
           return std::nullopt;
       }
 
+      // TODO: garantire che se restituiamo nullopt, lo stream non è avanzato
       return std::nullopt;
     }
   }  // namespace
 
-  std::optional<token> lexer::_keyword(std::istream &stream)
+  std::optional<token> lexer::_identifier()
   {
-    static constexpr std::pair<std::string_view, token> keywords[] = {
+    static constexpr std::pair<std::string_view, token> operators[] = {
       {"NOT",  token{unary::type::negation}},
       {"X",    token{unary::type::tomorrow}},
       {"Y",    token{unary::type::yesterday}},
@@ -121,39 +122,26 @@ namespace black::details
       {"T",    token{binary::type::triggered}}
     };
 
-    static constexpr auto find = [](std::string_view s) {
-      return
-        std::find_if(std::begin(keywords), std::end(keywords), [=](auto p) {
-          return p.first == s;
-        });
-    };
-
-    std::string kw;
-
-    if (!stream.good())
+    if (!_stream.good() || !isalpha(_stream.peek()))
       return std::nullopt;
 
-    if (isalpha(stream.peek())) {
-      kw += char(stream.peek());
-      stream.get();
-
-      if(auto it = find(kw); it != std::end(keywords))
-        return token{it->second};
-    } else
-      return std::nullopt;
-
-    while (stream.good() && isalnum(stream.peek())) {
-      kw += char(stream.peek());
-      stream.get();
-
-      if(auto it = find(kw); it != std::end(keywords))
-        return token{it->second};
+    std::string id;
+    while (_stream.good() && isalnum(_stream.peek())) {
+      id += char(_stream.peek());
+      _stream.get();
     }
-    if (!stream.good() && !stream.eof())
-      return std::nullopt;
+    black_assert(!id.empty());
 
-    _lexed_keywords.push_back(std::move(kw));
-    return token{std::string_view{_lexed_keywords.back()}};
+    auto it =
+      std::find_if(std::begin(operators), std::end(operators), [&](auto p) {
+        return p.first == id;
+      });
+
+    if(it != std::end(operators))
+      return {it->second};
+
+    _lexed_identifiers.push_back(std::move(id));
+    return token{std::string_view{_lexed_identifiers.back()}};
   }
 
   std::optional<token> lexer::_lex()
@@ -168,7 +156,7 @@ namespace black::details
     if(std::optional<token> t = symbol(_stream); t)
       return t;
 
-    return _keyword(_stream);
+    return _identifier();
   }
 
 }  // namespace black::details

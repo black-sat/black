@@ -29,7 +29,7 @@ cd $(git rev-parse --show-toplevel)
 
 summaryfile=tests/formulas/starexec/NuSMV-30min.csv
 
-cat $summaryfile | grep BMC | while IFS=", " read -r -a LINE; do
+cat $summaryfile | grep BDD | while IFS=", " read -r -a LINE; do
   # Parse the line
   filename=$(echo ${LINE[0]} | sed 's/ATVA11pltl-orig\///g')
   result=$(echo ${LINE[8]} | sed 's/UNS/UNSAT/')
