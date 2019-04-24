@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <black/support/common.hpp>
 
@@ -37,7 +37,7 @@
 
 // Consistency of enums
 namespace static_checks {
-  
+
 }
 
 //

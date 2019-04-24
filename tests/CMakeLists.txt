@@ -24,9 +24,6 @@
 #
 # Unit testing with Catch2
 #
-add_library(catch INTERFACE)
-target_include_directories(catch INTERFACE ${CMAKE_SOURCE_DIR}/external/catch/single_include/catch2)
-
 set(
   UNIT_TESTS
   units/main.cpp
@@ -36,7 +33,7 @@ set(
 )
 
 add_executable(unit_tests ${UNIT_TESTS})
-target_link_libraries(unit_tests black catch)
+target_link_libraries(unit_tests black Catch2::Catch2)
 
 target_compile_options(
   unit_tests PUBLIC
@@ -46,12 +43,12 @@ target_compile_options(
 
 add_test(NAME unit_tests COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
 
-message("-- Configuring tests")
+message(STATUS "Configuring tests")
 
 file(STRINGS formulas/tests.index TESTS)
 
 list(LENGTH TESTS TESTSLENGTH)
-message("-- Found ${TESTSLENGTH} test formulas")
+message(STATUS "Found ${TESTSLENGTH} test formulas")
 
 #
 # Formulas test set
@@ -65,7 +62,7 @@ foreach(TEST IN LISTS TESTS)
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/formulas"
     COMMAND
       /bin/bash -c
-      "$<TARGET_FILE:executable> -f '${FILE}' | grep '^${RESULT}'"
+      "$<TARGET_FILE:frontend> -f '${FILE}' | grep '^${RESULT}'"
   )
 
   add_test(

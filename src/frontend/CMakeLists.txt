@@ -29,17 +29,21 @@ set(
   main.cpp
 )
 
-add_executable(executable main.cpp)
+add_executable(frontend main.cpp)
 
-target_compile_features(executable PRIVATE cxx_std_17)
-target_link_libraries(executable black debug_assert fmt solvers)
+target_compile_features(frontend PRIVATE cxx_std_17)
+target_link_libraries(frontend PRIVATE black debug_assert fmt solvers)
 target_compile_options(
-  executable PRIVATE
+  frontend PRIVATE
   "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNINGS}>"
   "$<$<CXX_COMPILER_ID:GNU>:${GNU_WARNINGS}>"
   "$<$<CXX_COMPILER_ID:Clang>:${CLANG_WARNINGS}>"
 )
 
+if(STATIC_BUILD)
+  target_link_libraries(frontend PRIVATE "-static -pthread")
+endif()
 
-set_property(TARGET executable PROPERTY OUTPUT_NAME black)
-set_property(TARGET executable PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+set_property(TARGET frontend PROPERTY OUTPUT_NAME black)
+set_property(TARGET frontend PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

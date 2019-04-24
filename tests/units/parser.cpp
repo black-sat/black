@@ -26,9 +26,7 @@
 #include <black/logic/alphabet.hpp>
 #include <black/logic/parser.hpp>
 
-// asdas
-
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 using namespace black;
 

@@ -132,6 +132,8 @@ int batch(std::string_view argv0, std::string filename, int k) {
 
   //fmt::print("Parsed formula (nnf):\n   {}\n", to_nnf(*f));
 
+  black_assert(false);
+
   solver slv(sigma);
 
   slv.add_formula(*f);

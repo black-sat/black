@@ -25,15 +25,38 @@ cmake_minimum_required(VERSION 3.10)
 
 project(black LANGUAGES C CXX)
 
+set(CMAKE_CXX_STANDARD 17)
+
 # User options
 option(ENABLE_TESTS "Enable test suite" ON)
+option(STATIC_BUILD "Perform a static build" OFF)
+
+if("${CMAKE_BUILD_TYPE}" STREQUAL "")
+  message(STATUS "Build type not defined. Defaulting to Release")
+  set(CMAKE_BUILD_TYPE "Release")
+else()
+  message(STATUS "Build type: '${CMAKE_BUILD_TYPE}'")
+endif()
+
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDEBUG_ASSERT_DISABLE")
+
+if(STATIC_BUILD)
+  set(CMAKE_LINK_FLAGS_DEBUG "${CMAKE_LINK_FLAGS} -static")
+  set(CMAKE_LINK_FLAGS_RELEASE "${CMAKE_LINK_FLAGS} -static")
+  set(BUILD_SHARED_LIBS OFF)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+  message(STATUS "Static build enabled")
+endif()
 
 #
 # External dependencies
 #
 add_subdirectory(external/debug_assert)
-add_subdirectory(external/fmt)
 add_subdirectory(external/remotery)
+
+option(FMT_PEDANTIC "" ON)
+option(FMT_WERROR "" ON)
+add_subdirectory(external/fmt)
 
 #
 # SAT solvers
@@ -69,14 +92,15 @@ set(
 
 set(MSVC_WARNINGS /wd4068 /wd4702 /W4 /WX)
 
-# Black library and executble
+# Black library and frontend
 add_subdirectory(src/lib)
-add_subdirectory(src/executable)
+add_subdirectory(src/frontend)
 
 # Tests
 if (ENABLE_TESTS)
   enable_testing()
 
+  add_subdirectory(external/catch)
   add_subdirectory(tests)
 
 endif()

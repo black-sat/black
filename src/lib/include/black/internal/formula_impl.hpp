@@ -101,7 +101,7 @@ namespace black::details
         return {static_cast<formula_id>(p)};
     }catch(...) {}
 
-    return {};
+    return std::nullopt;
   }
 
   //

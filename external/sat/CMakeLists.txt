@@ -79,6 +79,7 @@ set_property(
 ## TODO: Add CMake flags to choose which solvers to link
 ##
 add_library(solvers INTERFACE)
-target_link_libraries(solvers INTERFACE glucose mathsat5 gmpxx gmp)
+target_link_libraries(solvers INTERFACE mathsat5 gmpxx gmp)
+#target_link_libraries(solvers INTERFACE glucose)
 target_include_directories(solvers SYSTEM
   INTERFACE ${MATHSAT_DIR}/include ${GMP_INCLUDES} ${GMPXX_INCLUDES})
