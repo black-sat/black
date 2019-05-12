@@ -50,6 +50,10 @@ file(STRINGS formulas/tests.index TESTS)
 list(LENGTH TESTS TESTSLENGTH)
 message(STATUS "Found ${TESTSLENGTH} test formulas")
 
+option(
+  ENABLE_TOOLS_TESTS "Enable tests of other tools in the benchmark suite" OFF
+)
+
 #
 # Formulas test set
 #
@@ -65,17 +69,19 @@ foreach(TEST IN LISTS TESTS)
       "$<TARGET_FILE:frontend> -f '${FILE}' | grep '^${RESULT}'"
   )
 
-  foreach(SOLVER IN ITEMS nuXmv/klive nuXmv/sbmc aalta/v2)
-    set(TEST_NAME "${SOLVER}:${FILE}:${RESULT}")
-    add_test(
-      NAME "${TEST_NAME}"
-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks"
-      COMMAND
-        /bin/bash -c
-        "./run.sh run ${SOLVER} '${FILE}' | grep '^${RESULT}'"
-    )
+  if(ENABLE_TOOLS_TESTS)
+    foreach(SOLVER IN ITEMS nuXmv/klive nuXmv/sbmc aalta/v2)
+      set(TEST_NAME "${SOLVER}:${FILE}:${RESULT}")
+      add_test(
+        NAME "${TEST_NAME}"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks"
+        COMMAND
+          /bin/bash -c
+          "./run.sh run ${SOLVER} '${FILE}' | grep '^${RESULT}'"
+      )
 
-    set_tests_properties("${TEST_NAME}" PROPERTIES TIMEOUT 3)
-  endforeach()
+      set_tests_properties("${TEST_NAME}" PROPERTIES TIMEOUT 3)
+    endforeach()
+  endif()
 
 endforeach()
