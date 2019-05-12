@@ -59,20 +59,23 @@ foreach(TEST IN LISTS TESTS)
 
   add_test(
     NAME "black:${FILE}:${RESULT}"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/formulas"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
     COMMAND
       /bin/bash -c
       "$<TARGET_FILE:frontend> -f '${FILE}' | grep '^${RESULT}'"
   )
 
-  add_test(
-    NAME "xmv:${FILE}:${RESULT}"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/formulas"
-    COMMAND
-      /bin/bash -c
-      "./run-xmv.sh '${FILE}' | grep '^${RESULT}'"
-  )
+  foreach(SOLVER IN ITEMS nuXmv/klive nuXmv/sbmc aalta/v2)
+    set(TEST_NAME "${SOLVER}:${FILE}:${RESULT}")
+    add_test(
+      NAME "${TEST_NAME}"
+      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks"
+      COMMAND
+        /bin/bash -c
+        "./run.sh run ${SOLVER} '${FILE}' | grep '^${RESULT}'"
+    )
 
-  set_tests_properties("xmv:${FILE}:${RESULT}" PROPERTIES TIMEOUT 300)
+    set_tests_properties("${TEST_NAME}" PROPERTIES TIMEOUT 3)
+  endforeach()
 
 endforeach()

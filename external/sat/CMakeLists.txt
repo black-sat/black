@@ -63,12 +63,35 @@ add_library(gmpxx SHARED IMPORTED)
 set_property(TARGET gmpxx PROPERTY IMPORTED_LOCATION ${GMPXX_LIBRARY})
 
 ## MathSAT imported library
-set(MATHSAT_DIR ${CMAKE_SOURCE_DIR}/external/sat/mathsat5)
+execute_process(
+  COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE CURRENT_ARCH
+)
+
+set(MATHSAT_ARCH_NAME "mathsat5-${CMAKE_SYSTEM_NAME}-${CURRENT_ARCH}")
+
+find_path(
+  MATHSAT_INCLUDES
+  NAMES mathsat.h
+  PATHS "${CMAKE_SOURCE_DIR}/external/sat/mathsat5/"
+        "${CMAKE_SOURCE_DIR}/external/sat/${MATHSAT_ARCH_NAME}/"
+  PATH_SUFFIXES "/include/"
+)
+
+find_library(
+  MATHSAT_LIBRARY
+  NAMES libmathsat.a mathsat
+  PATHS "${CMAKE_SOURCE_DIR}/external/sat/mathsat5/"
+        "${CMAKE_SOURCE_DIR}/external/sat/${MATHSAT_ARCH_NAME}/"
+  PATH_SUFFIXES "/lib/"
+)
+
+message(STATUS "Mathsat found: ${MATHSAT_INCLUDES};${MATHSAT_LIBRARY}")
+
 add_library(mathsat5 STATIC IMPORTED)
+
 set_property(
   TARGET mathsat5
-  PROPERTY IMPORTED_LOCATION
-    ${MATHSAT_DIR}/lib/libmathsat.a
+  PROPERTY IMPORTED_LOCATION "${MATHSAT_LIBRARY}"
 )
 
 ##
@@ -82,4 +105,4 @@ add_library(solvers INTERFACE)
 target_link_libraries(solvers INTERFACE mathsat5 gmpxx gmp)
 #target_link_libraries(solvers INTERFACE glucose)
 target_include_directories(solvers SYSTEM
-  INTERFACE ${MATHSAT_DIR}/include ${GMP_INCLUDES} ${GMPXX_INCLUDES})
+INTERFACE ${MATHSAT_INCLUDES} ${GMP_INCLUDES} ${GMPXX_INCLUDES})

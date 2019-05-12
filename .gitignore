@@ -206,6 +206,19 @@ tags
 
 ## External dependencies that we cannot redistribute
 external/sat/mathsat5
-gcc-build
+external/sat/mathsat5-*
 
+# Solvers binary dirs
+benchmarks/solvers
+benchmarks/solvers-*
+
+benchmarks/bench.status
+
+cnf.dimacs
+
+# Build directories
+build
+*-build
+
+# VSCode settings
 .vscode

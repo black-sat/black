@@ -47,3 +47,5 @@ endif()
 
 set_property(TARGET frontend PROPERTY OUTPUT_NAME black)
 set_property(TARGET frontend PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+install(TARGETS frontend RUNTIME DESTINATION bin)
