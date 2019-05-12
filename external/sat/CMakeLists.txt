@@ -56,11 +56,24 @@ find_path(GMPXX_INCLUDES NAMES gmpxx.h)
 find_library(GMP_LIBRARY NAMES gmp)
 find_library(GMPXX_LIBRARY NAMES gmpxx)
 
+if(NOT GMP_INCLUDES OR NOT GMP_LIBRARY)
+  message(FATAL_ERROR "GNU GMP library not found")
+endif()
+
+if(NOT GMPXX_INCLUDES OR NOT GMPXX_LIBRARY)
+  message(FATAL_ERROR "GNU GMP++ library not found")
+endif()
+
 add_library(gmp SHARED IMPORTED)
 set_property(TARGET gmp PROPERTY IMPORTED_LOCATION ${GMP_LIBRARY})
 
 add_library(gmpxx SHARED IMPORTED)
 set_property(TARGET gmpxx PROPERTY IMPORTED_LOCATION ${GMPXX_LIBRARY})
+
+##
+## MathSAT also depends on ZLib, let's find it
+##
+find_package(ZLIB REQUIRED)
 
 ## MathSAT imported library
 execute_process(
@@ -85,7 +98,11 @@ find_library(
   PATH_SUFFIXES "/lib/"
 )
 
-message(STATUS "Mathsat found: ${MATHSAT_INCLUDES};${MATHSAT_LIBRARY}")
+if(NOT MATHSAT_INCLUDES OR NOT MATHSAT_LIBRARY)
+  message(FATAL_ERROR "MathSAT not found")
+endif()
+
+message(STATUS "Found MathSAT: ${MATHSAT_INCLUDES};${MATHSAT_LIBRARY}")
 
 add_library(mathsat5 STATIC IMPORTED)
 
@@ -102,7 +119,7 @@ set_property(
 ## TODO: Add CMake flags to choose which solvers to link
 ##
 add_library(solvers INTERFACE)
-target_link_libraries(solvers INTERFACE mathsat5 gmpxx gmp)
+target_link_libraries(solvers INTERFACE mathsat5 gmpxx gmp ZLIB::ZLIB)
 #target_link_libraries(solvers INTERFACE glucose)
 target_include_directories(solvers SYSTEM
 INTERFACE ${MATHSAT_INCLUDES} ${GMP_INCLUDES} ${GMPXX_INCLUDES})
