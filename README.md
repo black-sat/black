@@ -52,7 +52,7 @@ $ brew install cmake gmp
    $ wget -q -O - http://mathsat.fbk.eu/download.php?file=mathsat-5.5.4-linux-x86_64.tar.gz | tar xvz
    $ mv mathsat-5* external/sat/mathsat5
    ```
-1. Create a `build` directory inside the source directory  
+1. Create a `build` directory and `cd` into it:
    ```
    $ mkdir build && cd build
    ```
@@ -70,9 +70,13 @@ $ brew install cmake gmp
    $ make
    ```
 4. Run the tests if you want to make sure everything worked properly  
-   `$ make test`
+   ```
+   $ make test
+   ```
 5. Install  
-   `$ make install`
+   ```
+   $ make install
+   ```
 
 [Reynolds]: https://arxiv.org/abs/1609.04102
 [CMake]: https://cmake.org
