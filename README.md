@@ -36,8 +36,12 @@ website (very easy single-command installation), then install the required
 dependencies as follows:
 
 ```
+$ xcode-select --install # make sure you have Apple Command Line Developer Tools
 $ brew install cmake gmp
 ```
+
+If the first command shows a dialog window, make sure to click on *Install*,
+not on *Get Xcode*
 
 ### Compilation
 1. Clone the repository. Clone it recursively, to get all the submodules, and
@@ -46,11 +50,9 @@ $ brew install cmake gmp
    $ git clone --recursive git@github.com:lucageatti/BLACK.git
    $ cd BLACK
    ```
-2. Download and unpack the MathSAT 5 distribution into
-   `external/sat/mathsat5`:   
+2. Download and unpack the MathSAT 5 distribution:
    ```
-   $ wget -q -O - http://mathsat.fbk.eu/download.php?file=mathsat-5.5.4-linux-x86_64.tar.gz | tar xvz
-   $ mv mathsat-5* external/sat/mathsat5
+   $ ./download-mathsat5.sh
    ```
 1. Create a `build` directory and `cd` into it:
    ```
@@ -61,7 +63,7 @@ $ brew install cmake gmp
       ```
       $ CC=gcc-8 CXX=g++-8 cmake ..
       ```
-   * On macOS Mojave, the right compiler is automatically found:  
+   * On macOS Mojave, the default choice is fine:  
       ```
       $ cmake ...
       ```
