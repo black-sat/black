@@ -11,9 +11,7 @@ BLACK has been tested on Linux (specifically Ubuntu Bionic 18.04) and macOS
 Mojave, but it should work on any Linux or macOS system satisfying the following
 requirements:
 1. A C++17 compliant compiler, *e.g.* GCC >= 8.2 and clang >= 7
-    (Xcode >= 10 on macOS)
-   * **WARNING**: GCC 7 claims C++17 compatibility but lacks proper support for
-   some required standard library component. Please use GCC 8.2 or later
+    (Xcode >= 10.2 available on macOS Mojave)
 2. [CMake][CMake] 3.10 or upper (see below)
 3. [MathSAT][MathSAT] 5.5 or later (see below)
    * GNU GMP library (see below)
@@ -23,7 +21,19 @@ Precompiled packages for macOS and major Linux distributions are being prepared.
 In the meantime, the following setup instructions are given for Ubuntu 18.04 and
 newer, and for macOS Mojave, and may need to be adapted for different versions.
 
-### Dependencies
+#### WARNING
+Please beware of this compatibility caveat before reporting a build failure.
+
+GCC 7, shipped by default on Ubuntu 18.04, and the Apple Clang
+shipped with Xcode 10.1 (up to Mac OS X High Sierra) claim C++17
+compatibility but lack proper support for some required standard library
+component.
+
+Hence, please use GCC >=8.2, mainstream Clang >= 7, or Xcode >=10.2
+(macOS Mojave). For Ubuntu 18.04 or later and macOS Mojave, follow the
+following instructions, or adapt them to your system/distribution.
+
+### Installing dependencies
 
 On Ubuntu 18.04, install the required packages with `apt` as follows:
 
