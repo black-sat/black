@@ -7,11 +7,11 @@ whole algorithm is being submitted and will be linked here as soon as possible.
 
 ## Installation
 
-BLACK has been tested on Linux (specifically Ubuntu Bionic 18.04) and macOS
-Mojave, but it should work on any Linux or macOS system satisfying the following
-requirements:
-1. A C++17 compliant compiler, *e.g.* GCC >= 8.2 and clang >= 7
-    (Xcode >= 10.2 available on macOS Mojave)
+BLACK has been tested on Linux (Ubuntu 18.04 and Fedora ≥ 29) and
+macOS Mojave, but it should work on any Linux or macOS system satisfying the
+following requirements:
+1. A C++17 compliant compiler, *e.g.* GCC ≥ 8.2 and clang ≥ 7
+    (Xcode ≥ 10.2 available on macOS Mojave)
 2. [CMake][CMake] 3.10 or upper (see below)
 3. [MathSAT][MathSAT] 5.5 or later (see below)
    * GNU GMP library (see below)
@@ -29,7 +29,7 @@ shipped with Xcode 10.1 (up to Mac OS X High Sierra) claim C++17
 compatibility but lack proper support for some required standard library
 component.
 
-Hence, please use GCC >=8.2, mainstream Clang >= 7, or Xcode >=10.2
+Hence, please use GCC ≥ 8.2, mainstream Clang ≥ 7, or Xcode ≥ 10.2
 (macOS Mojave). For Ubuntu 18.04 or later and macOS Mojave, follow the
 following instructions, or adapt them to your system/distribution.
 
@@ -39,6 +39,12 @@ On Ubuntu 18.04, install the required packages with `apt` as follows:
 
 ```
 $ sudo apt install build-essential gcc-8 g++-8 cmake libgmp-dev libz-dev
+```
+
+On Fedora ≥ 29:
+
+```
+$ sudo yum install gcc gcc-c++ make cmake gmp-devel zlib-devel
 ```
 
 On macOS Mojave, install the [Homebrew] package manager as explained on their
