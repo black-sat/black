@@ -1,5 +1,7 @@
 # BLACK
 
+[![Build Status](https://api.cirrus-ci.com/github/black-sat/BLACK.svg)](https://cirrus-ci.com/github/black-sat/BLACK)
+
 BLACK (short for Bounded Ltl sAtisfiability ChecKer) is a tool for testing the
 satisfiability of LTL formulas based on the SAT encoding of the tableau method
 described [here][Reynolds]. An in depth description of the encoding and the
