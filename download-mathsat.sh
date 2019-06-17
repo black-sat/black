@@ -13,13 +13,8 @@ detect_downloader() {
     download() {
       wget -q -O - "$1"
     }
-  elif command -v curl >/dev/null 2>&1; then
-    DOWNLOADER=curl
-    download() {
-      curl "$1"
-    }
   else
-    die 'This script needs either the `wget` or `curl` commands installed.'
+    die 'This script needs the `wget` command installed.'
   fi
 }
 
@@ -33,7 +28,7 @@ detect_system() {
   elif [ "$(uname -s)" == "Darwin" ]; then
     MATHSAT_DIR=mathsat-$MATHSAT_VERSION-darwin-libcxx-x86_64
   else
-    die "There is no MathSAT 5 pre-compiler distribution for your platform."
+    die "There is no MathSAT 5 pre-compiled distribution for your platform."
   fi
 }
 

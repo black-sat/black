@@ -38,13 +38,13 @@ following instructions, or adapt them to your system/distribution.
 On Ubuntu 18.04, install the required packages with `apt` as follows:
 
 ```
-$ sudo apt install build-essential gcc-8 g++-8 cmake libgmp-dev libz-dev
+$ sudo apt install build-essential gcc-8 g++-8 cmake libgmp-dev libz-dev git wget
 ```
 
 On Fedora ≥ 29:
 
 ```
-$ sudo yum install gcc gcc-c++ make cmake gmp-devel zlib-devel
+$ sudo yum install gcc gcc-c++ make cmake gmp-devel zlib-devel git wget
 ```
 
 On macOS Mojave, install the [Homebrew] package manager as explained on their
@@ -53,7 +53,7 @@ dependencies as follows:
 
 ```
 $ xcode-select --install # make sure you have Apple Command Line Developer Tools
-$ brew install cmake gmp
+$ brew install cmake gmp wget
 ```
 
 If the first command shows a dialog window, make sure to click on *Install*,
