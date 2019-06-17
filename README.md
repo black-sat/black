@@ -1,6 +1,6 @@
 # BLACK
 
-[![Build Status](https://api.cirrus-ci.com/github/black-sat/BLACK.svg)](https://cirrus-ci.com/github/black-sat/BLACK)
+[![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black)
 
 BLACK (short for Bounded Ltl sAtisfiability ChecKer) is a tool for testing the
 satisfiability of LTL formulas based on the SAT encoding of the tableau method
@@ -65,8 +65,8 @@ not on *Get Xcode*
 1. Clone the repository. Clone it recursively, to get all the submodules, and
    `cd` into the source directory:
    ```
-   $ git clone --recursive git@github.com:lucageatti/BLACK.git
-   $ cd BLACK
+   $ git clone --recursive git@github.com:black-sat/black.git
+   $ cd black
    ```
 2. Download and unpack the MathSAT 5 distribution:
    ```
