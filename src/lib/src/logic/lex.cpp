@@ -104,22 +104,24 @@ namespace black::details
   std::optional<token> lexer::_identifier()
   {
     static constexpr std::pair<std::string_view, token> operators[] = {
-      {"NOT",  token{unary::type::negation}},
-      {"X",    token{unary::type::tomorrow}},
-      {"Y",    token{unary::type::yesterday}},
-      {"F",    token{unary::type::eventually}},
-      {"G",    token{unary::type::always}},
-      {"P",    token{unary::type::past}},
-      {"H",    token{unary::type::historically}},
-      {"AND",  token{binary::type::conjunction}},
-      {"OR",   token{binary::type::disjunction}},
-      {"THEN", token{binary::type::then}},
-      {"IFF",  token{binary::type::iff}},
-      {"U",    token{binary::type::until}},
-      {"R",    token{binary::type::release}},
-      {"V",    token{binary::type::release}},
-      {"S",    token{binary::type::since}},
-      {"T",    token{binary::type::triggered}}
+      {"True",  token{true}},
+      {"False", token{false}},
+      {"NOT",   token{unary::type::negation}},
+      {"X",     token{unary::type::tomorrow}},
+      {"Y",     token{unary::type::yesterday}},
+      {"F",     token{unary::type::eventually}},
+      {"G",     token{unary::type::always}},
+      {"P",     token{unary::type::past}},
+      {"H",     token{unary::type::historically}},
+      {"AND",   token{binary::type::conjunction}},
+      {"OR",    token{binary::type::disjunction}},
+      {"THEN",  token{binary::type::then}},
+      {"IFF",   token{binary::type::iff}},
+      {"U",     token{binary::type::until}},
+      {"R",     token{binary::type::release}},
+      {"V",     token{binary::type::release}},
+      {"S",     token{binary::type::since}},
+      {"T",     token{binary::type::triggered}}
     };
 
     if (!_stream.good() || !isalpha(_stream.peek()))

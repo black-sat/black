@@ -54,7 +54,7 @@ namespace black::details
             return "<?>"s;
         },
         [](boolean b) {
-          return b.value() ? "true"s : "false"s;
+          return b.value() ? "True"s : "False"s;
         },
         [](unary u) {
           auto arg = u.operand();
@@ -156,6 +156,18 @@ namespace black::details
     }
   }
 
+  std::optional<formula> parser::parse_boolean()
+  {
+    black_assert(peek() && peek()->token_type() == token::boolean);
+
+    std::optional<token> tok = consume();
+
+    black_assert(tok);
+    black_assert(tok->token_type() == token::type::boolean);
+
+    return _alphabet.boolean(*tok->data<bool>());
+  }
+
   std::optional<formula> parser::parse_atom()
   {
     // Assume we are on an atom
@@ -203,6 +215,8 @@ namespace black::details
     if(!peek())
       return {};
 
+    if(peek()->token_type() == token::type::boolean)
+      return parse_boolean();
     if(peek()->token_type() == token::type::atom)
       return parse_atom();
     if(peek()->is<unary::type>())

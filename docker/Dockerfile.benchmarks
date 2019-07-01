@@ -1,0 +1,5 @@
+FROM black:ubuntu
+
+RUN apt-get update && apt-get install -y bc
+
+ENTRYPOINT ["/usr/bin/env", "--"]

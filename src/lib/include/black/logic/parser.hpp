@@ -51,6 +51,7 @@ namespace black::details
     std::nullopt_t error(std::string const&s);
 
     std::optional<formula> parse_binary_rhs(int precedence, formula lhs);
+    std::optional<formula> parse_boolean();
     std::optional<formula> parse_atom();
     std::optional<formula> parse_unary();
     std::optional<formula> parse_parens();

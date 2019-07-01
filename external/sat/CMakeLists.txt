@@ -24,26 +24,28 @@
 ##
 ## Glucose SAT solver
 ##
-set(
-  GLUCOSE_SRC
-  glucose/core/Solver.cc
-  glucose/simp/SimpSolver.cc
-  glucose/utils/Options.cc
-  glucose/utils/System.cc
-)
+if(ENABLE_GLUCOSE)
+  set(
+    GLUCOSE_SRC
+    glucose/core/Solver.cc
+    glucose/simp/SimpSolver.cc
+    glucose/utils/Options.cc
+    glucose/utils/System.cc
+  )
 
-add_library (glucose STATIC ${GLUCOSE_SRC})
-target_include_directories(glucose SYSTEM PUBLIC glucose/)
+  add_library (glucose STATIC ${GLUCOSE_SRC})
+  target_include_directories(glucose SYSTEM PUBLIC glucose/)
 
-set(
-  GLUCOSE_CLANG_WARNINGS
-  -Wno-dangling-else
-)
+  set(
+    GLUCOSE_CLANG_WARNINGS
+    -Wno-dangling-else
+  )
 
-target_compile_options(
-  glucose PRIVATE
-  "$<$<CXX_COMPILER_ID:Clang>:${GLUCOSE_CLANG_WARNINGS}>"
-)
+  target_compile_options(
+    glucose PRIVATE
+    "$<$<CXX_COMPILER_ID:Clang>:${GLUCOSE_CLANG_WARNINGS}>"
+  )
+endif()
 
 ##
 ## MathSAT 5 solver
@@ -120,6 +122,9 @@ set_property(
 ##
 add_library(solvers INTERFACE)
 target_link_libraries(solvers INTERFACE mathsat5 gmpxx gmp ZLIB::ZLIB)
-#target_link_libraries(solvers INTERFACE glucose)
 target_include_directories(solvers SYSTEM
 INTERFACE ${MATHSAT_INCLUDES} ${GMP_INCLUDES} ${GMPXX_INCLUDES})
+
+if(ENABLE_GLUCOSE)
+  target_link_libraries(solvers INTERFACE glucose)
+endif()

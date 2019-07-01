@@ -43,6 +43,9 @@ target_compile_options(
 
 add_test(NAME unit_tests COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
 
+#
+# Formulas test set
+#
 message(STATUS "Configuring tests")
 
 file(STRINGS formulas/tests.index TESTS)
@@ -54,20 +57,29 @@ option(
   ENABLE_TOOLS_TESTS "Enable tests of other tools in the benchmark suite" OFF
 )
 
-#
-# Formulas test set
-#
+option(TEST_TIMEOUT "Set a timeout for tests" OFF)
+set(TEST_TIMEOUT_SECS 3 CACHE STRING "Second of timeout for tests")
+
+if(TEST_TIMEOUT)
+  message(STATUS "Tests timeout set to ${TEST_TIMEOUT_SECS} seconds")
+endif()
+
 foreach(TEST IN LISTS TESTS)
   list(GET TEST 0 FILE)
   list(GET TEST 1 RESULT)
 
+  set(TEST_NAME "black:${FILE}:${RESULT}")
   add_test(
-    NAME "black:${FILE}:${RESULT}"
+    NAME "${TEST_NAME}"
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
     COMMAND
       /bin/bash -c
       "$<TARGET_FILE:frontend> -f '${FILE}' | grep '^${RESULT}'"
   )
+
+  if(TEST_TIMEOUT)
+    set_tests_properties("${TEST_NAME}" PROPERTIES TIMEOUT ${TEST_TIMEOUT_SECS})
+  endif()
 
   if(ENABLE_TOOLS_TESTS)
     foreach(SOLVER IN ITEMS nuXmv/klive nuXmv/sbmc aalta/v2)
@@ -80,7 +92,9 @@ foreach(TEST IN LISTS TESTS)
           "./run.sh run ${SOLVER} '${FILE}' | grep '^${RESULT}'"
       )
 
-      set_tests_properties("${TEST_NAME}" PROPERTIES TIMEOUT 3)
+      set_tests_properties("${TEST_NAME}"
+        PROPERTIES TIMEOUT ${TEST_TIMEOUT_SECS}
+      )
     endforeach()
   endif()
 

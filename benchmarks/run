@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # timeout time in seconds
-TIMEOUT=300 # five minutes
+if [ -z "$TIMEOUT" ]; then
+  TIMEOUT=300 # five minutes
+fi
 
 # utilities
 report() {
@@ -17,42 +19,90 @@ die() {
   exit 1
 }
 
+mcap() {
+  if [ -z "$cpu" ]; then
+    cpu=1
+  fi
+
+  cgexec -g "memory,cpuset:cpu$cpu" $@
+}
+
+has_mcap() {
+  return 0
+}
+
+if [ "$(uname -s)" != "Linux" ]; then
+  mcap() {
+    $@
+  }
+  has_mcap() {
+    return 1
+  }
+fi
+
 # Wrapper over time and timeout
 measure() {
   # Temporary file to store the time measurement
   timefile=$(mktemp)
-  # Temporary file to store the command error stream output
+  # Temporary file to store the command's standard output
   outputfile=$(mktemp)
+  # Temporary file to store the command's standard error
+  errorfile=$(mktemp)
 
   # actually runs the command
   n=0 # number of runs
   elapsed=0.0 # total elapsed time
 
   export TIMEFORMAT=%R
+  status=
   while [ $n -le 10 -a $(bc -l <<< "$elapsed>1") -ne 1 ]; do
     # The following line is the core of everything:
     # 1. Lunch the given command ($@)
     # 2. with the given timeout (\timeout $TIMEOUT)
-    # 3. and measure its execution time (time)
-    time=$(time (\timeout $TIMEOUT $@ > /dev/null 2> $outputfile) 2>&1)
+    # 3. under the given memory limits (mcap)
+    # 4. and measure its execution time (time)
+    time=$(time \
+      (mcap \timeout -s TERM $TIMEOUT $@ > $outputfile 2> $errorfile) 2>&1 \
+    )
+    ret=$?
+
+    # intercept timeouts or out of memory conditions
+    if [ $ret -eq 124 ]; then
+      status=timeout
+      break
+    elif [ $ret -eq 137 ]; then
+      status=memout
+      break
+    elif [ $ret -ne 0 ]; then
+      status="err($ret)"
+      break
+    fi
 
     # accumulate the time and increment the counter for the average
     elapsed=$(bc -l <<< $time+$elapsed)
     n=$((n+1))
   done
 
-  # Compute the average time
-  avg=$(bc -l <<< $elapsed/$n)
+  echo $status > $timefile
 
-  # Output it to the temporary file
-  \printf "%.3f" $avg > $timefile
+  if [ -z "$status" ]; then
+     # Compute the average time
+     avg=$(bc -l <<< $elapsed/$n)
+
+     # Output it to the temporary file
+     \printf "%.3f" $avg > $timefile
+  fi
 
   # re-output the command's standard error
-  cat $outputfile >&2
+  cat $errorfile >&2
 
-  # define the call-back for the caller
+  # define the call-backs for the caller
   print_time() {
     cat $timefile
+  }
+
+  print_result() {
+    cat $outputfile | postprocess
   }
 }
 
@@ -99,6 +149,7 @@ setup() {
   for mode in $modes; do
     report "- $mode"
   done
+  report
 
   report "Timeout: $TIMEOUT seconds"
 }
@@ -108,7 +159,7 @@ setup_run() {
   mode=$1
   formula=$2
 
-  [ -f "./formulas/$formula" ] || die "Unable to open file: $2"
+  [ -f "formulas/$formula" ] || die "Unable to open file: formulas/$formula"
 
   prescript="scripts/$mode/../pre.sh"
   runscript="scripts/$mode/run.sh"
@@ -125,16 +176,29 @@ setup_run() {
   do_run() {
     wrapper=$@
 
+    if [ -z "$wrapper" ]; then
+      wrapper=mcap
+    fi
+
     # Pre-process input
     input=$(mktemp)
-    $prescript "./formulas/$formula" > $input
+    $prescript "formulas/$formula" > $input
 
-    # Run and Post-process
-    $wrapper $runscript $input
+    # Run
+    $wrapper $runscript $input 2>&1
+
+    return $?
   }
 
   postprocess() {
-    $postscript
+    result=$($postscript)
+    case $result in
+      SAT|UNSAT)
+        output $result
+      ;;
+      *)
+        output "err"
+    esac
   }
 }
 
@@ -142,11 +206,17 @@ setup_run() {
 # User-invokable entry points start here
 #
 
+# List available solvers
+list() {
+  setup
+}
+
 # runs one specific solver mode on one formula
 run() {
   setup &> /dev/null
   setup_run $@
   do_run | postprocess
+  return ${PIPESTATUS[0]}
 }
 
 # benchmarks one specific solver mode on one formula
@@ -165,25 +235,27 @@ bench_formula()
   setup &> /dev/null
 
   formula=$1
+  cpu=$2
 
-  if [ ! "$indexfile" ]; then
-    indexfile=formulas/index
-  fi
+  family=$(echo "$formula" | cut -d/ -f1)
 
   statusmsg="Benchmarking formula: $formula"
-  if [ "$PARALLEL_SEQ" ]; then
+  if [ "$PARALLEL_SEQ" -a "$indexfile" ]; then
     total=$(cat $indexfile | wc -l | sed 's/ //g')
     statusmsg="Benchmarking formula $PARALLEL_SEQ/$total: $formula"
+    if has_mcap; then
+      statusmsg="Benchmarking formula $PARALLEL_SEQ/$total (CPU $cpu): $formula"
+    fi
   fi
 
   report $statusmsg
 
-  output -n $formula
+  output -n $formula $family
   for mode in $modes; do
     report -n "- $mode..."
-    setup_run $mode $formula
-    do_run measure 1>&2
-    \printf " %.3f" $(print_time)
+    setup_run $mode "$formula"
+    do_run measure > /dev/null
+    \printf " $(print_time) $(print_result)"
     report " done"
   done
   output
@@ -191,7 +263,7 @@ bench_formula()
 
 bench_all()
 {
-  [ "$1" ] || die "Please specify an output file for data"
+  [ "$1" ] || die "Please specify the output file"
   output=$1
 
   setup
@@ -219,9 +291,9 @@ bench_all()
   # print header of the output table
   if [ ! -f "$output" ]; then
     {
-      output -n "formula"
+      output -n "formula family"
       for mode in $modes; do
-        \printf " $mode"
+        \printf " $mode $mode:result"
       done
       output
     } > $output
@@ -230,9 +302,59 @@ bench_all()
   export indexfile
 
   # heavy lifting
-  cat $indexfile | \
-    parallel ./run.sh bench_formula {} '{#}' $total >> $output
+  cat $indexfile | parallel ./run bench_formula {} {%} >> $output
 }
 
+help() {
+  cat <<HELP
+BLACK benchmarking suite.
+
+Usage: $0 <command> [args..]
+
+Commands:
+  list                            Lists all the detected solvers and modes
+
+  run <solver/mode> <formula>     Runs \`solver\` with the given \`mode\`
+                                  (e.g. nuXmv/sbmc) over the given \`formula\`
+
+  bench <solver/mode> <formula>   Benchmarks \`solver\` with the given \`mode\`
+                                  (e.g. nuXmv/sbmc) over the given \`formula\`
+
+  bench_formula <formula>         Benchmarks the given \`formula\` with all
+                                  solvers in all modes.
+
+                                  The result data is written to standard output,
+                                  while a progress report is written to standard
+                                  error.
+
+  bench_all <file>                Runs the full benchmark of all formulas with
+                                  all solvers in all modes, writing the output
+                                  data on the given \`file\`
+
+ENVIRONMENT VARIABLES:
+  Benchmark timeout (in seconds) can be set through the \`TIMEOUT\` environment
+  variables. The default is 300 seconds.
+
+EXAMPLES:
+  \$ $0 bench black/default formulas/acacia/example/demo-v1.pltl
+  0.019
+
+  \$ $0 bench_formula formulas/acacia/example/demo-v1.pltl > demo-v1.dat
+  Benchmarking formula: formulas/acacia/example/demo-v1.pltl
+  - black/default...done
+  - nuXmv/klive...done
+  - nuXmv/sbmc...done
+
+  \$ cat demo-v1.dat
+  formulas/acacia/example/demo-v1.pltl 0.020 0.096 0.042
+HELP
+}
+
+CMD=$@
+
+if [ -z "$CMD" ]; then
+  CMD=help
+fi
+
 # Actual script starts here. Just executes whatever is found on the command line
-$@
+$CMD
