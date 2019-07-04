@@ -7,6 +7,3 @@
 [submodule "external/debug_assert"]
 	path = external/debug_assert
 	url = https://github.com/foonathan/debug_assert.git
-[submodule "external/remotery/remotery"]
-	path = external/remotery/remotery
-	url = https://github.com/Celtoys/Remotery.git

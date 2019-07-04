@@ -28,14 +28,8 @@
 
 #include <fmt/format.h>
 
-#define RMT_ENABLED 0
-
-#include <Remotery.h>
-
-namespace black::details {
-
-
-
+namespace black::details
+{
   /*
    * Incremental version of 'solve'
    */
@@ -107,8 +101,6 @@ namespace black::details {
     } // end while(true)
   }
 
-
-
   /*
    * Incremental version of 'bsc_prune'
    */
@@ -119,48 +111,30 @@ namespace black::details {
 
     for(int k=0; k <= k_max; ++k)
     {
-      //fmt::print("k: {}\n", k);
-      rmt_ScopedCPUSample(main_loop, 0);
       // Generating the k-unraveling
       add_to_msat(k_unraveling(k));
       // if 'encoding' is unsat, then stop with UNSAT.
-      {
-        rmt_ScopedCPUSample(is_sat, 0);
-        if(!is_sat())
-          return false;
-      }
+      if(!is_sat())
+        return false;
+
       // else, continue to check EMPTY and LOOP.
       // Generating EMPTY and LOOP
-      {
-        rmt_ScopedCPUSample(is_sat_with_loop, 0);
-
-        msat_push_backtrack_point(env);
-        add_to_msat(empty_and_loop(k));
-        // if 'encoding' is sat, then stop with SAT.
-        if(is_sat())
-          return true;
-        {
-          rmt_ScopedCPUSample(pop_breakpoint, 0);
-          msat_pop_backtrack_point(env);
-        }
-      }
+      msat_push_backtrack_point(env);
+      add_to_msat(empty_and_loop(k));
+      // if 'encoding' is sat, then stop with SAT.
+      if(is_sat())
+        return true;
+      msat_pop_backtrack_point(env);
 
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & not PRUNE^k'
-
-      {
-        rmt_ScopedCPUSample(is_sat_with_prune, 0);
-        add_to_msat( !prune(k) );
-        if(!is_sat())
-          return false;
-      }
-
-      rmt_LogText(fmt::format("k: {}\n", k).c_str());
+      add_to_msat( !prune(k) );
+      if(!is_sat())
+        return false;
     } // end while(true)
 
     return false;
   }
-
 
 
   /*
@@ -173,8 +147,8 @@ namespace black::details {
     msat_env env = _alpha.mathsat_env();
     msat_reset_env(env);
 
-    for(int k = 0; k <= k_max; ++k){
-      rmt_ScopedCPUSample(main_loop, 0);
+    for(int k = 0; k <= k_max; ++k)
+    {
       fmt::print("k: {}\n", k);
 
       if(k)
@@ -184,46 +158,34 @@ namespace black::details {
 
       //fmt::print("Testing {}-unraveling:\n   {}\n", k, to_string(encoding));
       // if 'encoding' is unsat, then stop with UNSAT.
-      {
-        rmt_ScopedCPUSample(is_sat, 0);
-        if(!is_sat(encoding))
-          return false;
-      }
+      if(!is_sat(encoding))
+        return false;
+
       // else, continue to check EMPTY and LOOP.
       // Generating EMPTY and LOOP
       formula empty = k_empty(k);
       formula loop = k_loop(k);
 
       // if 'encoding' is sat, then stop with SAT.
-      {
-        // fmt::print("Testing {0}-unraveling + {0}-empty:\n   {1}\n", k,
-        //            to_string(empty));
-        rmt_ScopedCPUSample(is_sat_with_loop, 0);
-        if(is_sat(encoding && empty))
-          return true;
+      if(is_sat(encoding && empty))
+        return true;
 
-        // fmt::print("Testing {0}-unraveling + {0}-loop:\n   {1}\n", k,
-        //            to_string(loop));
-        if(is_sat(encoding && loop))
-          return true;
-      }
+      // fmt::print("Testing {0}-unraveling + {0}-loop:\n   {1}\n", k,
+      //            to_string(loop));
+      if(is_sat(encoding && loop))
+        return true;
 
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & not PRUNE^k'
       formula prune = this->prune(k);
       encoding = encoding && !prune;
-      {
-        rmt_ScopedCPUSample(is_sat_with_prune, 0);
-        //fmt::print("Testing {0}-unraveling + {0}-prune:\n   {1}\n", k, to_string(prune));
-        if(!is_sat(encoding))
-          return false;
-      }
+
+      if(!is_sat(encoding))
+        return false;
     } // end while(true)
 
     return false;
   }
-
-
 
 
   /*
@@ -272,28 +234,24 @@ namespace black::details {
 
     msat_reset_env(_alpha.mathsat_env());
 
-    for(; k <= k_max; ++k){
-      rmt_ScopedCPUSample(main_loop, 0)
+    for(; k <= k_max; ++k)
+    {
       // Generating the k-unraveling
       if(k)
         encoding = encoding && k_unraveling(k);
       else // first iteration
         encoding = k_unraveling(k);
 
-      rmt_BeginCPUSample(is_sat, 0);
       if(!is_sat(encoding))
         return false;
-      rmt_EndCPUSample();
 
       // Generating EMPTY and LOOP
       loop = k_loop(k);
       formula looped = encoding && (k_empty(k) || loop);
 
-      rmt_BeginCPUSample(is_sat_with_loop, 0);
       // if 'encoding' is sat, then stop with SAT.
       if(is_sat(looped))
         return true;
-      rmt_EndCPUSample();
 
       //fmt::print("k: {}\n", k);
     }
@@ -303,9 +261,8 @@ namespace black::details {
 
 
   // Generates the PRUNE encoding
-  formula solver::prune(int k) {
-    rmt_ScopedCPUSample(prune, RMTSF_Aggregate);
-
+  formula solver::prune(int k)
+  {
     formula k_prune = _alpha.bottom();
     for(int l=0; l<k-1; l++) {
       formula k_prune_inner = _alpha.bottom();
@@ -347,7 +304,6 @@ namespace black::details {
 
   // Generates the EMPTY and LOOP encoding
   formula solver::empty_and_loop(int k) {
-    rmt_ScopedCPUSample(empty_and_loop, RMTSF_Aggregate);
     return k_empty(k) || k_loop(k);
   }
 
@@ -417,7 +373,6 @@ namespace black::details {
 
   // Generates the k-unraveling for the given k.
   formula solver::k_unraveling(int k) {
-    rmt_ScopedCPUSample(k_unraveling, RMTSF_Aggregate);
     // Keep the X-requests generated in phase k-1.
     // Clear all the X-requests from the vector
     _xrequests.clear();
@@ -635,25 +590,18 @@ namespace black::details {
   {
     msat_env env = _alpha.mathsat_env();
 
-    rmt_BeginCPUSample(to_sat, RMTSF_Aggregate);
     msat_term term = encoding.to_sat();
-    rmt_EndCPUSample();
 
     msat_result res;
-    {
-      rmt_ScopedCPUSample(msat_solve, RMTSF_Aggregate);
-
-      //msat_push_backtrack_point(env);
-      msat_assert_formula(env, term);
-      res = msat_solve(env);
-      // if(res == MSAT_SAT)
-      //   print_mathsat_model(_alpha);
-      msat_reset_env(env);
-    }
+    //msat_push_backtrack_point(env);
+    msat_assert_formula(env, term);
+    res = msat_solve(env);
+    // if(res == MSAT_SAT)
+    //   print_mathsat_model(_alpha);
+    msat_reset_env(env);
 
     return (res == MSAT_SAT);
   }
-
 
 
   // Asks MathSAT for the satisfiability of current formula

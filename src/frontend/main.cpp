@@ -28,10 +28,6 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
-#define RMT_ENABLED 0
-
-#include <Remotery.h>
-
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -46,18 +42,8 @@ inline void report_error(std::string const&s) {
 
 int batch(std::string_view argv0, std::string filename, int k);
 
-[[maybe_unused]]
-static Remotery *rmt;
-
 int main(int argc, char **argv)
 {
-  rmtError error = rmt_CreateGlobalInstance(&rmt);
-
-  if( RMT_ERROR_NONE != error) {
-	  fmt::print("Error launching Remotery: {}\n", error);
-    return -1;
-  }
-
   if(argc >= 3 && argv[1] == "-f"s)
   {
     int k = std::numeric_limits<int>::max();
@@ -107,8 +93,6 @@ int main(int argc, char **argv)
     slv.clear();
   }
 
-  rmt_DestroyGlobalInstance(rmt);
-
   return 0;
 }
 
@@ -138,19 +122,12 @@ int batch(std::string_view argv0, std::string filename, int k) {
 
   slv.add_formula(*f);
 
-  //int res = int{! slv.bsc()};
-  rmt_LogText("start solving");
   bool res = slv.inc_bsc_prune(k);
-  rmt_LogText("end");
-  //bool res = slv.bsc_prune();
-  //int res = int{! slv.inc_bsc_prune()};
 
   if(res)
     fmt::print("SAT\n");
   else
     fmt::print("UNSAT\n");
-
-  rmt_DestroyGlobalInstance(rmt);
 
   return 0;
 }

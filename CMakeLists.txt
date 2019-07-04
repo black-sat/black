@@ -52,12 +52,10 @@ endif()
 #
 # External dependencies
 #
-add_subdirectory(external/debug_assert)
-add_subdirectory(external/remotery)
-
 option(FMT_PEDANTIC "" ON)
 option(FMT_WERROR "" ON)
 add_subdirectory(external/fmt)
+add_subdirectory(external/debug_assert)
 
 #
 # SAT solvers
