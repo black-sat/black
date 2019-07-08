@@ -22,12 +22,9 @@
 // SOFTWARE.
 
 #include <black/frontend/cli.hpp>
+#include <black/frontend/io.hpp>
 
 #include <clipp.h>
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
-#include <iostream>
 
 //
 // Plug into the Clipp arguments conversion code to support std::optional vars
@@ -44,6 +41,11 @@ namespace clipp::detail {
 
 namespace black::frontend
 {
+
+  void quit(status_code status) {
+    exit(static_cast<uint8_t>(status));
+  }
+
   template<typename Cli>
   static void print_help(Cli cli) {
     auto fmt = clipp::doc_formatting{}
@@ -51,9 +53,9 @@ namespace black::frontend
          .doc_column(25)
          .last_column(79);
 
-    fmt::print("\nBLACK - Bounded Lᴛʟ sAtisfiability ChecKer\n\n");
+    io::message("\nBLACK - Bounded Lᴛʟ sAtisfiability ChecKer\n\n");
 
-    fmt::print("{}\n", clipp::make_man_page(cli, cli::command_name, fmt));
+    io::message("{}", clipp::make_man_page(cli, cli::command_name, fmt));
   }
 
   //
@@ -78,16 +80,16 @@ namespace black::frontend
 
     bool result = (bool)parse(argc, argv, cli);
     if(!result) {
-      fmt::print(std::cerr,
+      io::error(
         "{0}: invalid command line arguments.\n"
         "{0}: Type `{0} --help` for help.\n", argv[0]);
 
-      std::exit(status_codes::command_line_error);
+      quit(status_code::command_line_error);
     }
 
     if(help) {
       print_help(cli);
-      std::exit(status_codes::success);
+      quit(status_code::success);
     }
   }
 }

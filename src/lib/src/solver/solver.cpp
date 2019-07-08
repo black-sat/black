@@ -26,8 +26,6 @@
 #include <black/solver/solver.hpp>
 #include <black/sat/mathsat.hpp>
 
-#include <fmt/format.h>
-
 namespace black::details
 {
   /*
@@ -151,14 +149,11 @@ namespace black::details
 
     for(int k = 0; k <= k_max; ++k)
     {
-      fmt::print("k: {}\n", k);
-
       if(k)
         encoding = encoding && k_unraveling(k);
       else // first iteration
         encoding = k_unraveling(k);
 
-      //fmt::print("Testing {}-unraveling:\n   {}\n", k, to_string(encoding));
       // if 'encoding' is unsat, then stop with UNSAT.
       if(!is_sat(encoding))
         return false;
@@ -172,7 +167,6 @@ namespace black::details
       if(is_sat(encoding && empty))
         return true;
 
-      // fmt::print("Testing {0}-unraveling + {0}-loop:\n   {1}\n", k,
       //            to_string(loop));
       if(is_sat(encoding && loop))
         return true;
@@ -254,8 +248,6 @@ namespace black::details
       // if 'encoding' is sat, then stop with SAT.
       if(is_sat(looped))
         return true;
-
-      //fmt::print("k: {}\n", k);
     }
 
     return false;
@@ -354,7 +346,6 @@ namespace black::details
         period_lk = period_lk && then(atom_phi_k, body_impl);
       }
     }
-    //fmt::print("{}-to-{}-period: {}\n", l, k, to_string(period_lk));
     return period_lk;
   }
 
@@ -478,7 +469,6 @@ namespace black::details
       },
       // TODO: past operators
       [&](otherwise) -> formula {
-        fmt::print("unrecognized formula: {}\n", to_string(f));
         black_unreachable();
       }
     );

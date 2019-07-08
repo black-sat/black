@@ -33,6 +33,7 @@ set(
 set(
   FRONTEND_HEADERS
   include/black/frontend/cli.hpp
+  include/black/frontend/io.hpp
   include/black/frontend/support.hpp
 )
 

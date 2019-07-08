@@ -30,6 +30,40 @@
 
 namespace black::frontend
 {
+  // Levels of output verbosity
+  enum class verbosity : int8_t {
+    fatal   =  1,
+    error   =  2,
+    warning =  3,
+    message =  4,
+    debug   =  5,
+    noise   =  6
+  };
+
+  // Comparison between verbosity levels
+  inline bool operator<(verbosity v1, verbosity v2) {
+    return static_cast<int8_t>(v1) < static_cast<int8_t>(v2);
+  }
+
+  //
+  // Status codes returned from the executable to the environment.
+  // It's useful to return meaningful codes and document them to help
+  // the usage of `black` in shell scripts
+  //
+  enum class status_code : uint8_t {
+    success = 0,            // success status code
+    failure = 1,            // generic failure
+    command_line_error = 2, // command line parsing errors
+    filesystem_error = 3,   // errors related to file operations
+    syntax_error = 4,       // syntax errors at logic level (formulas, etc.)
+  };
+
+  //
+  // Like std::exit(), but accepts a status_code instead of a plain integer
+  //
+  [[ noreturn ]]
+  void quit(status_code);
+
   // Global parameters given by the command-line arguments
   namespace cli
   {
@@ -41,25 +75,14 @@ namespace black::frontend
 
     // maximum bound for BMC algorithms, if given
     inline std::optional<int> bound;
+
+    // verbosity level
+    inline verbosity verbosity = verbosity::message;
   }
 
   // parse the command-line arguments, filling the variables declared above.
   void parse_command_line(int argc, char **argv);
 
-  //
-  // Status codes returned from the executable to the environment.
-  // It's useful to return meaningful codes and document them to help
-  // the usage of `black` in shell scripts
-  //
-  namespace status_codes {
-    enum : uint8_t {
-      success = 0,            // success status code
-      failure = 1,            // generic failure
-      command_line_error = 2, // command line parsing errors
-      filesystem_error = 3,   // errors related to file operations
-      syntax_error = 4,       // syntax errors at logic level (formulas, etc.)
-    };
-  }
 }
 
 #endif // BLACK_CLI_HPP

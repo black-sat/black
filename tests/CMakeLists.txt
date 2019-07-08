@@ -58,7 +58,7 @@ option(
 )
 
 option(TEST_TIMEOUT "Set a timeout for tests" OFF)
-set(TEST_TIMEOUT_SECS 3 CACHE STRING "Second of timeout for tests")
+set(TEST_TIMEOUT_SECS 3 CACHE STRING "Seconds of timeout for tests")
 
 if(TEST_TIMEOUT)
   message(STATUS "Tests timeout set to ${TEST_TIMEOUT_SECS} seconds")

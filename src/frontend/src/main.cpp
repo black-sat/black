@@ -22,14 +22,12 @@
 // SOFTWARE.
 
 #include <black/frontend/cli.hpp>
+#include <black/frontend/io.hpp>
 #include <black/frontend/support.hpp>
 
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
 #include <black/solver/solver.hpp>
-
-#include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include <iostream>
 #include <fstream>
@@ -57,14 +55,11 @@ int batch()
 
   std::ifstream file{*cli::filename, std::ios::in};
 
-  if(!file) {
-    fmt::print(std::cerr,
-      "{}: Unable to open file `{}`: {}\n",
-      cli::command_name, *cli::filename, system_error_string(errno)
+  if(!file)
+    io::fatal(status_code::filesystem_error,
+      "Unable to open file `{}`: {}",
+      *cli::filename, system_error_string(errno)
     );
-
-    return status_codes::filesystem_error;
-  }
 
   return batch(file);
 }
@@ -78,11 +73,8 @@ int batch(std::istream &file)
 
   std::optional<black::formula> f =
     black::parse_formula(sigma, line, [](auto error) {
-      fmt::print(std::cerr, "{}: Syntax error: {}\n", error);
+      io::fatal(status_code::syntax_error, "Syntax error: {}\n", error);
     });
-
-  if(!f)
-    return status_codes::syntax_error;
 
   black::solver slv{sigma};
 
@@ -91,9 +83,9 @@ int batch(std::istream &file)
   bool res = slv.inc_bsc_prune(cli::bound);
 
   if(res)
-    fmt::print("SAT\n");
+    io::message("SAT\n");
   else
-    fmt::print("UNSAT\n");
+    io::message("UNSAT\n");
 
   return 0;
 }
@@ -106,30 +98,30 @@ int interactive()
   while(!std::cin.eof()) {
     std::string line;
 
-    fmt::print("Please enter formula: ");
+    io::message("Please enter formula: ");
     std::getline(std::cin, line);
 
     std::optional<black::formula> f =
       black::parse_formula(sigma, line, [](auto error) {
-        fmt::print(std::cerr, "Syntax error: {}\n", error);
+        io::error("Syntax error: {}\n", error);
       });
 
     if(!f)
       continue;
 
-    fmt::print("Parsed formula (nnf): {}\n", black::to_nnf(*f));
+    io::message("Parsed formula (nnf): {}\n", black::to_nnf(*f));
     if(cli::bound)
-      fmt::print("Solving (up to k={})...\n", *cli::bound);
+      io::message("Solving (up to k={})...\n", *cli::bound);
     else
-      fmt::print("Solving...\n");
+      io::message("Solving...\n");
 
     slv.add_formula(*f);
     bool res = slv.inc_bsc_prune(cli::bound);
 
     if(res)
-      fmt::print("The formula is SAT!\n\n");
+      io::message("The formula is SAT!\n\n");
     else
-      fmt::print("The formula is UNSAT!\n\n");
+      io::message("The formula is UNSAT!\n\n");
 
     slv.clear();
   }
