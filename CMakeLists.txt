@@ -56,6 +56,7 @@ option(FMT_PEDANTIC "" ON)
 option(FMT_WERROR "" ON)
 add_subdirectory(external/fmt)
 add_subdirectory(external/debug_assert)
+add_subdirectory(external/clipp)
 
 #
 # SAT solvers
@@ -79,9 +80,12 @@ set(
   -Wno-sign-conversion
   -Wno-global-constructors -Wno-extra-semi
   -Wno-unknown-warning-option
-  # TODO: Fix fmt to re-enable these warnings
+  # TODO: warnings ignored for fmt
   -Wno-undef -Wno-missing-noreturn
   -Wno-double-promotion
+  # TODO: warnings ignored for clipp
+  -Wno-reserved-id-macro
+  -Wno-covered-switch-default
 )
 
 set(

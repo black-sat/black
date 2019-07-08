@@ -25,14 +25,23 @@
 # Main black executable
 #
 set(
-  EXECUTABLE_SRC
-  main.cpp
+  FRONTEND_SRC
+  src/main.cpp
+  src/cli.cpp
 )
 
-add_executable(frontend main.cpp)
+set(
+  FRONTEND_HEADERS
+  include/black/frontend/cli.hpp
+  include/black/frontend/support.hpp
+)
+
+add_executable(frontend ${FRONTEND_SRC} ${FRONTEND_HEADERS})
 
 target_compile_features(frontend PRIVATE cxx_std_17)
-target_link_libraries(frontend PRIVATE black debug_assert fmt solvers)
+target_include_directories(frontend PRIVATE include)
+target_link_libraries(frontend PRIVATE black solvers)
+target_link_libraries(frontend PRIVATE debug_assert fmt clipp::clipp solvers)
 target_compile_options(
   frontend PRIVATE
   "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNINGS}>"

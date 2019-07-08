@@ -56,6 +56,11 @@ namespace black::details
         [](boolean b) {
           return b.value() ? "True"s : "False"s;
         },
+        [](negation n) {
+          auto arg = n.operand();
+          bool needs_parens = does_need_parens(n, arg);
+          return fmt::format("!{}", parens_if_needed(arg, needs_parens));
+        },
         [](unary u) {
           auto arg = u.operand();
           bool needs_parens = does_need_parens(u, arg);

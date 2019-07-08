@@ -104,10 +104,12 @@ namespace black::details
   /*
    * Incremental version of 'bsc_prune'
    */
-  bool solver::inc_bsc_prune(int k_max)
+  bool solver::inc_bsc_prune(std::optional<int> k_max_arg)
   {
     msat_env env = _alpha.mathsat_env();
     msat_reset_env(env);
+
+    int k_max = k_max_arg.value_or(std::numeric_limits<int>::max());
 
     for(int k=0; k <= k_max; ++k)
     {

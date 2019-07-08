@@ -74,7 +74,7 @@ foreach(TEST IN LISTS TESTS)
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
     COMMAND
       /bin/bash -c
-      "$<TARGET_FILE:frontend> -f '${FILE}' | grep '^${RESULT}'"
+      "$<TARGET_FILE:frontend> '${FILE}' | grep '^${RESULT}'"
   )
 
   if(TEST_TIMEOUT)

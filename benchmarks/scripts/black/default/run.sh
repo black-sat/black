@@ -1,3 +1,3 @@
 #!/bin/bash
 
-black -f $1
+black $1

@@ -115,7 +115,7 @@ namespace black::details {
     public:
 
       // Class constructor
-      solver(alphabet &a)
+      explicit solver(alphabet &a)
         : _alpha(a), _frm(a.top()) { }
 
       // Class constructor
@@ -145,7 +145,7 @@ namespace black::details {
       bool solve();
 
       // Incremental version of 'bsc_prune'
-      bool inc_bsc_prune(int k_max = std::numeric_limits<int>::max());
+      bool inc_bsc_prune(std::optional<int> k_max);
 
       // BSC augmented with the PRUNE rule
       bool bsc_prune(int k_max = std::numeric_limits<int>::max());
@@ -163,6 +163,7 @@ namespace black::details {
 // Names exported to the user
 namespace black {
   using details::solver;
+  using details::to_nnf;
 }
 
 #endif // SOLVER_HPP
