@@ -25,6 +25,7 @@
 #define BLACK_FRONTEND_IO_HPP
 
 #include <black/support/common.hpp>
+#include <black/frontend/cli.hpp>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -58,54 +59,69 @@ namespace black::frontend::io
     return isatty(fileno(stderr));
   }
 
+  // We use <cstdio> from the C standard library to avoid to propagate the
+  // inclusion of <iostream> to all the program.
+  inline FILE *stream_for_verbosity(verbosity v) {
+    return v > verbosity::warning ? stdout : stderr;
+  }
+
   //
   // io::print(verbosity, format, args...)
   //
   template<typename... Args>
   auto print(verbosity v, Args&&... args)
-    -> decltype(fmt::print(std::forward<Args>(args)...))
+    -> std::void_t<decltype(fmt::print(std::forward<Args>(args)...))>
   {
     if(v > cli::verbosity)
       return;
 
-    // We use the C library file utilities to avoid to propagate the inclusion
-    // of <iostream> to all the program.
-    FILE *file = (v > verbosity::warning ? stdout : stderr);
+    FILE *file = stream_for_verbosity(v);
 
     if(v == verbosity::fatal)
-      fmt::print("{}: ", "black");
+      fmt::print(file, "{}: ", cli::command_name);
 
     fmt::print(file, std::forward<Args>(args)...);
   }
 
   //
-  // Specific versions of print() for each verbosity level
+  // println() is just as print(), but prints a newline
   //
-  #define declare_verbose_print(Verbosity)                      \
-    template<typename... Args>                                  \
-    auto Verbosity(Args&& ...args)                              \
-      -> decltype(fmt::print(std::forward<Args>(args)...))      \
-    {                                                           \
-      print(verbosity::Verbosity, std::forward<Args>(args)...); \
+  template<typename... Args>
+  auto println(verbosity v, Args&&... args)
+    -> std::void_t<decltype(fmt::print(std::forward<Args>(args)...))>
+  {
+    print(v, std::forward<Args>(args)...);
+    fmt::print(stream_for_verbosity(v), "\n");
+  }
+
+  //
+  // Specific versions of println() for each verbosity level
+  //
+  #define declare_verbose_print(Verbosity)                              \
+    template<typename... Args>                                          \
+    auto Verbosity(Args&& ...args)                                      \
+      -> std::void_t<decltype(fmt::print(std::forward<Args>(args)...))> \
+    {                                                                   \
+      println(verbosity::Verbosity, std::forward<Args>(args)...);       \
     }
 
   declare_verbose_print(error)
   declare_verbose_print(warning)
   declare_verbose_print(message)
   declare_verbose_print(debug)
-  declare_verbose_print(noise)
+  declare_verbose_print(trace)
 
   #undef declare_verbose_print
 
   //
   // fatal() is different, as it also quits the program,
-  // and accepts an optional status code
+  // and asks for the status code to return to the system
   //
   template<typename... Args>
   auto fatal(status_code v, Args&&... args)
     -> decltype(fmt::print(std::forward<Args>(args)...))
   {
-    print(verbosity::fatal, std::forward<Args>(args)...);
+    println(verbosity::fatal, std::forward<Args>(args)...);
 
     quit(v);
   }
