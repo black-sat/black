@@ -37,7 +37,7 @@ namespace black::frontend
     warning =  3,
     message =  4,
     debug   =  5,
-    noise   =  6
+    trace   =  6
   };
 
   // Comparison between verbosity levels
