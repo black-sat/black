@@ -163,7 +163,7 @@ namespace black::details
 
   std::optional<formula> parser::parse_boolean()
   {
-    black_assert(peek() && peek()->token_type() == token::boolean);
+    black_assert(peek() && peek()->token_type() == token::type::boolean);
 
     std::optional<token> tok = consume();
 

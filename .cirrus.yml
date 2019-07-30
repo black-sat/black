@@ -8,47 +8,47 @@ task:
     - name: Fedora 30 (g++ 9.1)
       container:
         dockerfile: docker/Dockerfile.fedora
-  configure_script:
-    - git submodule update --init --recursive
-    - ./download-mathsat.sh
-    - mkdir build && cd build && cmake ..
-  build_script:
-    - cd build && make -j2
-  test_script:
-    - cd build && ctest -R black
-
-task:
-  matrix:
     - name: Ubuntu 18.04 (gcc-8.3)
+      container:
+        dockerfile: docker/Dockerfile.ubuntu
       env:
         CC: gcc-8
         CXX: g++-8
     - name: Ubuntu 18.04 (gcc-9.1)
+      container:
+        dockerfile: docker/Dockerfile.ubuntu
       env:
         CC: gcc-9
         CXX: g++-9
-  container:
-    dockerfile: docker/Dockerfile.ubuntu
-  configure_script:
+  download_dependencies_script:
     - git submodule update --init --recursive
     - ./download-mathsat.sh
-    - mkdir build && cd build && cmake ..
-  build_script:
-    - cd build && make -j2
+  debug_build_script:
+    - mkdir -p build/debug && cd build/debug
+    - cmake -DCMAKE_BUILD_TYPE=Debug ../..
+    - make -j2
+  release_build_script:
+    - mkdir -p build/release && cd build/release
+    - cmake -DCMAKE_BUILD_TYPE=Release ../..
+    - make -j2
   test_script:
-    - cd build && ctest -R black
+    - cd build/release && ctest -R black
 
 task:
   name: macOS Mojave (Apple clang)
   osx_instance:
     image: mojave-base
-  setup_script:
+  download_dependencies_script:
     - brew install cmake gmp wget
-  configure_script:
     - git submodule update --init --recursive
     - ./download-mathsat.sh
-    - mkdir build && cd build && cmake ..
-  build_script:
-    - cd build && make -j2
+  debug_build_script:
+    - mkdir -p build/debug && cd build/debug
+    - cmake -DCMAKE_BUILD_TYPE=Debug ../..
+    - make -j2
+  release_build_script:
+    - mkdir -p build/release && cd build/release
+    - cmake -DCMAKE_BUILD_TYPE=Release ../..
+    - make -j2
   test_script:
-    - cd build && ctest -R black
+    - cd build/release && ctest -R black
