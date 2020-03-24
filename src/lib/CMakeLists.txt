@@ -47,7 +47,7 @@ find_library(
 
 add_library(ubsan SHARED IMPORTED GLOBAL)
 set_property(TARGET ubsan PROPERTY IMPORTED_LOCATION ${UBSAN_LIBRARY})
-set_property(TARGET ubsan APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "-fsanitize=undefine")
+set_property(TARGET ubsan APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "-fsanitize=undefined")
 
 
 add_library(sanitizer INTERFACE)
@@ -84,8 +84,6 @@ target_link_libraries(black PUBLIC debug_assert solvers)
 target_link_libraries(black PRIVATE fmt)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
-
-#target_compile_options(black PUBLIC -O3 -g)
 
 #target_link_libraries(black PUBLIC sanitizer)
 
