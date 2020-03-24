@@ -65,7 +65,7 @@ not on *Get Xcode*
 1. Clone the repository. Clone it recursively, to get all the submodules, and
    `cd` into the source directory:
    ```
-   $ git clone --recursive git@github.com:black-sat/black.git
+   $ git clone --recursive https://github.com/black-sat/black.git
    $ cd black
    ```
 2. Download and unpack the MathSAT 5 distribution:

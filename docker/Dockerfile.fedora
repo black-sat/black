@@ -1,4 +1,4 @@
-ARG VERSION=30
+ARG VERSION=31
 FROM fedora:$VERSION
 RUN yum update -y
 RUN yum install -y make cmake gcc gcc-c++

@@ -5,9 +5,16 @@ task:
         dockerfile: docker/Dockerfile.fedora
         docker_arguments:
           VERSION: 29
-    - name: Fedora 30 (g++ 9.1)
+    - name: Fedora 30 (g++ 9.2)
       container:
         dockerfile: docker/Dockerfile.fedora
+        docker_arguments:
+          VERSION: 30
+    - name: Fedora 31 (g++ 9.2)
+      container:
+        dockerfile: docker/Dockerfile.fedora
+        docker_arguments:
+          VERSION: 30
     - name: Ubuntu 18.04 (gcc-8.3)
       container:
         dockerfile: docker/Dockerfile.ubuntu
