@@ -148,7 +148,7 @@ namespace black::details
 
       std::optional<formula> rhs = parse_primary();
       if(!rhs)
-        return {};
+        return error("Expected right operand to binary operator");
 
       if(!peek() || precedence(op) < precedence(*peek())) {
         rhs = parse_binary_rhs(prec + 1, *rhs);

@@ -36,7 +36,7 @@
 using namespace black::frontend;
 
 int batch();
-int batch(std::istream &);
+int batch(std::optional<std::string>, std::istream &);
 int interactive();
 
 int main(int argc, char **argv)
@@ -51,7 +51,7 @@ int batch()
   black_assert(cli::filename.has_value());
 
   if(*cli::filename == "-")
-    return batch(std::cin);
+    return batch(std::nullopt, std::cin);
 
   std::ifstream file{*cli::filename, std::ios::in};
 
@@ -61,10 +61,10 @@ int batch()
       *cli::filename, system_error_string(errno)
     );
 
-  return batch(file);
+  return batch(cli::filename, file);
 }
 
-int batch(std::istream &file)
+int batch(std::optional<std::string> path, std::istream &file)
 {
   std::string line;
   std::getline(file, line);
@@ -72,9 +72,13 @@ int batch(std::istream &file)
   black::alphabet sigma;
 
   std::optional<black::formula> f =
-    black::parse_formula(sigma, line, [](auto error) {
-      io::fatal(status_code::syntax_error, "Syntax error: {}\n", error);
+    black::parse_formula(sigma, line, [&path](auto error) {
+      io::fatal(status_code::syntax_error, 
+                "syntax error: {}: {}\n", 
+                path ? *path : "<stdin>", error);
     });
+
+  black_assert(f.has_value());
 
   black::solver slv{sigma};
 

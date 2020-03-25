@@ -118,6 +118,7 @@ namespace black::frontend::io
   // and asks for the status code to return to the system
   //
   template<typename... Args>
+  [[ noreturn ]]
   auto fatal(status_code v, Args&&... args)
     -> decltype(fmt::print(std::forward<Args>(args)...))
   {
