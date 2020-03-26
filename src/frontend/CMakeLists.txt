@@ -49,11 +49,11 @@ target_compile_options(
   "$<$<CXX_COMPILER_ID:GNU>:${GNU_WARNINGS}>"
   "$<$<CXX_COMPILER_ID:Clang>:${CLANG_WARNINGS}>"
 )
+add_sanitizers(frontend)
 
 if(STATIC_BUILD)
   target_link_libraries(frontend PRIVATE "-static -pthread")
 endif()
-
 
 set_property(TARGET frontend PROPERTY OUTPUT_NAME black)
 set_property(TARGET frontend PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

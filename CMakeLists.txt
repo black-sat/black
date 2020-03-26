@@ -39,8 +39,6 @@ else()
   message(STATUS "Build type: '${CMAKE_BUILD_TYPE}'")
 endif()
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDEBUG_ASSERT_DISABLE")
-
 if(STATIC_BUILD)
   set(CMAKE_LINK_FLAGS_DEBUG "${CMAKE_LINK_FLAGS} -static")
   set(CMAKE_LINK_FLAGS_RELEASE "${CMAKE_LINK_FLAGS} -static")
@@ -57,6 +55,8 @@ option(FMT_WERROR "" ON)
 add_subdirectory(external/fmt)
 add_subdirectory(external/debug_assert)
 add_subdirectory(external/clipp)
+
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDEBUG_ASSERT_DISABLE")
 
 #
 # SAT solvers
@@ -94,6 +94,15 @@ set(
 )
 
 set(MSVC_WARNINGS /wd4068 /wd4702 /W4 /WX)
+
+#
+# Sanitizers support
+#
+set(CMAKE_MODULE_PATH
+    "${CMAKE_SOURCE_DIR}/external/sanitizers-cmake/cmake" 
+    ${CMAKE_MODULE_PATH})
+
+find_package(Sanitizers)
 
 # Black library and frontend
 add_subdirectory(src/lib)

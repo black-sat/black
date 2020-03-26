@@ -57,7 +57,7 @@ namespace black::details {
   DEBUG_ASSERT(Expr, ::black::details::black_assert_t{})
 #define black_unreachable() \
   DEBUG_UNREACHABLE(::black::details::black_assert_t{});\
-  DEBUG_ASSERT_MARK_UNREACHABLE;
+  DEBUG_ASSERT_MARK_UNREACHABLE
 
 namespace black::details {
   // First-match-first-called apply function, used in formula matchers

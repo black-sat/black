@@ -10,3 +10,6 @@
 [submodule "external/clipp"]
 	path = external/clipp
 	url = https://github.com/muellan/clipp.git
+[submodule "external/sanitizers-cmake"]
+	path = external/sanitizers-cmake
+	url = https://github.com/arsenm/sanitizers-cmake.git

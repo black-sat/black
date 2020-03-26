@@ -22,38 +22,6 @@
 # SOFTWARE.
 
 #
-# Workaround to link asan
-# TODO: fix it decently
-#
-
-set(LLVM_PATH "/usr/local/opt/llvm/" CACHE STRING "Path of LLVM install tree")
-set(LLVM_VERSION "7.0.1" CACHE STRING "LLVM version")
-
-find_library(
-  ASAN_LIBRARY
-  NAMES libclang_rt.asan_osx_dynamic.dylib
-  PATHS "${LLVM_PATH}/lib/clang/${LLVM_VERSION}/lib/darwin/")
-
-add_library(asan SHARED IMPORTED GLOBAL)
-set_property(TARGET asan PROPERTY IMPORTED_LOCATION ${ASAN_LIBRARY})
-
-set_property(TARGET asan APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "-fsanitize=address")
-
-
-find_library(
-  UBSAN_LIBRARY
-  NAMES libclang_rt.ubsan_osx_dynamic.dylib
-  PATHS "${LLVM_PATH}/lib/clang/${LLVM_VERSION}/lib/darwin/")
-
-add_library(ubsan SHARED IMPORTED GLOBAL)
-set_property(TARGET ubsan PROPERTY IMPORTED_LOCATION ${UBSAN_LIBRARY})
-set_property(TARGET ubsan APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "-fsanitize=undefined")
-
-
-add_library(sanitizer INTERFACE)
-target_link_libraries(sanitizer INTERFACE asan)
-
-#
 # black library
 #
 set (
@@ -84,6 +52,7 @@ target_link_libraries(black PUBLIC debug_assert solvers)
 target_link_libraries(black PRIVATE fmt)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
+add_sanitizers(black)
 
 #target_link_libraries(black PUBLIC sanitizer)
 
