@@ -54,12 +54,3 @@ target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
 target_enable_warnings(black)
 add_sanitizers(black)
-
-install(
-  TARGETS black
-  EXPORT black
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

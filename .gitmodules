@@ -4,12 +4,12 @@
 [submodule "external/catch"]
 	path = external/catch
 	url = https://github.com/catchorg/Catch2.git
-[submodule "external/debug_assert"]
-	path = external/debug_assert
-	url = https://github.com/foonathan/debug_assert.git
 [submodule "external/clipp"]
 	path = external/clipp
 	url = https://github.com/muellan/clipp.git
 [submodule "external/sanitizers-cmake"]
 	path = external/sanitizers-cmake
 	url = https://github.com/arsenm/sanitizers-cmake.git
+[submodule "external/debug_assert"]
+	path = external/debug_assert
+	url = https://github.com/black-sat/debug_assert.git
