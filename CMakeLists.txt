@@ -28,7 +28,6 @@ project(black LANGUAGES C CXX)
 # User options
 option(ENABLE_TESTS "Enable test suite" ON)
 option(STATIC_BUILD "Perform a static build" OFF)
-option(ENABLE_GLUCOSE "Enable Glucose SAT solver (still unimplemented)" OFF)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "")
   message(STATUS "Build configuration not defined. Defaulting to Release")
