@@ -52,22 +52,14 @@ target_link_libraries(black PUBLIC debug_assert solvers)
 target_link_libraries(black PRIVATE fmt)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
+target_enable_warnings(black)
 add_sanitizers(black)
-
-#target_link_libraries(black PUBLIC sanitizer)
-
-target_compile_options(
-  black PUBLIC
-  "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNINGS}>"
-  "$<$<CXX_COMPILER_ID:GNU>:${GNU_WARNINGS}>"
-  "$<$<CXX_COMPILER_ID:Clang>:${CLANG_WARNINGS}>"
-)
 
 install(
   TARGETS black
   EXPORT black
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

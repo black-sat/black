@@ -25,18 +25,16 @@ cmake_minimum_required(VERSION 3.10)
 
 project(black LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
-
 # User options
 option(ENABLE_TESTS "Enable test suite" ON)
 option(STATIC_BUILD "Perform a static build" OFF)
 option(ENABLE_GLUCOSE "Enable Glucose SAT solver (still unimplemented)" OFF)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "")
-  message(STATUS "Build type not defined. Defaulting to Release")
+  message(STATUS "Build configuration not defined. Defaulting to Release")
   set(CMAKE_BUILD_TYPE "Release")
 else()
-  message(STATUS "Build type: '${CMAKE_BUILD_TYPE}'")
+  message(STATUS "Build configuration: '${CMAKE_BUILD_TYPE}'")
 endif()
 
 if(STATIC_BUILD)
@@ -50,6 +48,8 @@ endif()
 #
 # External dependencies
 #
+set(CMAKE_CXX_STANDARD 17)
+
 option(FMT_PEDANTIC "" ON)
 option(FMT_WERROR "" ON)
 add_subdirectory(external/fmt)
@@ -64,45 +64,16 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDEBUG_ASSERT_DISABLE")
 add_subdirectory(external/sat)
 
 #
-# Warnings
-#
-set(
-  CLANG_WARNINGS -Weverything -pedantic -Werror
-  -Wno-c++98-compat -Wno-c++98-compat-pedantic
-  -Wno-c++98-c++11-c++14-compat
-  -Wno-padded -Wno-weak-vtables -Wno-unknown-pragmas
-  -Wno-exit-time-destructors -Wno-switch-enum
-  -Wno-undefined-var-template
-  -Wno-undefined-func-template
-  -Wno-deprecated
-  -Wno-old-style-cast -Wno-documentation
-  -Wno-documentation-unknown-command
-  -Wno-sign-conversion
-  -Wno-global-constructors -Wno-extra-semi
-  -Wno-unknown-warning-option
-  # TODO: warnings ignored for fmt
-  -Wno-undef -Wno-missing-noreturn
-  -Wno-double-promotion
-  # TODO: warnings ignored for clipp
-  -Wno-reserved-id-macro
-  -Wno-covered-switch-default
-)
-
-set(
-  GNU_WARNINGS -Wall -Wextra -pedantic -Werror
-  -Wno-pragmas -Wno-unknown-pragmas -Wno-unused-but-set-parameter
-)
-
-set(MSVC_WARNINGS /wd4068 /wd4702 /W4 /WX)
-
-#
-# Sanitizers support
+# Additional modules
 #
 set(CMAKE_MODULE_PATH
     "${CMAKE_SOURCE_DIR}/external/sanitizers-cmake/cmake" 
+    "${CMAKE_SOURCE_DIR}/cmake"
     ${CMAKE_MODULE_PATH})
 
-find_package(Sanitizers)
+find_package(Sanitizers) # Sanitizers
+include(EnableWarnings) # Common warnings to enable or disable
+include(GNUInstallDirs) # Correct and portable installation paths
 
 # Black library and frontend
 add_subdirectory(src/lib)

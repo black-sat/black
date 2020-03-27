@@ -43,12 +43,7 @@ target_compile_features(frontend PRIVATE cxx_std_17)
 target_include_directories(frontend PRIVATE include)
 target_link_libraries(frontend PRIVATE black solvers)
 target_link_libraries(frontend PRIVATE debug_assert fmt clipp::clipp solvers)
-target_compile_options(
-  frontend PRIVATE
-  "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNINGS}>"
-  "$<$<CXX_COMPILER_ID:GNU>:${GNU_WARNINGS}>"
-  "$<$<CXX_COMPILER_ID:Clang>:${CLANG_WARNINGS}>"
-)
+target_enable_warnings(frontend)
 add_sanitizers(frontend)
 
 if(STATIC_BUILD)
@@ -58,4 +53,4 @@ endif()
 set_property(TARGET frontend PROPERTY OUTPUT_NAME black)
 set_property(TARGET frontend PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-install(TARGETS frontend RUNTIME DESTINATION bin)
+install(TARGETS frontend RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

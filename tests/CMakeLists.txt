@@ -34,12 +34,8 @@ set(
 
 add_executable(unit_tests ${UNIT_TESTS})
 target_link_libraries(unit_tests black Catch2::Catch2)
-
-target_compile_options(
-  unit_tests PUBLIC
-  "$<$<CXX_COMPILER_ID:GNU>:${GNU_WARNINGS}>"
-  "$<$<CXX_COMPILER_ID:Clang>:${CLANG_WARNINGS}>"
-)
+target_enable_warnings(unit_tests)
+add_sanitizers(unit_tests)
 
 add_test(NAME unit_tests COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
 
