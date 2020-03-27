@@ -18,15 +18,15 @@ task:
     - name: Ubuntu 18.04 (gcc-8.3)
       container:
         dockerfile: docker/Dockerfile.ubuntu
-      env:
-        CC: gcc-8
-        CXX: g++-8
-    - name: Ubuntu 18.04 (gcc-9.1)
+        docker_arguments:
+          VERSION: 18.04
+          GCC_VERSION: 8
+    - name: Ubuntu 20.04 (gcc-9.3)
       container:
         dockerfile: docker/Dockerfile.ubuntu
-      env:
-        CC: gcc-9
-        CXX: g++-9
+        docker_arguments:
+          VERSION: 20.04
+          GCC_VERSION: 9
   download_dependencies_script:
     - git submodule update --init --recursive
     - ./download-mathsat.sh
@@ -42,9 +42,13 @@ task:
     - cd build/release && ctest -R black
 
 task:
-  name: macOS Mojave (Apple clang)
-  osx_instance:
-    image: mojave-base
+  matrix:
+    - name: macOS Mojave (Apple clang)
+      osx_instance:
+        image: mojave-base
+    - name: macOS Catalina (Apple clang)
+      osx_instance: 
+        image: catalina-base
   download_dependencies_script:
     - brew install cmake gmp wget
     - git submodule update --init --recursive
