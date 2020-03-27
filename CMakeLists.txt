@@ -46,6 +46,22 @@ if(STATIC_BUILD)
 endif()
 
 #
+# Additional modules
+#
+set(CMAKE_MODULE_PATH
+    "${CMAKE_SOURCE_DIR}/external/sanitizers-cmake/cmake" 
+    "${CMAKE_SOURCE_DIR}/cmake"
+    ${CMAKE_MODULE_PATH})
+
+include(GitSubmodules) # To automatically fetch dependencies
+include(EnableWarnings) # Common warnings to enable or disable
+include(GNUInstallDirs) # Correct and portable installation paths
+
+update_git_submodules(FATAL) # Fetch git submodules
+
+find_package(Sanitizers) # Sanitizers
+
+#
 # External dependencies
 #
 set(CMAKE_CXX_STANDARD 17)
@@ -62,18 +78,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDEBUG_ASSERT_DISABLE")
 # SAT solvers
 #
 add_subdirectory(external/sat)
-
-#
-# Additional modules
-#
-set(CMAKE_MODULE_PATH
-    "${CMAKE_SOURCE_DIR}/external/sanitizers-cmake/cmake" 
-    "${CMAKE_SOURCE_DIR}/cmake"
-    ${CMAKE_MODULE_PATH})
-
-find_package(Sanitizers) # Sanitizers
-include(EnableWarnings) # Common warnings to enable or disable
-include(GNUInstallDirs) # Correct and portable installation paths
 
 # Black library and frontend
 add_subdirectory(src/lib)

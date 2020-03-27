@@ -28,7 +28,6 @@ task:
           VERSION: 20.04
           GCC_VERSION: 9
   download_dependencies_script:
-    - git submodule update --init --recursive
     - ./download-mathsat.sh
   debug_build_script:
     - mkdir -p build/debug && cd build/debug
@@ -47,7 +46,6 @@ task:
     image: catalina-base
   download_dependencies_script:
     - brew install cmake gmp wget
-    - git submodule update --init --recursive
     - ./download-mathsat.sh
   debug_build_script:
     - mkdir -p build/debug && cd build/debug
