@@ -42,13 +42,9 @@ task:
     - cd build/release && ctest -R black
 
 task:
-  matrix:
-    - name: macOS Mojave (Apple clang)
-      osx_instance:
-        image: mojave-base
-    - name: macOS Catalina (Apple clang)
-      osx_instance: 
-        image: catalina-base
+  name: macOS (Apple clang)
+  osx_instance:
+    image: catalina-base
   download_dependencies_script:
     - brew install cmake gmp wget
     - git submodule update --init --recursive
