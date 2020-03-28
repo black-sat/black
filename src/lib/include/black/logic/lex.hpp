@@ -27,7 +27,7 @@
 #include <variant>
 #include <vector>
 
-namespace black::details
+namespace black::internal
 {
   #define declare_token(Name) Name = formula::type,
 

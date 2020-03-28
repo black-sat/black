@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <iostream>
 
-namespace black::details
+namespace black::internal
 {
   namespace {
 
@@ -161,4 +161,4 @@ namespace black::details
     return _identifier();
   }
 
-}  // namespace black::details
+}  // namespace black::internal

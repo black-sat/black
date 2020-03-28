@@ -68,7 +68,7 @@ TEST_CASE("Hashing functions for tuples")
 
 TEST_CASE("any_hashable class")
 {
-  using namespace black::details;
+  using namespace black::internal;
 
   static_assert(is_hashable<int&>);
 

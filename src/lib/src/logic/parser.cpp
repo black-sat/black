@@ -23,7 +23,7 @@
 #include <string>
 #include <sstream>
 
-namespace black::details
+namespace black::internal
 {
   namespace {
 
@@ -98,7 +98,7 @@ namespace black::details
 }
 
 // Implementation of parser class
-namespace black::details
+namespace black::internal
 {
   optional<token> parser::peek() {
     return _lex.peek();
@@ -233,4 +233,4 @@ namespace black::details
     return error("Expected formula");
   }
 
-} // namespace black::details
+} // namespace black::internal

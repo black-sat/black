@@ -26,7 +26,7 @@
 
 #include <optional>
 
-namespace black::details {
+namespace black::internal {
   //
   // Enumeration of known types of formulas.
   // This type is not exported directly from the `black` namespace.
@@ -61,7 +61,7 @@ namespace black {
   class alphabet;
 }
 
-namespace black::details
+namespace black::internal
 {
   class formula
   {
@@ -86,7 +86,7 @@ namespace black::details
     formula &operator=(formula &&) = default;
 
     // Enumeration of possible types of formulas, as declared above
-    using type = black::details::formula_type;
+    using type = black::internal::formula_type;
 
     // Gets to the type of the represented formula
     type formula_type() const;
@@ -292,13 +292,13 @@ namespace black::details
 
 // Names exported from the `black` namespace
 namespace black {
-  using details::boolean;
-  using details::atom;
-  using details::unary;
-  using details::binary;
-  using details::formula;
-  using details::formula_id;
-  using details::otherwise;
+  using internal::boolean;
+  using internal::atom;
+  using internal::unary;
+  using internal::binary;
+  using internal::formula;
+  using internal::formula_id;
+  using internal::otherwise;
 }
 
 #include <black/internal/formula_impl.hpp>

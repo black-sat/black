@@ -42,7 +42,7 @@ namespace black {
   class alphabet; // forward declaration, declared in alphabet.hpp
 }
 
-namespace black::details
+namespace black::internal
 {
   class formula;
 
@@ -186,6 +186,6 @@ namespace black::details
     F *_formula;
   };
 
-} // namespace black::details
+} // namespace black::internal
 
 #endif // BLACK_LOGIC_FORMULA_BASE_HPP_

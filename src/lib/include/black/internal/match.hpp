@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Luca Geatti
+// (C) 2019 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,25 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SOLVER_MATHSAT_HPP
-#define BLACK_SOLVER_MATHSAT_HPP
+#ifndef BLACK_LOGIC_MATCH_HPP_
+#define BLACK_LOGIC_MATCH_HPP_
 
-#include <mathsat.h>
-
-namespace black {
-  class alphabet;
+namespace black::internal {
+  
 }
 
-namespace black::internal
-{
-  class formula;
 
-  msat_env mathsat_init();
-
-  msat_term to_mathsat(formula);
-
-  void print_mathsat_model(alphabet &);
-
-}
-
-#endif // BLACK_SOLVER_MATHSAT_HPP
+#endif

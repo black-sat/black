@@ -31,7 +31,7 @@
 
 #include <charconv>
 
-namespace black::details
+namespace black::internal
 {
   /*
    * Out-of-line definitions for class `formula_base`
@@ -110,13 +110,13 @@ namespace black::details
 } namespace std {
 
   template<>
-  struct hash<black::details::formula> {
-    size_t operator()(black::details::formula const&f) const {
+  struct hash<black::internal::formula> {
+    size_t operator()(black::internal::formula const&f) const {
       return f.hash();
     }
   };
 
-} namespace black::details {
+} namespace black::internal {
 
   /*
    * Out-of-line definitions for handles
@@ -244,12 +244,12 @@ namespace black::details
   };
 
   #define declare_operator(Op, Arity)                                 \
-    struct Op : Arity##_operator<Op, Arity::type::Op> {                 \
-      using base_t = Arity##_operator<Op, Arity::type::Op>;             \
+    struct Op : Arity##_operator<Op, Arity::type::Op> {               \
+      using base_t = Arity##_operator<Op, Arity::type::Op>;           \
       using base_t::base_t;                                           \
-      friend operator_base<Op, Arity##_t, Arity::type::Op>;             \
+      friend operator_base<Op, Arity##_t, Arity::type::Op>;           \
     };                                                                \
-  } namespace black { using details::Op; } namespace black::details { \
+  } namespace black { using internal::Op; } namespace black::internal { \
 
   declare_operator(negation,     unary)
   declare_operator(tomorrow,     unary)

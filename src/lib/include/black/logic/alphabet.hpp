@@ -35,7 +35,7 @@
 
 namespace black {
 
-  namespace details {
+  namespace internal {
     struct alphabet_impl;
   }
 
@@ -65,7 +65,7 @@ namespace black {
     // Entry point to obtain an atomic formula, i.e., a proposition variable
     // Atoms can be labelled by a piece of data of any type T, as long as
     // T is Hashable (see the std::unordered_map documentation for reference)
-    template<typename T, REQUIRES(details::is_hashable<T>)>
+    template<typename T, REQUIRES(internal::is_hashable<T>)>
     atom var(T&& label);
 
     // Function to obtain a formula given its unique id
@@ -75,10 +75,10 @@ namespace black {
     msat_env mathsat_env() const;
 
   private:
-    std::unique_ptr<details::alphabet_impl> _impl;
+    std::unique_ptr<internal::alphabet_impl> _impl;
 
     template<typename, typename>
-    friend struct details::handle_base;
+    friend struct internal::handle_base;
   };
 
 } // namespace black

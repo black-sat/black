@@ -32,7 +32,7 @@
 
 #include <string>
 
-namespace black::details {
+namespace black::internal {
 
   msat_env mathsat_init() {
     msat_config cfg = msat_create_config();

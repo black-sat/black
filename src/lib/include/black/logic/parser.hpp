@@ -25,7 +25,7 @@
 #include <ostream>
 #include <functional>
 
-namespace black::details
+namespace black::internal
 {
   //
   // Class to parse LTL formulas
@@ -99,13 +99,13 @@ namespace black::details
     return std::nullopt;
   }
 
-} // namespace black::details
+} // namespace black::internal
 
 // Exported names
 namespace black {
-  using details::parser;
-  using details::parse_formula;
-  using details::to_string;
+  using internal::parser;
+  using internal::parse_formula;
+  using internal::to_string;
 }
 
 #endif // PARSER_H_

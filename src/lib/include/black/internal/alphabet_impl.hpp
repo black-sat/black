@@ -31,7 +31,7 @@
 #include <deque>
 #include <unordered_map>
 
-namespace black::details {
+namespace black::internal {
 
   struct alphabet_impl
   {
@@ -153,30 +153,30 @@ namespace black::details {
 
     return {sigma, object};
   }
-} // namespace black::details
+} // namespace black::internal
 
 namespace black {
   //
   // Out-of-line definitions of methods of class `alphabet`
   //
   inline alphabet::alphabet()
-    : _impl{std::make_unique<details::alphabet_impl>(this)} {}
+    : _impl{std::make_unique<internal::alphabet_impl>(this)} {}
 
   inline boolean alphabet::boolean(bool value) {
     return value ? top() : bottom();
   }
 
   inline boolean alphabet::top() {
-    return black::details::boolean{this, &_impl->_top};
+    return black::internal::boolean{this, &_impl->_top};
   }
 
   inline boolean alphabet::bottom() {
-    return black::details::boolean{this, &_impl->_bottom};
+    return black::internal::boolean{this, &_impl->_bottom};
   }
 
-  template<typename T, REQUIRES_OUT_OF_LINE(details::is_hashable<T>)>
+  template<typename T, REQUIRES_OUT_OF_LINE(internal::is_hashable<T>)>
   inline atom alphabet::var(T&& label) {
-    using namespace details;
+    using namespace internal;
     if constexpr(std::is_constructible_v<std::string,T>) {
       return
         atom{this, _impl->allocate_formula<atom_t>(std::string{FWD(label)})};
@@ -186,7 +186,7 @@ namespace black {
   }
 
   inline formula alphabet::from_id(formula_id id) {
-    using namespace details;
+    using namespace internal;
     return
     formula{this, reinterpret_cast<formula_base *>(static_cast<uintptr_t>(id))};
   }
@@ -195,7 +195,7 @@ namespace black {
     return _impl->_msat_env;
   }
 
-  namespace details {
+  namespace internal {
     inline msat_term formula::to_sat() const {
       // TODO: check if the formula is propositional-only
       // TODO: check that the environment of the alphabet is the same

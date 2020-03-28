@@ -26,7 +26,7 @@
 #include <black/solver/solver.hpp>
 #include <black/sat/mathsat.hpp>
 
-namespace black::details
+namespace black::internal
 {
   /*
    * Incremental version of 'solve'
@@ -649,4 +649,4 @@ namespace black::details
 
 
 
-} // end namespace black::details
+} // end namespace black::internal

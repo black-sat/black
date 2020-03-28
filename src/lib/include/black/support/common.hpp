@@ -35,7 +35,7 @@
 // Include in the details namespace some commonly used type.
 // Since they are not included in the main namespace, the declarations do not
 // interefere with anything else.
-namespace black::details {
+namespace black::internal {
 
   using std::optional;
   using std::make_optional;
@@ -45,21 +45,21 @@ namespace black::details {
 
 // Custom assert and unreachable assertion macros built on top of debug_assert
 // library.
-namespace black::details {
+namespace black::internal {
   // Settings for the customization of foonathan's DEBUG_ASSERT macro
   struct black_assert_t
     : debug_assert::default_handler,
       debug_assert::set_level<1> {};
 
-} // black::details
+} // black::internal
 
 #define black_assert(Expr) \
-  DEBUG_ASSERT(Expr, ::black::details::black_assert_t{})
+  DEBUG_ASSERT(Expr, ::black::internal::black_assert_t{})
 #define black_unreachable() \
-  DEBUG_UNREACHABLE(::black::details::black_assert_t{});\
+  DEBUG_UNREACHABLE(::black::internal::black_assert_t{});\
   DEBUG_ASSERT_MARK_UNREACHABLE
 
-namespace black::details {
+namespace black::internal {
   // First-match-first-called apply function, used in formula matchers
   template<typename ...Args, typename F>
   auto apply_first(std::tuple<Args...> args, F f)
@@ -93,10 +93,10 @@ namespace black::details {
 
 // WARNING: this must stay on the same line.
 #define REQUIRES(...) \
-typename BLACK_REQUIRES_FRESH = void, typename std::enable_if<::black::details::true_t<BLACK_REQUIRES_FRESH>::value && ::black::details::all(__VA_ARGS__), int>::type = 0
+typename BLACK_REQUIRES_FRESH = void, typename std::enable_if<::black::internal::true_t<BLACK_REQUIRES_FRESH>::value && ::black::internal::all(__VA_ARGS__), int>::type = 0
 
 #define REQUIRES_OUT_OF_LINE(...) \
-typename BLACK_REQUIRES_FRESH, typename std::enable_if<::black::details::true_t<BLACK_REQUIRES_FRESH>::value && ::black::details::all(__VA_ARGS__), int>::type
+typename BLACK_REQUIRES_FRESH, typename std::enable_if<::black::internal::true_t<BLACK_REQUIRES_FRESH>::value && ::black::internal::all(__VA_ARGS__), int>::type
 
 #define BLACK_CONCAT(x, y) BLACK_CONCAT_2(x,y)
 #define BLACK_CONCAT_2(x, y) x ## y
@@ -107,7 +107,7 @@ typename BLACK_REQUIRES_FRESH, typename std::enable_if<::black::details::true_t<
 // Macro to require well-formedness of some dependent expression
 #define WELL_FORMED(Expr) typename = std::void_t<decltype(Expr)>
 
-namespace black::details {
+namespace black::internal {
 
   template<typename T>
   struct true_t : std::true_type { };
@@ -181,7 +181,7 @@ namespace black::details {
   bool constexpr all_equal(Arg &&arg, Args&& ...args) {
     return ((std::forward<Arg>(arg) == std::forward<Args>(args)) && ...);
   }
-} // namespace black::details
+} // namespace black::internal
 
 //
 // std::hash specialization for tuples and pairs.
@@ -189,7 +189,7 @@ namespace black::details {
 // and https://stackoverflow.com/questions/35985960
 // for an explanation of the hashing function combination technique
 //
-namespace black::details {
+namespace black::internal {
   inline size_t hash_combine(size_t lhs, size_t rhs) {
     static_assert(sizeof(size_t) == 4 || sizeof(size_t) == 8);
 
@@ -228,7 +228,7 @@ namespace std
   template<typename T, typename ...Ts>
   struct hash<tuple<T,Ts...>> {
     size_t operator()(tuple<T,Ts...> const&t) const {
-      using namespace ::black::details;
+      using namespace ::black::internal;
 
       hash<T> h1;
       hash<tuple<Ts...>> h2;
@@ -246,7 +246,7 @@ namespace std
   };
 }
 
-namespace black::details
+namespace black::internal
 {
   //
   // Trait to detect whether a type is convertible to a tuple of some arbitrary
@@ -380,8 +380,8 @@ namespace black::details
 // std::hash specialization for any_hashable
 namespace std {
   template<>
-  struct hash<black::details::any_hashable> {
-    size_t operator()(black::details::any_hashable const&h) const {
+  struct hash<black::internal::any_hashable> {
+    size_t operator()(black::internal::any_hashable const&h) const {
       return h.hash();
     }
   };

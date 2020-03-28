@@ -33,7 +33,7 @@
 #include <limits>
 #include <unordered_set>
 
-namespace black::details {
+namespace black::internal {
 
   // Auxiliary functions
 
@@ -158,12 +158,12 @@ namespace black::details {
 
   }; // end class Black Solver
 
-} // end namespace black::details
+} // end namespace black::internal
 
 // Names exported to the user
 namespace black {
-  using details::solver;
-  using details::to_nnf;
+  using internal::solver;
+  using internal::to_nnf;
 }
 
 #endif // SOLVER_HPP
