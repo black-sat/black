@@ -67,9 +67,10 @@ set(CMAKE_CXX_STANDARD 17)
 
 option(FMT_PEDANTIC "" ON)
 option(FMT_WERROR "" ON)
-add_subdirectory(external/fmt)
-add_subdirectory(external/debug_assert)
-add_subdirectory(external/clipp)
+
+add_subdirectory(external/fmt EXCLUDE_FROM_ALL)
+add_subdirectory(external/debug_assert EXCLUDE_FROM_ALL)
+add_subdirectory(external/clipp EXCLUDE_FROM_ALL)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDEBUG_ASSERT_DISABLE")
 
