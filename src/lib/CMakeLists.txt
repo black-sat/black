@@ -33,15 +33,19 @@ set (
  )
 
 set (
- LIB_HEADERS
- include/black/support/common.hpp
- include/black/logic/alphabet.hpp
- include/black/logic/formula.hpp
- include/black/logic/lex.hpp
- include/black/logic/parser.hpp
- include/black/sat/glucose.hpp
- include/black/sat/mathsat.hpp
- include/black/solver/solver.hpp
+  LIB_HEADERS
+  include/black/internal/formula/base.hpp
+  include/black/internal/formula/impl.hpp
+  include/black/internal/formula/match.hpp
+  include/black/internal/alphabet_impl.hpp
+  include/black/support/common.hpp
+  include/black/logic/alphabet.hpp
+  include/black/logic/formula.hpp
+  include/black/logic/lex.hpp
+  include/black/logic/parser.hpp
+  include/black/sat/glucose.hpp
+  include/black/sat/mathsat.hpp
+  include/black/solver/solver.hpp
 )
 
 # Here adding the headers is redundant, but makes them appear in

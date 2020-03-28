@@ -24,9 +24,11 @@
 #ifndef BLACK_LOGIC_MATCH_HPP_
 #define BLACK_LOGIC_MATCH_HPP_
 
-namespace black::internal {
-  
-}
+namespace black::internal::new_match
+{
+  class matcher {
 
+  };
+}
 
 #endif

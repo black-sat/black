@@ -55,7 +55,7 @@ namespace black::internal {
   };
 }
 
-#include <black/internal/formula_base.hpp>
+#include <black/internal/formula/base.hpp>
 
 namespace black {
   class alphabet;
@@ -301,6 +301,6 @@ namespace black {
   using internal::otherwise;
 }
 
-#include <black/internal/formula_impl.hpp>
+#include <black/internal/formula/impl.hpp>
 
 #endif // BLACK_LOGIC_FORMULA_HPP_
