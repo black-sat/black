@@ -45,7 +45,7 @@ namespace black::internal
   // Implementation of the matching function, formula::match()
   //
   template<typename Case, typename ...Cases, typename ...Handlers>
-  static auto match(formula f, Handlers&& ...handlers) 
+  auto match(formula f, Handlers&& ...handlers) 
   {
     if(f.is<Case>())
       return apply_first(std::make_tuple(*f.to<Case>()), FWD(handlers)...);
