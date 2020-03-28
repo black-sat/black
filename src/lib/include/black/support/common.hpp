@@ -59,33 +59,6 @@ namespace black::internal {
   DEBUG_UNREACHABLE(::black::internal::black_assert_t{});\
   DEBUG_ASSERT_MARK_UNREACHABLE
 
-namespace black::internal {
-  // First-match-first-called apply function, used in formula matchers
-  template<typename ...Args, typename F>
-  auto apply_first(std::tuple<Args...> args, F f)
-    //-> decltype(std::apply(f, args))
-  {
-    return std::apply(f, args);
-  }
-
-  template<typename ...Args, typename F, typename ...Fs>
-  auto apply_first(std::tuple<Args...> args, F f, Fs ...fs)
-    // -> std::conditional_t<std::is_invocable_v<F, Args...>,
-    //      std::invoke_result_t<F, Args...>,
-    //      decltype(apply_first(args, fs...))>
-  {
-    if constexpr(std::is_invocable_v<F, Args...>) {
-      return std::apply(f, args);
-    } else
-      return apply_first(args, fs...);
-  }
-
-  // Simple utility to get the overloading of multiple lambdas (for example)
-  // not used for formula::match but useful to work with std::visit
-  template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-  template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-}
-
 // Shorthand for perfect forwarding
 #define FWD(a) std::forward<decltype(a)>(a)
 
@@ -108,6 +81,11 @@ typename BLACK_REQUIRES_FRESH, typename std::enable_if<::black::internal::true_t
 #define WELL_FORMED(Expr) typename = std::void_t<decltype(Expr)>
 
 namespace black::internal {
+
+  // Simple utility to get the overloading of multiple lambdas (for example)
+  // not used for formula::match but useful to work with std::visit
+  template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+  template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
   template<typename T>
   struct true_t : std::true_type { };

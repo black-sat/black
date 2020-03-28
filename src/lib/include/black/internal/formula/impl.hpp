@@ -25,7 +25,7 @@
 #define BLACK_LOGIC_FORMULA_IMPL_HPP_
 
 #ifndef BLACK_LOGIC_FORMULA_HPP_
-  #error "This header file cannot included alone, "\
+  #error "This header file cannot be included alone, "\
          "please include <black/logic/formula.hpp> instead"
 #endif
 
@@ -75,7 +75,7 @@ namespace black::internal
   }
 
   // Implementation of formula::to_sat() under alphabet's in alphabet_impl.hpp
-  // Implementation of formula::match() below, after handles
+  // Implementation of formula::match() in match.hpp, included below
 
   /*
    * Opaque id for formulas
@@ -270,43 +270,6 @@ namespace black::internal
   #undef declare_operator
 
   //
-  // Implementation of the matching function
-  //
-  template<typename ...Cases>
-  auto formula::match(Cases&& ...cases) const
-  {
-    black_assert(_formula);
-
-    #define match_case(H)                                             \
-      case formula_type::H: {                                         \
-        black_assert(is<H>());                                        \
-        return apply_first(std::make_tuple(*to<H>()), FWD(cases)...); \
-      }
-
-    switch(_formula->type) {
-      match_case(boolean)
-      match_case(atom)
-      match_case(negation)
-      match_case(tomorrow)
-      match_case(yesterday)
-      match_case(always)
-      match_case(eventually)
-      match_case(past)
-      match_case(historically)
-      match_case(conjunction)
-      match_case(disjunction)
-      match_case(then)
-      match_case(iff)
-      match_case(until)
-      match_case(release)
-      match_case(since)
-      match_case(triggered)
-    }
-    #undef match_case
-    black_unreachable();
-  }
-
-  //
   // Implementation of operators
   //
   inline auto operator !(formula f) { return negation(f); }
@@ -341,5 +304,7 @@ namespace black::internal
   inline auto YP(formula f) { return Y(P(f)); }
   inline auto YH(formula f) { return Y(H(f)); }
 }
+
+#include <black/internal/formula/match.hpp>
 
 #endif // BLACK_LOGIC_FORMULA_IMPL_HPP_

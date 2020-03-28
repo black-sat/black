@@ -24,11 +24,59 @@
 #ifndef BLACK_LOGIC_MATCH_HPP_
 #define BLACK_LOGIC_MATCH_HPP_
 
-namespace black::internal::new_match
-{
-  class matcher {
+#ifndef BLACK_LOGIC_FORMULA_HPP_
+  #error "This header file cannot be included alone, "\
+         "please include <black/logic/formula.hpp> instead"
+#endif
 
-  };
+namespace black::internal
+{
+  // First-match-first-called apply function
+  template<typename ...Args, typename F, typename ...Fs>
+  auto apply_first(std::tuple<Args...> args, F f, Fs ...fs)
+  {
+    if constexpr(std::is_invocable_v<F, Args...>) {
+      return std::apply(f, args);
+    } else if constexpr(sizeof...(Fs) > 0)
+      return apply_first(args, fs...);
+  }
+
+  //
+  // Implementation of the matching function, formula::match()
+  //
+  template<typename Case, typename ...Cases, typename ...Handlers>
+  static auto match(formula f, Handlers&& ...handlers) 
+  {
+    if(f.is<Case>())
+      return apply_first(std::make_tuple(*f.to<Case>()), FWD(handlers)...);
+    else if constexpr(sizeof...(Cases) > 0)
+      return match<Cases...>(f, FWD(handlers)...);
+    
+    black_unreachable();
+  }
+  
+  template<typename ...Handlers>
+  auto formula::match(Handlers&& ...handlers) const {
+    return internal::match<
+      boolean,
+      atom,
+      negation,
+      tomorrow,
+      yesterday,
+      always,
+      eventually,
+      past,
+      historically,
+      conjunction,
+      disjunction,
+      then,
+      iff,
+      until,
+      release,
+      since,
+      triggered
+    >(*this, FWD(handlers)...);
+  }
 }
 
-#endif
+#endif // BLACK_LOGIC_MATCH_HPP_
