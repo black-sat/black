@@ -30,6 +30,7 @@ set(
   units/common.cpp
   units/formula.cpp
   units/parser.cpp
+  units/match.cpp
 )
 
 add_executable(unit_tests ${UNIT_TESTS})

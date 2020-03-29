@@ -41,23 +41,54 @@ namespace black::internal
       return apply_first(args, fs...);
   }
 
+  // Convenience version with a single argument
+  template<typename Arg, typename ...Fs>
+  auto apply_first(Arg&& arg, Fs ...fs)
+  {
+    return apply_first(std::make_tuple(FWD(arg)), fs...);
+  }
+
   //
   // Implementation of the matching function, formula::match()
   //
-  template<typename Case, typename ...Cases, typename ...Handlers>
-  auto match(formula f, Handlers&& ...handlers) 
+  template<typename ...Cases>
+  struct matcher;
+
+  template<typename Case>
+  struct matcher<Case> {
+    template<typename ...Handlers>
+    static auto match(formula f, Handlers&& ...handlers)
+      -> decltype(apply_first(*f.to<Case>(), FWD(handlers)...))
+    {
+      if(f.is<Case>())
+        return apply_first(*f.to<Case>(), FWD(handlers)...);
+      
+      black_unreachable();
+    }
+  };
+
+  template<typename Case, typename ...Cases>
+  struct matcher<Case, Cases...>
   {
-    if(f.is<Case>())
-      return apply_first(std::make_tuple(*f.to<Case>()), FWD(handlers)...);
-    else if constexpr(sizeof...(Cases) > 0)
-      return match<Cases...>(f, FWD(handlers)...);
-    
-    black_unreachable();
-  }
+    template<typename ...Handlers>
+    static auto match(formula f, Handlers&& ...handlers) 
+      -> std::common_type_t<
+        decltype(apply_first(*f.to<Case>(), FWD(handlers)...)),
+        decltype(matcher<Cases...>::match(f, FWD(handlers)...))
+      >
+    {
+      if(f.is<Case>())
+        return apply_first(*f.to<Case>(), FWD(handlers)...);
+      else if constexpr(sizeof...(Cases) > 0)
+        return matcher<Cases...>::match(f, FWD(handlers)...);
+      
+      black_unreachable();
+    }
+  };  
   
   template<typename ...Handlers>
   auto formula::match(Handlers&& ...handlers) const {
-    return internal::match<
+    return matcher<
       boolean,
       atom,
       negation,
@@ -75,8 +106,55 @@ namespace black::internal
       release,
       since,
       triggered
-    >(*this, FWD(handlers)...);
+    >::match(*this, FWD(handlers)...);
   }
+}
+
+namespace std {
+
+  #define declare_common_type_(Particular, General)                          \
+    template<typename T>                                                     \
+    struct common_type<                                                      \
+      enable_if_t<is_convertible_v<T, black::General>, black::Particular>, T \
+    > {                                                                      \
+      using type = black::General;                                           \
+    }; 
+
+  #define declare_common_type(Particular, General)   \
+    declare_common_type_(Particular, General)        \
+    template<typename T>                             \
+    struct common_type<                              \
+      enable_if_t<                                   \
+        !is_convertible_v<T, black::General> &&      \
+        is_convertible_v<T, black::formula>,         \
+        black::Particular                            \
+      >, T                                           \
+    > {                                              \
+      using type = black::formula;                   \
+    };
+
+  declare_common_type_(boolean,     formula)
+  declare_common_type_(atom,        formula)
+  declare_common_type_(unary,       formula)
+  declare_common_type_(binary,      formula)
+  declare_common_type(negation,     unary)
+  declare_common_type(tomorrow,     unary)
+  declare_common_type(yesterday,    unary)
+  declare_common_type(always,       unary)
+  declare_common_type(eventually,   unary)
+  declare_common_type(past,         unary)
+  declare_common_type(historically, unary)
+  declare_common_type(conjunction,  binary)
+  declare_common_type(disjunction,  binary)
+  declare_common_type(then,         binary)
+  declare_common_type(iff,          binary)
+  declare_common_type(until,        binary)
+  declare_common_type(release,      binary)
+  declare_common_type(since,        binary)
+  declare_common_type(triggered,    binary)
+
+  #undef declare_common_type
+  #undef declare_common_type_
 }
 
 #endif // BLACK_LOGIC_MATCH_HPP_

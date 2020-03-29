@@ -54,7 +54,7 @@ namespace black::internal
             return "<?>"s;
         },
         [](boolean b) {
-          return b.value() ? "True"s : "False"s;
+          return b.value() ? "True" : "False";
         },
         [](negation n) {
           auto arg = n.operand();

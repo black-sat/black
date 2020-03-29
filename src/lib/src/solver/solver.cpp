@@ -316,7 +316,7 @@ namespace black::internal
     return xreq.operand().match(
       [](eventually e) { return std::optional{e.operand()}; },
       [](until u) { return std::optional{u.right()}; },
-      [](otherwise) { return std::optional<formula>{std::nullopt}; }
+      [](otherwise) { return std::nullopt; }
     );
   }
 
@@ -391,81 +391,65 @@ namespace black::internal
     // FIRST: transformation in NNF. SECOND: transformation in xnf
     return f.match(
       // Future Operators
-      [&](boolean)        {
-        return f;
-      },
-      [&](atom a)         {
-          return formula{_alpha.var(std::pair<formula,int>(formula{a},k))};
-      },
+      [&](boolean) { return f; },
+      [&](atom)    { return _alpha.var(std::pair(f,k)); },
       [&,this](tomorrow t)   {
         if(update)
           _xrequests.push_back(t);
-        return formula{_alpha.var(std::pair<formula,int>(formula{t},k))};
+        return _alpha.var(std::pair(f,k));
       },
       [&](negation n)    {
-        return formula{!to_ground_xnf(n.operand(),k, update)};
+        return !to_ground_xnf(n.operand(),k, update);
       },
       [&](conjunction c) {
-        return formula{
-          to_ground_xnf(c.left(),k,update) &&
-          to_ground_xnf(c.right(),k,update)
-        };
+        return to_ground_xnf(c.left(),k,update) 
+            && to_ground_xnf(c.right(),k,update);
       },
       [&](disjunction d) {
-        return formula{
-          to_ground_xnf(d.left(),k,update) ||
-          to_ground_xnf(d.right(),k,update)
-        };
+        return to_ground_xnf(d.left(),k,update) 
+            || to_ground_xnf(d.right(),k,update);
       },
       [&](then d) {
-        return formula{then(
+        return then(
           to_ground_xnf(d.left(),k,update),
           to_ground_xnf(d.right(),k,update)
-        )};
+        );
       },
       [&](iff d) {
-        return formula{iff(
+        return iff(
           to_ground_xnf(d.left(),k,update),
           to_ground_xnf(d.right(),k,update)
-        )};
+        );
       },
       [&,this](until u) {
         if(update)
           _xrequests.push_back(X(u));
 
         return
-          formula{to_ground_xnf(u.right(),k,update) ||
+          to_ground_xnf(u.right(),k,update) ||
             (to_ground_xnf(u.left(),k,update) &&
-              _alpha.var(std::pair<formula,int>(formula{X(u)},k)))
-          };
+              _alpha.var(std::pair(formula{X(u)},k)));
       },
       [&,this](eventually e) {
         if(update)
           _xrequests.push_back(X(e));
         return
-          formula{
-            to_ground_xnf(e.operand(),k,update) ||
-            _alpha.var(std::pair<formula,int>(formula{X(e)},k))
-          };
+          to_ground_xnf(e.operand(),k,update) ||
+            _alpha.var(std::pair(formula{X(e)},k));
       },
       [&,this](always a) {
         if(update)
           _xrequests.push_back(X(a));
         return
-          formula{
-            to_ground_xnf(a.operand(),k,update) &&
-            _alpha.var(std::pair<formula,int>(formula{X(a)},k))
-          };
+          to_ground_xnf(a.operand(),k,update) &&
+            _alpha.var(std::pair(formula{X(a)},k));
       },
       [&,this](release r) {
         if(update)
           _xrequests.push_back(X(r));
-        return formula{
-          (to_ground_xnf(r.right(),k,update))
-            &&
-          (to_ground_xnf(r.left(),k,update) ||
-           _alpha.var(std::pair<formula,int>(formula{X(r)},k)))
-        };
+        return  to_ground_xnf(r.right(),k,update)
+            && (to_ground_xnf(r.left(),k,update) ||
+                _alpha.var(std::pair(formula{X(r)},k)));
       },
       // TODO: past operators
       [&](otherwise) -> formula {
@@ -519,36 +503,36 @@ namespace black::internal
   formula to_nnf(formula f)
   {
     return f.match(
-      [](boolean b) -> formula { return b; },
-      [](atom a)    -> formula { return a; },
+      [](boolean b) { return b; },
+      [](atom a)    { return a; },
       // Push the negation down to literals
       [](negation n) {
         return n.operand().match(
-          [](boolean b) -> formula { return !b; },
-          [](atom a)    -> formula { return !a; },
+          [](boolean b) { return !b; },
+          [](atom a)    { return !a; },
           [](negation n2) { // special case for double negation
             return to_nnf(n2.operand());
           },
-          [](unary u) -> formula {
+          [](unary u) {
             return unary(dual(u.formula_type()), to_nnf(!u.operand()));
           },
-          [](then d) -> formula {
+          [](then d) {
             return to_nnf(d.left()) && to_nnf(! d.right());
           },
-          [](iff d) -> formula {
+          [](iff d) {
             return iff(to_nnf(!d.left()), to_nnf(d.right()));
           },
-          [](binary b) -> formula {
+          [](binary b) {
             return binary(dual(b.formula_type()),
                           to_nnf(!b.left()), to_nnf(!b.right()));
           }
         );
       },
       // other cases: just recurse down the formula
-      [&](unary u) -> formula {
+      [&](unary u) {
         return unary(u.formula_type(), to_nnf(u.operand()));
       },
-      [](binary b) -> formula {
+      [](binary b) {
         return binary(b.formula_type(), to_nnf(b.left()), to_nnf(b.right()));
       }
     );
