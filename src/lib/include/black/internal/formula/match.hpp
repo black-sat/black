@@ -112,31 +112,46 @@ namespace black::internal
 
 namespace std {
 
-  #define declare_common_type_(Particular, General)                          \
+  #define declare_common_type(Particular, General)                           \
+    template<>                                                               \
+    struct common_type<black::Particular, black::Particular> {               \
+      using type = black::Particular;                                        \
+    };                                                                       \
+                                                                             \
     template<typename T>                                                     \
     struct common_type<                                                      \
       enable_if_t<is_convertible_v<T, black::General>, black::Particular>, T \
     > {                                                                      \
       using type = black::General;                                           \
-    }; 
-
-  #define declare_common_type(Particular, General)   \
-    declare_common_type_(Particular, General)        \
-    template<typename T>                             \
-    struct common_type<                              \
-      enable_if_t<                                   \
-        !is_convertible_v<T, black::General> &&      \
-        is_convertible_v<T, black::formula>,         \
-        black::Particular                            \
-      >, T                                           \
-    > {                                              \
-      using type = black::formula;                   \
+    };                                                                       \
+                                                                             \
+    template<typename T>                                                     \
+    struct common_type<                                                      \
+      enable_if_t<                                                           \
+        !is_convertible_v<T, black::General> &&                              \
+        is_convertible_v<T, black::formula>,                                 \
+        black::Particular                                                    \
+      >, T                                                                   \
+    > {                                                                      \
+      using type = black::formula;                                           \
     };
 
-  declare_common_type_(boolean,     formula)
-  declare_common_type_(atom,        formula)
-  declare_common_type_(unary,       formula)
-  declare_common_type_(binary,      formula)
+  #define declare_formula_ct(Type)           \
+    template<typename T>                     \
+    struct common_type<                      \
+      enable_if_t<                           \
+        is_convertible_v<T, black::formula>, \
+        black::Type                          \
+      >, T                                   \
+    > {                                      \
+      using type = black::formula;           \
+    };
+
+  declare_formula_ct(formula)
+  declare_formula_ct(boolean)
+  declare_formula_ct(atom)
+  declare_formula_ct(unary)
+  declare_formula_ct(binary)
   declare_common_type(negation,     unary)
   declare_common_type(tomorrow,     unary)
   declare_common_type(yesterday,    unary)
@@ -154,7 +169,7 @@ namespace std {
   declare_common_type(triggered,    binary)
 
   #undef declare_common_type
-  #undef declare_common_type_
+  #undef declare_formula_ct
 }
 
 #endif // BLACK_LOGIC_MATCH_HPP_
