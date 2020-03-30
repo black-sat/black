@@ -222,3 +222,6 @@ build
 
 # VSCode settings
 .vscode
+
+# CLion settings
+.idea
