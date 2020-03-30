@@ -33,22 +33,21 @@ set(
   CLANG_WARNINGS -Weverything -pedantic -Werror
   -Wno-c++98-compat -Wno-c++98-compat-pedantic
   -Wno-c++98-c++11-c++14-compat
-  -Wno-padded -Wno-weak-vtables -Wno-unknown-pragmas
-  -Wno-exit-time-destructors -Wno-switch-enum
+  -Wno-padded 
+  -Wno-weak-vtables 
+  -Wno-unknown-pragmas
+  -Wno-exit-time-destructors 
+  # -Wno-switch-enum
   -Wno-undefined-var-template
   -Wno-undefined-func-template
-  -Wno-deprecated
-  -Wno-old-style-cast -Wno-documentation
+  # -Wno-deprecated
+  -Wno-old-style-cast 
+  -Wno-documentation
   -Wno-documentation-unknown-command
-  -Wno-sign-conversion
-  -Wno-global-constructors -Wno-extra-semi
+  # -Wno-sign-conversion
+  -Wno-global-constructors 
+  # -Wno-extra-semi
   -Wno-unknown-warning-option
-  # TODO: warnings ignored for fmt
-  -Wno-undef -Wno-missing-noreturn
-  -Wno-double-promotion
-  # TODO: warnings ignored for clipp
-  -Wno-reserved-id-macro
-  -Wno-covered-switch-default
 )
 
 # GCC
@@ -73,3 +72,15 @@ macro(target_enable_warnings TARGET)
   )
 endmacro()
 
+#
+# Marks all interface headers of a target as system headers, to ignore warnings
+#
+function(target_mark_as_system TARGET)
+  get_target_property(
+    TARGET_INCLUDE_DIR ${TARGET} INTERFACE_INCLUDE_DIRECTORIES
+  )
+  set_target_properties(
+    ${TARGET} PROPERTIES 
+    INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${TARGET_INCLUDE_DIR}"
+  )
+endfunction()
