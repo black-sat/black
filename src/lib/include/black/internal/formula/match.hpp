@@ -24,6 +24,8 @@
 #ifndef BLACK_LOGIC_MATCH_HPP_
 #define BLACK_LOGIC_MATCH_HPP_
 
+#include <functional>
+
 #ifndef BLACK_LOGIC_FORMULA_HPP_
   #error "This header file cannot be included alone, "\
          "please include <black/logic/formula.hpp> instead"
@@ -31,21 +33,93 @@
 
 namespace black::internal
 {
-  // First-match-first-called apply function
-  template<typename ...Args, typename F, typename ...Fs>
-  auto apply_first(std::tuple<Args...> args, F f, Fs ...fs)
-  {
-    if constexpr(std::is_invocable_v<F, Args...>) {
-      return std::apply(f, args);
-    } else if constexpr(sizeof...(Fs) > 0)
-      return apply_first(args, fs...);
+  template<int I, REQUIRES(I == 0)>
+  formula get(unary u) {
+    return u.operand();
   }
 
-  // Convenience version with a single argument
-  template<typename Arg, typename ...Fs>
-  auto apply_first(Arg&& arg, Fs ...fs)
-  {
-    return apply_first(std::make_tuple(FWD(arg)), fs...);
+  template<int I, REQUIRES(I <= 1)>
+  formula get(binary b) {
+    if constexpr(I == 0)
+      return b.left();
+    else if constexpr(I == 1)
+      return b.right();
+  }
+}
+
+namespace std {
+
+  #define declare_destructuring_arity(Formula, Arity)    \
+    template<>                                           \
+    struct tuple_size<black::internal::Formula>          \
+      : std::integral_constant<int, Arity> { };          \
+                                                         \
+    template<int I>                                      \
+    struct tuple_element<I, black::internal::Formula> {  \
+      using type = black::internal::formula;             \
+    };
+
+    declare_destructuring_arity(boolean,      0)
+    declare_destructuring_arity(atom,         0)
+    declare_destructuring_arity(negation,     1)
+    declare_destructuring_arity(tomorrow,     1)
+    declare_destructuring_arity(yesterday,    1)
+    declare_destructuring_arity(always,       1)
+    declare_destructuring_arity(eventually,   1)
+    declare_destructuring_arity(past,         1)
+    declare_destructuring_arity(historically, 1)
+    declare_destructuring_arity(conjunction,  2)
+    declare_destructuring_arity(disjunction,  2)
+    declare_destructuring_arity(then,         2)
+    declare_destructuring_arity(iff,          2)
+    declare_destructuring_arity(until,        2)
+    declare_destructuring_arity(release,      2)
+    declare_destructuring_arity(since,        2)
+    declare_destructuring_arity(triggered,    2)
+
+  #undef declare_destructuring
+
+}
+
+namespace black::internal
+{
+  // this is just like std::apply but applies the formula f before the args
+  template<typename Handler, typename Formula, size_t ...I>
+  auto unpack_(
+    Handler&& handler, Formula f, std::index_sequence<I...>
+  ) -> RETURNS_DECLTYPE(FWD(handler)(f, get<I>(f)...))
+
+  template<typename Handler, typename Formula>
+  auto unpack(Handler&& handler, Formula f)
+  -> RETURNS_DECLTYPE(
+    unpack_(
+      FWD(handler), f, std::make_index_sequence<std::tuple_size_v<Formula>>{}
+    )
+  )
+
+  template<typename Handler, typename Formula, typename = void>
+  struct can_be_unpacked : std::false_type { };
+
+  template<typename Handler, typename Formula>
+  struct can_be_unpacked<
+    Handler, Formula, 
+    std::void_t<
+      decltype(
+        unpack(std::declval<Handler>(), std::declval<Formula>())
+      )
+    >
+  > : std::true_type { };
+  
+  template<typename Formula, typename Handler, typename ...Handlers>
+  auto dispatch(Formula f, Handler&& handler, Handlers&& ...handlers) {
+    if constexpr(std::is_invocable_v<Handler, Formula>)
+      return std::invoke(FWD(handler), f);
+    else if constexpr(can_be_unpacked<Handler, Formula>::value)
+      return unpack(FWD(handler), f);
+    else if constexpr(sizeof...(Handlers) > 0)
+      return dispatch(f, FWD(handlers)...);
+
+    black_unreachable();
   }
 
   template<typename ...Operators>
@@ -58,10 +132,10 @@ namespace black::internal
   struct matcher<syntax<Case>> {
     template<typename ...Handlers>
     static auto match(formula f, Handlers&& ...handlers)
-      -> decltype(apply_first(*f.to<Case>(), FWD(handlers)...))
+      -> decltype(dispatch(*f.to<Case>(), FWD(handlers)...))
     {
       if(f.is<Case>())
-        return apply_first(*f.to<Case>(), FWD(handlers)...);
+        return dispatch(*f.to<Case>(), FWD(handlers)...);
       
       black_unreachable();
     }
@@ -73,16 +147,14 @@ namespace black::internal
     template<typename ...Handlers>
     static auto match(formula f, Handlers&& ...handlers) 
       -> std::common_type_t<
-        decltype(apply_first(*f.to<Case>(), FWD(handlers)...)),
+        decltype(dispatch(*f.to<Case>(), FWD(handlers)...)),
         decltype(matcher<syntax<Cases...>>::match(f, FWD(handlers)...))
       >
     {
       if(f.is<Case>())
-        return apply_first(*f.to<Case>(), FWD(handlers)...);
-      else if constexpr(sizeof...(Cases) > 0)
+        return dispatch(*f.to<Case>(), FWD(handlers)...);
+      else
         return matcher<syntax<Cases...>>::match(f, FWD(handlers)...);
-      
-      black_unreachable();
     }
   };
 
