@@ -48,14 +48,14 @@ namespace black::internal
     return apply_first(std::make_tuple(FWD(arg)), fs...);
   }
 
-  //
-  // Implementation of the matching function, formula::match()
-  //
+  template<typename ...Operators>
+  struct syntax { };
+
   template<typename ...Cases>
   struct matcher;
 
   template<typename Case>
-  struct matcher<Case> {
+  struct matcher<syntax<Case>> {
     template<typename ...Handlers>
     static auto match(formula f, Handlers&& ...handlers)
       -> decltype(apply_first(*f.to<Case>(), FWD(handlers)...))
@@ -68,45 +68,78 @@ namespace black::internal
   };
 
   template<typename Case, typename ...Cases>
-  struct matcher<Case, Cases...>
+  struct matcher<syntax<Case, Cases...>>
   {
     template<typename ...Handlers>
     static auto match(formula f, Handlers&& ...handlers) 
       -> std::common_type_t<
         decltype(apply_first(*f.to<Case>(), FWD(handlers)...)),
-        decltype(matcher<Cases...>::match(f, FWD(handlers)...))
+        decltype(matcher<syntax<Cases...>>::match(f, FWD(handlers)...))
       >
     {
       if(f.is<Case>())
         return apply_first(*f.to<Case>(), FWD(handlers)...);
       else if constexpr(sizeof...(Cases) > 0)
-        return matcher<Cases...>::match(f, FWD(handlers)...);
+        return matcher<syntax<Cases...>>::match(f, FWD(handlers)...);
       
       black_unreachable();
     }
-  };  
-  
+  };
+
+  using ltl = syntax<
+    boolean,
+    atom,
+    negation,
+    tomorrow,
+    yesterday,
+    always,
+    eventually,
+    past,
+    historically,
+    conjunction,
+    disjunction,
+    then,
+    iff,
+    until,
+    release,
+    since,
+    triggered
+  >;
+
+  using unary_ltl_ops = syntax<
+    negation,
+    tomorrow,
+    yesterday,
+    always,
+    eventually,
+    past,
+    historically
+  >;
+
+  using binary_ltl_ops = syntax<
+    conjunction,
+    disjunction,
+    then,
+    iff,
+    until,
+    release,
+    since,
+    triggered
+  >;
+
   template<typename ...Handlers>
   auto formula::match(Handlers&& ...handlers) const {
-    return matcher<
-      boolean,
-      atom,
-      negation,
-      tomorrow,
-      yesterday,
-      always,
-      eventually,
-      past,
-      historically,
-      conjunction,
-      disjunction,
-      then,
-      iff,
-      until,
-      release,
-      since,
-      triggered
-    >::match(*this, FWD(handlers)...);
+    return matcher<ltl>::match(*this, FWD(handlers)...);
+  }
+
+  template<typename ...Handlers>
+  auto unary::match(Handlers&& ...handlers) const {
+    return matcher<unary_ltl_ops>::match(*this, FWD(handlers)...);
+  }
+
+  template<typename ...Handlers>
+  auto binary::match(Handlers&& ...handlers) const {
+    return matcher<binary_ltl_ops>::match(*this, FWD(handlers)...);
   }
 }
 
