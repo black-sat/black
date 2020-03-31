@@ -54,7 +54,7 @@ namespace std {
     struct tuple_size<black::internal::Formula>          \
       : std::integral_constant<int, Arity> { };          \
                                                          \
-    template<int I>                                      \
+    template<size_t I>                                   \
     struct tuple_element<I, black::internal::Formula> {  \
       using type = black::internal::formula;             \
     };
