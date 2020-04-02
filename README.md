@@ -5,7 +5,61 @@
 BLACK (short for Bounded Ltl sAtisfiability ChecKer) is a tool for testing the
 satisfiability of LTL formulas based on the SAT encoding of the tableau method
 described [here][Reynolds]. An in depth description of the encoding and the
-whole algorithm is being submitted and will be linked here as soon as possible.
+whole algorithm has been published in the proceedings of the TABLEAUX 2019 
+conference.
+
+[Luca Geatti][Geatti], [Nicola Gigante][Gigante], [Angelo Montanari][Montanari]  
+A SAT-based encoding of the one-pass and tree-shaped tableau system for LTL. 
+In: *Proceedings of the 28th International Conference on Automated Reasoning with 
+Analytic Tableaux and Related Methods*, [TABLEAUX 2019][Tableaux], pages 3‑20  
+DOI: 10.1007/978-3-030-29026-9_1  
+[Full Text][Paper], [DBLP][DBLP]
+
+## Usage
+
+See the next section for instructions on how to install the tool.
+
+Once installed, run `black --help` for a brief usage help:
+```
+$ black --help
+
+BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
+
+SYNOPSIS
+   black [-k <bound>] [<file>]
+   black -h
+
+OPTIONS
+   -k, --bound <bound>   maximum bound for BMC procedures
+   <file>                input formula file name.
+                         If missing, runs in interactive mode.
+                         If '-', reads from standard input in batch mode.
+   -h, --help            print this help message
+```
+
+The tool accepts a file name as a command line argument, and checks the 
+satisfiability of the LTL formula contained in the file:
+
+```
+$ black benchmarks/formulas/acacia/demo-v3/demo-v3/demo-v3_1.pltl 
+SAT
+```
+
+If launched without arguments, a formula is asked interactively:
+
+```
+$ black
+Please enter formula: 
+!(p | !p)
+Parsed formula (nnf): !p & p
+
+Solving...
+
+The formula is UNSAT!
+```
+
+The `-k` (or `--bound`) command line option sets the maximum
+number of iterations of the underlying algorithm (useful for very hard formulas).
 
 ## Installation
 
@@ -93,12 +147,19 @@ not on *Get Xcode*
    ```
    $ make test
    ```
-5. Install  
+5. Install (usually requires administrator privileges)
    ```
    $ make install
    ```
+
 
 [Reynolds]: https://arxiv.org/abs/1609.04102
 [CMake]: https://cmake.org
 [MathSAT]: http://mathsat.fbk.eu
 [Homebrew]: https://brew.sh
+[Geatti]: https://users.dimi.uniud.it/~luca.geatti
+[Gigante]: https://users.dimi.uniud.it/~nicola.gigante
+[Montanari]: https://users.dimi.uniud.it/~angelo.montanari
+[Tableaux]: https://tableaux2019.org/
+[Paper]: https://users.dimi.uniud.it/~nicola.gigante/papers/GeattiGM19.pdf
+[DBLP]: https://dblp.org/rec/conf/tableaux/GeattiGM19.html
