@@ -17,7 +17,7 @@ DOI: 10.1007/978-3-030-29026-9_1
 
 ## Usage
 
-See the following section for instructions on how to install the tool.
+See the next section for instructions on how to install the tool.
 
 Once installed, run `black --help` for a brief usage help:
 ```
@@ -37,7 +37,7 @@ OPTIONS
    -h, --help            print this help message
 ```
 
-The tool accepts a file name as a command line arguments, and checks the 
+The tool accepts a file name as a command line argument, and checks the 
 satisfiability of the LTL formula contained in the file:
 
 ```
@@ -45,7 +45,7 @@ $ black benchmarks/formulas/acacia/demo-v3/demo-v3/demo-v3_1.pltl
 SAT
 ```
 
-If lunched without arguments, a formula is asked interactively:
+If launched without arguments, a formula is asked interactively:
 
 ```
 $ black
