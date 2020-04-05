@@ -83,7 +83,7 @@ shipped with Xcode 10.1 (up to Mac OS X High Sierra) claim C++17
 compatibility but lack proper support for some required standard library
 component.
 
-Hence, please use GCC ≥ 8.2, mainstream Clang ≥ 7, or Xcode ≥ 10.2
+Hence, please use GCC ≥ 8.2, upstream Clang ≥ 7, or Xcode ≥ 10.2
 (macOS Mojave). For Ubuntu 18.04 or later and macOS Mojave, follow the
 following instructions, or adapt them to your system/distribution.
 
