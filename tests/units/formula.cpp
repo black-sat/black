@@ -146,4 +146,29 @@ TEST_CASE("Handles")
     REQUIRE(match(p && q)      == "conjunction"s);
     REQUIRE(match(p || q)      == "binary"s);
   }
+
+  SECTION("Unary formula pattern matching")
+  {
+    auto match = [&](unary u) {
+      return u.match(
+        [](negation)     { return "negation"s;    },
+        [](tomorrow)     { return "tomorrow"s;    },
+        [](yesterday)    { return "yesterday"s;    },
+        [](always)       { return "always"s;    },
+        [](eventually)   { return "eventually"s;    },
+        [](past)         { return "past"s;    },
+        [](historically) { return "historically"s;    }
+      );
+    };
+
+    formula t = XF(p && GF(!q));
+
+    REQUIRE(t.is<tomorrow>());
+    REQUIRE(!t.is<negation>());
+
+    REQUIRE(match(!p)        == "negation"s);
+    REQUIRE(match(X(p))      == "tomorrow"s);
+    REQUIRE(match(F(p && q)) == "eventually"s);
+    REQUIRE(match(Y(p || q)) == "yesterday"s);
+  }
 }
