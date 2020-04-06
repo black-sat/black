@@ -54,6 +54,7 @@ set(CMAKE_MODULE_PATH
 
 include(GitSubmodules) # To automatically fetch dependencies
 include(EnableWarnings) # Common warnings to enable or disable
+include(CodeCoverage) # Code to enable code coverage instrumentation
 include(GNUInstallDirs) # Correct and portable installation paths
 
 update_git_submodules(FATAL) # Fetch git submodules
