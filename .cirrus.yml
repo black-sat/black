@@ -42,10 +42,7 @@ task:
   test_script:
     - cd build/release && ctest -R black
   coverage_script:
-    - if [ "$COVERALLS_REPO_TOKEN" ]; then \
-        coveralls --exclude external --exclude tests --exclude build \
-        -b build/debug \
-      fi
+    - if [ "$COVERALLS_REPO_TOKEN" ]; then coveralls --exclude external --exclude tests --exclude build -b build/debug; fi
 
 task:
   name: macOS (Apple clang)
