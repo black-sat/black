@@ -33,7 +33,7 @@ task:
     - ./download-mathsat.sh
   debug_build_script:
     - mkdir -p build/debug && cd build/debug
-    - cmake -DCMAKE_BUILD_TYPE=Debug ../..
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ../..
     - make -j2
   release_build_script:
     - mkdir -p build/release && cd build/release
