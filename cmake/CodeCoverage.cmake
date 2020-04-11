@@ -26,33 +26,26 @@
 #
 
 option(CODE_COVERAGE "Enable code coverage instrumentation" OFF)
-option(LLVM_COV "Path to llvm-cov executable")
 
 if(CODE_COVERAGE)
-  message(STATUS "Checking for llvm-cov...")
-  find_program(
-    LLVM_COV_PATH llvm-cov  
-    DOC "Path to llvm-cov command"
-  )
-  if(LLVM_COV_PATH)
-    message(STATUS "Found llvm-cov: ${LLVM_COV_PATH}")
-  else()
-    message(WARNING "llvm-cov not found, skipping...")
-  endif()
+  message(STATUS "Code coverage instrumentation enabled")
 endif()
 
 set(COV_CLANG_FLAGS -fprofile-instr-generate -fcoverage-mapping)
+set(COV_GNU_FLAGS --coverage -fprofile-arcs -ftest-coverage)
 
 function(target_code_coverage TARGET)
   if(CODE_COVERAGE)
     target_compile_options(
       ${TARGET} 
       PRIVATE 
+      "$<$<CXX_COMPILER_ID:GNU>:${COV_GNU_FLAGS}>"
       "$<$<CXX_COMPILER_ID:Clang>:${COV_CLANG_FLAGS}>"
       "$<$<CXX_COMPILER_ID:AppleClang>:${COV_CLANG_FLAGS}>"
     )
     target_link_libraries(
       ${TARGET} PRIVATE
+      "$<$<CXX_COMPILER_ID:GNU>:${COV_GNU_FLAGS}>"
       "$<$<CXX_COMPILER_ID:Clang>:${COV_CLANG_FLAGS}>"
       "$<$<CXX_COMPILER_ID:AppleClang>:${COV_CLANG_FLAGS}>"
     )

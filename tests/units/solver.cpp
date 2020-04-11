@@ -23,13 +23,23 @@
 
 #include <catch2/catch.hpp>
 
+#include <black/logic/formula.hpp>
 #include <black/solver/solver.hpp>
-
-#include <string>
 
 using namespace black;
 
-TEST_CASE("K-UNRAVELING")
+TEST_CASE("Testing solver")
 {
-  SECTION("")
+  alphabet sigma;
+  black::solver slv{sigma};
+
+  SECTION("SAT formula") {
+    auto p = sigma.var("p");
+    
+    formula f = !p && !X(p) && FG(p);
+
+    slv.add_formula(f);
+
+    REQUIRE(slv.inc_bsc_prune());
+  }
 }

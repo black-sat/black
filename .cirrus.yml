@@ -27,6 +27,10 @@ task:
         docker_arguments:
           VERSION: 20.04
           GCC_VERSION: 9
+      environment:
+        COVERALLS_REPO_TOKEN: ENCRYPTED\
+        [c7a69f469678bfc6fd9f1e9a0ab2d77e8df79c84c8f38491bb7fc0a185ddcd34cbf3\
+        eeefdc521bc5e27abc4e8a4b564d]
   download_dependencies_script:
     - ./download-mathsat.sh
   debug_build_script:
@@ -39,6 +43,11 @@ task:
     - make -j2
   test_script:
     - cd build/release && ctest -R black
+  coverage_script:
+    - if [ "$COVERALLS_REPO_TOKEN" ]; then \
+        coveralls --exclude external --exclude tests --exclude build \
+        -b build/debug \
+      fi
 
 task:
   name: macOS (Apple clang)

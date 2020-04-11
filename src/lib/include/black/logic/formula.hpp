@@ -297,6 +297,7 @@ namespace black::internal
 
   auto XF(formula f);
   auto XG(formula f);
+  auto FG(formula f);
   auto GF(formula f);
   auto YP(formula f);
   auto YH(formula f);
