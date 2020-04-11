@@ -28,7 +28,9 @@ task:
           VERSION: 20.04
           GCC_VERSION: 9
       environment:
-        COVERALLS_REPO_TOKEN: ENCRYPTED[c7a69f469678bfc6fd9f1e9a0ab2d77e8df79c84c8f38491bb7fc0a185ddcd34cbf3eeefdc521bc5e27abc4e8a4b564d]
+        COVERALLS_REPO_TOKEN: "ENCRYPTED\
+        [c7a69f469678bfc6fd9f1e9a0ab2d77e8df79c84c8f38491bb7fc0a185ddcd34cbf3\
+        eeefdc521bc5e27abc4e8a4b564d]"
   download_dependencies_script:
     - ./download-mathsat.sh
   debug_build_script:
@@ -43,7 +45,10 @@ task:
     - cd build/release && ctest -R black
   coverage_script:
     - cd build/debug && ctest && cd ../..
-    - if [ "$COVERALLS_REPO_TOKEN" ]; then coveralls --exclude external --exclude tests --exclude build -b build/debug; fi
+    - if [ "$COVERALLS_REPO_TOKEN" ]; then \
+        coveralls --gcov /usr/bin/gcov-${GCC_VERSION} -b build/debug \
+                  --exclude external --exclude tests --exclude build;\
+      fi
 
 task:
   name: macOS (Apple clang)
