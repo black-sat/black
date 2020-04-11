@@ -28,9 +28,7 @@ task:
           VERSION: 20.04
           GCC_VERSION: 9
       environment:
-        COVERALLS_REPO_TOKEN: ENCRYPTED\
-        [c7a69f469678bfc6fd9f1e9a0ab2d77e8df79c84c8f38491bb7fc0a185ddcd34cbf3\
-        eeefdc521bc5e27abc4e8a4b564d]
+        COVERALLS_REPO_TOKEN: ENCRYPTED[c7a69f469678bfc6fd9f1e9a0ab2d77e8df79c84c8f38491bb7fc0a185ddcd34cbf3eeefdc521bc5e27abc4e8a4b564d]
   download_dependencies_script:
     - ./download-mathsat.sh
   debug_build_script:
