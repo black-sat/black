@@ -45,10 +45,7 @@ task:
     - cd build/release && ctest -R black
   coverage_script:
     - cd build/debug && ctest && cd ../..
-    - if [ "$COVERALLS_REPO_TOKEN" ]; then \
-        coveralls --gcov /usr/bin/gcov-${GCC_VERSION} -b build/debug \
-                  --exclude external --exclude tests --exclude build;\
-      fi
+    - if [ "$COVERALLS_REPO_TOKEN" ]; then coveralls --gcov /usr/bin/gcov-${GCC_VERSION} -b build/debug --exclude external --exclude tests --exclude build; fi
 
 task:
   name: macOS (Apple clang)
