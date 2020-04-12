@@ -37,15 +37,15 @@ task:
     - mkdir -p build/debug && cd build/debug
     - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ../..
     - make -j2
+  coverage_script:
+    - cd build/debug && ctest && cd ../..
+    - if [ "$COVERALLS_REPO_TOKEN" ]; then coveralls --gcov /usr/bin/gcov-${GCC_VERSION} -b build/debug --exclude external --exclude tests; fi
   release_build_script:
     - mkdir -p build/release && cd build/release
     - cmake -DCMAKE_BUILD_TYPE=Release ../..
     - make -j2
   test_script:
     - cd build/release && ctest -R black
-  coverage_script:
-    - cd build/debug && ctest && cd ../..
-    - if [ "$COVERALLS_REPO_TOKEN" ]; then coveralls --gcov /usr/bin/gcov-${GCC_VERSION} -b build/debug --exclude external --exclude tests --exclude build; fi
 
 task:
   name: macOS (Apple clang)

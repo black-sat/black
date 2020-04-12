@@ -39,8 +39,9 @@ set(
 )
 
 add_executable(unit_tests ${UNIT_TESTS})
-target_link_libraries(unit_tests black Catch2::Catch2)
+target_link_libraries(unit_tests PRIVATE black Catch2::Catch2)
 target_enable_warnings(unit_tests)
+target_code_coverage(unit_tests)
 add_sanitizers(unit_tests)
 
 add_test(NAME unit_tests COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
