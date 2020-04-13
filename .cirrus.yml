@@ -39,7 +39,7 @@ task:
     - make -j2
   coverage_script:
     - cd build/debug && ctest && cd ../..
-    - if [ "$COVERALLS_REPO_TOKEN" ]; then coveralls --gcov /usr/bin/gcov-${GCC_VERSION} -b build/debug --exclude external --exclude tests; fi
+    - if [ "$COVERALLS_REPO_TOKEN" ]; then coveralls --gcov /usr/bin/gcov-${GCC_VERSION} --root . --exclude external --exclude tests -E '.*CMakeFiles.*'; fi
   release_build_script:
     - mkdir -p build/release && cd build/release
     - cmake -DCMAKE_BUILD_TYPE=Release ../..
