@@ -197,6 +197,12 @@ namespace black::internal
 
     // Argument of the operator
     formula operand() const;
+
+    //
+    // Pattern matching function specific for unary formulas
+    //
+    template<typename ...Cases>
+    auto match(Cases&&...) const;
   };
 
   struct binary : handle_base<binary, binary_t>
@@ -227,6 +233,12 @@ namespace black::internal
 
     // Right hand side of the binary operator
     formula right() const;
+
+    //
+    // Pattern matching function specific for binary formulas
+    //
+    template<typename ...Cases>
+    auto match(Cases&&...) const;
   };
 
   //

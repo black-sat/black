@@ -401,54 +401,54 @@ namespace black::internal
       [&](negation n)    {
         return !to_ground_xnf(n.operand(),k, update);
       },
-      [&](conjunction c) {
-        return to_ground_xnf(c.left(),k,update) 
-            && to_ground_xnf(c.right(),k,update);
+      [&](conjunction, formula left, formula right) {
+        return to_ground_xnf(left,k,update) 
+            && to_ground_xnf(right,k,update);
       },
-      [&](disjunction d) {
-        return to_ground_xnf(d.left(),k,update) 
-            || to_ground_xnf(d.right(),k,update);
+      [&](disjunction, formula left, formula right) {
+        return to_ground_xnf(left,k,update) 
+            || to_ground_xnf(right,k,update);
       },
-      [&](then d) {
+      [&](then, formula left, formula right) {
         return then(
-          to_ground_xnf(d.left(),k,update),
-          to_ground_xnf(d.right(),k,update)
+          to_ground_xnf(left,k,update),
+          to_ground_xnf(right,k,update)
         );
       },
-      [&](iff d) {
+      [&](iff, formula left, formula right) {
         return iff(
-          to_ground_xnf(d.left(),k,update),
-          to_ground_xnf(d.right(),k,update)
+          to_ground_xnf(left,k,update),
+          to_ground_xnf(right,k,update)
         );
       },
-      [&,this](until u) {
+      [&,this](until u, formula left, formula right) {
         if(update)
           _xrequests.push_back(X(u));
 
         return
-          to_ground_xnf(u.right(),k,update) ||
-            (to_ground_xnf(u.left(),k,update) &&
+          to_ground_xnf(right,k,update) ||
+            (to_ground_xnf(left,k,update) &&
               _alpha.var(std::pair(formula{X(u)},k)));
       },
-      [&,this](eventually e) {
+      [&,this](eventually e, formula op) {
         if(update)
           _xrequests.push_back(X(e));
         return
-          to_ground_xnf(e.operand(),k,update) ||
+          to_ground_xnf(op,k,update) ||
             _alpha.var(std::pair(formula{X(e)},k));
       },
-      [&,this](always a) {
+      [&,this](always a, formula op) {
         if(update)
           _xrequests.push_back(X(a));
         return
-          to_ground_xnf(a.operand(),k,update) &&
+          to_ground_xnf(op,k,update) &&
             _alpha.var(std::pair(formula{X(a)},k));
       },
-      [&,this](release r) {
+      [&,this](release r, formula left, formula right) {
         if(update)
           _xrequests.push_back(X(r));
-        return  to_ground_xnf(r.right(),k,update)
-            && (to_ground_xnf(r.left(),k,update) ||
+        return  to_ground_xnf(right,k,update)
+            && (to_ground_xnf(left,k,update) ||
                 _alpha.var(std::pair(formula{X(r)},k)));
       },
       // TODO: past operators
@@ -510,21 +510,21 @@ namespace black::internal
         return n.operand().match(
           [](boolean b) { return !b; },
           [](atom a)    { return !a; },
-          [](negation n2) { // special case for double negation
-            return to_nnf(n2.operand());
+          [](negation, formula op) { // special case for double negation
+            return to_nnf(op);
           },
           [](unary u) {
             return unary(dual(u.formula_type()), to_nnf(!u.operand()));
           },
-          [](then d) {
-            return to_nnf(d.left()) && to_nnf(! d.right());
+          [](then, formula left, formula right) {
+            return to_nnf(left) && to_nnf(!right);
           },
-          [](iff d) {
-            return iff(to_nnf(!d.left()), to_nnf(d.right()));
+          [](iff, formula left, formula right) {
+            return iff(to_nnf(!left), to_nnf(right));
           },
-          [](binary b) {
+          [](binary b, formula left, formula right) {
             return binary(dual(b.formula_type()),
-                          to_nnf(!b.left()), to_nnf(!b.right()));
+                          to_nnf(!left), to_nnf(!right));
           }
         );
       },
@@ -550,12 +550,12 @@ namespace black::internal
     );
 
     f.match(
-      [&](unary u) {
-        add_xclosure(u.operand());
+      [&](unary, formula op) {
+        add_xclosure(op);
       },
-      [&](binary b) {
-        add_xclosure(b.left());
-        add_xclosure(b.right());
+      [&](binary, formula left, formula right) {
+        add_xclosure(left);
+        add_xclosure(right);
       },
       [](otherwise) { }
     );

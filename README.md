@@ -1,6 +1,4 @@
-# BLACK
-
-[![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black)
+# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black)  ![MIT](https://img.shields.io/badge/license-MIT-brightgreen)
 
 BLACK (short for Bounded Ltl sAtisfiability ChecKer) is a tool for testing the
 satisfiability of LTL formulas based on the SAT encoding of the tableau method
@@ -17,7 +15,7 @@ DOI: 10.1007/978-3-030-29026-9_1
 
 ## Usage
 
-See the following section for instructions on how to install the tool.
+See the next section for instructions on how to install the tool.
 
 Once installed, run `black --help` for a brief usage help:
 ```
@@ -37,7 +35,7 @@ OPTIONS
    -h, --help            print this help message
 ```
 
-The tool accepts a file name as a command line arguments, and checks the 
+The tool accepts a file name as a command line argument, and checks the 
 satisfiability of the LTL formula contained in the file:
 
 ```
@@ -45,7 +43,7 @@ $ black benchmarks/formulas/acacia/demo-v3/demo-v3/demo-v3_1.pltl
 SAT
 ```
 
-If lunched without arguments, a formula is asked interactively:
+If launched without arguments, a formula is asked interactively:
 
 ```
 $ black
@@ -85,7 +83,7 @@ shipped with Xcode 10.1 (up to Mac OS X High Sierra) claim C++17
 compatibility but lack proper support for some required standard library
 component.
 
-Hence, please use GCC ≥ 8.2, mainstream Clang ≥ 7, or Xcode ≥ 10.2
+Hence, please use GCC ≥ 8.2, upstream Clang ≥ 7, or Xcode ≥ 10.2
 (macOS Mojave). For Ubuntu 18.04 or later and macOS Mojave, follow the
 following instructions, or adapt them to your system/distribution.
 

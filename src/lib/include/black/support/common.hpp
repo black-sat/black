@@ -62,6 +62,10 @@ namespace black::internal {
 // Shorthand for perfect forwarding
 #define FWD(a) std::forward<decltype(a)>(a)
 
+// Shorthand for SFINAE-friendly small functions
+#define RETURNS_DECLTYPE(Expr) \
+  decltype(Expr) { return Expr; }
+
 // The REQUIRES() macro, an easier to use wrapper around std::enable_if
 
 // WARNING: this must stay on the same line.
