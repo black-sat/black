@@ -25,6 +25,7 @@
 #define BLACK_LOGIC_FORMULA_HPP_
 
 #include <optional>
+#include <cstdint>
 
 namespace black::internal {
   //
