@@ -5,40 +5,25 @@
 #ifndef BLACK_TRANSLATOR_HPP
 #define BLACK_TRANSLATOR_HPP
 
-//#include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
 
 namespace black::internal {
-  /*//
-  // Class to translate LTL+Past into LTL formulas
-  //
-  class translator
-  {
-  public:
-    // Class constructor
-    translator(alphabet &a, formula f) : _alpha(a), _frm(f) { }
 
-    formula translate();
+  formula substitute_past(alphabet &, formula);
 
-  private:
-    // Reference to the original _alphabet
-    alphabet& _alpha;
+  std::vector<formula> gen_semantics(alphabet &, formula);
 
-    // Current LTL formula to translate
-    formula _frm;
+  formula conjoin_list(std::vector<formula> fs);
 
-    formula substitute_past(formula);
+  formula ltlpast_to_ltl(alphabet &, formula);
 
-    std::vector<formula> gen_semantics(formula);
-  }; // end class translator*/
-
-  formula remove_past(alphabet&, formula);
+  // Return ( LTL formula (without past), Set with semantics )
+//  std::pair<formula, std::vector<formula>> remove_past(alphabet &, formula);
 } // end namespace black::internal
 
 // Names exported to the user
 namespace black {
-//  using internal::translator;
-  using internal::remove_past;
+  using internal::ltlpast_to_ltl;
 }
 
 #endif //BLACK_TRANSLATOR_HPP
