@@ -8,122 +8,127 @@ namespace black::internal {
   formula substitute_past(alphabet &alpha, formula f) {
     return f.match(
         [&](yesterday, formula op) {
-          return alpha.var( std::pair( Y( substitute_past(alpha, op) ), "Y" ) );
+          formula p = Y(substitute_past(alpha, op));
+          std::string l = "Y";
+          return alpha.var(std::pair(l, p));
         },
         [&](since, formula left, formula right) {
-          return alpha.var( std::pair( "S", S( substitute_past(alpha, left), substitute_past(alpha, right) ) ) );
+          formula p =
+              S(substitute_past(alpha, left), substitute_past(alpha, right));
+          std::string l = "S";
+          return alpha.var(std::pair(l, p));
         },
         [&](triggered, formula left, formula right) {
-          return substitute_past(alpha,  ! S( !left, !right ) );
+          return substitute_past(alpha, !S(!left, !right));
         },
         [&](past, formula op) {
-          return substitute_past(alpha,  S( alpha.top(), op) );
+          return substitute_past(alpha, S(alpha.top(), op));
         },
         [&](historically, formula op) {
-          return substitute_past(alpha,  ! P( ! op ));
+          return substitute_past(alpha, !P(!op));
         },
         [](boolean b) { return b; },
-        [](atom a)    { return a; },
+        [](atom a) { return a; },
         [&](unary u, formula op) {
-          return unary( u.formula_type(), substitute_past(alpha, op) );
+          return unary(u.formula_type(), substitute_past(alpha, op));
         },
         [&](binary b, formula left, formula right) {
-          return binary( b.formula_type(), substitute_past(alpha, left), substitute_past(alpha, right));
+          return binary(b.formula_type(), substitute_past(alpha, left),
+                        substitute_past(alpha, right));
         },
-        [](otherwise) {
-          black_unreachable();
-        }
-    );
+        [](otherwise) { black_unreachable(); });
   }
 
-  /*std::vector<formula> gen_semantics(alphabet &alpha, formula f) {
+  std::vector<formula> gen_semantics(alphabet &alpha, formula f) {
     return f.match(
-      [&](atom a) {
-        std::vector<formula> semantics;
-        std::optional<std::any> label = a.label();
+        [&](atom a) {
+          std::vector<formula> semantics;
+          std::optional<std::pair<std::string, formula>> label =
+              a.label<std::pair<std::string, formula>>();
 
-        if( label ) {
-          std
-        }
+          if (label) {
+            if ((*label).first == "Y" || (*label).first == "S") {
+              formula psi = (*label).second;
+              return psi.match(
+                  [&](yesterday, formula op) {
+                    formula s = !f && G(iff(X(f), op));
 
-        if( (*label).first == "Y" || (*label).first == "S" ) {
-          return label.second.match(
-            [&](yesterday, formula op) {
-              return semantics;
-            },
-            [&](since, formula left, formula right) {
-              return semantics;
-            },
-            [](otherwise) {
-              balck_unreachable();
+                    semantics = gen_semantics(alpha, op);
+                    semantics.push_back(s);
+
+                    return semantics;
+                  },
+                  [&](since, formula left, formula right) {
+                    formula pl = Y(psi);
+                    formula p = alpha.var(std::pair("Y", pl));
+
+                    formula s = G(iff(f, right || (left && p)));
+
+                    semantics = gen_semantics(alpha, p);
+
+                    std::vector<formula> semanticsl =
+                        gen_semantics(alpha, left);
+                    std::vector<formula> semanticsr =
+                        gen_semantics(alpha, right);
+                    semantics.insert(semantics.end(), semanticsl.begin(),
+                                     semanticsl.end());
+                    semantics.insert(semantics.end(), semanticsr.begin(),
+                                     semanticsr.end());
+
+                    semantics.push_back(s);
+
+                    return semantics;
+                  },
+
+                  // TODO: impossible cases but it doesn't compile without them
+                  [&](boolean) { return semantics; },
+                  [&](atom) { return semantics; },
+                  [&](unary) { return semantics; },
+                  [&](binary) { return semantics; },
+
+                  [](otherwise) { black_unreachable(); });
             }
-          );
-        }
+          }
 
-        return semantics;
-      }
-    );
-  }*/
+          return semantics;
+        },
+        [](boolean) {
+          std::vector<formula> semantics;
+          return semantics;
+        },
+        [&](unary, formula op) {
+          std::vector<formula> semantics = gen_semantics(alpha, op);
+          return semantics;
+        },
+        [&](binary, formula left, formula right) {
+          std::vector<formula> semanticsl = gen_semantics(alpha, left);
+          std::vector<formula> semanticsr = gen_semantics(alpha, right);
+          semanticsl.insert(semanticsl.end(), semanticsr.begin(),
+                            semanticsr.end());
+          return semanticsl;
+        },
+        [](otherwise) { black_unreachable(); });
+  }
+
+  formula conjoin_list(std::vector<formula> fs) {
+    if (fs.size() == 0) {
+      black_unreachable();
+    } else if (fs.size() == 1) {
+      formula f = fs.back();
+      fs.pop_back();
+      return f;
+    } else {
+      formula f = fs.back();
+      fs.pop_back();
+      return f && conjoin_list(fs);
+    }
+  }
 
   formula ltlpast_to_ltl(alphabet &alpha, formula f) {
-    return substitute_past(alpha, f);
+    formula ltl = substitute_past(alpha, f);
+    std::vector<formula> semantics = gen_semantics(alpha, ltl);
+    semantics.push_back(ltl);
+
+    return conjoin_list(semantics);
   }
-
-  // Old attempt to generate semantics and remove past in one shot
-  /*std::pair<formula, std::vector<formula>> remove_past(alphabet &alpha, formula f) {
-    return f.match(
-      [&](yesterday, formula op) {
-        std::pair<formula, std::vector<formula>> fs = remove_past(alpha, op);
-        formula p = alpha.var( std::pair( "Y", Y( fs.first ) ) );
-
-        std::vector<formula> semantics = { !p && G( iff( X(p), fs.first ) ) };
-
-        return std::pair( p, semantics );
-      },
-      [&](since, formula left, formula right) {
-        std::pair<formula, std::vector<formula>> fsl = remove_past(alpha, left);
-        std::pair<formula, std::vector<formula>> fsr = remove_past(alpha, right);
-        formula p = alpha.var( std::pair( "S", S( fsl.first, fsr.first ) ) );
-
-        formula py = alpha.var( std::pair( "Y", Y( S( fsl.first, fsr.first ) ) ) );
-
-        std::vector<formula> semantics = {
-            G( iff( p, fsr.first || ( fsl.first && py ) ) ),
-            !py && G( iff( X(py), S( fsl.first, fsr.first ) ) )
-        };
-
-        return std::pair( p, semantics );
-      },
-      [&](triggered, formula left, formula right) {
-        return remove_past(alpha,  ! S( !left, !right ) );
-      },
-      [&](past, formula op) {
-        return remove_past(alpha,  S( alpha.top(), op) );
-      },
-      [&](historically, formula op) {
-        return remove_past(alpha,  ! P( ! op ));
-      },
-      [](boolean b) {
-        std::vector<formula> semantics;
-        return std::pair( b, semantics );
-      },
-      [](atom a) {
-        std::vector<formula> semantics;
-        return std::pair( a, semantics );
-      },
-      [&](unary u) {
-        std::pair<formula, std::vector<formula>> fs = remove_past(alpha, u.operand());
-        return std::pair( unary(u.formula_type(), fs.first ), fs.second );
-      },
-      [&](binary b) {
-        std::pair<formula, std::vector<formula>> fsl = remove_past(alpha, b.left());
-        std::pair<formula, std::vector<formula>> fsr = remove_past(alpha, b.right());
-
-        return std::pair( binary(b.formula_type(), fsl.first, fsr.first), fsl.second.insert( fsl.second.end(), fsr.second.begin(), fsr.second.end() ) );
-      },
-      [](otherwise) {
-        black_unreachable();
-      }
-    );
-  }*/
-}
+} // namespace black::internal

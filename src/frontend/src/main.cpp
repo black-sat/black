@@ -114,7 +114,7 @@ int interactive()
     if(!f)
       continue;
 
-    io::message( "Translated formula: {}\n", black::ltlpast_to_ltl(sigma, *f) );
+    io::message("Translated formula: {}\n", black::ltlpast_to_ltl(sigma, *f));
 
     io::message("Parsed formula (nnf): {}\n", black::to_nnf(black::ltlpast_to_ltl(sigma, *f)));
 

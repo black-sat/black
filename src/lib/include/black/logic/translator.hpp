@@ -9,16 +9,18 @@
 
 namespace black::internal {
 
+  // Substitute past operators with new propositional letters
   formula substitute_past(alphabet &, formula);
 
+  // Generate semantics for each new propositional letter (from substitute_past)
   std::vector<formula> gen_semantics(alphabet &, formula);
 
+  // Put all vector elements in conjunction
   formula conjoin_list(std::vector<formula> fs);
 
+  // Exposed procedure which puts together everything
   formula ltlpast_to_ltl(alphabet &, formula);
 
-  // Return ( LTL formula (without past), Set with semantics )
-//  std::pair<formula, std::vector<formula>> remove_past(alphabet &, formula);
 } // end namespace black::internal
 
 // Names exported to the user
