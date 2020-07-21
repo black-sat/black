@@ -5,6 +5,7 @@
 #ifndef BLACK_TRANSLATOR_HPP
 #define BLACK_TRANSLATOR_HPP
 
+#include <vector>
 #include <black/logic/alphabet.hpp>
 
 namespace black::internal {
