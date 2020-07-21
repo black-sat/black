@@ -2,6 +2,7 @@
 // Created by gabriele on 16/07/2020.
 //
 
+#include <vector>
 #include <black/logic/translator.hpp>
 
 namespace black::internal {
