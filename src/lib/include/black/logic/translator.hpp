@@ -29,6 +29,15 @@
 
 namespace black::internal {
 
+  // Label data type for substituting past propositional letters
+  struct past_label {
+    class formula formula;
+
+    bool operator==(const past_label &other) const {
+      return formula == other.formula;
+    }
+  };
+
   // Substitute past operators with new propositional letters
   formula substitute_past(alphabet &, formula);
 
@@ -42,6 +51,20 @@ namespace black::internal {
   formula ltlpast_to_ltl(alphabet &, formula);
 
 } // end namespace black::internal
+
+// Extend hash for past_label
+namespace std
+{
+  template<>
+  struct hash<black::internal::past_label> {
+    size_t operator()(const black::internal::past_label &t) const {
+      return
+        hash<pair<black::internal::formula_type, black::internal::formula>>{}(
+            pair(t.formula.formula_type(), t.formula)
+        );
+    }
+  };
+}
 
 // Names exported to the user
 namespace black {

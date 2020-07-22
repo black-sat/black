@@ -28,14 +28,13 @@ namespace black::internal {
     return f.match(
         [&](yesterday, formula op) {
           formula p = Y(substitute_past(alpha, op));
-          std::string l = "Y";
-          return alpha.var(std::pair(l, p));
+          return alpha.var(past_label{p});
         },
         [&](since, formula left, formula right) {
           formula p =
               S(substitute_past(alpha, left), substitute_past(alpha, right));
           std::string l = "S";
-          return alpha.var(std::pair(l, p));
+          return alpha.var(past_label{p});
         },
         [&](triggered, formula left, formula right) {
           return substitute_past(alpha, !S(!left, !right));
@@ -55,59 +54,51 @@ namespace black::internal {
           return binary(b.formula_type(), substitute_past(alpha, left),
                         substitute_past(alpha, right));
         },
-        [](otherwise) { black_unreachable(); });
+        [](otherwise) { black_unreachable(); }
+    );
   }
 
   std::vector<formula> gen_semantics(alphabet &alpha, formula f) {
     return f.match(
         [&](atom a) {
           std::vector<formula> semantics;
-          std::optional<std::pair<std::string, formula>> label =
-              a.label<std::pair<std::string, formula>>();
+          std::optional<past_label> label = a.label<past_label>();
 
-          if (label) {
-            if ((*label).first == "Y" || (*label).first == "S") {
-              formula psi = (*label).second;
-              return psi.match(
-                  [&](yesterday, formula op) {
-                    formula s = !f && G(iff(X(f), op));
+          if (!label) return semantics;
 
-                    semantics = gen_semantics(alpha, op);
-                    semantics.push_back(s);
+          formula psi = label->formula;
+          return psi.match(
+              [&](yesterday, formula op) {
+                formula s = !f && G(iff(X(f), op));
 
-                    return semantics;
-                  },
-                  [&](since, formula left, formula right) {
-                    formula pl = Y(psi);
-                    formula p = alpha.var(std::pair("Y", pl));
+                semantics = gen_semantics(alpha, op);
+                semantics.push_back(s);
 
-                    formula s = G(iff(f, right || (left && p)));
+                return semantics;
+              },
+              [&](since, formula left, formula right) {
+                formula pl = Y(f);
+                formula p = alpha.var(past_label{pl});
 
-                    semantics = gen_semantics(alpha, p);
+                formula s = G(iff(f, right || (left && p)));
+                formula sy = !p && G(iff(X(p), f));
 
-                    std::vector<formula> semanticsl =
-                        gen_semantics(alpha, left);
-                    std::vector<formula> semanticsr =
-                        gen_semantics(alpha, right);
-                    semantics.insert(semantics.end(), semanticsl.begin(),
-                                     semanticsl.end());
-                    semantics.insert(semantics.end(), semanticsr.begin(),
-                                     semanticsr.end());
+                std::vector<formula> semanticsl =
+                    gen_semantics(alpha, left);
+                std::vector<formula> semanticsr =
+                    gen_semantics(alpha, right);
+                semantics.insert(semantics.end(), semanticsl.begin(),
+                                 semanticsl.end());
+                semantics.insert(semantics.end(), semanticsr.begin(),
+                                 semanticsr.end());
 
-                    semantics.push_back(s);
+                semantics.push_back(s);
+                semantics.push_back(sy);
 
-                    return semantics;
-                  },
-
-                  // TODO: impossible cases but it doesn't compile without them
-                  [&](boolean) { return semantics; },
-                  [&](atom) { return semantics; },
-                  [&](unary) { return semantics; },
-                  [&](binary) { return semantics; },
-
-                  [](otherwise) { black_unreachable(); });
-            }
-          }
+                return semantics;
+              },
+              [](otherwise) -> std::vector<formula> { black_unreachable(); }
+          );
 
           return semantics;
         },
@@ -130,7 +121,7 @@ namespace black::internal {
   }
 
   formula conjoin_list(std::vector<formula> fs) {
-    if (fs.size() == 0) {
+    if (fs.empty()) {
       black_unreachable();
     } else if (fs.size() == 1) {
       formula f = fs.back();
