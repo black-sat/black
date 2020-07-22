@@ -99,8 +99,6 @@ namespace black::internal {
               },
               [](otherwise) -> std::vector<formula> { black_unreachable(); }
           );
-
-          return semantics;
         },
         [](boolean) {
           std::vector<formula> semantics;
