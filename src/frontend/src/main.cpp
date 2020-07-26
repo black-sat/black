@@ -114,16 +114,18 @@ int interactive()
     if(!f)
       continue;
 
-    io::message("Translated formula: {}\n", black::ltlpast_to_ltl(sigma, *f));
+    black::formula f_nnf = black::to_nnf(*f);
+    black::formula f_trans = black::ltlpast_to_ltl(sigma, f_nnf);
 
-    io::message("Parsed formula (nnf): {}\n", black::to_nnf(black::ltlpast_to_ltl(sigma, *f)));
+    io::message("Parsed formula (nnf): {}\n", f_nnf);
+    if (f_trans != f_nnf) io::message("Translated formula: {}\n", f_trans);
 
     if(cli::bound)
       io::message("Solving (up to k={})...\n", *cli::bound);
     else
       io::message("Solving...\n");
 
-    slv.add_formula( black::ltlpast_to_ltl(sigma, *f) );
+    slv.add_formula(*f);
     bool res = slv.inc_bsc_prune(cli::bound);
 
     if(res)

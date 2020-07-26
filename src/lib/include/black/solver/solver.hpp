@@ -26,6 +26,7 @@
 
 #include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
+#include <black/logic/translator.hpp>
 #include <black/sat/mathsat.hpp>
 
 #include <vector>
@@ -124,7 +125,7 @@ namespace black::internal {
 
       // Conjoins the argument formula to the current one
       void add_formula(formula f) {
-        f = to_nnf(f);
+        f = ltlpast_to_ltl(_alpha, to_nnf(f));
         add_xclosure(f);
         if( _frm == _alpha.top() )
           _frm = f;
