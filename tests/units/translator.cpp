@@ -68,17 +68,14 @@ TEST_CASE("Translation for basic past formulas")
   formula p_Y = sigma.var(internal::past_label{Y(p)});
 
   std::vector<test> tests = { // , S(p,q), T(p,q), P(p), H(p)
-      {Y(p), p_Y && !p_Y && G(iff(X(p_Y), p))}
+      {Y(p), p_Y && (!p_Y && G(iff(X(p_Y), p)))}
   };
 
-  /*for(test t : tests) {
+  for(test t : tests) {
     DYNAMIC_SECTION("Translation for formula: " << t.formula) {
       auto result = ltlpast_to_ltl(sigma, t.formula);
 
-      std::cout << "Test: " << t.result << "\n";
-      std::cout << "Result: " << result;
-
       CHECK(result == t.result);
     }
-  }*/
+  }
 }
