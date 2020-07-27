@@ -42,7 +42,7 @@ namespace black::internal {
   formula substitute_past(alphabet &, formula);
 
   // Generate semantics for each new propositional letter (from substitute_past)
-  std::vector<formula> gen_semantics(alphabet &, formula);
+  void gen_semantics(alphabet &, formula, std::vector<formula>&);
 
   // Obtain semantics for yesterday propositional letter
   inline formula yesterday_semantics(atom a, yesterday y) {
