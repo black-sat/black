@@ -21,44 +21,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic/translator.hpp>
+#include <black/logic/past_remover.hpp>
+
+#include <numeric>
 
 namespace black::internal {
-  formula substitute_past(alphabet &alpha, formula f) {
+  formula sub_past(formula f) {
+    alphabet *alpha = f.alphabet();
+
     return f.match(
         [&](yesterday, formula op) {
-          formula p = Y(substitute_past(alpha, op));
-          return alpha.var(past_label{p});
+          return alpha->var(past_label{Y(sub_past(op))});
         },
         [&](since, formula left, formula right) {
-          formula p =
-              S(substitute_past(alpha, left), substitute_past(alpha, right));
-          std::string l = "S";
-          return alpha.var(past_label{p});
+          return alpha->var(past_label{S(sub_past(left), sub_past(right))});
         },
         [&](triggered, formula left, formula right) {
-          return substitute_past(alpha, !S(!left, !right));
+          return sub_past(!S(!left, !right));
         },
-        [&](past, formula op) {
-          return substitute_past(alpha, S(alpha.top(), op));
-        },
-        [&](historically, formula op) {
-          return substitute_past(alpha, !P(!op));
-        },
+        [&](past, formula op) { return sub_past(S(alpha->top(), op)); },
+        [&](historically, formula op) { return sub_past(!P(!op)); },
         [](boolean b) { return b; },
         [](atom a) { return a; },
         [&](unary u, formula op) {
-          return unary(u.formula_type(), substitute_past(alpha, op));
+          return unary(u.formula_type(), sub_past(op));
         },
         [&](binary b, formula left, formula right) {
-          return binary(b.formula_type(), substitute_past(alpha, left),
-                        substitute_past(alpha, right));
+          return binary(b.formula_type(), sub_past(left), sub_past(right));
         },
         [](otherwise) { black_unreachable(); }
     );
   }
 
-  void gen_semantics(alphabet &alpha, formula f, std::vector<formula> &sem) {
+  void gen_semantics(formula f, std::vector<formula> &sem) {
     return f.match(
         [&](atom a) {
           std::optional<past_label> label = a.label<past_label>();
@@ -72,54 +67,42 @@ namespace black::internal {
 
                 sem.push_back(sem_y);
 
-                gen_semantics(alpha, op, sem);
+                gen_semantics(op, sem);
               },
               [&](since s, formula left, formula right) {
-                atom y = alpha.var(past_label{Y(a)});
+                alphabet *alpha = f.alphabet();
+                atom y = alpha->var(past_label{Y(a)});
                 formula sem_s = since_semantics(a, s, y);
                 formula sem_y = yesterday_semantics(y, Y(a));
 
                 sem.push_back(sem_s);
                 sem.push_back(sem_y);
 
-                gen_semantics(alpha, left, sem);
-                gen_semantics(alpha, right, sem);
+                gen_semantics(left, sem);
+                gen_semantics(right, sem);
               },
               [](otherwise) { black_unreachable(); }
           );
         },
         [](boolean) {},
-        [&](unary, formula op) {
-          gen_semantics(alpha, op, sem);
-        },
+        [&](unary, formula op) { gen_semantics(op, sem); },
         [&](binary, formula left, formula right) {
-          gen_semantics(alpha, left, sem);
-          gen_semantics(alpha, right, sem);
+          gen_semantics(left, sem);
+          gen_semantics(right, sem);
         },
         [](otherwise) { black_unreachable(); }
     );
   }
 
-  formula conjoin_list(std::vector<formula> fs) {
-    if (fs.empty()) {
-      black_unreachable();
-    } else if (fs.size() == 1) {
-      formula f = fs.back();
-      fs.pop_back();
-      return f;
-    } else {
-      formula f = fs.back();
-      fs.pop_back();
-      return f && conjoin_list(fs);
-    }
-  }
+  formula remove_past(formula f) {
+    formula ltl = sub_past(f);
 
-  formula ltlpast_to_ltl(alphabet &alpha, formula f) {
-    formula ltl = substitute_past(alpha, f);
     std::vector<formula> semantics;
-    gen_semantics(alpha, ltl, semantics);
-    semantics.push_back(ltl);
+    gen_semantics(ltl, semantics);
 
-    return conjoin_list(semantics);
+    // Conjoin the ltl formula with its semantics formulas
+    return std::accumulate(semantics.begin(), semantics.end(), ltl,
+        [](formula f1, formula f2) { return f1 && f2; }
+    );
   }
 } // namespace black::internal

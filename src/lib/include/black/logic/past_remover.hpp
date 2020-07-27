@@ -21,11 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_TRANSLATOR_HPP
-#define BLACK_TRANSLATOR_HPP
+#ifndef BLACK_PAST_REMOVER_HPP
+#define BLACK_PAST_REMOVER_HPP
+
+#include <black/logic/alphabet.hpp>
 
 #include <vector>
-#include <black/logic/alphabet.hpp>
 
 namespace black::internal {
 
@@ -39,10 +40,10 @@ namespace black::internal {
   };
 
   // Substitute past operators with new propositional letters
-  formula substitute_past(alphabet &, formula);
+  formula sub_past(formula);
 
   // Generate semantics for each new propositional letter (from substitute_past)
-  void gen_semantics(alphabet &, formula, std::vector<formula>&);
+  void gen_semantics(formula, std::vector<formula>&);
 
   // Obtain semantics for yesterday propositional letter
   inline formula yesterday_semantics(atom a, yesterday y) {
@@ -54,11 +55,8 @@ namespace black::internal {
     return G(iff(a, s.right() || (s.left() && y)));
   }
 
-  // Put all vector elements in conjunction
-  formula conjoin_list(std::vector<formula> fs);
-
   // Exposed procedure which puts together everything
-  formula ltlpast_to_ltl(alphabet &, formula);
+  formula remove_past(formula);
 
 } // end namespace black::internal
 
@@ -78,7 +76,7 @@ namespace std
 
 // Names exported to the user
 namespace black {
-  using internal::ltlpast_to_ltl;
+  using internal::remove_past;
 }
 
-#endif //BLACK_TRANSLATOR_HPP
+#endif //BLACK_PAST_REMOVER_HPP

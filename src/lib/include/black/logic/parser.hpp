@@ -26,7 +26,6 @@
 
 #include <black/logic/alphabet.hpp>
 #include <black/logic/lex.hpp>
-#include <black/logic/translator.hpp>
 
 #include <istream>
 #include <ostream>

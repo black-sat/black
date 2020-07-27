@@ -27,7 +27,7 @@
 
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
-#include <black/logic/translator.hpp>
+#include <black/logic/past_remover.hpp>
 #include <black/solver/solver.hpp>
 
 #include <iostream>
@@ -83,7 +83,7 @@ int batch(std::optional<std::string> path, std::istream &file)
 
   black::solver slv{sigma};
 
-  slv.add_formula(*f);
+  slv.add_formula(black::remove_past(*f));
 
   bool res = slv.inc_bsc_prune(cli::bound);
 
@@ -114,18 +114,17 @@ int interactive()
     if(!f)
       continue;
 
-    black::formula f_trans = black::ltlpast_to_ltl(sigma, *f);
-    black::formula f_nnf = black::to_nnf(f_trans);
+    black::formula f_ltl = black::remove_past(*f);
 
-    if (f_trans != *f) io::message("Translated formula: {}", f_trans);
-    io::message("Parsed formula (nnf): {}\n", f_nnf);
+    if (f_ltl != *f) io::message("Translated formula: {}", f_ltl);
+    io::message("Parsed formula (nnf): {}\n", black::to_nnf(f_ltl));
 
     if(cli::bound)
       io::message("Solving (up to k={})...\n", *cli::bound);
     else
       io::message("Solving...\n");
 
-    slv.add_formula(*f);
+    slv.add_formula(f_ltl);
     bool res = slv.inc_bsc_prune(cli::bound);
 
     if(res)

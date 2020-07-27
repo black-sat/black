@@ -23,7 +23,7 @@
 
 
 
-#include <black/logic/translator.hpp>
+#include <black/logic/past_remover.hpp>
 #include <black/logic/parser.hpp>
 
 #include <catch2/catch.hpp>

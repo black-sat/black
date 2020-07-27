@@ -30,7 +30,7 @@ set (
    src/logic/parser.cpp
    src/sat/mathsat.cpp
    src/solver/solver.cpp
-        src/logic/translator.cpp)
+        src/logic/past_remover.cpp)
 
 set (
   LIB_HEADERS
@@ -46,7 +46,7 @@ set (
   include/black/sat/glucose.hpp
   include/black/sat/mathsat.hpp
   include/black/solver/solver.hpp
-        include/black/logic/translator.hpp)
+        include/black/logic/past_remover.hpp)
 
 # Here adding the headers is redundant, but makes them appear in
 # project files made by IDE generators (Xcode, VS, ecc...)
