@@ -24,7 +24,6 @@
 
 
 #include <black/logic/past_remover.hpp>
-#include <black/logic/parser.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -53,7 +52,7 @@ TEST_CASE("Translation idempotency on future only formulas")
 
   for(formula f : tests) {
     DYNAMIC_SECTION("Idempotency for formula: " << f) {
-      CHECK(ltlpast_to_ltl(sigma, f) == f);
+      CHECK(remove_past(f) == f);
     }
   }
 }
@@ -63,19 +62,33 @@ TEST_CASE("Translation for basic past formulas")
   alphabet sigma;
 
   atom p = sigma.var("p");
-  // atom q = sigma.var("q");
+  atom q = sigma.var("q");
 
-  formula p_Y = sigma.var(internal::past_label{Y(p)});
+  atom p_Y  = sigma.var(internal::past_label{Y(p)});
+  atom p_S  = sigma.var(internal::past_label{S(p,q)});
+  atom p_YS = sigma.var(internal::past_label{Y(p_S)});
+  atom p_T  = sigma.var(internal::past_label{S(!p,!q)});
+  atom p_YT = sigma.var(internal::past_label{Y(p_T)});
+  atom p_P  = sigma.var(internal::past_label{S(sigma.top(),p)});
+  atom p_YP = sigma.var(internal::past_label{Y(p_P)});
+  atom p_H  = sigma.var(internal::past_label{S(sigma.top(),!p)});
+  atom p_YH = sigma.var(internal::past_label{Y(p_H)});
 
-  std::vector<test> tests = { // , S(p,q), T(p,q), P(p), H(p)
-      {Y(p), p_Y && (!p_Y && G(iff(X(p_Y), p)))}
+  std::vector<test> tests = {
+      {Y(p),    p_Y && (!p_Y && G(iff(X(p_Y), p)))},
+      {S(p,q),  (p_S && G(iff(p_S, q || (p && p_YS))))
+                && (!p_YS && G(iff(X(p_YS), p_S)))},
+      {T(p,q),  (!p_T && G(iff(p_T, !q || (!p && p_YT))))
+                && (!p_YT && G(iff(X(p_YT), p_T)))},
+      {P(p),    (p_P && G(iff(p_P, p || (sigma.top() && p_YP))))
+                && (!p_YP && G(iff(X(p_YP), p_P)))},
+      {H(p),    (!p_H && G(iff(p_H, !p || (sigma.top() && p_YH))))
+                && (!p_YH && G(iff(X(p_YH), p_H)))}
   };
 
   for(test t : tests) {
     DYNAMIC_SECTION("Translation for formula: " << t.formula) {
-      auto result = ltlpast_to_ltl(sigma, t.formula);
-
-      CHECK(result == t.result);
+      CHECK(remove_past(t.formula) == t.result);
     }
   }
 }

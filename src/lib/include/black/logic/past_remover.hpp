@@ -25,6 +25,7 @@
 #define BLACK_PAST_REMOVER_HPP
 
 #include <black/logic/alphabet.hpp>
+#include <black/logic/parser.hpp>
 
 #include <vector>
 

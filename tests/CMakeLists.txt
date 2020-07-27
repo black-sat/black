@@ -31,7 +31,7 @@ set(
   units/formula.cpp
   units/parser.cpp
   units/match.cpp
-        units/translator.cpp)
+        units/past_remover.cpp)
 
 add_executable(unit_tests ${UNIT_TESTS})
 target_link_libraries(unit_tests black Catch2::Catch2)
