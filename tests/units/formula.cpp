@@ -111,6 +111,22 @@ TEST_CASE("Handles")
     REQUIRE(notp2.operand() == fp);
   }
 
+  SECTION("Boolean args in binary operators") {
+    formula f1 = p && top;
+    formula b1 = p && true;
+    formula f2 = top && p;
+    formula b2 = true && p;
+    formula f3 = p && bottom;
+    formula b3 = p && false;
+    formula f4 = bottom && p;
+    formula b4 = false && p;
+
+    REQUIRE(f1 == b1);
+    REQUIRE(f2 == b2);
+    REQUIRE(f3 == b3);
+    REQUIRE(f4 == b4);
+  }
+
   SECTION("Type-specific handles") {
     auto neg = negation(p);
     auto next = tomorrow(p);
