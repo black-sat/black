@@ -44,6 +44,16 @@ namespace black::internal {
   // Generate semantics for each new propositional letter (from substitute_past)
   std::vector<formula> gen_semantics(alphabet &, formula);
 
+  // Obtain semantics for yesterday propositional letter
+  inline formula yesterday_semantics(atom a, yesterday y) {
+    return !a && G(iff(X(a), y.operand()));
+  }
+
+  // Obtain semantics for since propositional letter
+  inline formula since_semantics(atom a, since s, atom y) {
+    return G(iff(a, s.right() || (s.left() && y)));
+  }
+
   // Put all vector elements in conjunction
   formula conjoin_list(std::vector<formula> fs);
 

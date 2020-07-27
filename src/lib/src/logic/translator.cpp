@@ -68,20 +68,19 @@ namespace black::internal {
 
           formula psi = label->formula;
           return psi.match(
-              [&](yesterday, formula op) {
-                formula s = !f && G(iff(X(f), op));
+              [&](yesterday y, formula op) {
+                formula sem = yesterday_semantics(a, y);
 
                 semantics = gen_semantics(alpha, op);
-                semantics.push_back(s);
+                semantics.push_back(sem);
 
                 return semantics;
               },
-              [&](since, formula left, formula right) {
-                formula pl = Y(f);
-                formula p = alpha.var(past_label{pl});
+              [&](since s, formula left, formula right) {
+                atom y = alpha.var(past_label{Y(a)});
 
-                formula s = G(iff(f, right || (left && p)));
-                formula sy = !p && G(iff(X(p), f));
+                formula sem = since_semantics(a, s, y);
+                formula semy = yesterday_semantics(y, Y(a));
 
                 std::vector<formula> semanticsl =
                     gen_semantics(alpha, left);
@@ -92,8 +91,8 @@ namespace black::internal {
                 semantics.insert(semantics.end(), semanticsr.begin(),
                                  semanticsr.end());
 
-                semantics.push_back(s);
-                semantics.push_back(sy);
+                semantics.push_back(sem);
+                semantics.push_back(semy);
 
                 return semantics;
               },
