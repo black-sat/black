@@ -36,25 +36,25 @@ namespace black::internal {
         [&](since, formula left, formula right) {
           return alpha->var(past_label{S(sub_past(left), sub_past(right))});
         },
-        [&](triggered, formula left, formula right) {
+        [](triggered, formula left, formula right) {
           return sub_past(!S(!left, !right));
         },
-        [&](past, formula op) { return sub_past(S(alpha->top(), op)); },
-        [&](historically, formula op) { return sub_past(!P(!op)); },
+        [](past, formula op) { return sub_past(S(true, op)); },
+        [](historically, formula op) { return sub_past(!P(!op)); },
         [](boolean b) { return b; },
         [](atom a) { return a; },
-        [&](unary u, formula op) {
+        [](unary u, formula op) {
           return unary(u.formula_type(), sub_past(op));
         },
-        [&](binary b, formula left, formula right) {
+        [](binary b, formula left, formula right) {
           return binary(b.formula_type(), sub_past(left), sub_past(right));
-        },
-        [](otherwise) { black_unreachable(); }
+        }
     );
   }
 
   void gen_semantics(formula f, std::vector<formula> &sem) {
     return f.match(
+        [](boolean) {},
         [&](atom a) {
           std::optional<past_label> label = a.label<past_label>();
 
@@ -84,13 +84,11 @@ namespace black::internal {
               [](otherwise) { black_unreachable(); }
           );
         },
-        [](boolean) {},
         [&](unary, formula op) { gen_semantics(op, sem); },
         [&](binary, formula left, formula right) {
           gen_semantics(left, sem);
           gen_semantics(right, sem);
-        },
-        [](otherwise) { black_unreachable(); }
+        }
     );
   }
 
