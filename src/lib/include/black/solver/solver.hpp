@@ -125,7 +125,7 @@ namespace black::internal {
 
       // Conjoins the argument formula to the current one
       void add_formula(formula f) {
-        f = ltlpast_to_ltl(_alpha, to_nnf(f));
+        f = to_nnf(ltlpast_to_ltl(_alpha, f));
         add_xclosure(f);
         if( _frm == _alpha.top() )
           _frm = f;
