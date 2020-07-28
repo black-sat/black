@@ -33,9 +33,9 @@ task:
           VERSION: 20.04
           GCC_VERSION: 9
       environment:
-        COVERALLS_REPO_TOKEN: "ENCRYPTED\
-        [c7a69f469678bfc6fd9f1e9a0ab2d77e8df79c84c8f38491bb7fc0a185ddcd34cbf3\
-        eeefdc521bc5e27abc4e8a4b564d]"
+        CODECOV_REPO_TOKEN: "ENCRYPTED\
+        [f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c\
+        17174261dbafebd70c2f150d45]"
   download_dependencies_script:
     - ./download-mathsat.sh
   debug_build_script:
@@ -44,7 +44,7 @@ task:
     - make -j2
   coverage_script:
     - cd build/debug && ctest && cd ../..
-    - if [ "$COVERALLS_REPO_TOKEN" ]; then coveralls --gcov /usr/bin/gcov-${GCC_VERSION} --root . --exclude external --exclude tests -E '.*CMakeFiles.*'; fi
+    - bash <(curl -s https://codecov.io/bash) -t $CODECOV_REPO_TOKEN
   release_build_script:
     - mkdir -p build/release && cd build/release
     - cmake -DCMAKE_BUILD_TYPE=Release ../..
