@@ -43,7 +43,7 @@ task:
     - cmake -DCMAKE_BUILD_TYPE=Release ../..
     - make -j2
   test_script:
-    - cd build/release && ctest -R black
+    - cd build/release && ctest --quiet -R black
 
 task:
   name: macOS (Apple clang)
@@ -61,7 +61,7 @@ task:
     - cmake -DCMAKE_BUILD_TYPE=Release ../..
     - make -j2
   test_script:
-    - cd build/release && ctest -R black
+    - cd build/release && ctest --quiet -R black
 
 task:
   name: Code coverage
