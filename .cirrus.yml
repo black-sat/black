@@ -65,8 +65,6 @@ task:
 
 task:
   name: Code coverage
-  depends_on:
-    - Fedora 32 (g++ 10)
   container:
     dockerfile: docker/Dockerfile.fedora
     docker_arguments:
