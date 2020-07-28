@@ -1,7 +1,7 @@
 #
 # BLACK - Bounded Ltl sAtisfiability ChecKer
 #
-# (C) 2019 Nicola Gigante
+# (C) 2020 Nicola Gigante
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,36 +22,32 @@
 # SOFTWARE.
 
 #
-# Main black executable
+# Code to enable code coverage instrumentation
 #
-set(
-  FRONTEND_SRC
-  src/main.cpp
-  src/cli.cpp
-)
 
-set(
-  FRONTEND_HEADERS
-  include/black/frontend/cli.hpp
-  include/black/frontend/io.hpp
-  include/black/frontend/support.hpp
-)
+option(CODE_COVERAGE "Enable code coverage instrumentation" OFF)
 
-add_executable(frontend ${FRONTEND_SRC} ${FRONTEND_HEADERS})
-
-target_compile_features(frontend PRIVATE cxx_std_17)
-target_include_directories(frontend PRIVATE include)
-target_link_libraries(frontend PRIVATE black solvers)
-target_link_libraries(frontend PRIVATE fmt clipp::clipp solvers)
-target_enable_warnings(frontend)
-target_code_coverage(frontend)
-add_sanitizers(frontend)
-
-if(STATIC_BUILD)
-  target_link_libraries(frontend PRIVATE "-static -pthread")
+if(CODE_COVERAGE)
+  message(STATUS "Code coverage instrumentation enabled")
 endif()
 
-set_property(TARGET frontend PROPERTY OUTPUT_NAME black)
-set_property(TARGET frontend PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(COV_CLANG_FLAGS -fprofile-instr-generate -fcoverage-mapping)
+set(COV_GNU_FLAGS --coverage -fprofile-arcs -ftest-coverage)
 
-install(TARGETS frontend RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+function(target_code_coverage TARGET)
+  if(CODE_COVERAGE)
+    target_compile_options(
+      ${TARGET} 
+      PRIVATE 
+      "$<$<CXX_COMPILER_ID:GNU>:${COV_GNU_FLAGS}>"
+      "$<$<CXX_COMPILER_ID:Clang>:${COV_CLANG_FLAGS}>"
+      "$<$<CXX_COMPILER_ID:AppleClang>:${COV_CLANG_FLAGS}>"
+    )
+    target_link_libraries(
+      ${TARGET} PRIVATE
+      "$<$<CXX_COMPILER_ID:GNU>:${COV_GNU_FLAGS}>"
+      "$<$<CXX_COMPILER_ID:Clang>:${COV_CLANG_FLAGS}>"
+      "$<$<CXX_COMPILER_ID:AppleClang>:${COV_CLANG_FLAGS}>"
+    )
+  endif()
+endfunction()

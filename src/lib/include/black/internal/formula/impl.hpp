@@ -302,6 +302,7 @@ namespace black::internal
 
   inline auto XF(formula f) { return X(F(f)); }
   inline auto XG(formula f) { return X(G(f)); }
+  inline auto FG(formula f) { return F(G(f)); }
   inline auto GF(formula f) { return G(F(f)); }
   inline auto YP(formula f) { return Y(P(f)); }
   inline auto YH(formula f) { return Y(H(f)); }
