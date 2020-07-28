@@ -79,9 +79,11 @@ task:
     - mkdir -p build/debug && cd build/debug
     - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ../..
     - make -j2
-  coverage_script:
+  test_script:
     - cd build/debug 
     - ctest --quiet -R black
+  coverage_script:
+    - cd build/debug 
     - bash <(curl -s https://codecov.io/bash)
   
   
