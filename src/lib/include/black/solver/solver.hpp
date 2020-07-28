@@ -145,7 +145,7 @@ namespace black::internal {
       bool solve();
 
       // Incremental version of 'bsc_prune'
-      bool inc_bsc_prune(std::optional<int> k_max);
+      bool inc_bsc_prune(std::optional<int> k_max = std::nullopt);
 
       // BSC augmented with the PRUNE rule
       bool bsc_prune(int k_max = std::numeric_limits<int>::max());

@@ -1,7 +1,7 @@
 #
 # BLACK - Bounded Ltl sAtisfiability ChecKer
 #
-# (C) 2019 Nicola Gigante
+# (C) 2020 Nicola Gigante
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,40 +22,32 @@
 # SOFTWARE.
 
 #
-# black library
+# Code to enable code coverage instrumentation
 #
-set (
-   LIB_SRC
-   src/logic/lex.cpp
-   src/logic/parser.cpp
-   src/sat/mathsat.cpp
-   src/solver/solver.cpp
- )
 
-set (
-  LIB_HEADERS
-  include/black/internal/formula/base.hpp
-  include/black/internal/formula/impl.hpp
-  include/black/internal/formula/match.hpp
-  include/black/internal/alphabet_impl.hpp
-  include/black/support/common.hpp
-  include/black/logic/alphabet.hpp
-  include/black/logic/formula.hpp
-  include/black/logic/lex.hpp
-  include/black/logic/parser.hpp
-  include/black/sat/glucose.hpp
-  include/black/sat/mathsat.hpp
-  include/black/solver/solver.hpp
-)
+option(CODE_COVERAGE "Enable code coverage instrumentation" OFF)
 
-# Here adding the headers is redundant, but makes them appear in
-# project files made by IDE generators (Xcode, VS, ecc...)
-add_library (black ${LIB_SRC} ${LIB_HEADERS})
+if(CODE_COVERAGE)
+  message(STATUS "Code coverage instrumentation enabled")
+endif()
 
-target_link_libraries(black PUBLIC solvers)
-target_link_libraries(black PRIVATE fmt)
-target_include_directories(black PUBLIC include)
-target_compile_features(black PUBLIC cxx_std_17)
-target_enable_warnings(black)
-target_code_coverage(black)
-add_sanitizers(black)
+set(COV_CLANG_FLAGS -fprofile-instr-generate -fcoverage-mapping)
+set(COV_GNU_FLAGS --coverage -fprofile-arcs -ftest-coverage)
+
+function(target_code_coverage TARGET)
+  if(CODE_COVERAGE)
+    target_compile_options(
+      ${TARGET} 
+      PRIVATE 
+      "$<$<CXX_COMPILER_ID:GNU>:${COV_GNU_FLAGS}>"
+      "$<$<CXX_COMPILER_ID:Clang>:${COV_CLANG_FLAGS}>"
+      "$<$<CXX_COMPILER_ID:AppleClang>:${COV_CLANG_FLAGS}>"
+    )
+    target_link_libraries(
+      ${TARGET} PRIVATE
+      "$<$<CXX_COMPILER_ID:GNU>:${COV_GNU_FLAGS}>"
+      "$<$<CXX_COMPILER_ID:Clang>:${COV_CLANG_FLAGS}>"
+      "$<$<CXX_COMPILER_ID:AppleClang>:${COV_CLANG_FLAGS}>"
+    )
+  endif()
+endfunction()

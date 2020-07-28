@@ -5,6 +5,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y make cmake
 RUN apt-get update && apt-get install -y libgmp-dev libz-dev
 RUN apt-get update && apt-get install -y git wget
+RUN apt-get update && apt-get install -y python3-pip
+RUN pip3 install cpp-coveralls
 
 ARG GCC_VERSION=8
 ENV GCC_VERSION $GCC_VERSION

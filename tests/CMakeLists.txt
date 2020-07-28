@@ -21,6 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+option(
+  ENABLE_TOOLS_TESTS "Enable tests of other tools in the benchmark suite" OFF
+)
+
 #
 # Unit testing with Catch2
 #
@@ -31,28 +35,28 @@ set(
   units/formula.cpp
   units/parser.cpp
   units/match.cpp
+  units/solver.cpp
 )
 
 add_executable(unit_tests ${UNIT_TESTS})
-target_link_libraries(unit_tests black Catch2::Catch2)
+target_link_libraries(unit_tests PRIVATE black Catch2::Catch2)
 target_enable_warnings(unit_tests)
+target_code_coverage(unit_tests)
 add_sanitizers(unit_tests)
 
 add_test(NAME unit_tests COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
 
+message(STATUS "Unit tests enabled")
+
 #
 # Formulas test set
 #
-message(STATUS "Configuring tests")
+message(STATUS "Configuring test suite")
 
 file(STRINGS formulas/tests.index TESTS)
 
 list(LENGTH TESTS TESTSLENGTH)
 message(STATUS "Found ${TESTSLENGTH} test formulas")
-
-option(
-  ENABLE_TOOLS_TESTS "Enable tests of other tools in the benchmark suite" OFF
-)
 
 option(TEST_TIMEOUT "Set a timeout for tests" OFF)
 set(TEST_TIMEOUT_SECS 3 CACHE STRING "Seconds of timeout for tests")
@@ -75,7 +79,9 @@ foreach(TEST IN LISTS TESTS)
   )
 
   if(TEST_TIMEOUT)
-    set_tests_properties("${TEST_NAME}" PROPERTIES TIMEOUT ${TEST_TIMEOUT_SECS})
+    set_tests_properties(
+      "${TEST_NAME}" PROPERTIES TIMEOUT ${TEST_TIMEOUT_SECS}
+    )
   endif()
 
   if(ENABLE_TOOLS_TESTS)

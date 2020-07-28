@@ -44,6 +44,7 @@ target_include_directories(frontend PRIVATE include)
 target_link_libraries(frontend PRIVATE black solvers)
 target_link_libraries(frontend PRIVATE fmt clipp::clipp solvers)
 target_enable_warnings(frontend)
+target_code_coverage(frontend)
 add_sanitizers(frontend)
 
 if(STATIC_BUILD)
