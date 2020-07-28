@@ -36,7 +36,7 @@ task:
     - ./download-mathsat.sh
   debug_build_script:
     - mkdir -p build/debug && cd build/debug
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ../..
+    - cmake -DCMAKE_BUILD_TYPE=Debug ../..
     - make -j2
   release_build_script:
     - mkdir -p build/release && cd build/release
@@ -65,6 +65,8 @@ task:
 
 task:
   name: Code coverage
+  depends_on:
+    - Fedora 32 (g++ 10)
   container:
     dockerfile: docker/Dockerfile.fedora
     docker_arguments:
@@ -79,7 +81,7 @@ task:
     - make -j2
   coverage_script:
     - cd build/debug 
-    - ctest -R black
+    - ctest --quiet -R black
     - bash <(curl -s https://codecov.io/bash)
   
   
