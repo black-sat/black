@@ -24,7 +24,7 @@
 #ifndef BLACK_COMMON_H
 #define BLACK_COMMON_H
 
-#include <debug_assert.hpp>
+#include <black/support/assert.hpp>
 
 #include <optional>
 #include <type_traits>
@@ -42,22 +42,6 @@ namespace black::internal {
   using std::nullopt;
 
 }
-
-// Custom assert and unreachable assertion macros built on top of debug_assert
-// library.
-namespace black::internal {
-  // Settings for the customization of foonathan's DEBUG_ASSERT macro
-  struct black_assert_t
-    : debug_assert::default_handler,
-      debug_assert::set_level<1> {};
-
-} // black::internal
-
-#define black_assert(Expr) \
-  DEBUG_ASSERT(Expr, ::black::internal::black_assert_t{})
-#define black_unreachable() \
-  DEBUG_UNREACHABLE(::black::internal::black_assert_t{});\
-  DEBUG_ASSERT_MARK_UNREACHABLE
 
 // Shorthand for perfect forwarding
 #define FWD(a) std::forward<decltype(a)>(a)
@@ -91,19 +75,16 @@ namespace black::internal {
   template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
   template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
+  // Always true type trait used for SFINAE tricks
   template<typename T>
   struct true_t : std::true_type { };
 
-  template<typename T, bool Tb = T::value>
-  constexpr bool metapredicate() {
-      return Tb;
-  }
-
-  template<bool B>
-  constexpr bool metapredicate() {
-      return B;
-  }
-
+  //
+  // constexpr function all(...) that returns true if all its arguments are
+  // either true booleans or have a true ::value member
+  // 
+  // Used in the implementation of REQUIRES macro above.
+  //
   constexpr bool all() { return true; }
 
   template<typename ...Args>
@@ -125,16 +106,6 @@ namespace black::internal {
       return all(std::is_same<T, Args>()...);
   }
 
-  constexpr bool neg(bool b) { return not b; }
-
-  template<typename T, bool Tb = T::value>
-  constexpr bool neg(T) { return not Tb; }
-
-  template<typename ...Args>
-  constexpr bool any(Args ...args) {
-      return not all(neg(args)...);
-  }
-
   //
   // Useful utilities to work with strongly-typed enums
   //
@@ -153,15 +124,6 @@ namespace black::internal {
   template<typename E, REQUIRES(std::is_enum_v<E>)>
   constexpr E from_underlying(std::underlying_type_t<E> v) noexcept {
     return static_cast<E>(v);
-  }
-
-  // Utility to check equality of a variable number of parameters
-  // Useful for parameter packs
-  bool constexpr all_equal() { return true; }
-
-  template<typename Arg, typename ...Args>
-  bool constexpr all_equal(Arg &&arg, Args&& ...args) {
-    return ((std::forward<Arg>(arg) == std::forward<Args>(args)) && ...);
   }
 } // namespace black::internal
 
