@@ -34,7 +34,7 @@
 namespace black::internal {
 
   template<typename Expr>
-  inline void assert_handler(
+  constexpr void assert_handler(
     Expr assertion, const char *expression, const char *filename, size_t line
   ) noexcept 
   {
@@ -46,10 +46,13 @@ namespace black::internal {
     std::abort();
   }
 
-  [[noreturn]]
-  inline 
-  void unreachable_handler(const char *filename, size_t line) noexcept  
+  constexpr 
+  void unreachable_handler(bool dummy, const char *filename, size_t line) 
+  noexcept
   {
+    if(dummy)
+      return;
+    
     std::fprintf(stderr, 
                  "[black]: unreachable code reached at %s:%zd\n",
                  filename, line);
@@ -65,8 +68,8 @@ namespace black::internal {
       [&]() { return Expr; }, #Expr, __FILE__, __LINE__ \
     )
 
-  #define BLACK_UNREACHABLE()                                 \
-    black::internal::unreachable_handler(__FILE__, __LINE__); \
+  #define BLACK_UNREACHABLE()                                        \
+    black::internal::unreachable_handler(false, __FILE__, __LINE__); \
     BLACK_MARK_UNREACHABLE
 
 #else 
