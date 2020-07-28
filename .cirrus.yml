@@ -41,10 +41,7 @@ task:
     - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ../..
     - make -j2
   coverage_script:
-    - if [ ! -z "$CODECOV_TOKEN" ]; then         \
-        cd build/debug && ctest && cd ../..;     \
-        bash <(curl -s https://codecov.io/bash); \
-      fi
+    - if [ ! -z "$CODECOV_TOKEN" ]; then cd build/debug && ctest && cd ../..;bash <(curl -s https://codecov.io/bash); fi
   release_build_script:
     - mkdir -p build/release && cd build/release
     - cmake -DCMAKE_BUILD_TYPE=Release ../..
