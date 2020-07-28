@@ -69,15 +69,13 @@ option(FMT_PEDANTIC "" ON)
 option(FMT_WERROR "" ON)
 
 add_subdirectory(external/fmt EXCLUDE_FROM_ALL)
-add_subdirectory(external/debug_assert EXCLUDE_FROM_ALL)
 add_subdirectory(external/clipp EXCLUDE_FROM_ALL)
 
 # mark the depenencies to ignore warnings from their interface headers
 target_mark_as_system(fmt)
-target_mark_as_system(debug_assert)
 target_mark_as_system(clipp)
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDEBUG_ASSERT_DISABLE")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DBLACK_ASSERT_DISABLE")
 
 #
 # SAT solvers
