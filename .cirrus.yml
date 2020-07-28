@@ -44,7 +44,7 @@ task:
     - make -j2
   coverage_script:
     - cd build/debug && ctest && cd ../..
-    - bash <(curl -s https://codecov.io/bash) -t $CODECOV_REPO_TOKEN
+    - bash <(curl -s https://codecov.io/bash) -t :$CODECOV_REPO_TOKEN
   release_build_script:
     - mkdir -p build/release && cd build/release
     - cmake -DCMAKE_BUILD_TYPE=Release ../..
