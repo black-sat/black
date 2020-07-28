@@ -42,7 +42,7 @@ add_executable(frontend ${FRONTEND_SRC} ${FRONTEND_HEADERS})
 target_compile_features(frontend PRIVATE cxx_std_17)
 target_include_directories(frontend PRIVATE include)
 target_link_libraries(frontend PRIVATE black solvers)
-target_link_libraries(frontend PRIVATE debug_assert fmt clipp::clipp solvers)
+target_link_libraries(frontend PRIVATE fmt clipp::clipp solvers)
 target_enable_warnings(frontend)
 add_sanitizers(frontend)
 
