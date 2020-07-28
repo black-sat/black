@@ -33,7 +33,7 @@ task:
           VERSION: 20.04
           GCC_VERSION: 9
       environment:
-        CODECOV_REPO_TOKEN: "ENCRYPTED\
+        CODECOV_TOKEN: "ENCRYPTED\
         [f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c\
         17174261dbafebd70c2f150d45]"
   download_dependencies_script:
@@ -44,7 +44,8 @@ task:
     - make -j2
   coverage_script:
     - cd build/debug && ctest && cd ../..
-    - bash <(curl -s https://codecov.io/bash) -t :$CODECOV_REPO_TOKEN
+    - echo Token: $CODECOV_TOKEN
+    - bash <(curl -s https://codecov.io/bash)
   release_build_script:
     - mkdir -p build/release && cd build/release
     - cmake -DCMAKE_BUILD_TYPE=Release ../..
