@@ -52,7 +52,7 @@ set (
 # project files made by IDE generators (Xcode, VS, ecc...)
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PUBLIC debug_assert solvers)
+target_link_libraries(black PUBLIC solvers)
 target_link_libraries(black PRIVATE fmt)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)

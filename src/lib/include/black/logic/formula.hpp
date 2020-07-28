@@ -25,6 +25,7 @@
 #define BLACK_LOGIC_FORMULA_HPP_
 
 #include <optional>
+#include <cstdint>
 
 namespace black::internal {
   //
@@ -281,7 +282,11 @@ namespace black::internal
   //
   auto operator !(formula f);
   auto operator &&(formula f1, formula f2);
+  auto operator &&(formula f1, bool f2);
+  auto operator &&(bool f1, formula f2);
   auto operator ||(formula f1, formula f2);
+  auto operator ||(formula f1, bool f2);
+  auto operator ||(bool f1, formula f2);
 
   auto X(formula f);
   auto Y(formula f);
@@ -291,9 +296,20 @@ namespace black::internal
   auto H(formula f);
 
   auto U(formula f1, formula f2);
+  auto U(formula f1, bool f2);
+  auto U(bool f1, formula f2);
+  
   auto R(formula f1, formula f2);
+  auto R(formula f1, bool f2);
+  auto R(bool f1, formula f2);
+  
   auto S(formula f1, formula f2);
+  auto S(formula f1, bool f2);
+  auto S(bool f1, formula f2);
+  
   auto T(formula f1, formula f2);
+  auto T(formula f1, bool f2);
+  auto T(bool f1, formula f2);
 
   auto XF(formula f);
   auto XG(formula f);

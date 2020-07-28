@@ -270,7 +270,9 @@ namespace black::internal
   #undef declare_operator
 
   //
-  // Implementation of operators
+  // Implementation of most of the operators. 
+  // The ones taking boolean args need alphabet hence are implemented in 
+  // alphabet_impl.hpp
   //
   inline auto operator !(formula f) { return negation(f); }
 

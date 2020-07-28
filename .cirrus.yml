@@ -1,27 +1,32 @@
 task:
   matrix:
-    - name: Fedora 29 (g++ 8.3)
+    - name: Fedora 29 (g++ 8)
       container:
         dockerfile: docker/Dockerfile.fedora
         docker_arguments:
           VERSION: 29
-    - name: Fedora 30 (g++ 9.2)
+    - name: Fedora 30 (g++ 9)
       container:
         dockerfile: docker/Dockerfile.fedora
         docker_arguments:
           VERSION: 30
-    - name: Fedora 31 (g++ 9.2)
+    - name: Fedora 31 (g++ 9)
       container:
         dockerfile: docker/Dockerfile.fedora
         docker_arguments:
           VERSION: 31
-    - name: Ubuntu 18.04 (gcc-8.3)
+    - name: Fedora 32 (g++ 10)
+      container:
+        dockerfile: docker/Dockerfile.fedora
+        docker_arguments:
+          VERSION: 32
+    - name: Ubuntu 18.04 (g++ 8)
       container:
         dockerfile: docker/Dockerfile.ubuntu
         docker_arguments:
           VERSION: 18.04
           GCC_VERSION: 8
-    - name: Ubuntu 20.04 (gcc-9.3)
+    - name: Ubuntu 20.04 (g++ 9)
       container:
         dockerfile: docker/Dockerfile.ubuntu
         docker_arguments:
