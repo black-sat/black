@@ -41,21 +41,28 @@ namespace black::internal {
   formula to_nnf(formula);
 
   // main solver class
-  class solver {
+  class solver 
+  {
+    public:
+
+      // Class constructor
+      explicit solver(alphabet &a)
+        : _alpha(a), _frm(a.top()) { }
+
+      // Class constructor
+      solver(alphabet &a, formula f)
+        : _alpha(a), _frm(to_nnf(f)) { }
+
+      // Asserts a formula
+      void assert_formula(formula f);
+
+      // Clears the solver set of formulas
+      void clear();
+
+      // Solve the formula with up to `k_max' iterations
+      bool solve(std::optional<int> k_max = std::nullopt);
+
     private:
-
-      // Reference to the original _alphabet
-      alphabet& _alpha;
-
-      // Current LTL formula to solve
-      formula _frm;
-
-      // Vector of all the X-requests of step k
-      std::vector<tomorrow> _xrequests;
-
-      // X-requests from the closure of the formula
-      // TODO: specialize to std::unordered_set<tomorrow>
-      std::vector<tomorrow> _xclosure;
 
       // Extract the x-eventuality from an x-request
       std::optional<formula> get_xev(tomorrow xreq);
@@ -97,66 +104,41 @@ namespace black::internal {
       // environment is SAT.
       bool is_sat();
 
-      // Simple implementation of an allSAT solver
-      formula all_sat(formula, formula);
-
-      // Incremental version of 'all_sat()'.
-      formula all_sat(formula);
-
       // Incremental version of assert.
       void add_to_msat(formula);
+    
+    private:
+      // Reference to the original _alphabet
+      alphabet& _alpha;
 
-      // Returns the model (if any) of given formula
-      formula get_model(formula);
+      // Current LTL formula to solve
+      formula _frm;
 
-      // Incremental version of 'get_model()'
-      formula get_model();
+      // Vector of all the X-requests of step k
+      std::vector<tomorrow> _xrequests;
 
-    public:
+      // X-requests from the closure of the formula
+      // TODO: specialize to std::unordered_set<tomorrow>
+      std::vector<tomorrow> _xclosure;
 
-      // Class constructor
-      explicit solver(alphabet &a)
-        : _alpha(a), _frm(a.top()) { }
-
-      // Class constructor
-      solver(alphabet &a, formula f)
-        : _alpha(a), _frm(to_nnf(f)) { }
-
-      // Conjoins the argument formula to the current one
-      void add_formula(formula f) {
-        f = to_nnf(f);
-        add_xclosure(f);
-        if( _frm == _alpha.top() )
-          _frm = f;
-        else
-          _frm = _frm && f;
-      }
-
-      void clear() {
-        _frm = _alpha.top();
-        _xrequests.clear();
-        _xclosure.clear();
-      }
-
-      // Incremental version of 'solve'
-      bool inc_solve();
-
-      // Main algorithm (allSAT-based)
-      bool solve();
-
-      // Incremental version of 'bsc_prune'
-      bool inc_bsc_prune(std::optional<int> k_max = std::nullopt);
-
-      // BSC augmented with the PRUNE rule
-      bool bsc_prune(int k_max = std::numeric_limits<int>::max());
-
-      // Incremental version of BSC.
-      bool inc_bsc();
-
-      // Naive (non terminating) algorithm for BSC
-      bool bsc(int k_max = std::numeric_limits<int>::max());
 
   }; // end class Black Solver
+
+  // simple public functions are given an inlinable implementation below
+  inline void solver::assert_formula(formula f) {
+    f = to_nnf(f);
+    add_xclosure(f);
+    if( _frm == _alpha.top() )
+      _frm = f;
+    else
+      _frm = _frm && f;
+  }
+
+  inline void solver::clear() {
+    _frm = _alpha.top();
+    _xrequests.clear();
+    _xclosure.clear();
+  }
 
 } // end namespace black::internal
 

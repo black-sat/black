@@ -82,9 +82,9 @@ int batch(std::optional<std::string> path, std::istream &file)
 
   black::solver slv{sigma};
 
-  slv.add_formula(*f);
+  slv.assert_formula(*f);
 
-  bool res = slv.inc_bsc_prune(cli::bound);
+  bool res = slv.solve(cli::bound);
 
   if(res)
     io::message("SAT\n");
@@ -119,8 +119,8 @@ int interactive()
     else
       io::message("Solving...\n");
 
-    slv.add_formula(*f);
-    bool res = slv.inc_bsc_prune(cli::bound);
+    slv.assert_formula(*f);
+    bool res = slv.solve(cli::bound);
 
     if(res)
       io::message("The formula is SAT!\n\n");
