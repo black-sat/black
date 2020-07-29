@@ -24,21 +24,37 @@
 #ifndef BLACK_SOLVER_MATHSAT_HPP
 #define BLACK_SOLVER_MATHSAT_HPP
 
+#include <black/sat/sat.hpp>
+#include <black/logic/formula.hpp>
+
 #include <mathsat.h>
+#include <unordered_map>
 
 namespace black {
   class alphabet;
 }
 
-namespace black::internal
+namespace black::internal::sat::backends
 {
-  class formula;
+  class mathsat : ::black::internal::sat::solver
+  {
+  public:
+    mathsat();
 
-  msat_env mathsat_init();
+    virtual      void assert_formula(formula f);
+    virtual      bool is_sat()  const;
+    virtual      void push();
+    virtual      void pop();
+    virtual      void clear();
+    virtual backend_t backend() const;
 
-  msat_term to_mathsat(formula);
+  private:
+    mutable msat_env _env;
+    std::unordered_map<formula, msat_term> _terms;
 
-  void print_mathsat_model(alphabet &);
+    msat_term to_mathsat(formula);
+    msat_term to_mathsat_inner(formula);
+  };
 
 }
 

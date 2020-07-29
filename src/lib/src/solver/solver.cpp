@@ -24,6 +24,7 @@
 
 #include <black/logic/parser.hpp>
 #include <black/solver/solver.hpp>
+#include <black/sat/sat.hpp>
 #include <black/sat/mathsat.hpp>
 
 namespace black::internal
@@ -33,32 +34,32 @@ namespace black::internal
    */
   bool solver::solve(std::optional<int> k_max_arg)
   {
-    msat_env env = _alpha.mathsat_env();
-    msat_reset_env(env);
+    auto sat = 
+      std::make_unique<sat::backends::mathsat>();
 
     int k_max = k_max_arg.value_or(std::numeric_limits<int>::max());
 
     for(int k=0; k <= k_max; ++k)
     {
       // Generating the k-unraveling
-      add_to_msat(k_unraveling(k));
-      // if 'encoding' is unsat, then stop with UNSAT.
-      if(!is_sat())
+      sat->assert_formula(k_unraveling(k));
+      // if 'encoding' is unsat, then stop with UNSAT
+      if(!sat->is_sat())
         return false;
 
-      // else, continue to check EMPTY and LOOP.
+      // else, continue to check EMPTY and LOOP
       // Generating EMPTY and LOOP
-      msat_push_backtrack_point(env);
-      add_to_msat(empty_and_loop(k));
-      // if 'encoding' is sat, then stop with SAT.
-      if(is_sat())
+      sat->push();
+      sat->assert_formula(empty_and_loop(k));
+      // if 'encoding' is sat, then stop with SAT
+      if(sat->is_sat())
         return true;
-      msat_pop_backtrack_point(env);
+      sat->pop();
 
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & not PRUNE^k'
-      add_to_msat( !prune(k) );
-      if(!is_sat())
+      sat->assert_formula(!prune(k));
+      if(!sat->is_sat())
         return false;
     } // end while(true)
 
@@ -374,21 +375,5 @@ namespace black::internal
       [](otherwise) { }
     );
   }
-
-  // Asks MathSAT for the satisfiability of current formula
-  bool solver::is_sat()
-  {
-    msat_result res = msat_solve(_alpha.mathsat_env());
-    return (res == MSAT_SAT);
-  }
-
-  // Assert a formula to MathSAT
-  void solver::add_to_msat(formula f)
-  {
-    msat_env env = _alpha.mathsat_env();
-    msat_assert_formula(env, f.to_sat());
-  }
-
-
 
 } // end namespace black::internal

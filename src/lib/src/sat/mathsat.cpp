@@ -24,6 +24,7 @@
 
 
 #include <black/sat/mathsat.hpp>
+
 #include <black/logic/alphabet.hpp>
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
@@ -32,74 +33,97 @@
 
 #include <string>
 
-namespace black::internal {
+namespace black::internal::sat::backends
+{
 
-  msat_env mathsat_init() {
+  mathsat::mathsat() 
+  {  
     msat_config cfg = msat_create_config();
     msat_set_option(cfg, "model_generation", "true");
     msat_set_option(cfg, "unsat_core_generation","3");
-    msat_env env = msat_create_env(cfg);
-
-    return env;
+    
+    _env = msat_create_env(cfg);
   }
 
-  //
-  // TODO: generalize efficient match of nested conjunctions/disjunctions
-  //
-  static inline msat_term to_mathsat(conjunction c)
+  void mathsat::assert_formula(formula f) {
+    msat_assert_formula(_env, to_mathsat(f));
+  }
+
+  bool mathsat::is_sat() const { 
+    msat_result res = msat_solve(_env);
+    return (res == MSAT_SAT);
+  }
+
+  void mathsat::push() {
+    msat_push_backtrack_point(_env);
+  }
+
+  void mathsat::pop() {
+    msat_pop_backtrack_point(_env);
+  }
+
+  void mathsat::clear() {
+    msat_reset_env(_env);
+  }
+
+  auto mathsat::backend() const -> backend_t {
+    return { _env.repr };
+  }
+
+
+  msat_term mathsat::to_mathsat(formula f) 
   {
-    msat_env env = c.alphabet()->mathsat_env();
-    msat_term acc = msat_make_true(env);
+    if(auto it = _terms.find(f); it != _terms.end()) 
+      return it->second;
 
-    formula next = c;
-    std::optional<conjunction> cnext{c};
-    do {
-      formula left = cnext->left();
-      next = cnext->right();
-      acc = msat_make_and(env, acc, left.to_sat());
-    } while((cnext = next.to<conjunction>()));
+    msat_term term = to_mathsat_inner(f);
+    _terms.insert({f, term});
 
-    return msat_make_and(env, acc, next.to_sat());
+    return term;
   }
 
-  msat_term to_mathsat(formula f) {
+  msat_term mathsat::to_mathsat_inner(formula f) 
+  {
     return f.match(
-      [](boolean b) {
-        msat_env env = b.alphabet()->mathsat_env();
-        return b.value() ? msat_make_true(env) : msat_make_false(env);
+      [this](boolean b) {
+        return b.value() ? msat_make_true(_env) : msat_make_false(_env);
       },
-      [](atom a) {
-        msat_env env = a.alphabet()->mathsat_env();
-
+      [this](atom a) {
         msat_decl msat_atom =
-          msat_declare_function(env, to_string(a.unique_id()).c_str(),
-          msat_get_bool_type(env));
+          msat_declare_function(_env, to_string(a.unique_id()).c_str(),
+          msat_get_bool_type(_env));
 
-        return msat_make_constant(env, msat_atom);
+        return msat_make_constant(_env, msat_atom);
       },
-      [](negation n) {
-        msat_env env = n.alphabet()->mathsat_env();
-        return msat_make_not(env, n.operand().to_sat());
+      [this](negation n) {
+        return msat_make_not(_env, to_mathsat(n.operand()));
       },
-      [](conjunction c) {
-        return to_mathsat(c);
+      [this](conjunction c) {
+        msat_term acc = msat_make_true(_env);
+
+        formula next = c;
+        std::optional<conjunction> cnext{c};
+        do {
+          formula left = cnext->left();
+          next = cnext->right();
+          acc = msat_make_and(_env, acc, to_mathsat(left));
+        } while((cnext = next.to<conjunction>()));
+
+        return msat_make_and(_env, acc, to_mathsat(next));
       },
-      [](disjunction d) {
-        msat_env env = d.alphabet()->mathsat_env();
-        return msat_make_or(env, d.left().to_sat(), d.right().to_sat());
+      [this](disjunction d) {
+        return msat_make_or(_env, to_mathsat(d.left()), to_mathsat(d.right()));
       },
-      [](then t) {
-        msat_env env = t.alphabet()->mathsat_env();
+      [this](then t) {
         return
-          msat_make_or(env,
-            msat_make_not(env, t.left().to_sat()), t.right().to_sat()
+          msat_make_or(_env,
+            msat_make_not(_env, to_mathsat(t.left())), to_mathsat(t.right())
           );
       },
-      [](iff i) {
-        msat_env env = i.alphabet()->mathsat_env();
-        return msat_make_iff(env, i.left().to_sat(), i.right().to_sat());
+      [this](iff i) {
+        return msat_make_iff(_env, to_mathsat(i.left()), to_mathsat(i.right()));
       },
-      [](otherwise) -> msat_term {
+      [this](otherwise) -> msat_term {
         black_unreachable();
       }
     );

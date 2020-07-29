@@ -96,17 +96,7 @@ namespace black::internal {
 
       // X-requests from the formula's closure
       void add_xclosure(formula f);
-
-      // Calls the SAT-solver to check if the boolean formula is sat
-      bool is_sat(formula f);
-
-      // Calls the SAT-solver to check if the current formula in its
-      // environment is SAT.
-      bool is_sat();
-
-      // Incremental version of assert.
-      void add_to_msat(formula);
-    
+  
     private:
       // Reference to the original _alphabet
       alphabet& _alpha;

@@ -43,7 +43,6 @@ set (
   include/black/logic/formula.hpp
   include/black/logic/lex.hpp
   include/black/logic/parser.hpp
-  include/black/sat/glucose.hpp
   include/black/sat/mathsat.hpp
   include/black/solver/solver.hpp
 )

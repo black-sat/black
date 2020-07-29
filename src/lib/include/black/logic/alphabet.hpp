@@ -26,7 +26,6 @@
 
 #include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
-#include <black/sat/mathsat.hpp>
 
 #include <string>
 #include <unordered_map>
@@ -70,9 +69,6 @@ namespace black {
 
     // Function to obtain a formula given its unique id
     formula from_id(formula_id);
-
-    // Returns the MathSAT environment object used by formula->to_sat()
-    msat_env mathsat_env() const;
 
   private:
     std::unique_ptr<internal::alphabet_impl> _impl;
