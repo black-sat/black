@@ -29,6 +29,7 @@ set (
    src/logic/lex.cpp
    src/logic/parser.cpp
    src/sat/mathsat.cpp
+   src/sat/z3.cpp
    src/solver/solver.cpp
  )
 

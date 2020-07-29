@@ -21,17 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SOLVER_MATHSAT_HPP
-#define BLACK_SOLVER_MATHSAT_HPP
+#ifndef BLACK_SAT_MATHSAT_HPP
+#define BLACK_SAT_MATHSAT_HPP
 
 #include <black/sat/sat.hpp>
-#include <black/logic/formula.hpp>
 
 #include <memory>
-
-namespace black {
-  class alphabet;
-}
 
 namespace black::internal::sat::backends
 {
@@ -46,7 +41,6 @@ namespace black::internal::sat::backends
     virtual      void push();
     virtual      void pop();
     virtual      void clear();
-    virtual backend_t backend() const;
 
   private:
     struct _mathsat_t;
@@ -55,4 +49,4 @@ namespace black::internal::sat::backends
 
 }
 
-#endif // BLACK_SOLVER_MATHSAT_HPP
+#endif // BLACK_SAT_MATHSAT_HPP

@@ -25,7 +25,7 @@
 #include <black/logic/parser.hpp>
 #include <black/solver/solver.hpp>
 #include <black/sat/sat.hpp>
-#include <black/sat/mathsat.hpp>
+#include <black/sat/z3.hpp>
 
 namespace black::internal
 {
@@ -35,7 +35,7 @@ namespace black::internal
   bool solver::solve(std::optional<int> k_max_arg)
   {
     auto sat = 
-      std::make_unique<sat::backends::mathsat>();
+      std::make_unique<sat::backends::z3>();
 
     int k_max = k_max_arg.value_or(std::numeric_limits<int>::max());
 

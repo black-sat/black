@@ -79,11 +79,6 @@ namespace black::internal::sat::backends
     msat_reset_env(_data->env);
   }
 
-  auto mathsat::backend() const -> backend_t {
-    return { _data->env.repr };
-  }
-
-
   msat_term mathsat::_mathsat_t::to_mathsat(formula f) 
   {
     if(auto it = terms.find(f); it != terms.end()) 

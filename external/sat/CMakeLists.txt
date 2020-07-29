@@ -22,7 +22,22 @@
 # SOFTWARE.
 
 ##
-## MathSAT 5 solver
+## Z3 SMT solver
+##
+
+find_path(Z3_INCLUDES NAMES z3.h)
+find_library(Z3_LIBRARY NAMES z3)
+
+if(NOT Z3_INCLUDES OR NOT Z3_LIBRARY)
+  message(FATAL_ERROR "Z3 library not found")
+endif()
+
+add_library(z3 SHARED IMPORTED)
+set_property(TARGET z3 PROPERTY IMPORTED_LOCATION ${Z3_LIBRARY})
+target_include_directories(z3 INTERFACE ${Z3_INCLUDES})
+
+##
+## MathSAT 5 SMT solver
 ##
 
 ## MathSAT depends on GMP, let's find it first
@@ -95,6 +110,6 @@ set_property(
 ## TODO: Add CMake flags to choose which solvers to link
 ##
 add_library(solvers INTERFACE)
-target_link_libraries(solvers INTERFACE mathsat5 gmpxx gmp ZLIB::ZLIB)
+target_link_libraries(solvers INTERFACE z3 mathsat5 gmpxx gmp ZLIB::ZLIB)
 target_include_directories(solvers SYSTEM
 INTERFACE ${MATHSAT_INCLUDES} ${GMP_INCLUDES} ${GMPXX_INCLUDES})

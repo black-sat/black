@@ -21,51 +21,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SAT_SOLVER_HPP
-#define BLACK_SAT_SOLVER_HPP
+#include <black/sat/sat.hpp>
 
-#include <black/logic/formula.hpp>
+#include <memory>
 
-namespace black::internal::sat 
-{  
-
-  //
-  // Generic interface to backend SAT solvers
-  //  
-  class solver 
+namespace black::internal::sat::backends
+{
+  class z3 : ::black::internal::sat::solver
   {
   public:
-    // default constructor
-    solver() = default;
+    z3();
+    ~z3();
 
-    // solver is a polymorphic, non-copyable type
-    solver(const solver &) = delete;
-    solver &operator=(const solver &) = delete;
+    virtual      void assert_formula(formula f);
+    virtual      bool is_sat()  const;
+    virtual      void push();
+    virtual      void pop();
+    virtual      void clear();
 
-    virtual ~solver() = default;
-
-    // assert a formula, adding it to the current context
-    virtual void assert_formula(formula f) = 0;
-
-    // tell if the current set of assertions is satisfiable
-    virtual bool is_sat() const = 0;
-
-    // push the current context on the assertion stack
-    virtual void push() = 0;
-
-    // pop the current context from the assertion stack
-    virtual void pop() = 0;
-
-    // clear the current context completely
-    virtual void clear() = 0;
+  private:
+    struct _z3_t;
+    std::unique_ptr<_z3_t> _data;
   };
 
 }
-
-namespace black {
-
-  namespace sat = internal::sat;
-
-}
-
-#endif
