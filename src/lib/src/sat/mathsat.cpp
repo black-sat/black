@@ -123,7 +123,7 @@ namespace black::internal::sat::backends
       [this](iff i) {
         return msat_make_iff(_env, to_mathsat(i.left()), to_mathsat(i.right()));
       },
-      [this](otherwise) -> msat_term {
+      [](otherwise) -> msat_term {
         black_unreachable();
       }
     );
