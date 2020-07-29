@@ -27,8 +27,7 @@
 #include <black/sat/sat.hpp>
 #include <black/logic/formula.hpp>
 
-#include <mathsat.h>
-#include <unordered_map>
+#include <memory>
 
 namespace black {
   class alphabet;
@@ -40,6 +39,7 @@ namespace black::internal::sat::backends
   {
   public:
     mathsat();
+    virtual ~mathsat();
 
     virtual      void assert_formula(formula f);
     virtual      bool is_sat()  const;
@@ -49,11 +49,8 @@ namespace black::internal::sat::backends
     virtual backend_t backend() const;
 
   private:
-    mutable msat_env _env;
-    std::unordered_map<formula, msat_term> _terms;
-
-    msat_term to_mathsat(formula);
-    msat_term to_mathsat_inner(formula);
+    struct _mathsat_t;
+    std::unique_ptr<_mathsat_t> _data;
   };
 
 }

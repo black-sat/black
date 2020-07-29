@@ -71,10 +71,12 @@ option(FMT_WERROR "" ON)
 
 add_subdirectory(external/fmt EXCLUDE_FROM_ALL)
 add_subdirectory(external/clipp EXCLUDE_FROM_ALL)
+add_subdirectory(external/hopscotch-map EXCLUDE_FROM_ALL)
 
 # mark the depenencies to ignore warnings from their interface headers
 target_mark_as_system(fmt)
 target_mark_as_system(clipp)
+target_mark_as_system(hopscotch_map)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DBLACK_ASSERT_DISABLE")
 
