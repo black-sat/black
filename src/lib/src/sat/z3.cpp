@@ -28,6 +28,8 @@
 #include <z3.h>
 #include <tsl/hopscotch_map.h>
 
+#include <limits>
+
 namespace black::internal::sat::backends 
 {
   struct z3::_z3_t {
@@ -113,20 +115,20 @@ namespace black::internal::sat::backends
         return Z3_mk_not(context, to_z3(n));
       },
       [this](conjunction c) {
-        Z3_ast acc = to_z3(c.alphabet()->top());
+        std::vector<Z3_ast> args;
 
         formula next = c;
         std::optional<conjunction> cnext{c};
         do {
           formula left = cnext->left();
           next = cnext->right();
-          
-          Z3_ast args[] = { acc, to_z3(left) };
-          acc = Z3_mk_and(context, 2, args);
+          args.push_back(to_z3(left));
         } while((cnext = next.to<conjunction>()));
+        args.push_back(to_z3(next));
 
-        Z3_ast args[] = { acc, to_z3(next) };
-        return Z3_mk_and(context, 2, args);
+        black_assert(args.size() <= std::numeric_limits<unsigned int>::max());
+        return Z3_mk_and(context, 
+          static_cast<unsigned int>(args.size()), args.data());
       },
       [this](disjunction, formula left, formula right) {
         Z3_ast args[] = { to_z3(left), to_z3(right) };
