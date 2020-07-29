@@ -105,34 +105,4 @@ namespace black::internal {
     );
   }
 
-
-  void print_mathsat_model(alphabet &sigma)
-  {
-    using namespace std::literals;
-    /* we use a model iterator to retrieve the model values for all the
-     * variables, and the necessary function instantiations */
-    msat_env env = sigma.mathsat_env();
-    msat_model_iterator iter = msat_create_model_iterator(env);
-    assert(!MSAT_ERROR_MODEL_ITERATOR(iter));
-
-    fmt::print("Model:\n");
-    while (msat_model_iterator_has_next(iter)) {
-      msat_term t, v;
-      msat_model_iterator_next(iter, &t, &v);
-      char *s = msat_term_repr(t);
-
-      std::optional<formula_id> id = id_from_string(s);
-      black_assert(id.has_value());
-
-      formula f = sigma.from_id(*id);
-
-      msat_free(s);
-      s = msat_term_repr(v);
-      if(s == "`true`"s) {
-        fmt::print("   {}\n", to_string(f));
-      }
-      msat_free(s);
-    }
-    msat_destroy_model_iterator(iter);
-  }
 }

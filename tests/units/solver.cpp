@@ -38,8 +38,8 @@ TEST_CASE("Testing solver")
     
     formula f = !p && !X(p) && FG(p);
 
-    slv.add_formula(f);
+    slv.assert_formula(f);
 
-    REQUIRE(slv.inc_bsc_prune());
+    REQUIRE(slv.solve());
   }
 }
