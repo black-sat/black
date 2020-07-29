@@ -376,24 +376,6 @@ namespace black::internal
   }
 
   // Asks MathSAT for the satisfiability of current formula
-  bool solver::is_sat(formula encoding)
-  {
-    msat_env env = _alpha.mathsat_env();
-
-    msat_term term = encoding.to_sat();
-
-    msat_result res;
-    //msat_push_backtrack_point(env);
-    msat_assert_formula(env, term);
-    res = msat_solve(env);
-    // if(res == MSAT_SAT)
-    //   print_mathsat_model(_alpha);
-    msat_reset_env(env);
-
-    return (res == MSAT_SAT);
-  }
-
-  // Asks MathSAT for the satisfiability of current formula
   bool solver::is_sat()
   {
     msat_result res = msat_solve(_alpha.mathsat_env());
