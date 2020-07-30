@@ -30,7 +30,9 @@
 
 #include <limits>
 
-namespace black::internal::sat::backends 
+BLACK_REGISTER_SAT_BACKEND(z3)
+
+namespace black::sat::backends 
 {
   struct z3::_z3_t {
     Z3_context context;

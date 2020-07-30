@@ -26,7 +26,11 @@
 
 #include <black/logic/formula.hpp>
 
-namespace black::internal::sat 
+#include <memory>
+#include <type_traits>
+#include <string_view>
+
+namespace black::sat 
 {  
 
   //
@@ -37,6 +41,9 @@ namespace black::internal::sat
   public:
     // default constructor
     solver() = default;
+
+    static bool has_solver(std::string const&name);
+    static std::unique_ptr<solver> get_solver(std::string const&name);
 
     // solver is a polymorphic, non-copyable type
     solver(const solver &) = delete;
@@ -60,12 +67,22 @@ namespace black::internal::sat
     virtual void clear() = 0;
   };
 
+  namespace internal {
+    struct backend_init_hook {
+      using backend_ctor = std::unique_ptr<solver> (*)();
+      backend_init_hook(const char *, backend_ctor);
+    };
+
+    #define BLACK_REGISTER_SAT_BACKEND(Backend) \
+      const black::sat::internal::backend_init_hook \
+        Backend##_init_hook_{ \
+          #Backend, \
+          []() -> std::unique_ptr<::black::sat::solver> { \
+            return {std::make_unique<::black::sat::backends::Backend>()}; \
+          } \
+        };
+  }
 }
 
-namespace black {
-
-  namespace sat = internal::sat;
-
-}
 
 #endif

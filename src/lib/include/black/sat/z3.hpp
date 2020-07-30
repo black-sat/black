@@ -25,9 +25,9 @@
 
 #include <memory>
 
-namespace black::internal::sat::backends
+namespace black::sat::backends
 {
-  class z3 : ::black::internal::sat::solver
+  class z3 : public ::black::sat::solver
   {
   public:
     z3();

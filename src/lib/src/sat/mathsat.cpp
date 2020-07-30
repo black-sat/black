@@ -35,8 +35,9 @@
 
 #include <string>
 
+BLACK_REGISTER_SAT_BACKEND(mathsat)
 
-namespace black::internal::sat::backends
+namespace black::sat::backends
 {
 
   struct mathsat::_mathsat_t {

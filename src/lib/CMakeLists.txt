@@ -28,6 +28,7 @@ set (
    LIB_SRC
    src/logic/lex.cpp
    src/logic/parser.cpp
+   src/sat/sat.cpp
    src/sat/mathsat.cpp
    src/sat/z3.cpp
    src/solver/solver.cpp
@@ -59,3 +60,7 @@ target_compile_features(black PUBLIC cxx_std_17)
 target_enable_warnings(black)
 target_code_coverage(black)
 add_sanitizers(black)
+
+# this is needed to ensure global constructors are called
+# for the SAT backend registry to work
+target_link_libraries(black PUBLIC -all_load) 
