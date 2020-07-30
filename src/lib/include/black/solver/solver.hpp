@@ -32,6 +32,7 @@
 #include <utility>
 #include <limits>
 #include <unordered_set>
+#include <string>
 
 namespace black::internal {
 
@@ -61,6 +62,12 @@ namespace black::internal {
 
       // Solve the formula with up to `k_max' iterations
       bool solve(std::optional<int> k_max = std::nullopt);
+
+      // Choose the SAT backend. The backend must exist.
+      void set_sat_backend(std::string name);
+
+      // Retrieve the current SAT backend
+      std::string sat_backend() const;
 
     private:
 
@@ -111,6 +118,8 @@ namespace black::internal {
       // TODO: specialize to std::unordered_set<tomorrow>
       std::vector<tomorrow> _xclosure;
 
+      // the name of the currently chosen sat backend
+      std::string _sat_backend = "mathsat"; // sensible default
 
   }; // end class Black Solver
 

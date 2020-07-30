@@ -29,6 +29,7 @@
 #include <memory>
 #include <type_traits>
 #include <string_view>
+#include <vector>
 
 namespace black::sat 
 {  
@@ -42,10 +43,9 @@ namespace black::sat
     // default constructor
     solver() = default;
 
-    static bool has_solver(const char *name);
-    static bool has_solver(std::string const& name);
-    static std::unique_ptr<solver> get_solver(const char *name);
-    static std::unique_ptr<solver> get_solver(std::string const& name);
+    static std::vector<std::string_view> backends();
+    static bool backend_exists(std::string_view name);
+    static std::unique_ptr<solver> get_solver(std::string_view name);
 
     // solver is a polymorphic, non-copyable type
     solver(const solver &) = delete;
@@ -72,7 +72,7 @@ namespace black::sat
   namespace internal {
     struct backend_init_hook {
       using backend_ctor = std::unique_ptr<solver> (*)();
-      backend_init_hook(const char *, backend_ctor);
+      backend_init_hook(std::string_view, backend_ctor);
     };
 
     #define BLACK_REGISTER_SAT_BACKEND(Backend) \
@@ -80,7 +80,7 @@ namespace black::sat
         Backend##_init_hook_{ \
           #Backend, \
           []() -> std::unique_ptr<::black::sat::solver> { \
-            return {std::make_unique<::black::sat::backends::Backend>()}; \
+            return std::make_unique<::black::sat::backends::Backend>(); \
           } \
         };
   }

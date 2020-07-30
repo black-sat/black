@@ -23,6 +23,7 @@
 
 #include <black/frontend/cli.hpp>
 #include <black/frontend/io.hpp>
+#include <black/sat/sat.hpp>
 
 #include <clipp.h>
 
@@ -46,6 +47,10 @@ namespace black::frontend
     exit(static_cast<uint8_t>(status));
   }
 
+  static void print_header() {
+    io::message("\nBLACK - Bounded Lᴛʟ sAtisfiability ChecKer\n\n");
+  }
+
   template<typename Cli>
   static void print_help(Cli cli) {
     auto fmt = clipp::doc_formatting{}
@@ -53,9 +58,21 @@ namespace black::frontend
          .doc_column(25)
          .last_column(79);
 
-    io::message("\nBLACK - Bounded Lᴛʟ sAtisfiability ChecKer\n\n");
+    print_header();
 
     io::message("{}", clipp::make_man_page(cli, cli::command_name, fmt));
+  }
+
+  static void print_sat_backends() {
+    print_header();
+    io::message("Available SAT backends:");
+    for(auto backend : black::sat::solver::backends()) {
+      io::message(" - {}", backend);
+    }
+  }
+
+  static bool is_backend(std::string const &name) {
+    return black::sat::solver::backend_exists(name);
   }
 
   //
@@ -66,15 +83,20 @@ namespace black::frontend
     using namespace clipp;
 
     bool help = false;
+    bool show_backends = false;
 
     auto cli = (
       (option("-k", "--bound") & integer("bound", cli::bound))
         % "maximum bound for BMC procedures",
+      (option("--sat-backend") & value(is_backend, "name", cli::sat_backend))
+        % "name of the selected SAT backend",
       value("file", cli::filename).required(false)
         % "input formula file name.\n"
           "If missing, runs in interactive mode.\n"
           "If '-', reads from standard input in batch mode."
-    ) | option("-h", "--help").set(help) % "print this help message";
+    ) | option("-h", "--help").set(help) % "print this help message"
+      | option("--sat-backends").set(show_backends) 
+          % "print the list of available SAT backends";
 
     cli::command_name = argv[0];
 
@@ -89,6 +111,11 @@ namespace black::frontend
 
     if(help) {
       print_help(cli);
+      quit(status_code::success);
+    }
+
+    if(show_backends) {
+      print_sat_backends();
       quit(status_code::success);
     }
   }

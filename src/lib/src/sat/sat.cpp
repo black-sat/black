@@ -24,44 +24,49 @@
 #include <black/sat/sat.hpp>
 
 #include <tsl/hopscotch_map.h>
-#include <string>
 
 namespace black::sat
 {
   namespace internal {
     namespace {
-      tsl::hopscotch_map<const char *, backend_init_hook::backend_ctor> 
-        backends;
+      tsl::hopscotch_map<std::string_view, backend_init_hook::backend_ctor> 
+        _backends;
     }
     
-    backend_init_hook::backend_init_hook(const char *name, backend_ctor ctor)
-    {
-      black_assert(backends.find(name) == backends.end());
-      backends.insert({name, ctor});
+    backend_init_hook::backend_init_hook(
+      std::string_view name, backend_ctor ctor
+    ) {
+      black_assert(_backends.find(name) == _backends.end());
+      _backends.insert({name, ctor});
     }
   }
 
-  bool solver::has_solver(const char *name) {
+  bool solver::backend_exists(std::string_view name) {
     using namespace black::sat::internal;
     
-    return backends.find(name) != backends.end();
+    return _backends.find(name) != _backends.end();
   }
 
-  bool solver::has_solver(std::string const &name) {
-    return has_solver(name.c_str());
-  }
-
-  std::unique_ptr<solver> solver::get_solver(const char *name) 
+  std::unique_ptr<solver> solver::get_solver(std::string_view name) 
   {
     using namespace black::sat::internal;
-    auto it = backends.find(name); 
+    auto it = _backends.find(name); 
     
-    black_assert(it != backends.end());
+    black_assert(it != _backends.end());
     
     return (it->second)();
   }
 
-  std::unique_ptr<solver> solver::get_solver(std::string const& name) {
-    return get_solver(name.c_str());
+  std::vector<std::string_view> solver::backends() {
+    using namespace black::sat::internal;
+
+    std::vector<std::string_view> result;
+
+    for(auto [key,elem] : _backends) {
+      result.push_back(key);
+    }
+
+    return result;
   }
+  
 }

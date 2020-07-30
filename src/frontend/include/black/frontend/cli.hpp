@@ -76,6 +76,9 @@ namespace black::frontend
     // maximum bound for BMC algorithms, if given
     inline std::optional<int> bound;
 
+    // name of the selected SAT backend (nullopt for default)
+    inline std::optional<std::string> sat_backend;
+
     // verbosity level
     inline verbosity verbosity = verbosity::message;
   }

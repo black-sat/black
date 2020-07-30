@@ -34,7 +34,7 @@ namespace black::internal
    */
   bool solver::solve(std::optional<int> k_max_arg)
   {
-    auto sat = sat::solver::get_solver("mathsat");
+    auto sat = sat::solver::get_solver(_sat_backend);
 
     int k_max = k_max_arg.value_or(std::numeric_limits<int>::max());
 
@@ -373,6 +373,14 @@ namespace black::internal
       },
       [](otherwise) { }
     );
+  }
+
+  void solver::set_sat_backend(std::string name) {
+    _sat_backend = std::move(name);
+  }
+
+  std::string solver::sat_backend() const {
+    return _sat_backend;
   }
 
 } // end namespace black::internal

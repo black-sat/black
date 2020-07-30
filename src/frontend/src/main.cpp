@@ -81,6 +81,9 @@ int batch(std::optional<std::string> path, std::istream &file)
   black_assert(f.has_value());
 
   black::solver slv{sigma};
+  
+  if(cli::sat_backend)
+    slv.set_sat_backend(*cli::sat_backend);
 
   slv.assert_formula(*f);
 
@@ -98,6 +101,9 @@ int interactive()
 {
   black::alphabet sigma;
   black::solver slv{sigma};
+
+  if(cli::sat_backend)
+    slv.set_sat_backend(*cli::sat_backend);
 
   while(!std::cin.eof()) {
     std::string line;
