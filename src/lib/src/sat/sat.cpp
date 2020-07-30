@@ -30,23 +30,28 @@ namespace black::sat
 {
   namespace internal {
     namespace {
-      tsl::hopscotch_map<std::string, backend_init_hook::backend_ctor> backends;
+      tsl::hopscotch_map<const char *, backend_init_hook::backend_ctor> 
+        backends;
     }
     
     backend_init_hook::backend_init_hook(const char *name, backend_ctor ctor)
     {
       black_assert(backends.find(name) == backends.end());
-      backends.insert({std::string{name}, ctor});
+      backends.insert({name, ctor});
     }
   }
 
-  bool solver::has_solver(std::string const& name) {
+  bool solver::has_solver(const char *name) {
     using namespace black::sat::internal;
     
     return backends.find(name) != backends.end();
   }
 
-  std::unique_ptr<solver> solver::get_solver(std::string const& name) 
+  bool solver::has_solver(std::string const &name) {
+    return has_solver(name.c_str());
+  }
+
+  std::unique_ptr<solver> solver::get_solver(const char *name) 
   {
     using namespace black::sat::internal;
     auto it = backends.find(name); 
@@ -56,4 +61,7 @@ namespace black::sat
     return (it->second)();
   }
 
+  std::unique_ptr<solver> solver::get_solver(std::string const& name) {
+    return get_solver(name.c_str());
+  }
 }

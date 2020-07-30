@@ -42,8 +42,10 @@ namespace black::sat
     // default constructor
     solver() = default;
 
-    static bool has_solver(std::string const&name);
-    static std::unique_ptr<solver> get_solver(std::string const&name);
+    static bool has_solver(const char *name);
+    static bool has_solver(std::string const& name);
+    static std::unique_ptr<solver> get_solver(const char *name);
+    static std::unique_ptr<solver> get_solver(std::string const& name);
 
     // solver is a polymorphic, non-copyable type
     solver(const solver &) = delete;
@@ -74,7 +76,7 @@ namespace black::sat
     };
 
     #define BLACK_REGISTER_SAT_BACKEND(Backend) \
-      const black::sat::internal::backend_init_hook \
+      static const black::sat::internal::backend_init_hook \
         Backend##_init_hook_{ \
           #Backend, \
           []() -> std::unique_ptr<::black::sat::solver> { \
