@@ -42,6 +42,12 @@ namespace black::internal::sat::backends
     Z3_ast to_z3_inner(formula);
   };
 
+  [[noreturn]]
+  static void error_handler(Z3_context c, Z3_error_code e) {
+    fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(c, e));
+    std::abort();
+  }
+
   z3::z3() : _data{std::make_unique<_z3_t>()} 
   { 
     Z3_config  cfg;
@@ -50,6 +56,7 @@ namespace black::internal::sat::backends
     Z3_set_param_value(cfg, "model", "true");
     
     _data->context = Z3_mk_context(cfg);
+    Z3_set_error_handler(_data->context, error_handler);
 
     Z3_del_config(cfg);
 
@@ -62,7 +69,9 @@ namespace black::internal::sat::backends
     Z3_del_context(_data->context);
   }
 
-  void z3::assert_formula(formula) { }
+  void z3::assert_formula(formula f) { 
+    Z3_solver_assert(_data->context, _data->solver, _data->to_z3(f));
+  }
   
   bool z3::is_sat() const { 
     Z3_lbool result = Z3_solver_check(_data->context, _data->solver);
