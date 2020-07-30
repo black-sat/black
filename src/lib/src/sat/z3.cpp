@@ -107,11 +107,7 @@ namespace black::internal::sat::backends
   {
     return f.match(
       [this](boolean b) {
-        Z3_sort sort = Z3_mk_bool_sort(context);
-        Z3_symbol symbol = b.value() ? 
-          Z3_mk_int_symbol(context, 1) : Z3_mk_int_symbol(context, 0);
-
-        return Z3_mk_const(context, symbol, sort);
+        return b.value() ? Z3_mk_true(context) : Z3_mk_false(context);
       },
       [this](atom a) {
         Z3_sort sort = Z3_mk_bool_sort(context);
