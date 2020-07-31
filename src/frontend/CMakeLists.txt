@@ -41,9 +41,17 @@ add_executable(frontend ${FRONTEND_SRC} ${FRONTEND_HEADERS})
 
 target_compile_features(frontend PRIVATE cxx_std_17)
 target_include_directories(frontend PRIVATE include)
+
+set(BLACK_GNU_LINK_FLAGS "-Wl,-whole-archive" black "-Wl,-no-whole-archive")
+set(BLACK_CLANG_LINK_FLAGS "-Wl,-force_load" black)
+
 target_link_libraries(frontend PRIVATE
-  "-Wl,-whole-archive" black "-Wl,-no-whole-archive")
-target_link_libraries(frontend PRIVATE fmt clipp::clipp)
+  "$<$<CXX_COMPILER_ID:Clang>:${BLACK_CLANG_LINK_FLAGS}>"
+  "$<$<CXX_COMPILER_ID:AppleClang>:${BLACK_CLANG_LINK_FLAGS}>"
+  "$<$<CXX_COMPILER_ID:GNU>:${BLACK_GNU_LINK_FLAGS}>"
+  )
+
+  target_link_libraries(frontend PRIVATE fmt clipp::clipp)
 target_enable_warnings(frontend)
 target_code_coverage(frontend)
 add_sanitizers(frontend)
