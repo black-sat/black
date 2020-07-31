@@ -41,7 +41,8 @@ add_executable(frontend ${FRONTEND_SRC} ${FRONTEND_HEADERS})
 
 target_compile_features(frontend PRIVATE cxx_std_17)
 target_include_directories(frontend PRIVATE include)
-target_link_libraries(frontend PRIVATE black)
+target_link_libraries(frontend PRIVATE
+  "-Wl,-whole-archive" black "-Wl,-no-whole-archive")
 target_link_libraries(frontend PRIVATE fmt clipp::clipp)
 target_enable_warnings(frontend)
 target_code_coverage(frontend)
