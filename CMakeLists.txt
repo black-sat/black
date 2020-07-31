@@ -80,11 +80,6 @@ target_mark_as_system(hopscotch_map)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DBLACK_ASSERT_DISABLE")
 
-#
-# SAT solvers
-#
-add_subdirectory(external/sat)
-
 # Black library and frontend
 add_subdirectory(src/lib)
 add_subdirectory(src/frontend)

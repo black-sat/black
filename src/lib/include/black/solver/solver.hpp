@@ -26,7 +26,6 @@
 
 #include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
-#include <black/sat/mathsat.hpp>
 
 #include <vector>
 #include <utility>
@@ -119,7 +118,7 @@ namespace black::internal {
       std::vector<tomorrow> _xclosure;
 
       // the name of the currently chosen sat backend
-      std::string _sat_backend = "mathsat"; // sensible default
+      std::string _sat_backend = "z3"; // sensible default
 
   }; // end class Black Solver
 

@@ -205,8 +205,8 @@ tags
 
 
 ## External dependencies that we cannot redistribute
-external/sat/mathsat5
-external/sat/mathsat5-*
+external/mathsat5
+external/mathsat5-*
 
 # Solvers binary dirs
 benchmarks/solvers

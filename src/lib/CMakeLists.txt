@@ -1,7 +1,7 @@
 #
 # BLACK - Bounded Ltl sAtisfiability ChecKer
 #
-# (C) 2019 Nicola Gigante
+# (C) 2019 - 2020 Nicola Gigante
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+find_package(Z3 REQUIRED)
+
 #
 # black library
 #
@@ -29,8 +31,7 @@ set (
    src/logic/lex.cpp
    src/logic/parser.cpp
    src/sat/sat.cpp
-   src/sat/mathsat.cpp
-   src/sat/z3.cpp
+   src/sat/backends/z3.cpp
    src/solver/solver.cpp
  )
 
@@ -45,18 +46,22 @@ set (
   include/black/logic/formula.hpp
   include/black/logic/lex.hpp
   include/black/logic/parser.hpp
-  include/black/sat/mathsat.hpp
   include/black/solver/solver.hpp
 )
 
-# Here adding the headers is redundant, but makes them appear in
-# project files made by IDE generators (Xcode, VS, ecc...)
+#
+# Main black library. The `internal` trick is needed to make sure global 
+# constructors are correctly called when the library is statically linked
+#
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PUBLIC solvers)
-target_link_libraries(black PRIVATE fmt tsl::hopscotch_map)
+target_link_libraries(black PRIVATE Z3 fmt tsl::hopscotch_map)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
 target_enable_warnings(black)
 target_code_coverage(black)
 add_sanitizers(black)
+
+##
+## Z3 SMT solver
+##

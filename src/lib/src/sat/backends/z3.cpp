@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 
-#include <black/sat/z3.hpp>
+#include <black/sat/backends/z3.hpp>
 #include <black/logic/alphabet.hpp>
 
 #include <z3.h>

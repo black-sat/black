@@ -25,7 +25,6 @@
 #include <black/logic/parser.hpp>
 #include <black/solver/solver.hpp>
 #include <black/sat/sat.hpp>
-#include <black/sat/z3.hpp>
 
 namespace black::internal
 {

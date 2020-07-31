@@ -1,7 +1,7 @@
 #
 # BLACK - Bounded Ltl sAtisfiability ChecKer
 #
-# (C) 2019 Nicola Gigante
+# (C) 2020 Nicola Gigante
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,39 +21,52 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#
-# Main black executable
-#
-set(
-  FRONTEND_SRC
-  src/main.cpp
-  src/cli.cpp
+##
+## Find the Z3 SMT solver
+##
+
+find_package(PkgConfig)
+pkg_check_modules(PC_Z3 QUIET Z3)
+
+find_path(Z3_INCLUDE_DIR
+  NAMES z3.h
+  PATHS ${PC_Z3_INCLUDE_DIRS}
+  PATH_SUFFIXES z3
+)
+find_library(Z3_LIBRARY
+  NAMES z3
+  PATHS ${PC_Z3_LIBRARY_DIRS}
 )
 
-set(
-  FRONTEND_HEADERS
-  include/black/frontend/cli.hpp
-  include/black/frontend/io.hpp
-  include/black/frontend/support.hpp
+set(Z3_VERSION ${PC_Z3_VERSION})
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Z3
+  FOUND_VAR Z3_FOUND
+  REQUIRED_VARS
+    Z3_LIBRARY
+    Z3_INCLUDE_DIR
+  VERSION_VAR Z3_VERSION
 )
 
-include(LinkGlobalCtors)
+if(Z3_FOUND)
+  set(Z3_LIBRARIES ${Z3_LIBRARY})
+  set(Z3_INCLUDE_DIRS ${Z3_INCLUDE_DIR})
 
-add_executable(frontend ${FRONTEND_SRC} ${FRONTEND_HEADERS})
-target_link_library_with_global_ctors(frontend PRIVATE black)
+  add_library(z3_internal UNKNOWN IMPORTED)
+  set_target_properties(z3_internal PROPERTIES
+    IMPORTED_LOCATION "${Z3_LIBRARY}"
+    INTERFACE_COMPILE_OPTIONS "${PC_Z3_CFLAGS_OTHER}"
+    INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${Z3_INCLUDE_DIR}"
+  )
 
-target_compile_features(frontend PRIVATE cxx_std_17)
-target_include_directories(frontend PRIVATE include)
-target_link_libraries(frontend PRIVATE fmt clipp::clipp)
-target_enable_warnings(frontend)
-target_code_coverage(frontend)
-add_sanitizers(frontend)
+  add_library(Z3 INTERFACE)
+  target_link_libraries(Z3 INTERFACE z3_internal)
+  target_include_directories(Z3 SYSTEM INTERFACE ${Z3_INCLUDE_DIR})
 
-if(STATIC_BUILD)
-  target_link_libraries(frontend PRIVATE "-static -pthread")
 endif()
 
-set_property(TARGET frontend PROPERTY OUTPUT_NAME black)
-set_property(TARGET frontend PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
-install(TARGETS frontend RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+mark_as_advanced(
+  Z3_INCLUDE_DIR
+  Z3_LIBRARY
+)
