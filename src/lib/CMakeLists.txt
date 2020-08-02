@@ -21,7 +21,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-find_package(Z3 REQUIRED)
+find_package(MathSAT REQUIRED)
+find_package(Z3)
+
+message(STATUS "MathSAT solver found! Enabling the MathSAT backend...")
+if(Z3_FOUND)
+  message(STATUS "Z3 solver found! Enabling the Z3 SAT backend...")
+else()
+  message(STATUS "Z3 solver not found. Disabling the Z3 SAT backend...")
+endif()
 
 #
 # black library
@@ -31,9 +39,13 @@ set (
    src/logic/lex.cpp
    src/logic/parser.cpp
    src/sat/sat.cpp
-   src/sat/backends/z3.cpp
+   src/sat/backends/mathsat.cpp
    src/solver/solver.cpp
- )
+   )
+   
+if(Z3_FOUND)
+  set(LIB_SRC ${LIB_SRC} src/sat/backends/z3.cpp)
+endif()
 
 set (
   LIB_HEADERS
@@ -55,9 +67,12 @@ set (
 #
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PRIVATE Z3 fmt tsl::hopscotch_map)
+target_link_libraries(black PRIVATE MathSAT fmt tsl::hopscotch_map)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
+if(Z3_FOUND)
+  target_link_libraries(black PRIVATE Z3)
+endif()
 target_enable_warnings(black)
 target_code_coverage(black)
 add_sanitizers(black)

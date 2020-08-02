@@ -48,7 +48,7 @@ namespace black::frontend
   }
 
   static void print_header() {
-    io::message("\nBLACK - Bounded Lᴛʟ sAtisfiability ChecKer\n\n");
+    io::message("\nBLACK - Bounded Lᴛʟ sAtisfiability ChecKer\n");
   }
 
   template<typename Cli>
@@ -60,7 +60,7 @@ namespace black::frontend
 
     print_header();
 
-    io::message("{}", clipp::make_man_page(cli, cli::command_name, fmt));
+    io::message("\n{}", clipp::make_man_page(cli, cli::command_name, fmt));
   }
 
   static void print_sat_backends() {
