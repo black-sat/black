@@ -43,7 +43,8 @@ task:
     - cmake -DCMAKE_BUILD_TYPE=Release ../..
     - make -j2
   test_script:
-    - cd build/release && ctest --quiet -R black
+    - cd build/release 
+    - ctest -R black
 
 task:
   name: macOS (Apple clang)
@@ -61,7 +62,24 @@ task:
     - cmake -DCMAKE_BUILD_TYPE=Release ../..
     - make -j2
   test_script:
-    - cd build/release && ctest --quiet -R black
+    - cd build/release 
+    - ctest -R black
+
+
+task:
+  name: macOS (with Z3 SAT backend)
+  osx_instance:
+    image: catalina-base
+  download_dependencies_script:
+    - brew install cmake gmp wget z3
+    - ./download-mathsat.sh
+  release_build_script:
+    - mkdir -p build/release && cd build/release
+    - cmake -DCMAKE_BUILD_TYPE=Release -DBLACK_TESTS_SAT_BACKEND=z3 ../..
+    - make -j2
+  test_script:
+    - cd build/release 
+    - ctest -R black
 
 task:
   name: Code coverage
@@ -79,7 +97,7 @@ task:
     - make -j2
   test_script:
     - cd build/debug 
-    - ctest --quiet -R black
+    - ctest -R black
   coverage_script:
     - cd build/debug 
     - bash <(curl -s https://codecov.io/bash)
