@@ -30,7 +30,6 @@
 #endif
 
 #include <black/support/common.hpp>
-#include <black/sat/mathsat.hpp>
 
 #include <type_traits>
 #include <array>
@@ -68,7 +67,6 @@ namespace black::internal
   {
     formula_base(formula_type t);
 
-    msat_term encoding{};
     const formula_type type{};
   };
 

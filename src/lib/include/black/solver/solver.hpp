@@ -26,12 +26,12 @@
 
 #include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
-#include <black/sat/mathsat.hpp>
 
 #include <vector>
 #include <utility>
 #include <limits>
 #include <unordered_set>
+#include <string>
 
 namespace black::internal {
 
@@ -61,6 +61,12 @@ namespace black::internal {
 
       // Solve the formula with up to `k_max' iterations
       bool solve(std::optional<int> k_max = std::nullopt);
+
+      // Choose the SAT backend. The backend must exist.
+      void set_sat_backend(std::string name);
+
+      // Retrieve the current SAT backend
+      std::string sat_backend() const;
 
     private:
 
@@ -96,17 +102,7 @@ namespace black::internal {
 
       // X-requests from the formula's closure
       void add_xclosure(formula f);
-
-      // Calls the SAT-solver to check if the boolean formula is sat
-      bool is_sat(formula f);
-
-      // Calls the SAT-solver to check if the current formula in its
-      // environment is SAT.
-      bool is_sat();
-
-      // Incremental version of assert.
-      void add_to_msat(formula);
-    
+  
     private:
       // Reference to the original _alphabet
       alphabet& _alpha;
@@ -121,6 +117,8 @@ namespace black::internal {
       // TODO: specialize to std::unordered_set<tomorrow>
       std::vector<tomorrow> _xclosure;
 
+      // the name of the currently chosen sat backend
+      std::string _sat_backend = "z3"; // sensible default
 
   }; // end class Black Solver
 

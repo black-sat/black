@@ -25,6 +25,8 @@ option(
   ENABLE_TOOLS_TESTS "Enable tests of other tools in the benchmark suite" OFF
 )
 
+set(BLACK_TESTS_SAT_BACKEND "mathsat" CACHE STRING "SAT backend used in tests")
+
 #
 # Unit testing with Catch2
 #
@@ -39,7 +41,8 @@ set(
 )
 
 add_executable(unit_tests ${UNIT_TESTS})
-target_link_libraries(unit_tests PRIVATE black Catch2::Catch2)
+target_link_library_with_global_ctors(unit_tests PRIVATE black)
+target_link_libraries(unit_tests PRIVATE Catch2::Catch2)
 target_enable_warnings(unit_tests)
 target_code_coverage(unit_tests)
 add_sanitizers(unit_tests)
@@ -75,7 +78,8 @@ foreach(TEST IN LISTS TESTS)
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
     COMMAND
       /bin/bash -c
-      "$<TARGET_FILE:frontend> '${FILE}' | grep '^${RESULT}'"
+      "$<TARGET_FILE:frontend> \
+      --sat-backend ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | grep '^${RESULT}'"
   )
 
   if(TEST_TIMEOUT)

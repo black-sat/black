@@ -65,7 +65,7 @@ namespace black::internal {
 
   #define BLACK_ASSERT(Expr)                            \
     black::internal::assert_handler(                    \
-      [&]() { return Expr; }, #Expr, __FILE__, __LINE__ \
+      [&]() { return static_cast<bool>(Expr); }, #Expr, __FILE__, __LINE__ \
     )
 
   #define BLACK_UNREACHABLE()                                        \

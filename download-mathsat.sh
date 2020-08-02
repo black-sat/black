@@ -39,7 +39,7 @@ main()
 
   ORIGINAL_PWD=$(pwd)
 
-  cd "$(git rev-parse --show-toplevel)/external/sat" || \
+  cd "$(git rev-parse --show-toplevel)/external" || \
     die "Please run the script from inside BLACK's sources"
 
   MATHSAT_URL=http://mathsat.fbk.eu/download.php?file=$MATHSAT_DIR.tar.gz

@@ -21,25 +21,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SOLVER_MATHSAT_HPP
-#define BLACK_SOLVER_MATHSAT_HPP
+#ifndef BLACK_SAT_MATHSAT_HPP
+#define BLACK_SAT_MATHSAT_HPP
 
-#include <mathsat.h>
+#include <black/sat/sat.hpp>
 
-namespace black {
-  class alphabet;
-}
+#include <memory>
 
-namespace black::internal
+namespace black::sat::backends
 {
-  class formula;
+  class mathsat : public ::black::sat::solver
+  {
+  public:
+    mathsat();
+    virtual ~mathsat();
 
-  msat_env mathsat_init();
+    virtual      void assert_formula(formula f);
+    virtual      bool is_sat()  const;
+    virtual      void push();
+    virtual      void pop();
+    virtual      void clear();
 
-  msat_term to_mathsat(formula);
-
-  void print_mathsat_model(alphabet &);
+  private:
+    struct _mathsat_t;
+    std::unique_ptr<_mathsat_t> _data;
+  };
 
 }
 
-#endif // BLACK_SOLVER_MATHSAT_HPP
+#endif // BLACK_SAT_MATHSAT_HPP
