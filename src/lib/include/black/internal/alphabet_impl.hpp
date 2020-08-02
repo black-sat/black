@@ -26,7 +26,6 @@
 
 #include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
-#include <black/sat/mathsat.hpp>
 
 #include <deque>
 #include <unordered_map>
@@ -59,10 +58,6 @@ namespace black::internal {
     std::unordered_map<any_hashable, atom_t*> _atoms_map;
     std::unordered_map<unary_key,   unary_t*> _unaries_map;
     std::unordered_map<binary_key, binary_t*> _binaries_map;
-
-    // MathSAT environment object
-    // TODO: decouple formula construction code from the SAT solver
-    msat_env _msat_env = mathsat_init();
 
   private:
     template<typename>
@@ -229,22 +224,6 @@ namespace black {
     using namespace internal;
     return
     formula{this, reinterpret_cast<formula_base *>(static_cast<uintptr_t>(id))};
-  }
-
-  inline msat_env alphabet::mathsat_env() const {
-    return _impl->_msat_env;
-  }
-
-  namespace internal {
-    inline msat_term formula::to_sat() const {
-      // TODO: check if the formula is propositional-only
-      // TODO: check that the environment of the alphabet is the same
-      if(MSAT_ERROR_TERM(_formula->encoding))
-        _formula->encoding = to_mathsat(*this);
-
-      black_assert(!MSAT_ERROR_TERM(_formula->encoding));
-      return _formula->encoding;
-    }
   }
 
 } // namespace black

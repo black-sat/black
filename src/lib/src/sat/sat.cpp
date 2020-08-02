@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Nicola Gigante
+// (C) 2020 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,52 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_GLUCOSE_H
-#define BLACK_GLUCOSE_H
+#include <black/sat/sat.hpp>
 
-#include <simp/SimpSolver.h>
+#include <tsl/hopscotch_map.h>
 
-#endif // BLACK_GLUCOSE_H
+namespace black::sat
+{
+  namespace internal {
+    namespace {
+      tsl::hopscotch_map<std::string_view, backend_init_hook::backend_ctor> 
+        _backends;
+    }
+    
+    backend_init_hook::backend_init_hook(
+      std::string_view name, backend_ctor ctor
+    ) {
+      black_assert(_backends.find(name) == _backends.end());
+      _backends.insert({name, ctor});
+    }
+  }
+
+  bool solver::backend_exists(std::string_view name) {
+    using namespace black::sat::internal;
+    
+    return _backends.find(name) != _backends.end();
+  }
+
+  std::unique_ptr<solver> solver::get_solver(std::string_view name) 
+  {
+    using namespace black::sat::internal;
+    auto it = _backends.find(name); 
+    
+    black_assert(it != _backends.end());
+    
+    return (it->second)();
+  }
+
+  std::vector<std::string_view> solver::backends() {
+    using namespace black::sat::internal;
+
+    std::vector<std::string_view> result;
+
+    for(auto [key,elem] : _backends) {
+      result.push_back(key);
+    }
+
+    return result;
+  }
+  
+}

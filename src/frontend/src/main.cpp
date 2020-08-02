@@ -82,10 +82,13 @@ int batch(std::optional<std::string> path, std::istream &file)
   black_assert(f.has_value());
 
   black::solver slv{sigma};
+  
+  if(cli::sat_backend)
+    slv.set_sat_backend(*cli::sat_backend);
 
-  slv.add_formula(black::remove_past(*f));
+  slv.assert_formula(black::remove_past(*f));
 
-  bool res = slv.inc_bsc_prune(cli::bound);
+  bool res = slv.solve(cli::bound);
 
   if(res)
     io::message("SAT\n");
@@ -99,6 +102,9 @@ int interactive()
 {
   black::alphabet sigma;
   black::solver slv{sigma};
+
+  if(cli::sat_backend)
+    slv.set_sat_backend(*cli::sat_backend);
 
   while(!std::cin.eof()) {
     std::string line;
@@ -124,8 +130,8 @@ int interactive()
     else
       io::message("Solving...\n");
 
-    slv.add_formula(f_ltl);
-    bool res = slv.inc_bsc_prune(cli::bound);
+    slv.assert_formula(f_ltl);
+    bool res = slv.solve(cli::bound);
 
     if(res)
       io::message("The formula is SAT!\n\n");

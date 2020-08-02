@@ -24,235 +24,45 @@
 
 #include <black/logic/parser.hpp>
 #include <black/solver/solver.hpp>
-#include <black/sat/mathsat.hpp>
+#include <black/sat/sat.hpp>
 
 namespace black::internal
 {
   /*
-   * Incremental version of 'solve'
+   * Solve the formula with up to `k_max' iterations
    */
-  bool solver::inc_solve()
+  bool solver::solve(std::optional<int> k_max_arg)
   {
-    int k=0;
-
-    msat_env env = _alpha.mathsat_env();
-    msat_reset_env(env);
-
-    while(true){
-      // Generating the k-unraveling
-      add_to_msat(k_unraveling(k));
-      // if 'encoding' is unsat, then stop with UNSAT.
-      if(!is_sat())
-        return false;
-
-      // else, continue to check EMPTY and LOOP.
-      // Generating EMPTY and LOOP
-      msat_push_backtrack_point(env);
-      add_to_msat(empty_and_loop(k));
-      // if 'encoding' is sat, then stop with SAT.
-      if(is_sat())
-        return true;
-
-      // else, generate the PRUNE
-      // Computing allSAT of 'encoding & PRUNE^k'
-      msat_pop_backtrack_point(env);
-      formula all_models = all_sat(_alpha.bottom());
-      // Fixing the negation of 'all_models'
-      add_to_msat( !all_models );
-      // Incrementing 'k' for the next iteration
-      k++;
-    } // end while(true)
-  }
-
-
-  /*
-   * Main algorithm (allSAT-based) for the solver.
-   */
-  bool solver::solve()
-  {
-    int k=0;
-    formula encoding = _alpha.top();
-    while(true){
-      // Generating the k-unraveling
-      if(k)
-        encoding = encoding && k_unraveling(k);
-      else // first iteration
-        encoding = k_unraveling(k);
-      // if 'encoding' is unsat, then stop with UNSAT.
-      if(!is_sat(encoding))
-        return false;
-
-      // else, continue to check EMPTY and LOOP.
-      // Generating EMPTY and LOOP
-      formula looped = encoding && empty_and_loop(k);
-      // if 'encoding' is sat, then stop with SAT.
-      if(is_sat(looped))
-        return true;
-
-      // else, generate the PRUNE
-      // Computing allSAT of 'encoding & PRUNE^k'
-      formula all_models = all_sat(encoding && prune(k), _alpha.bottom());
-      // Fixing the negation of 'all_models'
-      encoding = encoding && !all_models;
-      // Incrementing 'k' for the next iteration
-      k++;
-    } // end while(true)
-  }
-
-  /*
-   * Incremental version of 'bsc_prune'
-   */
-  bool solver::inc_bsc_prune(std::optional<int> k_max_arg)
-  {
-    msat_env env = _alpha.mathsat_env();
-    msat_reset_env(env);
+    auto sat = sat::solver::get_solver(_sat_backend);
 
     int k_max = k_max_arg.value_or(std::numeric_limits<int>::max());
 
     for(int k=0; k <= k_max; ++k)
     {
       // Generating the k-unraveling
-      add_to_msat(k_unraveling(k));
-      // if 'encoding' is unsat, then stop with UNSAT.
-      if(!is_sat())
+      sat->assert_formula(k_unraveling(k));
+      // if 'encoding' is unsat, then stop with UNSAT
+      if(!sat->is_sat())
         return false;
 
-      // else, continue to check EMPTY and LOOP.
+      // else, continue to check EMPTY and LOOP
       // Generating EMPTY and LOOP
-      msat_push_backtrack_point(env);
-      add_to_msat(empty_and_loop(k));
-      // if 'encoding' is sat, then stop with SAT.
-      if(is_sat())
+      sat->push();
+      sat->assert_formula(empty_and_loop(k));
+      // if 'encoding' is sat, then stop with SAT
+      if(sat->is_sat())
         return true;
-      msat_pop_backtrack_point(env);
+      sat->pop();
 
       // else, generate the PRUNE
       // Computing allSAT of 'encoding & not PRUNE^k'
-      add_to_msat( !prune(k) );
-      if(!is_sat())
+      sat->assert_formula(!prune(k));
+      if(!sat->is_sat())
         return false;
     } // end while(true)
 
     return false;
   }
-
-
-  /*
-   * BSC augmented with the PRUNE rule.
-   */
-  bool solver::bsc_prune(int k_max)
-  {
-    formula encoding = _alpha.top();
-
-    msat_env env = _alpha.mathsat_env();
-    msat_reset_env(env);
-
-    for(int k = 0; k <= k_max; ++k)
-    {
-      if(k)
-        encoding = encoding && k_unraveling(k);
-      else // first iteration
-        encoding = k_unraveling(k);
-
-      // if 'encoding' is unsat, then stop with UNSAT.
-      if(!is_sat(encoding))
-        return false;
-
-      // else, continue to check EMPTY and LOOP.
-      // Generating EMPTY and LOOP
-      formula empty = k_empty(k);
-      formula loop = k_loop(k);
-
-      // if 'encoding' is sat, then stop with SAT.
-      if(is_sat(encoding && empty))
-        return true;
-
-      //            to_string(loop));
-      if(is_sat(encoding && loop))
-        return true;
-
-      // else, generate the PRUNE
-      // Computing allSAT of 'encoding & not PRUNE^k'
-      formula prune = this->prune(k);
-      encoding = encoding && !prune;
-
-      if(!is_sat(encoding))
-        return false;
-    } // end while(true)
-
-    return false;
-  }
-
-
-  /*
-   * Incremental version of BSC.
-   */
-  bool solver::inc_bsc()
-  {
-    int k=0;
-
-    msat_env env = _alpha.mathsat_env();
-    msat_reset_env(env);
-
-    while(true){
-      // Generating the k-unraveling
-      add_to_msat(k_unraveling(k));
-
-      if(!is_sat())
-        return false;
-
-      // Generating EMPTY and LOOP
-      msat_push_backtrack_point(env);
-      add_to_msat(empty_and_loop(k));
-
-      // if 'encoding' is sat, then stop with SAT.
-      if(is_sat())
-        return true;
-
-      msat_pop_backtrack_point(env);
-      k++;
-    }
-
-  }
-
-
-
-
-  /*
-   * Naive (not terminating) algorithm for Bounded
-   * Satisfiability Checking.
-   */
-  bool solver::bsc(int k_max)
-  {
-    formula encoding = _alpha.top();
-    formula loop = _alpha.top();
-    int k = 0;
-
-    msat_reset_env(_alpha.mathsat_env());
-
-    for(; k <= k_max; ++k)
-    {
-      // Generating the k-unraveling
-      if(k)
-        encoding = encoding && k_unraveling(k);
-      else // first iteration
-        encoding = k_unraveling(k);
-
-      if(!is_sat(encoding))
-        return false;
-
-      // Generating EMPTY and LOOP
-      loop = k_loop(k);
-      formula looped = encoding && (k_empty(k) || loop);
-
-      // if 'encoding' is sat, then stop with SAT.
-      if(is_sat(looped))
-        return true;
-    }
-
-    return false;
-  }
-
 
   // Generates the PRUNE encoding
   formula solver::prune(int k)
@@ -312,6 +122,7 @@ namespace black::internal
     return k_empty;
   }
 
+  // extract the requested formula from an X-eventuality
   std::optional<formula> solver::get_xev(tomorrow xreq) {
     return xreq.operand().match(
       [](eventually e) { return std::optional{e.operand()}; },
@@ -387,8 +198,9 @@ namespace black::internal
 
 
   // Turns the current formula into Next Normal Form
+  // Note: this has to be run *after* the transformation to NNF (to_nnf() below)
+  //
   formula solver::to_ground_xnf(formula f, int k, bool update) {
-    // FIRST: transformation in NNF. SECOND: transformation in xnf
     return f.match(
       // Future Operators
       [&](boolean) { return f; },
@@ -458,7 +270,7 @@ namespace black::internal
     );
   }
 
-  // Dual operators for use in to_nnf()
+  // Duals for temporal operators used in to_nnf()
   static constexpr unary::type dual(unary::type t) {
     switch(t) {
       case unary::type::negation:
@@ -537,7 +349,8 @@ namespace black::internal
       }
     );
   }
-
+  
+  // If `f' is a temporal operator, adds Xf to the _xclosure vector
   void solver::add_xclosure(formula f)
   {
     f.match(
@@ -561,76 +374,12 @@ namespace black::internal
     );
   }
 
-  // Asks MathSAT for the satisfiability of current formula
-  bool solver::is_sat(formula encoding)
-  {
-    msat_env env = _alpha.mathsat_env();
-
-    msat_term term = encoding.to_sat();
-
-    msat_result res;
-    //msat_push_backtrack_point(env);
-    msat_assert_formula(env, term);
-    res = msat_solve(env);
-    // if(res == MSAT_SAT)
-    //   print_mathsat_model(_alpha);
-    msat_reset_env(env);
-
-    return (res == MSAT_SAT);
+  void solver::set_sat_backend(std::string name) {
+    _sat_backend = std::move(name);
   }
 
-
-  // Asks MathSAT for the satisfiability of current formula
-  bool solver::is_sat()
-  {
-    msat_result res = msat_solve(_alpha.mathsat_env());
-    return (res == MSAT_SAT);
+  std::string solver::sat_backend() const {
+    return _sat_backend;
   }
-
-
-
-  // Asks MathSAT for a model (if any) of current formula
-  // The result is given as a cube.
-  formula solver::get_model(formula) {
-    formula mdl = _alpha.top();
-    return mdl;
-  }
-
-
-  // Incremental version of 'get_model'.
-  formula solver::get_model() {
-    formula mdl = _alpha.top();
-    return mdl;
-  }
-
-
-  // Simple implementation of an allSAT solver.
-  formula solver::all_sat(formula f, formula models) {
-    if(is_sat(f)){
-      formula sigma = get_model(f);
-      return all_sat(f && !sigma, models || sigma);
-    }
-    return models;
-  }
-
-
-  // Incremental version of 'all_sat()'
-  formula solver::all_sat(formula models) {
-    if(is_sat()) {
-      formula sigma = get_model();
-      add_to_msat(!sigma);
-      return all_sat(models || sigma);
-    }
-    return models;
-  }
-
-
-  void solver::add_to_msat(formula f)
-  {
-    msat_env env = _alpha.mathsat_env();
-    msat_assert_formula(env, f.to_sat());
-  }
-
-
 
 } // end namespace black::internal

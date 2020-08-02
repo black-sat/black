@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Luca Geatti
+// (C) 2020 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,25 +21,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <catch2/catch.hpp>
+#include <black/sat/sat.hpp>
 
-#include <black/logic/formula.hpp>
-#include <black/solver/solver.hpp>
+#include <memory>
 
-using namespace black;
-
-TEST_CASE("Testing solver")
+namespace black::sat::backends
 {
-  alphabet sigma;
-  black::solver slv{sigma};
+  class z3 : public ::black::sat::solver
+  {
+  public:
+    z3();
+    ~z3();
 
-  SECTION("SAT formula") {
-    auto p = sigma.var("p");
-    
-    formula f = !p && !X(p) && FG(p);
+    virtual      void assert_formula(formula f);
+    virtual      bool is_sat()  const;
+    virtual      void push();
+    virtual      void pop();
+    virtual      void clear();
 
-    slv.assert_formula(f);
+  private:
+    struct _z3_t;
+    std::unique_ptr<_z3_t> _data;
+  };
 
-    REQUIRE(slv.solve());
-  }
 }

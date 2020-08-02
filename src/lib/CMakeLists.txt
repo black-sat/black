@@ -1,7 +1,7 @@
 #
 # BLACK - Bounded Ltl sAtisfiability ChecKer
 #
-# (C) 2019 Nicola Gigante
+# (C) 2019 - 2020 Nicola Gigante
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+find_package(MathSAT REQUIRED)
+find_package(Z3)
+
+message(STATUS "MathSAT solver found! Enabling the MathSAT backend...")
+if(Z3_FOUND)
+  message(STATUS "Z3 solver found! Enabling the Z3 SAT backend...")
+else()
+  message(STATUS "Z3 solver not found. Disabling the Z3 SAT backend...")
+endif()
+
 #
 # black library
 #
@@ -28,9 +38,15 @@ set (
    LIB_SRC
    src/logic/lex.cpp
    src/logic/parser.cpp
-   src/sat/mathsat.cpp
+   src/sat/sat.cpp
+   src/sat/backends/mathsat.cpp
    src/solver/solver.cpp
-        src/logic/past_remover.cpp)
+   src/logic/past_remover.cpp)
+   )
+   
+if(Z3_FOUND)
+  set(LIB_SRC ${LIB_SRC} src/sat/backends/z3.cpp)
+endif()
 
 set (
   LIB_HEADERS
@@ -43,19 +59,25 @@ set (
   include/black/logic/formula.hpp
   include/black/logic/lex.hpp
   include/black/logic/parser.hpp
-  include/black/sat/glucose.hpp
-  include/black/sat/mathsat.hpp
   include/black/solver/solver.hpp
         include/black/logic/past_remover.hpp)
 
-# Here adding the headers is redundant, but makes them appear in
-# project files made by IDE generators (Xcode, VS, ecc...)
+#
+# Main black library. The `internal` trick is needed to make sure global 
+# constructors are correctly called when the library is statically linked
+#
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PUBLIC solvers)
-target_link_libraries(black PRIVATE fmt)
+target_link_libraries(black PRIVATE MathSAT fmt tsl::hopscotch_map)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
+if(Z3_FOUND)
+  target_link_libraries(black PRIVATE Z3)
+endif()
 target_enable_warnings(black)
 target_code_coverage(black)
 add_sanitizers(black)
+
+##
+## Z3 SMT solver
+##

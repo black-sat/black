@@ -122,11 +122,6 @@ namespace black::internal
     size_t hash() const;
 
     //
-    // Translate the formula into MathSAT format
-    //
-    msat_term to_sat() const;
-
-    //
     // Get a lightweight, opaque, printable unique identifier for the formula
     //
     formula_id unique_id() const;

@@ -1,7 +1,7 @@
 #
 # BLACK - Bounded Ltl sAtisfiability ChecKer
 #
-# (C) 2019 Nicola Gigante
+# (C) 2020 Nicola Gigante
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,38 +22,20 @@
 # SOFTWARE.
 
 #
-# Main black executable
+# Macro to link a static library with functioning global constructors
 #
-set(
-  FRONTEND_SRC
-  src/main.cpp
-  src/cli.cpp
-)
+# see https://github.com/bioinformatics-centre/kaiju/issues/30
+#
 
-set(
-  FRONTEND_HEADERS
-  include/black/frontend/cli.hpp
-  include/black/frontend/io.hpp
-  include/black/frontend/support.hpp
-)
-
-include(LinkGlobalCtors)
-
-add_executable(frontend ${FRONTEND_SRC} ${FRONTEND_HEADERS})
-target_link_library_with_global_ctors(frontend PRIVATE black)
-
-target_compile_features(frontend PRIVATE cxx_std_17)
-target_include_directories(frontend PRIVATE include)
-target_link_libraries(frontend PRIVATE fmt clipp::clipp)
-target_enable_warnings(frontend)
-target_code_coverage(frontend)
-add_sanitizers(frontend)
-
-if(STATIC_BUILD)
-  target_link_libraries(frontend PRIVATE "-static -pthread")
-endif()
-
-set_property(TARGET frontend PROPERTY OUTPUT_NAME black)
-set_property(TARGET frontend PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
-install(TARGETS frontend RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+macro(target_link_library_with_global_ctors TARGET MODE LIBRARY)
+  set(CLANG_GLOBAL_CTORS_FLAGS 
+    "-Wl,-force_load" ${LIBRARY})
+  set(GNU_GLOBAL_CTORS_FLAGS 
+    "-Wl,-whole-archive" ${LIBRARY} "-Wl,-no-whole-archive")
+  
+  target_link_libraries(${TARGET} ${MODE} 
+    "$<$<CXX_COMPILER_ID:Clang>:${CLANG_GLOBAL_CTORS_FLAGS}>"
+    "$<$<CXX_COMPILER_ID:AppleClang>:${CLANG_GLOBAL_CTORS_FLAGS}>"
+    "$<$<CXX_COMPILER_ID:GNU>:${GNU_GLOBAL_CTORS_FLAGS}>"
+  )
+endmacro()
