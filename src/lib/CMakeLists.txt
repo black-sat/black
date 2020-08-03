@@ -39,6 +39,7 @@ set (
    src/logic/lex.cpp
    src/logic/parser.cpp
    src/sat/sat.cpp
+   src/sat/cnf.cpp
    src/sat/backends/mathsat.cpp
    src/solver/solver.cpp
    )
