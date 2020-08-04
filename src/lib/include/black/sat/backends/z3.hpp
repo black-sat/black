@@ -33,11 +33,11 @@ namespace black::sat::backends
     z3();
     ~z3();
 
-    virtual      void assert_formula(formula f);
-    virtual      bool is_sat()  const;
-    virtual      void push();
-    virtual      void pop();
-    virtual      void clear();
+    virtual void assert_formula(formula f);
+    virtual bool is_sat(std::vector<formula> const&assumptions);
+    virtual bool is_sat(formula assumption);
+    virtual bool is_sat();
+    virtual void clear();
 
   private:
     struct _z3_t;

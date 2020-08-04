@@ -39,7 +39,6 @@ BLACK_REGISTER_SAT_BACKEND(mathsat)
 
 namespace black::sat::backends
 {
-
   struct mathsat::_mathsat_t {
     msat_env env;
     tsl::hopscotch_map<formula, msat_term> terms;
@@ -63,17 +62,35 @@ namespace black::sat::backends
     msat_assert_formula(_data->env, _data->to_mathsat(f));
   }
 
-  bool mathsat::is_sat() const { 
+  bool mathsat::is_sat() { 
     msat_result res = msat_solve(_data->env);
     return (res == MSAT_SAT);
   }
 
-  void mathsat::push() {
+  bool mathsat::is_sat(formula f) 
+  {
     msat_push_backtrack_point(_data->env);
+  
+    assert_formula(f);
+    msat_result res = msat_solve(_data->env);
+  
+    msat_pop_backtrack_point(_data->env);
+    return (res == MSAT_SAT);
   }
 
-  void mathsat::pop() {
+  bool mathsat::is_sat(std::vector<formula> const &assumptions) {
+    std::vector<msat_term> terms;
+
+    msat_push_backtrack_point(_data->env);
+    for(formula f : assumptions) {
+      assert_formula(f);
+    }
+
+    msat_result res = msat_solve(_data->env);
+
     msat_pop_backtrack_point(_data->env);
+
+    return (res == MSAT_SAT);
   }
 
   void mathsat::clear() {

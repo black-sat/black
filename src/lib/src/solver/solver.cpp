@@ -47,15 +47,12 @@ namespace black::internal
 
       // else, continue to check EMPTY and LOOP
       // Generating EMPTY and LOOP
-      sat->push();
-      sat->assert_formula(empty_and_loop(k));
-      // if 'encoding' is sat, then stop with SAT
-      if(sat->is_sat())
+      // if the encoding is SAT with the assumption, then stop with SAT
+      if(sat->is_sat(empty_and_loop(k)))
         return true;
-      sat->pop();
 
       // else, generate the PRUNE
-      // Computing allSAT of 'encoding & not PRUNE^k'
+      // Computing satisfiability of 'encoding & not PRUNE^k'
       sat->assert_formula(!prune(k));
       if(!sat->is_sat())
         return false;

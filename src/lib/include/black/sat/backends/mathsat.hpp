@@ -36,11 +36,11 @@ namespace black::sat::backends
     mathsat();
     virtual ~mathsat();
 
-    virtual      void assert_formula(formula f);
-    virtual      bool is_sat()  const;
-    virtual      void push();
-    virtual      void pop();
-    virtual      void clear();
+    virtual void assert_formula(formula f);
+    virtual bool is_sat(std::vector<formula> const&assumptions);
+    virtual bool is_sat(formula assumption);
+    virtual bool is_sat();
+    virtual void clear();
 
   private:
     struct _mathsat_t;

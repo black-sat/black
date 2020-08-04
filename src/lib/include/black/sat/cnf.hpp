@@ -29,6 +29,8 @@
 
 namespace black::internal 
 {
+  
+  // TODO: Compress the boolean into the pointer to the atom
   struct literal {
     bool sign;
     struct atom atom;

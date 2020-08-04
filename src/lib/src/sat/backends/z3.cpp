@@ -34,6 +34,13 @@ BLACK_REGISTER_SAT_BACKEND(z3)
 
 namespace black::sat::backends 
 {
+  // TODO: generalize with the same function in cnf.cpp
+  inline atom fresh(formula f) {
+    if(f.is<atom>())
+      return *f.to<atom>();
+    return f.alphabet()->var(f);
+  }
+
   struct z3::_z3_t {
     Z3_context context;
     Z3_solver solver;
@@ -75,25 +82,49 @@ namespace black::sat::backends
     Z3_solver_assert(_data->context, _data->solver, _data->to_z3(f));
   }
   
-  bool z3::is_sat() const { 
+  bool z3::is_sat(formula f) {
+    Z3_solver_push(_data->context, _data->solver);
+    assert_formula(iff(fresh(f), f));
+    Z3_ast term = _data->to_z3(fresh(f));
+    
+    Z3_lbool res = 
+      Z3_solver_check_assumptions(_data->context, _data->solver, 1, &term);
+    Z3_solver_pop(_data->context, _data->solver, 1);
+
+    return (res == Z3_L_TRUE);
+  }
+
+  bool z3::is_sat(std::vector<formula> const &assumptions) {
+    std::vector<Z3_ast> terms;
+
+    Z3_solver_push(_data->context, _data->solver);
+    for(formula f : assumptions) {
+      assert_formula(iff(fresh(f), f));
+      terms.push_back(_data->to_z3(fresh(f)));
+    }
+
+    Z3_lbool res =
+      Z3_solver_check_assumptions(
+        _data->context, _data->solver, 
+        static_cast<unsigned int>(terms.size()), terms.data()
+      );
+
+    Z3_solver_pop(_data->context, _data->solver, 1);
+
+    return (res == Z3_L_TRUE);
+  }
+
+  bool z3::is_sat() { 
     Z3_lbool result = Z3_solver_check(_data->context, _data->solver);
 
     return (result == Z3_L_TRUE);
-  }
-  
-  void z3::push() { 
-    Z3_solver_push(_data->context, _data->solver);
-  }
-
-  void z3::pop() { 
-    Z3_solver_pop(_data->context, _data->solver, 1);
   }
 
   void z3::clear() { 
     Z3_solver_reset(_data->context, _data->solver);
   }
 
-  // TODO: Factor out common logic with z3.cpp
+  // TODO: Factor out common logic with mathsat.cpp
   Z3_ast z3::_z3_t::to_z3(formula f) 
   {
     if(auto it = terms.find(f); it != terms.end()) 
