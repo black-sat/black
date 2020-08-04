@@ -21,45 +21,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <catch2/catch.hpp>
+
 #include <black/logic/formula.hpp>
-#include <black/logic/alphabet.hpp>
+#include <black/logic/parser.hpp>
+#include <black/solver/solver.hpp>
+#include <black/sat/cnf.hpp>
 
-#include <vector>
-#include <initializer_list>
+using namespace black;
 
-namespace black::internal 
+TEST_CASE("CNF Translation")
 {
-  struct literal {
-    bool sign;
-    struct atom atom;
+  alphabet sigma;
+
+  atom p = sigma.var("p");
+  atom q = sigma.var("q");
+  atom r = sigma.var("r");
+
+  solver s{sigma};
+
+  std::vector<formula> tests = {
+    p && q, p || q, !r,
+    p || (p && !q), (p && (!p || q))
   };
 
-  struct clause {
-    std::vector<literal> literals;
+  for(formula f : tests) {
+    DYNAMIC_SECTION("CNF translation for formula: " << f) {
+      cnf c = to_cnf(f);
+      formula fc = to_formula(sigma, c);
+      s.assert_formula(!then(fc,f));
 
-    clause() { }
-    clause(std::vector<literal> lits) : literals(std::move(lits)) { }
-    clause(std::initializer_list<literal> elems) : literals{elems} { }
-  };
-  
-  struct cnf {
-    std::vector<clause> clauses;
-
-    cnf() { }
-    cnf(std::vector<clause> cls) : clauses(std::move(cls)) { }
-    cnf(std::initializer_list<clause> elems) : clauses{elems} { }
-  };
-
-  cnf to_cnf(formula f);
-  formula to_formula(literal lit);
-  formula to_formula(alphabet &sigma, clause c);
-  formula to_formula(alphabet &sigma, cnf c);
-}
-
-namespace black {
-  using internal::literal;
-  using internal::clause;
-  using internal::cnf;
-  using internal::to_cnf;
-  using internal::to_formula;
+      INFO("CNF: " << fc);
+      REQUIRE(!s.solve());
+    }
+  }
 }

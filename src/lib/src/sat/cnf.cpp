@@ -26,13 +26,11 @@
 
 namespace black::internal 
 {
+  std::vector<clause> tseitin(formula f);
   void tseitin(formula f, std::vector<clause> &clauses);
 
   cnf to_cnf(formula f) {
-    cnf result;
-    tseitin(f, result.clauses);
-    
-    return result;
+    return {tseitin(f)};
   }
 
   // TODO: disambiguate fresh variables
@@ -42,6 +40,15 @@ namespace black::internal
     return f.alphabet()->var(f);
   }
   
+  std::vector<clause> tseitin(formula f) {
+    std::vector<clause> result;
+    
+    tseitin(f, result);
+    result.push_back({{true, fresh(f)}});
+
+    return result;
+  }
+
   void tseitin(formula f,  std::vector<clause> &clauses) {
     f.match(
       [ ](atom) { /* nop */ },
@@ -72,7 +79,7 @@ namespace black::internal
       [&](negation, formula arg) {
         // clausal form for negations:
         // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
-        // TODO: handle NANDs, NORs, etc.. for a better translation
+        // TODO: handle NANDs, NORs, etc.. instead for a better translation
         clauses.insert(end(clauses), {
           {{false, fresh(f)}, {false, fresh(arg)}},
           {{true,  fresh(f)}, {true,  fresh(arg)}}
@@ -84,5 +91,31 @@ namespace black::internal
         black_unreachable();
       }
     );
+  }
+
+  formula to_formula(literal lit) {
+    return lit.sign ? formula{lit.atom} : formula{!lit.atom};
+  }
+
+  formula to_formula(alphabet &sigma, clause c) {
+    if(c.literals.empty())
+      return sigma.bottom();
+    
+    formula f = to_formula(c.literals.front());
+    for(size_t i = 1; i < c.literals.size(); ++i)
+      f = f || to_formula(c.literals[i]);
+
+    return f;
+  }
+
+  formula to_formula(alphabet &sigma, cnf c) {
+    if(c.clauses.empty())
+      return sigma.bottom();
+    
+    formula f = to_formula(sigma, c.clauses.front());
+    for(size_t i = 1; i < c.clauses.size(); ++i)
+      f = f && to_formula(sigma, c.clauses[i]);
+
+    return f;
   }
 }
