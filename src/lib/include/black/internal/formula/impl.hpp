@@ -104,20 +104,6 @@ namespace black::internal
     return std::nullopt;
   }
 
-  //
-  // std::hash specialization for class `formula`
-  //
-} namespace std {
-
-  template<>
-  struct hash<black::internal::formula> {
-    size_t operator()(black::internal::formula const&f) const {
-      return f.hash();
-    }
-  };
-
-} namespace black::internal {
-
   /*
    * Out-of-line definitions for handles
    */
@@ -243,14 +229,29 @@ namespace black::internal
     }
   };
 
-  #define declare_operator(Op, Arity)                                 \
-    struct Op : Arity##_operator<Op, Arity::type::Op> {               \
-      using base_t = Arity##_operator<Op, Arity::type::Op>;           \
-      using base_t::base_t;                                           \
-      friend operator_base<Op, Arity##_t, Arity::type::Op>;           \
-    };                                                                \
-  } namespace black { using internal::Op; } namespace black::internal { \
+  //
+  // std::hash specialization for `formula` and others
+  //
+  #define declare_formula_hash(Type)                              \
+  } namespace std {                                               \
+    template<>                                                    \
+    struct hash<black::internal::Type> {                          \
+      size_t operator()(black::internal::Type const&f) const {    \
+        return black::internal::formula{f}.hash();                \
+      }                                                           \
+    };                                                            \
+  } namespace black::internal {
 
+  #define declare_operator(Op, Arity)                                   \
+    struct Op : Arity##_operator<Op, Arity::type::Op> {                 \
+      using base_t = Arity##_operator<Op, Arity::type::Op>;             \
+      using base_t::base_t;                                             \
+      friend operator_base<Op, Arity##_t, Arity::type::Op>;             \
+    };                                                                  \
+    declare_formula_hash(Op)                                            \
+  } namespace black { using internal::Op; } namespace black::internal {      
+  
+  
   declare_operator(negation,     unary)
   declare_operator(tomorrow,     unary)
   declare_operator(yesterday,    unary)
@@ -266,6 +267,12 @@ namespace black::internal
   declare_operator(release,     binary)
   declare_operator(since,       binary)
   declare_operator(triggered,   binary)
+
+  declare_formula_hash(formula)
+  declare_formula_hash(boolean)
+  declare_formula_hash(atom)
+  declare_formula_hash(unary)
+  declare_formula_hash(binary)
 
   #undef declare_operator
 
