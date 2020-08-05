@@ -24,6 +24,9 @@
 #include <black/sat/cnf.hpp>
 #include <black/logic/alphabet.hpp>
 
+#include <black/logic/parser.hpp>
+#include <fmt/format.h>
+
 namespace black::internal 
 {
   std::vector<clause> tseitin(formula f);
@@ -51,6 +54,12 @@ namespace black::internal
 
   void tseitin(formula f,  std::vector<clause> &clauses) {
     f.match(
+      [&](boolean b) {
+        if(b.value()) 
+          tseitin(iff(fresh(b),fresh(b)), clauses);
+        else
+          tseitin(iff(fresh(b),!fresh(b)), clauses);
+      },
       [ ](atom) { /* nop */ },
       [&](conjunction, formula l, formula r) {
         // clausal form for conjunctions:
@@ -71,6 +80,32 @@ namespace black::internal
           {{true, fresh(f)}, {false, fresh(l)}},
           {{true, fresh(f)}, {false, fresh(r)}},
           {{true, fresh(l)}, {true, fresh(r)}, {false, fresh(f)}}
+        });
+
+        tseitin(l, clauses);
+        tseitin(r, clauses);
+      },
+      [&](then, formula l, formula r) {
+        // clausal form for double implications:
+        //    f <-> (l -> r) == (!f ∨ !l ∨ r) ∧ (f ∨ l) ∧ (f ∨ !r)
+        clauses.insert(end(clauses), {
+          {{false, fresh(f)}, {false, fresh(l)}, {true, fresh(r)}},
+          {{true,  fresh(f)}, {true,  fresh(l)}},
+          {{true,  fresh(f)}, {false, fresh(r)}}
+        });
+
+        tseitin(l, clauses);
+        tseitin(r, clauses);
+      },
+      [&](iff, formula l, formula r) {
+        // clausal form for double implications:
+        //    f <-> (l <-> r) == (!f ∨ !l ∨  r) ∧ (!f ∨ l ∨ !r) ∧
+        //                       ( f ∨ !l ∨ !r) ∧ ( f ∨ l ∨  r)
+        clauses.insert(end(clauses), {
+          {{false, fresh(f)}, {false, fresh(l)}, {true,  fresh(r)}},
+          {{false, fresh(f)}, {true,  fresh(l)}, {false, fresh(r)}},
+          {{true,  fresh(f)}, {false, fresh(l)}, {false, fresh(r)}},
+          {{true,  fresh(f)}, {true,  fresh(l)}, {true,  fresh(r)}}
         });
 
         tseitin(l, clauses);

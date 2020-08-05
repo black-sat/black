@@ -21,39 +21,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <catch2/catch.hpp>
+#include <black/sat/sat.hpp>
 
-#include <black/logic/formula.hpp>
-#include <black/logic/parser.hpp>
-#include <black/solver/solver.hpp>
-#include <black/sat/cnf.hpp>
-
-using namespace black;
-
-TEST_CASE("CNF Translation")
+namespace black::sat::backends 
 {
-  alphabet sigma;
+  class cmsat : public ::black::sat::solver
+  {
+  public:
+    cmsat();
+    virtual ~cmsat();
 
-  atom p = sigma.var("p");
-  atom q = sigma.var("q");
-  atom r = sigma.var("r");
+    virtual void assert_formula(formula f);
+    virtual bool is_sat(std::vector<formula> const&assumptions);
+    //virtual bool is_sat(formula assumption);
+    virtual bool is_sat();
+    virtual void clear();
 
-  solver s{sigma};
-
-  std::vector<formula> tests = {
-    p && q, p || q, !r,
-    p || (p && !q), (p && (!p || q)),
-    then(p, q), iff(p, q)
+  private:
+    struct _cmsat_t;
+    std::unique_ptr<_cmsat_t> _data;
   };
-
-  for(formula f : tests) {
-    DYNAMIC_SECTION("CNF translation for formula: " << f) {
-      cnf c = to_cnf(f);
-      formula fc = to_formula(sigma, c);
-      s.assert_formula(!then(fc,f));
-
-      INFO("CNF: " << fc);
-      REQUIRE(!s.solve());
-    }
-  }
 }
