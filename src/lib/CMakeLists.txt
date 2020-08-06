@@ -84,7 +84,8 @@ set (
 #
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PRIVATE MathSAT fmt tsl::hopscotch_map)
+target_link_libraries(black PRIVATE MathSAT fmt)
+target_link_libraries(black PUBLIC tsl::hopscotch_map)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
 if(Z3_FOUND)

@@ -28,7 +28,7 @@
 
 namespace black::internal 
 {
-  void tseitin(formula f, std::vector<clause> &clauses);
+  formula tseitin(formula f, std::vector<clause> &clauses);
 
   // TODO: disambiguate fresh variables
   inline atom fresh(formula f) {
@@ -53,7 +53,9 @@ namespace black::internal
   cnf to_cnf(formula f) {
     std::vector<clause> result;
     
-    formula simple = simplify(f);
+    formula simple = tseitin(f, result);
+    black_assert(!has_constants(simple));
+
     if(auto b = simple.to<boolean>(); b) {
       if(b->value())
         return result;
@@ -63,12 +65,9 @@ namespace black::internal
       }
     }
 
-    black_assert(!has_constants(simple));
-    
-    tseitin(simple, result);
     result.push_back({{true, fresh(simple)}});
 
-    return {result};
+    return result;
   }
   
   formula simplify(formula f) {
@@ -76,77 +75,66 @@ namespace black::internal
     return f.match(
       [ ](boolean b) -> formula { return b; },
       [ ](atom a) -> formula { return a; },
-      [&](negation, formula op) -> formula {
-        formula arg = simplify(op);
-        std::optional<boolean> barg = arg.to<boolean>();
-        if(!barg)
-          return negation(arg);
+      [&](negation n, formula op) -> formula {
+        if(auto b = op.to<boolean>(); b)
+          return sigma.boolean(!b->value());
         
-        if(barg->value())
-          return sigma.bottom();
-        else
-          return sigma.top();
+        return n;
       },
-      [&](conjunction, formula l, formula r) -> formula {
-        formula sl = simplify(l), sr = simplify(r);
-        optional<boolean> bl = sl.to<boolean>(), br = sr.to<boolean>();
+      [&](conjunction c, formula l, formula r) -> formula {
+        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
         if(!bl && !br)
-          return conjunction(sl,sr);
+          return c;
 
         if(bl && !br) {
-          return bl->value() ? sr : sigma.bottom();
+          return bl->value() ? r : sigma.bottom();
         }
         
         if(!bl && br)
-          return br->value() ? sl : sigma.bottom();
+          return br->value() ? l : sigma.bottom();
 
         return sigma.boolean(bl->value() && br->value());
       },
-      [&](disjunction, formula l, formula r) -> formula {
-        formula sl = simplify(l), sr = simplify(r);
-        optional<boolean> bl = sl.to<boolean>(), br = sr.to<boolean>();
+      [&](disjunction d, formula l, formula r) -> formula {
+        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
         if(!bl && !br)
-          return disjunction(sl,sr);
+          return d;
 
         if(bl && !br)
-          return bl->value() ? sigma.top() : sr;
+          return bl->value() ? sigma.top() : r;
         
         if(!bl && br)
-          return br->value() ? sigma.top() : sl;
+          return br->value() ? sigma.top() : l;
           
         return sigma.boolean(bl->value() || br->value());
       },
-      [&](then, formula l, formula r) -> formula {
-        formula sl = simplify(l), sr = simplify(r);
-        optional<boolean> bl = sl.to<boolean>(), br = sr.to<boolean>();
+      [&](then t, formula l, formula r) -> formula {
+        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
         if(!bl && !br)
-          return then(sl,sr);
+          return t;
 
-        if(bl && !br) {
-          return bl->value() ? sr : sigma.top();
-        }
+        if(bl && !br)
+          return bl->value() ? r : sigma.top();
         
         if(!bl && br)
           return br->value() ? sigma.top() : sigma.bottom();
 
         return sigma.boolean(!bl->value() || br->value());
       },
-      [&](iff, formula l, formula r) -> formula {
-        formula sl = simplify(l), sr = simplify(r);
-        optional<boolean> bl = sl.to<boolean>(), br = sr.to<boolean>();
+      [&](iff ff, formula l, formula r) -> formula {
+        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
         if(!bl && !br)
-          return iff(sl,sr);
+          return ff;
 
-        if(bl && !br) {
-          return bl->value() ? sr : !sr;
-        }
+        if(bl && !br)
+          return bl->value() ? r : !r;
         
         if(!bl && br)
-          return br->value() ? sl : !sl;
+          return br->value() ? l : !l;
 
         return sigma.boolean(bl->value() == br->value());
       },
@@ -154,77 +142,107 @@ namespace black::internal
     );
   }
 
-  void tseitin(formula f,  std::vector<clause> &clauses) {
-    f.match(
-      [&](boolean) {
-        // 🤷‍♂️
-        black_unreachable();
-      },
-      [ ](atom) { /* nop */ },
-      [&](conjunction, formula l, formula r) {
-        // clausal form for conjunctions:
-        //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ r) ∧ (!l ∨ !r ∨ f)
-        clauses.insert(end(clauses), {
-          {{false, fresh(f)}, {true, fresh(l)}},
-          {{false, fresh(f)}, {true, fresh(r)}},
-          {{false, fresh(l)}, {false, fresh(r)}, {true, fresh(f)}}
-        });
+  formula tseitin(formula f, std::vector<clause> &clauses) {
+    return f.match(
+      [](boolean b) -> formula { return b; },
+      [](atom a) -> formula { return a; },
+      [&](conjunction, formula l, formula r) 
+      {
+        formula sl = tseitin(l, clauses);
+        formula sr = tseitin(r, clauses);
 
-        tseitin(l, clauses);
-        tseitin(r, clauses);
-      },
-      [&](disjunction, formula l, formula r) {
-        // clausal form for disjunctions:
-        //   f <-> (l ∨ r) == (f ∨ !l) ∧ (f ∨ !r) ∧ (l ∨ r ∨ !f)
-        clauses.insert(end(clauses), {
-          {{true, fresh(f)}, {false, fresh(l)}},
-          {{true, fresh(f)}, {false, fresh(r)}},
-          {{true, fresh(l)}, {true, fresh(r)}, {false, fresh(f)}}
-        });
+        formula s = simplify(sl && sr);
 
-        tseitin(l, clauses);
-        tseitin(r, clauses);
-      },
-      [&](then, formula l, formula r) {
-        // clausal form for double implications:
-        //    f <-> (l -> r) == (!f ∨ !l ∨ r) ∧ (f ∨ l) ∧ (f ∨ !r)
-        clauses.insert(end(clauses), {
-          {{false, fresh(f)}, {false, fresh(l)}, {true, fresh(r)}},
-          {{true,  fresh(f)}, {true,  fresh(l)}},
-          {{true,  fresh(f)}, {false, fresh(r)}}
-        });
+        if(!s.is<boolean>()) {
+          // clausal form for conjunctions:
+          //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ r) ∧ (!l ∨ !r ∨ f)
+          clauses.insert(end(clauses), {
+            {{false, fresh(s)}, {true, fresh(sl)}},
+            {{false, fresh(s)}, {true, fresh(sr)}},
+            {{false, fresh(sl)}, {false, fresh(sr)}, {true, fresh(s)}}
+          });
+        }
 
-        tseitin(l, clauses);
-        tseitin(r, clauses);
+        return s;
+        
       },
-      [&](iff, formula l, formula r) {
-        // clausal form for double implications:
-        //    f <-> (l <-> r) == (!f ∨ !l ∨  r) ∧ (!f ∨ l ∨ !r) ∧
-        //                       ( f ∨ !l ∨ !r) ∧ ( f ∨ l ∨  r)
-        clauses.insert(end(clauses), {
-          {{false, fresh(f)}, {false, fresh(l)}, {true,  fresh(r)}},
-          {{false, fresh(f)}, {true,  fresh(l)}, {false, fresh(r)}},
-          {{true,  fresh(f)}, {false, fresh(l)}, {false, fresh(r)}},
-          {{true,  fresh(f)}, {true,  fresh(l)}, {true,  fresh(r)}}
-        });
+      [&](disjunction, formula l, formula r) 
+      {
+        formula sl = tseitin(l, clauses);
+        formula sr = tseitin(r, clauses);
 
-        tseitin(l, clauses);
-        tseitin(r, clauses);
+        formula s = simplify(sl || sr);
+
+        if(!s.is<boolean>()) {
+          // clausal form for disjunctions:
+          //   f <-> (l ∨ r) == (f ∨ !l) ∧ (f ∨ !r) ∧ (l ∨ r ∨ !f)
+          clauses.insert(end(clauses), {
+            {{true, fresh(s)}, {false, fresh(sl)}},
+            {{true, fresh(s)}, {false, fresh(sr)}},
+            {{true, fresh(sl)}, {true, fresh(sr)}, {false, fresh(s)}}
+          });
+        }
+
+        return s;
+      },
+      [&](then, formula l, formula r) 
+      {
+        formula sl = tseitin(l, clauses);
+        formula sr = tseitin(r, clauses);
+
+        formula s = simplify(then(sl, sr));
+
+        if(!s.is<boolean>()) {
+          // clausal form for double implications:
+          //    f <-> (l -> r) == (!f ∨ !l ∨ r) ∧ (f ∨ l) ∧ (f ∨ !r)
+          clauses.insert(end(clauses), {
+            {{false, fresh(s)}, {false, fresh(sl)}, {true, fresh(sr)}},
+            {{true,  fresh(s)}, {true,  fresh(sl)}},
+            {{true,  fresh(s)}, {false, fresh(sr)}}
+          });
+        }
+
+        return s;        
+      },
+      [&](iff, formula l, formula r) 
+      {
+        formula sl = tseitin(l, clauses);
+        formula sr = tseitin(r, clauses);
+
+        formula s = simplify(iff(sl, sr));
+
+        if(!s.is<boolean>()) {
+          // clausal form for double implications:
+          //    f <-> (l <-> r) == (!f ∨ !l ∨  r) ∧ (!f ∨ l ∨ !r) ∧
+          //                       ( f ∨ !l ∨ !r) ∧ ( f ∨ l ∨  r)
+          clauses.insert(end(clauses), {
+            {{false, fresh(s)}, {false, fresh(sl)}, {true,  fresh(sr)}},
+            {{false, fresh(s)}, {true,  fresh(sl)}, {false, fresh(sr)}},
+            {{true,  fresh(s)}, {false, fresh(sl)}, {false, fresh(sr)}},
+            {{true,  fresh(s)}, {true,  fresh(sl)}, {true,  fresh(sr)}}
+          });
+        }
+
+        return s;
       },
       [&](negation, formula arg) {
-        // clausal form for negations:
-        // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
-        // TODO: handle NANDs, NORs, etc.. instead for a better translation
-        clauses.insert(end(clauses), {
-          {{false, fresh(f)}, {false, fresh(arg)}},
-          {{true,  fresh(f)}, {true,  fresh(arg)}}
-        });
+        formula sarg = tseitin(arg, clauses);
 
-        tseitin(arg, clauses);
+        formula s = simplify(negation(sarg));
+
+        if(!s.is<boolean>()) {
+          // clausal form for negations:
+          // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
+          // TODO: handle NANDs, NORs, etc.. instead for a better translation
+          clauses.insert(end(clauses), {
+            {{false, fresh(s)}, {false, fresh(sarg)}},
+            {{true,  fresh(s)}, {true,  fresh(sarg)}}
+          });
+        }
+
+        return s;
       },
-      [](otherwise) {
-        black_unreachable();
-      }
+      [](otherwise) -> formula { black_unreachable(); }
     );
   }
 
