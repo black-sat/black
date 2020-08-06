@@ -52,7 +52,16 @@ namespace black::internal
     cnf(std::initializer_list<clause> elems) : clauses{elems} { }
   };
 
+  // simplifies True and False constants from the formula
+  formula simplify(formula f);
+
+  // returns true after simplify()
+  bool has_constants(formula f);
+
+  // Tseitin conversion to CNF
   cnf to_cnf(formula f);
+
+  // Conversion of literals, clauses and cnfs to formulas
   formula to_formula(literal lit);
   formula to_formula(alphabet &sigma, clause c);
   formula to_formula(alphabet &sigma, cnf c);
@@ -62,6 +71,7 @@ namespace black {
   using internal::literal;
   using internal::clause;
   using internal::cnf;
+  using internal::simplify;
   using internal::to_cnf;
   using internal::to_formula;
 }

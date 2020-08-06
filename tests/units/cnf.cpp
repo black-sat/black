@@ -30,30 +30,70 @@
 
 using namespace black;
 
-TEST_CASE("CNF Translation")
+TEST_CASE("Boolean constants simplification")
 {
   alphabet sigma;
 
   atom p = sigma.var("p");
-  atom q = sigma.var("q");
-  atom r = sigma.var("r");
 
-  solver s{sigma};
+  REQUIRE(simplify(!sigma.top()) == sigma.bottom());
+  REQUIRE(simplify(!sigma.bottom()) == sigma.top());
+  REQUIRE(simplify(!!sigma.top()) == sigma.top());
+  REQUIRE(simplify(!!sigma.bottom()) == sigma.bottom());
+
+  REQUIRE(simplify(sigma.top() && p) == p);
+  REQUIRE(simplify(sigma.bottom() && p) == sigma.bottom());
+
+  REQUIRE(simplify(sigma.top() || p) == sigma.top());
+  REQUIRE(simplify(sigma.bottom() || p) == p);
+
+  REQUIRE(simplify(then(sigma.top(), p)) == p);
+  REQUIRE(simplify(then(sigma.bottom(), p)) == sigma.top());
+  REQUIRE(simplify(then(p, sigma.top())) == sigma.top());
+  REQUIRE(simplify(then(p, sigma.bottom())) == sigma.bottom());
+  
+  REQUIRE(simplify(iff(p, sigma.top())) == p);
+  REQUIRE(simplify(iff(p, sigma.bottom())) == !p);
 
   std::vector<formula> tests = {
-    p && q, p || q, !r,
-    p || (p && !q), (p && (!p || q)),
-    then(p, q), iff(p, q)
+    p || (sigma.bottom() || p)
   };
 
-  for(formula f : tests) {
-    DYNAMIC_SECTION("CNF translation for formula: " << f) {
-      cnf c = to_cnf(f);
-      formula fc = to_formula(sigma, c);
-      s.assert_formula(!then(fc,f));
-
-      INFO("CNF: " << fc);
-      REQUIRE(!s.solve());
+  for(formula f : tests){
+    DYNAMIC_SECTION("Formula: " << f) {
+      formula s = simplify(f);
+      INFO("Simplified formula: " << s);
+      REQUIRE(!has_constants(s));
     }
   }
+  
 }
+
+// TEST_CASE("CNF Translation")
+// {
+//   alphabet sigma;
+
+//   [[maybe_unused]] atom p = sigma.var("p");
+//   [[maybe_unused]] atom q = sigma.var("q");
+//   [[maybe_unused]] atom r = sigma.var("r");
+
+//   solver s{sigma};
+
+//   std::vector<formula> tests = {
+//     // p && q, p || q, !r,
+//     // p || (p && !q), (p && (!p || q)),
+//     // then(p, q), iff(p, q), sigma.top() && p,
+//     sigma.bottom()
+//   };
+
+//   for(formula f : tests) {
+//     DYNAMIC_SECTION("CNF translation for formula: " << f) {
+//       cnf c = to_cnf(f);
+//       formula fc = to_formula(sigma, c);
+//       s.assert_formula(!then(fc,f));
+
+//       INFO("CNF: " << fc);
+//       REQUIRE(!s.solve());
+//     }
+//   }
+// }

@@ -25,40 +25,140 @@
 #include <black/logic/alphabet.hpp>
 
 #include <black/logic/parser.hpp>
-#include <fmt/format.h>
 
 namespace black::internal 
 {
-  std::vector<clause> tseitin(formula f);
   void tseitin(formula f, std::vector<clause> &clauses);
-
-  cnf to_cnf(formula f) {
-    return {tseitin(f)};
-  }
 
   // TODO: disambiguate fresh variables
   inline atom fresh(formula f) {
     if(f.is<atom>())
       return *f.to<atom>();
-    return f.alphabet()->var(f);
+    atom a = f.alphabet()->var(f);
+    return a;
   }
-  
-  std::vector<clause> tseitin(formula f) {
+
+  bool has_constants(formula f)
+  {
+    return f.match(
+      [](boolean) { return true; },
+      [](atom) { return false; },
+      [](unary, formula op) { return has_constants(op); },
+      [](binary, formula l, formula r) { 
+        return has_constants(l) || has_constants(r);
+      }
+    );
+  }
+
+  cnf to_cnf(formula f) {
     std::vector<clause> result;
     
-    tseitin(f, result);
-    result.push_back({{true, fresh(f)}});
+    formula simple = simplify(f);
+    if(auto b = simple.to<boolean>(); b) {
+      if(b->value())
+        return result;
+      else {
+        result.push_back({});
+        return result;
+      }
+    }
 
-    return result;
+    black_assert(!has_constants(simple));
+    
+    tseitin(simple, result);
+    result.push_back({{true, fresh(simple)}});
+
+    return {result};
+  }
+  
+  formula simplify(formula f) {
+    alphabet &sigma = *f.alphabet();
+    return f.match(
+      [ ](boolean b) -> formula { return b; },
+      [ ](atom a) -> formula { return a; },
+      [&](negation, formula op) -> formula {
+        formula arg = simplify(op);
+        std::optional<boolean> barg = arg.to<boolean>();
+        if(!barg)
+          return negation(arg);
+        
+        if(barg->value())
+          return sigma.bottom();
+        else
+          return sigma.top();
+      },
+      [&](conjunction, formula l, formula r) -> formula {
+        formula sl = simplify(l), sr = simplify(r);
+        optional<boolean> bl = sl.to<boolean>(), br = sr.to<boolean>();
+
+        if(!bl && !br)
+          return conjunction(sl,sr);
+
+        if(bl && !br) {
+          return bl->value() ? sr : sigma.bottom();
+        }
+        
+        if(!bl && br)
+          return br->value() ? sl : sigma.bottom();
+
+        return sigma.boolean(bl->value() && br->value());
+      },
+      [&](disjunction, formula l, formula r) -> formula {
+        formula sl = simplify(l), sr = simplify(r);
+        optional<boolean> bl = sl.to<boolean>(), br = sr.to<boolean>();
+
+        if(!bl && !br)
+          return disjunction(sl,sr);
+
+        if(bl && !br)
+          return bl->value() ? sigma.top() : sr;
+        
+        if(!bl && br)
+          return br->value() ? sigma.top() : sl;
+          
+        return sigma.boolean(bl->value() || br->value());
+      },
+      [&](then, formula l, formula r) -> formula {
+        formula sl = simplify(l), sr = simplify(r);
+        optional<boolean> bl = sl.to<boolean>(), br = sr.to<boolean>();
+
+        if(!bl && !br)
+          return then(sl,sr);
+
+        if(bl && !br) {
+          return bl->value() ? sr : sigma.top();
+        }
+        
+        if(!bl && br)
+          return br->value() ? sigma.top() : sigma.bottom();
+
+        return sigma.boolean(!bl->value() || br->value());
+      },
+      [&](iff, formula l, formula r) -> formula {
+        formula sl = simplify(l), sr = simplify(r);
+        optional<boolean> bl = sl.to<boolean>(), br = sr.to<boolean>();
+
+        if(!bl && !br)
+          return iff(sl,sr);
+
+        if(bl && !br) {
+          return bl->value() ? sr : !sr;
+        }
+        
+        if(!bl && br)
+          return br->value() ? sl : !sl;
+
+        return sigma.boolean(bl->value() == br->value());
+      },
+      [](otherwise) -> formula { black_unreachable(); }
+    );
   }
 
   void tseitin(formula f,  std::vector<clause> &clauses) {
     f.match(
-      [&](boolean b) {
-        if(b.value()) 
-          tseitin(iff(fresh(b),fresh(b)), clauses);
-        else
-          tseitin(iff(fresh(b),!fresh(b)), clauses);
+      [&](boolean) {
+        // 🤷‍♂️
+        black_unreachable();
       },
       [ ](atom) { /* nop */ },
       [&](conjunction, formula l, formula r) {
