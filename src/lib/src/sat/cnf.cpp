@@ -141,7 +141,7 @@ namespace black::internal
 
         return s;
       },
-      [&](negation, formula arg) {
+      [&](negation n, formula arg) {
         return arg.match(
           [&](negation, formula op) {
             return tseitin(op, clauses);
@@ -171,8 +171,8 @@ namespace black::internal
             formula s = simplify(!simplify(sl || sr));
 
             if(!s.is<boolean>()) {
-              // clausal form for negated conjunction:
-              //   f <-> !(l ∧ r) == (f ∨ l ∨ r) ∧ (!f ∨ !l) ∧ (!f ∨ !r)
+              // clausal form for negated disjunction:
+              //   f <-> !(l ∨ r) == (f ∨ l ∨ r) ∧ (!f ∨ !l) ∧ (!f ∨ !r)
               clauses.insert(end(clauses), {
                 {{true,  fresh(s)}, {true,  fresh(sl)}, {true, fresh(sr)}},
                 {{false, fresh(s)}, {false, fresh(sl)}},
@@ -182,23 +182,59 @@ namespace black::internal
 
             return s;
           },
-          [&](otherwise) {
-            formula sarg = tseitin(arg, clauses);
+          [&](then, formula l, formula r) 
+          {
+            formula sl = tseitin(l, clauses);
+            formula sr = tseitin(r, clauses);
 
-            formula s = simplify(negation(sarg));
+            formula s = simplify(!simplify(then(sl, sr)));
 
             if(!s.is<boolean>()) {
-              // clausal form for negations:
-              // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
-              // TODO: handle NANDs, NORs, etc.. instead for a better translation
+              // clausal form for negated implication:
+              //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ !r) ∧ (!l ∨ r ∨ f)
               clauses.insert(end(clauses), {
-                {{false, fresh(s)}, {false, fresh(sarg)}},
-                {{true,  fresh(s)}, {true,  fresh(sarg)}}
+                {{false, fresh(s)}, {true, fresh(sl)}},
+                {{false, fresh(s)}, {false, fresh(sr)}},
+                {{false, fresh(sl)}, {true, fresh(sr)}, {true, fresh(s)}}
               });
             }
 
             return s;
-          }
+          },
+          [&](iff, formula l, formula r) {
+            formula sl = tseitin(l, clauses);
+            formula sr = tseitin(r, clauses);
+
+            formula s = simplify(!simplify(iff(sl, sr)));
+
+            if(!s.is<boolean>()) {
+              // clausal form for negated double implication (xor):
+              //    f <-> !(l <-> r) == (!f ∨ !l ∨ !r) ∧ (!f ∨  l ∨ r) ∧
+              //                        (f  ∨  l ∨ !r) ∧ (f  ∨ !l ∨ r)
+              clauses.insert(end(clauses), {
+                {{false, fresh(s)}, {false, fresh(sl)}, {false, fresh(sr)}},
+                {{false, fresh(s)}, {true,  fresh(sl)}, {true,  fresh(sr)}},
+                {{true,  fresh(s)}, {true,  fresh(sl)}, {false, fresh(sr)}},
+                {{true,  fresh(s)}, {false, fresh(sl)}, {true,  fresh(sr)}}
+              });
+            }
+
+            return s;
+          },
+          [&](boolean b) -> formula {
+            return simplify(!b);
+          },
+          [&](atom a) -> formula {
+            // clausal form for negations:
+            // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
+            clauses.insert(end(clauses), {
+              {{false, fresh(n)}, {false, fresh(a)}},
+              {{true,  fresh(n)}, {true,  fresh(a)}}
+            });
+
+            return n;
+          },
+          [](otherwise) -> formula { black_unreachable(); }
         );
       },
       [](otherwise) -> formula { black_unreachable(); }
