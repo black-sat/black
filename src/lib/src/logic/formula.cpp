@@ -124,7 +124,47 @@ namespace black::internal {
 
         return sigma.boolean(bl->value() == br->value());
       },
-      [&](otherwise) -> formula { return f; /* TODO */ }
+      [&](tomorrow x, formula op) -> formula { 
+        if(op.is<boolean>())
+          return op;
+
+        return x;
+      },
+      [&](eventually e, formula op) -> formula { 
+        if(op.is<boolean>())
+          return op;
+
+        return e;
+      },
+      [&](always g, formula op) -> formula { 
+        if(op.is<boolean>())
+          return op;
+
+        return g;
+      },
+      [&](until u, formula l, formula r) -> formula {
+        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+
+        if(!bl && !br)
+          return u;
+
+        if(bl && !br)
+          return bl->value() ? F(r) : r;
+        
+        return *br;
+      },
+      [&](release s, formula l, formula r) -> formula {
+        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+
+        if(!bl && !br)
+          return s;
+
+        if(bl && !br)
+          return bl->value() ? r : G(r);
+
+        return *br;
+      },
+      [&](otherwise) -> formula { black_unreachable(); }
     );
   }
 }
