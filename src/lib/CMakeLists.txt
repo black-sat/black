@@ -46,6 +46,7 @@ endif()
 #
 set (
    LIB_SRC
+   src/logic/formula.cpp
    src/logic/lex.cpp
    src/logic/parser.cpp
    src/sat/sat.cpp

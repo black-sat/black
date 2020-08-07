@@ -38,23 +38,11 @@ namespace black::internal
     return a;
   }
 
-  bool has_constants(formula f)
-  {
-    return f.match(
-      [](boolean) { return true; },
-      [](atom) { return false; },
-      [](unary, formula op) { return has_constants(op); },
-      [](binary, formula l, formula r) { 
-        return has_constants(l) || has_constants(r);
-      }
-    );
-  }
-
   cnf to_cnf(formula f) {
     std::vector<clause> result;
     
     formula simple = tseitin(f, result);
-    black_assert(!has_constants(simple));
+    black_assert(simple.is<boolean>() || !has_constants(simple));
 
     if(auto b = simple.to<boolean>(); b) {
       if(b->value())
@@ -68,78 +56,6 @@ namespace black::internal
     result.push_back({{true, fresh(simple)}});
 
     return result;
-  }
-  
-  formula simplify(formula f) {
-    alphabet &sigma = *f.alphabet();
-    return f.match(
-      [ ](boolean b) -> formula { return b; },
-      [ ](atom a) -> formula { return a; },
-      [&](negation n, formula op) -> formula {
-        if(auto b = op.to<boolean>(); b)
-          return sigma.boolean(!b->value());
-        
-        return n;
-      },
-      [&](conjunction c, formula l, formula r) -> formula {
-        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
-
-        if(!bl && !br)
-          return c;
-
-        if(bl && !br) {
-          return bl->value() ? r : sigma.bottom();
-        }
-        
-        if(!bl && br)
-          return br->value() ? l : sigma.bottom();
-
-        return sigma.boolean(bl->value() && br->value());
-      },
-      [&](disjunction d, formula l, formula r) -> formula {
-        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
-
-        if(!bl && !br)
-          return d;
-
-        if(bl && !br)
-          return bl->value() ? sigma.top() : r;
-        
-        if(!bl && br)
-          return br->value() ? sigma.top() : l;
-          
-        return sigma.boolean(bl->value() || br->value());
-      },
-      [&](then t, formula l, formula r) -> formula {
-        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
-
-        if(!bl && !br)
-          return t;
-
-        if(bl && !br)
-          return bl->value() ? r : sigma.top();
-        
-        if(!bl && br)
-          return br->value() ? sigma.top() : sigma.bottom();
-
-        return sigma.boolean(!bl->value() || br->value());
-      },
-      [&](iff ff, formula l, formula r) -> formula {
-        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
-
-        if(!bl && !br)
-          return ff;
-
-        if(bl && !br)
-          return bl->value() ? r : !r;
-        
-        if(!bl && br)
-          return br->value() ? l : !l;
-
-        return sigma.boolean(bl->value() == br->value());
-      },
-      [](otherwise) -> formula { black_unreachable(); }
-    );
   }
 
   formula tseitin(formula f, std::vector<clause> &clauses) {

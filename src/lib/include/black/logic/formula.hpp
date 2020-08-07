@@ -312,6 +312,21 @@ namespace black::internal
   auto GF(formula f);
   auto YP(formula f);
   auto YH(formula f);
+
+  //
+  // Utility functions
+  //
+
+  // Simplifies the formula in some simple ways.
+  // Currently, it only removes true/false constants, where possible.
+  // This function acts on the *top-level* operator.
+  // Use simplify_deep() to recursively simplify the whole formula
+  formula simplify(formula f);
+
+  formula simplify_deep(formula f);
+
+  // true if there is any true/false constant in the formula
+  bool has_constants(formula f);
 }
 
 // Names exported from the `black` namespace
@@ -323,6 +338,9 @@ namespace black {
   using internal::formula;
   using internal::formula_id;
   using internal::otherwise;
+
+  using internal::simplify;
+  using internal::has_constants;
 }
 
 #include <black/internal/formula/impl.hpp>

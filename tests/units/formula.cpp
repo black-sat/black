@@ -23,7 +23,9 @@
 
 #include <catch2/catch.hpp>
 
+#include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
+#include <black/logic/parser.hpp>
 
 #include <string>
 #include <string_view>
@@ -187,4 +189,31 @@ TEST_CASE("Handles")
     REQUIRE(match(F(p && q)) == "eventually"s);
     REQUIRE(match(Y(p || q)) == "yesterday"s);
   }
+}
+
+
+TEST_CASE("Boolean constants simplification")
+{
+  alphabet sigma;
+
+  atom p = sigma.var("p");
+
+  REQUIRE(simplify_deep(!sigma.top()) == sigma.bottom());
+  REQUIRE(simplify_deep(!sigma.bottom()) == sigma.top());
+  REQUIRE(simplify_deep(!!sigma.top()) == sigma.top());
+  REQUIRE(simplify_deep(!!sigma.bottom()) == sigma.bottom());
+
+  REQUIRE(simplify_deep(sigma.top() && p) == p);
+  REQUIRE(simplify_deep(sigma.bottom() && p) == sigma.bottom());
+
+  REQUIRE(simplify_deep(sigma.top() || p) == sigma.top());
+  REQUIRE(simplify_deep(sigma.bottom() || p) == p);
+
+  REQUIRE(simplify_deep(then(sigma.top(), p)) == p);
+  REQUIRE(simplify_deep(then(sigma.bottom(), p)) == sigma.top());
+  REQUIRE(simplify_deep(then(p, sigma.top())) == sigma.top());
+  REQUIRE(simplify_deep(then(p, sigma.bottom())) == sigma.bottom());
+  
+  REQUIRE(simplify_deep(iff(p, sigma.top())) == p);
+  REQUIRE(simplify_deep(iff(p, sigma.bottom())) == !p);
 }
