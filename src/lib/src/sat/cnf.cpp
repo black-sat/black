@@ -142,21 +142,64 @@ namespace black::internal
         return s;
       },
       [&](negation, formula arg) {
-        formula sarg = tseitin(arg, clauses);
+        return arg.match(
+          [&](negation, formula op) {
+            return tseitin(op, clauses);
+          },
+          [&](conjunction, formula l, formula r) {
+            formula sl = tseitin(l, clauses);
+            formula sr = tseitin(r, clauses);
 
-        formula s = simplify(negation(sarg));
+            formula s = simplify(!simplify(sl && sr));
 
-        if(!s.is<boolean>()) {
-          // clausal form for negations:
-          // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
-          // TODO: handle NANDs, NORs, etc.. instead for a better translation
-          clauses.insert(end(clauses), {
-            {{false, fresh(s)}, {false, fresh(sarg)}},
-            {{true,  fresh(s)}, {true,  fresh(sarg)}}
-          });
-        }
+            if(!s.is<boolean>()) {
+              // clausal form for negated conjunction:
+              //   f <-> !(l ∧ r) == (!f ∨ !l ∨ !r) ∧ (f ∨ l) ∧ (f ∨ r)
+              clauses.insert(end(clauses), {
+                {{false, fresh(s)}, {false, fresh(sl)}, {false, fresh(sr)}},
+                {{true,  fresh(s)}, {true, fresh(sl)}},
+                {{true,  fresh(s)}, {true, fresh(sr)}},
+              });
+            }
 
-        return s;
+            return s;
+          },
+          [&](disjunction, formula l, formula r) {
+            formula sl = tseitin(l, clauses);
+            formula sr = tseitin(r, clauses);
+
+            formula s = simplify(!simplify(sl || sr));
+
+            if(!s.is<boolean>()) {
+              // clausal form for negated conjunction:
+              //   f <-> !(l ∧ r) == (f ∨ l ∨ r) ∧ (!f ∨ !l) ∧ (!f ∨ !r)
+              clauses.insert(end(clauses), {
+                {{true,  fresh(s)}, {true,  fresh(sl)}, {true, fresh(sr)}},
+                {{false, fresh(s)}, {false, fresh(sl)}},
+                {{false, fresh(s)}, {false, fresh(sr)}},
+              });
+            }
+
+            return s;
+          },
+          [&](otherwise) {
+            formula sarg = tseitin(arg, clauses);
+
+            formula s = simplify(negation(sarg));
+
+            if(!s.is<boolean>()) {
+              // clausal form for negations:
+              // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
+              // TODO: handle NANDs, NORs, etc.. instead for a better translation
+              clauses.insert(end(clauses), {
+                {{false, fresh(s)}, {false, fresh(sarg)}},
+                {{true,  fresh(s)}, {true,  fresh(sarg)}}
+              });
+            }
+
+            return s;
+          }
+        );
       },
       [](otherwise) -> formula { black_unreachable(); }
     );
