@@ -45,7 +45,7 @@ TEST_CASE("Translation idempotency on future only formulas")
       p, !p, X(p), F(p), G(p), XF(p), GF(p), XG(p),
       p && q, p || q, U(p,q), R(p,q),
       p && (X(U(p,q)) || XF(!q)),
-      p && then(X(R(p,q)), GF(!p)),
+      p && implies(X(R(p,q)), GF(!p)),
       U(p, !(GF(q))),
       !(iff(p || q, !q && p))
   };
