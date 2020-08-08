@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Luca Geatti
+// (C) 2020 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,32 +21,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SAT_MATHSAT_HPP
-#define BLACK_SAT_MATHSAT_HPP
-
 #include <black/sat/sat.hpp>
 
-#include <memory>
-
-namespace black::sat::backends
+namespace black::sat::backends 
 {
-  class mathsat : public ::black::sat::solver
+  class cmsat : public ::black::sat::solver
   {
   public:
-    mathsat();
-    virtual ~mathsat();
+    cmsat();
+    virtual ~cmsat();
 
     virtual void assert_formula(formula f);
     virtual bool is_sat(std::vector<formula> const&assumptions);
-    virtual bool is_sat(formula assumption);
+    //virtual bool is_sat(formula assumption);
     virtual bool is_sat();
     virtual void clear();
 
   private:
-    struct _mathsat_t;
-    std::unique_ptr<_mathsat_t> _data;
+    struct _cmsat_t;
+    std::unique_ptr<_cmsat_t> _data;
   };
-
 }
-
-#endif // BLACK_SAT_MATHSAT_HPP

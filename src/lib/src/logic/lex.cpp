@@ -59,7 +59,7 @@ namespace black::internal
           s.get();
           if (s.peek() == '>') {
             s.get();
-            return token{binary::type::then};
+            return token{binary::type::implication};
           }
           return std::nullopt;
 
@@ -68,7 +68,7 @@ namespace black::internal
           s.get();
           if (s.peek() == '>') {
             s.get();
-            return token{binary::type::then};
+            return token{binary::type::implication};
           }
           else {
             return token{binary::type::iff};
@@ -115,7 +115,7 @@ namespace black::internal
       {"H",     token{unary::type::historically}},
       {"AND",   token{binary::type::conjunction}},
       {"OR",    token{binary::type::disjunction}},
-      {"THEN",  token{binary::type::then}},
+      {"THEN",  token{binary::type::implication}},
       {"IFF",   token{binary::type::iff}},
       {"U",     token{binary::type::until}},
       {"R",     token{binary::type::release}},

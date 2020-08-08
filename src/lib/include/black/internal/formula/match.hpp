@@ -70,7 +70,7 @@ namespace std {
     declare_destructuring_arity(historically, 1)
     declare_destructuring_arity(conjunction,  2)
     declare_destructuring_arity(disjunction,  2)
-    declare_destructuring_arity(then,         2)
+    declare_destructuring_arity(implication,  2)
     declare_destructuring_arity(iff,          2)
     declare_destructuring_arity(until,        2)
     declare_destructuring_arity(release,      2)
@@ -170,7 +170,7 @@ namespace black::internal
     historically,
     conjunction,
     disjunction,
-    then,
+    implication,
     iff,
     until,
     release,
@@ -191,7 +191,7 @@ namespace black::internal
   using binary_ltl_ops = syntax<
     conjunction,
     disjunction,
-    then,
+    implication,
     iff,
     until,
     release,
@@ -266,7 +266,7 @@ namespace std {
   declare_common_type(historically, unary)
   declare_common_type(conjunction,  binary)
   declare_common_type(disjunction,  binary)
-  declare_common_type(then,         binary)
+  declare_common_type(implication,  binary)
   declare_common_type(iff,          binary)
   declare_common_type(until,        binary)
   declare_common_type(release,      binary)

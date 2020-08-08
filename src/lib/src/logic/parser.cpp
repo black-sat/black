@@ -51,7 +51,7 @@ namespace black::internal
             return
               fmt::format("<{},{}>", to_string(fname->first), fname->second);
           else
-            return "<?>"s;
+            return fmt::format("<{:x}>", to_underlying(formula{a}.unique_id()));
         },
         [](boolean b) {
           return b.value() ? "True" : "False";

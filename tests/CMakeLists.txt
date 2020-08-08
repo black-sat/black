@@ -32,11 +32,12 @@ set(BLACK_TESTS_SAT_BACKEND "mathsat" CACHE STRING "SAT backend used in tests")
 #
 set(
   UNIT_TESTS
-  units/main.cpp
+  units/cnf.cpp
   units/common.cpp
   units/formula.cpp
-  units/parser.cpp
+  units/main.cpp
   units/match.cpp
+  units/parser.cpp
   units/solver.cpp
 )
 

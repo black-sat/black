@@ -28,7 +28,7 @@
 #include <black/logic/formula.hpp>
 
 #include <deque>
-#include <unordered_map>
+#include <tsl/hopscotch_map.h>
 
 namespace black::internal {
 
@@ -55,9 +55,9 @@ namespace black::internal {
                                   formula_base*,
                                   formula_base*>;
 
-    std::unordered_map<any_hashable, atom_t*> _atoms_map;
-    std::unordered_map<unary_key,   unary_t*> _unaries_map;
-    std::unordered_map<binary_key, binary_t*> _binaries_map;
+    tsl::hopscotch_map<any_hashable, atom_t*> _atoms_map;
+    tsl::hopscotch_map<unary_key,   unary_t*> _unaries_map;
+    tsl::hopscotch_map<binary_key, binary_t*> _binaries_map;
 
   private:
     template<typename>
@@ -147,45 +147,6 @@ namespace black::internal {
     );
 
     return {sigma, object};
-  }
-
-  //
-  // Out-of-line implementation of the operators taking boolean args
-  inline auto operator &&(bool f1, formula f2) {
-    return conjunction(f2.alphabet()->boolean(f1), f2);
-  }
-  inline auto operator &&(formula f1, bool f2) {
-    return conjunction(f1, f1.alphabet()->boolean(f2));
-  }
-  inline auto operator ||(bool f1, formula f2) {
-    return disjunction(f2.alphabet()->boolean(f1), f2);
-  }
-  inline auto operator ||(formula f1, bool f2) {
-    return disjunction(f1, f1.alphabet()->boolean(f2));
-  }
-  inline auto U(formula f1, bool f2) {
-    return U(f1, f1.alphabet()->boolean(f2));
-  }
-  inline auto U(bool f1, formula f2) {
-    return U(f2.alphabet()->boolean(f1), f2);
-  }
-  inline auto R(formula f1, bool f2) {
-    return R(f1, f1.alphabet()->boolean(f2));
-  }
-  inline auto R(bool f1, formula f2) {
-    return R(f2.alphabet()->boolean(f1), f2);
-  }
-  inline auto S(formula f1, bool f2) {
-    return S(f1, f1.alphabet()->boolean(f2));
-  }
-  inline auto S(bool f1, formula f2) {
-    return S(f2.alphabet()->boolean(f1), f2);
-  }
-  inline auto T(formula f1, bool f2) {
-    return T(f1, f1.alphabet()->boolean(f2));
-  }
-  inline auto T(bool f1, formula f2) {
-    return T(f2.alphabet()->boolean(f1), f2);
   }
   
 } // namespace black::internal
