@@ -23,7 +23,7 @@
 
 find_package(MathSAT REQUIRED)
 find_package(Z3)
-find_package(cryptominisat5)
+find_package(cryptominisat5 QUIET)
 
 message(STATUS "MathSAT solver found! Enabling the MathSAT backend...")
 
