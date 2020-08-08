@@ -142,7 +142,7 @@ namespace black::sat::backends
         return msat_make_or(env, 
           to_mathsat(d.left()), to_mathsat(d.right()));
       },
-      [this](then t) {
+      [this](implication t) {
         return
           msat_make_or(env,
             msat_make_not(env, 

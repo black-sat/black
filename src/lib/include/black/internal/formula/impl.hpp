@@ -261,7 +261,7 @@ namespace black::internal
   declare_operator(historically, unary)
   declare_operator(conjunction, binary)
   declare_operator(disjunction, binary)
-  declare_operator(then,        binary)
+  declare_operator(implication, binary)
   declare_operator(iff,         binary)
   declare_operator(until,       binary)
   declare_operator(release,     binary)
@@ -289,6 +289,10 @@ namespace black::internal
 
   inline auto operator ||(formula f1, formula f2) {
     return disjunction(f1, f2);
+  }
+
+  inline auto implies(formula f1, formula f2) {
+    return implication(f1, f2);
   }
 
   // Helper functions akin to operators.

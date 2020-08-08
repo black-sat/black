@@ -43,7 +43,7 @@ TEST_CASE("CNF Translation")
   std::vector<formula> tests = {
     p && q, p || q, !r,
     p || (p && !q), (p && (!p || q)),
-    then(p, q), iff(p, q), sigma.top() && p,
+    implies(p, q), iff(p, q), sigma.top() && p,
     sigma.bottom()
   };
 
@@ -51,7 +51,7 @@ TEST_CASE("CNF Translation")
     DYNAMIC_SECTION("CNF translation for formula: " << f) {
       cnf c = to_cnf(f);
       formula fc = to_formula(sigma, c);
-      s.assert_formula(!then(fc,f));
+      s.assert_formula(!implies(fc,f));
 
       INFO("CNF: " << fc);
       REQUIRE(!s.solve());

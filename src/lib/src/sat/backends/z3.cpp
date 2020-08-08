@@ -172,7 +172,7 @@ namespace black::sat::backends
         Z3_ast args[] = { to_z3(left), to_z3(right) };
         return Z3_mk_or(context, 2, args);
       },
-      [this](then, formula left, formula right) {
+      [this](implication, formula left, formula right) {
         return Z3_mk_implies(context, to_z3(left), to_z3(right));
       },
       [this](iff, formula left, formula right) {

@@ -91,7 +91,7 @@ namespace black::internal
     constexpr std::optional<int> ops[] = {
       {30}, // conjunction
       {20}, // disjunction
-      {40}, // then
+      {40}, // implication
       {40}, // iff
       {50}, // until
       {50}, // release

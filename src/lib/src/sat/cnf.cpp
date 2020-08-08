@@ -101,12 +101,12 @@ namespace black::internal
 
         return s;
       },
-      [&](then, formula l, formula r) 
+      [&](implication, formula l, formula r) 
       {
         formula sl = tseitin(l, clauses);
         formula sr = tseitin(r, clauses);
 
-        formula s = simplify(then(sl, sr));
+        formula s = simplify(implies(sl, sr));
 
         if(!s.is<boolean>()) {
           // clausal form for double implications:
@@ -182,12 +182,12 @@ namespace black::internal
 
             return s;
           },
-          [&](then, formula l, formula r) 
+          [&](implication, formula l, formula r) 
           {
             formula sl = tseitin(l, clauses);
             formula sr = tseitin(r, clauses);
 
-            formula s = simplify(!simplify(then(sl, sr)));
+            formula s = simplify(!simplify(implies(sl, sr)));
 
             if(!s.is<boolean>()) {
               // clausal form for negated implication:

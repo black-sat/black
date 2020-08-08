@@ -63,7 +63,7 @@ namespace black::internal {
       simplify_negation,
       simplify_and,
       simplify_or,
-      simplify_then,
+      simplify_implication,
       simplify_iff,
       simplify_tomorrow,
       simplify_eventually,
@@ -114,7 +114,7 @@ namespace black::internal {
     return sigma.boolean(bl->value() || br->value());
   }
 
-  formula simplify_then(then t, formula l, formula r) {
+  formula simplify_implication(implication t, formula l, formula r) {
     alphabet &sigma = *t.alphabet();
     optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 

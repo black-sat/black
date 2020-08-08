@@ -47,7 +47,7 @@ namespace black::internal {
     // binary formulas
     conjunction,
     disjunction,
-    then,
+    implication,
     iff,
     until,
     release,
@@ -209,7 +209,7 @@ namespace black::internal
     enum class type : uint8_t {
       conjunction = to_underlying(formula::type::conjunction),
       disjunction,
-      then,
+      implication,
       iff,
       until,
       release,
@@ -256,7 +256,7 @@ namespace black::internal
   // Binary operators. Same public interface as struct `binary`
   struct conjunction;
   struct disjunction;
-  struct then;
+  struct implication;
   struct iff;
   struct until;
   struct release;
@@ -277,11 +277,8 @@ namespace black::internal
   //
   auto operator !(formula f);
   auto operator &&(formula f1, formula f2);
-  auto operator &&(formula f1, bool f2);
-  auto operator &&(bool f1, formula f2);
   auto operator ||(formula f1, formula f2);
-  auto operator ||(formula f1, bool f2);
-  auto operator ||(bool f1, formula f2);
+  auto implies(formula f1, formula f2);
 
   auto X(formula f);
   auto Y(formula f);
@@ -291,20 +288,9 @@ namespace black::internal
   auto H(formula f);
 
   auto U(formula f1, formula f2);
-  auto U(formula f1, bool f2);
-  auto U(bool f1, formula f2);
-  
   auto R(formula f1, formula f2);
-  auto R(formula f1, bool f2);
-  auto R(bool f1, formula f2);
-  
   auto S(formula f1, formula f2);
-  auto S(formula f1, bool f2);
-  auto S(bool f1, formula f2);
-  
   auto T(formula f1, formula f2);
-  auto T(formula f1, bool f2);
-  auto T(bool f1, formula f2);
 
   auto XF(formula f);
   auto XG(formula f);
@@ -329,7 +315,7 @@ namespace black::internal
   formula simplify_negation(negation n, formula op);
   formula simplify_and(conjunction c, formula l, formula r);
   formula simplify_or(disjunction c, formula l, formula r);
-  formula simplify_then(then c, formula l, formula r);
+  formula simplify_implication(implication c, formula l, formula r);
   formula simplify_iff(iff c, formula l, formula r);
   formula simplify_tomorrow(tomorrow n, formula op);
   formula simplify_eventually(eventually n, formula op);
@@ -352,6 +338,7 @@ namespace black {
   using internal::otherwise;
 
   using internal::simplify;
+  using internal::simplify_deep;
   using internal::has_constants;
 }
 
