@@ -53,7 +53,7 @@ set (
    src/sat/cnf.cpp
    src/sat/backends/mathsat.cpp
    src/solver/solver.cpp
-   src/logic/past_remover.cpp)
+   src/logic/past_remover.cpp
    )
    
 if(Z3_FOUND)
