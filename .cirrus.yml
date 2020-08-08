@@ -82,6 +82,21 @@ task:
     - ctest -R black
 
 task:
+  name: macOS (with CryptoMiniSAT backend)
+  osx_instance:
+    image: catalina-base
+  download_dependencies_script:
+    - brew install cmake gmp wget cryptominisat
+    - ./download-mathsat.sh
+  release_build_script:
+    - mkdir -p build/release && cd build/release
+    - cmake -DCMAKE_BUILD_TYPE=Release -DBLACK_TESTS_SAT_BACKEND=cmsat ../..
+    - make -j2
+  test_script:
+    - cd build/release 
+    - ctest -R black
+
+task:
   name: Code coverage
   container:
     dockerfile: docker/Dockerfile.fedora

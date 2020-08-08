@@ -56,15 +56,19 @@ namespace black::sat
     // assert a formula, adding it to the current context
     virtual void assert_formula(formula f) = 0;
 
+    // tell if the current set of assertions is satisfiable, 
+    // under the given assumptions
+    virtual bool is_sat(std::vector<formula> const &assumptions) = 0;
+
     // tell if the current set of assertions is satisfiable
-    virtual bool is_sat() const = 0;
+    virtual bool is_sat() { return is_sat(std::vector<formula>{}); }
 
-    // push the current context on the assertion stack
-    virtual void push() = 0;
-
-    // pop the current context from the assertion stack
-    virtual void pop() = 0;
-
+    // tell if the current set of assertions is satisfiable, 
+    // under the given assumption
+    virtual bool is_sat(formula assumption) { 
+      return is_sat(std::vector<formula>{assumption}); 
+    }
+    
     // clear the current context completely
     virtual void clear() = 0;
   };

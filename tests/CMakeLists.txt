@@ -32,12 +32,15 @@ set(BLACK_TESTS_SAT_BACKEND "mathsat" CACHE STRING "SAT backend used in tests")
 #
 set(
   UNIT_TESTS
-  units/main.cpp
+  units/cnf.cpp
   units/common.cpp
   units/formula.cpp
-  units/parser.cpp
+  units/main.cpp
   units/match.cpp
-        units/past_remover.cpp)
+  units/parser.cpp
+  units/solver.cpp
+  units/past_remover.cpp
+)
 
 add_executable(unit_tests ${UNIT_TESTS})
 target_link_library_with_global_ctors(unit_tests PRIVATE black)

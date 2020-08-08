@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Luca Geatti
+// (C) 2020 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,32 +21,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SAT_MATHSAT_HPP
-#define BLACK_SAT_MATHSAT_HPP
+#include <catch2/catch.hpp>
 
-#include <black/sat/sat.hpp>
+#include <black/logic/formula.hpp>
+#include <black/logic/parser.hpp>
+#include <black/solver/solver.hpp>
+#include <black/sat/cnf.hpp>
 
-#include <memory>
+using namespace black;
 
-namespace black::sat::backends
+TEST_CASE("CNF Translation")
 {
-  class mathsat : public ::black::sat::solver
-  {
-  public:
-    mathsat();
-    virtual ~mathsat();
+  alphabet sigma;
 
-    virtual void assert_formula(formula f);
-    virtual bool is_sat(std::vector<formula> const&assumptions);
-    virtual bool is_sat(formula assumption);
-    virtual bool is_sat();
-    virtual void clear();
+  [[maybe_unused]] atom p = sigma.var("p");
+  [[maybe_unused]] atom q = sigma.var("q");
+  [[maybe_unused]] atom r = sigma.var("r");
 
-  private:
-    struct _mathsat_t;
-    std::unique_ptr<_mathsat_t> _data;
+  solver s{sigma};
+
+  std::vector<formula> tests = {
+    p && q, p || q, !r,
+    p || (p && !q), (p && (!p || q)),
+    implies(p, q), iff(p, q), sigma.top() && p,
+    sigma.bottom()
   };
 
-}
+  for(formula f : tests) {
+    DYNAMIC_SECTION("CNF translation for formula: " << f) {
+      cnf c = to_cnf(f);
+      formula fc = to_formula(sigma, c);
+      s.assert_formula(!implies(fc,f));
 
-#endif // BLACK_SAT_MATHSAT_HPP
+      INFO("CNF: " << fc);
+      REQUIRE(!s.solve());
+    }
+  }
+}

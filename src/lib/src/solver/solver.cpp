@@ -47,15 +47,12 @@ namespace black::internal
 
       // else, continue to check EMPTY and LOOP
       // Generating EMPTY and LOOP
-      sat->push();
-      sat->assert_formula(empty_and_loop(k));
-      // if 'encoding' is sat, then stop with SAT
-      if(sat->is_sat())
+      // if the encoding is SAT with the assumption, then stop with SAT
+      if(sat->is_sat(empty_and_loop(k)))
         return true;
-      sat->pop();
 
       // else, generate the PRUNE
-      // Computing allSAT of 'encoding & not PRUNE^k'
+      // Computing satisfiability of 'encoding & not PRUNE^k'
       sat->assert_formula(!prune(k));
       if(!sat->is_sat())
         return false;
@@ -99,7 +96,7 @@ namespace black::internal
           formula xnf_req = to_ground_xnf(*req, i, false);
           second_conj = second_conj || xnf_req;
         }
-        prune = prune && then(first_conj, second_conj);
+        prune = prune && implies(first_conj, second_conj);
       }
     }
     return prune;
@@ -154,7 +151,7 @@ namespace black::internal
           formula req_atom_i = to_ground_xnf(*req, i, false);
           body_impl = body_impl || req_atom_i;
         }
-        period_lk = period_lk && then(atom_phi_k, body_impl);
+        period_lk = period_lk && implies(atom_phi_k, body_impl);
       }
     }
     return period_lk;
@@ -221,8 +218,8 @@ namespace black::internal
         return to_ground_xnf(left,k,update) 
             || to_ground_xnf(right,k,update);
       },
-      [&](then, formula left, formula right) {
-        return then(
+      [&](implication, formula left, formula right) {
+        return implies(
           to_ground_xnf(left,k,update),
           to_ground_xnf(right,k,update)
         );
@@ -305,7 +302,7 @@ namespace black::internal
       case binary::type::triggered:
         return binary::type::since;
       case binary::type::iff:
-      case binary::type::then:
+      case binary::type::implication:
         black_unreachable(); // these two operators do not have simple duals
     }
     black_unreachable();
@@ -328,7 +325,7 @@ namespace black::internal
           [](unary u) {
             return unary(dual(u.formula_type()), to_nnf(!u.operand()));
           },
-          [](then, formula left, formula right) {
+          [](implication, formula left, formula right) {
             return to_nnf(left) && to_nnf(!right);
           },
           [](iff, formula left, formula right) {

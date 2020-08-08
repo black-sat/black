@@ -23,12 +23,22 @@
 
 find_package(MathSAT REQUIRED)
 find_package(Z3)
+find_package(cryptominisat5)
 
 message(STATUS "MathSAT solver found! Enabling the MathSAT backend...")
+
 if(Z3_FOUND)
   message(STATUS "Z3 solver found! Enabling the Z3 SAT backend...")
 else()
   message(STATUS "Z3 solver not found. Disabling the Z3 SAT backend...")
+endif()
+
+if(cryptominisat5_FOUND)
+  message(STATUS 
+    "CryptoMiniSAT solver found! Enabling the CMSAT SAT backend...")
+else()
+  message(STATUS 
+    "CryptoMiniSAT solver not found. Disabling the CMSAT SAT backend...")
 endif()
 
 #
@@ -36,16 +46,24 @@ endif()
 #
 set (
    LIB_SRC
+   src/logic/formula.cpp
    src/logic/lex.cpp
    src/logic/parser.cpp
    src/sat/sat.cpp
+   src/sat/cnf.cpp
    src/sat/backends/mathsat.cpp
    src/solver/solver.cpp
    src/logic/past_remover.cpp)
    )
    
 if(Z3_FOUND)
-  set(LIB_SRC ${LIB_SRC} src/sat/backends/z3.cpp)
+  set(LIB_SRC ${LIB_SRC} 
+    src/sat/backends/z3.cpp include/black/sat/backends/z3.hpp)
+endif()
+
+if(cryptominisat5_FOUND)
+  set(LIB_SRC ${LIB_SRC} 
+    src/sat/backends/cmsat.cpp include/black/sat/backends/cmsat.hpp)
 endif()
 
 set (
@@ -68,11 +86,15 @@ set (
 #
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PRIVATE MathSAT fmt tsl::hopscotch_map)
+target_link_libraries(black PRIVATE MathSAT fmt)
+target_link_libraries(black PUBLIC tsl::hopscotch_map)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
 if(Z3_FOUND)
   target_link_libraries(black PRIVATE Z3)
+endif()
+if(cryptominisat5_FOUND)
+  target_link_libraries(black PRIVATE cryptominisat5)
 endif()
 target_enable_warnings(black)
 target_code_coverage(black)

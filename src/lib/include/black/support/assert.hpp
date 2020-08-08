@@ -26,7 +26,6 @@
 // - black_assert(Expr)
 // - black_unreachable()
 //
-//
 
 #include <cstdio>
 #include <cstdlib>

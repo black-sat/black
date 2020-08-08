@@ -107,7 +107,7 @@ namespace black::internal
     constexpr std::string_view toks[] = {
       "&",   // conjunction
       "|",   // disjunction
-      "->",  // then
+      "->",  // implication
       "<->", // iff
       "U",   // until
       "R",   // release

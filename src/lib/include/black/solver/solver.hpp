@@ -118,7 +118,7 @@ namespace black::internal {
       std::vector<tomorrow> _xclosure;
 
       // the name of the currently chosen sat backend
-      std::string _sat_backend = "z3"; // sensible default
+      std::string _sat_backend = "mathsat"; // sensible default
 
   }; // end class Black Solver
 

@@ -54,7 +54,7 @@ namespace black::internal
           if(auto fname = a.label<past_label>(); fname.has_value())
             return fmt::format("<{}>", to_string(fname->formula));
           else
-            return "<?>"s;
+            return fmt::format("<{:x}>", to_underlying(formula{a}.unique_id()));
         },
         [](boolean b) {
           return b.value() ? "True" : "False";

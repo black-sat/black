@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Luca Geatti
+// (C) 2020 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,32 +21,50 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SAT_MATHSAT_HPP
-#define BLACK_SAT_MATHSAT_HPP
+#include <black/logic/formula.hpp>
+#include <black/logic/alphabet.hpp>
 
-#include <black/sat/sat.hpp>
+#include <vector>
+#include <initializer_list>
 
-#include <memory>
-
-namespace black::sat::backends
+namespace black::internal 
 {
-  class mathsat : public ::black::sat::solver
-  {
-  public:
-    mathsat();
-    virtual ~mathsat();
-
-    virtual void assert_formula(formula f);
-    virtual bool is_sat(std::vector<formula> const&assumptions);
-    virtual bool is_sat(formula assumption);
-    virtual bool is_sat();
-    virtual void clear();
-
-  private:
-    struct _mathsat_t;
-    std::unique_ptr<_mathsat_t> _data;
+  
+  // TODO: Compress the boolean into the pointer to the atom
+  struct literal {
+    bool sign;
+    struct atom atom;
   };
 
+  struct clause {
+    std::vector<literal> literals;
+
+    clause() { }
+    clause(std::vector<literal> lits) : literals(std::move(lits)) { }
+    clause(std::initializer_list<literal> elems) : literals{elems} { }
+  };
+  
+  struct cnf {
+    std::vector<clause> clauses;
+
+    cnf() { }
+    cnf(std::vector<clause> cls) : clauses(std::move(cls)) { }
+    cnf(std::initializer_list<clause> elems) : clauses{elems} { }
+  };
+
+  // Tseitin conversion to CNF
+  cnf to_cnf(formula f);
+
+  // Conversion of literals, clauses and cnfs to formulas
+  formula to_formula(literal lit);
+  formula to_formula(alphabet &sigma, clause c);
+  formula to_formula(alphabet &sigma, cnf c);
 }
 
-#endif // BLACK_SAT_MATHSAT_HPP
+namespace black {
+  using internal::literal;
+  using internal::clause;
+  using internal::cnf;
+  using internal::to_cnf;
+  using internal::to_formula;
+}
