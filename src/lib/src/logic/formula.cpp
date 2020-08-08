@@ -57,114 +57,137 @@ namespace black::internal {
   }
 
   formula simplify(formula f) {
-    alphabet &sigma = *f.alphabet();
     return f.match(
       [ ](boolean b) -> formula { return b; },
       [ ](atom a) -> formula { return a; },
-      [&](negation n, formula op) -> formula {
-        if(auto b = op.to<boolean>(); b)
-          return sigma.boolean(!b->value());
-        
-        return n;
-      },
-      [&](conjunction c, formula l, formula r) -> formula {
-        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
-
-        if(!bl && !br)
-          return c;
-
-        if(bl && !br) {
-          return bl->value() ? r : sigma.bottom();
-        }
-        
-        if(!bl && br)
-          return br->value() ? l : sigma.bottom();
-
-        return sigma.boolean(bl->value() && br->value());
-      },
-      [&](disjunction d, formula l, formula r) -> formula {
-        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
-
-        if(!bl && !br)
-          return d;
-
-        if(bl && !br)
-          return bl->value() ? sigma.top() : r;
-        
-        if(!bl && br)
-          return br->value() ? sigma.top() : l;
-          
-        return sigma.boolean(bl->value() || br->value());
-      },
-      [&](then t, formula l, formula r) -> formula {
-        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
-
-        if(!bl && !br)
-          return t;
-
-        if(bl && !br)
-          return bl->value() ? r : sigma.top();
-        
-        if(!bl && br)
-          return br->value() ? sigma.top() : sigma.bottom();
-
-        return sigma.boolean(!bl->value() || br->value());
-      },
-      [&](iff ff, formula l, formula r) -> formula {
-        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
-
-        if(!bl && !br)
-          return ff;
-
-        if(bl && !br)
-          return bl->value() ? r : !r;
-        
-        if(!bl && br)
-          return br->value() ? l : !l;
-
-        return sigma.boolean(bl->value() == br->value());
-      },
-      [&](tomorrow x, formula op) -> formula { 
-        if(op.is<boolean>())
-          return op;
-
-        return x;
-      },
-      [&](eventually e, formula op) -> formula { 
-        if(op.is<boolean>())
-          return op;
-
-        return e;
-      },
-      [&](always g, formula op) -> formula { 
-        if(op.is<boolean>())
-          return op;
-
-        return g;
-      },
-      [&](until u, formula l, formula r) -> formula {
-        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
-
-        if(!bl && !br)
-          return u;
-
-        if(bl && !br)
-          return bl->value() ? F(r) : r;
-        
-        return *br;
-      },
-      [&](release s, formula l, formula r) -> formula {
-        optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
-
-        if(!bl && !br)
-          return s;
-
-        if(bl && !br)
-          return bl->value() ? r : G(r);
-
-        return *br;
-      },
+      simplify_negation,
+      simplify_and,
+      simplify_or,
+      simplify_then,
+      simplify_iff,
+      simplify_tomorrow,
+      simplify_eventually,
+      simplify_always,
+      simplify_until,
+      simplify_release,
       [&](otherwise) -> formula { black_unreachable(); }
     );
+  }
+
+  formula simplify_negation(negation n, formula op) {
+    if(auto b = op.to<boolean>(); b)
+      return n.alphabet()->boolean(!b->value());
+    
+    return n;
+  }
+
+  formula simplify_and(conjunction c, formula l, formula r) {
+    alphabet &sigma = *c.alphabet();
+    optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+
+    if(!bl && !br)
+      return c;
+
+    if(bl && !br) {
+      return bl->value() ? r : sigma.bottom();
+    }
+    
+    if(!bl && br)
+      return br->value() ? l : sigma.bottom();
+
+    return sigma.boolean(bl->value() && br->value());
+  }
+
+  formula simplify_or(disjunction d, formula l, formula r) {
+    alphabet &sigma = *d.alphabet();
+    optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+
+    if(!bl && !br)
+      return d;
+
+    if(bl && !br)
+      return bl->value() ? sigma.top() : r;
+    
+    if(!bl && br)
+      return br->value() ? sigma.top() : l;
+      
+    return sigma.boolean(bl->value() || br->value());
+  }
+
+  formula simplify_then(then t, formula l, formula r) {
+    alphabet &sigma = *t.alphabet();
+    optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+
+    if(!bl && !br)
+      return t;
+
+    if(bl && !br)
+      return bl->value() ? r : sigma.top();
+    
+    if(!bl && br)
+      return br->value() ? sigma.top() : sigma.bottom();
+
+    return sigma.boolean(!bl->value() || br->value());
+  }
+
+  formula simplify_iff(iff f, formula l, formula r) {
+    alphabet &sigma = *f.alphabet();
+    optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+
+    if(!bl && !br)
+      return f;
+
+    if(bl && !br)
+      return bl->value() ? r : !r;
+    
+    if(!bl && br)
+      return br->value() ? l : !l;
+
+    return sigma.boolean(bl->value() == br->value());
+  }
+
+  formula simplify_tomorrow(tomorrow x, formula op) { 
+    if(op.is<boolean>())
+      return op;
+
+    return x;
+  }
+
+  formula simplify_eventually(eventually e, formula op) { 
+    if(op.is<boolean>())
+      return op;
+
+    return e;
+  }
+
+  formula simplify_always(always g, formula op) { 
+    if(op.is<boolean>())
+      return op;
+
+    return g;
+  }
+
+  formula simplify_until(until u, formula l, formula r) {
+    optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+
+    if(!bl && !br)
+      return u;
+
+    if(bl && !br)
+      return bl->value() ? F(r) : r;
+    
+    return *br;
+  }
+
+  formula simplify_release(release s, formula l, formula r) {
+    optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+
+    if(!bl && !br)
+      return s;
+
+    if(bl && !br)
+      return bl->value() ? r : G(r);
+
+    return *br;
   }
 }

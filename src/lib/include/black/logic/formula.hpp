@@ -325,6 +325,18 @@ namespace black::internal
 
   formula simplify_deep(formula f);
 
+  // type-specific versions of simplify()
+  formula simplify_negation(negation n, formula op);
+  formula simplify_and(conjunction c, formula l, formula r);
+  formula simplify_or(disjunction c, formula l, formula r);
+  formula simplify_then(then c, formula l, formula r);
+  formula simplify_iff(iff c, formula l, formula r);
+  formula simplify_tomorrow(tomorrow n, formula op);
+  formula simplify_eventually(eventually n, formula op);
+  formula simplify_always(always n, formula op);
+  formula simplify_until(until c, formula l, formula r);
+  formula simplify_release(release c, formula l, formula r);
+
   // true if there is any true/false constant in the formula
   bool has_constants(formula f);
 }
