@@ -28,6 +28,12 @@ option(
 set(BLACK_TESTS_SAT_BACKEND "mathsat" CACHE STRING "SAT backend used in tests")
 
 #
+# Past formulas generator
+#
+add_executable(past_generator past_generator.cpp)
+target_link_library_with_global_ctors(past_generator PRIVATE black)
+
+#
 # Unit testing with Catch2
 #
 set(
