@@ -52,6 +52,7 @@ set (
    src/sat/sat.cpp
    src/sat/cnf.cpp
    src/sat/backends/mathsat.cpp
+   src/sat/backends/glucose.cpp
    src/solver/solver.cpp
    )
    
@@ -85,7 +86,7 @@ set (
 #
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PRIVATE MathSAT fmt)
+target_link_libraries(black PRIVATE MathSAT glucose fmt)
 target_link_libraries(black PUBLIC tsl::hopscotch_map)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
