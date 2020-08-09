@@ -25,5 +25,20 @@
 
 namespace black::sat::backends 
 {
+  class glucose : public ::black::sat::solver
+  {
+  public:
+    glucose();
+    virtual ~glucose();
 
+    virtual void assert_formula(formula f);
+    virtual bool is_sat(std::vector<formula> const&assumptions);
+    //virtual bool is_sat(formula assumption);
+    virtual bool is_sat();
+    virtual void clear();
+
+  private:
+    struct _glucose_t;
+    std::unique_ptr<_glucose_t> _data;
+  };
 }

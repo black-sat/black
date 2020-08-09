@@ -21,7 +21,70 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace black::sat::backends 
+#include <black/sat/backends/glucose.hpp>
+#include <black/sat/cnf.hpp>
+
+#include <simp/SimpSolver.h>
+#include <tsl/hopscotch_map.h>
+
+BLACK_REGISTER_SAT_BACKEND(glucose)
+
+namespace black::sat::backends
 {
-  
+
+  // TODO: generalize with the same function in cnf.cpp
+  inline atom fresh(formula f) {
+    if(f.is<atom>())
+      return *f.to<atom>();
+    return f.alphabet()->var(f);
+  }
+
+  struct glucose::_glucose_t {
+    Glucose::SimpSolver solver;
+    tsl::hopscotch_map<atom, Glucose::Var> vars;
+
+    Glucose::Var var(atom a) {
+      if(auto it = vars.find(a); it != vars.end())
+        return it->second;
+      
+      Glucose::Var v = solver.newVar();
+      vars.insert({a, v});
+      return v;
+    }
+  };
+
+  glucose::glucose() : _data{std::make_unique<_glucose_t>()} { 
+    _data->solver.verbosity = -1;
+  }
+
+  glucose::~glucose() { }
+
+  void glucose::assert_formula(formula f) {
+    cnf c = to_cnf(f);
+    for(clause cls : c.clauses) {
+      Glucose::vec<Glucose::Lit> lits;
+      for(literal lit : cls.literals) {
+        lits.push(Glucose::mkLit(_data->var(lit.atom), lit.sign));
+      }
+      _data->solver.addClause(lits);
+    }
+  }
+
+  bool glucose::is_sat(std::vector<formula> const& assumptions) {
+    Glucose::vec<Glucose::Lit> vars;
+    for(formula f : assumptions) {
+      assert_formula(iff(fresh(f), f));
+      vars.push(Glucose::mkLit(_data->var(fresh(f)), true));
+    }
+
+    return _data->solver.solve(vars);
+  }
+
+  bool glucose::is_sat() {
+    return _data->solver.solve();
+  }
+
+  void glucose::clear() {
+    _data = std::make_unique<_glucose_t>();
+  }
 }

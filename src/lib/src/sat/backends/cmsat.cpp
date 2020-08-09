@@ -67,9 +67,7 @@ namespace black::sat::backends
       int32_t last_var = _data->last_var;
       
       for(literal lit : cls.literals) {
-        lits.push_back(
-          CMSat::Lit{static_cast<uint32_t>(_data->var(lit.atom)), !lit.sign}
-        );
+        lits.push_back(CMSat::Lit{_data->var(lit.atom), !lit.sign});
       }
       
       size_t new_vars = static_cast<size_t>(_data->last_var - last_var);
