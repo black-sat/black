@@ -30,6 +30,8 @@
 
 using namespace black;
 
+static alphabet sigma;
+
 formula once_chain(int, int);
 formula equals(int);
 formula digit(int, int);
@@ -47,15 +49,26 @@ int main(int argc, char **argv) {
   int N,i;
 
   if (argc != 3) {
-    std::cerr << "Usage: past_generator <N> <i>\n"
-              << "\tN,i : int numbers; N must be even\n";
-    return 1;
+    std::cerr
+      << "Generator for parametrized properties of the form:\n"
+      << "\t! F( P((c = N/2) /\\ P((c = N/2+1) /\\ ... P(c = N/2+i) ...)) )"
+      << "\n\nUsage: past_generator <N> <i>\n"
+      << "\tN,i : int numbers, N must be even\n";
+    exit(1);
   }
 
-  N = atoi(argv[1]);
-  i = atoi(argv[2]);
+  try {
+    N = std::stoi(argv[1]);
+    i = std::stoi(argv[2]);
+  } catch (const std::invalid_argument& e) {
+    std::cerr << "Invalid argument: " << e.what() << "\n";
+    exit(1);
+  }
 
-  black_assert(N%2 == 0);
+  if (N % 2) {
+    std::cerr << "First parameter (N) must be even.";
+    exit(1);
+  }
 
   formula f = ! F( once_chain(N, i) );
 
@@ -95,7 +108,6 @@ formula equals(int num) {
 
 // Produces the single 'if and only if' for the i-th digit
 formula digit(int i, int num) {
-  alphabet sigma;
   return iff(sigma.var("c" + std::to_string(i)),
              (num % 2) ? sigma.top() : sigma.bottom());
 }
