@@ -34,8 +34,6 @@ formula once_chain(int, int);
 formula equals(int);
 formula digit(int, int);
 
-alphabet sigma;
-
 /* This aim to produce the set of parametrized properties of the form:
  *   ! F( P((c = N/2) /\ P((c = N/2+1) /\ ... P(c = N/2+i) ...)) )
  * proposed in
@@ -84,7 +82,7 @@ formula once_chain(int N, int i) {
  *   (c2 <-> True) /\ (c1 <-> False) /\ (c0 <-> False)
  */
 formula equals(int num) {
-  int l = floor(log2(num));
+  int l = (int)floor(log2(num));
   formula f = digit(0, num);
 
   for (int i = 1; i <= l; i++) {
@@ -97,6 +95,7 @@ formula equals(int num) {
 
 // Produces the single 'if and only if' for the i-th digit
 formula digit(int i, int num) {
+  alphabet sigma;
   return iff(sigma.var("c" + std::to_string(i)),
              (num % 2) ? sigma.top() : sigma.bottom());
 }
