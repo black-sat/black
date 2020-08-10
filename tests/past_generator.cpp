@@ -26,48 +26,77 @@
 #include <black/logic/parser.hpp>
 
 #include <iostream>
-#include <fstream>
 #include <cmath>
 
 using namespace black;
 
-formula digit(alphabet &sigma, int i, int num) {
-  return iff(sigma.var("c" + std::to_string(i)),
-             (num % 2) ? sigma.top() : sigma.bottom());
-}
+formula once_chain(int, int);
+formula equals(int);
+formula digit(int, int);
 
-formula equals(alphabet &sigma, int k) {
-  int l = (int)floor(log2(k)) + 1;
-  formula f = digit(sigma, 0, k);
+alphabet sigma;
 
-  for (int i=1; i<l; i++) {
-    k = std::div(k,2).quot;
-    f = f && digit(sigma, i, k);
+/* This aim to produce the set of parametrized properties of the form:
+ *   ! F( P((c = N/2) /\ P((c = N/2+1) /\ ... P(c = N/2+i) ...)) )
+ * proposed in
+ *   Cimatti, Alessandro, Marco Roveri, e Daniel Sheridan.
+ *   «Bounded Verification of Past LTL». In Formal Methods in Computer-Aided
+ *   Design, a cura di Alan J. Hu e Andrew K. Martin, 245–59. Lecture Notes
+ *   in Computer Science. Berlin, Heidelberg: Springer, 2004.
+ *   https://doi.org/10.1007/978-3-540-30494-4_18.
+ */
+int main(int argc, char **argv) {
+  int N,i;
+
+  if (argc != 3) {
+    std::cerr << "Usage: past_generator <N> <i>\n"
+              << "\tN,i : int numbers; N must be even\n";
+    return 1;
   }
 
-  return f;
-}
+  N = atoi(argv[1]);
+  i = atoi(argv[2]);
 
-formula once_chain(alphabet &sigma, int n, int i) {
-  formula f = P( equals(sigma, n/2+i) );
+  black_assert(N%2 == 0);
 
-  for (int j=i-1; j>=0; j--) {
-    f = P( equals(sigma, n/2+j) && f );
-  }
-
-  return f;
-}
-
-int main() { // int argc, char **argv
-  int i=20,n=32768;
-  alphabet sigma;
-
-  black_assert(n%2 == 0);
-
-  formula f = ! F( once_chain(sigma, n, i) );
+  formula f = ! F( once_chain(N, i) );
 
   std::cout << to_string(f);
 
   return 0;
 }
 
+/* Produces the chain of nested once operators:
+ *   P((c = N/2) /\ P((c = N/2+1) /\ ... P(c = N/2+i) ...))
+ */
+formula once_chain(int N, int i) {
+  formula f = P( equals(N/2+i) );
+
+  for (int j=i-1; j>=0; j--) f = P( equals(N/2+j) && f );
+
+  return f;
+}
+
+/* Produces the single equality 'c = N/2+i'. Where 'num' is the specific N/2+i.
+ * This is done producing a conjunction with each digit of the binary
+ * representation of 'num'.
+ * That is, if 'num' is '100', then to express the equality we produce instead:
+ *   (c2 <-> True) /\ (c1 <-> False) /\ (c0 <-> False)
+ */
+formula equals(int num) {
+  int l = floor(log2(num));
+  formula f = digit(0, num);
+
+  for (int i = 1; i <= l; i++) {
+    num = std::div(num, 2).quot;
+    f = digit(i, num) && f;
+  }
+
+  return f;
+}
+
+// Produces the single 'if and only if' for the i-th digit
+formula digit(int i, int num) {
+  return iff(sigma.var("c" + std::to_string(i)),
+             (num % 2) ? sigma.top() : sigma.bottom());
+}
