@@ -325,6 +325,12 @@ namespace black::internal
 
   // true if there is any true/false constant in the formula
   bool has_constants(formula f);
+
+  //
+  // Matchers that do not correspond to concrete formula types
+  //
+  struct big_and;
+  struct big_or;
 }
 
 // Names exported from the `black` namespace
@@ -340,6 +346,9 @@ namespace black {
   using internal::simplify;
   using internal::simplify_deep;
   using internal::has_constants;
+
+  using internal::big_and;
+  using internal::big_or;
 }
 
 #include <black/internal/formula/impl.hpp>

@@ -125,22 +125,21 @@ namespace black::sat::backends
       [this](negation n) {
         return msat_make_not(env, to_mathsat(n.operand()));
       },
-      [this](conjunction c) {
+      [this](big_and c) {
         msat_term acc = msat_make_true(env);
 
-        formula next = c;
-        std::optional<conjunction> cnext{c};
-        do {
-          formula left = cnext->left();
-          next = cnext->right();
-          acc = msat_make_and(env, acc, to_mathsat(left));
-        } while((cnext = next.to<conjunction>()));
+        for(formula op : c.operands())
+          acc = msat_make_and(env, acc, to_mathsat(op));
 
-        return msat_make_and(env, acc, to_mathsat(next));
+        return acc;
       },
-      [this](disjunction d) {
-        return msat_make_or(env, 
-          to_mathsat(d.left()), to_mathsat(d.right()));
+      [this](big_or c) {
+        msat_term acc = msat_make_false(env);
+
+        for(formula op : c.operands())
+          acc = msat_make_or(env, acc, to_mathsat(op));
+
+        return acc;
       },
       [this](implication t) {
         return

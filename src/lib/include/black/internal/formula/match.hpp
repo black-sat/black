@@ -24,6 +24,7 @@
 #ifndef BLACK_LOGIC_MATCH_HPP_
 #define BLACK_LOGIC_MATCH_HPP_
 
+#include <vector>
 #include <functional>
 
 #ifndef BLACK_LOGIC_FORMULA_HPP_
@@ -275,6 +276,45 @@ namespace std {
 
   #undef declare_common_type
   #undef declare_formula_ct
+
+}
+
+namespace black::internal
+{
+  //
+  // Matchers that do not correspond to concrete formula types
+  //
+  template<typename Formula>
+  struct associative_matcher 
+  {
+    associative_matcher(Formula c) { flatten(c); }
+
+    std::vector<formula> const&operands() const { return _operands; }
+
+  private:
+    std::vector<formula> _operands;
+
+    void flatten(Formula c) {
+      if(c.left().template is<Formula>())
+        flatten(*c.left().template to<Formula>());
+      else
+        _operands.push_back(c.left());
+
+      if(c.right().template is<Formula>())
+        flatten(*c.right().template to<Formula>());
+      else
+        _operands.push_back(c.right());
+    }
+  };
+
+  struct big_and : associative_matcher<conjunction> {
+    using associative_matcher<conjunction>::associative_matcher;
+  };
+
+  struct big_or : associative_matcher<disjunction> {
+    using associative_matcher<disjunction>::associative_matcher;
+  };
+
 }
 
 #endif // BLACK_LOGIC_MATCH_HPP_

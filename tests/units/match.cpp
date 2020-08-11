@@ -21,7 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <catch2/catch.hpp>
+
 #include <black/logic/formula.hpp>
+#include <black/logic/alphabet.hpp>
+#include <black/logic/parser.hpp>
 
 #include <type_traits>
 
@@ -320,3 +324,28 @@ static_assert(check<triggered, until,        binary>);
 static_assert(check<triggered, release,      binary>);
 static_assert(check<triggered, since,        binary>);
 static_assert(check<triggered, triggered,    triggered>);
+
+
+TEST_CASE("Non-formula matchers") 
+{
+  alphabet sigma;
+
+  atom p1 = sigma.var("p1");
+  atom p2 = sigma.var("p2");
+  atom p3 = sigma.var("p3");
+  atom p4 = sigma.var("p4");
+  atom p5 = sigma.var("p5");
+  formula f = (p1 && p2) && (p3 && (p4 && p5));
+
+  std::string result;
+  f.match(
+    [&](big_and a) {
+      for(auto op : a.operands()) {
+        result += to_string(op);
+      }
+    },
+    [](otherwise) { }
+  );
+
+  REQUIRE(result == "p1p2p3p4p5");
+}
