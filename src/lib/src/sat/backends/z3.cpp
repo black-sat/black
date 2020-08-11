@@ -152,25 +152,25 @@ namespace black::sat::backends
       [this](negation, formula n) {
         return Z3_mk_not(context, to_z3(n));
       },
-      [this](conjunction c) {
+      [this](big_and c) {
         std::vector<Z3_ast> args;
-
-        formula next = c;
-        std::optional<conjunction> cnext{c};
-        do {
-          formula left = cnext->left();
-          next = cnext->right();
-          args.push_back(to_z3(left));
-        } while((cnext = next.to<conjunction>()));
-        args.push_back(to_z3(next));
-
+        for(formula op : c.operands())
+          args.push_back(to_z3(op));
+        
         black_assert(args.size() <= std::numeric_limits<unsigned int>::max());
+
         return Z3_mk_and(context, 
           static_cast<unsigned int>(args.size()), args.data());
       },
-      [this](disjunction, formula left, formula right) {
-        Z3_ast args[] = { to_z3(left), to_z3(right) };
-        return Z3_mk_or(context, 2, args);
+      [this](big_or c) {
+        std::vector<Z3_ast> args;
+        for(formula op : c.operands())
+          args.push_back(to_z3(op));
+        
+        black_assert(args.size() <= std::numeric_limits<unsigned int>::max());
+
+        return Z3_mk_or(context, 
+          static_cast<unsigned int>(args.size()), args.data());
       },
       [this](implication, formula left, formula right) {
         return Z3_mk_implies(context, to_z3(left), to_z3(right));
@@ -178,7 +178,7 @@ namespace black::sat::backends
       [this](iff, formula left, formula right) {
         return Z3_mk_iff(context, to_z3(left), to_z3(right));
       },
-      [](otherwise) -> Z3_ast {
+      [](temporal) -> Z3_ast {
         black_unreachable();
       }
     );

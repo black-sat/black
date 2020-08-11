@@ -96,7 +96,7 @@ namespace black::internal
       "Y", // yesterday
       "G", // always
       "F", // eventually
-      "P", // past
+      "P", // once
       "H", // historically
     };
 
