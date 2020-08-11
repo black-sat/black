@@ -178,7 +178,7 @@ namespace black::sat::backends
       [this](iff, formula left, formula right) {
         return Z3_mk_iff(context, to_z3(left), to_z3(right));
       },
-      [](otherwise) -> Z3_ast {
+      [](temporal) -> Z3_ast {
         black_unreachable();
       }
     );

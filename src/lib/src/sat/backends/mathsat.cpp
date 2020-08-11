@@ -152,7 +152,7 @@ namespace black::sat::backends
         return msat_make_iff(env, 
           to_mathsat(i.left()), to_mathsat(i.right()));
       },
-      [](otherwise) -> msat_term {
+      [](temporal) -> msat_term {
         black_unreachable();
       }
     );

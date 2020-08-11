@@ -70,7 +70,7 @@ namespace black::internal {
       simplify_always,
       simplify_until,
       simplify_release,
-      [&](otherwise) -> formula { black_unreachable(); }
+      [&](past) -> formula { /* TODO */ black_unreachable(); }
     );
   }
 

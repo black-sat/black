@@ -42,7 +42,7 @@ namespace black::internal {
     yesterday,
     always,
     eventually,
-    past,
+    once,
     historically,
     // binary formulas
     conjunction,
@@ -180,7 +180,7 @@ namespace black::internal
       yesterday,
       always,
       eventually,
-      past,
+      once,
       historically
     };
 
@@ -250,7 +250,7 @@ namespace black::internal
   struct yesterday;
   struct always;
   struct eventually;
-  struct past;
+  struct once;
   struct historically;
 
   // Binary operators. Same public interface as struct `binary`
@@ -331,6 +331,10 @@ namespace black::internal
   //
   struct big_and;
   struct big_or;
+  struct propositional;
+  struct temporal;
+  struct future;
+  struct past;
 }
 
 // Names exported from the `black` namespace
@@ -349,6 +353,10 @@ namespace black {
 
   using internal::big_and;
   using internal::big_or;
+  using internal::propositional;
+  using internal::temporal;
+  using internal::future;
+  using internal::past;
 }
 
 #include <black/internal/formula/impl.hpp>
