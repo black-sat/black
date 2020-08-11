@@ -273,10 +273,7 @@ namespace black::internal
             && (to_ground_xnf(left,k,update) ||
                 _alpha.var(std::pair(formula{X(r)},k)));
       },
-      // TODO: past operators
-      [&](otherwise) -> formula {
-        black_unreachable();
-      }
+      [&](past) -> formula { /* TODO */ black_unreachable(); }
     );
   }
 
@@ -291,10 +288,10 @@ namespace black::internal
         return unary::type::eventually;
       case unary::type::eventually:
         return unary::type::always;
-      case unary::type::past:
+      case unary::type::once:
         return unary::type::historically;
       case unary::type::historically:
-        return unary::type::past;
+        return unary::type::once;
     }
     black_unreachable();
   }

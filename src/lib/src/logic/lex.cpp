@@ -111,7 +111,7 @@ namespace black::internal
       {"Y",     token{unary::type::yesterday}},
       {"F",     token{unary::type::eventually}},
       {"G",     token{unary::type::always}},
-      {"P",     token{unary::type::past}},
+      {"P",     token{unary::type::once}},
       {"H",     token{unary::type::historically}},
       {"AND",   token{binary::type::conjunction}},
       {"OR",    token{binary::type::disjunction}},

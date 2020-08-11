@@ -158,7 +158,7 @@ TEST_CASE("Handles")
         [](yesterday)    { return "yesterday"s;    },
         [](always)       { return "always"s;    },
         [](eventually)   { return "eventually"s;    },
-        [](past)         { return "past"s;    },
+        [](once)         { return "once"s;    },
         [](historically) { return "historically"s;    }
       );
     };
