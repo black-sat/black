@@ -26,6 +26,9 @@
 #include <black/solver/solver.hpp>
 #include <black/sat/sat.hpp>
 
+#include <fmt/format.h>
+#include <black/logic/parser.hpp>
+
 namespace black::internal
 {
   /*
@@ -40,7 +43,9 @@ namespace black::internal
     for(int k=0; k <= k_max; ++k)
     {
       // Generating the k-unraveling
-      sat->assert_formula(k_unraveling(k));
+      formula unrav = k_unraveling(k);
+      fmt::print("{}-unrav: {}\n", k, to_string(unrav));
+      sat->assert_formula(unrav);
       // if 'encoding' is unsat, then stop with UNSAT
       if(!sat->is_sat())
         return false;
@@ -48,7 +53,15 @@ namespace black::internal
       // else, continue to check EMPTY and LOOP
       // Generating EMPTY and LOOP
       // if the encoding is SAT with the assumption, then stop with SAT
-      if(sat->is_sat(empty_and_loop(k)))
+      formula e = k_empty(k);
+      fmt::print("{}-empty: {}\n", k, to_string(e));
+      if(sat->is_sat(e)) {
+        fmt::print("{0}-unrav with {0}-empty is SAT.\n", k);
+        return true;
+      }
+
+      formula l = k_loop(k);
+      if(sat->is_sat(l))
         return true;
 
       // else, generate the PRUNE
