@@ -257,7 +257,7 @@ namespace black::internal
   declare_operator(yesterday,    unary)
   declare_operator(always,       unary)
   declare_operator(eventually,   unary)
-  declare_operator(past,         unary)
+  declare_operator(once,         unary)
   declare_operator(historically, unary)
   declare_operator(conjunction, binary)
   declare_operator(disjunction, binary)
@@ -303,7 +303,7 @@ namespace black::internal
   inline auto Y(formula f) { return yesterday(f);    }
   inline auto F(formula f) { return eventually(f);   }
   inline auto G(formula f) { return always(f);       }
-  inline auto P(formula f) { return past(f);         }
+  inline auto P(formula f) { return once(f);         }
   inline auto H(formula f) { return historically(f); }
 
   inline auto U(formula f1, formula f2) { return until(f1,f2);     }
