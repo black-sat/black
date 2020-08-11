@@ -39,7 +39,7 @@ namespace black::internal {
         [](triggered, formula left, formula right) {
           return sub_past(!S(!left, !right));
         },
-        [](past p, formula op) { return sub_past(S(p.alphabet()->top(), op)); },
+        [](once p, formula op) { return sub_past(S(p.alphabet()->top(), op)); },
         [](historically, formula op) { return sub_past(!P(!op)); },
         [](boolean b) { return b; },
         [](atom a) { return a; },
