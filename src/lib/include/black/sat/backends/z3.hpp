@@ -34,9 +34,8 @@ namespace black::sat::backends
     ~z3();
 
     virtual void assert_formula(formula f);
-    virtual bool is_sat(std::vector<formula> const&assumptions);
-    virtual bool is_sat(formula assumption);
     virtual bool is_sat();
+    virtual bool is_sat(formula assumption);
     virtual void clear();
 
   private:

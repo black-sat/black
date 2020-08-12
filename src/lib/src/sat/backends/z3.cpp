@@ -94,26 +94,6 @@ namespace black::sat::backends
     return (res == Z3_L_TRUE);
   }
 
-  bool z3::is_sat(std::vector<formula> const &assumptions) {
-    std::vector<Z3_ast> terms;
-
-    Z3_solver_push(_data->context, _data->solver);
-    for(formula f : assumptions) {
-      assert_formula(iff(fresh(f), f));
-      terms.push_back(_data->to_z3(fresh(f)));
-    }
-
-    Z3_lbool res =
-      Z3_solver_check_assumptions(
-        _data->context, _data->solver, 
-        static_cast<unsigned int>(terms.size()), terms.data()
-      );
-
-    Z3_solver_pop(_data->context, _data->solver, 1);
-
-    return (res == Z3_L_TRUE);
-  }
-
   bool z3::is_sat() { 
     Z3_lbool result = Z3_solver_check(_data->context, _data->solver);
 
