@@ -64,7 +64,13 @@ task:
     - ctest -R black
 
 task:
-  name: Fedora 32 (g++ 10)
+  matrix:
+    - name: Fedora 32 (with Z3 backend)
+      environment:
+        BACKEND: z3
+    - name: Fedora 32 (with CryptoMiniSAT backend)
+      environment:
+        BACKEND: cmsat
   container:
     dockerfile: docker/Dockerfile.fedora
     docker_arguments:
@@ -75,7 +81,7 @@ task:
     - ./download-mathsat.sh
   debug_build_script:
     - mkdir -p build && cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DBLACK_TESTS_SAT_BACKEND=z3 -DCODE_COVERAGE=ON ..
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DBLACK_TESTS_SAT_BACKEND=$BACKEND -DCODE_COVERAGE=ON ..
     - make
   test_script:
     - cd build 
@@ -83,19 +89,3 @@ task:
   coverage_script:
     - cd build
     - bash <(curl -s https://codecov.io/bash);
-
-task:
-  name: macOS (with CryptoMiniSAT backend)
-  osx_instance:
-    image: catalina-base
-  download_dependencies_script:
-    - brew install cmake gmp wget cryptominisat
-    - ./download-mathsat.sh
-  release_build_script:
-    - mkdir -p build && cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DBLACK_TESTS_SAT_BACKEND=cmsat ..
-    - make
-  test_script:
-    - cd build 
-    - ctest -R black
-  
