@@ -122,8 +122,8 @@ int interactive()
 
     black::formula f_ltl = black::remove_past(*f);
 
-    if (f_ltl != *f) io::message("Translated formula: {}", f_ltl);
-    io::message("Parsed formula (nnf): {}\n", black::to_nnf(f_ltl));
+    io::message("Parsed formula: {}\n", *f);
+    if (f_ltl != *f) io::message("Translated formula: {}\n", f_ltl);
 
     if(cli::bound)
       io::message("Solving (up to k={})...\n", *cli::bound);

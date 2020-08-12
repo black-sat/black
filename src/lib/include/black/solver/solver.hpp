@@ -33,12 +33,9 @@
 #include <unordered_set>
 #include <string>
 
+#include <tsl/hopscotch_map.h>
+
 namespace black::internal {
-
-  // Auxiliary functions
-
-  // Transformation in NNF
-  formula to_nnf(formula);
 
   // main solver class
   class solver 
@@ -100,6 +97,9 @@ namespace black::internal {
       // Generates the Next Normal Form of f
       formula to_ground_xnf(formula f, int k, bool update);
 
+      formula to_nnf(formula f);
+      formula to_nnf_inner(formula f);
+
       // X-requests from the formula's closure
       void add_xclosure(formula f);
   
@@ -116,6 +116,9 @@ namespace black::internal {
       // X-requests from the closure of the formula
       // TODO: specialize to std::unordered_set<tomorrow>
       std::vector<tomorrow> _xclosure;
+
+      // cache to memoize to_nnf() calls
+      tsl::hopscotch_map<formula, formula> _nnf_cache;
 
       // the name of the currently chosen sat backend
       std::string _sat_backend = "mathsat"; // sensible default
@@ -143,7 +146,6 @@ namespace black::internal {
 // Names exported to the user
 namespace black {
   using internal::solver;
-  using internal::to_nnf;
 }
 
 #endif // SOLVER_HPP
