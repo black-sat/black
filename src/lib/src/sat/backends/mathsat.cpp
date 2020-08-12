@@ -78,21 +78,6 @@ namespace black::sat::backends
     return (res == MSAT_SAT);
   }
 
-  bool mathsat::is_sat(std::vector<formula> const &assumptions) {
-    std::vector<msat_term> terms;
-
-    msat_push_backtrack_point(_data->env);
-    for(formula f : assumptions) {
-      assert_formula(f);
-    }
-
-    msat_result res = msat_solve(_data->env);
-
-    msat_pop_backtrack_point(_data->env);
-
-    return (res == MSAT_SAT);
-  }
-
   void mathsat::clear() {
     msat_reset_env(_data->env);
   }
