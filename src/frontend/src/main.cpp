@@ -119,7 +119,7 @@ int interactive()
     if(!f)
       continue;
 
-    io::message("Parsed formula (nnf): {}\n", black::to_nnf(*f));
+    io::message("Parsed formula: {}\n", *f);
     if(cli::bound)
       io::message("Solving (up to k={})...\n", *cli::bound);
     else
