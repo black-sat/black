@@ -77,14 +77,14 @@ namespace black::sat::backends
     }
   }
 
-  bool cmsat::is_sat(std::vector<formula> const &assumptions) { 
-    std::vector<CMSat::Lit> vars;
-    for(formula f : assumptions) {
-      assert_formula(iff(fresh(f), f));
-      vars.push_back(CMSat::Lit{_data->var(fresh(f)), false});
-    }
+  bool cmsat::is_sat(formula assumption) 
+  {
+    assert_formula(iff(fresh(assumption), assumption));
+    std::vector<CMSat::Lit> lits = {
+      CMSat::Lit{_data->var(fresh(assumption)), false}
+    };
 
-    CMSat::lbool ret = _data->solver.solve(&vars);
+    CMSat::lbool ret = _data->solver.solve(&lits);
     return ret == CMSat::l_True;
   }
 
