@@ -20,6 +20,8 @@ task:
         dockerfile: docker/Dockerfile.fedora
         docker_arguments:
           VERSION: 32
+        environment:
+          CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
     - name: Ubuntu 18.04 (g++ 8)
       container:
         dockerfile: docker/Dockerfile.ubuntu
@@ -35,16 +37,18 @@ task:
   download_dependencies_script:
     - ./download-mathsat.sh
   debug_build_script:
-    - mkdir -p build/debug && cd build/debug
-    - cmake -DCMAKE_BUILD_TYPE=Debug ../..
-    - make -j2
-  release_build_script:
-    - mkdir -p build/release && cd build/release
-    - cmake -DCMAKE_BUILD_TYPE=Release ../..
-    - make -j2
+    - mkdir build && cd build
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ..
+    - make
   test_script:
-    - cd build/release 
+    - cd build
     - ctest -R black
+  coverage_script:
+    - cd build
+    - if [ "$CODECOV_TOKEN" ]; then \
+        bash <(curl -s https://codecov.io/bash); \
+      fi
+
 
 task:
   name: macOS (Apple clang)
@@ -54,17 +58,12 @@ task:
     - brew install cmake gmp wget
     - ./download-mathsat.sh
   debug_build_script:
-    - mkdir -p build/debug && cd build/debug
-    - cmake -DCMAKE_BUILD_TYPE=Debug ../..
-    - make -j2
-  release_build_script:
-    - mkdir -p build/release && cd build/release
-    - cmake -DCMAKE_BUILD_TYPE=Release ../..
-    - make -j2
+    - mkdir -p build && cd build
+    - cmake -DCMAKE_BUILD_TYPE=Debug ..
+    - make
   test_script:
-    - cd build/release 
+    - cd build 
     - ctest -R black
-
 
 task:
   name: macOS (with Z3 SAT backend)
@@ -73,12 +72,12 @@ task:
   download_dependencies_script:
     - brew install cmake gmp wget z3
     - ./download-mathsat.sh
-  release_build_script:
-    - mkdir -p build/release && cd build/release
+  debug_build_script:
+    - mkdir -p build/debug && cd build/debug
     - cmake -DCMAKE_BUILD_TYPE=Release -DBLACK_TESTS_SAT_BACKEND=z3 ../..
-    - make -j2
+    - make
   test_script:
-    - cd build/release 
+    - cd build/debug 
     - ctest -R black
 
 task:
@@ -89,32 +88,10 @@ task:
     - brew install cmake gmp wget cryptominisat
     - ./download-mathsat.sh
   release_build_script:
-    - mkdir -p build/release && cd build/release
-    - cmake -DCMAKE_BUILD_TYPE=Release -DBLACK_TESTS_SAT_BACKEND=cmsat ../..
-    - make -j2
-  test_script:
-    - cd build/release 
-    - ctest -R black
-
-task:
-  name: Code coverage
-  container:
-    dockerfile: docker/Dockerfile.fedora
-    docker_arguments:
-      VERSION: 32
-  environment:
-    CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
-  download_dependencies_script:
-    - ./download-mathsat.sh
-  build_script:
     - mkdir -p build/debug && cd build/debug
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ../..
-    - make -j2
+    - cmake -DCMAKE_BUILD_TYPE=Release -DBLACK_TESTS_SAT_BACKEND=cmsat ../..
+    - make
   test_script:
     - cd build/debug 
     - ctest -R black
-  coverage_script:
-    - cd build/debug 
-    - bash <(curl -s https://codecov.io/bash)
-  
   
