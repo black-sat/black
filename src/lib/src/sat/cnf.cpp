@@ -24,11 +24,14 @@
 #include <black/sat/cnf.hpp>
 #include <black/logic/alphabet.hpp>
 
-#include <black/logic/parser.hpp>
+#include <tsl/hopscotch_set.h>
 
 namespace black::internal 
 {
-  formula tseitin(formula f, std::vector<clause> &clauses);
+  std::vector<clause> tseitin(formula f);
+  void tseitin(
+    formula f, std::vector<clause> &clauses, tsl::hopscotch_set<formula> &memo
+  );
 
   // TODO: disambiguate fresh variables
   inline atom fresh(formula f) {
@@ -39,11 +42,17 @@ namespace black::internal
   }
 
   cnf to_cnf(formula f) {
+    return tseitin(f);
+  }
+
+  std::vector<clause> tseitin(formula f) {
     std::vector<clause> result;
+    tsl::hopscotch_set<formula> memo;
     
-    formula simple = tseitin(f, result);
+    formula simple = simplify_deep(f);
     black_assert(simple.is<boolean>() || !has_constants(simple));
 
+    tseitin(simple, result, memo);
     if(auto b = simple.to<boolean>(); b) {
       if(b->value())
         return result;
@@ -58,186 +67,139 @@ namespace black::internal
     return result;
   }
 
-  formula tseitin(formula f, std::vector<clause> &clauses) {
-    return f.match(
-      [](boolean b) -> formula { return b; },
-      [](atom a) -> formula { return a; },
+  void tseitin(
+    formula f, std::vector<clause> &clauses, tsl::hopscotch_set<formula> &memo
+  ) {
+    if(memo.find(f) != memo.end())
+      return;
+
+    memo.insert(f);
+    f.match(
+      [](boolean) { },
+      [](atom)  {  },
       [&](conjunction, formula l, formula r) 
       {
-        formula sl = tseitin(l, clauses);
-        formula sr = tseitin(r, clauses);
+        tseitin(l, clauses, memo);
+        tseitin(r, clauses, memo);
 
-        formula s = simplify(sl && sr);
-
-        if(!s.is<boolean>()) {
-          // clausal form for conjunctions:
-          //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ r) ∧ (!l ∨ !r ∨ f)
-          clauses.insert(end(clauses), {
-            {{false, fresh(s)}, {true, fresh(sl)}},
-            {{false, fresh(s)}, {true, fresh(sr)}},
-            {{false, fresh(sl)}, {false, fresh(sr)}, {true, fresh(s)}}
-          });
-        }
-
-        return s;
-        
+        // clausal form for conjunctions:
+        //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ r) ∧ (!l ∨ !r ∨ f)
+        clauses.insert(end(clauses), {
+          {{false, fresh(f)}, {true, fresh(l)}},
+          {{false, fresh(f)}, {true, fresh(r)}},
+          {{false, fresh(l)}, {false, fresh(r)}, {true, fresh(f)}}
+        });
       },
       [&](disjunction, formula l, formula r) 
       {
-        formula sl = tseitin(l, clauses);
-        formula sr = tseitin(r, clauses);
+        tseitin(l, clauses, memo);
+        tseitin(r, clauses, memo);
 
-        formula s = simplify(sl || sr);
-
-        if(!s.is<boolean>()) {
-          // clausal form for disjunctions:
-          //   f <-> (l ∨ r) == (f ∨ !l) ∧ (f ∨ !r) ∧ (l ∨ r ∨ !f)
-          clauses.insert(end(clauses), {
-            {{true, fresh(s)}, {false, fresh(sl)}},
-            {{true, fresh(s)}, {false, fresh(sr)}},
-            {{true, fresh(sl)}, {true, fresh(sr)}, {false, fresh(s)}}
-          });
-        }
-
-        return s;
+        // clausal form for disjunctions:
+        //   f <-> (l ∨ r) == (f ∨ !l) ∧ (f ∨ !r) ∧ (l ∨ r ∨ !f)
+        clauses.insert(end(clauses), {
+          {{true, fresh(f)}, {false, fresh(l)}},
+          {{true, fresh(f)}, {false, fresh(r)}},
+          {{true, fresh(l)}, {true, fresh(r)}, {false, fresh(f)}}
+        });
       },
       [&](implication, formula l, formula r) 
       {
-        formula sl = tseitin(l, clauses);
-        formula sr = tseitin(r, clauses);
+        tseitin(l, clauses, memo);
+        tseitin(r, clauses, memo);
 
-        formula s = simplify(implies(sl, sr));
-
-        if(!s.is<boolean>()) {
-          // clausal form for double implications:
-          //    f <-> (l -> r) == (!f ∨ !l ∨ r) ∧ (f ∨ l) ∧ (f ∨ !r)
-          clauses.insert(end(clauses), {
-            {{false, fresh(s)}, {false, fresh(sl)}, {true, fresh(sr)}},
-            {{true,  fresh(s)}, {true,  fresh(sl)}},
-            {{true,  fresh(s)}, {false, fresh(sr)}}
-          });
-        }
-
-        return s;        
+        // clausal form for double implications:
+        //    f <-> (l -> r) == (!f ∨ !l ∨ r) ∧ (f ∨ l) ∧ (f ∨ !r)
+        clauses.insert(end(clauses), {
+          {{false, fresh(f)}, {false, fresh(l)}, {true, fresh(r)}},
+          {{true,  fresh(f)}, {true,  fresh(l)}},
+          {{true,  fresh(f)}, {false, fresh(r)}}
+        });     
       },
       [&](iff, formula l, formula r) 
       {
-        formula sl = tseitin(l, clauses);
-        formula sr = tseitin(r, clauses);
+        tseitin(l, clauses, memo);
+        tseitin(r, clauses, memo);
 
-        formula s = simplify(iff(sl, sr));
-
-        if(!s.is<boolean>()) {
-          // clausal form for double implications:
-          //    f <-> (l <-> r) == (!f ∨ !l ∨  r) ∧ (!f ∨ l ∨ !r) ∧
-          //                       ( f ∨ !l ∨ !r) ∧ ( f ∨ l ∨  r)
-          clauses.insert(end(clauses), {
-            {{false, fresh(s)}, {false, fresh(sl)}, {true,  fresh(sr)}},
-            {{false, fresh(s)}, {true,  fresh(sl)}, {false, fresh(sr)}},
-            {{true,  fresh(s)}, {false, fresh(sl)}, {false, fresh(sr)}},
-            {{true,  fresh(s)}, {true,  fresh(sl)}, {true,  fresh(sr)}}
-          });
-        }
-
-        return s;
+        // clausal form for double implications:
+        //    f <-> (l <-> r) == (!f ∨ !l ∨  r) ∧ (!f ∨ l ∨ !r) ∧
+        //                       ( f ∨ !l ∨ !r) ∧ ( f ∨ l ∨  r)
+        clauses.insert(end(clauses), {
+          {{false, fresh(f)}, {false, fresh(l)}, {true,  fresh(r)}},
+          {{false, fresh(f)}, {true,  fresh(l)}, {false, fresh(r)}},
+          {{true,  fresh(f)}, {false, fresh(l)}, {false, fresh(r)}},
+          {{true,  fresh(f)}, {true,  fresh(l)}, {true,  fresh(r)}}
+        });
       },
-      [&](negation n, formula arg) {
+      [&](negation, formula arg) {
         return arg.match(
-          [&](negation, formula op) {
-            return tseitin(op, clauses);
-          },
-          [&](conjunction, formula l, formula r) {
-            formula sl = tseitin(l, clauses);
-            formula sr = tseitin(r, clauses);
-
-            formula s = simplify(!simplify(sl && sr));
-
-            if(!s.is<boolean>()) {
-              // clausal form for negated conjunction:
-              //   f <-> !(l ∧ r) == (!f ∨ !l ∨ !r) ∧ (f ∨ l) ∧ (f ∨ r)
-              clauses.insert(end(clauses), {
-                {{false, fresh(s)}, {false, fresh(sl)}, {false, fresh(sr)}},
-                {{true,  fresh(s)}, {true, fresh(sl)}},
-                {{true,  fresh(s)}, {true, fresh(sr)}},
-              });
-            }
-
-            return s;
-          },
-          [&](disjunction, formula l, formula r) {
-            formula sl = tseitin(l, clauses);
-            formula sr = tseitin(r, clauses);
-
-            formula s = simplify(!simplify(sl || sr));
-
-            if(!s.is<boolean>()) {
-              // clausal form for negated disjunction:
-              //   f <-> !(l ∨ r) == (f ∨ l ∨ r) ∧ (!f ∨ !l) ∧ (!f ∨ !r)
-              clauses.insert(end(clauses), {
-                {{true,  fresh(s)}, {true,  fresh(sl)}, {true, fresh(sr)}},
-                {{false, fresh(s)}, {false, fresh(sl)}},
-                {{false, fresh(s)}, {false, fresh(sr)}},
-              });
-            }
-
-            return s;
-          },
-          [&](implication, formula l, formula r) 
-          {
-            formula sl = tseitin(l, clauses);
-            formula sr = tseitin(r, clauses);
-
-            formula s = simplify(!simplify(implies(sl, sr)));
-
-            if(!s.is<boolean>()) {
-              // clausal form for negated implication:
-              //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ !r) ∧ (!l ∨ r ∨ f)
-              clauses.insert(end(clauses), {
-                {{false, fresh(s)}, {true, fresh(sl)}},
-                {{false, fresh(s)}, {false, fresh(sr)}},
-                {{false, fresh(sl)}, {true, fresh(sr)}, {true, fresh(s)}}
-              });
-            }
-
-            return s;
-          },
-          [&](iff, formula l, formula r) {
-            formula sl = tseitin(l, clauses);
-            formula sr = tseitin(r, clauses);
-
-            formula s = simplify(!simplify(iff(sl, sr)));
-
-            if(!s.is<boolean>()) {
-              // clausal form for negated double implication (xor):
-              //    f <-> !(l <-> r) == (!f ∨ !l ∨ !r) ∧ (!f ∨  l ∨ r) ∧
-              //                        (f  ∨  l ∨ !r) ∧ (f  ∨ !l ∨ r)
-              clauses.insert(end(clauses), {
-                {{false, fresh(s)}, {false, fresh(sl)}, {false, fresh(sr)}},
-                {{false, fresh(s)}, {true,  fresh(sl)}, {true,  fresh(sr)}},
-                {{true,  fresh(s)}, {true,  fresh(sl)}, {false, fresh(sr)}},
-                {{true,  fresh(s)}, {false, fresh(sl)}, {true,  fresh(sr)}}
-              });
-            }
-
-            return s;
-          },
-          [&](boolean b) -> formula {
-            return simplify(!b);
-          },
-          [&](atom a) -> formula {
+          [&](boolean) { },
+          [&](atom a) {
             // clausal form for negations:
             // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
             clauses.insert(end(clauses), {
-              {{false, fresh(n)}, {false, fresh(a)}},
-              {{true,  fresh(n)}, {true,  fresh(a)}}
+              {{false, fresh(f)}, {false, fresh(a)}},
+              {{true,  fresh(f)}, {true,  fresh(a)}}
             });
-
-            return n;
           },
-          [](temporal) -> formula { black_unreachable(); }
+          [&](negation, formula op) {
+            tseitin(op, clauses, memo);
+          },
+          [&](conjunction, formula l, formula r) {
+            tseitin(l, clauses, memo);
+            tseitin(r, clauses, memo);
+
+            // clausal form for negated conjunction:
+            //   f <-> !(l ∧ r) == (!f ∨ !l ∨ !r) ∧ (f ∨ l) ∧ (f ∨ r)
+            clauses.insert(end(clauses), {
+              {{false, fresh(f)}, {false, fresh(l)}, {false, fresh(r)}},
+              {{true,  fresh(f)}, {true, fresh(l)}},
+              {{true,  fresh(f)}, {true, fresh(r)}},
+            });
+          },
+          [&](disjunction, formula l, formula r) {
+            tseitin(l, clauses, memo);
+            tseitin(r, clauses, memo);
+
+            // clausal form for negated disjunction:
+            //   f <-> !(l ∨ r) == (f ∨ l ∨ r) ∧ (!f ∨ !l) ∧ (!f ∨ !r)
+            clauses.insert(end(clauses), {
+              {{true,  fresh(f)}, {true,  fresh(l)}, {true, fresh(r)}},
+              {{false, fresh(f)}, {false, fresh(l)}},
+              {{false, fresh(f)}, {false, fresh(r)}},
+            });
+          },
+          [&](implication, formula l, formula r) 
+          {
+            tseitin(l, clauses, memo);
+            tseitin(r, clauses, memo);
+
+            // clausal form for negated implication:
+            //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ !r) ∧ (!l ∨ r ∨ f)
+            clauses.insert(end(clauses), {
+              {{false, fresh(f)}, {true, fresh(l)}},
+              {{false, fresh(f)}, {false, fresh(r)}},
+              {{false, fresh(l)}, {true, fresh(r)}, {true, fresh(f)}}
+            });
+          },
+          [&](iff, formula l, formula r) {
+            tseitin(l, clauses, memo);
+            tseitin(r, clauses, memo);
+
+            // clausal form for negated double implication (xor):
+            //    f <-> !(l <-> r) == (!f ∨ !l ∨ !r) ∧ (!f ∨  l ∨ r) ∧
+            //                        (f  ∨  l ∨ !r) ∧ (f  ∨ !l ∨ r)
+            clauses.insert(end(clauses), {
+              {{false, fresh(f)}, {false, fresh(l)}, {false, fresh(r)}},
+              {{false, fresh(f)}, {true,  fresh(l)}, {true,  fresh(r)}},
+              {{true,  fresh(f)}, {true,  fresh(l)}, {false, fresh(r)}},
+              {{true,  fresh(f)}, {false, fresh(l)}, {true,  fresh(r)}}
+            });
+          },
+          [](temporal) { black_unreachable(); }
         );
       },
-      [](temporal) -> formula { black_unreachable(); }
+      [](temporal) { black_unreachable(); }
     );
   }
 
