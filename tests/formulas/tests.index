@@ -3319,3 +3319,5 @@ rozier/formulas/n2/P0.95/L100/P0.95N2L100_6.pltl;SAT
 rozier/formulas/n2/P0.95/L100/P0.95N2L100_7.pltl;SAT
 rozier/formulas/n2/P0.95/L100/P0.95N2L100_8.pltl;SAT
 rozier/formulas/n2/P0.95/L100/P0.95N2L100_9.pltl;SAT
+regressions/iff.pltl;UNSAT
+regressions/iff2.pltl;UNSAT

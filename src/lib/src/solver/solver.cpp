@@ -40,19 +40,18 @@ namespace black::internal
     for(int k=0; k <= k_max; ++k)
     {
       // Generating the k-unraveling
+      // if it is unsat, then stop with UNSAT
       sat->assert_formula(k_unraveling(k));
-      // if 'encoding' is unsat, then stop with UNSAT
       if(!sat->is_sat())
         return false;
 
       // else, continue to check EMPTY and LOOP
-      // Generating EMPTY and LOOP
-      // if the encoding is SAT with the assumption, then stop with SAT
-      if(sat->is_sat(empty_and_loop(k)))
+      // if the k-unrav is SAT assuming EMPTY or LOOP, then stop with SAT
+      if(sat->is_sat(empty_or_loop(k)))
         return true;
 
       // else, generate the PRUNE
-      // Computing satisfiability of 'encoding & not PRUNE^k'
+      // if the PRUNE is unsat, the formula is unsat
       sat->assert_formula(!prune(k));
       if(!sat->is_sat())
         return false;
@@ -104,7 +103,7 @@ namespace black::internal
 
 
   // Generates the EMPTY and LOOP encoding
-  formula solver::empty_and_loop(int k) {
+  formula solver::empty_or_loop(int k) {
     return k_empty(k) || k_loop(k);
   }
 
@@ -326,7 +325,9 @@ namespace black::internal
             return to_nnf(left) && to_nnf(!right);
           },
           [](iff, formula left, formula right) {
-            return iff(to_nnf(!left), to_nnf(right));
+            // return iff(to_nnf(!left), to_nnf(right));
+	          return to_nnf(!implies(left,right)) ||
+	    	           to_nnf(!implies(right,left));
           },
           [](binary b, formula left, formula right) {
             return binary(dual(b.formula_type()),
@@ -337,6 +338,13 @@ namespace black::internal
       // other cases: just recurse down the formula
       [&](unary u) {
         return unary(u.formula_type(), to_nnf(u.operand()));
+      },
+      [](implication, formula left, formula right) {
+        return to_nnf(!left) || to_nnf(right);
+      },
+      [](iff, formula left, formula right) {
+	      return to_nnf(implies(left, right)) &&
+	             to_nnf(implies(right, left));
       },
       [](binary b) {
         return binary(b.formula_type(), to_nnf(b.left()), to_nnf(b.right()));
