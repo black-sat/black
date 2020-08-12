@@ -305,31 +305,40 @@ namespace black::internal
   }
 
   // Transformation in NNF
-  formula to_nnf(formula f)
+  formula solver::to_nnf(formula f) {
+    if(auto it = _nnf_cache.find(f); it != _nnf_cache.end())
+      return it->second;
+    
+    formula n = to_nnf_inner(f);
+    _nnf_cache.insert({f, n});
+    return n;
+  }
+
+  formula solver::to_nnf_inner(formula f)
   {
     return f.match(
       [](boolean b) { return b; },
       [](atom a)    { return a; },
       // Push the negation down to literals
-      [](negation n) {
+      [&](negation n) {
         return n.operand().match(
           [](boolean b) { return !b; },
           [](atom a)    { return !a; },
-          [](negation, formula op) { // special case for double negation
+          [&](negation, formula op) { // special case for double negation
             return to_nnf(op);
           },
-          [](unary u) {
+          [&](unary u) {
             return unary(dual(u.formula_type()), to_nnf(!u.operand()));
           },
-          [](implication, formula left, formula right) {
+          [&](implication, formula left, formula right) {
             return to_nnf(left) && to_nnf(!right);
           },
-          [](iff, formula left, formula right) {
+          [&](iff, formula left, formula right) {
             // return iff(to_nnf(!left), to_nnf(right));
 	          return to_nnf(!implies(left,right)) ||
 	    	           to_nnf(!implies(right,left));
           },
-          [](binary b, formula left, formula right) {
+          [&](binary b, formula left, formula right) {
             return binary(dual(b.formula_type()),
                           to_nnf(!left), to_nnf(!right));
           }
@@ -339,14 +348,14 @@ namespace black::internal
       [&](unary u) {
         return unary(u.formula_type(), to_nnf(u.operand()));
       },
-      [](implication, formula left, formula right) {
+      [&](implication, formula left, formula right) {
         return to_nnf(!left) || to_nnf(right);
       },
-      [](iff, formula left, formula right) {
+      [&](iff, formula left, formula right) {
 	      return to_nnf(implies(left, right)) &&
 	             to_nnf(implies(right, left));
       },
-      [](binary b) {
+      [&](binary b) {
         return binary(b.formula_type(), to_nnf(b.left()), to_nnf(b.right()));
       }
     );
