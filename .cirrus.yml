@@ -75,7 +75,7 @@ task:
     - ./download-mathsat.sh
   debug_build_script:
     - mkdir -p build && cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DBLACK_TESTS_SAT_BACKEND=z3 -DCODE_COVERAGE=ON ../..
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DBLACK_TESTS_SAT_BACKEND=z3 -DCODE_COVERAGE=ON ..
     - make
   test_script:
     - cd build 
@@ -93,7 +93,7 @@ task:
     - ./download-mathsat.sh
   release_build_script:
     - mkdir -p build && cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DBLACK_TESTS_SAT_BACKEND=cmsat ../..
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DBLACK_TESTS_SAT_BACKEND=cmsat ..
     - make
   test_script:
     - cd build 
