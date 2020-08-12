@@ -3721,3 +3721,5 @@ trp/N5y/5/pltl-5-0-5-3-0-200006.pltl
 trp/N5y/5/pltl-5-0-5-3-0-200007.pltl
 trp/N5y/5/pltl-5-0-5-3-0-200008.pltl
 trp/N5y/5/pltl-5-0-5-3-0-200009.pltl
+regressions/iff.pltl
+regressions/iff2.pltl

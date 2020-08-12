@@ -47,8 +47,10 @@ namespace black::internal
       fmt::print("{}-unrav: {}\n", k, to_string(unrav));
       sat->assert_formula(unrav);
       // if 'encoding' is unsat, then stop with UNSAT
-      if(!sat->is_sat())
+      if(!sat->is_sat()) {
+	fmt::print("{}-unrav is UNSAT\n", k);
         return false;
+      }
 
       // else, continue to check EMPTY and LOOP
       // Generating EMPTY and LOOP
@@ -67,8 +69,10 @@ namespace black::internal
       // else, generate the PRUNE
       // Computing satisfiability of 'encoding & not PRUNE^k'
       sat->assert_formula(!prune(k));
-      if(!sat->is_sat())
+      if(!sat->is_sat()) {
+	fmt::print("{}-prune is UNSAT\n", k);
         return false;
+      }
     } // end while(true)
 
     return false;
@@ -342,7 +346,9 @@ namespace black::internal
             return to_nnf(left) && to_nnf(!right);
           },
           [](iff, formula left, formula right) {
-            return iff(to_nnf(!left), to_nnf(right));
+            // return iff(to_nnf(!left), to_nnf(right));
+	    return to_nnf(!implies(left,right)) ||
+	    	   to_nnf(!implies(right,left));
           },
           [](binary b, formula left, formula right) {
             return binary(dual(b.formula_type()),
@@ -353,6 +359,13 @@ namespace black::internal
       // other cases: just recurse down the formula
       [&](unary u) {
         return unary(u.formula_type(), to_nnf(u.operand()));
+      },
+      [](implication, formula left, formula right) {
+	return to_nnf(!left) || to_nnf(right);
+      },
+      [](iff, formula left, formula right) {
+	return to_nnf(implies(left, right)) &&
+	       to_nnf(implies(right, left));
       },
       [](binary b) {
         return binary(b.formula_type(), to_nnf(b.left()), to_nnf(b.right()));
