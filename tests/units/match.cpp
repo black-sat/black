@@ -21,7 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <catch2/catch.hpp>
+
 #include <black/logic/formula.hpp>
+#include <black/logic/alphabet.hpp>
+#include <black/logic/parser.hpp>
 
 #include <type_traits>
 
@@ -41,7 +45,7 @@ static_assert(check<boolean, tomorrow,     formula>);
 static_assert(check<boolean, yesterday,    formula>);
 static_assert(check<boolean, always,       formula>);
 static_assert(check<boolean, eventually,   formula>);
-static_assert(check<boolean, past,         formula>);
+static_assert(check<boolean, once,         formula>);
 static_assert(check<boolean, historically, formula>);
 static_assert(check<boolean, conjunction,  formula>);
 static_assert(check<boolean, disjunction,  formula>);
@@ -59,7 +63,7 @@ static_assert(check<atom, tomorrow,     formula>);
 static_assert(check<atom, yesterday,    formula>);
 static_assert(check<atom, always,       formula>);
 static_assert(check<atom, eventually,   formula>);
-static_assert(check<atom, past,         formula>);
+static_assert(check<atom, once,         formula>);
 static_assert(check<atom, historically, formula>);
 static_assert(check<atom, conjunction,  formula>);
 static_assert(check<atom, disjunction,  formula>);
@@ -76,7 +80,7 @@ static_assert(check<tomorrow, tomorrow,     tomorrow>);
 static_assert(check<tomorrow, yesterday,    unary>);
 static_assert(check<tomorrow, always,       unary>);
 static_assert(check<tomorrow, eventually,   unary>);
-static_assert(check<tomorrow, past,         unary>);
+static_assert(check<tomorrow, once,         unary>);
 static_assert(check<tomorrow, historically, unary>);
 static_assert(check<tomorrow, conjunction,  formula>);
 static_assert(check<tomorrow, disjunction,  formula>);
@@ -94,7 +98,7 @@ static_assert(check<yesterday, tomorrow,     unary>);
 static_assert(check<yesterday, yesterday,    yesterday>);
 static_assert(check<yesterday, always,       unary>);
 static_assert(check<yesterday, eventually,   unary>);
-static_assert(check<yesterday, past,         unary>);
+static_assert(check<yesterday, once,         unary>);
 static_assert(check<yesterday, historically, unary>);
 static_assert(check<yesterday, conjunction,  formula>);
 static_assert(check<yesterday, disjunction,  formula>);
@@ -112,7 +116,7 @@ static_assert(check<always, tomorrow,     unary>);
 static_assert(check<always, yesterday,    unary>);
 static_assert(check<always, always,       always>);
 static_assert(check<always, eventually,   unary>);
-static_assert(check<always, past,         unary>);
+static_assert(check<always, once,         unary>);
 static_assert(check<always, historically, unary>);
 static_assert(check<always, conjunction,  formula>);
 static_assert(check<always, disjunction,  formula>);
@@ -130,7 +134,7 @@ static_assert(check<eventually, tomorrow,     unary>);
 static_assert(check<eventually, yesterday,    unary>);
 static_assert(check<eventually, always,       unary>);
 static_assert(check<eventually, eventually,   eventually>);
-static_assert(check<eventually, past,         unary>);
+static_assert(check<eventually, once,         unary>);
 static_assert(check<eventually, historically, unary>);
 static_assert(check<eventually, conjunction,  formula>);
 static_assert(check<eventually, disjunction,  formula>);
@@ -141,23 +145,23 @@ static_assert(check<eventually, release,      formula>);
 static_assert(check<eventually, since,        formula>);
 static_assert(check<eventually, triggered,    formula>);
 
-static_assert(check<past, atom,         formula>);
-static_assert(check<past, boolean,      formula>);
-static_assert(check<past, negation,     unary>);
-static_assert(check<past, tomorrow,     unary>);
-static_assert(check<past, yesterday,    unary>);
-static_assert(check<past, always,       unary>);
-static_assert(check<past, eventually,   unary>);
-static_assert(check<past, past,         past>);
-static_assert(check<past, historically, unary>);
-static_assert(check<past, conjunction,  formula>);
-static_assert(check<past, disjunction,  formula>);
-static_assert(check<past, implication,  formula>);
-static_assert(check<past, iff,          formula>);
-static_assert(check<past, until,        formula>);
-static_assert(check<past, release,      formula>);
-static_assert(check<past, since,        formula>);
-static_assert(check<past, triggered,    formula>);
+static_assert(check<once, atom,         formula>);
+static_assert(check<once, boolean,      formula>);
+static_assert(check<once, negation,     unary>);
+static_assert(check<once, tomorrow,     unary>);
+static_assert(check<once, yesterday,    unary>);
+static_assert(check<once, always,       unary>);
+static_assert(check<once, eventually,   unary>);
+static_assert(check<once, once,         once>);
+static_assert(check<once, historically, unary>);
+static_assert(check<once, conjunction,  formula>);
+static_assert(check<once, disjunction,  formula>);
+static_assert(check<once, implication,  formula>);
+static_assert(check<once, iff,          formula>);
+static_assert(check<once, until,        formula>);
+static_assert(check<once, release,      formula>);
+static_assert(check<once, since,        formula>);
+static_assert(check<once, triggered,    formula>);
 
 static_assert(check<historically, atom,         formula>);
 static_assert(check<historically, boolean,      formula>);
@@ -166,7 +170,7 @@ static_assert(check<historically, tomorrow,     unary>);
 static_assert(check<historically, yesterday,    unary>);
 static_assert(check<historically, always,       unary>);
 static_assert(check<historically, eventually,   unary>);
-static_assert(check<historically, past,         unary>);
+static_assert(check<historically, once,         unary>);
 static_assert(check<historically, historically, historically>);
 static_assert(check<historically, conjunction,  formula>);
 static_assert(check<historically, disjunction,  formula>);
@@ -184,7 +188,7 @@ static_assert(check<conjunction, tomorrow,     formula>);
 static_assert(check<conjunction, yesterday,    formula>);
 static_assert(check<conjunction, always,       formula>);
 static_assert(check<conjunction, eventually,   formula>);
-static_assert(check<conjunction, past,         formula>);
+static_assert(check<conjunction, once,         formula>);
 static_assert(check<conjunction, historically, formula>);
 static_assert(check<conjunction, conjunction,  conjunction>);
 static_assert(check<conjunction, disjunction,  binary>);
@@ -202,7 +206,7 @@ static_assert(check<disjunction, tomorrow,     formula>);
 static_assert(check<disjunction, yesterday,    formula>);
 static_assert(check<disjunction, always,       formula>);
 static_assert(check<disjunction, eventually,   formula>);
-static_assert(check<disjunction, past,         formula>);
+static_assert(check<disjunction, once,         formula>);
 static_assert(check<disjunction, historically, formula>);
 static_assert(check<disjunction, conjunction,  binary>);
 static_assert(check<disjunction, disjunction,  disjunction>);
@@ -220,7 +224,7 @@ static_assert(check<implication, tomorrow,     formula>);
 static_assert(check<implication, yesterday,    formula>);
 static_assert(check<implication, always,       formula>);
 static_assert(check<implication, eventually,   formula>);
-static_assert(check<implication, past,         formula>);
+static_assert(check<implication, once,         formula>);
 static_assert(check<implication, historically, formula>);
 static_assert(check<implication, conjunction,  binary>);
 static_assert(check<implication, disjunction,  binary>);
@@ -238,7 +242,7 @@ static_assert(check<iff, tomorrow,     formula>);
 static_assert(check<iff, yesterday,    formula>);
 static_assert(check<iff, always,       formula>);
 static_assert(check<iff, eventually,   formula>);
-static_assert(check<iff, past,         formula>);
+static_assert(check<iff, once,         formula>);
 static_assert(check<iff, historically, formula>);
 static_assert(check<iff, conjunction,  binary>);
 static_assert(check<iff, disjunction,  binary>);
@@ -256,7 +260,7 @@ static_assert(check<until, tomorrow,     formula>);
 static_assert(check<until, yesterday,    formula>);
 static_assert(check<until, always,       formula>);
 static_assert(check<until, eventually,   formula>);
-static_assert(check<until, past,         formula>);
+static_assert(check<until, once,         formula>);
 static_assert(check<until, historically, formula>);
 static_assert(check<until, conjunction,  binary>);
 static_assert(check<until, disjunction,  binary>);
@@ -274,7 +278,7 @@ static_assert(check<release, tomorrow,     formula>);
 static_assert(check<release, yesterday,    formula>);
 static_assert(check<release, always,       formula>);
 static_assert(check<release, eventually,   formula>);
-static_assert(check<release, past,         formula>);
+static_assert(check<release, once,         formula>);
 static_assert(check<release, historically, formula>);
 static_assert(check<release, conjunction,  binary>);
 static_assert(check<release, disjunction,  binary>);
@@ -292,7 +296,7 @@ static_assert(check<since, tomorrow,     formula>);
 static_assert(check<since, yesterday,    formula>);
 static_assert(check<since, always,       formula>);
 static_assert(check<since, eventually,   formula>);
-static_assert(check<since, past,         formula>);
+static_assert(check<since, once,         formula>);
 static_assert(check<since, historically, formula>);
 static_assert(check<since, conjunction,  binary>);
 static_assert(check<since, disjunction,  binary>);
@@ -310,7 +314,7 @@ static_assert(check<triggered, tomorrow,     formula>);
 static_assert(check<triggered, yesterday,    formula>);
 static_assert(check<triggered, always,       formula>);
 static_assert(check<triggered, eventually,   formula>);
-static_assert(check<triggered, past,         formula>);
+static_assert(check<triggered, once,         formula>);
 static_assert(check<triggered, historically, formula>);
 static_assert(check<triggered, conjunction,  binary>);
 static_assert(check<triggered, disjunction,  binary>);
@@ -320,3 +324,124 @@ static_assert(check<triggered, until,        binary>);
 static_assert(check<triggered, release,      binary>);
 static_assert(check<triggered, since,        binary>);
 static_assert(check<triggered, triggered,    triggered>);
+
+
+TEST_CASE("Non-formula matchers") 
+{
+  alphabet sigma;
+
+  atom p1 = sigma.var("p1");
+  atom p2 = sigma.var("p2");
+  atom p3 = sigma.var("p3");
+  atom p4 = sigma.var("p4");
+  atom p5 = sigma.var("p5");
+
+  SECTION("big_and matcher") {
+    formula f = (p1 && p2) && (p3 && (p4 && p5));
+
+    std::string result;
+    f.match(
+      [&](big_and a) {
+        for(auto op : a.operands()) {
+          result += to_string(op);
+        }
+      },
+      [](otherwise) { }
+    );
+
+    REQUIRE(result == "p1p2p3p4p5");
+  }
+
+  SECTION("big_or matcher") {
+    formula f = (p1 || p2) || (p3 || (p4 || p5));
+
+    std::string result;
+    f.match(
+      [&](big_or a) {
+        for(auto op : a.operands()) {
+          result += to_string(op);
+        }
+      },
+      [](otherwise) { }
+    );
+
+    REQUIRE(result == "p1p2p3p4p5");
+  }
+  
+  SECTION("past matcher") {
+    formula f = S(p1,p2);
+    int i = f.match(
+      [](past p) {
+        return p.match(
+          [](yesterday) { return 1; },
+          [](once) { return 2; },
+          [](historically) { return 3; },
+          [](since) { return 4; },
+          [](triggered) { return 5; }
+        );
+      },
+      [](otherwise) { return 42; }
+    );
+    REQUIRE(i == 4);
+  }
+
+  SECTION("future matcher"){  
+    formula f = U(p1,p2);
+    int i = f.match(
+      [](future p) {
+        return p.match(
+          [](tomorrow) { return 1; },
+          [](eventually) { return 2; },
+          [](always) { return 3; },
+          [](until) { return 4; },
+          [](release) { return 5; }
+        );
+      },
+      [](otherwise) { return 42; }
+    );
+
+    REQUIRE(i == 4);
+  }
+  
+  SECTION("propositional matcher") {
+    formula f = implies(p1,p2);
+    int i = f.match(
+      [](propositional p) {
+        return p.match(
+          [](boolean) { return 1; },
+          [](atom) { return 2; },
+          [](negation) { return 3; },
+          [](conjunction) { return 4; },
+          [](disjunction) { return 5; },
+          [](implication) { return 6; },
+          [](iff) { return 7; }
+        );
+      },
+      [](temporal) -> int { black_unreachable(); }
+    );
+    REQUIRE(i == 6);
+  }
+
+  SECTION("temporal matcher") {
+    formula f = G(p1);
+    int i = f.match(
+      [](temporal p) {
+        return p.match(
+          [](tomorrow)     { return 1; },
+          [](always)       { return 2; },
+          [](eventually)   { return 3; },
+          [](until)        { return 4; },
+          [](release)      { return 5; },
+          [](yesterday)    { return 6; },
+          [](once)         { return 7; },
+          [](historically) { return 8; },
+          [](since)        { return 9; },
+          [](triggered)    { return 10; }
+        );
+      },
+      [](propositional) -> int { black_unreachable(); }
+    );
+    REQUIRE(i == 2);
+  }  
+
+}

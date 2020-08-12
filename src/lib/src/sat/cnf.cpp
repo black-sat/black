@@ -234,10 +234,10 @@ namespace black::internal
 
             return n;
           },
-          [](otherwise) -> formula { black_unreachable(); }
+          [](temporal) -> formula { black_unreachable(); }
         );
       },
-      [](otherwise) -> formula { black_unreachable(); }
+      [](temporal) -> formula { black_unreachable(); }
     );
   }
 

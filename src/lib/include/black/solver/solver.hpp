@@ -80,7 +80,7 @@ namespace black::internal {
       formula l_j_k_prune(int l, int j, int k);
 
       // Generates the EMPTY and LOOP encoding
-      formula empty_and_loop(int k);
+      formula empty_or_loop(int k);
 
       // Generates the encoding for EMPTY_k
       formula k_empty(int k);

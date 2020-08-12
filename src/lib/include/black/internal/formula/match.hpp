@@ -24,7 +24,9 @@
 #ifndef BLACK_LOGIC_MATCH_HPP_
 #define BLACK_LOGIC_MATCH_HPP_
 
+#include <vector>
 #include <functional>
+#include <type_traits>
 
 #ifndef BLACK_LOGIC_FORMULA_HPP_
   #error "This header file cannot be included alone, "\
@@ -66,7 +68,7 @@ namespace std {
     declare_destructuring_arity(yesterday,    1)
     declare_destructuring_arity(always,       1)
     declare_destructuring_arity(eventually,   1)
-    declare_destructuring_arity(past,         1)
+    declare_destructuring_arity(once,         1)
     declare_destructuring_arity(historically, 1)
     declare_destructuring_arity(conjunction,  2)
     declare_destructuring_arity(disjunction,  2)
@@ -166,7 +168,7 @@ namespace black::internal
     yesterday,
     always,
     eventually,
-    past,
+    once,
     historically,
     conjunction,
     disjunction,
@@ -184,7 +186,7 @@ namespace black::internal
     yesterday,
     always,
     eventually,
-    past,
+    once,
     historically
   >;
 
@@ -262,7 +264,7 @@ namespace std {
   declare_common_type(yesterday,    unary)
   declare_common_type(always,       unary)
   declare_common_type(eventually,   unary)
-  declare_common_type(past,         unary)
+  declare_common_type(once,         unary)
   declare_common_type(historically, unary)
   declare_common_type(conjunction,  binary)
   declare_common_type(disjunction,  binary)
@@ -275,6 +277,121 @@ namespace std {
 
   #undef declare_common_type
   #undef declare_formula_ct
+
+}
+
+namespace black::internal
+{
+  //
+  // Matchers that do not correspond to concrete formula types
+  //
+  template<typename Formula>
+  struct associative_matcher 
+  {
+    associative_matcher(Formula c) { flatten(c); }
+
+    std::vector<formula> const&operands() const { return _operands; }
+
+  private:
+    std::vector<formula> _operands;
+
+    void flatten(Formula c) {
+      if(c.left().template is<Formula>())
+        flatten(*c.left().template to<Formula>());
+      else
+        _operands.push_back(c.left());
+
+      if(c.right().template is<Formula>())
+        flatten(*c.right().template to<Formula>());
+      else
+        _operands.push_back(c.right());
+    }
+  };
+
+  struct big_and : associative_matcher<conjunction> {
+    using associative_matcher<conjunction>::associative_matcher;
+  };
+
+  struct big_or : associative_matcher<disjunction> {
+    using associative_matcher<disjunction>::associative_matcher;
+  };
+
+  template<typename>
+  struct fragment_matcher;
+
+  template<typename ...Operators>
+  struct fragment_matcher<syntax<Operators...>> {
+    template<typename T, REQUIRES((std::is_same_v<T, Operators> || ...))>
+    fragment_matcher(T t) : _f{t} { }
+
+    class formula formula() const { return _f; }
+
+    template<typename ...Handlers>
+    auto match(Handlers&& ...handlers) const {
+      return matcher<syntax<Operators...>>::match(_f, FWD(handlers)...);
+    }
+
+  private:
+    class formula _f;
+  };
+
+  using past_ltl_ops = syntax<
+    yesterday,
+    once,
+    historically,
+    since,
+    triggered
+  >;
+
+  using future_ltl_ops = syntax<
+    tomorrow,
+    always,
+    eventually,
+    until,
+    release
+  >;
+
+  using temporal_ltl_ops = syntax<
+    tomorrow,
+    always,
+    eventually,
+    until,
+    release,
+    yesterday,
+    once,
+    historically,
+    since,
+    triggered
+  >;
+  
+  using propositional_ops = syntax<
+    boolean,
+    atom,
+    negation,
+    conjunction,
+    disjunction,
+    implication,
+    iff
+  >;
+
+  struct propositional : fragment_matcher<propositional_ops> { 
+    using fragment_matcher<propositional_ops>::fragment_matcher;
+  };
+
+  struct temporal : fragment_matcher<temporal_ltl_ops> { 
+    using fragment_matcher<temporal_ltl_ops>::fragment_matcher;
+  };
+
+  struct future : fragment_matcher<future_ltl_ops> { 
+    using fragment_matcher<future_ltl_ops>::fragment_matcher;
+  };
+
+  struct past : fragment_matcher<past_ltl_ops> { 
+    using fragment_matcher<past_ltl_ops>::fragment_matcher;
+  };
+  
+
+
 }
 
 #endif // BLACK_LOGIC_MATCH_HPP_
