@@ -49,8 +49,7 @@ TEST_CASE("CNF Translation")
 
   for(formula f : tests) {
     DYNAMIC_SECTION("CNF translation for formula: " << f) {
-      cnf c = to_cnf(f);
-      formula fc = to_formula(sigma, c);
+      formula fc = to_formula(sigma, to_cnf(f));
       s.assert_formula(!implies(fc,f));
 
       INFO("CNF: " << fc);

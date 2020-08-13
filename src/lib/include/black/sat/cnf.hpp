@@ -26,6 +26,7 @@
 
 #include <vector>
 #include <initializer_list>
+#include <memory>
 
 namespace black::internal 
 {
@@ -39,17 +40,32 @@ namespace black::internal
   struct clause {
     std::vector<literal> literals;
 
-    clause() { }
+    clause() = default;
     clause(std::vector<literal> lits) : literals(std::move(lits)) { }
     clause(std::initializer_list<literal> elems) : literals{elems} { }
   };
   
-  struct cnf {
-    std::vector<clause> clauses;
+  class cnf 
+  {
+  public:
+    
+    cnf();
+    cnf(cnf &&) = default;
+    cnf &operator=(cnf &&) = default;
+    ~cnf();
+    
+    std::vector<clause> const&clauses() const;
 
-    cnf() { }
-    cnf(std::vector<clause> cls) : clauses(std::move(cls)) { }
-    cnf(std::initializer_list<clause> elems) : clauses{elems} { }
+    size_t add_clauses(std::vector<clause> const&);
+    size_t add_clauses(cnf const& c) { return add_clauses(c.clauses()); }
+    size_t add_clause(clause c) { return add_clauses({c}); };
+
+    size_t nvars() const;
+    uint32_t var(atom);
+
+  private:
+    struct _cnf_t;
+    std::unique_ptr<_cnf_t> _data;
   };
 
   // Tseitin conversion to CNF
