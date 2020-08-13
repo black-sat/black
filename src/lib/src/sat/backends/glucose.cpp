@@ -41,16 +41,7 @@ namespace black::sat::backends
 
   struct glucose::_glucose_t {
     Glucose::SimpSolver solver;
-    tsl::hopscotch_map<atom, Glucose::Var> vars;
-
-    Glucose::Var var(atom a) {
-      if(auto it = vars.find(a); it != vars.end())
-        return it->second;
-      
-      Glucose::Var v = solver.newVar();
-      vars.insert({a, v});
-      return v;
-    }
+    cnf clauses;
   };
 
   glucose::glucose() : _data{std::make_unique<_glucose_t>()} { 
@@ -61,10 +52,14 @@ namespace black::sat::backends
 
   void glucose::assert_formula(formula f) {
     cnf c = to_cnf(f);
-    for(clause cls : c.clauses) {
+    size_t new_vars = _data->clauses.add_clauses(c);
+    for(size_t i = 0; i <= new_vars; ++i)
+      _data->solver.newVar();
+    
+    for(clause cls : c.clauses()) {
       Glucose::vec<Glucose::Lit> lits;
       for(literal lit : cls.literals) {
-        lits.push(Glucose::mkLit(_data->var(lit.atom), lit.sign));
+        lits.push(Glucose::mkLit(_data->clauses.var(lit.atom), lit.sign));
       }
       _data->solver.addClause(lits);
     }
@@ -74,7 +69,7 @@ namespace black::sat::backends
     Glucose::vec<Glucose::Lit> lits;
     
     assert_formula(iff(fresh(assumption), assumption));
-    lits.push(Glucose::mkLit(_data->var(fresh(assumption)), true));
+    lits.push(Glucose::mkLit(_data->clauses.var(fresh(assumption)), true));
 
     return _data->solver.solve(lits);
   }
