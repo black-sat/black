@@ -36,7 +36,9 @@ namespace black::internal
       if(auto it = vars.find(a); it != vars.end()) 
         return it->second;
 
-      uint32_t v = vars.size() + 1;
+      black_assert(vars.size() <= std::numeric_limits<uint32_t>::max() - 1);
+      
+      uint32_t v = static_cast<uint32_t>(vars.size() + 1);
       vars.insert({a, v});
       return v;
     }

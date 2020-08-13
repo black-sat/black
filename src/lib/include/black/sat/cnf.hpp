@@ -21,6 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#ifndef BLACK_CNF_HPP_
+#define BLACK_CNF_HPP_
+
+
 #include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
 
@@ -58,7 +62,7 @@ namespace black::internal
 
     size_t add_clauses(std::vector<clause> const&);
     size_t add_clauses(cnf const& c) { return add_clauses(c.clauses()); }
-    size_t add_clause(clause c) { return add_clauses({c}); };
+    size_t add_clause(clause c) { return add_clauses({c}); }
 
     size_t nvars() const;
     uint32_t var(atom);
@@ -84,3 +88,5 @@ namespace black {
   using internal::to_cnf;
   using internal::to_formula;
 }
+
+#endif // BLACK_CNF_HPP_
