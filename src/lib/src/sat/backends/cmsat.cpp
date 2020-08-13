@@ -43,36 +43,29 @@ namespace black::sat::backends
 
   struct cmsat::_cmsat_t {
     CMSat::SATSolver solver;
-    tsl::hopscotch_map<atom, uint32_t> vars;
-    int32_t last_var = -1;
-
-    uint32_t var(atom a) {
-      if(auto it = vars.find(a); it != vars.end())
-        return it->second;
-      
-      uint32_t new_var = static_cast<uint32_t>(++last_var);
-      vars.insert({a, new_var});
-      return new_var;
-    }
+    cnf clauses;
   };
 
-  cmsat::cmsat() : _data{std::make_unique<_cmsat_t>()} { }
+  cmsat::cmsat() : _data{std::make_unique<_cmsat_t>()} { 
+    _data->solver.new_var();
+  }
 
   cmsat::~cmsat() { }
 
-  void cmsat::assert_formula(formula f) { 
+  void cmsat::assert_formula(formula f) 
+  { 
     cnf c = to_cnf(f);
-    for(clause cls : c.clauses) {
+    
+    size_t new_vars = _data->clauses.add_clauses(c);
+    if(new_vars > 0)
+      _data->solver.new_vars(new_vars);
+    
+    for(clause cls : c.clauses()) {
       std::vector<CMSat::Lit> lits;
-      int32_t last_var = _data->last_var;
       
-      for(literal lit : cls.literals) {
-        lits.push_back(CMSat::Lit{_data->var(lit.atom), !lit.sign});
-      }
-      
-      size_t new_vars = static_cast<size_t>(_data->last_var - last_var);
-      if(new_vars > 0)
-        _data->solver.new_vars(new_vars);
+      for(literal lit : cls.literals)
+        lits.push_back(CMSat::Lit{(_data->clauses.var(lit.atom)), !lit.sign});
+
       _data->solver.add_clause(lits);
     }
   }
@@ -81,7 +74,7 @@ namespace black::sat::backends
   {
     assert_formula(iff(fresh(assumption), assumption));
     std::vector<CMSat::Lit> lits = {
-      CMSat::Lit{_data->var(fresh(assumption)), false}
+      CMSat::Lit{_data->clauses.var(fresh(assumption)), false}
     };
 
     CMSat::lbool ret = _data->solver.solve(&lits);
