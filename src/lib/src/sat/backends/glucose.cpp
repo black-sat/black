@@ -70,14 +70,13 @@ namespace black::sat::backends
     }
   }
 
-  bool glucose::is_sat(std::vector<formula> const& assumptions) {
-    Glucose::vec<Glucose::Lit> vars;
-    for(formula f : assumptions) {
-      assert_formula(iff(fresh(f), f));
-      vars.push(Glucose::mkLit(_data->var(fresh(f)), true));
-    }
+  bool glucose::is_sat(formula assumption) {
+    Glucose::vec<Glucose::Lit> lits;
+    
+    assert_formula(iff(fresh(assumption), assumption));
+    lits.push(Glucose::mkLit(_data->var(fresh(assumption)), true));
 
-    return _data->solver.solve(vars);
+    return _data->solver.solve(lits);
   }
 
   bool glucose::is_sat() {
