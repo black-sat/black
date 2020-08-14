@@ -21,13 +21,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/sat/backends/glucose.hpp>
+#include <black/sat/backends/minisat.hpp>
 #include <black/sat/cnf.hpp>
 
-#include <simp/SimpSolver.h>
+#include <minisat/simp/SimpSolver.h>
 #include <tsl/hopscotch_map.h>
 
-BLACK_REGISTER_SAT_BACKEND(glucose)
+BLACK_REGISTER_SAT_BACKEND(minisat)
 
 namespace black::sat::backends
 {
@@ -39,48 +39,51 @@ namespace black::sat::backends
     return f.alphabet()->var(f);
   }
 
-  struct glucose::_glucose_t {
-    Glucose::SimpSolver solver;
+  struct minisat::_minisat_t {
+    Minisat::SimpSolver solver;
     cnf clauses;
   };
 
-  glucose::glucose() : _data{std::make_unique<_glucose_t>()} { 
+  minisat::minisat() : _data{std::make_unique<_minisat_t>()} { 
     _data->solver.verbosity = -1;
-    _data->solver.newVar();
     _data->solver.use_elim = false;
+    _data->solver.newVar();
   }
 
-  glucose::~glucose() { }
+  minisat::~minisat() { }
 
-  void glucose::assert_formula(formula f) {
+  void minisat::assert_formula(formula f) 
+  {
     cnf c = to_cnf(f);
+    
     size_t new_vars = _data->clauses.add_clauses(c);
     for(size_t i = 0; i <= new_vars; ++i)
       _data->solver.newVar();
     
     for(clause cls : c.clauses()) {
-      Glucose::vec<Glucose::Lit> lits;
-      for(literal lit : cls.literals) {
-        lits.push(Glucose::mkLit(_data->clauses.var(lit.atom), lit.sign));
-      }
+      Minisat::vec<Minisat::Lit> lits;
+
+      for(literal lit : cls.literals)
+        lits.push(Minisat::mkLit(_data->clauses.var(lit.atom), lit.sign));
+
       _data->solver.addClause(lits);
     }
   }
 
-  bool glucose::is_sat(formula assumption) {
-    Glucose::vec<Glucose::Lit> lits;
+  bool minisat::is_sat(formula assumption) {
+    Minisat::vec<Minisat::Lit> lits;
     
     assert_formula(iff(fresh(assumption), assumption));
-    lits.push(Glucose::mkLit(_data->clauses.var(fresh(assumption)), true));
+    lits.push(Minisat::mkLit(_data->clauses.var(fresh(assumption)), true));
 
     return _data->solver.solve(lits);
   }
 
-  bool glucose::is_sat() {
+  bool minisat::is_sat() {
     return _data->solver.solve();
   }
 
-  void glucose::clear() {
-    _data = std::make_unique<_glucose_t>();
+  void minisat::clear() {
+    _data = std::make_unique<_minisat_t>();
   }
 }

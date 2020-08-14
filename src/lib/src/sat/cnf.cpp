@@ -65,8 +65,7 @@ namespace black::internal
 
   uint32_t cnf::var(atom a) {
     return _data->var(a);
-  } 
-
+  }
 
   static void tseitin(
     formula f, cnf &clauses, tsl::hopscotch_set<formula> &memo

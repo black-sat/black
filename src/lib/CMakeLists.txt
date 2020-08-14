@@ -21,24 +21,37 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-find_package(MathSAT REQUIRED)
+find_package(MathSAT)
 find_package(Z3)
-find_package(cryptominisat5 QUIET)
+find_package(MiniSAT)
+find_package(CryptoMiniSAT)
 
-message(STATUS "MathSAT solver found! Enabling the MathSAT backend...")
+message(STATUS "Glucose solver is built-in. Enabling Glucose backend...")
 
-if(Z3_FOUND)
-  message(STATUS "Z3 solver found! Enabling the Z3 SAT backend...")
+if(MathSAT_FOUND)
+  message(STATUS "MathSAT solver found! Enabling the MathSAT backend...")
 else()
-  message(STATUS "Z3 solver not found. Disabling the Z3 SAT backend...")
+  message(STATUS "MathSAT solver not found. Disabling the MathSAT backend...")
 endif()
 
-if(cryptominisat5_FOUND)
+if(Z3_FOUND)
+  message(STATUS "Z3 solver found! Enabling the Z3 backend...")
+else()
+  message(STATUS "Z3 solver not found. Disabling the Z3 backend...")
+endif()
+
+if(MiniSAT_FOUND)
+  message(STATUS "MiniSAT solver found! Enabling the MiniSAT backend...")
+else()
+  message(STATUS "MiniSAT solver not found. Disabling the MiniSAT backend...")
+endif()
+
+if(CryptoMiniSAT_FOUND)
   message(STATUS 
-    "CryptoMiniSAT solver found! Enabling the CMSAT SAT backend...")
+    "CryptoMiniSAT solver found! Enabling the CMSAT backend...")
 else()
   message(STATUS 
-    "CryptoMiniSAT solver not found. Disabling the CMSAT SAT backend...")
+    "CryptoMiniSAT solver not found. Disabling the CMSAT backend...")
 endif()
 
 #
@@ -51,17 +64,27 @@ set (
    src/logic/parser.cpp
    src/sat/sat.cpp
    src/sat/cnf.cpp
-   src/sat/backends/mathsat.cpp
    src/sat/backends/glucose.cpp
    src/solver/solver.cpp
-   )
+)
+   
+   
+if(MathSAT_FOUND)
+  set(LIB_SRC ${LIB_SRC} 
+    src/sat/backends/mathsat.cpp include/black/sat/backends/mathsat.hpp)
+endif()
    
 if(Z3_FOUND)
   set(LIB_SRC ${LIB_SRC} 
     src/sat/backends/z3.cpp include/black/sat/backends/z3.hpp)
 endif()
 
-if(cryptominisat5_FOUND)
+if(MiniSAT_FOUND)
+  set(LIB_SRC ${LIB_SRC} 
+    src/sat/backends/minisat.cpp include/black/sat/backends/minisat.hpp)
+endif()
+
+if(CryptoMiniSAT_FOUND)
   set(LIB_SRC ${LIB_SRC} 
     src/sat/backends/cmsat.cpp include/black/sat/backends/cmsat.hpp)
 endif()
@@ -81,24 +104,30 @@ set (
 )
 
 #
-# Main black library. The `internal` trick is needed to make sure global 
-# constructors are correctly called when the library is statically linked
+# Main black library.
 #
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PRIVATE MathSAT glucose fmt)
+target_link_libraries(black PRIVATE glucose fmt)
 target_link_libraries(black PUBLIC tsl::hopscotch_map)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
-if(Z3_FOUND)
-  target_link_libraries(black PRIVATE Z3)
-endif()
-if(cryptominisat5_FOUND)
-  target_link_libraries(black PRIVATE cryptominisat5)
-endif()
 target_enable_warnings(black)
 target_code_coverage(black)
 add_sanitizers(black)
+
+if(MathSAT_FOUND)
+  target_link_libraries(black PRIVATE MathSAT)
+endif()
+if(Z3_FOUND)
+  target_link_libraries(black PRIVATE Z3)
+endif()
+if(MiniSAT_FOUND)
+  target_link_libraries(black PRIVATE MiniSAT)
+endif()
+if(CryptoMiniSAT_FOUND)
+  target_link_libraries(black PRIVATE CryptoMiniSAT)
+endif()
 
 ##
 ## Z3 SMT solver
