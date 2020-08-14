@@ -61,7 +61,9 @@ namespace black::sat::backends
     for(clause cls : c.clauses()) {
       Glucose::vec<Glucose::Lit> lits;
       for(literal lit : cls.literals) {
-        lits.push(Glucose::mkLit(_data->clauses.var(lit.atom), lit.sign));
+        lits.push(
+          Glucose::mkLit(int32_t(_data->clauses.var(lit.atom)), lit.sign)
+        );
       }
       _data->solver.addClause(lits);
     }
@@ -71,7 +73,9 @@ namespace black::sat::backends
     Glucose::vec<Glucose::Lit> lits;
     
     assert_formula(iff(fresh(assumption), assumption));
-    lits.push(Glucose::mkLit(_data->clauses.var(fresh(assumption)), true));
+    lits.push(
+      Glucose::mkLit(int32_t(_data->clauses.var(fresh(assumption))), true)
+    );
 
     return _data->solver.solve(lits);
   }

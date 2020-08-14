@@ -40,7 +40,7 @@ task:
     - make
   test_script:
     - cd build
-    - ctest -R black
+    - ctest -j2 -R black
   coverage_script:
     - cd build
     - bash <(curl -s https://codecov.io/bash);
@@ -58,7 +58,7 @@ task:
     - make
   test_script:
     - cd build 
-    - ctest -R black
+    - ctest -j2 -R black
 
 task:
   matrix:
@@ -85,7 +85,7 @@ task:
     - make
   test_script:
     - cd build 
-    - ctest -R black
+    - ctest -j2 -R black
   coverage_script:
     - cd build
     - bash <(curl -s https://codecov.io/bash);
