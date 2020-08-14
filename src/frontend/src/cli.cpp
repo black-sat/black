@@ -55,7 +55,7 @@ namespace black::frontend
   static void print_help(Cli cli) {
     auto fmt = clipp::doc_formatting{}
          .first_column(3)
-         .doc_column(25)
+         .doc_column(30)
          .last_column(79);
 
     print_header();
@@ -88,15 +88,16 @@ namespace black::frontend
     auto cli = (
       (option("-k", "--bound") & integer("bound", cli::bound))
         % "maximum bound for BMC procedures",
-      (option("--sat-backend") & value(is_backend, "name", cli::sat_backend))
-        % "name of the selected SAT backend",
+      (option("-B", "--sat-backend") 
+        & value(is_backend, "name", cli::sat_backend))
+        % "select the SAT backend to use",
       value("file", cli::filename).required(false)
         % "input formula file name.\n"
           "If missing, runs in interactive mode.\n"
           "If '-', reads from standard input in batch mode."
-    ) | option("-h", "--help").set(help) % "print this help message"
-      | option("--sat-backends").set(show_backends) 
-          % "print the list of available SAT backends";
+    ) | option("--sat-backends").set(show_backends) 
+          % "print the list of available SAT backends"
+      | option("-h", "--help").set(help) % "print this help message";
 
     cli::command_name = argv[0];
 

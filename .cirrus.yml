@@ -34,15 +34,13 @@ task:
         docker_arguments:
           VERSION: 20.04
           GCC_VERSION: 9
-  download_dependencies_script:
-    - ./download-mathsat.sh
   debug_build_script:
     - mkdir build && cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ..
     - make
   test_script:
     - cd build
-    - ctest -R black
+    - ctest -j2 -R black
   coverage_script:
     - cd build
     - bash <(curl -s https://codecov.io/bash);
@@ -54,14 +52,13 @@ task:
     image: catalina-base
   download_dependencies_script:
     - brew install cmake gmp wget
-    - ./download-mathsat.sh
   debug_build_script:
     - mkdir -p build && cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug ..
     - make
   test_script:
     - cd build 
-    - ctest -R black
+    - ctest -j2 -R black
 
 task:
   matrix:
@@ -71,13 +68,16 @@ task:
     - name: Fedora 32 (with CryptoMiniSAT backend)
       environment:
         BACKEND: cmsat
+    - name: Fedora 32 (with MathSAT backend)
+      environment:
+        BACKEND: mathsat
   container:
     dockerfile: docker/Dockerfile.fedora
     docker_arguments:
       VERSION: 32
   environment:
     CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
-  download_dependencies_script:
+  download_mathsat_script:
     - ./download-mathsat.sh
   debug_build_script:
     - mkdir -p build && cd build
@@ -85,7 +85,7 @@ task:
     - make
   test_script:
     - cd build 
-    - ctest -R black
+    - ctest -j2 -R black
   coverage_script:
     - cd build
     - bash <(curl -s https://codecov.io/bash);
