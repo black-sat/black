@@ -58,7 +58,7 @@ namespace black::internal
 
     size_t add_clauses(std::vector<clause> const&);
     size_t add_clauses(cnf const& c) { return add_clauses(c.clauses()); }
-    size_t add_clause(clause c) { return add_clauses({c}); };
+    size_t add_clause(clause c) { return add_clauses({c}); }
 
     size_t nvars() const;
     uint32_t var(atom);
