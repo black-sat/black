@@ -21,6 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#ifndef BLACK_CNF_HPP_
+#define BLACK_CNF_HPP_
+
+
 #include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
 
@@ -84,3 +88,5 @@ namespace black {
   using internal::to_cnf;
   using internal::to_formula;
 }
+
+#endif // BLACK_CNF_HPP_
