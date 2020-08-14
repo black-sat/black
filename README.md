@@ -23,16 +23,20 @@ $ black --help
 
 BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
 
+
 SYNOPSIS
-   black [-k <bound>] [<file>]
-   black -h
+   ./black [-k <bound>] [-B <name>] [<file>]
+   ./black --sat-backends
+   ./black -h
 
 OPTIONS
-   -k, --bound <bound>   maximum bound for BMC procedures
-   <file>                input formula file name.
-                         If missing, runs in interactive mode.
-                         If '-', reads from standard input in batch mode.
-   -h, --help            print this help message
+   -k, --bound <bound>        maximum bound for BMC procedures
+   -B, --sat-backend <name>   name of the selected SAT backend
+   <file>                     input formula file name.
+                              If missing, runs in interactive mode.
+                              If '-', reads from standard input in batch mode.
+   --sat-backends             print the list of available SAT backends
+   -h, --help                 print this help message
 ```
 
 The tool accepts a file name as a command line argument, and checks the 
@@ -120,15 +124,17 @@ not on *Get Xcode*
    $ git clone https://github.com/black-sat/black.git
    $ cd black
    ```
-2. Download and unpack the MathSAT 5 distribution:
+2. **optional** The default backend is Glucose. MiniSAT, CryptoMiniSAT, Z3 backends will be
+   automatically if their installation is found on the system. Moreover,
+   you can download and enable MathSAT as follows
    ```
    $ ./download-mathsat5.sh
    ```
-1. Create a `build` directory and `cd` into it:
+3. Create a `build` directory and `cd` into it:
    ```
    $ mkdir build && cd build
    ```
-2. Run `cmake` inside the `build` directory.
+4. Run `cmake` inside the `build` directory.
    * on Ubuntu (and Linux systems in general), make sure to select GCC 8:  
       ```
       $ CC=gcc-8 CXX=g++-8 cmake ..
@@ -137,15 +143,15 @@ not on *Get Xcode*
       ```
       $ cmake ...
       ```
-3. Build
+5. Build
    ```
    $ make
    ```
-4. Run the tests if you want to make sure everything worked properly  
+6. Run the tests if you want to make sure everything worked properly  
    ```
    $ make test
    ```
-5. Install (usually requires administrator privileges)
+7. Install (usually requires administrator privileges)
    ```
    $ make install
    ```
