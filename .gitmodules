@@ -4,9 +4,6 @@
 [submodule "external/catch"]
 	path = external/catch
 	url = https://github.com/catchorg/Catch2.git
-[submodule "external/sanitizers-cmake"]
-	path = external/sanitizers-cmake
-	url = https://github.com/arsenm/sanitizers-cmake.git
 [submodule "external/glucose"]
 	path = external/glucose
 	url = https://github.com/black-sat/glucose.git
