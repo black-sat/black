@@ -1,3 +1,0 @@
-[submodule "external/glucose"]
-	path = external/glucose
-	url = https://github.com/black-sat/glucose.git
