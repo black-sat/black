@@ -27,7 +27,7 @@
 
 find_library(
   CryptoMiniSAT_LIBRARY
-  NAMES libcryptominisat5.so
+  NAMES libcryptominisat5.so libcryptominisat5.dylib
   PATH_SUFFIXES "/lib/" 
   PATH_SUFFIXES "/lib64/"
 )

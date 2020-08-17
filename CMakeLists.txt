@@ -64,19 +64,13 @@ find_package(Sanitizers) # Sanitizers
 #
 # External dependencies
 #
-set(CMAKE_CXX_STANDARD 17)
+find_package(tsl-hopscotch-map REQUIRED)
+find_package(fmt REQUIRED)
 
-option(FMT_PEDANTIC "" ON)
-option(FMT_WERROR "" ON)
-
-find_package(tsl-hopscotch-map QUIET)
-
-add_subdirectory(external/fmt EXCLUDE_FROM_ALL)
 add_subdirectory(external/clipp EXCLUDE_FROM_ALL)
 add_subdirectory(external/glucose EXCLUDE_FROM_ALL)
 
 # mark the depenencies to ignore warnings from their interface headers
-target_mark_as_system(fmt)
 target_mark_as_system(clipp)
 target_mark_as_system(glucose)
 
@@ -90,7 +84,7 @@ add_subdirectory(src/frontend)
 if (ENABLE_TESTS)
   enable_testing()
 
-  find_package(Catch2)
+  find_package(Catch2 REQUIRED)
   add_subdirectory(tests)
 
 endif()

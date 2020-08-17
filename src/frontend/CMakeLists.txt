@@ -44,7 +44,7 @@ target_link_library_with_global_ctors(frontend PRIVATE black)
 
 target_compile_features(frontend PRIVATE cxx_std_17)
 target_include_directories(frontend PRIVATE include)
-target_link_libraries(frontend PRIVATE fmt clipp::clipp)
+target_link_libraries(frontend PRIVATE fmt::fmt clipp::clipp)
 target_enable_warnings(frontend)
 target_code_coverage(frontend)
 add_sanitizers(frontend)
