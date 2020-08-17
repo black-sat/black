@@ -90,7 +90,7 @@ add_subdirectory(src/frontend)
 if (ENABLE_TESTS)
   enable_testing()
 
-  add_subdirectory(external/catch)
+  find_package(Catch2)
   add_subdirectory(tests)
 
 endif()
