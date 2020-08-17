@@ -65,68 +65,79 @@ number of iterations of the underlying algorithm (useful for very hard formulas)
 
 ## Installation
 
-BLACK has been tested on Linux (Ubuntu 18.04 and Fedora ≥ 29) and
-macOS Mojave, but it should work on any Linux or macOS system satisfying the
+BLACK has been tested on Linux (Ubuntu ≥ 18.04 and Fedora ≥ 29) and macOS Mojave
+and later, but it should work on any Linux or macOS system satisfying the
 following requirements:
-1. A C++17 compliant compiler, *e.g.* GCC ≥ 8.2 and clang ≥ 7
+1. A C++17 compliant compiler, *e.g.* GCC ≥ 8.2 or clang ≥ 7
     (Xcode ≥ 10.2 available on macOS Mojave)
 2. [CMake][CMake] 3.10 or upper (see below)
-3. [MathSAT][MathSAT] 5.5 or later (see below)
-   * GNU GMP library (see below)
-   * ZLib (see below)
+3. [Hopscotch-map][hopscotch] v.2.8
 
-Precompiled packages for macOS and major Linux distributions are being prepared.
-In the meantime, the following setup instructions are given for Ubuntu 18.04 and
-newer, and for macOS Mojave, and may need to be adapted for different versions.
+Optionally:
 
-#### WARNING
-Please beware of this compatibility caveat before reporting a build failure.
+4. [MathSAT][MathSAT] 5.5 or later
+5. [Z3][Z3] 4.4 or later
+5. [CryptoMiniSAT][CMS] 5.x
+6. [MiniSAT][MiniSAT] 2.2
 
-GCC 7, shipped by default on Ubuntu 18.04, and the Apple Clang
-shipped with Xcode 10.1 (up to Mac OS X High Sierra) claim C++17
-compatibility but lack proper support for some required standard library
-component.
+Precompiled packages for major Linux distributions are being prepared. In the
+meantime, the following setup instructions are given for Ubuntu 18.04 and newer.
+On macOS Mojave and later, BLACK can be installed from Homebrew as shown below.
 
-Hence, please use GCC ≥ 8.2, upstream Clang ≥ 7, or Xcode ≥ 10.2
-(macOS Mojave). For Ubuntu 18.04 or later and macOS Mojave, follow the
-following instructions, or adapt them to your system/distribution.
+<details>
+  <summary>macOS: installation from Homebrew</summary>
+  
+  Make sure to have installed the [Homebrew][Homebrew] package manager as
+  explained on their website (very easy single-command installation). Then,
+  install BLACK as follows:
+  ```
+  $ brew tap black-sat/black
+  $ brew install black
+  ```
+</details>
+
+<details>
+<summary>Linux: installation from sources</summary>
 
 ### Installing dependencies
 
-On Ubuntu 18.04, install the required packages with `apt` as follows:
+<details>
+<summary>Ubuntu ≥ 20.04 (and other Debian-based distributions)</summary>
+On Ubuntu ≥ 20.04, install the required packages with `apt` as follows:
 
 ```
-$ sudo apt install build-essential gcc-8 g++-8 cmake libgmp-dev libz-dev git wget
+$ sudo apt install build-essential gcc g++ cmake libtsl-hopscotch-map-dev git
 ```
+</details>
+<details>
+<summary>Fedora ≥ 29 (and other RedHat-based distributions)</summary>
 
-On Fedora ≥ 29:
-
+On Fedora ≥ 18.04, install the required packages with `yum` as follows:
 ```
-$ sudo yum install gcc gcc-c++ make cmake gmp-devel zlib-devel git wget
+$ sudo yum install gcc gcc-c++ make cmake gmp-devel zlib-devel git
 ```
-
-On macOS Mojave, install the [Homebrew] package manager as explained on their
-website (very easy single-command installation), then install the required
-dependencies as follows:
-
+and then, install from source the `hopscotch-map` library, which is not available
+as a precompiled `.rpm` package:
 ```
-$ xcode-select --install # make sure you have Apple Command Line Developer Tools
-$ brew install cmake gmp wget
+$ git clone https://github.com/Tessil/hopscotch-map.git
+$ cd hopscotch-map
+$ git checkout v2.3.0
+$ cmake .
+$ make install
 ```
+</details>
 
-If the first command shows a dialog window, make sure to click on *Install*,
-not on *Get Xcode*
 
 ### Compilation
-1. Clone the repository. Clone it recursively, to get all the submodules, and
-   `cd` into the source directory:
+1. Clone the repository and `cd` into the source directory:
    ```
    $ git clone https://github.com/black-sat/black.git
    $ cd black
    ```
-2. **optional** The default backend is Glucose. MiniSAT, CryptoMiniSAT, Z3 backends will be
-   automatically if their installation is found on the system. Moreover,
-   you can download and enable MathSAT as follows
+2. **optional** The default backend SAT solver is Glucose, which is built into
+   BLACK's sources so does not need to be installed separately. The MiniSAT,
+   CryptoMiniSAT, and Z3 backends will be automatically if their installation is
+   found on the system. Moreover, you can download and enable MathSAT as follows
    ```
    $ ./download-mathsat5.sh
    ```
@@ -135,14 +146,9 @@ not on *Get Xcode*
    $ mkdir build && cd build
    ```
 4. Run `cmake` inside the `build` directory.
-   * on Ubuntu (and Linux systems in general), make sure to select GCC 8:  
-      ```
-      $ CC=gcc-8 CXX=g++-8 cmake ..
-      ```
-   * On macOS Mojave, the default choice is fine:  
-      ```
-      $ cmake ...
-      ```
+   ```
+   $ cmake ..
+   ```
 5. Build
    ```
    $ make
@@ -155,10 +161,14 @@ not on *Get Xcode*
    ```
    $ make install
    ```
-
+</details>
 
 [Reynolds]: https://arxiv.org/abs/1609.04102
 [CMake]: https://cmake.org
+[hopscotch]: https://github.com/Tessil/hopscotch-map
+[CMS]: https://github.com/msoos/cryptominisat
+[MiniSAT]: http://minisat.se/
+[Z3]: https://github.com/Z3Prover/z3
 [MathSAT]: http://mathsat.fbk.eu
 [Homebrew]: https://brew.sh
 [Geatti]: https://users.dimi.uniud.it/~luca.geatti
