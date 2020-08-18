@@ -71,6 +71,7 @@ following requirements:
 1. A C++17 compliant compiler, *e.g.* GCC ≥ 8.2 or clang ≥ 7
     (Xcode ≥ 10.2 available on macOS Mojave)
 2. [CMake][CMake] 3.10 or upper (see below)
+3. [zlib][zlib] 1.x
 3. [Hopscotch-map][hopscotch] v.2.8
 
 Optionally:
@@ -102,19 +103,19 @@ On macOS Mojave and later, BLACK can be installed from Homebrew as shown below.
 ### Installing dependencies
 
 <details>
-<summary>Ubuntu ≥ 20.04 (and other Debian-based distributions)</summary>
+<summary>Ubuntu ≥ 20.04 and other Debian-based distributions</summary>
 On Ubuntu ≥ 20.04, install the required packages with `apt` as follows:
 
 ```
-$ sudo apt install build-essential gcc g++ cmake libtsl-hopscotch-map-dev git
+$ sudo apt install build-essential git gcc g++ cmake libtsl-hopscotch-map-dev libz-dev libfmt-dev
 ```
 </details>
 <details>
-<summary>Fedora ≥ 29 (and other RedHat-based distributions)</summary>
+<summary>Fedora ≥ 29 and other RedHat-based distributions</summary>
 
-On Fedora ≥ 18.04, install the required packages with `yum` as follows:
+On Fedora ≥ 29, install the required packages with `yum` as follows:
 ```
-$ sudo yum install gcc gcc-c++ make cmake gmp-devel zlib-devel git
+$ sudo yum install gcc gcc-c++ make cmake zlib-devel git
 ```
 and then, install from source the `hopscotch-map` library, which is not available
 as a precompiled `.rpm` package:
@@ -134,13 +135,32 @@ $ make install
    $ git clone https://github.com/black-sat/black.git
    $ cd black
    ```
-2. **optional** The default backend SAT solver is Glucose, which is built into
-   BLACK's sources so does not need to be installed separately. The MiniSAT,
-   CryptoMiniSAT, and Z3 backends will be automatically if their installation is
-   found on the system. Moreover, you can download and enable MathSAT as follows
+2. <details><summary><strong>Optional</strong> Additional SAT backends</summary>
+    The default backend SAT solver is Glucose, which is built into
+   BLACK's sources and does not need to be installed separately. 
+   
+   The MiniSAT, CryptoMiniSAT, and Z3 backends will be automatically if their
+   installation is found on the system.  
+   
+   To enable the MathSAT backend and install its dependencies, proceed as follows:
+   <details>
+   <summary>On Ubuntu and other Debian-based distributions</summary>
+
    ```
+   $ sudo apt install libgmp-dev
    $ ./download-mathsat5.sh
    ```
+   </details>
+   <details>
+   <summary>On Fedora and other Red Hat-based distributions</summary>
+
+   ```
+   $ sudo yum install gmp-devel
+   $ ./download-mathsat5.sh
+   ```
+   </details>
+   </details>
+
 3. Create a `build` directory and `cd` into it:
    ```
    $ mkdir build && cd build
@@ -165,6 +185,7 @@ $ make install
 
 [Reynolds]: https://arxiv.org/abs/1609.04102
 [CMake]: https://cmake.org
+[zlib]: https://zlib.net/
 [hopscotch]: https://github.com/Tessil/hopscotch-map
 [CMS]: https://github.com/msoos/cryptominisat
 [MiniSAT]: http://minisat.se/
