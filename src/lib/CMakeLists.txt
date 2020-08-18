@@ -21,6 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+find_package(ZLIB REQUIRED) # for Glucose
+
 find_package(MathSAT)
 find_package(Z3)
 find_package(MiniSAT)

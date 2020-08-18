@@ -21,8 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-find_package(GMP REQUIRED)
-find_package(ZLIB REQUIRED)
+find_package(GMP)
+find_package(ZLIB)
 
 ##
 ## Find the MathSAT 5 SMT solver
@@ -55,9 +55,12 @@ find_path(
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MathSAT
   FOUND_VAR MathSAT_FOUND
-  REQUIRED_VARS
+  REQUIRED_VARS 
     MathSAT_LIBRARY
     MathSAT_INCLUDE_DIR
+    GMP_LIBRARIES
+    GMPXX_LIBRARIES
+    ZLIB_LIBRARIES
   VERSION_VAR MathSAT_VERSION
 )
 
