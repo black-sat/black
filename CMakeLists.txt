@@ -81,10 +81,9 @@ add_subdirectory(src/lib)
 add_subdirectory(src/frontend)
 
 # Tests
-if (ENABLE_TESTS)
-  enable_testing()
 
-  find_package(Catch2 REQUIRED)
+if (ENABLE_TESTS)
+  
   add_subdirectory(tests)
 
 endif()

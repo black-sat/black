@@ -21,36 +21,46 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+enable_testing()
+find_package(Catch2 QUIET)
+
 option(
   ENABLE_TOOLS_TESTS "Enable tests of other tools in the benchmark suite" OFF
 )
 
 set(BLACK_TESTS_SAT_BACKEND "glucose" CACHE STRING "SAT backend used in tests")
 
-#
-# Unit testing with Catch2
-#
-set(
-  UNIT_TESTS
-  units/cnf.cpp
-  units/common.cpp
-  units/formula.cpp
-  units/main.cpp
-  units/match.cpp
-  units/parser.cpp
-  units/solver.cpp
-)
+if(Catch2_FOUND)
 
-add_executable(unit_tests ${UNIT_TESTS})
-target_link_library_with_global_ctors(unit_tests PRIVATE black)
-target_link_libraries(unit_tests PRIVATE Catch2::Catch2)
-target_enable_warnings(unit_tests)
-target_code_coverage(unit_tests)
-add_sanitizers(unit_tests)
+  #
+  # Unit testing with Catch2
+  #
+  set(
+    UNIT_TESTS
+    units/cnf.cpp
+    units/common.cpp
+    units/formula.cpp
+    units/main.cpp
+    units/match.cpp
+    units/parser.cpp
+    units/solver.cpp
+  )
 
-add_test(NAME unit_tests COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
+  add_executable(unit_tests ${UNIT_TESTS})
+  target_link_library_with_global_ctors(unit_tests PRIVATE black)
+  target_link_libraries(unit_tests PRIVATE Catch2::Catch2)
+  target_enable_warnings(unit_tests)
+  target_code_coverage(unit_tests)
+  add_sanitizers(unit_tests)
 
-message(STATUS "Unit tests enabled")
+  add_test(NAME unit_tests COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
+
+  message(STATUS "Unit tests enabled")
+else()
+  message(STATUS
+    "Catch2 missing. Unit tests disabled (correctness test suite still enabled)"
+  )
+endif()
 
 #
 # Formulas test set
