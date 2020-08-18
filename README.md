@@ -93,7 +93,7 @@ On macOS Mojave and later, BLACK can be installed from Homebrew as shown below.
   install BLACK as follows:
   ```
   $ brew tap black-sat/black
-  $ brew install black
+  $ brew install black-sat
   ```
 </details>
 
