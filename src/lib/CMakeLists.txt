@@ -21,6 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+find_package(ZLIB REQUIRED) # for Glucose
+
 find_package(MathSAT)
 find_package(Z3)
 find_package(MiniSAT)
@@ -108,7 +110,7 @@ set (
 #
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PRIVATE glucose fmt)
+target_link_libraries(black PRIVATE glucose fmt::fmt)
 target_link_libraries(black PUBLIC tsl::hopscotch_map)
 target_include_directories(black PUBLIC include)
 target_compile_features(black PUBLIC cxx_std_17)
