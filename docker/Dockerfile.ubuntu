@@ -3,7 +3,7 @@ FROM ubuntu:$VERSION
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y make cmake
-RUn apt-get update && apt-get install -y libtsl-hopscotch-map-dev
+RUN apt-get update && apt-get install -y libtsl-hopscotch-map-dev libfmt-dev
 RUN apt-get update && apt-get install -y git
 
 ARG GCC_VERSION=8
