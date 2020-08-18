@@ -21,7 +21,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-enable_testing()
 find_package(Catch2 QUIET)
 
 option(
@@ -65,7 +64,7 @@ endif()
 #
 # Formulas test set
 #
-message(STATUS "Configuring test suite")
+message(STATUS "Configuring test suite...")
 
 file(STRINGS formulas/tests.index TESTS)
 
