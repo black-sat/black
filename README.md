@@ -155,7 +155,7 @@ $ make install
    <summary>On Fedora and other Red Hat-based distributions</summary>
 
    ```
-   $ sudo yum install gmp-devel
+   $ sudo yum install gmp-devel gmp-c++
    $ ./download-mathsat5.sh
    ```
    </details>
