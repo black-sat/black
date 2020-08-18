@@ -59,7 +59,6 @@ find_package_handle_standard_args(MathSAT
     MathSAT_LIBRARY
     MathSAT_INCLUDE_DIR
     GMP_LIBRARIES
-    GMPXX_LIBRARIES
     ZLIB_LIBRARIES
   VERSION_VAR MathSAT_VERSION
 )
@@ -67,7 +66,7 @@ find_package_handle_standard_args(MathSAT
 if(MathSAT_FOUND)
 
   set(MathSAT_LIBRARIES 
-    ${MathSAT_LIBRARY} ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} ${ZLIB_LIBRARIES}
+    ${MathSAT_LIBRARY} ${GMP_LIBRARIES} ${ZLIB_LIBRARIES}
   )
   set(MathSAT_INCLUDE_DIRS ${MathSAT_INCLUDE_DIR})
 
