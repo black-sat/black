@@ -51,7 +51,7 @@ task:
   osx_instance:
     image: catalina-base
   download_dependencies_script:
-    - brew install cmake gmp wget
+    - brew install cmake fmt
     - brew install black-sat/black/hopscotch-map
   debug_build_script:
     - mkdir -p build && cd build
