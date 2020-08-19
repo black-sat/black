@@ -33,11 +33,13 @@ set(
   # Simp
   simp/SimpSolver.cc
   simp/SimpSolver.h
+)
+
+set(LIB_PARALEL_SRC
   # parallel
   parallel/SolverConfiguration.cc
   parallel/SharedCompanion.cc
   parallel/ClausesBuffer.h
-  parallel/Makefile
   parallel/ParallelSolver.cc
   parallel/ClausesBuffer.cc
   parallel/SharedCompanion.h
@@ -59,7 +61,9 @@ set(
 # Single-thread library and front-end
 #
 
-add_library(glucose ${SIMP_LIB_SRC} ${LIB_SRC})
+add_library(glucose STATIC ${SIMP_LIB_SRC} ${LIB_SRC})
+target_link_libraries(glucose PUBLIC pthread)
+set_target_properties(glucose PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(glucose PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_options(glucose PRIVATE -DNDEBUG)
 target_compile_features(glucose PUBLIC cxx_std_11)
@@ -68,6 +72,20 @@ target_compile_options(
   "$<$<CXX_COMPILER_ID:Clang>:${CLANG_WARNINGS}>"
   "$<$<CXX_COMPILER_ID:AppleClang>:${CLANG_WARNINGS}>"
 )
+
+add_library(glucose-parallel STATIC ${SIMP_LIB_SRC} ${LIB_SRC})
+target_link_libraries(glucose-parallel PUBLIC glucose pthread)
+set_target_properties(glucose-parallel PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(glucose PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_options(glucose PRIVATE -DNDEBUG)
+target_compile_features(glucose PUBLIC cxx_std_11)
+target_compile_options(
+  glucose PRIVATE 
+  "$<$<CXX_COMPILER_ID:Clang>:${CLANG_WARNINGS}>"
+  "$<$<CXX_COMPILER_ID:AppleClang>:${CLANG_WARNINGS}>"
+)
+
+
 
 add_executable(frontend-simp simp/Main.cc)
 target_link_libraries(frontend-simp PRIVATE glucose ZLIB::ZLIB)
@@ -78,7 +96,7 @@ target_compile_options(
 )
 
 add_executable(frontend-syrup parallel/Main.cc)
-target_link_libraries(frontend-syrup PRIVATE glucose ZLIB::ZLIB)
+target_link_libraries(frontend-syrup PRIVATE glucose glucose-parallel ZLIB::ZLIB)
 set_property(TARGET frontend-syrup PROPERTY OUTPUT_NAME glucose-syrup)
 target_compile_options(
   frontend-syrup PRIVATE 

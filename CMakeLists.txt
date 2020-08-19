@@ -23,7 +23,7 @@
 
 cmake_minimum_required(VERSION 3.10)
 
-project(black LANGUAGES C CXX)
+project(black VERSION 0.1.1 LANGUAGES C CXX)
 
 # User options
 option(ENABLE_TESTS "Enable test suite" ON)
@@ -42,6 +42,8 @@ if(STATIC_BUILD)
   set(BUILD_SHARED_LIBS OFF)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
   message(STATUS "Static build enabled")
+else()
+  set(BUILD_SHARED_LIBS ON)
 endif()
 
 #
@@ -88,3 +90,17 @@ if (ENABLE_TESTS)
   add_subdirectory(tests)
 
 endif()
+
+
+##
+## Packaging
+##
+set(CPACK_PACKAGE_VENDOR "University of Udine, Italy")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "BLACK (Bounded Lᴛʟ sAtisfiability ChecKer)")
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+
+include(CPack)
