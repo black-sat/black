@@ -23,7 +23,12 @@
 
 cmake_minimum_required(VERSION 3.10)
 
-project(black VERSION 0.1.1 LANGUAGES C CXX)
+project(
+  black 
+  VERSION 0.1.1 
+  LANGUAGES C CXX
+  DESCRIPTION "BLACK (Bounded Lᴛʟ sAtisfiability ChecKer)"
+)
 
 # User options
 option(ENABLE_TESTS "Enable test suite" ON)
@@ -95,12 +100,15 @@ endif()
 ##
 ## Packaging
 ##
+set(CPACK_PACKAGE_NAME "black-sat")
 set(CPACK_PACKAGE_VENDOR "University of Udine, Italy")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "BLACK (Bounded Lᴛʟ sAtisfiability ChecKer)")
 set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+
+set(CPACK_PACKAGE_CONTACT "Nicola Gigante <nicola.gigante@gmail.com>")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6,libgcc1,libstdc++6,zlib1g")
 
 include(CPack)
