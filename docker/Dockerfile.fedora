@@ -3,7 +3,7 @@ FROM fedora:$VERSION
 RUN yum update -y
 RUN yum install -y make cmake gcc gcc-c++
 RUN yum install -y zlib-devel fmt-devel catch-devel z3-devel gmp-devel gmp-c++
-RUN yum install -y git wget
+RUN yum install -y git wget rpm-build
 
 RUN git clone https://github.com/msoos/cryptominisat.git /cmsat
 WORKDIR /cmsat
