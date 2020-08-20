@@ -47,8 +47,15 @@ namespace black::frontend
     exit(static_cast<uint8_t>(status));
   }
 
+  static void print_version() {
+    io::message("BLACK - Bounded Lᴛʟ sAtisfiability ChecKer");
+    io::message("        version {}", black::version);
+  }
+
   static void print_header() {
-    io::message("\nBLACK - Bounded Lᴛʟ sAtisfiability ChecKer\n");
+    io::message("");
+    print_version();
+    io::message("");
   }
 
   template<typename Cli>
@@ -83,6 +90,7 @@ namespace black::frontend
     using namespace clipp;
 
     bool help = false;
+    bool version = false;
     bool show_backends = false;
 
     auto cli = (
@@ -97,6 +105,8 @@ namespace black::frontend
           "If '-', reads from standard input in batch mode."
     ) | option("--sat-backends").set(show_backends) 
           % "print the list of available SAT backends"
+      | option("-v", "--version").set(version)
+          % "show version information"
       | option("-h", "--help").set(help) % "print this help message";
 
     cli::command_name = argv[0];
@@ -117,6 +127,11 @@ namespace black::frontend
 
     if(show_backends) {
       print_sat_backends();
+      quit(status_code::success);
+    }
+
+    if(version) {
+      print_version();
       quit(status_code::success);
     }
   }

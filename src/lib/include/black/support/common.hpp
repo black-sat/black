@@ -24,9 +24,11 @@
 #ifndef BLACK_COMMON_H
 #define BLACK_COMMON_H
 
+#include <black/support/config.hpp>
+
 #include <optional>
 #include <type_traits>
-
+#include <string_view>
 
 // Include in the details namespace some commonly used type.
 // Since they are not included in the main namespace, the declarations do not
@@ -37,6 +39,10 @@ namespace black::internal {
   using std::make_optional;
   using std::nullopt;
 
+}
+
+namespace black {
+  inline std::string_view version = BLACK_VERSION;
 }
 
 // Shorthand for perfect forwarding

@@ -56,6 +56,9 @@ else()
     "CryptoMiniSAT solver not found. Disabling the CMSAT backend...")
 endif()
 
+# configure config header
+configure_file(include/black/support/config.hpp.in ${CMAKE_BINARY_DIR}/include/black/support/config.hpp)
+
 #
 # black library
 #
@@ -113,8 +116,9 @@ add_library (black ${LIB_SRC} ${LIB_HEADERS})
 target_link_libraries(black PRIVATE glucose fmt::fmt)
 target_link_libraries(black PUBLIC tsl::hopscotch_map)
 target_include_directories(black PUBLIC  
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>  
-  $<INSTALL_INTERFACE:include> 
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 target_compile_features(black PUBLIC cxx_std_17)
 target_enable_warnings(black)
@@ -144,7 +148,15 @@ install(TARGETS black
   ARCHIVE DESTINATION lib
 )
 
-install(DIRECTORY include/black DESTINATION include)
+install(
+  DIRECTORY include/black 
+  DESTINATION include
+  PATTERN "*.in" EXCLUDE
+)
+
+install(FILES "${CMAKE_BINARY_DIR}/include/black/support/config.hpp"
+  DESTINATION include/black/support
+)
 
 install(EXPORT blackTargets
   FILE blackTargets.cmake
