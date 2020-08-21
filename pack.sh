@@ -3,6 +3,12 @@
 set -eu -o pipefail
 shopt -s failglob
 
+if [ $# -ne 1 ]; then
+  echo Please provide the version number
+  exit 1
+fi
+
+VERSION=$1
 SRC_DIR=$(pwd)
 
 die() {
@@ -49,13 +55,48 @@ build() {
   $env cpack -G $gen || die
 
   mkdir -p "$SRC_DIR/packages"
-  mv "$SRC_DIR"/build/black-sat-*.$ext "$SRC_DIR/packages" 
+  mv "$SRC_DIR/build/black-sat-$VERSION-Linux.$ext" \
+     "$SRC_DIR/packages/black-sat-$VERSION-1.$(uname -m).$ext" 
+}
+
+homebrew() {
+  temp=$(mktemp)
+  wget -O "$temp" "https://github.com/black-sat/black/archive/v$VERSION.tar.gz"
+  sum=$(shasum -a 256 "$temp" | awk '{print $1}')
+  
+  cat <<END > $SRC_DIR/packages/black-sat.rb
+class BlackSat < Formula
+  desc "BLACK (Bounded Lᴛʟ sAtisfiability ChecKer)"
+  homepage ""
+  url "https://github.com/black-sat/black/archive/v$VERSION.tar.gz"
+  sha256 "$sum"
+
+  depends_on "cmake" => :build
+  depends_on "hopscotch-map" => :build
+  depends_on "catch2" => :build
+  depends_on "fmt"
+  depends_on "z3" => :recommended
+  depends_on "cryptominisat" => :recommended
+
+  def install
+    # ENV.deparallelize  # if your formula fails when building in parallel
+    system "cmake", ".", *std_cmake_args
+    system "make"
+    system "make", "install"
+  end
+
+  test do
+    system "make test"
+  end
+end
+END
 }
 
 main () {
   prepare
   build ubuntu 
   build fedora
+  homebrew
 }
 
 main "$@"
