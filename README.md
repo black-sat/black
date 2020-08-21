@@ -19,6 +19,38 @@ See the project's wiki for the [Documentation][Home]. In particular:
 2. [Usage][Usage]
 3. (coming soon...) BLACK Library API
 
+Quick installation instructions:
+
+| Ubuntu ≥ 20.04             | Fedora ≥ 32, CentOS/RHEL ≥ 8 | macOS ≥ 10.14 with [Homebrew][Homebrew] |
+|----------------------------|------------------------------|-----------------------------|
+| [![Download](https://badgen.net/badge/Download%20v0.1.1/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.1.1/.rpm/green)][pkg.rpm]| |
+| How to install:<br/>`$ sudo apt install ⟨file⟩` | How to install:<br/>`$ sudo dnf install ⟨file⟩` |How to install:<br/>`$ brew install black-sat/black/black-sat`|
+
+Quick usage help:
+```
+$ black --help
+
+BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
+        version 0.1.1
+
+
+SYNOPSIS
+   black [-k <bound>] [-B <name>] [<file>]
+   black --sat-backends
+   black -v
+   black -h
+
+OPTIONS
+   -k, --bound <bound>        maximum bound for BMC procedures
+   -B, --sat-backend <name>   select the SAT backend to use
+   <file>                     input formula file name.
+                              If missing, runs in interactive mode.
+                              If '-', reads from standard input in batch mode.
+   --sat-backends             print the list of available SAT backends
+   -v, --version              show version information
+   -h, --help                 print this help message
+```
+
 
 [Reynolds]: https://arxiv.org/abs/1609.04102
 [CMake]: https://cmake.org
@@ -38,3 +70,5 @@ See the project's wiki for the [Documentation][Home]. In particular:
 [Home]: https://github.com/black-sat/black/wiki/Home 
 [Installation]: https://github.com/black-sat/black/wiki/Installation 
 [Usage]: https://github.com/black-sat/black/wiki/Usage 
+[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.1.1/black-sat-0.1.1-1.x86_64.deb
+[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.1.1/black-sat-0.1.1-1.x86_64.rpm
