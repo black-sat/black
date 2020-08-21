@@ -21,39 +21,63 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
+option(ENABLE_MATHSAT "Enable the MathSAT backend, if found" ON)
+option(ENABLE_Z3 "Enable the Z3 backend, if found" ON)
+option(ENABLE_CMSAT "Enable the CryptoMiniSAT backend, if found" ON)
+option(ENABLE_MINISAT "Enable the MiniSAT backend, if found" ON)
+
 find_package(ZLIB REQUIRED) # for Glucose
-
-find_package(MathSAT)
-find_package(Z3)
-find_package(MiniSAT)
-find_package(CryptoMiniSAT)
-
 message(STATUS "Glucose solver is built-in. Enabling Glucose backend...")
 
-if(MathSAT_FOUND)
-  message(STATUS "MathSAT solver found! Enabling the MathSAT backend...")
+if(ENABLE_MATHSAT)
+  find_package(MathSAT)
+
+  if(MathSAT_FOUND)
+    message(STATUS "MathSAT solver found! Enabling the MathSAT backend...")
+  else()
+    message(STATUS "MathSAT solver not found. Disabling the MathSAT backend...")
+  endif()
 else()
-  message(STATUS "MathSAT solver not found. Disabling the MathSAT backend...")
+  message(STATUS "MathSAT backend disabled.")
 endif()
 
-if(Z3_FOUND)
-  message(STATUS "Z3 solver found! Enabling the Z3 backend...")
+if(ENABLE_Z3)
+  find_package(Z3)
+
+  if(Z3_FOUND)
+    message(STATUS "Z3 solver found! Enabling the Z3 backend...")
+  else()
+    message(STATUS "Z3 solver not found. Disabling the Z3 backend...")
+  endif()
 else()
-  message(STATUS "Z3 solver not found. Disabling the Z3 backend...")
+  message(STATUS "Z3 backend disabled.")
 endif()
 
-if(MiniSAT_FOUND)
-  message(STATUS "MiniSAT solver found! Enabling the MiniSAT backend...")
+if(ENABLE_MINISAT)
+  find_package(MiniSAT)
+
+  if(MiniSAT_FOUND)
+    message(STATUS "MiniSAT solver found! Enabling the MiniSAT backend...")
+  else()
+    message(STATUS "MiniSAT solver not found. Disabling the MiniSAT backend...")
+  endif()
 else()
-  message(STATUS "MiniSAT solver not found. Disabling the MiniSAT backend...")
+  message(STATUS "MiniSAT backend disabled.")
 endif()
 
-if(CryptoMiniSAT_FOUND)
-  message(STATUS 
-    "CryptoMiniSAT solver found! Enabling the CMSAT backend...")
+if(ENABLE_CMSAT)
+  find_package(CryptoMiniSAT)
+
+  if(CryptoMiniSAT_FOUND)
+    message(STATUS 
+      "CryptoMiniSAT solver found! Enabling the CMSAT backend...")
+  else()
+    message(STATUS 
+      "CryptoMiniSAT solver not found. Disabling the CMSAT backend...")
+  endif()
 else()
-  message(STATUS 
-    "CryptoMiniSAT solver not found. Disabling the CMSAT backend...")
+  message(STATUS "CryptoMiniSAT backend disabled.")
 endif()
 
 # configure config header
