@@ -21,7 +21,7 @@ See the project's wiki for the [Documentation][Home]. In particular:
 
 Quick installation instructions:
 
-| Ubuntu ≥ 20.04             | Fedora ≥ 32, CentOS/RHEL ≥ 8 | macOS ≥ 10.14 with [Homebrew][Homebrew] |
+| Ubuntu ≥ 20.04             | Fedora ≥ 32, CentOS/RHEL&nbsp;≥&nbsp;8 | macOS ≥ 10.14 with [Homebrew][Homebrew] |
 |----------------------------|------------------------------|-----------------------------|
 | [![Download](https://badgen.net/badge/Download%20v0.1.1/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.1.1/.rpm/green)][pkg.rpm]| |
 | How to install:<br/>`$ sudo apt install ⟨file⟩` | How to install:<br/>`$ sudo dnf install ⟨file⟩` |How to install:<br/>`$ brew install black-sat/black/black-sat`|
