@@ -48,8 +48,20 @@ namespace black::frontend
   }
 
   static void print_version() {
+    static std::string sep(80, '-');
+
     io::message("BLACK - Bounded Lᴛʟ sAtisfiability ChecKer");
     io::message("        version {}", black::version);
+
+    io::message("{}", sep);
+    io::message("{}", black::license);
+    for(auto name : black::sat::solver::backends()) {
+      auto backend = black::sat::solver::get_solver(name);
+      if(auto l = backend->license(); l) {
+        io::message("{}", sep);
+        io::message("{}", *l);
+      }
+    }
   }
 
   static void print_header() {
@@ -106,7 +118,7 @@ namespace black::frontend
     ) | option("--sat-backends").set(show_backends) 
           % "print the list of available SAT backends"
       | option("-v", "--version").set(version)
-          % "show version information"
+          % "show version and license information"
       | option("-h", "--help").set(help) % "print this help message";
 
     cli::command_name = argv[0];
