@@ -25,6 +25,7 @@
 #define BLACK_COMMON_H
 
 #include <black/support/config.hpp>
+#include <black/support/license.hpp>
 
 #include <optional>
 #include <type_traits>
