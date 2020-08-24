@@ -47,12 +47,15 @@ namespace black::frontend
     exit(static_cast<uint8_t>(status));
   }
 
+  static void print_header() {
+    io::message("BLACK - Bounded Lᴛʟ sAtisfiability ChecKer");
+    io::message("        version {}", black::version);
+  }
+
   static void print_version() {
     static std::string sep(80, '-');
 
-    io::message("BLACK - Bounded Lᴛʟ sAtisfiability ChecKer");
-    io::message("        version {}", black::version);
-
+    print_header();
     io::message("{}", sep);
     io::message("{}", black::license);
     for(auto name : black::sat::solver::backends()) {
@@ -64,12 +67,6 @@ namespace black::frontend
     }
   }
 
-  static void print_header() {
-    io::message("");
-    print_version();
-    io::message("");
-  }
-
   template<typename Cli>
   static void print_help(Cli cli) {
     auto fmt = clipp::doc_formatting{}
@@ -77,14 +74,16 @@ namespace black::frontend
          .doc_column(30)
          .last_column(79);
 
+    io::message("");
     print_header();
+    io::message("");
 
     io::message("\n{}", clipp::make_man_page(cli, cli::command_name, fmt));
   }
 
   static void print_sat_backends() {
     print_header();
-    io::message("Available SAT backends:");
+    io::message("\nAvailable SAT backends:");
     for(auto backend : black::sat::solver::backends()) {
       io::message(" - {}", backend);
     }
