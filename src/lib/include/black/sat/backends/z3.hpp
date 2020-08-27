@@ -37,6 +37,7 @@ namespace black::sat::backends
     virtual bool is_sat();
     virtual bool is_sat(formula assumption);
     virtual void clear();
+    virtual std::optional<std::string> license() const;
 
   private:
     struct _z3_t;

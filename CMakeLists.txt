@@ -23,7 +23,12 @@
 
 cmake_minimum_required(VERSION 3.10)
 
-project(black LANGUAGES C CXX)
+project(
+  black 
+  VERSION 0.1.1 
+  LANGUAGES C CXX
+  DESCRIPTION "BLACK (Bounded Lᴛʟ sAtisfiability ChecKer)"
+)
 
 # User options
 option(ENABLE_TESTS "Enable test suite" ON)
@@ -42,6 +47,8 @@ if(STATIC_BUILD)
   set(BUILD_SHARED_LIBS OFF)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
   message(STATUS "Static build enabled")
+else()
+  set(BUILD_SHARED_LIBS ON)
 endif()
 
 #
@@ -64,19 +71,15 @@ find_package(Sanitizers) # Sanitizers
 #
 # External dependencies
 #
-set(CMAKE_CXX_STANDARD 17)
+find_package(tsl-hopscotch-map REQUIRED)
+find_package(fmt REQUIRED)
 
-option(FMT_PEDANTIC "" ON)
-option(FMT_WERROR "" ON)
-
-add_subdirectory(external/fmt EXCLUDE_FROM_ALL)
 add_subdirectory(external/clipp EXCLUDE_FROM_ALL)
-add_subdirectory(external/hopscotch-map EXCLUDE_FROM_ALL)
+add_subdirectory(external/glucose EXCLUDE_FROM_ALL)
 
 # mark the depenencies to ignore warnings from their interface headers
-target_mark_as_system(fmt)
 target_mark_as_system(clipp)
-target_mark_as_system(hopscotch_map)
+target_mark_as_system(glucose)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DBLACK_ASSERT_DISABLE")
 
@@ -85,10 +88,28 @@ add_subdirectory(src/lib)
 add_subdirectory(src/frontend)
 
 # Tests
-if (ENABLE_TESTS)
-  enable_testing()
 
-  add_subdirectory(external/catch)
+if (ENABLE_TESTS)
+  
+  enable_testing()
   add_subdirectory(tests)
 
 endif()
+
+
+##
+## Packaging
+##
+set(CPACK_PACKAGE_NAME "black-sat")
+set(CPACK_PACKAGE_VENDOR "University of Udine, Italy")
+set(CPACK_PACKAGE_CONTACT "Nicola Gigante <nicola.gigante@gmail.com>")
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+
+set(CPACK_DEBIAN_PACKAGE_SECTION "science")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6,libgcc1,libstdc++6,zlib1g,libz3-4")
+
+include(CPack)

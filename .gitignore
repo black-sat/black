@@ -219,6 +219,7 @@ cnf.dimacs
 # Build directories
 build
 *-build
+packages
 
 # VSCode settings
 .vscode

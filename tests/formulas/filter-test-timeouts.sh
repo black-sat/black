@@ -17,7 +17,7 @@ mytimeout()
   command=timeout
   [ "$(uname)" = "Darwin" ] && command=gtimeout
 
-  $command --foreground -s KILL 3s $@
+  $command --foreground -s KILL 0.01s "$@"
 
   # timeout returns 124 or 137 if it had to kill the process
   # Yes I love Unix...
@@ -27,21 +27,20 @@ mytimeout()
 # Run from the topmost source dir
 cd $(git rev-parse --show-toplevel)
 
-summaryfile=tests/formulas/starexec/NuSMV-30min.csv
+summaryfile=tests/formulas/tests.index
 
-cat $summaryfile | grep BDD | while IFS=", " read -r -a LINE; do
+cat $summaryfile | while IFS=";" read -r -a LINE; do
   # Parse the line
-  filename=$(echo ${LINE[0]} | sed 's/ATVA11pltl-orig\///g')
-  result=$(echo ${LINE[8]} | sed 's/UNS/UNSAT/')
+  filename=$(echo ${LINE[0]})
+  result=$(echo ${LINE[1]})
 
-  # Discard CSV header
-  [ "$filename" != "benchmark" ] || continue
-
-  # Discard entries with unknown result
-  [ "$result" != "UNK" -a "$result" != "--" ] || continue
+  if [ "$result" = "UNSAT" ]; then
+    echo "$filename;$result"
+    continue
+  fi
 
   # Launch checker
-  if mytimeout ./build/black -f "./tests/formulas/$filename" > /dev/null; then
+  if mytimeout ./build/black "./benchmarks/formulas/$filename" > /dev/null; then
     echo "$filename;$result"
   fi
 done

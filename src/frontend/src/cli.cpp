@@ -47,15 +47,34 @@ namespace black::frontend
     exit(static_cast<uint8_t>(status));
   }
 
+  static void print_version() {
+    static std::string sep(80, '-');
+
+    io::message("BLACK - Bounded Lᴛʟ sAtisfiability ChecKer");
+    io::message("        version {}", black::version);
+
+    io::message("{}", sep);
+    io::message("{}", black::license);
+    for(auto name : black::sat::solver::backends()) {
+      auto backend = black::sat::solver::get_solver(name);
+      if(auto l = backend->license(); l) {
+        io::message("{}", sep);
+        io::message("{}", *l);
+      }
+    }
+  }
+
   static void print_header() {
-    io::message("\nBLACK - Bounded Lᴛʟ sAtisfiability ChecKer\n");
+    io::message("");
+    print_version();
+    io::message("");
   }
 
   template<typename Cli>
   static void print_help(Cli cli) {
     auto fmt = clipp::doc_formatting{}
          .first_column(3)
-         .doc_column(25)
+         .doc_column(30)
          .last_column(79);
 
     print_header();
@@ -83,20 +102,24 @@ namespace black::frontend
     using namespace clipp;
 
     bool help = false;
+    bool version = false;
     bool show_backends = false;
 
     auto cli = (
       (option("-k", "--bound") & integer("bound", cli::bound))
         % "maximum bound for BMC procedures",
-      (option("--sat-backend") & value(is_backend, "name", cli::sat_backend))
-        % "name of the selected SAT backend",
+      (option("-B", "--sat-backend") 
+        & value(is_backend, "name", cli::sat_backend))
+        % "select the SAT backend to use",
       value("file", cli::filename).required(false)
         % "input formula file name.\n"
           "If missing, runs in interactive mode.\n"
           "If '-', reads from standard input in batch mode."
-    ) | option("-h", "--help").set(help) % "print this help message"
-      | option("--sat-backends").set(show_backends) 
-          % "print the list of available SAT backends";
+    ) | option("--sat-backends").set(show_backends) 
+          % "print the list of available SAT backends"
+      | option("-v", "--version").set(version)
+          % "show version and license information"
+      | option("-h", "--help").set(help) % "print this help message";
 
     cli::command_name = argv[0];
 
@@ -116,6 +139,11 @@ namespace black::frontend
 
     if(show_backends) {
       print_sat_backends();
+      quit(status_code::success);
+    }
+
+    if(version) {
+      print_version();
       quit(status_code::success);
     }
   }

@@ -2,16 +2,26 @@ ARG VERSION=32
 FROM fedora:$VERSION
 RUN yum update -y
 RUN yum install -y make cmake gcc gcc-c++
-RUN yum install -y gmp-devel zlib-devel z3-devel
-RUN yum install -y git wget findutils
+RUN yum install -y zlib-devel fmt-devel catch-devel z3-devel gmp-devel gmp-c++
+RUN yum install -y git wget rpm-build
 
 RUN git clone https://github.com/msoos/cryptominisat.git /cmsat
 WORKDIR /cmsat
-RUN git checkout 6477e8bc43b0fda7038965bb148b64b8637c804b
+RUN git checkout 5.8.0
 
 WORKDIR /cmsat/build
+RUN cmake -DONLY_SIMPLE=ON -DNOZLIB=ON -DNOM4RI=ON -DSTATS=OFF -DNOVALGRIND=ON -DENABLE_TESTING=OFF ..
+RUN make
+RUN make install
+
+RUN git clone https://github.com/Tessil/hopscotch-map.git /tsl
+WORKDIR /tsl
+RUN git checkout v2.3.0
+
+WORKDIR /tsl/build
 RUN cmake ..
 RUN make
 RUN make install
+
 
 ENTRYPOINT ["/usr/bin/env", "--"]

@@ -143,4 +143,15 @@ namespace black::sat::backends
     );
   }
 
+  std::optional<std::string> mathsat::license() const {
+    return R"(
+MathSAT5 is copyrighted 2009-2020 by Fondazione Bruno Kessler, Trento, Italy, 
+University of Trento, Italy, and others. All rights reserved.
+
+MathSAT5 is available for research and evaluation purposes only. It can not be 
+used in a commercial environment, particularly as part of a commercial product, 
+without written permission. MathSAT5 is provided as is, without any warranty.
+)";
+  }
+
 }

@@ -21,11 +21,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+find_package(Catch2 QUIET)
+
 option(
   ENABLE_TOOLS_TESTS "Enable tests of other tools in the benchmark suite" OFF
 )
 
-set(BLACK_TESTS_SAT_BACKEND "mathsat" CACHE STRING "SAT backend used in tests")
+set(BLACK_TESTS_SAT_BACKEND "glucose" CACHE STRING "SAT backend used in tests")
 
 #
 # Past formulas generator
@@ -33,36 +35,43 @@ set(BLACK_TESTS_SAT_BACKEND "mathsat" CACHE STRING "SAT backend used in tests")
 add_executable(past_generator past_generator.cpp)
 target_link_library_with_global_ctors(past_generator PRIVATE black)
 
-#
-# Unit testing with Catch2
-#
-set(
-  UNIT_TESTS
-  units/cnf.cpp
-  units/common.cpp
-  units/formula.cpp
-  units/main.cpp
-  units/match.cpp
-  units/parser.cpp
-  units/solver.cpp
-  units/past_remover.cpp
-)
 
-add_executable(unit_tests ${UNIT_TESTS})
-target_link_library_with_global_ctors(unit_tests PRIVATE black)
-target_link_libraries(unit_tests PRIVATE Catch2::Catch2)
-target_enable_warnings(unit_tests)
-target_code_coverage(unit_tests)
-add_sanitizers(unit_tests)
+if(Catch2_FOUND)
 
-add_test(NAME unit_tests COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
+  #
+  # Unit testing with Catch2
+  #
+  set(
+    UNIT_TESTS
+    units/cnf.cpp
+    units/common.cpp
+    units/formula.cpp
+    units/main.cpp
+    units/match.cpp
+    units/parser.cpp
+    units/solver.cpp
+  )
 
-message(STATUS "Unit tests enabled")
+  add_executable(unit_tests ${UNIT_TESTS})
+  target_link_library_with_global_ctors(unit_tests PRIVATE black)
+  target_link_libraries(unit_tests PRIVATE Catch2::Catch2)
+  target_enable_warnings(unit_tests)
+  target_code_coverage(unit_tests)
+  add_sanitizers(unit_tests)
+
+  add_test(NAME unit_tests COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
+
+  message(STATUS "Unit tests enabled")
+else()
+  message(STATUS
+    "Catch2 missing. Unit tests disabled (correctness test suite still enabled)"
+  )
+endif()
 
 #
 # Formulas test set
 #
-message(STATUS "Configuring test suite")
+message(STATUS "Configuring test suite...")
 
 file(STRINGS formulas/tests.index TESTS)
 
