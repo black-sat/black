@@ -153,13 +153,14 @@ TEST_CASE("Handles")
   {
     auto match = [&](unary u) {
       return u.match(
-        [](negation)     { return "negation"s;    },
-        [](tomorrow)     { return "tomorrow"s;    },
-        [](yesterday)    { return "yesterday"s;    },
-        [](always)       { return "always"s;    },
-        [](eventually)   { return "eventually"s;    },
-        [](once)         { return "once"s;    },
-        [](historically) { return "historically"s;    }
+        [](negation)     { return "negation"s;       },
+        [](tomorrow)     { return "tomorrow"s;       },
+        [](yesterday)    { return "yesterday"s;      },
+        [](w_yesterday)  { return "weak yesterday"s; },
+        [](always)       { return "always"s;         },
+        [](eventually)   { return "eventually"s;     },
+        [](once)         { return "once"s;           },
+        [](historically) { return "historically"s;   }
       );
     };
 
@@ -172,6 +173,7 @@ TEST_CASE("Handles")
     REQUIRE(match(X(p))      == "tomorrow"s);
     REQUIRE(match(F(p && q)) == "eventually"s);
     REQUIRE(match(Y(p || q)) == "yesterday"s);
+    REQUIRE(match(Z(p || q)) == "weak yesterday"s);
   }
 }
 

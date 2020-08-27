@@ -109,6 +109,7 @@ namespace black::internal
       {"NOT",   token{unary::type::negation}},
       {"X",     token{unary::type::tomorrow}},
       {"Y",     token{unary::type::yesterday}},
+      {"Z",     token{unary::type::w_yesterday}},
       {"F",     token{unary::type::eventually}},
       {"G",     token{unary::type::always}},
       {"P",     token{unary::type::once}},

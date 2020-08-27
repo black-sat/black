@@ -94,6 +94,7 @@ namespace black::internal
       "!", // negation
       "X", // tomorrow
       "Y", // yesterday
+      "Z", // weak yesterday
       "G", // always
       "F", // eventually
       "P", // once

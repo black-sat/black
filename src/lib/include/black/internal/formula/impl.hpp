@@ -255,6 +255,7 @@ namespace black::internal
   declare_operator(negation,     unary)
   declare_operator(tomorrow,     unary)
   declare_operator(yesterday,    unary)
+  declare_operator(w_yesterday,  unary)
   declare_operator(always,       unary)
   declare_operator(eventually,   unary)
   declare_operator(once,         unary)
@@ -301,6 +302,7 @@ namespace black::internal
   //       cause name clashes with user names
   inline auto X(formula f) { return tomorrow(f);     }
   inline auto Y(formula f) { return yesterday(f);    }
+  inline auto Z(formula f) { return w_yesterday(f);  }
   inline auto F(formula f) { return eventually(f);   }
   inline auto G(formula f) { return always(f);       }
   inline auto P(formula f) { return once(f);         }

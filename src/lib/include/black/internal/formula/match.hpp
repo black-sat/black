@@ -66,6 +66,7 @@ namespace std {
     declare_destructuring_arity(negation,     1)
     declare_destructuring_arity(tomorrow,     1)
     declare_destructuring_arity(yesterday,    1)
+    declare_destructuring_arity(w_yesterday,  1)
     declare_destructuring_arity(always,       1)
     declare_destructuring_arity(eventually,   1)
     declare_destructuring_arity(once,         1)
@@ -166,6 +167,7 @@ namespace black::internal
     negation,
     tomorrow,
     yesterday,
+    w_yesterday,
     always,
     eventually,
     once,
@@ -184,6 +186,7 @@ namespace black::internal
     negation,
     tomorrow,
     yesterday,
+    w_yesterday,
     always,
     eventually,
     once,
@@ -262,6 +265,7 @@ namespace std {
   declare_common_type(negation,     unary)
   declare_common_type(tomorrow,     unary)
   declare_common_type(yesterday,    unary)
+  declare_common_type(w_yesterday,  unary)
   declare_common_type(always,       unary)
   declare_common_type(eventually,   unary)
   declare_common_type(once,         unary)
@@ -337,6 +341,7 @@ namespace black::internal
 
   using past_ltl_ops = syntax<
     yesterday,
+    w_yesterday,
     once,
     historically,
     since,
@@ -358,6 +363,7 @@ namespace black::internal
     until,
     release,
     yesterday,
+    w_yesterday,
     once,
     historically,
     since,
