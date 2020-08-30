@@ -33,8 +33,8 @@ namespace black::internal {
         [&](yesterday, formula op) {
           return alpha->var(past_label{Y(sub_past(op))});
         },
-        [&](w_yesterday, formula) -> formula {
-          black_unreachable();
+        [&](w_yesterday, formula op) {
+          return alpha->var(past_label{Z(sub_past(op))});
         },
         [&](since, formula left, formula right) {
           return alpha->var(past_label{S(sub_past(left), sub_past(right))});
@@ -72,8 +72,12 @@ namespace black::internal {
 
                 gen_semantics(op, sem);
               },
-              [&](w_yesterday, formula) {
-                black_unreachable();
+              [&](w_yesterday z, formula op) {
+                formula sem_z = w_yesterday_semantics(a, z);
+
+                sem.push_back(sem_z);
+
+                gen_semantics(op, sem);
               },
               [&](since s, formula left, formula right) {
                 alphabet *alpha = f.alphabet();
