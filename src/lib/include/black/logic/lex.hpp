@@ -97,7 +97,7 @@ namespace black::internal
       "Z", // weak yesterday
       "G", // always
       "F", // eventually
-      "P", // once
+      "O", // once
       "H", // historically
     };
 
