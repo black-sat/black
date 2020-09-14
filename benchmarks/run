@@ -24,7 +24,8 @@ mcap() {
     cpu=1
   fi
 
-  cgexec -g "memory,cpuset:cpu$cpu" $@
+  # cgexec -g "memory,cpuset:cpu$cpu" $@
+  $@
 }
 
 has_mcap() {
