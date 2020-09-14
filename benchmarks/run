@@ -19,20 +19,20 @@ die() {
   exit 1
 }
 
-mcap() {
-  if [ -z "$cpu" ]; then
-    cpu=1
-  fi
+if which cgexec > /dev/null 2>&1
+then
+  mcap() {
+    if [ -z "$cpu" ]; then
+      cpu=1
+    fi
 
-  # cgexec -g "memory,cpuset:cpu$cpu" $@
-  $@
-}
+    cgexec -g "memory,cpuset:cpu$cpu" $@
+  }
 
-has_mcap() {
-  return 0
-}
-
-if [ "$(uname -s)" != "Linux" ]; then
+  has_mcap() {
+    return 0
+  }
+else
   mcap() {
     $@
   }

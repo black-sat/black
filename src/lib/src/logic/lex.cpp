@@ -112,7 +112,7 @@ namespace black::internal
       {"Z",     token{unary::type::w_yesterday}},
       {"F",     token{unary::type::eventually}},
       {"G",     token{unary::type::always}},
-      {"P",     token{unary::type::once}},
+      {"O",     token{unary::type::once}},
       {"H",     token{unary::type::historically}},
       {"AND",   token{binary::type::conjunction}},
       {"OR",    token{binary::type::disjunction}},
