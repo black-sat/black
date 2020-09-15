@@ -108,6 +108,6 @@ formula equals(int num) {
 
 // Produces the single 'if and only if' for the i-th digit
 formula digit(int i, int num) {
-  return iff(sigma.var("c" + std::to_string(i)),
+  return iff(sigma.var("(c" + std::to_string(i) + ")"),
              (num % 2) ? sigma.top() : sigma.bottom());
 }
