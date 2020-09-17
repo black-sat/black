@@ -37,7 +37,7 @@ formula equals(int);
 formula digit(int, int);
 
 /* This aim to produce the set of parametrized properties of the form:
- *   ! F( P((c = N/2) /\ P((c = N/2+1) /\ ... P(c = N/2+i) ...)) )
+ *   ! F( O((c = N/2) /\ O((c = N/2+1) /\ ... O(c = N/2+i) ...)) )
  * proposed in
  *   Cimatti, Alessandro, Marco Roveri, e Daniel Sheridan.
  *   «Bounded Verification of Past LTL». In Formal Methods in Computer-Aided
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
 }
 
 /* Produces the chain of nested once operators:
- *   P((c = N/2) /\ P((c = N/2+1) /\ ... P(c = N/2+i) ...))
+ *   O((c = N/2) /\ O((c = N/2+1) /\ ... O(c = N/2+i) ...))
  */
 formula once_chain(int N, int i) {
   formula f = P( equals(N/2+i) );
