@@ -23,12 +23,15 @@ Options:
   --i_step                        Set a step for i increment. Default is 1.
 
   --N_template                    Use this instead of N value to set filename.
+
+  --next                          Use counter based on X instead of Y operators.
 HELP
 }
 
 OUT_DIR=.
 I_MIN=0
 I_STEP=1
+NEXT=""
 EXEC=crscounter_generator
 
 # Optional parameters
@@ -60,6 +63,10 @@ while [[ $# -gt 0 ]]; do
     --N_template)
       N_TEMPLATE="$2"
       shift
+      shift
+      ;;
+    --next)
+      NEXT="next"
       shift
       ;;
     *)    # unknown option
@@ -96,9 +103,15 @@ if [[ ! -x "$EXEC" ]]; then
   exit 1
 fi
 
+MOD=""
+# Build modality string
+if [[ "$NEXT" != "" ]]; then
+  MOD="next_"
+fi
+
 # Generation
 for (( i=I_MIN; i<=I_MAX; i=i+I_STEP ))
 do
-  $EXEC $N $i > "$OUT_DIR/crscounter_N$N_TEMPLATE""_i$i.pltl"
+  $EXEC $N $i $NEXT > "$OUT_DIR/crscounter_$MOD""N$N_TEMPLATE""_i$i.pltl"
 done
 
