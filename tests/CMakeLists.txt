@@ -30,10 +30,15 @@ option(
 set(BLACK_TESTS_SAT_BACKEND "glucose" CACHE STRING "SAT backend used in tests")
 
 #
-# Past formulas generator
+# Formulas generators
 #
-add_executable(crscounter_generator crscounter/crscounter_generator.cpp)
+add_executable(crscounter_generator
+        formulas_generators/crscounter/crscounter_generator.cpp)
 target_link_library_with_global_ctors(crscounter_generator PRIVATE black)
+
+add_executable(random_formulas_generator
+        formulas_generators/random_formulas/random_formulas_generator.cpp)
+target_link_library_with_global_ctors(random_formulas_generator PRIVATE black)
 
 
 if(Catch2_FOUND)

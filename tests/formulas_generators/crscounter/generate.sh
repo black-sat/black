@@ -5,16 +5,15 @@
 
 help() {
   cat <<HELP
-Usage: ./$(basename $0) <N> <i_max> [options..]
+Usage: ./$(basename $0) <N> <i_max> [options]
 
 Generates formulas with N assigned, and i from 0 (or i_min) to i_max
 
 Options:
   -e | --exec                     To specify the executable file, if it is not
-                                  'crscounter_generator' in the current
-                                  directory.
+                                  in the current directory.
 
-  -o | --out                      Specify an output directory. Default is the
+  -o | --out                      To specify an output directory. Default is the
                                   current one.
 
   --i_min                         To start generation from a specific i value.
