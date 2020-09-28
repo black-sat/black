@@ -1,0 +1,1 @@
+Y(((((p1) <-> False) -> (p2)) S !(p3)) S (Y False & F True))

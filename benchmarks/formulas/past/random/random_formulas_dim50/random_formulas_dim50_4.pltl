@@ -1,0 +1,1 @@
+F((H O (p2) | Z(True | (p2) | ((p4) <-> (p1)))) S G H !(Y(G((p2) & (p3)) | !H H Z (p1)) S Z F(!O G F(True -> (F (p5) S (p2))) U !((p1) & ((p2) T ((p3) & (p4)))))))

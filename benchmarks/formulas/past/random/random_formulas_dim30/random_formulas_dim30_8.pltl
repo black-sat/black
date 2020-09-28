@@ -1,0 +1,1 @@
+(O Z(((False | G (p2)) T False) -> (Y (p1) | Z False)) | !True) -> Y((p1) & (p2) & True & Y O(False T (p3)))
