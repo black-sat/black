@@ -164,6 +164,10 @@ formula rand_formula_gen::random_formula(int n) { // must be n >= 1
   }
 }
 
+/* ---------------------------------- MAIN ---------------------------------- */
+[[ noreturn ]] void help();
+std::vector<std::string> parse_ap(std::string);
+
 void help() {
   std::cerr
       << "\nGenerator for random LTL(+Past) formulas.\n"
