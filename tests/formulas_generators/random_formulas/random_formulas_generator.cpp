@@ -35,17 +35,10 @@
 using namespace black;
 
 enum class logic_t { ltl, ltlp };
-
-using un_op_t = std::function<formula(formula)>;
-using bin_op_t = std::function<formula(formula, formula)>;
+using op_t = std::variant<unary::type, binary::type>;
 
 const int DIM_MIN = 10;
 const int DIM_MAX = 100;
-
-struct op_t {
-  std::variant<un_op_t, bin_op_t> op;
-  logic_t logic;
-};
 
 
 /* This class implements RandomFormula(n) procedure introduced in:
@@ -71,47 +64,43 @@ public:
 
     // LTL operators
     _ops = {
-        {rand_formula_gen::un_negation,     logic_t::ltl},
-        {rand_formula_gen::un_tomorrow,     logic_t::ltl},
-        {rand_formula_gen::un_always,       logic_t::ltl},
-        {rand_formula_gen::un_eventually,   logic_t::ltl},
+        unary::type::negation,
+        unary::type::tomorrow,
+        unary::type::always,
+        unary::type::eventually,
 
-        {rand_formula_gen::bin_conjunction, logic_t::ltl},
-        {rand_formula_gen::bin_disjunction, logic_t::ltl},
-        {rand_formula_gen::bin_implication, logic_t::ltl},
-        {rand_formula_gen::bin_iff,         logic_t::ltl},
-        {rand_formula_gen::bin_until,       logic_t::ltl},
-//        {rand_formula_gen::bin_release,     logic_t::ltl} not handled by nuXmv
+        binary::type::conjunction,
+        binary::type::disjunction,
+        binary::type::implication,
+        binary::type::iff,
+        binary::type::until,
+        binary::type::release,
     };
 
     // LTL+Past operators
     if (_logic == logic_t::ltlp) {
-      _ops.push_back({rand_formula_gen::un_yesterday, logic_t::ltlp});
-      _ops.push_back({rand_formula_gen::un_w_yesterday, logic_t::ltlp});
-      _ops.push_back({rand_formula_gen::un_once, logic_t::ltlp});
-      _ops.push_back({rand_formula_gen::un_historically, logic_t::ltlp});
+      _ops.emplace_back(unary::type::yesterday);
+      _ops.emplace_back(unary::type::w_yesterday);
+      _ops.emplace_back(unary::type::once);
+      _ops.emplace_back(unary::type::historically);
 
-      _ops.push_back({rand_formula_gen::bin_since, logic_t::ltlp});
-      _ops.push_back({rand_formula_gen::bin_triggered, logic_t::ltlp});
+      _ops.emplace_back(binary::type::since);
+      _ops.emplace_back(binary::type::triggered);
     }
 
     // Retrieve unary operators
-    for (const op_t& o : _ops) {
-      if (std::holds_alternative<un_op_t>(o.op)) {
-        _unary_ops.push_back(o);
+    for (const op_t& op : _ops) {
+      if (std::holds_alternative<unary::type>(op)) {
+        _unary_ops.push_back(std::get<unary::type>(op));
       }
     }
 
     // Symbols in AP
     _ap = {_sigma.top(), _sigma.bottom()};
-    for (std::string s : symbols) {
+    for (const std::string& s : symbols) {
       _ap.push_back(_sigma.var("(" + s + ")"));
     }
   }
-
-  inline formula random_atom();
-  inline op_t random_operator();
-  inline op_t random_unary_operator();
 
   formula random_formula(int n);
 
@@ -120,47 +109,21 @@ private:
   logic_t _logic;
   alphabet _sigma;
   std::vector<op_t> _ops;
-  std::vector<op_t> _unary_ops; // subset of _ops
-  std::vector<formula> _ap;     // AP U {True,False}
+  std::vector<unary::type> _unary_ops; // subset of _ops
+  std::vector<formula> _ap;            // AP U {True,False}
 
-  // unary operators
-  static inline formula un_negation(formula f) { return !(f); }
-  static inline formula un_tomorrow(formula f) { return X(f); }
-  static inline formula un_always(formula f) { return G(f); }
-  static inline formula un_eventually(formula f) { return F(f); }
-  static inline formula un_yesterday(formula f) { return Y(f); }
-  static inline formula un_w_yesterday(formula f) { return Z(f); }
-  static inline formula un_once(formula f) { return P(f); }
-  static inline formula un_historically(formula f) { return H(f); }
-
-  // binary operators
-  static inline formula bin_conjunction(formula f1, formula f2) {
-    return f1 && f2;
-  }
-  static inline formula bin_disjunction(formula f1, formula f2) {
-    return f1 || f2;
-  }
-  static inline formula bin_implication(formula f1, formula f2) {
-    return implies(f1, f2);
-  }
-  static inline formula bin_iff(formula f1, formula f2) { return iff(f1, f2); }
-  static inline formula bin_until(formula f1, formula f2) { return U(f1, f2); }
-  static inline formula bin_release(formula f1, formula f2) {
-    return R(f1, f2);
-  }
-  static inline formula bin_since(formula f1, formula f2) { return S(f1, f2); }
-  static inline formula bin_triggered(formula f1, formula f2) {
-    return T(f1, f2);
-  }
+  inline formula random_atom();
+  inline op_t random_operator();
+  inline op_t random_unary_operator();
 
   // operators application
-  static inline formula un_op_apply(const un_op_t& op, formula f) {
-    return op(f);
+  static inline formula un_op_apply(const unary::type& op, formula f) {
+    return unary(op, f);
   }
 
   static inline formula
-  bin_op_apply(const bin_op_t& op, formula f1, formula f2) {
-    return op(f1, f2);
+  bin_op_apply(const binary::type& op, formula f1, formula f2) {
+    return binary(op, f1, f2);
   }
 }; // class rand_formula_gen
 
@@ -184,18 +147,18 @@ formula rand_formula_gen::random_formula(int n) { // must be n >= 1
     return random_atom();
   } else {
     if (n == 2) {
-      op_t o = random_unary_operator();
-      return un_op_apply(std::get<un_op_t>(o.op), random_formula(n-1));
+      op_t op = random_unary_operator();
+      return un_op_apply(std::get<unary::type>(op), random_formula(n-1));
     } else {
-      op_t o = random_operator();
-      if (std::holds_alternative<un_op_t>(o.op)) {  // if unary
-        return un_op_apply(std::get<un_op_t>(o.op), random_formula(n-1));
+      op_t op = random_operator();
+      if (std::holds_alternative<unary::type>(op)) {  // if unary
+        return un_op_apply(std::get<unary::type>(op), random_formula(n-1));
       } else {  // if binary
         std::uniform_int_distribution<> r(1, n-2);
         int x = r(_gen);
         formula phi = random_formula(x);
         formula psi = random_formula(n-x-1);
-        return bin_op_apply(std::get<bin_op_t>(o.op), phi, psi);
+        return bin_op_apply(std::get<binary::type>(op), phi, psi);
       }
     }
   }
@@ -204,7 +167,7 @@ formula rand_formula_gen::random_formula(int n) { // must be n >= 1
 void help() {
   std::cerr
       << "\nGenerator for random LTL(+Past) formulas.\n"
-      << "\nUsage: random_formulas [options]\n"
+      << "\nUsage: random_formulas_generator [options]\n"
       << "\nOptions:\n"
       << "\t--num <x> : Number of formulas wanted, must be x>0. Default is 1.\n"
       << "\t--dim <x> : Dimension of each generated formula, must be x>0.\n"
@@ -252,6 +215,7 @@ int main(int argc, char **argv) {
   std::vector<std::string> ap;
   bool ap_set = false;
 
+  // Parsing CLI arguments
   int i=1;
   while (i < argc) {
     if (std::strcmp(argv[i], "--num") == 0) {
@@ -285,12 +249,14 @@ int main(int argc, char **argv) {
     help();
   }
 
+  // Generate AP if needed
   if (!ap_set && ap.empty()) {
     for (int j=1; j<=(int)floor(log2(dim)); j++) {
       ap.push_back("p" + std::to_string(j));
     }
   }
 
+  // Generate <num> random formulas
   rand_formula_gen f {logic, ap};
 
   for (int j=0; j<num; j++) {
