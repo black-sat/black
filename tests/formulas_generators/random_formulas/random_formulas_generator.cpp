@@ -128,17 +128,17 @@ private:
 }; // class rand_formula_gen
 
 formula rand_formula_gen::random_atom() {
-  std::uniform_int_distribution<> i(0, _ap.size()-1);
+  std::uniform_int_distribution<unsigned long> i(0, _ap.size()-1);
   return _ap[i(_gen)];
 }
 
 op_t rand_formula_gen::random_operator() {
-  std::uniform_int_distribution<> i(0, _ops.size()-1);
+  std::uniform_int_distribution<unsigned long> i(0, _ops.size()-1);
   return _ops[i(_gen)];
 }
 
 op_t rand_formula_gen::random_unary_operator() {
-  std::uniform_int_distribution<> i(0, _unary_ops.size()-1);
+  std::uniform_int_distribution<unsigned long> i(0, _unary_ops.size()-1);
   return _unary_ops[i(_gen)];
 }
 
