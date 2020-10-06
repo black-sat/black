@@ -5,6 +5,11 @@ if [ -z "$TIMEOUT" ]; then
   TIMEOUT=300 # five minutes
 fi
 
+# disable memory cap by default
+if [ -z "$MCAP" ]; then
+  MCAP=false
+fi
+
 # utilities
 report() {
   echo $@ >&2
@@ -19,15 +24,13 @@ die() {
   exit 1
 }
 
-if which cgexec > /dev/null 2>&1
-then
+if $MCAP; then
   mcap() {
     if [ -z "$cpu" ]; then
       cpu=1
     fi
 
-    # cgexec -g "memory,cpuset:cpu$cpu" $@
-    $@
+    cgexec -g "memory,cpuset:cpu$cpu" $@
   }
 
   has_mcap() {
@@ -336,6 +339,9 @@ Commands:
 ENVIRONMENT VARIABLES:
   Benchmark timeout (in seconds) can be set through the \`TIMEOUT\` environment
   variables. The default is 300 seconds.
+
+  Memory control through cgroups can be enabled setting the \'MCAP\' environment
+  variable to \'true\'. It is disabled by default.
 
 EXAMPLES:
   \$ $0 bench black/default formulas/acacia/example/demo-v1.pltl
