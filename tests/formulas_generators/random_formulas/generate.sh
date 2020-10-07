@@ -3,23 +3,39 @@
 # (C) 2020 Gabriele Venturato
 # Script to generate LTL+Past random formulas through the C++ generator.
 
+# --------------------------------- Utilities ----------------------------------
+report() {
+  echo "$@" >&2
+}
+
+die() {
+  report "$1"
+  exit 1
+}
+
 help() {
   cat <<HELP
-Usage: ./$(basename $0) <num> <dim> [options]
+Usage: ./$(basename "$0") <num> <dim> [options]
 
 Generates <num> random formulas of dimension <dim>.
 
 Options:
-  -e | --exec                     To specify the executable file, if it is not
-                                  in the current directory.
+  -e | --exec       To specify the executable file path, if it is not in the
+                    current directory.
 
-  -o | --out                      To specify an output directory. Default is the
-                                  current one.
+  -o | --out        To specify an output directory. Default is the current one.
 
-  --ltl                           To exclude past operators.
+  --ltl             To exclude past operators.
+
+  -h | --help       Print this help.
 HELP
 }
 
+errhelp() {
+  help >&2
+}
+
+# ----------------------------------- Main -------------------------------------
 OUT_DIR=.
 LTL=""
 EXEC=random_formulas_generator
@@ -44,6 +60,10 @@ while [[ $# -gt 0 ]]; do
       LTL="--ltl"
       shift
       ;;
+    -h|--help)
+      help
+      exit 0
+      ;;
     *)    # unknown option
       POSITIONAL+=("$1") # save it in an array for later
       shift
@@ -54,7 +74,7 @@ set -- "${POSITIONAL[@]}" # restore positional parameters
 
 # Mandatory parameters
 if [[ $# -ne 2 ]]; then
-  help
+  errhelp
   exit 1
 fi
 
@@ -63,18 +83,16 @@ DIM=$2
 
 # Check if OUT_DIR exists
 if [[ ! -d "$OUT_DIR" ]]; then
-  echo "Directory $OUT_DIR does not exists."
-  exit 1
+  die "Directory $OUT_DIR does not exists."
 fi
 
 # Check if EXEC exists and is executable
 if [[ ! -x "$EXEC" ]]; then
-  echo "File $EXEC is not executable or does not exists."
-  exit 1
+  die "File $EXEC is not executable or does not exists."
 fi
 
 # Generation
-formulas=$($EXEC --num $NUM --dim $DIM $LTL)
+formulas=$($EXEC --num "$NUM" --dim "$DIM" $LTL)
 
 i=1
 while IFS= read -r line; do
