@@ -1,1 +1,1 @@
-!O(False T (p2)) & (False <-> (G (p1) S G((p2) U (p2))))
+X(G Z !((p3) | True) | Z((p3) R (G (p3) | False)))

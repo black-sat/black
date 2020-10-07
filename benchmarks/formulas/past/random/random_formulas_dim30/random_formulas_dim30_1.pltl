@@ -1,1 +1,1 @@
-H(((((p2) S X G((p2) <-> Y O H (p2))) <-> (H (p3) T (p1))) -> Y Y(False <-> False)) U (O((p3) U G (p1)) | False))
+G(((X(True <-> O (p2)) | F (p1) | True) -> Z((X (p2) U (p1)) U ((p3) T Y G (p2)))) -> (F((p1) T True) U False))

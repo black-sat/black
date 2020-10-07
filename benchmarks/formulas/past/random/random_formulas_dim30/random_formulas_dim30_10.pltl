@@ -1,1 +1,1 @@
-Y((Y G H (p1) -> X F(True T False)) T X((G !H(Y X H (p2) U (p2)) <-> Z X (p2)) S (False S (p2))))
+(F G True T F !(True & !(p3))) S (Z Y G Z(((p1) S (p3)) S H (p4)) -> F G(X X (p1) <-> Y True))

@@ -1,1 +1,1 @@
-(p3) T (X Z (p2) <-> Y Y G(G O H (p3) -> (p3)))
+!((p3) | (X (p3) & ((p2) T Y Z Y True))) & !(p2)

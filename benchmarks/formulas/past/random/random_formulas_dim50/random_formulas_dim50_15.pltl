@@ -1,0 +1,1 @@
+X(!((False R Y (p1)) U (Y (p1) -> !((p5) -> (p1)))) & (O((p2) <-> (p5)) T G F((p4) T (G False -> (p1))))) T G H O H X((F (p4) T !(p4)) & (H !Y (p4) <-> X(Y True -> (p3))))

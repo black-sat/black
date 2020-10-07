@@ -1,1 +1,1 @@
-G(F(G(True | (p1)) & G Z O False) & O H (p3))
+((!O (p2) <-> False) R G (p1)) U O G(G (p2) R False)

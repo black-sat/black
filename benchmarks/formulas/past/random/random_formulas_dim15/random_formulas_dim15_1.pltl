@@ -1,1 +1,1 @@
-Y(((((p1) <-> False) -> (p2)) S !(p3)) S (Y False & F True))
+(F True -> False) | Y Z X((X (p2) & (p1)) U H False)

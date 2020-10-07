@@ -1,1 +1,1 @@
-F H Y(True <-> ((p2) | (False T F H Z (p3)))) <-> True
+F F(Z (p2) <-> (False T (O((p2) T True) S (False <-> (p1)))))

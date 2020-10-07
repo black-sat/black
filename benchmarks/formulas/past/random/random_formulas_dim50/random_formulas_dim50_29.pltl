@@ -1,0 +1,1 @@
+H((((F (p4) U ((p3) | (p5))) T (((p4) -> False) S O Z (p4))) T (Z True U H (p3))) <-> H Z(G (p4) | ((Z((p5) U O True) S (!(p1) & Z (p4))) -> ((p4) -> !((p2) S (p3)))) | !((p2) U False)))
