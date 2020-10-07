@@ -9,7 +9,7 @@ report() {
 }
 
 die() {
-  report "$1"
+  report "$@"
   exit 1
 }
 
