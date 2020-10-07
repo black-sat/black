@@ -7,7 +7,7 @@ fi
 
 # disable memory cap by default
 if [ -z "$MCAP" ]; then
-  MCAP=false
+  MCAP=true
 fi
 
 # utilities
