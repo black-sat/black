@@ -3250,7 +3250,7 @@ past/random/random_formulas_dim15/random_formulas_dim15_8.pltl;SAT
 past/random/random_formulas_dim15/random_formulas_dim15_9.pltl;SAT
 past/random/random_formulas_dim15/random_formulas_dim15_10.pltl;SAT
 past/random/random_formulas_dim15/random_formulas_dim15_11.pltl;SAT
-past/random/random_formulas_dim15/random_formulas_dim15_12.pltl;UNSAT
+past/random/random_formulas_dim15/random_formulas_dim15_12.pltl;SAT
 past/random/random_formulas_dim15/random_formulas_dim15_13.pltl;SAT
 past/random/random_formulas_dim15/random_formulas_dim15_14.pltl;UNSAT
 past/random/random_formulas_dim15/random_formulas_dim15_15.pltl;SAT
@@ -3273,12 +3273,12 @@ past/random/random_formulas_dim30/random_formulas_dim30_4.pltl;SAT
 past/random/random_formulas_dim30/random_formulas_dim30_5.pltl;SAT
 past/random/random_formulas_dim30/random_formulas_dim30_7.pltl;SAT
 past/random/random_formulas_dim30/random_formulas_dim30_8.pltl;SAT
-past/random/random_formulas_dim30/random_formulas_dim30_9.pltl;UNSAT
+past/random/random_formulas_dim30/random_formulas_dim30_9.pltl;SAT
 past/random/random_formulas_dim30/random_formulas_dim30_11.pltl;SAT
 past/random/random_formulas_dim30/random_formulas_dim30_12.pltl;UNSAT
 past/random/random_formulas_dim30/random_formulas_dim30_13.pltl;UNSAT
 past/random/random_formulas_dim30/random_formulas_dim30_14.pltl;SAT
-past/random/random_formulas_dim30/random_formulas_dim30_15.pltl;UNSAT
+past/random/random_formulas_dim30/random_formulas_dim30_15.pltl;SAT
 past/random/random_formulas_dim30/random_formulas_dim30_17.pltl;SAT
 past/random/random_formulas_dim30/random_formulas_dim30_18.pltl;SAT
 past/random/random_formulas_dim30/random_formulas_dim30_19.pltl;UNSAT
