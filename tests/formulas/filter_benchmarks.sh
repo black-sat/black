@@ -29,6 +29,8 @@ Options:
   -e | --exec         Specify the BLACK executable file path. By default some
                       standard paths are checked.
 
+  --args              Arguments to pass to BLACK.
+
   -f | --filter       Apply a grep filter to the index list of formulas.
 
   -h | --help         Print this help.
@@ -45,7 +47,6 @@ errhelp() {
 
 # ----------------------------------- Main -------------------------------------
 FORMULAS_DIR=../../benchmarks/formulas
-FILTER=
 
 # Try to find black executable
 BLACK=./black
@@ -69,6 +70,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     -e|--exec)
       BLACK="$2"
+      shift
+      shift
+      ;;
+    --args)
+      ARGS="$2"
       shift
       shift
       ;;
@@ -106,7 +112,8 @@ fi
 
 # Filtering
 grep "$FILTER" "$FORMULAS_DIR/index" | while IFS= read -r formula; do
-  if res=$(timeout -s KILL 3s "$BLACK" "$FORMULAS_DIR/$formula" 2>/dev/null)
+  if res=$(timeout -s KILL 3s \
+            "$BLACK" $ARGS "$FORMULAS_DIR/$formula" 2>/dev/null)
   then
     echo "$formula;$res"
   fi
