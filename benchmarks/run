@@ -133,6 +133,9 @@ setup() {
   # setup PATH for solver scripts
   for solver in $solvers; do
     export PATH="$solvers_dir/$solver/bin:$PATH"
+    if [[ -d "$solvers_dir/$solver/lib" ]]; then
+      export LD_LIBRARY_PATH="$solvers_dir/$solver/lib:$LD_LIBRARY_PATH"
+    fi
   done
 
   # ensure to use GNU utilities on macOS
