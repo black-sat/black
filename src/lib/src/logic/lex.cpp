@@ -101,6 +101,14 @@ namespace black::internal
     }
   }  // namespace
 
+  bool lexer::_is_identifier_char(int c) {
+    return isalnum(c) || c == '_';
+  }
+
+  bool lexer::_is_initial_identifier_char(int c) {
+    return isalpha(c) || c == '_';
+  }
+
   std::optional<token> lexer::_identifier()
   {
     static constexpr std::pair<std::string_view, token> operators[] = {
@@ -124,11 +132,12 @@ namespace black::internal
       {"T",     token{binary::type::triggered}}
     };
 
-    if (!_stream.good() || !isalpha(_stream.peek()))
+    if (!_stream.good() || !_is_initial_identifier_char(_stream.peek()))
       return std::nullopt;
 
     std::string id;
-    while (_stream.good() && isalnum(_stream.peek())) {
+    while (_stream.good() && _is_identifier_char(_stream.peek())) 
+    {
       id += char(_stream.peek());
       _stream.get();
     }
@@ -148,8 +157,10 @@ namespace black::internal
 
   std::optional<token> lexer::_lex()
   {
-    while (_stream.good() && isspace(_stream.peek())) {
+    char c = (char)_stream.peek();
+    while (_stream.good() && isspace(c)) {
       _stream.get();
+      c = (char)_stream.peek();
     }
 
     if (!_stream.good())
