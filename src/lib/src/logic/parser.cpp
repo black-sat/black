@@ -95,6 +95,16 @@ namespace black::internal
 
     return p.parse();
   }
+
+  // Easy entry-point for parsing formulas
+  std::optional<formula>
+  parse_formula(alphabet &sigma, std::istream &stream,
+                parser::error_handler error)
+  {
+    parser p{sigma, stream, std::move(error)};
+
+    return p.parse();
+  }
 }
 
 // Implementation of parser class
@@ -134,7 +144,7 @@ namespace black::internal
   std::optional<formula> parser::parse() {
     std::optional<formula> lhs = parse_primary();
     if(!lhs)
-      return {};
+      return error("Expected formula");
 
     return parse_binary_rhs(0, *lhs);
   }
@@ -208,10 +218,10 @@ namespace black::internal
 
     std::optional<formula> formula = parse();
     if(!formula)
-      return {};
+      return {}; // error raised by parse();
 
     if(!consume(token::type::punctuation, "')'"))
-      return {};
+      return {}; // error raised by consume()
 
     return formula;
   }

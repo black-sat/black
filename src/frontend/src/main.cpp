@@ -66,13 +66,10 @@ int batch()
 
 int batch(std::optional<std::string> path, std::istream &file)
 {
-  std::string line;
-  std::getline(file, line);
-
   black::alphabet sigma;
 
   std::optional<black::formula> f =
-    black::parse_formula(sigma, line, [&path](auto error) {
+    black::parse_formula(sigma, file, [&path](auto error) {
       io::fatal(status_code::syntax_error, 
                 "syntax error: {}: {}\n", 
                 path ? *path : "<stdin>", error);
