@@ -53,7 +53,7 @@ namespace black::internal {
 
   // Obtain semantics for weak-yesterday propositional letter
   inline formula w_yesterday_semantics(atom a, w_yesterday y) {
-    return G(iff(X(a), y.operand()));
+    return a && G(iff(X(a), y.operand()));
   }
 
   // Obtain semantics for since propositional letter
