@@ -95,6 +95,7 @@ set (
    src/sat/cnf.cpp
    src/sat/backends/glucose.cpp
    src/solver/solver.cpp
+   src/logic/past_remover.cpp
 )
    
    
@@ -130,7 +131,7 @@ set (
   include/black/logic/lex.hpp
   include/black/logic/parser.hpp
   include/black/solver/solver.hpp
-)
+        include/black/logic/past_remover.hpp)
 
 #
 # Main black library.

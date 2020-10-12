@@ -1,0 +1,1 @@
+Y(F True -> !G False) -> (False & (H (p1) <-> Y (p1)))

@@ -1,0 +1,1 @@
+(F (p2) | X Y(((p4) T H O (p1)) <-> True)) S !(!((!(p2) U X(Y (p1) -> O (p2))) U O X (p2)) U (p4))

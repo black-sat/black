@@ -121,7 +121,7 @@ namespace black::internal {
       tsl::hopscotch_map<formula, formula> _nnf_cache;
 
       // the name of the currently chosen sat backend
-      std::string _sat_backend = "glucose"; // sensible default
+      std::string _sat_backend = "z3"; // sensible default
 
   }; // end class Black Solver
 

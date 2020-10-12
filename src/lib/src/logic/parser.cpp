@@ -17,6 +17,7 @@
 #include <black/logic/alphabet.hpp>
 #include <black/logic/parser.hpp>
 #include <black/logic/lex.hpp>
+#include <black/logic/past_remover.hpp>
 
 #include <fmt/format.h>
 
@@ -50,6 +51,8 @@ namespace black::internal
           if(auto fname = a.label<std::pair<formula,int>>(); fname.has_value())
             return
               fmt::format("<{},{}>", to_string(fname->first), fname->second);
+          if(auto fname = a.label<past_label>(); fname.has_value())
+            return fmt::format("<{}>", to_string(fname->formula));
           else
             return fmt::format("<{:x}>", to_underlying(formula{a}.unique_id()));
         },

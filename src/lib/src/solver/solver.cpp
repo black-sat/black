@@ -268,8 +268,11 @@ namespace black::internal
     switch(t) {
       case unary::type::negation:
       case unary::type::tomorrow:
-      case unary::type::yesterday:
         return t;
+      case unary::type::yesterday:
+        return unary::type::w_yesterday;
+      case unary::type::w_yesterday:
+        return unary::type::yesterday;
       case unary::type::always:
         return unary::type::eventually;
       case unary::type::eventually:

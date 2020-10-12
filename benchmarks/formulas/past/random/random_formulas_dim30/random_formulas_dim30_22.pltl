@@ -1,0 +1,1 @@
+((X (p4) | (p1)) & H O X (p1)) <-> G F(X Z X(True | ((p1) & (p4))) | ((Y X (p3) | False) T O Y (p1)))

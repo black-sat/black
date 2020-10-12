@@ -5,6 +5,11 @@ if [ -z "$TIMEOUT" ]; then
   TIMEOUT=300 # five minutes
 fi
 
+# disable memory cap by default
+if [ -z "$MCAP" ]; then
+  MCAP=true
+fi
+
 # utilities
 report() {
   echo $@ >&2
@@ -19,19 +24,19 @@ die() {
   exit 1
 }
 
-mcap() {
-  if [ -z "$cpu" ]; then
-    cpu=1
-  fi
+if $MCAP; then
+  mcap() {
+    if [ -z "$cpu" ]; then
+      cpu=1
+    fi
 
-  cgexec -g "memory,cpuset:cpu$cpu" $@
-}
+    cgexec -g "memory,cpuset:cpu$cpu" $@
+  }
 
-has_mcap() {
-  return 0
-}
-
-if [ "$(uname -s)" != "Linux" ]; then
+  has_mcap() {
+    return 0
+  }
+else
   mcap() {
     $@
   }
@@ -128,6 +133,9 @@ setup() {
   # setup PATH for solver scripts
   for solver in $solvers; do
     export PATH="$solvers_dir/$solver/bin:$PATH"
+    if [[ -d "$solvers_dir/$solver/lib" ]]; then
+      export LD_LIBRARY_PATH="$solvers_dir/$solver/lib:$LD_LIBRARY_PATH"
+    fi
   done
 
   # ensure to use GNU utilities on macOS
@@ -334,6 +342,9 @@ Commands:
 ENVIRONMENT VARIABLES:
   Benchmark timeout (in seconds) can be set through the \`TIMEOUT\` environment
   variables. The default is 300 seconds.
+
+  Memory control through cgroups can be enabled setting the \'MCAP\' environment
+  variable to \'true\'. It is disabled by default.
 
 EXAMPLES:
   \$ $0 bench black/default formulas/acacia/example/demo-v1.pltl

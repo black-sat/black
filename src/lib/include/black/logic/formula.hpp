@@ -40,6 +40,7 @@ namespace black::internal {
     negation,
     tomorrow,
     yesterday,
+    w_yesterday,
     always,
     eventually,
     once,
@@ -178,6 +179,7 @@ namespace black::internal
       negation     = to_underlying(formula::type::negation),
       tomorrow,
       yesterday,
+      w_yesterday,
       always,
       eventually,
       once,
@@ -248,6 +250,7 @@ namespace black::internal
   struct negation;
   struct tomorrow;
   struct yesterday;
+  struct w_yesterday;
   struct always;
   struct eventually;
   struct once;

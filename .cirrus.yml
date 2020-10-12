@@ -51,7 +51,7 @@ task:
   osx_instance:
     image: catalina-base
   download_dependencies_script:
-    - brew install cmake fmt catch2
+    - brew install cmake fmt catch2 z3
     - brew install black-sat/black/hopscotch-map
   debug_build_script:
     - mkdir -p build && cd build
@@ -63,12 +63,12 @@ task:
 
 task:
   matrix:
-    - name: Fedora 32 (with Z3 backend)
-      environment:
-        BACKEND: z3
-    - name: Fedora 32 (with CryptoMiniSAT backend)
-      environment:
-        BACKEND: cmsat
+    # - name: Fedora 32 (with Glucose backend)
+    #   environment:
+    #     BACKEND: glucose
+    # - name: Fedora 32 (with CryptoMiniSAT backend)
+    #   environment:
+    #     BACKEND: cmsat
     - name: Fedora 32 (with MathSAT backend)
       environment:
         BACKEND: mathsat

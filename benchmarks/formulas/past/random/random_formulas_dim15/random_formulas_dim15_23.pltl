@@ -1,0 +1,1 @@
+(X (p1) -> G(F (p3) -> (X H True <-> F (p2)))) <-> False

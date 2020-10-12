@@ -1,0 +1,1 @@
+(O X False T True) T X(True -> !(G False <-> X False))

@@ -1,0 +1,1 @@
+!((p2) R (((p5) & F (p3)) U !(p3))) S Y(O True & (False S (H (p3) | Y((p4) -> O((p5) | True)))) & ((H(H((p2) <-> (F False <-> G (p4))) <-> (p3)) <-> O (p5)) U X(G F (p2) | X (p4))))
