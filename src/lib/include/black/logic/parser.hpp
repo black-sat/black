@@ -74,8 +74,17 @@ namespace black::internal
   parse_formula(alphabet &sigma, std::string const&s,
                 parser::error_handler error);
 
+  std::optional<formula>
+  parse_formula(alphabet &sigma, std::istream &s,
+                parser::error_handler error);
+
   inline std::optional<formula>
   parse_formula(alphabet &sigma, std::string const&s) {
+    return parse_formula(sigma, s, [](auto){});
+  }
+
+  inline std::optional<formula>
+  parse_formula(alphabet &sigma, std::istream &s) {
     return parse_formula(sigma, s, [](auto){});
   }
 

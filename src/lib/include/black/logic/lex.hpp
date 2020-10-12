@@ -149,6 +149,8 @@ namespace black::internal
   private:
     std::optional<token> _lex();
     std::optional<token> _identifier();
+    bool _is_identifier_char(int c);
+    bool _is_initial_identifier_char(int c);
 
     std::optional<token> _token = std::nullopt;
     std::istream &_stream;

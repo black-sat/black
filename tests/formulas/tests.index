@@ -3217,6 +3217,7 @@ rozier/formulas/n2/P0.95/L100/P0.95N2L100_8.pltl;SAT
 rozier/formulas/n2/P0.95/L100/P0.95N2L100_9.pltl;SAT
 regressions/iff.pltl;UNSAT
 regressions/iff2.pltl;UNSAT
+<<<<<<< HEAD
 past/crscounter/crscounter_N8/crscounter_N8_i0.pltl;SAT
 past/crscounter/crscounter_N8/crscounter_N8_i1.pltl;SAT
 past/crscounter/crscounter_N8/crscounter_N8_i2.pltl;SAT
@@ -3334,3 +3335,6 @@ past/random/random_formulas_dim200/random_formulas_dim200_17.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_23.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_24.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_30.pltl;SAT
+=======
+regressions/github_29.pltl;UNSAT
+>>>>>>> master
