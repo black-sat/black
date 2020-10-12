@@ -63,12 +63,12 @@ task:
 
 task:
   matrix:
-    - name: Fedora 32 (with Z3 backend)
-      environment:
-        BACKEND: z3
-    - name: Fedora 32 (with CryptoMiniSAT backend)
-      environment:
-        BACKEND: cmsat
+    # - name: Fedora 32 (with Glucose backend)
+    #   environment:
+    #     BACKEND: glucose
+    # - name: Fedora 32 (with CryptoMiniSAT backend)
+    #   environment:
+    #     BACKEND: cmsat
     - name: Fedora 32 (with MathSAT backend)
       environment:
         BACKEND: mathsat

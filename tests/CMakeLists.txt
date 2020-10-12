@@ -27,7 +27,7 @@ option(
   ENABLE_TOOLS_TESTS "Enable tests of other tools in the benchmark suite" OFF
 )
 
-set(BLACK_TESTS_SAT_BACKEND "glucose" CACHE STRING "SAT backend used in tests")
+set(BLACK_TESTS_SAT_BACKEND "z3" CACHE STRING "SAT backend used in tests")
 
 #
 # Formulas generators
