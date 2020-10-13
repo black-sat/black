@@ -74,10 +74,16 @@ namespace black::internal {
     );
   }
 
-  formula simplify_negation(negation n, formula op) {
+  formula simplify_negation(negation n, formula op) 
+  {
+    // !true -> false, !false -> true
     if(auto b = op.to<boolean>(); b)
-      return n.alphabet()->boolean(!b->value());
+      return n.alphabet()->boolean(!b->value()); 
     
+    // !!p -> p
+    if(auto nop = op.to<negation>(); nop)
+      return simplify(nop->operand());
+
     return n;
   }
 

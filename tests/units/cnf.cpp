@@ -67,6 +67,7 @@ TEST_CASE("CNF Translation")
       s.assert_formula(!implies(fc,f));
 
       INFO("Formula: " << f);
+      INFO("Simplification: " << simplify_deep(f));
       INFO("CNF: " << fc);
       REQUIRE(!s.solve());
     }
