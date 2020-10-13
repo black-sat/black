@@ -28,9 +28,12 @@
 
 namespace black::internal {
 
-  formula random_ltl_formula(int n, std::vector<std::string> const& sigma);
-  formula random_ltlp_formula(int n, std::vector<std::string> const& sigma);
-  formula random_boolean_formula(int n, std::vector<std::string> const& sigma);
+  formula random_ltl_formula(
+    alphabet &sigma, int n, std::vector<std::string> const& symbols);
+  formula random_ltlp_formula(
+    alphabet &sigma, int n, std::vector<std::string> const& symbols);
+  formula random_boolean_formula(
+    alphabet &sigma, int n, std::vector<std::string> const& symbols);
 
 }
 

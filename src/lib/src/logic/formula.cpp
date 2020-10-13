@@ -125,7 +125,7 @@ namespace black::internal {
       return bl->value() ? r : sigma.top();
     
     if(!bl && br)
-      return br->value() ? sigma.top() : sigma.bottom();
+      return br->value() ? formula{sigma.top()} : formula{!l};
 
     return sigma.boolean(!bl->value() || br->value());
   }

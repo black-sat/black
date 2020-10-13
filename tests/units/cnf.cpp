@@ -25,6 +25,7 @@
 
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/debug/random_formula.hpp>
 #include <black/solver/solver.hpp>
 #include <black/sat/cnf.hpp>
 
@@ -34,24 +35,38 @@ TEST_CASE("CNF Translation")
 {
   alphabet sigma;
 
-  [[maybe_unused]] atom p = sigma.var("p");
-  [[maybe_unused]] atom q = sigma.var("q");
-  [[maybe_unused]] atom r = sigma.var("r");
+  std::vector<std::string> symbols = {
+    "p1", "p2", "p3", "p4", "p5", "p6",
+    "p7", "p8", "p9", "p10",
+  };
+
+
+  std::vector<formula> tests;
+  for(int i = 0 ; i <= 30; ++i) {
+    tests.push_back(black::random_boolean_formula(sigma, 10, symbols));
+  }
 
   solver s{sigma};
 
-  std::vector<formula> tests = {
-    p && q, p || q, !r,
-    p || (p && !q), (p && (!p || q)),
-    implies(p, q), iff(p, q), sigma.top() && p,
-    sigma.bottom()
-  };
+  SECTION("Simplification of random formulas") {
+    for(formula f : tests) 
+    { 
+      formula fc = simplify_deep(f);
+      s.assert_formula(!iff(fc,f));
 
-  for(formula f : tests) {
-    DYNAMIC_SECTION("CNF translation for formula: " << f) {
+      INFO("Formula: " << f);
+      INFO("Simplification: " << fc);
+      REQUIRE(!s.solve());
+    }
+  }
+
+  SECTION("CNF of random formulas") {
+    for(formula f : tests) 
+    { 
       formula fc = to_formula(sigma, to_cnf(f));
       s.assert_formula(!implies(fc,f));
 
+      INFO("Formula: " << f);
       INFO("CNF: " << fc);
       REQUIRE(!s.solve());
     }

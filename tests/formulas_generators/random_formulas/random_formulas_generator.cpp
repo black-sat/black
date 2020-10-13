@@ -134,10 +134,14 @@ int main(int argc, char **argv) {
     }
   }
 
+  alphabet sigma;
+
   // Generate <num> random formulas
   for (int j=0; j<num; j++) {
-    formula f = logic == logic_t::ltl ? 
-      black::random_ltl_formula(dim, ap) : black::random_ltlp_formula(dim, ap);
+    formula f = logic == 
+      logic_t::ltl ? 
+        black::random_ltl_formula(sigma, dim, ap) : 
+        black::random_ltlp_formula(sigma, dim, ap);
     std::cout << to_string(f) << "\n";
   }
 
