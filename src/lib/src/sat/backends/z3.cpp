@@ -51,11 +51,46 @@ namespace black::sat::backends
     Z3_ast to_z3_inner(formula);
   };
 
+  //
+  // This trick, up to error_handler(), is needed to support Z3 4.4 
+  // (the version shipped with Debian stable), which has a different API for
+  // Z3_get_error_msg() w.r.t to the latest (4.8) version
+  //
+  namespace z3_compat {
+    template<typename T = int>
+    void Z3_get_error_msg(Z3_context, Z3_error_code, T = T{}) { }
+  }
+
+  constexpr bool z3_is_old() {
+    using namespace z3_compat;
+    using type = decltype(Z3_get_error_msg(nullptr,Z3_error_code{}));
+    
+    return std::is_same_v<type, void>;
+  }
+
+  namespace z3_compat_wrap {
+    template<REQUIRES(!z3_is_old())>
+    Z3_string Z3_get_error_msg(Z3_error_code) {
+      black_unreachable();
+    }
+
+    template<REQUIRES(z3_is_old())>
+    Z3_string Z3_get_error_msg(Z3_context, Z3_error_code) {
+      black_unreachable();
+    }
+  }
+  
   [[noreturn]]
   static void error_handler(Z3_context c, Z3_error_code e) {
-    fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(c, e));
+    using namespace z3_compat_wrap;
+    if constexpr (z3_is_old())
+      fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(e));
+    else
+      fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(c, e));
     std::abort();
   }
+
+  // end trick
 
   z3::z3() : _data{std::make_unique<_z3_t>()} 
   { 
