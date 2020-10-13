@@ -23,7 +23,7 @@ Quick installation instructions:
 
 | Ubuntu ≥ 20.04             | Fedora ≥ 32, CentOS/RHEL&nbsp;≥&nbsp;8 | macOS ≥ 10.14 with [Homebrew][Homebrew] |
 |----------------------------|------------------------------|-----------------------------|
-| [![Download](https://badgen.net/badge/Download%20v0.1.1/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.1.1/.rpm/green)][pkg.rpm]| |
+| [![Download](https://badgen.net/badge/Download%20v0.2.0/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.2.0/.rpm/green)][pkg.rpm]| |
 | How to install:<br/>`$ sudo apt install ⟨file⟩` | How to install:<br/>`$ sudo dnf install ⟨file⟩` |How to install:<br/>`$ brew install black-sat/black/black-sat`|
 
 Quick usage help:
@@ -70,5 +70,5 @@ OPTIONS
 [Home]: https://github.com/black-sat/black/wiki/Home 
 [Installation]: https://github.com/black-sat/black/wiki/Installation 
 [Usage]: https://github.com/black-sat/black/wiki/Usage 
-[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.1.1/black-sat-0.1.1-1.x86_64.deb
-[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.1.1/black-sat-0.1.1-1.x86_64.rpm
+[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.2.0/black-sat-0.2.0-1.x86_64.deb
+[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.2.0/black-sat-0.2.0-1.x86_64.rpm
