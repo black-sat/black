@@ -23,7 +23,7 @@
 
 
 option(ENABLE_MATHSAT "Enable the MathSAT backend, if found" ON)
-option(ENABLE_Z3 "Enable the Z3 backend, if found" ON)
+option(ENABLE_GLUCOSE "Enable the Glucose backend, if found" ON)
 option(ENABLE_CMSAT "Enable the CryptoMiniSAT backend, if found" ON)
 option(ENABLE_MINISAT "Enable the MiniSAT backend, if found" ON)
 
