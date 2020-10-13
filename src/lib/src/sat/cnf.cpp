@@ -180,6 +180,15 @@ namespace black::internal
           },
           [&](negation, formula op) {
             tseitin(op, clauses, memo);
+
+            // NOTE: normally, this case should never be invoked because 
+            //       simplify_deep() removes double negations
+            // clausal form for identity:
+            // f <-> p == (!f ∨ p) ∧ (f ∨ !p)
+            clauses.add_clauses({
+              {{false, fresh(f)}, {true, fresh(op)}},
+              {{true,  fresh(f)}, {false,  fresh(op)}}
+            });
           },
           [&](conjunction, formula l, formula r) {
             tseitin(l, clauses, memo);

@@ -91,11 +91,12 @@ set (
    src/logic/formula.cpp
    src/logic/lex.cpp
    src/logic/parser.cpp
+   src/logic/past_remover.cpp
    src/sat/sat.cpp
    src/sat/cnf.cpp
    src/sat/backends/glucose.cpp
    src/solver/solver.cpp
-   src/logic/past_remover.cpp
+   src/debug/random_formula.cpp
 )
    
    

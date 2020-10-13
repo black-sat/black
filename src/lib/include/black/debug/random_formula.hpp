@@ -21,55 +21,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <catch2/catch.hpp>
+#ifndef BLACK_DEBUG_RANDOM_FORMULA_HPP
+#define BLACK_DEBUG_RANDOM_FORMULA_HPP
 
 #include <black/logic/formula.hpp>
-#include <black/logic/parser.hpp>
-#include <black/debug/random_formula.hpp>
-#include <black/solver/solver.hpp>
-#include <black/sat/cnf.hpp>
 
-using namespace black;
+namespace black::internal {
 
-TEST_CASE("CNF Translation")
-{
-  alphabet sigma;
+  formula random_ltl_formula(
+    alphabet &sigma, int n, std::vector<std::string> const& symbols);
+  formula random_ltlp_formula(
+    alphabet &sigma, int n, std::vector<std::string> const& symbols);
+  formula random_boolean_formula(
+    alphabet &sigma, int n, std::vector<std::string> const& symbols);
 
-  std::vector<std::string> symbols = {
-    "p1", "p2", "p3", "p4", "p5", "p6",
-    "p7", "p8", "p9", "p10",
-  };
-
-
-  std::vector<formula> tests;
-  for(int i = 0 ; i <= 30; ++i) {
-    tests.push_back(black::random_boolean_formula(sigma, 10, symbols));
-  }
-
-  solver s{sigma};
-
-  SECTION("Simplification of random formulas") {
-    for(formula f : tests) 
-    { 
-      formula fc = simplify_deep(f);
-      s.assert_formula(!iff(fc,f));
-
-      INFO("Formula: " << f);
-      INFO("Simplification: " << fc);
-      REQUIRE(!s.solve());
-    }
-  }
-
-  SECTION("CNF of random formulas") {
-    for(formula f : tests) 
-    { 
-      formula fc = to_formula(sigma, to_cnf(f));
-      s.assert_formula(!implies(fc,f));
-
-      INFO("Formula: " << f);
-      INFO("Simplification: " << simplify_deep(f));
-      INFO("CNF: " << fc);
-      REQUIRE(!s.solve());
-    }
-  }
 }
+
+namespace black {
+  using internal::random_ltl_formula;
+  using internal::random_ltlp_formula;
+  using internal::random_boolean_formula;
+}
+
+#endif // BLACK_DEBUG_RANDOM_FORMULA_HPP
