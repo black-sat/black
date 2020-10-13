@@ -113,7 +113,11 @@ namespace black::frontend
       value("file", cli::filename).required(false)
         % "input formula file name.\n"
           "If missing, runs in interactive mode.\n"
-          "If '-', reads from standard input in batch mode."
+          "If '-', reads from standard input in batch mode.",
+      option("--remove-past").set(cli::remove_past)
+        % "use translation of past operators instead of the direct SAT encoding"
+          " (i.e. translate LTL+Past formulas into LTL and then check "
+          "satisfiability)"
     ) | option("--sat-backends").set(show_backends) 
           % "print the list of available SAT backends"
       | option("-v", "--version").set(version)

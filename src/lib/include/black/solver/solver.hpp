@@ -32,6 +32,7 @@
 #include <limits>
 #include <unordered_set>
 #include <string>
+#include <numeric>
 
 #include <tsl/hopscotch_map.h>
 
@@ -94,14 +95,14 @@ namespace black::internal {
       // Generates the k-unraveling for the given k
       formula k_unraveling(int k);
 
-      // Generates the Next Normal Form of f
-      formula to_ground_xnf(formula f, int k, bool update);
+      // Generates the Stepped Normal Form of f
+      formula to_ground_snf(formula f, int k, bool update);
 
       formula to_nnf(formula f);
       formula to_nnf_inner(formula f);
 
-      // X-requests from the formula's closure
-      void add_xclosure(formula f);
+      // X/Y/Z-requests from the formula's closure
+      void add_xyz_closure(formula f);
   
     private:
       // Reference to the original _alphabet
@@ -113,9 +114,11 @@ namespace black::internal {
       // Vector of all the X-requests of step k
       std::vector<tomorrow> _xrequests;
 
-      // X-requests from the closure of the formula
-      // TODO: specialize to std::unordered_set<tomorrow>
+      // X/Y/Z-requests from the closure of the formula
+      // TODO: specialize to std::unordered_set<tomorrow/yesterday/w_yesterday>
       std::vector<tomorrow> _xclosure;
+      std::vector<yesterday> _yclosure;
+      std::vector<w_yesterday> _zclosure;
 
       // cache to memoize to_nnf() calls
       tsl::hopscotch_map<formula, formula> _nnf_cache;
@@ -128,7 +131,7 @@ namespace black::internal {
   // simple public functions are given an inlinable implementation below
   inline void solver::assert_formula(formula f) {
     f = to_nnf(f);
-    add_xclosure(f);
+    add_xyz_closure(f);
     if( _frm == _alpha.top() )
       _frm = f;
     else

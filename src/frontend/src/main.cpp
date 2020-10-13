@@ -80,14 +80,17 @@ int batch(std::optional<std::string> path, std::istream &file)
 
   black::solver slv{sigma};
   
-  if(cli::sat_backend)
+  if (cli::sat_backend)
     slv.set_sat_backend(*cli::sat_backend);
 
-  slv.assert_formula(black::remove_past(*f));
+  if (cli::remove_past)
+    slv.assert_formula(black::remove_past(*f));
+  else
+    slv.assert_formula(*f);
 
   bool res = slv.solve(cli::bound);
 
-  if(res)
+  if (res)
     io::message("SAT\n");
   else
     io::message("UNSAT\n");
@@ -100,10 +103,10 @@ int interactive()
   black::alphabet sigma;
   black::solver slv{sigma};
 
-  if(cli::sat_backend)
+  if (cli::sat_backend)
     slv.set_sat_backend(*cli::sat_backend);
 
-  while(!std::cin.eof()) {
+  while (!std::cin.eof()) {
     std::string line;
 
     io::message("Please enter formula: ");
@@ -114,20 +117,24 @@ int interactive()
         io::error("Syntax error: {}\n", error);
       });
 
-    if(!f)
+    if (!f)
       continue;
 
     black::formula f_ltl = black::remove_past(*f);
 
     io::message("Parsed formula: {}\n", *f);
-    if (f_ltl != *f) io::message("Translated formula: {}\n", f_ltl);
+    if (f_ltl != *f && cli::remove_past)
+      io::message("Translated formula: {}\n", f_ltl);
 
-    if(cli::bound)
+    if (cli::bound)
       io::message("Solving (up to k={})...\n", *cli::bound);
     else
       io::message("Solving...\n");
 
-    slv.assert_formula(f_ltl);
+    if (cli::remove_past)
+      slv.assert_formula(f_ltl);
+    else
+      slv.assert_formula(*f);
     bool res = slv.solve(cli::bound);
 
     if(res)
