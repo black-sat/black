@@ -1,3 +1,3 @@
 #!/bin/bash
 
-black -B z3 $1
+black -B z3 "$1"
