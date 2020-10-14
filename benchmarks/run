@@ -146,10 +146,9 @@ setup() {
 
   # get list of solvers run modes
   modes=$(for s in $solvers; do
-    if [ -d scripts/$s ]; then
-      for m in $(find "scripts/$s" -mindepth 1 -type d -exec basename {} ';'); do
-        echo $s/$m
-      done
+    if [ -d "scripts/$s" ]; then
+      find "scripts/$s" -mindepth 1 -type d \
+        | sed 's|^.*scripts/||' | sed 's|/$||'
     fi
   done)
 
