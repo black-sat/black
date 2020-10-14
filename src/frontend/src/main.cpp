@@ -135,6 +135,7 @@ int interactive()
       slv.assert_formula(f_ltl);
     else
       slv.assert_formula(*f);
+
     bool res = slv.solve(cli::bound);
 
     if(res)

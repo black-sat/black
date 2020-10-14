@@ -69,7 +69,7 @@ namespace black::internal {
     private:
 
       // Extract the x-eventuality from an x-request
-      std::optional<formula> get_xev(tomorrow xreq);
+      static std::optional<formula> get_xev(tomorrow xreq);
 
       // Generates the PRUNE encoding
       formula prune(int k);

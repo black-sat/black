@@ -23,7 +23,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic/parser.hpp>
 #include <black/solver/solver.hpp>
 #include <black/sat/sat.hpp>
 
@@ -68,7 +67,8 @@ namespace black::internal
     for(int l=0; l<k-1; l++) {
       formula k_prune_inner = _alpha.bottom();
       for(int j=l+1; j<k; j++) {
-        formula llp = l_to_k_loop(l,j) && l_to_k_loop(j,k) && l_j_k_prune(l,j,k);
+        formula llp =
+            l_to_k_loop(l,j) && l_to_k_loop(j,k) && l_j_k_prune(l,j,k);
         k_prune_inner = k_prune_inner || llp;
       }
       k_prune = k_prune || k_prune_inner;
@@ -113,8 +113,8 @@ namespace black::internal
   // Generates the encoding for EMPTY_k
   formula solver::k_empty(int k) {
     formula k_empty = _alpha.top();
-    for(auto it = _xrequests.begin(); it != _xrequests.end(); it++) {
-      k_empty = k_empty && (!( _alpha.var(std::pair<formula,int>(formula{*it},k)) ));
+    for(auto & req : _xrequests) {
+      k_empty = k_empty && (!( _alpha.var(std::pair(formula{req},k)) ));
     }
     return k_empty;
   }
@@ -161,7 +161,6 @@ namespace black::internal
   // Generates the encoding for _lL_k
   formula solver::l_to_k_loop(int l, int k) {
     formula loop_lk = _alpha.top();
-    //for(auto it = _xrequests.begin(); it != _xrequests.end(); it++) {
     for(tomorrow xreq : _xrequests) {
       formula first_atom = _alpha.var( std::pair(formula{xreq},l) );
       formula second_atom = _alpha.var( std::pair(formula{xreq},k) );
@@ -346,7 +345,7 @@ namespace black::internal
   formula solver::to_nnf(formula f) {
     if(auto it = _nnf_cache.find(f); it != _nnf_cache.end())
       return it->second;
-    
+
     formula n = to_nnf_inner(f);
     _nnf_cache.insert({f, n});
     return n;
@@ -398,7 +397,7 @@ namespace black::internal
       }
     );
   }
-  
+
   /* Following the definition of "closure":
    * - if f is a future operator, then X(f) is in _xclosure
    * - if f is S or O, then Y(f) is in _yclosure
