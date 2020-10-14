@@ -282,8 +282,8 @@ namespace black::internal
             _alpha.var(std::pair(formula{Y(s)},k)));
       },
       [&,this](triggered t, formula left, formula right) {
-        return to_ground_snf(left,k,update) &&
-            (to_ground_snf(right,k,update) ||
+        return to_ground_snf(right,k,update) &&
+            (to_ground_snf(left,k,update) ||
             _alpha.var(std::pair(formula{Z(t)},k)));
       },
       [&,this](once o, formula op) {
