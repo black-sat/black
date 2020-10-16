@@ -113,6 +113,8 @@ namespace black::internal {
 
       // Vector of all the X-requests of step k
       std::vector<tomorrow> _xrequests;
+      std::vector<yesterday> _yrequests;
+      std::vector<w_yesterday> _zrequests;
 
       // X/Y/Z-requests from the closure of the formula
       // TODO: specialize to std::unordered_set<tomorrow/yesterday/w_yesterday>
@@ -141,7 +143,11 @@ namespace black::internal {
   inline void solver::clear() {
     _frm = _alpha.top();
     _xrequests.clear();
+    _yrequests.clear();
+    _zrequests.clear();
     _xclosure.clear();
+    _yclosure.clear();
+    _zclosure.clear();
   }
 
 } // end namespace black::internal

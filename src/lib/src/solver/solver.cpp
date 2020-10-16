@@ -158,16 +158,19 @@ namespace black::internal
   }
 
 
-  // Generates the encoding for _lL_k
+  // Generates the encoding for _lR_k
   formula solver::l_to_k_loop(int l, int k) {
-    formula loop_lk = _alpha.top();
-    for(tomorrow xreq : _xrequests) {
-      formula first_atom = _alpha.var( std::pair(formula{xreq},l) );
-      formula second_atom = _alpha.var( std::pair(formula{xreq},k) );
-      // big and formula
-      loop_lk = loop_lk && iff(first_atom,second_atom);
-    }
-    return loop_lk;
+    auto eq_fold = [&](formula acc, auto xyz_req) {
+      return acc && iff(
+        _alpha.var(std::pair(formula{xyz_req},l)),
+        _alpha.var(std::pair(formula{xyz_req},k))
+      );
+    };
+
+    return std::accumulate(_zrequests.begin(), _zrequests.end(),
+        std::accumulate(_yrequests.begin(), _yrequests.end(),
+            std::accumulate(_xrequests.begin(), _xrequests.end(),
+                formula{_alpha.top()}, eq_fold), eq_fold), eq_fold);
   }
 
 
@@ -176,6 +179,8 @@ namespace black::internal
     // Keep the X-requests generated in phase k-1.
     // Clear all the X-requests from the vector
     _xrequests.clear();
+    _yrequests.clear();
+    _zrequests.clear();
 
     if (k==0) {
       return std::accumulate(_zclosure.begin(), _zclosure.end(),
@@ -228,8 +233,14 @@ namespace black::internal
           _xrequests.push_back(t);
         return _alpha.var(std::pair(f,k));
       },
-      [&](yesterday) { return _alpha.var(std::pair(f,k)); },
-      [&](w_yesterday) { return _alpha.var(std::pair(f,k)); },
+      [&](yesterday y) {
+        if (update) _yrequests.push_back(y);
+        return _alpha.var(std::pair(f,k));
+      },
+      [&](w_yesterday z) {
+        if (update) _zrequests.push_back(z);
+        return _alpha.var(std::pair(f,k));
+      },
       [&](negation n) { return !to_ground_snf(n.operand(),k, update); },
       [&](conjunction, formula left, formula right) {
         return to_ground_snf(left,k,update) && to_ground_snf(right,k,update);
@@ -277,20 +288,24 @@ namespace black::internal
             _alpha.var(std::pair(formula{X(r)},k)));
       },
       [&,this](since s, formula left, formula right) {
+        if (update) _yrequests.push_back(Y(s));
         return to_ground_snf(right,k,update) ||
             (to_ground_snf(left,k,update) &&
             _alpha.var(std::pair(formula{Y(s)},k)));
       },
       [&,this](triggered t, formula left, formula right) {
+        if (update) _zrequests.push_back(Z(t));
         return to_ground_snf(right,k,update) &&
             (to_ground_snf(left,k,update) ||
             _alpha.var(std::pair(formula{Z(t)},k)));
       },
       [&,this](once o, formula op) {
+        if (update) _yrequests.push_back(Y(o));
         return to_ground_snf(op,k,update) ||
             _alpha.var(std::pair(formula{Y(o)},k));
       },
       [&,this](historically h, formula op) {
+        if (update) _zrequests.push_back(Z(h));
         return to_ground_snf(op,k,update) &&
             _alpha.var(std::pair(formula{Z(h)},k));
       }
