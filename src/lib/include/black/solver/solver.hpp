@@ -96,13 +96,13 @@ namespace black::internal {
       formula k_unraveling(int k);
 
       // Generates the Stepped Normal Form of f
-      formula to_ground_snf(formula f, int k, bool update);
+      formula to_ground_snf(formula f, int k);
 
       formula to_nnf(formula f);
       formula to_nnf_inner(formula f);
 
-      // X/Y/Z-requests from the formula's closure
-      void add_xyz_closure(formula f);
+      // collect X/Y/Z-requests
+      void add_xyz_requests(formula f);
   
     private:
       // Reference to the original _alphabet
@@ -111,29 +111,23 @@ namespace black::internal {
       // Current LTL formula to solve
       formula _frm;
 
-      // Vector of all the X-requests of step k
+      // X/Y/Z-requests from the formula's closure
+      // TODO: specialize to std::unordered_set<tomorrow/yesterday/w_yesterday>
       std::vector<tomorrow> _xrequests;
       std::vector<yesterday> _yrequests;
       std::vector<w_yesterday> _zrequests;
-
-      // X/Y/Z-requests from the closure of the formula
-      // TODO: specialize to std::unordered_set<tomorrow/yesterday/w_yesterday>
-      std::vector<tomorrow> _xclosure;
-      std::vector<yesterday> _yclosure;
-      std::vector<w_yesterday> _zclosure;
 
       // cache to memoize to_nnf() calls
       tsl::hopscotch_map<formula, formula> _nnf_cache;
 
       // the name of the currently chosen sat backend
       std::string _sat_backend = "z3"; // sensible default
-
   }; // end class Black Solver
 
-  // simple public functions are given an inlinable implementation below
+  // simple public functions are given an inlineable implementation below
   inline void solver::assert_formula(formula f) {
     f = to_nnf(f);
-    add_xyz_closure(f);
+    add_xyz_requests(f);
     if( _frm == _alpha.top() )
       _frm = f;
     else
@@ -145,9 +139,6 @@ namespace black::internal {
     _xrequests.clear();
     _yrequests.clear();
     _zrequests.clear();
-    _xclosure.clear();
-    _yclosure.clear();
-    _zclosure.clear();
   }
 
 } // end namespace black::internal

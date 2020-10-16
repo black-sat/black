@@ -87,13 +87,13 @@ namespace black::internal
         formula first_conj = _alpha.var(std::pair(formula{xreq},k));
         formula inner_impl = _alpha.bottom();
         for(int i=j+1; i<=k; i++) {
-          formula xnf_req = to_ground_snf(*req, i, false);
+          formula xnf_req = to_ground_snf(*req, i);
           inner_impl = inner_impl || xnf_req;
         }
         first_conj = first_conj && inner_impl;
         formula second_conj = _alpha.bottom();
         for(int i=l+1; i<=j; i++) {
-          formula xnf_req = to_ground_snf(*req, i, false);
+          formula xnf_req = to_ground_snf(*req, i);
           second_conj = second_conj || xnf_req;
         }
         prune = prune && implies(first_conj, second_conj);
@@ -148,7 +148,7 @@ namespace black::internal
         formula atom_phi_k = _alpha.var( std::pair(formula{xreq},k) );
         formula body_impl = _alpha.bottom();
         for(int i=l+1; i<=k; i++) {
-          formula req_atom_i = to_ground_snf(*req, i, false);
+          formula req_atom_i = to_ground_snf(*req, i);
           body_impl = body_impl || req_atom_i;
         }
         period_lk = period_lk && implies(atom_phi_k, body_impl);
@@ -176,33 +176,27 @@ namespace black::internal
 
   // Generates the k-unraveling step for the given k.
   formula solver::k_unraveling(int k) {
-    // Keep the X-requests generated in phase k-1.
-    // Clear all the X-requests from the vector
-    _xrequests.clear();
-    _yrequests.clear();
-    _zrequests.clear();
-
     if (k==0) {
-      return std::accumulate(_zclosure.begin(), _zclosure.end(),
-          std::accumulate(_yclosure.begin(), _yclosure.end(),
-              to_ground_snf(_frm, k, true),
+      return std::accumulate(_zrequests.begin(), _zrequests.end(),
+          std::accumulate(_yrequests.begin(), _yrequests.end(),
+              to_ground_snf(_frm, k),
               [&](formula acc, formula f) {
-                return acc && !to_ground_snf(f, k, true);
+                return acc && !to_ground_snf(f, k);
               }
           ),
           [&](formula acc, formula f) {
-            return acc && to_ground_snf(f, k, true);
+            return acc && to_ground_snf(f, k);
           }
       );
     }
 
     // STEP
-    formula step = std::accumulate(_xclosure.begin(), _xclosure.end(),
+    formula step = std::accumulate(_xrequests.begin(), _xrequests.end(),
         formula{_alpha.top()},
         [&](formula acc, tomorrow xreq) {
           return acc && iff(
               _alpha.var(std::pair(formula{xreq},k-1)), // X(\alpha)_G^{k}
-              to_ground_snf(xreq.operand(),k,true)      // snf(\alpha)_G^{k+1}
+              to_ground_snf(xreq.operand(),k)           // snf(\alpha)_G^{k+1}
           );
         }
     );
@@ -211,12 +205,12 @@ namespace black::internal
     auto yz_fold = [&](formula acc, auto yz_req) {
       return acc && iff(
           _alpha.var(std::pair(formula{yz_req},k)), // Y/Z(\alpha)_G^{k+1}
-          to_ground_snf(yz_req.operand(),k-1,true)  // snf(\alpha)_G^{k}
+          to_ground_snf(yz_req.operand(),k-1)       // snf(\alpha)_G^{k}
       );
     };
 
-    return std::accumulate(_zclosure.begin(), _zclosure.end(),
-        std::accumulate(_yclosure.begin(), _yclosure.end(), step, yz_fold),
+    return std::accumulate(_zrequests.begin(), _zrequests.end(),
+        std::accumulate(_yrequests.begin(), _yrequests.end(), step, yz_fold),
         yz_fold
     );
   }
@@ -224,90 +218,53 @@ namespace black::internal
 
   // Turns the current formula into Stepped Normal Form
   // Note: this has to be run *after* the transformation to NNF (to_nnf() below)
-  formula solver::to_ground_snf(formula f, int k, bool update) {
+  formula solver::to_ground_snf(formula f, int k) {
     return f.match(
-      [&](boolean) { return f; },
-      [&](atom) { return _alpha.var(std::pair(f,k)); },
-      [&,this](tomorrow t) {
-        if(update)
-          _xrequests.push_back(t);
-        return _alpha.var(std::pair(f,k));
-      },
-      [&](yesterday y) {
-        if (update) _yrequests.push_back(y);
-        return _alpha.var(std::pair(f,k));
-      },
-      [&](w_yesterday z) {
-        if (update) _zrequests.push_back(z);
-        return _alpha.var(std::pair(f,k));
-      },
-      [&](negation n) { return !to_ground_snf(n.operand(),k, update); },
+      [&](boolean)      { return f; },
+      [&](atom)         { return _alpha.var(std::pair(f,k)); },
+      [&](tomorrow)     { return _alpha.var(std::pair(f,k)); },
+      [&](yesterday)    { return _alpha.var(std::pair(f,k)); },
+      [&](w_yesterday)  { return _alpha.var(std::pair(f,k)); },
+      [&](negation n)   { return !to_ground_snf(n.operand(),k); },
       [&](conjunction, formula left, formula right) {
-        return to_ground_snf(left,k,update) && to_ground_snf(right,k,update);
+        return to_ground_snf(left,k) && to_ground_snf(right,k);
       },
       [&](disjunction, formula left, formula right) {
-        return to_ground_snf(left,k,update) || to_ground_snf(right,k,update);
+        return to_ground_snf(left,k) || to_ground_snf(right,k);
       },
       [&](implication, formula left, formula right) {
-        return implies(
-            to_ground_snf(left,k,update),
-            to_ground_snf(right,k,update)
-            );
+        return implies(to_ground_snf(left,k), to_ground_snf(right,k));
       },
       [&](iff, formula left, formula right) {
-        return iff(
-            to_ground_snf(left,k,update),
-            to_ground_snf(right,k,update)
-            );
+        return iff(to_ground_snf(left,k), to_ground_snf(right,k));
       },
       [&,this](until u, formula left, formula right) {
-        if(update)
-          _xrequests.push_back(X(u));
-
-        return to_ground_snf(right,k,update) ||
-            (to_ground_snf(left,k,update) &&
-            _alpha.var(std::pair(formula{X(u)},k)));
+        return to_ground_snf(right,k) ||
+            (to_ground_snf(left,k) && _alpha.var(std::pair(formula{X(u)},k)));
       },
       [&,this](eventually e, formula op) {
-        if(update)
-          _xrequests.push_back(X(e));
-        return to_ground_snf(op,k,update) ||
-            _alpha.var(std::pair(formula{X(e)},k));
+        return to_ground_snf(op,k) || _alpha.var(std::pair(formula{X(e)},k));
       },
       [&,this](always a, formula op) {
-        if(update)
-          _xrequests.push_back(X(a));
-        return to_ground_snf(op,k,update) &&
-            _alpha.var(std::pair(formula{X(a)},k));
+        return to_ground_snf(op,k) && _alpha.var(std::pair(formula{X(a)},k));
       },
       [&,this](release r, formula left, formula right) {
-        if(update)
-          _xrequests.push_back(X(r));
-        return to_ground_snf(right,k,update) &&
-            (to_ground_snf(left,k,update) ||
-            _alpha.var(std::pair(formula{X(r)},k)));
+        return to_ground_snf(right,k) &&
+            (to_ground_snf(left,k) || _alpha.var(std::pair(formula{X(r)},k)));
       },
       [&,this](since s, formula left, formula right) {
-        if (update) _yrequests.push_back(Y(s));
-        return to_ground_snf(right,k,update) ||
-            (to_ground_snf(left,k,update) &&
-            _alpha.var(std::pair(formula{Y(s)},k)));
+        return to_ground_snf(right,k) ||
+            (to_ground_snf(left,k) && _alpha.var(std::pair(formula{Y(s)},k)));
       },
       [&,this](triggered t, formula left, formula right) {
-        if (update) _zrequests.push_back(Z(t));
-        return to_ground_snf(right,k,update) &&
-            (to_ground_snf(left,k,update) ||
-            _alpha.var(std::pair(formula{Z(t)},k)));
+        return to_ground_snf(right,k) &&
+            (to_ground_snf(left,k) || _alpha.var(std::pair(formula{Z(t)},k)));
       },
       [&,this](once o, formula op) {
-        if (update) _yrequests.push_back(Y(o));
-        return to_ground_snf(op,k,update) ||
-            _alpha.var(std::pair(formula{Y(o)},k));
+        return to_ground_snf(op,k) || _alpha.var(std::pair(formula{Y(o)},k));
       },
       [&,this](historically h, formula op) {
-        if (update) _zrequests.push_back(Z(h));
-        return to_ground_snf(op,k,update) &&
-            _alpha.var(std::pair(formula{Z(h)},k));
+        return to_ground_snf(op,k) && _alpha.var(std::pair(formula{Z(h)},k));
       }
     );
   }
@@ -386,13 +343,13 @@ namespace black::internal
             return to_nnf(left) && to_nnf(!right);
           },
           [&](iff, formula left, formula right) {
-            // return iff(to_nnf(!left), to_nnf(right));
-	          return to_nnf(!implies(left,right)) ||
-	    	           to_nnf(!implies(right,left));
+            return to_nnf(!implies(left,right)) || to_nnf(!implies(right,left));
           },
           [&](binary b, formula left, formula right) {
-            return binary(dual(b.formula_type()),
-                          to_nnf(!left), to_nnf(!right));
+            return binary(
+                dual(b.formula_type()),
+                to_nnf(!left), to_nnf(!right)
+            );
           }
         );
       },
@@ -404,8 +361,7 @@ namespace black::internal
         return to_nnf(!left) || to_nnf(right);
       },
       [&](iff, formula left, formula right) {
-	      return to_nnf(implies(left, right)) &&
-	             to_nnf(implies(right, left));
+	      return to_nnf(implies(left, right)) && to_nnf(implies(right, left));
       },
       [&](binary b) {
         return binary(b.formula_type(), to_nnf(b.left()), to_nnf(b.right()));
@@ -414,34 +370,34 @@ namespace black::internal
   }
 
   /* Following the definition of "closure":
-   * - if f is a future operator, then X(f) is in _xclosure
-   * - if f is S or O, then Y(f) is in _yclosure
-   * - if f is T or H, then Z(f) is in _zclosure
+   * - if f is a future operator, then X(f) is in _xrequests
+   * - if f is S or O, then Y(f) is in _yrequests
+   * - if f is T or H, then Z(f) is in _zrequests
    */
-  void solver::add_xyz_closure(formula f)
+  void solver::add_xyz_requests(formula f)
   {
     f.match(
-      [&](tomorrow t)     { _xclosure.push_back(t); },
-      [&](yesterday y)    { _yclosure.push_back(y); },
-      [&](w_yesterday z)  { _zclosure.push_back(z); },
-      [&](until u)        { _xclosure.push_back(X(u)); },
-      [&](release r)      { _xclosure.push_back(X(r)); },
-      [&](always a)       { _xclosure.push_back(X(a)); },
-      [&](eventually e)   { _xclosure.push_back(X(e)); },
-      [&](since s)        { _yclosure.push_back(Y(s)); },
-      [&](once o)         { _yclosure.push_back(Y(o)); },
-      [&](triggered t)    { _zclosure.push_back(Z(t)); },
-      [&](historically h) { _zclosure.push_back(Z(h)); },
+      [&](tomorrow t)     { _xrequests.push_back(t); },
+      [&](yesterday y)    { _yrequests.push_back(y); },
+      [&](w_yesterday z)  { _zrequests.push_back(z); },
+      [&](until u)        { _xrequests.push_back(X(u)); },
+      [&](release r)      { _xrequests.push_back(X(r)); },
+      [&](always a)       { _xrequests.push_back(X(a)); },
+      [&](eventually e)   { _xrequests.push_back(X(e)); },
+      [&](since s)        { _yrequests.push_back(Y(s)); },
+      [&](once o)         { _yrequests.push_back(Y(o)); },
+      [&](triggered t)    { _zrequests.push_back(Z(t)); },
+      [&](historically h) { _zrequests.push_back(Z(h)); },
       [](otherwise)       { }
     );
 
     f.match(
       [&](unary, formula op) {
-        add_xyz_closure(op);
+        add_xyz_requests(op);
       },
       [&](binary, formula left, formula right) {
-        add_xyz_closure(left);
-        add_xyz_closure(right);
+        add_xyz_requests(left);
+        add_xyz_requests(right);
       },
       [](otherwise) { }
     );
