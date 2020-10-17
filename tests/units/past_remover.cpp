@@ -100,8 +100,10 @@ TEST_CASE("Translation for basic past formulas")
 
     for(test t : tests) {
       DYNAMIC_SECTION("Check for formula: " << t.formula) {
-        slv.assert_formula(formula{implies(remove_past(t.formula), t.formula)});
-        CHECK(slv.solve());
+        slv.assert_formula(
+          formula{!implies(remove_past(t.formula), t.formula)}
+        );
+        CHECK(!slv.solve()); // check validity
         slv.clear();
       }
     }
