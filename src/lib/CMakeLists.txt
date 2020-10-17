@@ -23,12 +23,11 @@
 
 
 option(ENABLE_MATHSAT "Enable the MathSAT backend, if found" ON)
-option(ENABLE_Z3 "Enable the Z3 backend, if found" ON)
+option(ENABLE_GLUCOSE "Enable the Glucose backend, if found" ON)
 option(ENABLE_CMSAT "Enable the CryptoMiniSAT backend, if found" ON)
 option(ENABLE_MINISAT "Enable the MiniSAT backend, if found" ON)
 
-find_package(ZLIB REQUIRED) # for Glucose
-message(STATUS "Glucose solver is built-in. Enabling Glucose backend...")
+find_package(Z3 REQUIRED) # default backend
 
 if(ENABLE_MATHSAT)
   find_package(MathSAT)
@@ -42,16 +41,20 @@ else()
   message(STATUS "MathSAT backend disabled.")
 endif()
 
-if(ENABLE_Z3)
-  find_package(Z3)
+if(ENABLE_GLUCOSE)
+  find_package(ZLIB) # for Glucose
+  message(STATUS "Enabling Glucose backend...")
 
-  if(Z3_FOUND)
-    message(STATUS "Z3 solver found! Enabling the Z3 backend...")
+  if(ZLIB_FOUND)
+    set(GLUCOSE_FOUND YES)
+    message(STATUS "Enabling Glucose backend...")
   else()
-    message(STATUS "Z3 solver not found. Disabling the Z3 backend...")
+    set(GLUCOSE_FOUND NO)
+    message(STATUS "Missing zlib. Disabling Glucose backend...")
   endif()
+
 else()
-  message(STATUS "Z3 backend disabled.")
+  message(STATUS "Glucose backend disabled.")
 endif()
 
 if(ENABLE_MINISAT)
@@ -91,11 +94,12 @@ set (
    src/logic/formula.cpp
    src/logic/lex.cpp
    src/logic/parser.cpp
+   src/logic/past_remover.cpp
    src/sat/sat.cpp
    src/sat/cnf.cpp
-   src/sat/backends/glucose.cpp
+   src/sat/backends/z3.cpp
    src/solver/solver.cpp
-   src/logic/past_remover.cpp
+   src/debug/random_formula.cpp
 )
    
    
@@ -104,9 +108,9 @@ if(MathSAT_FOUND)
     src/sat/backends/mathsat.cpp include/black/sat/backends/mathsat.hpp)
 endif()
    
-if(Z3_FOUND)
+if(GLUCOSE_FOUND)
   set(LIB_SRC ${LIB_SRC} 
-    src/sat/backends/z3.cpp include/black/sat/backends/z3.hpp)
+    src/sat/backends/glucose.cpp include/black/sat/backends/glucose.hpp)
 endif()
 
 if(MiniSAT_FOUND)
@@ -131,7 +135,7 @@ set (
   include/black/logic/lex.hpp
   include/black/logic/parser.hpp
   include/black/solver/solver.hpp
-        include/black/logic/past_remover.hpp)
+  include/black/logic/past_remover.hpp)
 
 #
 # Main black library.

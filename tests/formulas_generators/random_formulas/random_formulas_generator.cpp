@@ -21,9 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic/alphabet.hpp>
-#include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/debug/random_formula.hpp>
 
 #include <iostream>
 #include <functional>
@@ -35,134 +34,9 @@
 using namespace black;
 
 enum class logic_t { ltl, ltlp };
-using op_t = std::variant<unary::type, binary::type>;
 
 const int DIM_MIN = 10;
 const int DIM_MAX = 100;
-
-
-/* This class implements RandomFormula(n) procedure introduced in:
- *
- * Tauriainen, Heikki, and Keijo Heljanko.
- * “Testing LTL Formula Translation into Büchi Automata.”
- * International Journal on Software Tools for Technology Transfer 4,
- * no. 1 (October 1, 2002): 57–70. https://doi.org/10.1007/s100090200070.
- *
- * with the extension to the past too.
- */
-class rand_formula_gen {
-public:
-  rand_formula_gen() : rand_formula_gen(std::vector<std::string> {}) {}
-
-  explicit rand_formula_gen(logic_t l) : rand_formula_gen(l, {}) {}
-
-  explicit rand_formula_gen(const std::vector<std::string>& symbols)
-      : rand_formula_gen(logic_t::ltlp, symbols) {}
-
-  rand_formula_gen(logic_t l, const std::vector<std::string>& symbols)
-    : _gen((std::random_device())()), _logic(l) {
-
-    // LTL operators
-    _ops = {
-        unary::type::negation,
-        unary::type::tomorrow,
-        unary::type::always,
-        unary::type::eventually,
-
-        binary::type::conjunction,
-        binary::type::disjunction,
-        binary::type::implication,
-        binary::type::iff,
-        binary::type::until,
-        binary::type::release,
-    };
-
-    // LTL+Past operators
-    if (_logic == logic_t::ltlp) {
-      _ops.emplace_back(unary::type::yesterday);
-      _ops.emplace_back(unary::type::w_yesterday);
-      _ops.emplace_back(unary::type::once);
-      _ops.emplace_back(unary::type::historically);
-
-      _ops.emplace_back(binary::type::since);
-      _ops.emplace_back(binary::type::triggered);
-    }
-
-    // Retrieve unary operators
-    for (const op_t& op : _ops) {
-      if (std::holds_alternative<unary::type>(op)) {
-        _unary_ops.push_back(std::get<unary::type>(op));
-      }
-    }
-
-    // Symbols in AP
-    _ap = {_sigma.top(), _sigma.bottom()};
-    for (const std::string& s : symbols) {
-      _ap.push_back(_sigma.var("(" + s + ")"));
-    }
-  }
-
-  formula random_formula(int n);
-
-private:
-  std::mt19937 _gen;
-  logic_t _logic;
-  alphabet _sigma;
-  std::vector<op_t> _ops;
-  std::vector<unary::type> _unary_ops; // subset of _ops
-  std::vector<formula> _ap;            // AP U {True,False}
-
-  inline formula random_atom();
-  inline op_t random_operator();
-  inline op_t random_unary_operator();
-
-  // operators application
-  static inline formula un_op_apply(const unary::type& op, formula f) {
-    return unary(op, f);
-  }
-
-  static inline formula
-  bin_op_apply(const binary::type& op, formula f1, formula f2) {
-    return binary(op, f1, f2);
-  }
-}; // class rand_formula_gen
-
-formula rand_formula_gen::random_atom() {
-  std::uniform_int_distribution<unsigned long> i(0, _ap.size()-1);
-  return _ap[i(_gen)];
-}
-
-op_t rand_formula_gen::random_operator() {
-  std::uniform_int_distribution<unsigned long> i(0, _ops.size()-1);
-  return _ops[i(_gen)];
-}
-
-op_t rand_formula_gen::random_unary_operator() {
-  std::uniform_int_distribution<unsigned long> i(0, _unary_ops.size()-1);
-  return _unary_ops[i(_gen)];
-}
-
-formula rand_formula_gen::random_formula(int n) { // must be n >= 1
-  if (n == 1) {
-    return random_atom();
-  } else {
-    if (n == 2) {
-      op_t op = random_unary_operator();
-      return un_op_apply(std::get<unary::type>(op), random_formula(n-1));
-    } else {
-      op_t op = random_operator();
-      if (std::holds_alternative<unary::type>(op)) {  // if unary
-        return un_op_apply(std::get<unary::type>(op), random_formula(n-1));
-      } else {  // if binary
-        std::uniform_int_distribution<> r(1, n-2);
-        int x = r(_gen);
-        formula phi = random_formula(x);
-        formula psi = random_formula(n-x-1);
-        return bin_op_apply(std::get<binary::type>(op), phi, psi);
-      }
-    }
-  }
-}
 
 /* ---------------------------------- MAIN ---------------------------------- */
 [[ noreturn ]] void help();
@@ -260,11 +134,15 @@ int main(int argc, char **argv) {
     }
   }
 
-  // Generate <num> random formulas
-  rand_formula_gen f {logic, ap};
+  alphabet sigma;
 
+  // Generate <num> random formulas
   for (int j=0; j<num; j++) {
-    std::cout << to_string(f.random_formula(dim)) << "\n";
+    formula f = logic == 
+      logic_t::ltl ? 
+        black::random_ltl_formula(sigma, dim, ap) : 
+        black::random_ltlp_formula(sigma, dim, ap);
+    std::cout << to_string(f) << "\n";
   }
 
   return 0;
