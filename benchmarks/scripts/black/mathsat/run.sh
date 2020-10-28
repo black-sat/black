@@ -1,3 +1,3 @@
 #!/bin/bash
 
-black -B mathsat $1
+black -B mathsat "$1"

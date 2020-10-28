@@ -79,6 +79,9 @@ namespace black::frontend
     // name of the selected SAT backend (nullopt for default)
     inline std::optional<std::string> sat_backend;
 
+    // past removing before executing the SAT-encoding (disabled by default)
+    inline bool remove_past = false;
+
     // verbosity level
     inline verbosity verbosity = verbosity::message;
   }

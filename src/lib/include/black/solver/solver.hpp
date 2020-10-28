@@ -32,6 +32,7 @@
 #include <limits>
 #include <unordered_set>
 #include <string>
+#include <numeric>
 
 #include <tsl/hopscotch_map.h>
 
@@ -68,7 +69,7 @@ namespace black::internal {
     private:
 
       // Extract the x-eventuality from an x-request
-      std::optional<formula> get_xev(tomorrow xreq);
+      static std::optional<formula> get_xev(tomorrow xreq);
 
       // Generates the PRUNE encoding
       formula prune(int k);
@@ -94,14 +95,14 @@ namespace black::internal {
       // Generates the k-unraveling for the given k
       formula k_unraveling(int k);
 
-      // Generates the Next Normal Form of f
-      formula to_ground_xnf(formula f, int k, bool update);
+      // Generates the Stepped Normal Form of f
+      formula to_ground_snf(formula f, int k);
 
       formula to_nnf(formula f);
       formula to_nnf_inner(formula f);
 
-      // X-requests from the formula's closure
-      void add_xclosure(formula f);
+      // collect X/Y/Z-requests
+      void add_xyz_requests(formula f);
   
     private:
       // Reference to the original _alphabet
@@ -110,25 +111,23 @@ namespace black::internal {
       // Current LTL formula to solve
       formula _frm;
 
-      // Vector of all the X-requests of step k
+      // X/Y/Z-requests from the formula's closure
+      // TODO: specialize to std::unordered_set<tomorrow/yesterday/w_yesterday>
       std::vector<tomorrow> _xrequests;
-
-      // X-requests from the closure of the formula
-      // TODO: specialize to std::unordered_set<tomorrow>
-      std::vector<tomorrow> _xclosure;
+      std::vector<yesterday> _yrequests;
+      std::vector<w_yesterday> _zrequests;
 
       // cache to memoize to_nnf() calls
       tsl::hopscotch_map<formula, formula> _nnf_cache;
 
       // the name of the currently chosen sat backend
       std::string _sat_backend = "z3"; // sensible default
-
   }; // end class Black Solver
 
-  // simple public functions are given an inlinable implementation below
+  // simple public functions are given an inlineable implementation below
   inline void solver::assert_formula(formula f) {
     f = to_nnf(f);
-    add_xclosure(f);
+    add_xyz_requests(f);
     if( _frm == _alpha.top() )
       _frm = f;
     else
@@ -138,7 +137,8 @@ namespace black::internal {
   inline void solver::clear() {
     _frm = _alpha.top();
     _xrequests.clear();
-    _xclosure.clear();
+    _yrequests.clear();
+    _zrequests.clear();
   }
 
 } // end namespace black::internal

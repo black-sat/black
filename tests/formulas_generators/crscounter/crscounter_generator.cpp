@@ -118,12 +118,13 @@ formula once_chain(int N, int i) {
 formula counter(int N) {
   int d = ilog2(N);
   formula init = equals_d(0, d);
-  formula trans = iff(equals_d(1, d), Y(equals_d(0, d)));
+  formula trans = sigma.top();
 
-  for (int i=2; i<=N; i++) {
+  for (int i=1; i<=N; i++) {
     formula t = equals_d(i-1, d);
     if (i == N/2) t = t || equals_d(N, d); // create the loop at N/2
-    trans = trans && iff(equals_d(i, d), Y(t));
+    formula step = iff(equals_d(i, d), Y(t));
+    trans = (i==1) ? step : trans && step; // accumulate from i>=2
   }
 
   return init && G(trans);

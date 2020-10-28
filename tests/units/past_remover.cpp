@@ -24,6 +24,7 @@
 
 
 #include <black/logic/past_remover.hpp>
+#include <black/solver/solver.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -65,6 +66,7 @@ TEST_CASE("Translation for basic past formulas")
   atom q = sigma.var("q");
 
   atom p_Y  = sigma.var(internal::past_label{Y(p)});
+  atom p_Z  = sigma.var(internal::past_label{Z(p)});
   atom p_S  = sigma.var(internal::past_label{S(p,q)});
   atom p_YS = sigma.var(internal::past_label{Y(p_S)});
   atom p_T  = sigma.var(internal::past_label{S(!p,!q)});
@@ -76,6 +78,7 @@ TEST_CASE("Translation for basic past formulas")
 
   std::vector<test> tests = {
       {Y(p),    p_Y && (!p_Y && G(iff(X(p_Y), p)))},
+      {Z(p),    p_Z && (p_Z && G(iff(X(p_Z), p)))},
       {S(p,q),  (p_S && G(iff(p_S, q || (p && p_YS))))
                 && (!p_YS && G(iff(X(p_YS), p_S)))},
       {T(p,q),  (!p_T && G(iff(p_T, !q || (!p && p_YT))))
@@ -89,6 +92,20 @@ TEST_CASE("Translation for basic past formulas")
   for(test t : tests) {
     DYNAMIC_SECTION("Translation for formula: " << t.formula) {
       CHECK(remove_past(t.formula) == t.result);
+    }
+  }
+
+  SECTION("Translation produces an equisatisfiable formula") {
+    black::solver slv{sigma};
+
+    for(test t : tests) {
+      DYNAMIC_SECTION("Check for formula: " << t.formula) {
+        slv.assert_formula(
+          formula{!implies(remove_past(t.formula), t.formula)}
+        );
+        CHECK(!slv.solve()); // check validity
+        slv.clear();
+      }
     }
   }
 }

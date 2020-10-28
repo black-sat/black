@@ -110,6 +110,8 @@ namespace black::frontend
       (option("-B", "--sat-backend") 
         & value(is_backend, "name", cli::sat_backend))
         % "select the SAT backend to use",
+      option("--remove-past").set(cli::remove_past)
+        % "translate LTL+Past formulas into LTL before checking satisfiability",
       value("file", cli::filename).required(false)
         % "input formula file name.\n"
           "If missing, runs in interactive mode.\n"
