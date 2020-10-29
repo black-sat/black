@@ -35,10 +35,10 @@ BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
 
 
 SYNOPSIS
-   ./black [-k <bound>] [-B <name>] [--remove-past] [<file>]
-   ./black --sat-backends
-   ./black -v
-   ./black -h
+   black [-k <bound>] [-B <name>] [--remove-past] [<file>]
+   black --sat-backends
+   black -v
+   black -h
 
 OPTIONS
    -k, --bound <bound>        maximum bound for BMC procedures
