@@ -31,23 +31,26 @@ Quick usage help:
 $ black --help
 
 BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
-        version 0.1.1
+        version 0.2.0
 
 
 SYNOPSIS
-   black [-k <bound>] [-B <name>] [<file>]
-   black --sat-backends
-   black -v
-   black -h
+   ./black [-k <bound>] [-B <name>] [--remove-past] [<file>]
+   ./black --sat-backends
+   ./black -v
+   ./black -h
 
 OPTIONS
    -k, --bound <bound>        maximum bound for BMC procedures
    -B, --sat-backend <name>   select the SAT backend to use
+   --remove-past              translate LTL+Past formulas into LTL before
+                              checking satisfiability
+
    <file>                     input formula file name.
                               If missing, runs in interactive mode.
                               If '-', reads from standard input in batch mode.
    --sat-backends             print the list of available SAT backends
-   -v, --version              show version information
+   -v, --version              show version and license information
    -h, --help                 print this help message
 ```
 
