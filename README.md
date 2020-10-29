@@ -1,4 +1,4 @@
-# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black)  ![MIT](https://img.shields.io/badge/license-MIT-brightgreen) [![Latest release](https://badgen.net/github/release/black-sat/black)](https://github.com/black-sat/black/releases/tag/v0.2.0)
+# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black)  ![MIT](https://img.shields.io/badge/license-MIT-brightgreen) [![Latest release](https://badgen.net/github/release/black-sat/black)](https://github.com/black-sat/black/releases/tag/v0.3.0)
 
 BLACK (short for Bounded Ltl sAtisfiability ChecKer) is a tool for testing the
 satisfiability of LTL formulas based on the SAT encoding of the tableau method
@@ -23,7 +23,7 @@ Quick installation instructions:
 
 | Ubuntu ≥ 20.04             | Fedora ≥ 32, CentOS/RHEL&nbsp;≥&nbsp;8 | macOS ≥ 10.14 with [Homebrew][Homebrew] |
 |----------------------------|------------------------------|-----------------------------|
-| [![Download](https://badgen.net/badge/Download%20v0.2.0/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.2.0/.rpm/green)][pkg.rpm]| |
+| [![Download](https://badgen.net/badge/Download%20v0.3.0/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.3.0/.rpm/green)][pkg.rpm]| |
 | How to install:<br/>`$ sudo apt install ⟨file⟩` | How to install:<br/>`$ sudo dnf install ⟨file⟩` |How to install:<br/>`$ brew install black-sat/black/black-sat`|
 
 Quick usage help:
@@ -31,7 +31,7 @@ Quick usage help:
 $ black --help
 
 BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
-        version 0.2.0
+        version 0.3.0
 
 
 SYNOPSIS
@@ -73,5 +73,5 @@ OPTIONS
 [Home]: https://github.com/black-sat/black/wiki/Home 
 [Installation]: https://github.com/black-sat/black/wiki/Installation 
 [Usage]: https://github.com/black-sat/black/wiki/Usage 
-[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.2.0/black-sat-0.2.0-1.x86_64.deb
-[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.2.0/black-sat-0.2.0-1.x86_64.rpm
+[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.3.0/black-sat-0.3.0-1.x86_64.deb
+[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.3.0/black-sat-0.3.0-1.x86_64.rpm
