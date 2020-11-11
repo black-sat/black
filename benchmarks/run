@@ -30,7 +30,7 @@ if $MCAP; then
       cpu=1
     fi
 
-    cgexec -g "memory,cpuset:cpu$cpu" $@
+    cgexec -g "memory:benchmark/cpu$cpu" $@
   }
 
   has_mcap() {
