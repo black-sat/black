@@ -1,0 +1,1 @@
+(((((p4) | X (p4)) -> Z (p1)) -> F((((True <-> F (p1)) -> O True) T (p1)) | G True)) -> ((X O F (p2) <-> (F (p5) T H False)) S (G False R !(((p4) | (p4)) U G !False)))) <-> F G X !(p2)

@@ -1,0 +1,1 @@
+(F H H(H True R False) T (F !(False S (p1)) S H F(O Z F True | ((p4) S (p1))))) S ((((p2) S Y (p1)) U Z (p5)) R (H True -> Y((G (p4) T Y True) | ((p2) T F H O X (p5)))))

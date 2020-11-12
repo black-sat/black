@@ -1,0 +1,1 @@
+!(F G H G((!True <-> (p2)) | (O True -> (p3))) T (X Z((True <-> F G Y (p3)) <-> (p4)) T (X (p3) S (p1))))

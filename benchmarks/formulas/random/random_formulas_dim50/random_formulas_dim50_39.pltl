@@ -1,0 +1,1 @@
+((O (p1) R !F(False U ((Z !O (p3) -> (F(True | X (p2)) | (p5))) R X((p3) S (p4))))) <-> H(F X G((p2) T ((p4) & True)) -> X(F (p1) S (p4)))) | G(((H False U (p5)) <-> True) <-> (p2))

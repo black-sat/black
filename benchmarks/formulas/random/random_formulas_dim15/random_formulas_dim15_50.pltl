@@ -1,0 +1,1 @@
+(O (p3) S (p1)) & F(((p3) | False) U !(Z (p1) | True))

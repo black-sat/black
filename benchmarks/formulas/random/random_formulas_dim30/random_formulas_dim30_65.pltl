@@ -1,0 +1,1 @@
+X(((False & (p1)) U !F !H Y True) -> (p3)) | H(((p3) & (p3)) U ((G True U G((p2) <-> O X (p4))) -> False))

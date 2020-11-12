@@ -1,0 +1,1 @@
+(Y((G !((p1) <-> (O (p5) S False)) | ((p5) -> O (p2))) -> Y !(F F H (p2) <-> !False)) -> X Z F Z X(O (p3) -> Z G(((p2) & (p4)) | X((False U (p3)) -> !(p2))))) | Y X (p1)

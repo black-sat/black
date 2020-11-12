@@ -1,0 +1,1 @@
+Z(Z(((True -> False) U G (p4)) & (H G((p2) S ((p2) -> (p2))) <-> F True)) | ((p2) U (F (p2) U !X((p1) | False))))

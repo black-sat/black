@@ -1,0 +1,1 @@
+(Z(Y(((p1) -> (p5)) | (X Y (p2) T (H(Y(H True S (p4)) -> X G X True) -> (p3)))) T (False -> F True)) <-> ((O (p1) & !G((p4) & (p2))) -> H True)) & Y X Y O((p4) T ((p3) -> (p1)))

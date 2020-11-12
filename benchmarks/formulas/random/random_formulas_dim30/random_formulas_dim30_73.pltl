@@ -1,0 +1,1 @@
+(H(O (p3) & G !Z(Z (p3) | (((O False U Y False) | False) U (H (p4) <-> (p1))))) -> (Z (p4) <-> True)) U H True

@@ -1,0 +1,1 @@
+(F (p1) T Z (p2)) | ((False | False | False) -> Z X (p1))

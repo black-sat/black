@@ -1,0 +1,1 @@
+!F(False & (X (p2) | True)) R ((!!(G (p3) R (p2)) T (X O (p1) U ((False & True) <-> ((p2) | (p4))))) <-> Y (p2))
