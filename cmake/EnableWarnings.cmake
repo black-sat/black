@@ -48,6 +48,7 @@ set(
   -Wno-global-constructors 
   # -Wno-extra-semi
   -Wno-unknown-warning-option
+  -Wno-poison-system-directories # fix for macOS Big Sur
 )
 
 # GCC
