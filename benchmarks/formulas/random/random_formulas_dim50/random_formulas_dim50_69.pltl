@@ -1,0 +1,1 @@
+Y(O (p4) & H (p2) & G(True | ((True & H (p2)) U (Y (p1) & (p5) & (False <-> False))))) U F(!X (p4) U (X(!False & X !Z (p2)) U ((((G (p2) | !(p4)) <-> (p5)) T H (p4)) <-> (p3))))

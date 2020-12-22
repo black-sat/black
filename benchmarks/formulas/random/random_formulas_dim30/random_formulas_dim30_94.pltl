@@ -1,0 +1,1 @@
+((O (p4) <-> ((p2) <-> (True R (p1)))) S H(((H (p4) & True) T (p4)) R (F (p3) & ((p3) | (p4))))) T (F True R ((p3) S (p3)))

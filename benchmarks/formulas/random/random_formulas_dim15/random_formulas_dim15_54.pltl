@@ -1,0 +1,1 @@
+F((!G (p1) | H G(False | !((p1) | (p2)))) -> False)

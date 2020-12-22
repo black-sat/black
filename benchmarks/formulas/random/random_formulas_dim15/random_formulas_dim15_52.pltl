@@ -1,0 +1,1 @@
+!(Z((False R ((p2) & False)) & (p3)) | (p3)) & (True U False)

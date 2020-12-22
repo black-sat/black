@@ -1,0 +1,1 @@
+(((True | (p1)) <-> (G (p1) | False)) T True) & Y False & (p2)

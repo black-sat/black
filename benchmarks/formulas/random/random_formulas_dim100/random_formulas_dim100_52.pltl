@@ -1,0 +1,1 @@
+(!(H O Y(O (p2) <-> F((True <-> (p6)) | True)) T !O(G Y (p3) & F (p4))) T (!(!Y((p6) -> (p5)) R ((p2) U (p2))) T F X F(X True R (p1)))) <-> H(((p1) T X(Z G F Y(F H Z !False U False) -> O X (p1))) & ((O(Z Y(True U O (p5)) R (Z (p1) <-> ((p6) & (p6)))) U (p6)) | !(G X X((p3) & (p6)) -> (F(((p5) U !((p4) | Y (p6))) T H True) & (p5)))))

@@ -1,0 +1,1 @@
+(G(G((p3) U (p2)) <-> ((False & G(X True | !Y (p2))) <-> (p1))) U ((p1) R O F !True)) R (((p2) R False) <-> (p3))

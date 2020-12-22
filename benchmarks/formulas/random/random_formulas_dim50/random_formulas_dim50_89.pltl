@@ -1,0 +1,1 @@
+((O(H (p3) & (p5) & Z(True | (p2))) R ((p4) | (p1) | (p4))) S (O (p4) T !(True <-> (p3)))) T H((True | ((p2) U ((p4) & H O G (p3)))) U ((((p3) & X True) T (p4)) U (Z True R ((p1) & (p2)))))

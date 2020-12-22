@@ -25,6 +25,9 @@ Options:
 
   -o | --out        To specify an output directory. Default is the current one.
 
+  --i-min           Start generating formulas from a minimum index. Useful to
+                    not override already generated formulas. Default is 1.
+
   --ltl             To exclude past operators.
 
   -h | --help       Print this help.
@@ -39,6 +42,7 @@ errhelp() {
 OUT_DIR=.
 LTL=""
 EXEC=random_formulas_generator
+I_MIN=1
 
 # Optional parameters
 POSITIONAL=()
@@ -53,6 +57,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     -o|--out)
       OUT_DIR="$2"
+      shift
+      shift
+      ;;
+    --i-min)
+      I_MIN="$2"
       shift
       shift
       ;;
@@ -94,7 +103,7 @@ fi
 # Generation
 formulas=$($EXEC --num "$NUM" --dim "$DIM" $LTL)
 
-i=1
+i=$I_MIN
 while IFS= read -r line; do
   echo "$line" > "$OUT_DIR/random_formulas_dim$DIM""_$i.pltl"
   i=$((i+1))
