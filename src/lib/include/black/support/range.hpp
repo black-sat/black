@@ -134,6 +134,6 @@ namespace black::internal
 
 namespace black {
   using internal::range;
-};
+}
 
 #endif // BLACK_RANGE_HPP
