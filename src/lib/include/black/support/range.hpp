@@ -84,33 +84,41 @@ namespace black::internal
       return _value != other._value;
     }
 
+    bool operator==(range_end_iterator end);
+    bool operator!=(range_end_iterator end);
+
   private:
     size_t _value;
   };
 
-  class range_end_iterator {
+  class range_end_iterator 
+  {
+    friend class range_iterator;
   public:
     range_end_iterator(size_t end) : _end{end} { }
 
-    friend bool operator==(range_iterator it, range_end_iterator end) {
-      return it._value == end._end;
-    }
-
-    friend bool operator!=(range_iterator it, range_end_iterator end) {
-      return it._value != end._end;
-    }
-
-    friend bool operator==(range_end_iterator end, range_iterator it) {
-      return end._end == it._value;
-    }
-
-    friend bool operator!=(range_end_iterator end, range_iterator it) {
-      return end._end != it._value;
-    }
+    bool operator==(range_iterator it);
+    bool operator!=(range_iterator it);
 
   private:
     size_t _end;
   };
+
+  inline bool range_iterator::operator==(range_end_iterator end) {
+    return _value == end._end;
+  }
+
+  inline bool range_iterator::operator!=(range_end_iterator end) {
+    return _value != end._end;
+  }
+
+  inline bool range_end_iterator::operator==(range_iterator it) {
+    return _end == it._value;
+  }
+
+  inline bool range_end_iterator::operator!=(range_iterator it) {
+    return _end != it._value;
+  }
 
   inline range_iterator begin(range r) { return r.begin(); } 
   inline range_end_iterator end(range r) { return r.end(); } 
