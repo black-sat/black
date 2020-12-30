@@ -55,7 +55,7 @@ namespace black::internal {
       void clear();
 
       // Solve the formula with up to `k_max' iterations
-      bool solve(std::optional<ssize_t> k_max = std::nullopt);
+      bool solve(std::optional<size_t> k_max = std::nullopt);
 
       // Choose the SAT backend. The backend must exist.
       void set_sat_backend(std::string name);

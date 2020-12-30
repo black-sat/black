@@ -51,37 +51,37 @@ namespace black::internal
     // the name of the currently chosen sat backend
     std::string sat_backend = "z3"; // sensible default
 
-    bool solve(std::optional<ssize_t> k_max_arg);
+    bool solve(std::optional<size_t> k_max_arg);
 
     // Extract the x-eventuality from an x-request
     static std::optional<formula> get_xev(tomorrow xreq);
 
     // Generates the PRUNE encoding
-    formula prune(ssize_t k);
+    formula prune(size_t k);
 
     // Generates the _lPRUNE_j^k encoding
-    formula l_j_k_prune(ssize_t l, ssize_t j, ssize_t k);
+    formula l_j_k_prune(size_t l, size_t j, size_t k);
 
     // Generates the EMPTY and LOOP encoding
-    formula empty_or_loop(ssize_t k);
+    formula empty_or_loop(size_t k);
 
     // Generates the encoding for EMPTY_k
-    formula k_empty(ssize_t k);
+    formula k_empty(size_t k);
 
     // Generates the encoding for LOOP_k
-    formula k_loop(ssize_t k);
+    formula k_loop(size_t k);
 
     // Generates the encoding for _lP_k
-    formula l_to_k_period(ssize_t l, ssize_t k);
+    formula l_to_k_period(size_t l, size_t k);
 
     // Generates the encoding for _lL_k
-    formula l_to_k_loop(ssize_t l, ssize_t k);
+    formula l_to_k_loop(size_t l, size_t k);
 
     // Generates the k-unraveling for the given k
-    formula k_unraveling(ssize_t k);
+    formula k_unraveling(size_t k);
 
     // Generates the Stepped Normal Form of f
-    formula to_ground_snf(formula f, ssize_t k);
+    formula to_ground_snf(formula f, size_t k);
 
     formula to_nnf(formula f);
     formula to_nnf_inner(formula f);
@@ -95,20 +95,20 @@ namespace black::internal
 
   solver::~solver() = default;
 
-  bool solver::solve(std::optional<ssize_t> k_max) {
+  bool solver::solve(std::optional<size_t> k_max) {
     return _data->solve(k_max);
   }
 
   /*
    * Solve the formula with up to `k_max' iterations
    */
-  bool solver::_solver_t::solve(std::optional<ssize_t> k_max_arg)
+  bool solver::_solver_t::solve(std::optional<size_t> k_max_arg)
   {
     auto sat = sat::solver::get_solver(sat_backend);
 
-    ssize_t k_max = k_max_arg.value_or(std::numeric_limits<ssize_t>::max());
+    size_t k_max = k_max_arg.value_or(std::numeric_limits<size_t>::max());
 
-    for(ssize_t k = 0; k <= k_max; ++k)
+    for(size_t k = 0; k <= k_max; ++k)
     {
       // Generating the k-unraveling
       // if it is unsat, then stop with UNSAT
@@ -132,12 +132,12 @@ namespace black::internal
   }
 
   // Generates the PRUNE encoding
-  formula solver::_solver_t::prune(ssize_t k)
+  formula solver::_solver_t::prune(size_t k)
   {
     formula k_prune = sigma.bottom();
-    for(ssize_t l = 0; l < k - 1; l++) {
+    for(size_t l = 0; l + 1 < k; l++) {
       formula k_prune_inner = sigma.bottom();
-      for(ssize_t j = l + 1; j < k; j++) {
+      for(size_t j = l + 1; j < k; j++) {
         formula llp =
             l_to_k_loop(l,j) && l_to_k_loop(j,k) && l_j_k_prune(l,j,k);
         k_prune_inner = k_prune_inner || llp;
@@ -149,7 +149,7 @@ namespace black::internal
 
 
   // Generates the _lPRUNE_j^k encoding
-  formula solver::_solver_t::l_j_k_prune(ssize_t l, ssize_t j, ssize_t k) {
+  formula solver::_solver_t::l_j_k_prune(size_t l, size_t j, size_t k) {
     formula prune = sigma.top();
     for(tomorrow xreq : xrequests) {
       // If the X-requests is an X-eventuality
@@ -157,13 +157,13 @@ namespace black::internal
         // Creating the encoding
         formula first_conj = sigma.var(std::pair(formula{xreq},k));
         formula inner_impl = sigma.bottom();
-        for(ssize_t i = j + 1; i <= k; i++) {
+        for(size_t i = j + 1; i <= k; i++) {
           formula xnf_req = to_ground_snf(*req, i);
           inner_impl = inner_impl || xnf_req;
         }
         first_conj = first_conj && inner_impl;
         formula second_conj = sigma.bottom();
-        for(ssize_t i = l + 1; i <= j; i++) {
+        for(size_t i = l + 1; i <= j; i++) {
           formula xnf_req = to_ground_snf(*req, i);
           second_conj = second_conj || xnf_req;
         }
@@ -175,12 +175,12 @@ namespace black::internal
 
 
   // Generates the EMPTY and LOOP encoding
-  formula solver::_solver_t::empty_or_loop(ssize_t k) {
+  formula solver::_solver_t::empty_or_loop(size_t k) {
     return k_empty(k) || k_loop(k);
   }
 
   // Generates the encoding for EMPTY_k
-  formula solver::_solver_t::k_empty(ssize_t k) {
+  formula solver::_solver_t::k_empty(size_t k) {
     formula k_empty = sigma.top();
     for(auto & req : xrequests) {
       k_empty = k_empty && (!( sigma.var(std::pair(formula{req},k)) ));
@@ -198,9 +198,9 @@ namespace black::internal
   }
 
   // Generates the encoding for LOOP_k
-  formula solver::_solver_t::k_loop(ssize_t k) {
+  formula solver::_solver_t::k_loop(size_t k) {
     formula k_loop = sigma.bottom();
-    for(ssize_t l = 0; l < k; l++) {
+    for(size_t l = 0; l < k; l++) {
       k_loop = k_loop || (l_to_k_loop(l,k) && l_to_k_period(l,k));
     }
     return k_loop;
@@ -208,7 +208,7 @@ namespace black::internal
 
 
   // Generates the encoding for _lP_k
-  formula solver::_solver_t::l_to_k_period(ssize_t l, ssize_t k) {
+  formula solver::_solver_t::l_to_k_period(size_t l, size_t k) {
     formula period_lk = sigma.top();
     for(tomorrow xreq : xrequests) {
       // If the X-requests is an X-eventuality
@@ -216,7 +216,7 @@ namespace black::internal
         // Creating the encoding
         formula atom_phi_k = sigma.var( std::pair(formula{xreq},k) );
         formula body_impl = sigma.bottom();
-        for(ssize_t i = l + 1; i <= k; i++) {
+        for(size_t i = l + 1; i <= k; i++) {
           formula req_atom_i = to_ground_snf(*req, i);
           body_impl = body_impl || req_atom_i;
         }
@@ -228,7 +228,7 @@ namespace black::internal
 
 
   // Generates the encoding for _lR_k
-  formula solver::_solver_t::l_to_k_loop(ssize_t l, ssize_t k) {
+  formula solver::_solver_t::l_to_k_loop(size_t l, size_t k) {
     auto eq_fold = [&](formula acc, auto xyz_req) {
       return acc && iff(
         sigma.var(std::pair(formula{xyz_req},l)),
@@ -244,7 +244,7 @@ namespace black::internal
 
 
   // Generates the k-unraveling step for the given k.
-  formula solver::_solver_t::k_unraveling(ssize_t k) {
+  formula solver::_solver_t::k_unraveling(size_t k) {
     if (k==0) {
       return std::accumulate(zrequests.begin(), zrequests.end(),
           std::accumulate(yrequests.begin(), yrequests.end(),
@@ -285,9 +285,9 @@ namespace black::internal
   }
 
 
-  // Turns the current formula ssize_to Stepped Normal Form
+  // Turns the current formula size_to Stepped Normal Form
   // Note: this has to be run *after* the transformation to NNF (to_nnf() below)
-  formula solver::_solver_t::to_ground_snf(formula f, ssize_t k) {
+  formula solver::_solver_t::to_ground_snf(formula f, size_t k) {
     return f.match(
       [&](boolean)      { return f; },
       [&](atom)         { return sigma.var(std::pair(f,k)); },
@@ -494,4 +494,4 @@ namespace black::internal
     return _data->sat_backend;
   }
 
-} // end namespace black::ssize_ternal
+} // end namespace black::size_ternal
