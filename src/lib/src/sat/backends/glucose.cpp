@@ -69,7 +69,7 @@ namespace black::sat::backends
     }
   }
 
-  bool glucose::is_sat(formula assumption) {
+  bool glucose::is_sat_with(formula assumption) {
     Glucose::vec<Glucose::Lit> lits;
     
     assert_formula(iff(fresh(assumption), assumption));

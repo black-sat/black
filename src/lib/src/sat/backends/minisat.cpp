@@ -70,7 +70,7 @@ namespace black::sat::backends
     }
   }
 
-  bool minisat::is_sat(formula assumption) {
+  bool minisat::is_sat_with(formula assumption) {
     Minisat::vec<Minisat::Lit> lits;
     
     assert_formula(iff(fresh(assumption), assumption));

@@ -28,6 +28,7 @@ option(ENABLE_CMSAT "Enable the CryptoMiniSAT backend, if found" ON)
 option(ENABLE_MINISAT "Enable the MiniSAT backend, if found" ON)
 
 find_package(Z3 REQUIRED) # default backend
+message(STATUS "Enabling Z3 backend...")
 
 if(ENABLE_MATHSAT)
   find_package(MathSAT)
@@ -43,7 +44,6 @@ endif()
 
 if(ENABLE_GLUCOSE)
   find_package(ZLIB) # for Glucose
-  message(STATUS "Enabling Glucose backend...")
 
   if(ZLIB_FOUND)
     set(GLUCOSE_FOUND YES)

@@ -117,7 +117,7 @@ namespace black::sat::backends
     Z3_solver_assert(_data->context, _data->solver, _data->to_z3(f));
   }
   
-  bool z3::is_sat(formula f) {
+  bool z3::is_sat_with(formula f) {
     Z3_solver_push(_data->context, _data->solver);
     assert_formula(iff(fresh(f), f));
     Z3_ast term = _data->to_z3(fresh(f));
@@ -167,7 +167,7 @@ namespace black::sat::backends
       [this](negation, formula n) {
         return Z3_mk_not(context, to_z3(n));
       },
-      [this](big_and c) {
+      [this](big_conjunction c) {
         std::vector<Z3_ast> args;
         for(formula op : c.operands())
           args.push_back(to_z3(op));
@@ -177,7 +177,7 @@ namespace black::sat::backends
         return Z3_mk_and(context, 
           static_cast<unsigned int>(args.size()), args.data());
       },
-      [this](big_or c) {
+      [this](big_disjunction c) {
         std::vector<Z3_ast> args;
         for(formula op : c.operands())
           args.push_back(to_z3(op));

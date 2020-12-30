@@ -67,7 +67,7 @@ namespace black::sat::backends
     return (res == MSAT_SAT);
   }
 
-  bool mathsat::is_sat(formula f) 
+  bool mathsat::is_sat_with(formula f) 
   {
     msat_push_backtrack_point(_data->env);
   
@@ -110,7 +110,7 @@ namespace black::sat::backends
       [this](negation n) {
         return msat_make_not(env, to_mathsat(n.operand()));
       },
-      [this](big_and c) {
+      [this](big_conjunction c) {
         msat_term acc = msat_make_true(env);
 
         for(formula op : c.operands())
@@ -118,7 +118,7 @@ namespace black::sat::backends
 
         return acc;
       },
-      [this](big_or c) {
+      [this](big_disjunction c) {
         msat_term acc = msat_make_false(env);
 
         for(formula op : c.operands())
