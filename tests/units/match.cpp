@@ -392,7 +392,7 @@ TEST_CASE("Non-formula matchers")
 
     std::string result;
     f.match(
-      [&](big_or a) {
+      [&](big_disjunction a) {
         for(auto op : a.operands()) {
           result += to_string(op);
         }
