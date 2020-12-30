@@ -25,6 +25,7 @@
 
 #include <black/solver/solver.hpp>
 #include <black/sat/sat.hpp>
+#include <black/support/range.hpp>
 
 namespace black::internal
 {
@@ -147,49 +148,39 @@ namespace black::internal
   // Generates the PRUNE encoding
   formula solver::_solver_t::prune(size_t k)
   {
-    formula k_prune = sigma.bottom();
-    for(size_t l = 0; l + 1 < k; l++) {
-      formula k_prune_inner = sigma.bottom();
-      for(size_t j = l + 1; j < k; j++) {
-        formula llp =
-            l_to_k_loop(l,j) && l_to_k_loop(j,k) && l_j_k_prune(l,j,k);
-        k_prune_inner = k_prune_inner || llp;
-      }
-      k_prune = k_prune || k_prune_inner;
-    }
-    return k_prune;
+    return big_or(sigma, range(0, k), [&](size_t l) {
+      return big_or(sigma, range(l + 1, k), [&](size_t j) {
+        return l_to_k_loop(l,j) && l_to_k_loop(j,k) && l_j_k_prune(l,j,k);
+      });
+    });
   }
 
 
   // Generates the _lPRUNE_j^k encoding
   formula solver::_solver_t::l_j_k_prune(size_t l, size_t j, size_t k) {
-    formula prune = sigma.top();
-    for(tomorrow xreq : xrequests) {
-      // If the X-requests is an X-eventuality
-      if(auto req = get_xev(xreq); req) {
-        // Creating the encoding
-        formula first_conj = ground(xreq, k);
-        formula inner_impl = sigma.bottom();
-        for(size_t i = j + 1; i <= k; i++) {
-          formula xnf_req = to_ground_snf(*req, i);
-          inner_impl = inner_impl || xnf_req;
-        }
-        first_conj = first_conj && inner_impl;
-        formula second_conj = sigma.bottom();
-        for(size_t i = l + 1; i <= j; i++) {
-          formula xnf_req = to_ground_snf(*req, i);
-          second_conj = second_conj || xnf_req;
-        }
-        prune = prune && implies(first_conj, second_conj);
-      }
-    }
-    return prune;
+    return big_and(sigma, xrequests, [&](tomorrow xreq) -> formula {
+      auto req = get_xev(xreq); // consider only X-eventualities
+      if(!req)
+        return sigma.top();
+
+      // Creating the encoding
+      formula inner_impl = big_or(sigma, range(j + 1, k + 1), [&](size_t i) {
+        return to_ground_snf(*req, i);
+      });
+      
+      formula first_conj = ground(xreq, k) && inner_impl;
+      formula second_conj = big_or(sigma, range(l + 1, j + 1), [&](size_t i) {
+        return to_ground_snf(*req, i);
+      });
+
+      return implies(first_conj, second_conj);
+    });
   }
 
 
   // Generates the encoding for EMPTY_k
   formula solver::_solver_t::k_empty(size_t k) {
-    return make_big_and(sigma, xrequests, [&](tomorrow req) {
+    return big_and(sigma, xrequests, [&](tomorrow req) {
       return !ground(req, k);
     });
   }
@@ -205,30 +196,26 @@ namespace black::internal
 
   // Generates the encoding for LOOP_k
   formula solver::_solver_t::k_loop(size_t k) {
-    formula k_loop = sigma.bottom();
-    for(size_t l = 0; l < k; l++) {
-      k_loop = k_loop || (l_to_k_loop(l,k) && l_to_k_period(l,k));
-    }
-    return k_loop;
+    return big_or(sigma, range(0, k), [&](size_t l) {
+      return l_to_k_loop(l, k) && l_to_k_period(l, k);
+    });
   }
 
 
   // Generates the encoding for _lP_k
   formula solver::_solver_t::l_to_k_period(size_t l, size_t k) {
-    return make_big_and(sigma, xrequests, [&](tomorrow xreq) -> formula {
-      // If the X-request is an X-eventuality
-      if(auto req = get_xev(xreq); req) {
-        // Creating the encoding
-        formula atom_phi_k = ground(xreq, k);
-        formula body_impl = sigma.bottom();
-        for(size_t i = l + 1; i <= k; i++) {
-          formula req_atom_i = to_ground_snf(*req, i);
-          body_impl = body_impl || req_atom_i;
-        }
-        return implies(atom_phi_k, body_impl);
-      }
+    return big_and(sigma, xrequests, [&](tomorrow xreq) -> formula {
+      auto req = get_xev(xreq); // consider only X-eventualities
+      if(!req)
+        return sigma.top();
+      
+      // Creating the encoding
+      formula atom_phi_k = ground(xreq, k);
+      formula body_impl = big_or(sigma, range(l + 1, k + 1), [&](size_t i) {
+        return to_ground_snf(*req, i);
+      });
 
-      return sigma.top();
+      return implies(atom_phi_k, body_impl);
     });
   }
 
@@ -239,9 +226,9 @@ namespace black::internal
       return iff( ground(xyz_req, l), ground(xyz_req, k) );
     };
 
-    formula x = make_big_and(sigma, xrequests, make_loop);
-    formula y = make_big_and(sigma, yrequests, make_loop);
-    formula z = make_big_and(sigma, zrequests, make_loop);
+    formula x = big_and(sigma, xrequests, make_loop);
+    formula y = big_and(sigma, yrequests, make_loop);
+    formula z = big_and(sigma, zrequests, make_loop);
 
     return x && y && z;
   }
@@ -250,11 +237,11 @@ namespace black::internal
   // Generates the k-unraveling step for the given k.
   formula solver::_solver_t::k_unraveling(size_t k) {
     if (k == 0) {
-      formula y = make_big_and(sigma, yrequests, [&](formula f) {
+      formula y = big_and(sigma, yrequests, [&](formula f) {
         return !to_ground_snf(f, k);
       });
 
-      formula z = make_big_and(sigma, zrequests, [&](formula f) {
+      formula z = big_and(sigma, zrequests, [&](formula f) {
         return to_ground_snf(f, k);
       });
 
@@ -263,7 +250,7 @@ namespace black::internal
 
     // STEP
     // X(\alpha)_G^{k} <-> snf(\alpha)_G^{k+1}
-    formula step = make_big_and(sigma, xrequests, [&](tomorrow xreq) {
+    formula step = big_and(sigma, xrequests, [&](tomorrow xreq) {
       return iff( ground(xreq, k - 1), to_ground_snf(xreq.operand(), k) );
     });
 
@@ -273,8 +260,8 @@ namespace black::internal
       return iff( ground(yz_req, k), to_ground_snf(yz_req.operand(), k - 1) );
     };
 
-    formula y = make_big_and(sigma, yrequests, make_yz);
-    formula z = make_big_and(sigma, zrequests, make_yz);
+    formula y = big_and(sigma, yrequests, make_yz);
+    formula z = big_and(sigma, zrequests, make_yz);
     
     return step && y && z;
   }

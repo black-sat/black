@@ -371,12 +371,12 @@ TEST_CASE("Non-formula matchers")
   atom p4 = sigma.var("p4");
   atom p5 = sigma.var("p5");
 
-  SECTION("big_and matcher") {
+  SECTION("big_conjunction matcher") {
     formula f = (p1 && p2) && (p3 && (p4 && p5));
 
     std::string result;
     f.match(
-      [&](big_and a) {
+      [&](big_conjunction a) {
         for(auto op : a.operands()) {
           result += to_string(op);
         }
@@ -387,7 +387,7 @@ TEST_CASE("Non-formula matchers")
     REQUIRE(result == "p1p2p3p4p5");
   }
 
-  SECTION("big_or matcher") {
+  SECTION("big_disjunction matcher") {
     formula f = (p1 || p2) || (p3 || (p4 || p5));
 
     std::string result;

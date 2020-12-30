@@ -27,6 +27,9 @@
 // - black_unreachable()
 //
 
+#ifndef BLACK_ASSERT_HPP
+#define BLACK_ASSERT_HPP
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -96,5 +99,4 @@ namespace black::internal {
   #define black_unreachable BLACK_UNREACHABLE
 #endif
 
-
-
+#endif // BLACK_ASSERT_HPP

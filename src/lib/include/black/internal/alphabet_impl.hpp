@@ -197,40 +197,51 @@ namespace black::internal {
    
   // Conjunct multiple formulas generated from a range,
   // avoiding useless true formulas at the beginning of the fold
-  template<typename Iterator, typename F>
-  formula make_big_and(alphabet &sigma, Iterator b, Iterator e, F&& f) {
-    if(b == e)
-      return sigma.top();
+  template<typename Iterator, typename EndIterator, typename F>
+  formula big_and(alphabet &sigma, Iterator b, EndIterator e, F&& f) {
+    formula acc = sigma.top();
 
-    formula first = std::forward<F>(f)(*b);
+    while(b != e) {
+      formula elem = std::forward<F>(f)(*b++);
+      if(elem == sigma.top())
+        continue;
+      else if(acc == sigma.top())
+        acc = elem;
+      else
+        acc = acc && elem;
+    }
 
-    return std::accumulate(b, e, first, [&](formula acc, auto elem) {
-      return acc && std::forward<F>(f)(elem);
-    });
+    return acc;
   }
 
   template<typename Range, typename F>
-  formula make_big_and(alphabet &sigma, Range r, F&& f) {
-    return make_big_and(sigma, begin(r), end(r), std::forward<F>(f));
+  formula big_and(alphabet &sigma, Range r, F&& f) {
+    return big_and(sigma, begin(r), end(r), std::forward<F>(f));
   }
    
   // Disjunct multiple formulas generated from a range,
   // avoiding useless true formulas at the beginning of the fold
-  template<typename Iterator, typename F>
-  formula make_big_or(alphabet &sigma, Iterator b, Iterator e, F&& f) {
-    if(b == e)
-      return sigma.bottom();
+  template<typename Iterator, typename EndIterator, typename F>
+  formula big_or(alphabet &sigma, Iterator b, EndIterator e, F&& f) 
+  {
+    formula acc = sigma.bottom();
 
-    formula first = std::forward<F>(f)(*b);
+    while(b != e) {
+      formula elem = std::forward<F>(f)(*b++);
+      if(elem == sigma.bottom())
+        continue;
+      else if(acc == sigma.bottom())
+        acc = elem;
+      else
+        acc = acc || elem;
+    }
 
-    return std::accumulate(b, e, first, [&](formula acc, auto elem) {
-      return acc || std::forward<F>(f)(elem);
-    });
+    return acc;
   }
 
   template<typename Range, typename F>
-  formula make_big_or(alphabet &sigma, Range r, F&& f) {
-    return make_big_or(sigma, begin(r), end(r), std::forward<F>(f));
+  formula big_or(alphabet &sigma, Range r, F&& f) {
+    return big_or(sigma, begin(r), end(r), std::forward<F>(f));
   }
 
 }

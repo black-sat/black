@@ -167,7 +167,7 @@ namespace black::sat::backends
       [this](negation, formula n) {
         return Z3_mk_not(context, to_z3(n));
       },
-      [this](big_and c) {
+      [this](big_conjunction c) {
         std::vector<Z3_ast> args;
         for(formula op : c.operands())
           args.push_back(to_z3(op));
@@ -177,7 +177,7 @@ namespace black::sat::backends
         return Z3_mk_and(context, 
           static_cast<unsigned int>(args.size()), args.data());
       },
-      [this](big_or c) {
+      [this](big_disjunction c) {
         std::vector<Z3_ast> args;
         for(formula op : c.operands())
           args.push_back(to_z3(op));

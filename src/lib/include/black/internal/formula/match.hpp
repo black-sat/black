@@ -312,11 +312,11 @@ namespace black::internal
     }
   };
 
-  struct big_and : associative_matcher<conjunction> {
+  struct big_conjunction : associative_matcher<conjunction> {
     using associative_matcher<conjunction>::associative_matcher;
   };
 
-  struct big_or : associative_matcher<disjunction> {
+  struct big_disjunction : associative_matcher<disjunction> {
     using associative_matcher<disjunction>::associative_matcher;
   };
 

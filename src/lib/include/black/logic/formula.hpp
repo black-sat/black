@@ -330,24 +330,24 @@ namespace black::internal
   bool has_constants(formula f);
 
   // Conjunct multiple formulas generated from a range
-  template<typename Iterator, typename F>
-  formula make_big_and(alphabet &sigma, Iterator b, Iterator e, F&& f);
+  template<typename Iterator, typename EndIterator, typename F>
+  formula big_and(alphabet &sigma, Iterator b, EndIterator e, F&& f);
 
   template<typename Range, typename F>
-  formula make_big_and(alphabet &sigma, Range r, F&& f);
+  formula big_and(alphabet &sigma, Range r, F&& f);
 
   // Disjunct multiple formulas generated from a range
-  template<typename Iterator, typename F>
-  formula make_big_or(alphabet &sigma, Iterator b, Iterator e, F&& f);
+  template<typename Iterator, typename EndIterator, typename F>
+  formula big_or(alphabet &sigma, Iterator b, EndIterator e, F&& f);
 
   template<typename Range, typename F>
-  formula make_big_or(alphabet &sigma, Range r, F&& f);
+  formula big_or(alphabet &sigma, Range r, F&& f);
 
   //
   // Matchers that do not correspond to concrete formula types
   //
-  struct big_and;
-  struct big_or;
+  struct big_conjunction;
+  struct big_disjunction;
   struct propositional;
   struct temporal;
   struct future;
@@ -368,10 +368,11 @@ namespace black {
   using internal::simplify_deep;
   using internal::has_constants;
 
-  using internal::make_big_and;
-
   using internal::big_and;
   using internal::big_or;
+
+  using internal::big_conjunction;
+  using internal::big_disjunction;
   using internal::propositional;
   using internal::temporal;
   using internal::future;
