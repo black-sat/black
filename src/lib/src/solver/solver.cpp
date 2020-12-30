@@ -28,8 +28,12 @@
 
 namespace black::internal
 {
-  struct solver::_solver_t {
-
+  /*
+   * Private implementation of the solver class.
+   */
+  struct solver::_solver_t 
+  {
+  public:
     _solver_t(alphabet &a) :
       sigma{a}, frm{a.top()} { }
 
@@ -51,7 +55,27 @@ namespace black::internal
     // the name of the currently chosen sat backend
     std::string sat_backend = "z3"; // sensible default
 
+  public:
+    // Main algorithm
     bool solve(std::optional<size_t> k_max_arg);
+
+    /*
+     * Functions that implement the SAT encoding. 
+     * Refer to the TABLEAUX 2019 and IJCAI 2021 paper for details.
+     */
+
+    // Make the stepped ground version of a formula, f_G^k
+    atom ground(formula f, size_t k);
+
+    // Put a formula in negated normal form
+    formula to_nnf(formula f);
+    formula to_nnf_inner(formula f);
+
+    // Put a formula in Stepped Normal Form
+    formula to_ground_snf(formula f, size_t k);
+
+    // collect X/Y/Z-requests
+    void add_xyz_requests(formula f);
 
     // Extract the x-eventuality from an x-request
     static std::optional<formula> get_xev(tomorrow xreq);
@@ -61,9 +85,6 @@ namespace black::internal
 
     // Generates the _lPRUNE_j^k encoding
     formula l_j_k_prune(size_t l, size_t j, size_t k);
-
-    // Generates the EMPTY and LOOP encoding
-    formula empty_or_loop(size_t k);
 
     // Generates the encoding for EMPTY_k
     formula k_empty(size_t k);
@@ -80,14 +101,6 @@ namespace black::internal
     // Generates the k-unraveling for the given k
     formula k_unraveling(size_t k);
 
-    // Generates the Stepped Normal Form of f
-    formula to_ground_snf(formula f, size_t k);
-
-    formula to_nnf(formula f);
-    formula to_nnf_inner(formula f);
-
-    // collect X/Y/Z-requests
-    void add_xyz_requests(formula f);
   };
 
   solver::solver(alphabet &a)
@@ -100,7 +113,7 @@ namespace black::internal
   }
 
   /*
-   * Solve the formula with up to `k_max' iterations
+   * Main algorithm. Solve the formula with up to `k_max' iterations
    */
   bool solver::_solver_t::solve(std::optional<size_t> k_max_arg)
   {
@@ -110,19 +123,19 @@ namespace black::internal
 
     for(size_t k = 0; k <= k_max; ++k)
     {
-      // Generating the k-unraveling
-      // if it is unsat, then stop with UNSAT
+      // Generating the k-unraveling.
+      // If it is UNSAT, then stop with UNSAT
       sat->assert_formula(k_unraveling(k));
       if(!sat->is_sat())
         return false;
 
-      // else, continue to check EMPTY and LOOP
-      // if the k-unrav is SAT assuming EMPTY or LOOP, then stop with SAT
-      if(sat->is_sat(empty_or_loop(k)))
+      // else, continue to check EMPTY and LOOP.
+      // If the k-unrav is SAT assuming EMPTY or LOOP, then stop with SAT
+      if(sat->is_sat_with(k_empty(k) || k_loop(k)))
         return true;
 
       // else, generate the PRUNE
-      // if the PRUNE is unsat, the formula is unsat
+      // If the PRUNE is UNSAT, the formula is UNSAT
       sat->assert_formula(!prune(k));
       if(!sat->is_sat())
         return false;
@@ -155,7 +168,7 @@ namespace black::internal
       // If the X-requests is an X-eventuality
       if(auto req = get_xev(xreq); req) {
         // Creating the encoding
-        formula first_conj = sigma.var(std::pair(formula{xreq},k));
+        formula first_conj = ground(xreq, k);
         formula inner_impl = sigma.bottom();
         for(size_t i = j + 1; i <= k; i++) {
           formula xnf_req = to_ground_snf(*req, i);
@@ -174,18 +187,11 @@ namespace black::internal
   }
 
 
-  // Generates the EMPTY and LOOP encoding
-  formula solver::_solver_t::empty_or_loop(size_t k) {
-    return k_empty(k) || k_loop(k);
-  }
-
   // Generates the encoding for EMPTY_k
   formula solver::_solver_t::k_empty(size_t k) {
-    formula k_empty = sigma.top();
-    for(auto & req : xrequests) {
-      k_empty = k_empty && (!( sigma.var(std::pair(formula{req},k)) ));
-    }
-    return k_empty;
+    return make_big_and(sigma, xrequests, [&](tomorrow req) {
+      return !ground(req, k);
+    });
   }
 
   // extract the requested formula from an X-eventuality
@@ -209,91 +215,80 @@ namespace black::internal
 
   // Generates the encoding for _lP_k
   formula solver::_solver_t::l_to_k_period(size_t l, size_t k) {
-    formula period_lk = sigma.top();
-    for(tomorrow xreq : xrequests) {
-      // If the X-requests is an X-eventuality
+    return make_big_and(sigma, xrequests, [&](tomorrow xreq) -> formula {
+      // If the X-request is an X-eventuality
       if(auto req = get_xev(xreq); req) {
         // Creating the encoding
-        formula atom_phi_k = sigma.var( std::pair(formula{xreq},k) );
+        formula atom_phi_k = ground(xreq, k);
         formula body_impl = sigma.bottom();
         for(size_t i = l + 1; i <= k; i++) {
           formula req_atom_i = to_ground_snf(*req, i);
           body_impl = body_impl || req_atom_i;
         }
-        period_lk = period_lk && implies(atom_phi_k, body_impl);
+        return implies(atom_phi_k, body_impl);
       }
-    }
-    return period_lk;
+
+      return sigma.top();
+    });
   }
 
 
   // Generates the encoding for _lR_k
   formula solver::_solver_t::l_to_k_loop(size_t l, size_t k) {
-    auto eq_fold = [&](formula acc, auto xyz_req) {
-      return acc && iff(
-        sigma.var(std::pair(formula{xyz_req},l)),
-        sigma.var(std::pair(formula{xyz_req},k))
-      );
+    auto make_loop = [&](auto xyz_req) {
+      return iff( ground(xyz_req, l), ground(xyz_req, k) );
     };
 
-    return std::accumulate(zrequests.begin(), zrequests.end(),
-        std::accumulate(yrequests.begin(), yrequests.end(),
-            std::accumulate(xrequests.begin(), xrequests.end(),
-                formula{sigma.top()}, eq_fold), eq_fold), eq_fold);
+    formula x = make_big_and(sigma, xrequests, make_loop);
+    formula y = make_big_and(sigma, yrequests, make_loop);
+    formula z = make_big_and(sigma, zrequests, make_loop);
+
+    return x && y && z;
   }
 
 
   // Generates the k-unraveling step for the given k.
   formula solver::_solver_t::k_unraveling(size_t k) {
-    if (k==0) {
-      return std::accumulate(zrequests.begin(), zrequests.end(),
-          std::accumulate(yrequests.begin(), yrequests.end(),
-              to_ground_snf(frm, k),
-              [&](formula acc, formula f) {
-                return acc && !to_ground_snf(f, k);
-              }
-          ),
-          [&](formula acc, formula f) {
-            return acc && to_ground_snf(f, k);
-          }
-      );
+    if (k == 0) {
+      formula y = make_big_and(sigma, yrequests, [&](formula f) {
+        return !to_ground_snf(f, k);
+      });
+
+      formula z = make_big_and(sigma, zrequests, [&](formula f) {
+        return to_ground_snf(f, k);
+      });
+
+      return to_ground_snf(frm, k) && y && z;
     }
 
     // STEP
-    formula step = std::accumulate(xrequests.begin(), xrequests.end(),
-        formula{sigma.top()},
-        [&](formula acc, tomorrow xreq) {
-          return acc && iff(
-              sigma.var(std::pair(formula{xreq},k-1)), // X(\alpha)_G^{k}
-              to_ground_snf(xreq.operand(),k)           // snf(\alpha)_G^{k+1}
-          );
-        }
-    );
+    // X(\alpha)_G^{k} <-> snf(\alpha)_G^{k+1}
+    formula step = make_big_and(sigma, xrequests, [&](tomorrow xreq) {
+      return iff( ground(xreq, k - 1), to_ground_snf(xreq.operand(), k) );
+    });
 
     // YESTERDAY and W-YESTERDAY
-    auto yz_fold = [&](formula acc, auto yz_req) {
-      return acc && iff(
-          sigma.var(std::pair(formula{yz_req},k)), // Y/Z(\alpha)_G^{k+1}
-          to_ground_snf(yz_req.operand(),k-1)       // snf(\alpha)_G^{k}
-      );
+    // Y/Z(\alpha)_G^{k+1} <-> snf(\alpha)_G^{k}
+    auto make_yz = [&](auto yz_req) {
+      return iff( ground(yz_req, k), to_ground_snf(yz_req.operand(), k - 1) );
     };
 
-    return std::accumulate(zrequests.begin(), zrequests.end(),
-        std::accumulate(yrequests.begin(), yrequests.end(), step, yz_fold),
-        yz_fold
-    );
+    formula y = make_big_and(sigma, yrequests, make_yz);
+    formula z = make_big_and(sigma, zrequests, make_yz);
+    
+    return step && y && z;
   }
 
 
-  // Turns the current formula size_to Stepped Normal Form
+  // Turns the current formula into Stepped Normal Form
   // Note: this has to be run *after* the transformation to NNF (to_nnf() below)
   formula solver::_solver_t::to_ground_snf(formula f, size_t k) {
     return f.match(
       [&](boolean)      { return f; },
-      [&](atom)         { return sigma.var(std::pair(f,k)); },
-      [&](tomorrow)     { return sigma.var(std::pair(f,k)); },
-      [&](yesterday)    { return sigma.var(std::pair(f,k)); },
-      [&](w_yesterday)  { return sigma.var(std::pair(f,k)); },
+      [&](atom)         { return ground(f, k); },
+      [&](tomorrow)     { return ground(f, k); },
+      [&](yesterday)    { return ground(f, k); },
+      [&](w_yesterday)  { return ground(f, k); },
       [&](negation n)   { return !to_ground_snf(n.operand(),k); },
       [&](conjunction, formula left, formula right) {
         return to_ground_snf(left,k) && to_ground_snf(right,k);
@@ -309,31 +304,31 @@ namespace black::internal
       },
       [&,this](until u, formula left, formula right) {
         return to_ground_snf(right,k) ||
-            (to_ground_snf(left,k) && sigma.var(std::pair(formula{X(u)},k)));
+            (to_ground_snf(left,k) && ground(X(u), k));
       },
       [&,this](eventually e, formula op) {
-        return to_ground_snf(op,k) || sigma.var(std::pair(formula{X(e)},k));
+        return to_ground_snf(op,k) || ground(X(e), k);
       },
       [&,this](always a, formula op) {
-        return to_ground_snf(op,k) && sigma.var(std::pair(formula{X(a)},k));
+        return to_ground_snf(op,k) && ground(X(a), k);
       },
       [&,this](release r, formula left, formula right) {
         return to_ground_snf(right,k) &&
-            (to_ground_snf(left,k) || sigma.var(std::pair(formula{X(r)},k)));
+            (to_ground_snf(left,k) || ground(X(r), k));
       },
       [&,this](since s, formula left, formula right) {
         return to_ground_snf(right,k) ||
-            (to_ground_snf(left,k) && sigma.var(std::pair(formula{Y(s)},k)));
+            (to_ground_snf(left,k) && ground(Y(s), k));
       },
       [&,this](triggered t, formula left, formula right) {
         return to_ground_snf(right,k) &&
-            (to_ground_snf(left,k) || sigma.var(std::pair(formula{Z(t)},k)));
+            (to_ground_snf(left,k) || ground(Z(t), k));
       },
       [&,this](once o, formula op) {
-        return to_ground_snf(op,k) || sigma.var(std::pair(formula{Y(o)},k));
+        return to_ground_snf(op,k) || ground(Y(o), k);
       },
       [&,this](historically h, formula op) {
-        return to_ground_snf(op,k) && sigma.var(std::pair(formula{Z(h)},k));
+        return to_ground_snf(op,k) && ground(Z(h), k);
       }
     );
   }
@@ -380,6 +375,10 @@ namespace black::internal
         black_unreachable(); // these two operators do not have simple duals
     }
     black_unreachable();
+  }
+
+  atom solver::_solver_t::ground(formula f, size_t k) {
+    return sigma.var(std::pair(f,k));
   }
 
   // Transformation in NNF

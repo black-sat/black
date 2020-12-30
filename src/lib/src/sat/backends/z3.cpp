@@ -117,7 +117,7 @@ namespace black::sat::backends
     Z3_solver_assert(_data->context, _data->solver, _data->to_z3(f));
   }
   
-  bool z3::is_sat(formula f) {
+  bool z3::is_sat_with(formula f) {
     Z3_solver_push(_data->context, _data->solver);
     assert_formula(iff(fresh(f), f));
     Z3_ast term = _data->to_z3(fresh(f));

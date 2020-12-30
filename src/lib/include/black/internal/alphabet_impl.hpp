@@ -28,6 +28,7 @@
 #include <black/logic/formula.hpp>
 
 #include <deque>
+#include <numeric> // for std::accumulate
 #include <tsl/hopscotch_map.h>
 
 namespace black::internal {
@@ -188,5 +189,50 @@ namespace black {
   }
 
 } // namespace black
+
+/*
+ * Functions from formula.hpp that need the alphabet class
+ */
+namespace black::internal {
+   
+  // Conjunct multiple formulas generated from a range,
+  // avoiding useless true formulas at the beginning of the fold
+  template<typename Iterator, typename F>
+  formula make_big_and(alphabet &sigma, Iterator b, Iterator e, F&& f) {
+    if(b == e)
+      return sigma.top();
+
+    formula first = std::forward<F>(f)(*b);
+
+    return std::accumulate(b, e, first, [&](formula acc, auto elem) {
+      return acc && std::forward<F>(f)(elem);
+    });
+  }
+
+  template<typename Range, typename F>
+  formula make_big_and(alphabet &sigma, Range r, F&& f) {
+    return make_big_and(sigma, begin(r), end(r), std::forward<F>(f));
+  }
+   
+  // Disjunct multiple formulas generated from a range,
+  // avoiding useless true formulas at the beginning of the fold
+  template<typename Iterator, typename F>
+  formula make_big_or(alphabet &sigma, Iterator b, Iterator e, F&& f) {
+    if(b == e)
+      return sigma.bottom();
+
+    formula first = std::forward<F>(f)(*b);
+
+    return std::accumulate(b, e, first, [&](formula acc, auto elem) {
+      return acc || std::forward<F>(f)(elem);
+    });
+  }
+
+  template<typename Range, typename F>
+  formula make_big_or(alphabet &sigma, Range r, F&& f) {
+    return make_big_or(sigma, begin(r), end(r), std::forward<F>(f));
+  }
+
+}
 
 #endif // BLACK_ALPHABET_IMPL_HPP

@@ -319,6 +319,7 @@ namespace black::internal
   inline auto GF(formula f) { return G(F(f)); }
   inline auto YP(formula f) { return Y(P(f)); }
   inline auto YH(formula f) { return Y(H(f)); }
+
 }
 
 #include <black/internal/formula/match.hpp>

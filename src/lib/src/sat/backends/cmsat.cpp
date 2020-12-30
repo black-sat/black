@@ -70,7 +70,7 @@ namespace black::sat::backends
     }
   }
 
-  bool cmsat::is_sat(formula assumption) 
+  bool cmsat::is_sat_with(formula assumption) 
   {
     assert_formula(iff(fresh(assumption), assumption));
     std::vector<CMSat::Lit> lits = {

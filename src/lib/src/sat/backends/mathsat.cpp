@@ -67,7 +67,7 @@ namespace black::sat::backends
     return (res == MSAT_SAT);
   }
 
-  bool mathsat::is_sat(formula f) 
+  bool mathsat::is_sat_with(formula f) 
   {
     msat_push_backtrack_point(_data->env);
   

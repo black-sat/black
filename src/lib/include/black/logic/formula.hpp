@@ -329,6 +329,20 @@ namespace black::internal
   // true if there is any true/false constant in the formula
   bool has_constants(formula f);
 
+  // Conjunct multiple formulas generated from a range
+  template<typename Iterator, typename F>
+  formula make_big_and(alphabet &sigma, Iterator b, Iterator e, F&& f);
+
+  template<typename Range, typename F>
+  formula make_big_and(alphabet &sigma, Range r, F&& f);
+
+  // Disjunct multiple formulas generated from a range
+  template<typename Iterator, typename F>
+  formula make_big_or(alphabet &sigma, Iterator b, Iterator e, F&& f);
+
+  template<typename Range, typename F>
+  formula make_big_or(alphabet &sigma, Range r, F&& f);
+
   //
   // Matchers that do not correspond to concrete formula types
   //
@@ -353,6 +367,8 @@ namespace black {
   using internal::simplify;
   using internal::simplify_deep;
   using internal::has_constants;
+
+  using internal::make_big_and;
 
   using internal::big_and;
   using internal::big_or;

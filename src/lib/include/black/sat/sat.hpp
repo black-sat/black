@@ -61,7 +61,7 @@ namespace black::sat
     
     // tell if the current set of assertions is satisfiable, 
     // under the given assumption
-    virtual bool is_sat(formula assumption) = 0;
+    virtual bool is_sat_with(formula assumption) = 0;
     
     // clear the current context completely
     virtual void clear() = 0;
