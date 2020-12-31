@@ -40,6 +40,12 @@ add_executable(random_formulas_generator
         formulas_generators/random_formulas/random_formulas_generator.cpp)
 target_link_library_with_global_ctors(random_formulas_generator PRIVATE black)
 
+set_target_properties(
+  crscounter_generator random_formulas_generator 
+  PROPERTIES 
+  EXCLUDE_FROM_ALL TRUE
+)
+
 
 if(Catch2_FOUND)
 
@@ -84,10 +90,10 @@ file(STRINGS formulas/tests.index TESTS)
 list(LENGTH TESTS TESTSLENGTH)
 message(STATUS "Found ${TESTSLENGTH} test formulas")
 
-option(TEST_TIMEOUT "Set a timeout for tests" OFF)
+option(BLACK_TEST_TIMEOUT "Set a timeout for tests" OFF)
 set(TEST_TIMEOUT_SECS 3 CACHE STRING "Seconds of timeout for tests")
 
-if(TEST_TIMEOUT)
+if(BLACK_TEST_TIMEOUT)
   message(STATUS "Tests timeout set to ${TEST_TIMEOUT_SECS} seconds")
 endif()
 
@@ -105,9 +111,9 @@ foreach(TEST IN LISTS TESTS)
       --sat-backend ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | grep '^${RESULT}'"
   )
 
-  if(TEST_TIMEOUT)
+  if(BLACK_TEST_TIMEOUT)
     set_tests_properties(
-      "${TEST_NAME}" PROPERTIES TIMEOUT ${TEST_TIMEOUT_SECS}
+      "${TEST_NAME}" PROPERTIES TIMEOUT ${BLACK_TEST_TIMEOUT}
     )
   endif()
 
