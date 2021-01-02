@@ -32,57 +32,45 @@ BLACK_REGISTER_SAT_BACKEND(cmsat)
 
 namespace black::sat::backends
 {
-
-  // TODO: generalize with the same function in cnf.cpp
-  inline atom fresh(formula f) {
-    if(f.is<atom>())
-      return *f.to<atom>();
-    return f.alphabet()->var(f);
-  }
-
-
   struct cmsat::_cmsat_t {
     CMSat::SATSolver solver;
-    cnf clauses;
   };
 
   cmsat::cmsat() : _data{std::make_unique<_cmsat_t>()} { 
     _data->solver.new_var();
   }
 
-  cmsat::~cmsat() { }
+  cmsat::~cmsat() = default;
 
-  void cmsat::assert_formula(formula f) 
-  { 
-    cnf c = to_cnf(f);
-    
-    size_t new_vars = _data->clauses.add_clauses(c);
-    if(new_vars > 0)
-      _data->solver.new_vars(new_vars);
-    
-    for(clause cls : c.clauses()) {
-      std::vector<CMSat::Lit> lits;
-      
-      for(literal lit : cls.literals)
-        lits.push_back(CMSat::Lit{(_data->clauses.var(lit.atom)), !lit.sign});
-
-      _data->solver.add_clause(lits);
-    }
+  void cmsat::new_vars(size_t n) {
+    _data->solver.new_vars(n);
+  }
+  
+  size_t cmsat::nvars() const { 
+    return _data->solver.nVars();
   }
 
-  bool cmsat::is_sat_with(formula assumption) 
-  {
-    assert_formula(iff(fresh(assumption), assumption));
-    std::vector<CMSat::Lit> lits = {
-      CMSat::Lit{_data->clauses.var(fresh(assumption)), false}
-    };
+  void cmsat::assert_clause(dimacs::clause cl) {
+    std::vector<CMSat::Lit> lits;
+    for(dimacs::literal lit : cl.literals) {
+      lits.push_back(CMSat::Lit{lit.var, !lit.sign});
+    }
 
-    CMSat::lbool ret = _data->solver.solve(&lits);
-    return ret == CMSat::l_True;
+    _data->solver.add_clause(lits);
   }
 
   bool cmsat::is_sat() {
     CMSat::lbool ret = _data->solver.solve();
+    return ret == CMSat::l_True;
+  }
+
+  bool cmsat::is_sat_with(std::vector<dimacs::literal> const& assumptions) {
+    std::vector<CMSat::Lit> lits;
+    for(dimacs::literal lit : assumptions) {
+      lits.push_back(CMSat::Lit{lit.var, !lit.sign});
+    }
+
+    CMSat::lbool ret = _data->solver.solve(&lits);
     return ret == CMSat::l_True;
   }
 
