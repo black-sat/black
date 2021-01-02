@@ -22,18 +22,21 @@
 // SOFTWARE.
 
 #include <black/sat/sat.hpp>
+#include <black/sat/dimacs.hpp>
 
 namespace black::sat::backends 
 {
-  class cmsat : public ::black::sat::solver
+  class cmsat : public ::black::sat::dimacs::solver
   {
   public:
     cmsat();
     virtual ~cmsat();
 
-    virtual void assert_formula(formula f);
+    virtual void new_vars(size_t n);
+    virtual size_t nvars() const;
+    virtual void assert_clause(dimacs::clause f);
     virtual bool is_sat();
-    virtual bool is_sat_with(formula assumption);
+    virtual bool is_sat_with(std::vector<dimacs::literal> const& assumptions);
     virtual void clear();
     virtual std::optional<std::string> license() const;
 

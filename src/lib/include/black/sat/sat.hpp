@@ -66,7 +66,7 @@ namespace black::sat
     // clear the current context completely
     virtual void clear() = 0;
 
-    // License not for whatever third-party software lies under the hood
+    // License note for whatever third-party software lies under the hood
     virtual std::optional<std::string> license() const = 0;
   };
 

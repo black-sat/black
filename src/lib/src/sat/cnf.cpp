@@ -26,51 +26,12 @@
 
 #include <tsl/hopscotch_set.h>
 
-namespace black::internal 
+namespace black::sat::internal 
 { 
-  struct cnf::_cnf_t {
-    std::vector<clause> clauses;
-    tsl::hopscotch_map<atom, uint32_t> vars;
-
-    uint32_t var(atom a) {
-      if(auto it = vars.find(a); it != vars.end()) 
-        return it->second;
-
-      black_assert(vars.size() <= std::numeric_limits<uint32_t>::max() - 1);
-
-      uint32_t v = static_cast<uint32_t>(vars.size() + 1);
-      vars.insert({a, v});
-      return v;
-    }
-  };
-
-  cnf::cnf() : _data{std::make_unique<_cnf_t>()}  { }
-  
-  cnf::~cnf() { }
-
-  std::vector<clause> const&cnf::clauses() const { return _data->clauses; }
-
-  size_t cnf::add_clauses(std::vector<clause> const& cls) {
-    _data->clauses.insert(_data->clauses.end(), cls.begin(), cls.end());
-
-    size_t n = nvars();
-    for(clause c : cls)
-      for(literal lit : c.literals)
-        var(lit.atom);
-
-    return nvars() - n;
-  }
-
-  size_t cnf::nvars() const {
-    return _data->vars.size() + 1;
-  }
-
-  uint32_t cnf::var(atom a) {
-    return _data->var(a);
-  }
-
   static void tseitin(
-    formula f, cnf &clauses, tsl::hopscotch_set<formula> &memo
+    formula f, 
+    std::vector<sat::clause> &clauses, 
+    tsl::hopscotch_set<formula> &memo
   );
 
   // TODO: disambiguate fresh variables
@@ -82,7 +43,7 @@ namespace black::internal
   }
 
   cnf to_cnf(formula f) {
-    cnf result;
+    std::vector<clause> result;
     tsl::hopscotch_set<formula> memo;
     
     formula simple = simplify_deep(f);
@@ -93,18 +54,20 @@ namespace black::internal
       if(b->value())
         return result;
       else {
-        result.add_clause({});
+        result.push_back({});
         return result;
       }
     }
 
-    result.add_clause({{true, fresh(simple)}});
+    result.push_back({{true, fresh(simple)}});
 
-    return result;
+    return {result};
   }
 
   static void tseitin(
-    formula f, cnf &clauses, tsl::hopscotch_set<formula> &memo
+    formula f, 
+    std::vector<clause> &clauses, 
+    tsl::hopscotch_set<formula> &memo
   ) {
     if(memo.find(f) != memo.end())
       return;
@@ -120,7 +83,7 @@ namespace black::internal
 
         // clausal form for conjunctions:
         //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ r) ∧ (!l ∨ !r ∨ f)
-        clauses.add_clauses({
+        clauses.insert(clauses.end(), {
           {{false, fresh(f)}, {true, fresh(l)}},
           {{false, fresh(f)}, {true, fresh(r)}},
           {{false, fresh(l)}, {false, fresh(r)}, {true, fresh(f)}}
@@ -133,7 +96,7 @@ namespace black::internal
 
         // clausal form for disjunctions:
         //   f <-> (l ∨ r) == (f ∨ !l) ∧ (f ∨ !r) ∧ (l ∨ r ∨ !f)
-        clauses.add_clauses({
+        clauses.insert(clauses.end(), {
           {{true, fresh(f)}, {false, fresh(l)}},
           {{true, fresh(f)}, {false, fresh(r)}},
           {{true, fresh(l)}, {true, fresh(r)}, {false, fresh(f)}}
@@ -146,7 +109,7 @@ namespace black::internal
 
         // clausal form for double implications:
         //    f <-> (l -> r) == (!f ∨ !l ∨ r) ∧ (f ∨ l) ∧ (f ∨ !r)
-        clauses.add_clauses({
+        clauses.insert(clauses.end(), {
           {{false, fresh(f)}, {false, fresh(l)}, {true, fresh(r)}},
           {{true,  fresh(f)}, {true,  fresh(l)}},
           {{true,  fresh(f)}, {false, fresh(r)}}
@@ -160,7 +123,7 @@ namespace black::internal
         // clausal form for double implications:
         //    f <-> (l <-> r) == (!f ∨ !l ∨  r) ∧ (!f ∨ l ∨ !r) ∧
         //                       ( f ∨ !l ∨ !r) ∧ ( f ∨ l ∨  r)
-        clauses.add_clauses({
+        clauses.insert(clauses.end(), {
           {{false, fresh(f)}, {false, fresh(l)}, {true,  fresh(r)}},
           {{false, fresh(f)}, {true,  fresh(l)}, {false, fresh(r)}},
           {{true,  fresh(f)}, {false, fresh(l)}, {false, fresh(r)}},
@@ -173,7 +136,7 @@ namespace black::internal
           [&](atom a) {
             // clausal form for negations:
             // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
-            clauses.add_clauses({
+            clauses.insert(clauses.end(), {
               {{false, fresh(f)}, {false, fresh(a)}},
               {{true,  fresh(f)}, {true,  fresh(a)}}
             });
@@ -185,7 +148,7 @@ namespace black::internal
             //       simplify_deep() removes double negations
             // clausal form for identity:
             // f <-> p == (!f ∨ p) ∧ (f ∨ !p)
-            clauses.add_clauses({
+            clauses.insert(clauses.end(), {
               {{false, fresh(f)}, {true, fresh(op)}},
               {{true,  fresh(f)}, {false,  fresh(op)}}
             });
@@ -196,7 +159,7 @@ namespace black::internal
 
             // clausal form for negated conjunction:
             //   f <-> !(l ∧ r) == (!f ∨ !l ∨ !r) ∧ (f ∨ l) ∧ (f ∨ r)
-            clauses.add_clauses({
+            clauses.insert(clauses.end(), {
               {{false, fresh(f)}, {false, fresh(l)}, {false, fresh(r)}},
               {{true,  fresh(f)}, {true, fresh(l)}},
               {{true,  fresh(f)}, {true, fresh(r)}},
@@ -208,7 +171,7 @@ namespace black::internal
 
             // clausal form for negated disjunction:
             //   f <-> !(l ∨ r) == (f ∨ l ∨ r) ∧ (!f ∨ !l) ∧ (!f ∨ !r)
-            clauses.add_clauses({
+            clauses.insert(clauses.end(), {
               {{true,  fresh(f)}, {true,  fresh(l)}, {true, fresh(r)}},
               {{false, fresh(f)}, {false, fresh(l)}},
               {{false, fresh(f)}, {false, fresh(r)}},
@@ -221,7 +184,7 @@ namespace black::internal
 
             // clausal form for negated implication:
             //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ !r) ∧ (!l ∨ r ∨ f)
-            clauses.add_clauses({
+            clauses.insert(clauses.end(), {
               {{false, fresh(f)}, {true, fresh(l)}},
               {{false, fresh(f)}, {false, fresh(r)}},
               {{false, fresh(l)}, {true, fresh(r)}, {true, fresh(f)}}
@@ -234,7 +197,7 @@ namespace black::internal
             // clausal form for negated double implication (xor):
             //    f <-> !(l <-> r) == (!f ∨ !l ∨ !r) ∧ (!f ∨  l ∨ r) ∧
             //                        (f  ∨  l ∨ !r) ∧ (f  ∨ !l ∨ r)
-            clauses.add_clauses({
+            clauses.insert(clauses.end(), {
               {{false, fresh(f)}, {false, fresh(l)}, {false, fresh(r)}},
               {{false, fresh(f)}, {true,  fresh(l)}, {true,  fresh(r)}},
               {{true,  fresh(f)}, {true,  fresh(l)}, {false, fresh(r)}},
@@ -253,24 +216,14 @@ namespace black::internal
   }
 
   formula to_formula(alphabet &sigma, clause c) {
-    if(c.literals.empty())
-      return sigma.bottom();
-    
-    formula f = to_formula(c.literals.front());
-    for(size_t i = 1; i < c.literals.size(); ++i)
-      f = f || to_formula(c.literals[i]);
-
-    return f;
+    return big_or(sigma, c.literals, [](literal lit){
+      return to_formula(lit);
+    });
   }
 
   formula to_formula(alphabet &sigma, cnf c) {
-    if(c.clauses().empty())
-      return sigma.bottom();
-    
-    formula f = to_formula(sigma, c.clauses().front());
-    for(size_t i = 1; i < c.clauses().size(); ++i)
-      f = f && to_formula(sigma, c.clauses()[i]);
-
-    return f;
+    return big_and(sigma, c.clauses, [&](clause cl) {
+      return to_formula(sigma, cl);
+    });
   }
 }

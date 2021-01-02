@@ -63,7 +63,7 @@ TEST_CASE("CNF Translation")
   SECTION("CNF of random formulas") {
     for(formula f : tests) 
     { 
-      formula fc = to_formula(sigma, to_cnf(f));
+      formula fc = to_formula(sigma, sat::to_cnf(f));
       s.assert_formula(!implies(fc,f));
 
       INFO("Formula: " << f);

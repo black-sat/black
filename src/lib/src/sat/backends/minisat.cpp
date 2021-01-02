@@ -32,16 +32,9 @@ BLACK_REGISTER_SAT_BACKEND(minisat)
 namespace black::sat::backends
 {
 
-  // TODO: generalize with the same function in cnf.cpp
-  inline atom fresh(formula f) {
-    if(f.is<atom>())
-      return *f.to<atom>();
-    return f.alphabet()->var(f);
-  }
-
   struct minisat::_minisat_t {
     Minisat::SimpSolver solver;
-    cnf clauses;
+    size_t nvars;
   };
 
   minisat::minisat() : _data{std::make_unique<_minisat_t>()} { 
@@ -52,36 +45,38 @@ namespace black::sat::backends
 
   minisat::~minisat() { }
 
-  void minisat::assert_formula(formula f) 
-  {
-    cnf c = to_cnf(f);
-    
-    size_t new_vars = _data->clauses.add_clauses(c);
-    for(size_t i = 0; i <= new_vars; ++i)
+  void minisat::new_vars(size_t n) {
+    for(size_t i = 0; i < n; ++i) {
       _data->solver.newVar();
-    
-    for(clause cls : c.clauses()) {
-      Minisat::vec<Minisat::Lit> lits;
-
-      for(literal lit : cls.literals)
-        lits.push(Minisat::mkLit(_data->clauses.var(lit.atom), lit.sign));
-
-      _data->solver.addClause(lits);
+      _data->nvars++;
     }
   }
 
-  bool minisat::is_sat_with(formula assumption) {
-    Minisat::vec<Minisat::Lit> lits;
-    
-    assert_formula(iff(fresh(assumption), assumption));
-    lits.push(Minisat::mkLit(_data->clauses.var(fresh(assumption)), true));
-
-    return _data->solver.solve(lits);
+  size_t minisat::nvars() const {
+    return _data->nvars;
   }
 
+  void minisat::assert_clause(dimacs::clause cl) { 
+    Minisat::vec<Minisat::Lit> lits;
+    for(dimacs::literal lit : cl.literals) {
+      lits.push(Minisat::mkLit(lit.var, !lit.sign));
+    }
+
+    _data->solver.addClause(lits);
+  }
+  
   bool minisat::is_sat() {
     return _data->solver.solve();
   }
+
+  bool minisat::is_sat_with(std::vector<dimacs::literal> const& assumptions) {
+    Minisat::vec<Minisat::Lit> lits;
+    for(dimacs::literal lit : assumptions) {
+      lits.push(Minisat::mkLit(lit.var, !lit.sign));
+    }
+
+    return _data->solver.solve(lits);
+  } 
 
   void minisat::clear() {
     _data = std::make_unique<_minisat_t>();
