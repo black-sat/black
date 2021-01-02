@@ -23,7 +23,6 @@
 
 
 option(ENABLE_MATHSAT "Enable the MathSAT backend, if found" ON)
-option(ENABLE_GLUCOSE "Enable the Glucose backend, if found" ON)
 option(ENABLE_CMSAT "Enable the CryptoMiniSAT backend, if found" ON)
 option(ENABLE_MINISAT "Enable the MiniSAT backend, if found" ON)
 
@@ -40,21 +39,6 @@ if(ENABLE_MATHSAT)
   endif()
 else()
   message(STATUS "MathSAT backend disabled.")
-endif()
-
-if(ENABLE_GLUCOSE)
-  find_package(ZLIB) # for Glucose
-
-  if(ZLIB_FOUND)
-    set(GLUCOSE_FOUND YES)
-    message(STATUS "Enabling Glucose backend...")
-  else()
-    set(GLUCOSE_FOUND NO)
-    message(STATUS "Missing zlib. Disabling Glucose backend...")
-  endif()
-
-else()
-  message(STATUS "Glucose backend disabled.")
 endif()
 
 if(ENABLE_MINISAT)
@@ -107,11 +91,6 @@ if(MathSAT_FOUND)
   set(LIB_SRC ${LIB_SRC} 
     src/sat/backends/mathsat.cpp include/black/sat/backends/mathsat.hpp)
 endif()
-   
-if(GLUCOSE_FOUND)
-  set(LIB_SRC ${LIB_SRC} 
-    src/sat/backends/glucose.cpp include/black/sat/backends/glucose.hpp)
-endif()
 
 if(MiniSAT_FOUND)
   set(LIB_SRC ${LIB_SRC} 
@@ -142,7 +121,7 @@ set (
 #
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PRIVATE glucose fmt::fmt)
+target_link_libraries(black PRIVATE fmt::fmt)
 target_link_libraries(black PUBLIC tsl::hopscotch_map)
 target_include_directories(black PUBLIC  
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
