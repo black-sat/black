@@ -113,11 +113,11 @@ namespace black::internal
 // Implementation of parser class
 namespace black::internal
 {
-  optional<token> parser::peek() {
+  std::optional<token> parser::peek() {
     return _lex.peek();
   }
 
-  optional<token> parser::peek(token::type t, std::string const&err) {
+  std::optional<token> parser::peek(token::type t, std::string const&err) {
     auto tok = peek();
     if(!tok || tok->token_type() != t)
       return error("Expected " + err);
@@ -125,14 +125,14 @@ namespace black::internal
     return tok;
   }
 
-  optional<token> parser::consume() {
+  std::optional<token> parser::consume() {
     auto tok = peek();
     if(tok)
       _lex.get();
     return tok;
   }
 
-  optional<token> parser::consume(token::type t, std::string const&err) {
+  std::optional<token> parser::consume(token::type t, std::string const&err) {
     auto tok = peek(t, err);
     if(tok)
       _lex.get();

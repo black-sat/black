@@ -24,10 +24,12 @@
 #ifndef BLACK_SUPPORT_HASH_HPP
 #define BLACK_SUPPORT_HASH_HPP
 
-#include <black/support/common.hpp>
+#include <black/support/meta.hpp>
+#include <black/support/assert.hpp>
 
 #include <any>
 #include <tuple>
+#include <optional>
 
 //
 // std::hash specialization for tuples and pairs.
@@ -170,17 +172,17 @@ namespace black::internal
     }
 
     template<typename T>
-    optional<T> to() const & {
+    std::optional<T> to() const & {
       if(T const*ptr = std::any_cast<T>(&_any); ptr)
-        return optional<T>{*ptr};
-      return nullopt;
+        return std::optional<T>{*ptr};
+      return std::nullopt;
     }
 
     template<typename T>
-    optional<T> to() && {
+    std::optional<T> to() && {
       if(T const*ptr = std::any_cast<T>(&_any); ptr)
-        return optional<T>{std::move(*ptr)};
-      return nullopt;
+        return std::optional<T>{std::move(*ptr)};
+      return std::nullopt;
     }
 
     template<typename T>

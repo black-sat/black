@@ -24,6 +24,8 @@
 #include <black/frontend/cli.hpp>
 #include <black/frontend/io.hpp>
 #include <black/sat/sat.hpp>
+#include <black/support/config.hpp>
+#include <black/support/license.hpp>
 
 #include <clipp.h>
 

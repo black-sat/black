@@ -72,11 +72,18 @@ namespace black::sat::dimacs::internal
     // solve the instance assuming the given literals
     virtual bool is_sat_with(std::vector<literal> const& assumptions) = 0;
 
+    // retrieve the value of an atom after is_sat() or is_sat_with() 
+    virtual tribool value(atom) const = 0;
+
     // clears the state of the solver
     virtual void clear() = 0;
 
     // License note for whatever third-party software lies under the hood
     virtual std::optional<std::string> license() const = 0;
+
+  protected:
+    // returns the index of the variable corresponding to the atom
+    std::optional<uint32_t> var(atom a) const;
 
   private:
     struct _solver_t;

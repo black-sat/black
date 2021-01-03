@@ -29,7 +29,9 @@
          "please include <black/logic/formula.hpp> instead"
 #endif
 
-#include <black/support/common.hpp>
+#include <black/support/meta.hpp>
+#include <black/support/assert.hpp>
+#include <black/support/hash.hpp>
 
 #include <type_traits>
 #include <array>
@@ -165,10 +167,10 @@ namespace black::internal
   protected:
     using handled_formula_t = F;
 
-    static optional<H> cast(black::alphabet *sigma, formula_base *f) {
+    static std::optional<H> cast(black::alphabet *sigma, formula_base *f) {
       if(auto ptr = formula_cast<typename H::handled_formula_t *>(f); ptr)
-        return optional<H>{H{sigma, ptr}};
-      return nullopt;
+        return std::optional<H>{H{sigma, ptr}};
+      return std::nullopt;
     }
 
     // Implemented after alphabet class

@@ -109,7 +109,6 @@ set (
   include/black/internal/formula/impl.hpp
   include/black/internal/formula/match.hpp
   include/black/internal/alphabet_impl.hpp
-  include/black/support/common.hpp
   include/black/logic/alphabet.hpp
   include/black/logic/formula.hpp
   include/black/logic/lex.hpp

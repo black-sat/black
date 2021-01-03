@@ -24,7 +24,6 @@
 #ifndef BLACK_FRONTEND_IO_HPP
 #define BLACK_FRONTEND_IO_HPP
 
-#include <black/support/common.hpp>
 #include <black/frontend/cli.hpp>
 
 #include <fmt/format.h>

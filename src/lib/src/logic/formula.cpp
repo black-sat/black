@@ -89,7 +89,7 @@ namespace black::internal {
 
   formula simplify_and(conjunction c, formula l, formula r) {
     alphabet &sigma = *c.alphabet();
-    optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+    std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
     if(!bl && !br)
       return c;
@@ -106,7 +106,7 @@ namespace black::internal {
 
   formula simplify_or(disjunction d, formula l, formula r) {
     alphabet &sigma = *d.alphabet();
-    optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+    std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
     if(!bl && !br)
       return d;
@@ -122,7 +122,7 @@ namespace black::internal {
 
   formula simplify_implication(implication t, formula l, formula r) {
     alphabet &sigma = *t.alphabet();
-    optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+    std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
     if(!bl && !br)
       return t;
@@ -138,7 +138,7 @@ namespace black::internal {
 
   formula simplify_iff(iff f, formula l, formula r) {
     alphabet &sigma = *f.alphabet();
-    optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+    std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
     if(!bl && !br)
       return f;
@@ -174,7 +174,7 @@ namespace black::internal {
   }
 
   formula simplify_until(until u, formula l, formula r) {
-    optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+    std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
     if(!bl && !br)
       return u;
@@ -186,7 +186,7 @@ namespace black::internal {
   }
 
   formula simplify_release(release s, formula l, formula r) {
-    optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+    std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
     if(!bl && !br)
       return s;

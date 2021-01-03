@@ -49,7 +49,7 @@ TEST_CASE("CNF Translation")
   solver s{sigma};
 
   SECTION("Simplification of random formulas") {
-    for(formula f : tests) 
+    for(formula f : tests)
     { 
       formula fc = simplify_deep(f);
       s.assert_formula(!iff(fc,f));

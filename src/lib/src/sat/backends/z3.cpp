@@ -44,6 +44,7 @@ namespace black::sat::backends
   struct z3::_z3_t {
     Z3_context context;
     Z3_solver solver;
+    bool model_available = false;
 
     tsl::hopscotch_map<formula, Z3_ast> terms;
 
@@ -126,13 +127,48 @@ namespace black::sat::backends
       Z3_solver_check_assumptions(_data->context, _data->solver, 1, &term);
     Z3_solver_pop(_data->context, _data->solver, 1);
 
-    return (res == Z3_L_TRUE);
+    bool result = (res == Z3_L_TRUE);
+    _data->model_available = result;
+
+    return result;
   }
 
   bool z3::is_sat() { 
-    Z3_lbool result = Z3_solver_check(_data->context, _data->solver);
+    Z3_lbool res = Z3_solver_check(_data->context, _data->solver);
 
-    return (result == Z3_L_TRUE);
+    bool result = (res == Z3_L_TRUE);
+    _data->model_available = result;
+
+    return result;
+  }
+
+  tribool z3::value(atom a) const {
+    if(!_data->model_available)
+      return tribool::undef;
+    
+    auto it = _data->terms.find(a);
+    if(it == _data->terms.end())
+      return tribool::undef;
+    
+    Z3_ast term = it->second;
+
+    Z3_model model = Z3_solver_get_model(_data->context, _data->solver);
+    Z3_model_inc_ref(_data->context, model);
+
+    Z3_ast res;
+    Z3_bool_opt ok = Z3_model_eval(_data->context, model, term, false, &res);
+    if(!ok)
+      return tribool::undef;
+
+    Z3_lbool lres = Z3_get_bool_value(_data->context, res);
+    
+    tribool result = 
+      lres == Z3_L_TRUE ? tribool{true} :
+      lres == Z3_L_FALSE ? tribool{false} : tribool::undef;
+    
+    Z3_model_dec_ref(_data->context, model);
+
+    return result;
   }
 
   void z3::clear() { 

@@ -58,7 +58,7 @@ namespace black::internal
   }
 
   template<typename H>
-  optional<H> formula::to() const {
+  std::optional<H> formula::to() const {
     black_assert(_formula != nullptr);
 
     return H::cast(_alphabet, _formula);
@@ -178,11 +178,11 @@ namespace black::internal
     using base_t::base_t;
 
   protected:
-    static optional<H> cast(alphabet *sigma, formula_base *f) {
+    static std::optional<H> cast(alphabet *sigma, formula_base *f) {
       auto ptr = formula_cast<F *>(f);
       if( ptr && ptr->type == static_cast<formula_type>(OT))
-        return optional<H>{H{sigma, ptr}};
-      return nullopt;
+        return std::optional<H>{H{sigma, ptr}};
+      return std::nullopt;
     }
   };
 

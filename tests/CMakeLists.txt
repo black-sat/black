@@ -55,7 +55,7 @@ if(Catch2_FOUND)
   set(
     UNIT_TESTS
     units/cnf.cpp
-    units/common.cpp
+    units/hash.cpp
     units/formula.cpp
     units/main.cpp
     units/match.cpp
