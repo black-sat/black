@@ -24,8 +24,8 @@
 #ifndef BLACK_SAT_DIMACS_HPP
 #define BLACK_SAT_DIMACS_HPP
 
-#include <black/sat/sat.hpp>
-#include <black/sat/cnf.hpp>
+#include <black/sat/solver.hpp>
+#include <black/logic/cnf.hpp>
 
 #include <cstdint>
 

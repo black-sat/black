@@ -24,7 +24,7 @@
 #ifndef BLACK_SAT_MATHSAT_HPP
 #define BLACK_SAT_MATHSAT_HPP
 
-#include <black/sat/sat.hpp>
+#include <black/sat/solver.hpp>
 
 #include <memory>
 

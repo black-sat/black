@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/sat/dimacs.hpp>
+#include <black/sat/dimacs/solver.hpp>
 
 namespace black::sat::dimacs::internal
 {
@@ -54,8 +54,8 @@ namespace black::sat::dimacs::internal
 
     // census of new variables
     size_t old_size = _data->vars.size();
-    for(sat::clause cl : c.clauses) {
-      for(sat::literal lit : cl.literals) {
+    for(black::clause cl : c.clauses) {
+      for(black::literal lit : cl.literals) {
         _data->var(lit.atom);
       }
     }
@@ -66,9 +66,9 @@ namespace black::sat::dimacs::internal
       this->new_vars(new_size - old_size);
 
     // assert the clauses
-    for(sat::clause cl : c.clauses) {
+    for(black::clause cl : c.clauses) {
       dimacs::clause dcl;
-      for(sat::literal lit : cl.literals) {
+      for(black::literal lit : cl.literals) {
         dcl.literals.push_back({ lit.sign, _data->var(lit.atom) });
       }
 

@@ -24,7 +24,7 @@
 // SOFTWARE.
 
 #include <black/solver/solver.hpp>
-#include <black/sat/sat.hpp>
+#include <black/sat/solver.hpp>
 #include <black/support/range.hpp>
 
 namespace black::internal
