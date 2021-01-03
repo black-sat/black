@@ -87,12 +87,14 @@ namespace black::sat::dimacs::internal
     return this->is_sat_with({{true, _data->var(fresh)}});
   }
 
-  std::optional<uint32_t> solver::var(atom a) const {
+  tribool solver::value(atom a) const {
     auto it = _data->vars.find(a);
     if(it == _data->vars.end())
-      return std::nullopt;
+      return tribool::undef;
 
-    return it->second;
+    uint32_t var = it->second;
+
+    return this->value(var);
   }
 
 }

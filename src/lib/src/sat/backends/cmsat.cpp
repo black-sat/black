@@ -81,12 +81,8 @@ namespace black::sat::backends
     return result;
   }
 
-  tribool cmsat::value(atom a) const {
+  tribool cmsat::value(uint32_t v) const {
     if(!_data->model_available)
-      return tribool::undef;
-
-    std::optional<uint32_t> v = var(a);
-    if(!v)
       return tribool::undef;
 
     std::vector<CMSat::lbool> const& model = _data->solver.get_model();
@@ -94,8 +90,8 @@ namespace black::sat::backends
       return tribool::undef;
 
     return 
-      model[*v] == CMSat::l_True ? tribool{true} : 
-      model[*v] == CMSat::l_False ? tribool{false} : tribool::undef;
+      model[v] == CMSat::l_True ? tribool{true} : 
+      model[v] == CMSat::l_False ? tribool{false} : tribool::undef;
   }
 
   void cmsat::clear() {

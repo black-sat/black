@@ -37,7 +37,7 @@ namespace black::sat::backends
     virtual void assert_clause(dimacs::clause f);
     virtual bool is_sat();
     virtual bool is_sat_with(std::vector<dimacs::literal> const& assumptions);
-    virtual tribool value(atom a) const;
+    virtual tribool value(uint32_t v) const;
     virtual void clear();
     virtual std::optional<std::string> license() const;
 
