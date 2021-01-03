@@ -44,6 +44,14 @@ namespace black::sat::dimacs::internal
     clause(std::initializer_list<literal> elems) : literals{elems} { }
   };
 
+  struct problem {
+    std::vector<clause> clauses;
+
+    problem() = default;
+    problem(std::vector<clause> cls) : clauses(std::move(cls)) { }
+    problem(std::initializer_list<clause> elems) : clauses{elems} { }
+  };
+
   class solver : public sat::solver 
   {
   public:
@@ -92,6 +100,7 @@ namespace black::sat::dimacs::internal
 namespace black::sat::dimacs {
   using internal::literal;
   using internal::clause;
+  using internal::problem;
   using internal::solver;
 }
 

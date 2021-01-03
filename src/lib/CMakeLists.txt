@@ -82,6 +82,7 @@ set (
    src/sat/solver.cpp
    src/logic/cnf.cpp
    src/sat/dimacs/solver.cpp
+   src/sat/dimacs/parser.cpp
    src/sat/backends/z3.cpp
    src/solver/solver.cpp
    src/debug/random_formula.cpp
@@ -116,6 +117,7 @@ set (
   include/black/sat/solver.hpp
   include/black/logic/cnf.hpp
   include/black/sat/dimacs/solver.hpp
+  include/black/sat/dimacs/parser.hpp
   include/black/solver/solver.hpp
   include/black/logic/past_remover.hpp)
 
