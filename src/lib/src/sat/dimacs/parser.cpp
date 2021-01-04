@@ -21,82 +21,172 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/sat/dimacs/parser.hpp>
+#include <black/sat/dimacs.hpp>
+#include <black/support/config.hpp>
 
 #include <cctype>
+#include <cmath>
 #include <fmt/format.h>
 
 namespace black::sat::dimacs::internal 
 {  
-  struct parser::_parser_t {
+  struct _parser_t {
     std::istream &in;
     std::function<void(std::string)> handler;
-    bool start_of_line = true;
 
     _parser_t(std::istream &_in, std::function<void(std::string)> _handler)
        : in{_in}, handler{_handler} { }
 
-    int get();
     void skip_comment();
     void skip();
     bool parse_header();
-    std::optional<clause> parse_clause();
+    std::optional<literal> parse_literal();
     std::vector<clause> parse_clauses();
+    std::optional<problem> parse();
   };
 
-  parser::parser(std::istream &in, std::function<void(std::string)> handler) 
-    : _data{std::make_unique<_parser_t>(in, handler)} { }
-  parser::~parser() = default;
-
-  int parser::_parser_t::get() {
-    int c = in.get();
-    start_of_line = (c == '\n');
-    
-    return c;
-  }
-
-  void parser::_parser_t::skip_comment() {
+  void _parser_t::skip_comment() {
     if(in.peek() != 'c')
       return;
     
-    while(in.good() && get() != '\n');
+    while(in.good() && in.peek() != '\n')
+      in.get();
   }
 
-  void parser::_parser_t::skip() {
-    do {
-      if(start_of_line)
-        skip_comment();
-      get();
-    } while(in.good() && isspace(in.peek()));
+  void _parser_t::skip() {
+    while(in.good() && (isspace(in.peek()) || in.peek() == 'c')) {
+      skip_comment();
+      in.get();
+    }
   }
 
-  bool parser::_parser_t::parse_header() {
+  bool _parser_t::parse_header() {
     if(!in.good())
       return false;
 
-    std::string header;
-    std::getline(in, header);
-    start_of_line = true;
-
-    if(header.substr(0, 5) != "p cnf") {
+    std::string h;
+    for(int i = 0; i < 5; ++i)
+      h += (char)in.get();
+    
+    if(h != "p cnf") {
       handler("expected problem header");
+      return false;
+    }
+
+    uint32_t nvars = 0;
+    uint64_t nclauses = 0;
+
+    in >> nvars; // we ignore nvars and nclauses, but they must be there
+    in >> nclauses;
+    
+    if(in.fail()) {
+      handler("expected nbvars and nbclauses in problem header");
       return false;
     }
 
     return true;
   }
 
-  std::vector<clause> parser::_parser_t::parse_clauses() {
-    return {};
+  std::optional<literal> _parser_t::parse_literal() 
+  {
+    if(in.eof())
+      return std::nullopt;
+      
+    int32_t v = 0;
+    if(!(in >> v)) {
+      handler("expected literal");
+      return std::nullopt;
+    }
+
+    return literal{ 
+      .sign = (v >= 0), 
+      .var = static_cast<uint32_t>(abs(v))
+    };
   }
 
-  std::optional<problem> parser::parse() 
+  std::vector<clause> _parser_t::parse_clauses() 
   {
-    _data->skip();
-    if(!_data->parse_header())
+    std::vector<clause> clauses;
+
+    clause cl;
+    do
+    {
+      skip();
+      std::optional<literal> l = parse_literal();
+      if(!l) {
+        if(cl.literals.size() > 0)
+          handler("expected '0' at the end of clause");
+        return clauses;
+      }
+      if(l->var == 0) {
+        clauses.push_back(cl);
+        cl.literals.clear();
+      } else {
+        cl.literals.push_back(*l);
+      }
+    } while (!in.eof());
+    
+    return clauses;
+  }
+
+  std::optional<problem> _parser_t::parse() 
+  {
+    skip();
+    if(!parse_header())
       return std::nullopt;
 
-    _data->skip();
-    return _data->parse_clauses();
+    skip();
+    return problem{parse_clauses()};
+  }
+
+  std::optional<problem> parse(
+    std::istream &in, std::function<void(std::string)> handler
+  ) {
+    _parser_t parser{in, handler};
+
+    return parser.parse();
+  }
+
+  std::string to_string(literal l) {
+    return fmt::format("{}{}", l.sign ? "" : "-", l.var);
+  }
+
+  void print(std::ostream &out, problem p) {
+    out << fmt::format("c BLACK v{}\n", black::version);
+
+    size_t nclauses = p.clauses.size();
+    uint32_t nvars = 0;
+    for(dimacs::clause c : p.clauses)
+      for(dimacs::literal l : c.literals)
+        nvars = l.var > nvars ? l.var : nvars;
+
+    out << fmt::format("p cnf {} {}\n", nvars, nclauses);
+
+    for(dimacs::clause c : p.clauses) {
+      for(dimacs::literal l : c.literals) {
+        out << to_string(l) << ' ';
+      }
+      out << "0\n";
+    }
+  }
+
+  void print(std::ostream &out, std::optional<solution> const& s) {
+    out << fmt::format("c BLACK v{}\n", black::version);
+
+    if(!s) {
+      out << "s UNSATISFIABLE\n";
+      return;
+    }
+
+    out << "s SATISFIABLE\n";
+
+    out << "v ";
+    int i = 0;
+    for(dimacs::literal l : s->assignments) {
+      if(i % 4)
+        out << "\nv ";
+      out << to_string(l) << ' ';
+    }
+    out << '\n';
   }
 }

@@ -24,9 +24,13 @@
 #ifndef BLACK_SAT_DIMACS_HPP
 #define BLACK_SAT_DIMACS_HPP
 
+#include <black/logic/formula.hpp>
+#include <black/logic/alphabet.hpp>
 #include <black/sat/solver.hpp>
 #include <black/logic/cnf.hpp>
 
+#include <istream>
+#include <string>
 #include <cstdint>
 
 namespace black::sat::dimacs::internal
@@ -38,20 +42,32 @@ namespace black::sat::dimacs::internal
 
   struct clause {
     std::vector<literal> literals;
-
-    clause() = default;
-    clause(std::vector<literal> lits) : literals(std::move(lits)) { }
-    clause(std::initializer_list<literal> elems) : literals{elems} { }
   };
 
   struct problem {
     std::vector<clause> clauses;
-
-    problem() = default;
-    problem(std::vector<clause> cls) : clauses(std::move(cls)) { }
-    problem(std::initializer_list<clause> elems) : clauses{elems} { }
   };
 
+  std::optional<problem> parse(
+    std::istream &in, std::function<void(std::string)> error_handler
+  );
+
+  std::string to_string(literal l);
+  void print(std::ostream &out, problem p);
+
+  struct solution {
+    std::vector<literal> assignments;
+  };
+
+  formula to_formula(alphabet &sigma, clause const& c);
+  formula to_formula(alphabet &sigma, problem const& p);
+  std::optional<solution> solve(problem const& p, std::string backend);
+  void print(std::ostream &out, std::optional<solution> const& s);
+
+  //
+  // A specialized instance of sat::solver for backends with 
+  // DIMACS-based interfaces (e.g. MiniSAT and CryptoMiniSAT)
+  //
   class solver : public sat::solver 
   {
   public:
@@ -101,6 +117,11 @@ namespace black::sat::dimacs {
   using internal::literal;
   using internal::clause;
   using internal::problem;
+  using internal::solution;
+  using internal::parse;
+  using internal::to_string;
+  using internal::print;
+  using internal::solve;
   using internal::solver;
 }
 

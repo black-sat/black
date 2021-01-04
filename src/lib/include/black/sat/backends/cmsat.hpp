@@ -21,8 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/sat/solver.hpp>
-#include <black/sat/dimacs/solver.hpp>
+#include <black/sat/dimacs.hpp>
 
 namespace black::sat::backends 
 {

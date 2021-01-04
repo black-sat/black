@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/sat/dimacs/solver.hpp>
+#include <black/sat/dimacs.hpp>
 
 namespace black::sat::dimacs::internal
 {
@@ -95,6 +95,49 @@ namespace black::sat::dimacs::internal
     uint32_t var = it->second;
 
     return this->value(var);
+  }
+
+  formula to_formula(alphabet &sigma, dimacs::clause const& c) {
+    return big_or(sigma, c.literals, [&](literal l) {
+      atom a = sigma.var(l.var);
+      return l.sign ? formula{a} : formula{!a};
+    });
+  }
+
+  formula to_formula(alphabet &sigma, dimacs::problem const& p) {
+    return big_and(sigma, p.clauses, [&](clause c) {
+      return to_formula(sigma, c);
+    });
+  }
+
+  std::optional<solution> solve(dimacs::problem const &p, std::string backend) {
+    alphabet sigma;
+
+    auto solver = sat::solver::get_solver(backend);
+    solver->assert_formula(to_formula(sigma, p));
+
+    if(!solver->is_sat())
+      return {};
+
+    uint32_t nvars = 0;
+    for(dimacs::clause c : p.clauses)
+      for(dimacs::literal l : c.literals)
+        nvars = l.var > nvars ? l.var : nvars;
+
+    solution s;
+    for(uint32_t i = 1; i <= nvars; ++i) {
+      atom a = sigma.var(i);
+      tribool v = solver->value(a);
+      if(v == tribool::undef)
+        continue;
+      
+      s.assignments.push_back(literal{
+        .sign = (bool)v,
+        .var = i
+      });
+    }
+
+    return std::move(s);
   }
 
 }

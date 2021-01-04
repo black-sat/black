@@ -30,7 +30,7 @@
 #include <black/logic/past_remover.hpp>
 #include <black/solver/solver.hpp>
 
-#include <black/sat/dimacs/parser.hpp>
+#include <black/sat/dimacs.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -102,17 +102,22 @@ int ltl(std::optional<std::string> path, std::istream &file)
 int dimacs(std::optional<std::string> , std::istream &in) 
 {
   using namespace black::sat;
-  dimacs::parser parser(in, [](std::string error) {
-    io::message("{}", error);
-    exit(1);
-  });
+  
+  std::optional<dimacs::problem> problem = 
+    dimacs::parse(in, [](std::string error) {
+      io::message("{}", error);
+      exit(1);
+    });
 
-  std::optional<dimacs::problem> problem = parser.parse();
-
-  if(problem)
-    io::message("Problem parsed");
-  else
+  if(!problem) {
     io::message("Parsing problem");
+    return (int)status_code::syntax_error;
+  }
+
+  std::string backend = cli::sat_backend ? *cli::sat_backend : "z3";
+  std::optional<dimacs::solution> s = dimacs::solve(*problem, backend);
+
+  dimacs::print(std::cout, s);
 
   return 0;
 }
