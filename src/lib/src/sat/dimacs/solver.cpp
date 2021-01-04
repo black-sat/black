@@ -131,10 +131,7 @@ namespace black::sat::dimacs::internal
       if(v == tribool::undef)
         continue;
       
-      s.assignments.push_back(literal{
-        .sign = (bool)v,
-        .var = i
-      });
+      s.assignments.push_back(literal{(bool)v, i});
     }
 
     return std::move(s);

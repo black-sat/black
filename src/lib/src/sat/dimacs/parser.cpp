@@ -99,8 +99,8 @@ namespace black::sat::dimacs::internal
     }
 
     return literal{ 
-      .sign = (v >= 0), 
-      .var = static_cast<uint32_t>(abs(v))
+      /*sign=*/ (v >= 0), 
+      /*var=*/  static_cast<uint32_t>(abs(v))
     };
   }
 
