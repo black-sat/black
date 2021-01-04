@@ -116,8 +116,7 @@ set (
   include/black/logic/parser.hpp
   include/black/sat/solver.hpp
   include/black/logic/cnf.hpp
-  include/black/sat/dimacs/solver.hpp
-  include/black/sat/dimacs/parser.hpp
+  include/black/sat/dimacs.hpp
   include/black/solver/solver.hpp
   include/black/logic/past_remover.hpp)
 
