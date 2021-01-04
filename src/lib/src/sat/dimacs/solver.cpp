@@ -134,7 +134,7 @@ namespace black::sat::dimacs::internal
       s.assignments.push_back(literal{(bool)v, i});
     }
 
-    return std::move(s);
+    return s;
   }
 
 }
