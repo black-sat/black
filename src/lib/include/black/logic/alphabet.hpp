@@ -24,7 +24,7 @@
 #ifndef BLACK_ALPHABET_HPP
 #define BLACK_ALPHABET_HPP
 
-#include <black/support/common.hpp>
+#include <black/support/meta.hpp>
 #include <black/logic/formula.hpp>
 
 #include <string>

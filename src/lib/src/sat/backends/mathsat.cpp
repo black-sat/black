@@ -78,6 +78,25 @@ namespace black::sat::backends
     return (res == MSAT_SAT);
   }
 
+  tribool mathsat::value(atom a) const {
+    auto it = _data->terms.find(a);
+    if(it == _data->terms.end())
+      return tribool::undef;
+
+    msat_term var = it->second;
+    msat_model model = msat_get_model(_data->env);
+    if(MSAT_ERROR_MODEL(model))
+      return tribool::undef;
+
+    msat_term result = msat_model_eval(model, var);
+    if(msat_term_is_true(_data->env, result))
+      return true;
+    if(msat_term_is_false(_data->env, result))
+      return false;
+
+    return tribool::undef;
+  }
+
   void mathsat::clear() {
     msat_reset_env(_data->env);
   }

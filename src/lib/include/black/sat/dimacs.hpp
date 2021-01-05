@@ -24,9 +24,13 @@
 #ifndef BLACK_SAT_DIMACS_HPP
 #define BLACK_SAT_DIMACS_HPP
 
-#include <black/sat/sat.hpp>
-#include <black/sat/cnf.hpp>
+#include <black/logic/formula.hpp>
+#include <black/logic/alphabet.hpp>
+#include <black/sat/solver.hpp>
+#include <black/logic/cnf.hpp>
 
+#include <istream>
+#include <string>
 #include <cstdint>
 
 namespace black::sat::dimacs::internal
@@ -38,12 +42,32 @@ namespace black::sat::dimacs::internal
 
   struct clause {
     std::vector<literal> literals;
-
-    clause() = default;
-    clause(std::vector<literal> lits) : literals(std::move(lits)) { }
-    clause(std::initializer_list<literal> elems) : literals{elems} { }
   };
 
+  struct problem {
+    std::vector<clause> clauses;
+  };
+
+  std::optional<problem> parse(
+    std::istream &in, std::function<void(std::string)> error_handler
+  );
+
+  std::string to_string(literal l);
+  void print(std::ostream &out, problem p);
+
+  struct solution {
+    std::vector<literal> assignments;
+  };
+
+  formula to_formula(alphabet &sigma, clause const& c);
+  formula to_formula(alphabet &sigma, problem const& p);
+  std::optional<solution> solve(problem const& p, std::string backend);
+  void print(std::ostream &out, std::optional<solution> const& s);
+
+  //
+  // A specialized instance of sat::solver for backends with 
+  // DIMACS-based interfaces (e.g. MiniSAT and CryptoMiniSAT)
+  //
   class solver : public sat::solver 
   {
   public:
@@ -54,6 +78,7 @@ namespace black::sat::dimacs::internal
     // sat::solver interface
     virtual void assert_formula(formula f);
     virtual bool is_sat_with(formula assumption);
+    virtual tribool value(atom a) const;
     
     // specialized DIMACS interface
 
@@ -72,6 +97,9 @@ namespace black::sat::dimacs::internal
     // solve the instance assuming the given literals
     virtual bool is_sat_with(std::vector<literal> const& assumptions) = 0;
 
+    // retrieve the value of an atom after is_sat() or is_sat_with() 
+    virtual tribool value(uint32_t var) const = 0;
+
     // clears the state of the solver
     virtual void clear() = 0;
 
@@ -88,6 +116,12 @@ namespace black::sat::dimacs::internal
 namespace black::sat::dimacs {
   using internal::literal;
   using internal::clause;
+  using internal::problem;
+  using internal::solution;
+  using internal::parse;
+  using internal::to_string;
+  using internal::print;
+  using internal::solve;
   using internal::solver;
 }
 

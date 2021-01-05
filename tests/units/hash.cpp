@@ -23,7 +23,8 @@
 
 #include <catch2/catch.hpp>
 
-#include <black/support/common.hpp>
+#include <black/support/meta.hpp>
+#include <black/support/hash.hpp>
 
 #include <string>
 #include <tuple>

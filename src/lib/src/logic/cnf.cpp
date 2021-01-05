@@ -21,16 +21,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/sat/cnf.hpp>
+#include <black/logic/cnf.hpp>
 #include <black/logic/alphabet.hpp>
 
 #include <tsl/hopscotch_set.h>
 
-namespace black::sat::internal 
+namespace black::internal 
 { 
   static void tseitin(
     formula f, 
-    std::vector<sat::clause> &clauses, 
+    std::vector<clause> &clauses, 
     tsl::hopscotch_set<formula> &memo
   );
 

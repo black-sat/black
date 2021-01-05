@@ -27,7 +27,7 @@
 #include <black/logic/parser.hpp>
 #include <black/debug/random_formula.hpp>
 #include <black/solver/solver.hpp>
-#include <black/sat/cnf.hpp>
+#include <black/logic/cnf.hpp>
 
 using namespace black;
 
@@ -49,7 +49,7 @@ TEST_CASE("CNF Translation")
   solver s{sigma};
 
   SECTION("Simplification of random formulas") {
-    for(formula f : tests) 
+    for(formula f : tests)
     { 
       formula fc = simplify_deep(f);
       s.assert_formula(!iff(fc,f));
@@ -63,7 +63,7 @@ TEST_CASE("CNF Translation")
   SECTION("CNF of random formulas") {
     for(formula f : tests) 
     { 
-      formula fc = to_formula(sigma, sat::to_cnf(f));
+      formula fc = to_formula(sigma, to_cnf(f));
       s.assert_formula(!implies(fc,f));
 
       INFO("Formula: " << f);

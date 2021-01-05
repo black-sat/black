@@ -25,6 +25,7 @@
 #define BLACK_SAT_SOLVER_HPP
 
 #include <black/logic/formula.hpp>
+#include <black/support/tribool.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -63,6 +64,11 @@ namespace black::sat
     // under the given assumption
     virtual bool is_sat_with(formula assumption) = 0;
     
+    // gets the value of a proposition from the solver.
+    // The result is tribool::undef if the variable has not been decided
+    // e.g. before the first call to is_sat()
+    virtual tribool value(atom a) const = 0;
+
     // clear the current context completely
     virtual void clear() = 0;
 

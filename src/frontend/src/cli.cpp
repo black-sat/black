@@ -23,7 +23,9 @@
 
 #include <black/frontend/cli.hpp>
 #include <black/frontend/io.hpp>
-#include <black/sat/sat.hpp>
+#include <black/sat/solver.hpp>
+#include <black/support/config.hpp>
+#include <black/support/license.hpp>
 
 #include <clipp.h>
 
@@ -112,6 +114,9 @@ namespace black::frontend
         % "select the SAT backend to use",
       option("--remove-past").set(cli::remove_past)
         % "translate LTL+Past formulas into LTL before checking satisfiability",
+      option("--dimacs").set(cli::dimacs)
+        % "treat the input file as a DIMACS file and show the output in "
+          "DIMACS format",
       value("file", cli::filename).required(false)
         % "input formula file name.\n"
           "If missing, runs in interactive mode.\n"

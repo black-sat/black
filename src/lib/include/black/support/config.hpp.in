@@ -30,4 +30,10 @@
 
 #define BLACK_VERSION "${PROJECT_VERSION}"
 
+#include <string_view>
+
+namespace black {
+  inline std::string_view version = BLACK_VERSION;
+}
+
 #endif // BLACK_CONFIG_HPP_

@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 #include <black/sat/backends/minisat.hpp>
-#include <black/sat/cnf.hpp>
+#include <black/logic/cnf.hpp>
 
 #include <minisat/simp/SimpSolver.h>
 #include <tsl/hopscotch_map.h>
@@ -35,6 +35,7 @@ namespace black::sat::backends
   struct minisat::_minisat_t {
     Minisat::SimpSolver solver;
     size_t nvars;
+    bool model_available = false;
   };
 
   minisat::minisat() : _data{std::make_unique<_minisat_t>()} { 
@@ -66,7 +67,10 @@ namespace black::sat::backends
   }
   
   bool minisat::is_sat() {
-    return _data->solver.solve();
+    bool result = _data->solver.solve();
+    _data->model_available = result;
+
+    return result;
   }
 
   bool minisat::is_sat_with(std::vector<dimacs::literal> const& assumptions) {
@@ -75,8 +79,23 @@ namespace black::sat::backends
       lits.push(Minisat::mkLit(lit.var, !lit.sign));
     }
 
-    return _data->solver.solve(lits);
-  } 
+    bool result = _data->solver.solve(lits);
+    _data->model_available = result;
+
+    return result;
+  }
+
+  tribool minisat::value(uint32_t v) const {
+    if(!_data->model_available)
+      return tribool::undef;
+    
+    return 
+      _data->solver.modelValue(Minisat::Var(v)) == Minisat::l_True ? 
+        tribool{true} :
+      _data->solver.modelValue(Minisat::Var(v)) == Minisat::l_False ? 
+        tribool{false} : 
+        tribool::undef;
+  }
 
   void minisat::clear() {
     _data = std::make_unique<_minisat_t>();

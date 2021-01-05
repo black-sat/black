@@ -54,8 +54,8 @@ namespace black::sat::dimacs::internal
 
     // census of new variables
     size_t old_size = _data->vars.size();
-    for(sat::clause cl : c.clauses) {
-      for(sat::literal lit : cl.literals) {
+    for(black::clause cl : c.clauses) {
+      for(black::literal lit : cl.literals) {
         _data->var(lit.atom);
       }
     }
@@ -66,9 +66,9 @@ namespace black::sat::dimacs::internal
       this->new_vars(new_size - old_size);
 
     // assert the clauses
-    for(sat::clause cl : c.clauses) {
+    for(black::clause cl : c.clauses) {
       dimacs::clause dcl;
-      for(sat::literal lit : cl.literals) {
+      for(black::literal lit : cl.literals) {
         dcl.literals.push_back({ lit.sign, _data->var(lit.atom) });
       }
 
@@ -85,6 +85,56 @@ namespace black::sat::dimacs::internal
     this->assert_formula(iff(fresh, assumption));
 
     return this->is_sat_with({{true, _data->var(fresh)}});
+  }
+
+  tribool solver::value(atom a) const {
+    auto it = _data->vars.find(a);
+    if(it == _data->vars.end())
+      return tribool::undef;
+
+    uint32_t var = it->second;
+
+    return this->value(var);
+  }
+
+  formula to_formula(alphabet &sigma, dimacs::clause const& c) {
+    return big_or(sigma, c.literals, [&](literal l) {
+      atom a = sigma.var(l.var);
+      return l.sign ? formula{a} : formula{!a};
+    });
+  }
+
+  formula to_formula(alphabet &sigma, dimacs::problem const& p) {
+    return big_and(sigma, p.clauses, [&](clause c) {
+      return to_formula(sigma, c);
+    });
+  }
+
+  std::optional<solution> solve(dimacs::problem const &p, std::string backend) {
+    alphabet sigma;
+
+    auto solver = sat::solver::get_solver(backend);
+    solver->assert_formula(to_formula(sigma, p));
+
+    if(!solver->is_sat())
+      return {};
+
+    uint32_t nvars = 0;
+    for(dimacs::clause c : p.clauses)
+      for(dimacs::literal l : c.literals)
+        nvars = l.var > nvars ? l.var : nvars;
+
+    solution s;
+    for(uint32_t i = 1; i <= nvars; ++i) {
+      atom a = sigma.var(i);
+      tribool v = solver->value(a);
+      if(v == tribool::undef)
+        continue;
+      
+      s.assignments.push_back(literal{(bool)v, i});
+    }
+
+    return s;
   }
 
 }

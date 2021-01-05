@@ -30,29 +30,30 @@
 #include <black/logic/past_remover.hpp>
 #include <black/solver/solver.hpp>
 
+#include <black/sat/dimacs.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <type_traits>
 
 using namespace black::frontend;
 
-int batch();
-int batch(std::optional<std::string>, std::istream &);
+int ltl(std::optional<std::string>, std::istream &);
+int dimacs(std::optional<std::string> path, std::istream &file);
 int interactive();
 
 int main(int argc, char **argv)
 {
   parse_command_line(argc, argv);
 
-  return cli::filename ? batch() : interactive();
-}
-
-int batch()
-{
-  black_assert(cli::filename.has_value());
+  if(!cli::filename)
+    return interactive();
 
   if(*cli::filename == "-")
-    return batch(std::nullopt, std::cin);
+    return 
+      cli::dimacs ? 
+        dimacs(std::nullopt, std::cin) :
+        ltl(std::nullopt, std::cin);
 
   std::ifstream file{*cli::filename, std::ios::in};
 
@@ -62,10 +63,10 @@ int batch()
       *cli::filename, system_error_string(errno)
     );
 
-  return batch(cli::filename, file);
+  return cli::dimacs ? dimacs(cli::filename, file) : ltl(cli::filename, file);
 }
 
-int batch(std::optional<std::string> path, std::istream &file)
+int ltl(std::optional<std::string> path, std::istream &file)
 {
   black::alphabet sigma;
 
@@ -94,6 +95,29 @@ int batch(std::optional<std::string> path, std::istream &file)
     io::message("SAT\n");
   else
     io::message("UNSAT\n");
+
+  return 0;
+}
+
+int dimacs(std::optional<std::string> , std::istream &in) 
+{
+  using namespace black::sat;
+  
+  std::optional<dimacs::problem> problem = 
+    dimacs::parse(in, [](std::string error) {
+      io::message("{}", error);
+      exit(1);
+    });
+
+  if(!problem) {
+    io::message("Parsing problem");
+    return (int)status_code::syntax_error;
+  }
+
+  std::string backend = cli::sat_backend ? *cli::sat_backend : "z3";
+  std::optional<dimacs::solution> s = dimacs::solve(*problem, backend);
+
+  dimacs::print(std::cout, s);
 
   return 0;
 }

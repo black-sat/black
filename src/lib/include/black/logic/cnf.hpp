@@ -32,7 +32,7 @@
 #include <initializer_list>
 #include <memory>
 
-namespace black::sat::internal 
+namespace black::internal 
 {
   
   // TODO: Compress the boolean into the pointer to the atom
@@ -68,7 +68,7 @@ namespace black::sat::internal
   formula to_formula(alphabet &sigma, cnf c);
 }
 
-namespace black::sat {
+namespace black {
   using internal::literal;
   using internal::clause;
   using internal::cnf;

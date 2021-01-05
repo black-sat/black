@@ -37,6 +37,7 @@ set(
   -Wno-weak-vtables 
   -Wno-unknown-pragmas
   -Wno-exit-time-destructors 
+  -Wno-return-std-move-in-c++11
   # -Wno-switch-enum
   -Wno-undefined-var-template
   -Wno-undefined-func-template

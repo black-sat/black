@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 #include <black/sat/backends/cmsat.hpp>
-#include <black/sat/cnf.hpp>
+#include <black/logic/cnf.hpp>
 
 #include <cryptominisat5/cryptominisat.h>
 
@@ -34,6 +34,7 @@ namespace black::sat::backends
 {
   struct cmsat::_cmsat_t {
     CMSat::SATSolver solver;
+    bool model_available = false;
   };
 
   cmsat::cmsat() : _data{std::make_unique<_cmsat_t>()} { 
@@ -61,7 +62,10 @@ namespace black::sat::backends
 
   bool cmsat::is_sat() {
     CMSat::lbool ret = _data->solver.solve();
-    return ret == CMSat::l_True;
+    bool result = (ret == CMSat::l_True);
+    _data->model_available = result;
+
+    return result;
   }
 
   bool cmsat::is_sat_with(std::vector<dimacs::literal> const& assumptions) {
@@ -71,7 +75,23 @@ namespace black::sat::backends
     }
 
     CMSat::lbool ret = _data->solver.solve(&lits);
-    return ret == CMSat::l_True;
+    bool result = (ret == CMSat::l_True);
+    _data->model_available = result;
+
+    return result;
+  }
+
+  tribool cmsat::value(uint32_t v) const {
+    if(!_data->model_available)
+      return tribool::undef;
+
+    std::vector<CMSat::lbool> const& model = _data->solver.get_model();
+    if(v >= model.size())
+      return tribool::undef;
+
+    return 
+      model[v] == CMSat::l_True ? tribool{true} : 
+      model[v] == CMSat::l_False ? tribool{false} : tribool::undef;
   }
 
   void cmsat::clear() {
