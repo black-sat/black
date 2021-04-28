@@ -80,7 +80,7 @@ namespace std {
     declare_destructuring_arity(since,        2)
     declare_destructuring_arity(triggered,    2)
 
-  #undef declare_destructuring
+  #undef declare_destructuring_arity
 
 }
 
