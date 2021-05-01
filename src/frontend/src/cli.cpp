@@ -117,6 +117,8 @@ namespace black::frontend
       option("--dimacs").set(cli::dimacs)
         % "treat the input file as a DIMACS file and show the output in "
           "DIMACS format",
+      option("-m", "--model").set(cli::print_model)
+        % "print the model of the formula, when it exists",
       value("file", cli::filename).required(false)
         % "input formula file name.\n"
           "If missing, runs in interactive mode.\n"

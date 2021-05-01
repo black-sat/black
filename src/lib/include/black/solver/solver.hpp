@@ -81,6 +81,7 @@ namespace black::internal {
   {
     public:
       size_t size() const;
+      size_t loop() const;
       tribool value(atom a, size_t t) const;
     private:
       friend class solver;

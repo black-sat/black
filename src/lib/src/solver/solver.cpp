@@ -159,6 +159,19 @@ namespace black::internal
     return _solver._data->model_size;
   }
 
+  size_t model::loop() const {
+    black_assert(size() > 0);
+    
+    size_t k = size() - 1;
+    for(size_t l = 0; l < k; ++l) {
+       atom loop_var = _solver._data->sigma.var(std::tuple{"_loop_var", l, k});
+       if(_solver._data->sat->value(loop_var))
+        return l;
+    }
+
+    return k;
+  }
+
   tribool model::value(atom a, size_t t) const {
     atom u = _solver._data->ground(a, t);
 
@@ -196,7 +209,7 @@ namespace black::internal
       sat->assert_formula(!prune(k));
       if(!sat->is_sat())
         return model = false;
-    } // end while(true)
+    } // end for
 
     return false;
   }
@@ -251,12 +264,19 @@ namespace black::internal
   }
 
   // Generates the encoding for LOOP_k
+  // This is modified to allow the extraction of the loop index when printing
+  // the model of the formula
   formula solver::_solver_t::k_loop(size_t k) {
-    return big_or(sigma, range(0, k), [&](size_t l) {
-      return l_to_k_loop(l, k) && l_to_k_period(l, k);
+    formula axioms = big_and(sigma, range(0,k), [&](size_t l) {
+      atom loop_var = sigma.var(std::tuple{"_loop_var", l, k});
+      return iff(loop_var, l_to_k_loop(l, k) && l_to_k_period(l, k));
+    });
+    
+
+    return axioms && big_or(sigma, range(0, k), [&](size_t l) {
+      return sigma.var(std::tuple{"_loop_var", l, k});
     });
   }
-
 
   // Generates the encoding for _lP_k
   formula solver::_solver_t::l_to_k_period(size_t l, size_t k) {
