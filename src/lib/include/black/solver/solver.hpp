@@ -53,10 +53,6 @@ namespace black::internal {
       // Asserts a formula
       void assert_formula(formula f);
 
-      // returns a formula equivalent to the conjunction of all the formulas 
-      // currently asserted
-      formula current_formula() const;
-
       // Clears the solver set of formulas
       void clear();
 

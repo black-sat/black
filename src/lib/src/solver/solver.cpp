@@ -128,10 +128,6 @@ namespace black::internal
       _data->frm = _data->frm && f;
   }
 
-  formula solver::current_formula() const {
-    return _data->frm;
-  }
-
   void solver::clear() {
     _data = std::make_unique<_solver_t>(_data->sigma);
   }

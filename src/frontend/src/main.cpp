@@ -42,7 +42,7 @@ using namespace black::frontend;
 int ltl(std::optional<std::string>, std::istream &);
 int dimacs(std::optional<std::string> path, std::istream &file);
 int interactive();
-void print_model(black::solver &solver);
+void print_model(black::solver &solver, black::formula f);
 void collect_atoms(black::formula f, std::unordered_set<black::atom> &atoms);
 
 int main(int argc, char **argv)
@@ -97,7 +97,7 @@ int ltl(std::optional<std::string> path, std::istream &file)
   if (res) {
     io::message("SAT\n");
     if(cli::print_model)
-      print_model(slv);
+      print_model(slv, *f);
   }
   else
     io::message("UNSAT\n");
@@ -179,14 +179,14 @@ int interactive()
   return 0;
 }
 
-void print_model(black::solver &solver) {
+void print_model(black::solver &solver, black::formula f) {
   black_assert(solver.model().has_value());
 
   io::message("Model size: {}", solver.model()->size());
   io::message("Loop at: {}", solver.model()->loop());
 
   std::unordered_set<black::atom> atoms;
-  collect_atoms(solver.current_formula(), atoms);
+  collect_atoms(f, atoms);
 
   for(size_t i = 0; i < solver.model()->size(); ++i) {
     io::message("- Time step: {}", i);
