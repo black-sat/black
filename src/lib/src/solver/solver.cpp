@@ -53,6 +53,16 @@ namespace black::internal
     // cache to memoize to_nnf() calls
     tsl::hopscotch_map<formula, formula> nnf_cache;
 
+    // whether a model has been found 
+    // i.e., whether solve() has been called and returned true
+    bool model = false;
+
+    // size of the found model (if any)
+    size_t model_size = 0;
+
+    // current SAT solver instance
+    std::unique_ptr<sat::solver> sat;
+
     // the name of the currently chosen sat backend
     std::string sat_backend = "z3"; // sensible default
 
@@ -62,7 +72,7 @@ namespace black::internal
 
     /*
      * Functions that implement the SAT encoding. 
-     * Refer to the TABLEAUX 2019 and IJCAI 2021 paper for details.
+     * Refer to the TABLEAUX 2019 and TIME 2021 paper for details.
      */
 
     // Make the stepped ground version of a formula, f_G^k
@@ -109,8 +119,59 @@ namespace black::internal
 
   solver::~solver() = default;
 
+  void solver::assert_formula(formula f) {
+    f = _data->to_nnf(f);
+    _data->add_xyz_requests(f);
+    if( _data->frm == _data->sigma.top() )
+      _data->frm = f;
+    else
+      _data->frm = _data->frm && f;
+  }
+
+  void solver::clear() {
+    _data = std::make_unique<_solver_t>(_data->sigma);
+  }
+
   bool solver::solve(std::optional<size_t> k_max) {
     return _data->solve(k_max);
+  }
+
+  std::optional<model> solver::model() const {
+    if(!_data->model)
+      return {};
+    
+    return {{*this}};
+  }
+
+  void solver::set_sat_backend(std::string name) {
+    _data->sat_backend = std::move(name);
+  }
+
+  std::string solver::sat_backend() const {
+    return _data->sat_backend;
+  }
+
+  size_t model::size() const {
+    return _solver._data->model_size;
+  }
+
+  size_t model::loop() const {
+    black_assert(size() > 0);
+    
+    size_t k = size() - 1;
+    for(size_t l = 0; l < k; ++l) {
+       atom loop_var = _solver._data->sigma.var(std::tuple{"_loop_var", l, k});
+       if(_solver._data->sat->value(loop_var))
+        return l;
+    }
+
+    return k;
+  }
+
+  tribool model::value(atom a, size_t t) const {
+    atom u = _solver._data->ground(a, t);
+
+    return _solver._data->sat->value(u);
   }
 
   /*
@@ -118,7 +179,7 @@ namespace black::internal
    */
   bool solver::_solver_t::solve(std::optional<size_t> k_max_arg)
   {
-    auto sat = sat::solver::get_solver(sat_backend);
+    sat = sat::solver::get_solver(sat_backend);
 
     size_t k_max = k_max_arg.value_or(std::numeric_limits<size_t>::max());
 
@@ -128,19 +189,23 @@ namespace black::internal
       // If it is UNSAT, then stop with UNSAT
       sat->assert_formula(k_unraveling(k));
       if(!sat->is_sat())
-        return false;
+        return model = false;
 
       // else, continue to check EMPTY and LOOP.
       // If the k-unrav is SAT assuming EMPTY or LOOP, then stop with SAT
-      if(sat->is_sat_with(k_empty(k) || k_loop(k)))
+      if(sat->is_sat_with(k_empty(k) || k_loop(k))) {
+        model_size = k + 1;
+        model = true;
+        
         return true;
+      }
 
       // else, generate the PRUNE
       // If the PRUNE is UNSAT, the formula is UNSAT
       sat->assert_formula(!prune(k));
       if(!sat->is_sat())
-        return false;
-    } // end while(true)
+        return model = false;
+    } // end for
 
     return false;
   }
@@ -195,12 +260,19 @@ namespace black::internal
   }
 
   // Generates the encoding for LOOP_k
+  // This is modified to allow the extraction of the loop index when printing
+  // the model of the formula
   formula solver::_solver_t::k_loop(size_t k) {
-    return big_or(sigma, range(0, k), [&](size_t l) {
-      return l_to_k_loop(l, k) && l_to_k_period(l, k);
+    formula axioms = big_and(sigma, range(0,k), [&](size_t l) {
+      atom loop_var = sigma.var(std::tuple{"_loop_var", l, k});
+      return iff(loop_var, l_to_k_loop(l, k) && l_to_k_period(l, k));
+    });
+    
+
+    return axioms && big_or(sigma, range(0, k), [&](size_t l) {
+      return sigma.var(std::tuple{"_loop_var", l, k});
     });
   }
-
 
   // Generates the encoding for _lP_k
   formula solver::_solver_t::l_to_k_period(size_t l, size_t k) {
@@ -456,28 +528,6 @@ namespace black::internal
       },
       [](otherwise) { }
     );
-  }
-
-  // simple public functions are given an inlineable implementation below
-  void solver::assert_formula(formula f) {
-    f = _data->to_nnf(f);
-    _data->add_xyz_requests(f);
-    if( _data->frm == _data->sigma.top() )
-      _data->frm = f;
-    else
-      _data->frm = _data->frm && f;
-  }
-
-  void solver::clear() {
-    _data = std::make_unique<_solver_t>(_data->sigma);
-  }
-
-  void solver::set_sat_backend(std::string name) {
-    _data->sat_backend = std::move(name);
-  }
-
-  std::string solver::sat_backend() const {
-    return _data->sat_backend;
   }
 
 } // end namespace black::size_ternal

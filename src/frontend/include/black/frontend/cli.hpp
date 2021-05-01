@@ -87,6 +87,9 @@ namespace black::frontend
 
     // verbosity level
     inline verbosity verbosity = verbosity::message;
+
+    // to print or not to print the model
+    inline bool print_model = false;
   }
 
   // parse the command-line arguments, filling the variables declared above.

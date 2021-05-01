@@ -26,6 +26,7 @@
 
 #include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
+#include <black/support/tribool.hpp>
 
 #include <vector>
 #include <utility>
@@ -42,6 +43,7 @@ namespace black::internal {
   class solver 
   {
     public:
+      friend class model;
 
       // Constructor
       explicit solver(alphabet &a);
@@ -57,6 +59,8 @@ namespace black::internal {
       // Solve the formula with up to `k_max' iterations
       bool solve(std::optional<size_t> k_max = std::nullopt);
 
+      std::optional<class model> model() const;
+
       // Choose the SAT backend. The backend must exist.
       void set_sat_backend(std::string name);
 
@@ -68,6 +72,19 @@ namespace black::internal {
       std::unique_ptr<_solver_t> _data;
 
   }; // end class Black Solver
+
+  class model
+  {
+    public:
+      size_t size() const;
+      size_t loop() const;
+      tribool value(atom a, size_t t) const;
+    private:
+      friend class solver;
+      model(solver const&s) : _solver{s} { }
+      
+      solver const&_solver;
+  };
 
 } // end namespace black::internal
 

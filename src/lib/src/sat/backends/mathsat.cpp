@@ -35,6 +35,8 @@
 
 #include <string>
 
+#include <cstdio>
+
 BLACK_REGISTER_SAT_BACKEND(mathsat)
 
 namespace black::sat::backends
@@ -42,9 +44,15 @@ namespace black::sat::backends
   struct mathsat::_mathsat_t {
     msat_env env;
     tsl::hopscotch_map<formula, msat_term> terms;
+    std::optional<msat_model> model;
 
     msat_term to_mathsat(formula);
     msat_term to_mathsat_inner(formula);
+
+    ~_mathsat_t() {
+      if(model)
+        msat_destroy_model(*model);
+    }
   };
 
   mathsat::mathsat() : _data{std::make_unique<_mathsat_t>()}
@@ -64,6 +72,15 @@ namespace black::sat::backends
 
   bool mathsat::is_sat() { 
     msat_result res = msat_solve(_data->env);
+
+    if(res == MSAT_SAT) {
+      if(_data->model)
+        msat_destroy_model(*_data->model);
+
+      _data->model = msat_get_model(_data->env);
+      black_assert(!MSAT_ERROR_MODEL(*_data->model));
+    }
+
     return (res == MSAT_SAT);
   }
 
@@ -73,6 +90,14 @@ namespace black::sat::backends
   
     assert_formula(f);
     msat_result res = msat_solve(_data->env);
+
+    if(res == MSAT_SAT) {
+      if(_data->model)
+        msat_destroy_model(*_data->model);
+
+      _data->model = msat_get_model(_data->env);
+      black_assert(!MSAT_ERROR_MODEL(*_data->model));
+    }
   
     msat_pop_backtrack_point(_data->env);
     return (res == MSAT_SAT);
@@ -83,12 +108,11 @@ namespace black::sat::backends
     if(it == _data->terms.end())
       return tribool::undef;
 
-    msat_term var = it->second;
-    msat_model model = msat_get_model(_data->env);
-    if(MSAT_ERROR_MODEL(model))
+    if(!_data->model)
       return tribool::undef;
-
-    msat_term result = msat_model_eval(model, var);
+    
+    msat_term var = it->second;
+    msat_term result = msat_model_eval(*_data->model, var);
     if(msat_term_is_true(_data->env, result))
       return true;
     if(msat_term_is_false(_data->env, result))
