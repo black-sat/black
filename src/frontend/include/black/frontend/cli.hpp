@@ -64,6 +64,11 @@ namespace black::frontend
   [[ noreturn ]]
   void quit(status_code);
 
+  //
+  // Prints a standard error message for command line errors
+  //
+  void command_line_error(std::string const& what);
+
   // Global parameters given by the command-line arguments
   namespace cli
   {
@@ -72,6 +77,9 @@ namespace black::frontend
 
     // name of the input file, if given
     inline std::optional<std::string> filename;
+
+    // formula to solve, directly passed on the command line
+    inline std::optional<std::string> formula;
 
     // maximum bound for BMC algorithms, if given
     inline std::optional<int> bound;

@@ -57,7 +57,8 @@ namespace black::internal {
       void clear();
 
       // Solve the formula with up to `k_max' iterations
-      bool solve(std::optional<size_t> k_max = std::nullopt);
+      // returns tribool::undef if `k_max` is reached
+      tribool solve(size_t k_max = std::numeric_limits<size_t>::max());
 
       std::optional<class model> model() const;
 

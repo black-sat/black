@@ -33,6 +33,7 @@
 #include <black/sat/dimacs.hpp>
 
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <type_traits>
 #include <set>
@@ -41,7 +42,6 @@ using namespace black::frontend;
 
 int ltl(std::optional<std::string>, std::istream &);
 int dimacs(std::optional<std::string> path, std::istream &file);
-int interactive();
 void print_model(black::solver &solver, black::formula f);
 void collect_atoms(black::formula f, std::unordered_set<black::atom> &atoms);
 
@@ -49,8 +49,15 @@ int main(int argc, char **argv)
 {
   parse_command_line(argc, argv);
 
-  if(!cli::filename)
-    return interactive();
+  if(!cli::filename && !cli::formula) {
+    command_line_error("please specify a filename or the --formula option");
+    quit(status_code::command_line_error);
+  }
+
+  if(cli::formula) {
+    std::istringstream str{*cli::formula};
+    return ltl(std::nullopt, str);
+  }
 
   if(*cli::filename == "-")
     return 
@@ -92,20 +99,23 @@ int ltl(std::optional<std::string> path, std::istream &file)
   else
     slv.assert_formula(*f);
 
-  bool res = slv.solve(cli::bound);
+  size_t bound = cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
+  black::tribool res = slv.solve(bound);
 
-  if (res) {
-    io::message("SAT\n");
+  if(res == black::tribool::undef) {
+    io::message("UNKNOWN (stopped at k = {})", bound);
+  } else if (res == true) {
+    io::message("SAT");
     if(cli::print_model)
       print_model(slv, *f);
+  } else {
+    io::message("UNSAT");
   }
-  else
-    io::message("UNSAT\n");
 
   return 0;
 }
 
-int dimacs(std::optional<std::string> , std::istream &in) 
+int dimacs(std::optional<std::string>, std::istream &in) 
 {
   using namespace black::sat;
   
@@ -124,57 +134,6 @@ int dimacs(std::optional<std::string> , std::istream &in)
   std::optional<dimacs::solution> s = dimacs::solve(*problem, backend);
 
   dimacs::print(std::cout, s);
-
-  return 0;
-}
-
-int interactive()
-{
-  black::alphabet sigma;
-  black::solver slv{sigma};
-
-  if (cli::sat_backend)
-    slv.set_sat_backend(*cli::sat_backend);
-
-  while (!std::cin.eof()) {
-    std::string line;
-
-    io::message("Please enter formula: ");
-    std::getline(std::cin, line);
-
-    std::optional<black::formula> f =
-      black::parse_formula(sigma, line, [](auto error) {
-        io::error("Syntax error: {}\n", error);
-      });
-
-    if (!f)
-      continue;
-
-    black::formula f_ltl = black::remove_past(*f);
-
-    io::message("Parsed formula: {}\n", *f);
-    if (f_ltl != *f && cli::remove_past)
-      io::message("Translated formula: {}\n", f_ltl);
-
-    if (cli::bound)
-      io::message("Solving (up to k={})...\n", *cli::bound);
-    else
-      io::message("Solving...\n");
-
-    if (cli::remove_past)
-      slv.assert_formula(f_ltl);
-    else
-      slv.assert_formula(*f);
-
-    bool res = slv.solve(cli::bound);
-
-    if(res)
-      io::message("The formula is SAT!\n\n");
-    else
-      io::message("The formula is UNSAT!\n\n");
-
-    slv.clear();
-  }
 
   return 0;
 }

@@ -49,6 +49,12 @@ namespace black::frontend
     exit(static_cast<uint8_t>(status));
   }
 
+  void command_line_error(std::string const& what) {
+    io::error(
+      "{0}: invalid command line arguments: {1}\n"
+      "{0}: Type `{0} --help` for help.\n", cli::command_name, what);
+  }
+
   static void print_header() {
     io::message("BLACK - Bounded Lᴛʟ sAtisfiability ChecKer");
     io::message("        version {}", black::version);
@@ -110,19 +116,23 @@ namespace black::frontend
       (option("-k", "--bound") & integer("bound", cli::bound))
         % "maximum bound for BMC procedures",
       (option("-B", "--sat-backend") 
-        & value(is_backend, "name", cli::sat_backend))
+        & value(is_backend, "backend", cli::sat_backend))
         % "select the SAT backend to use",
       option("--remove-past").set(cli::remove_past)
         % "translate LTL+Past formulas into LTL before checking satisfiability",
-      option("--dimacs").set(cli::dimacs)
-        % "treat the input file as a DIMACS file and show the output in "
-          "DIMACS format",
       option("-m", "--model").set(cli::print_model)
         % "print the model of the formula, when it exists",
+      (option("-f", "--formula") & value("formula", cli::formula))
+        % "LTL formula to solve",
       value("file", cli::filename).required(false)
-        % "input formula file name.\n"
-          "If missing, runs in interactive mode.\n"
-          "If '-', reads from standard input in batch mode."
+          % "input formula file name.\n"
+            "If '-', reads from standard input."
+    ) | (
+      (option("--dimacs").set(cli::dimacs) & value("file", cli::filename))
+        % "treat the input file as a DIMACS file and show the output in "
+          "DIMACS format",
+      option("-B", "--sat-backend") 
+        & value(is_backend, "backend", cli::sat_backend)
     ) | option("--sat-backends").set(show_backends) 
           % "print the list of available SAT backends"
       | option("-v", "--version").set(version)
@@ -133,9 +143,7 @@ namespace black::frontend
 
     bool result = (bool)parse(argc, argv, cli);
     if(!result) {
-      io::error(
-        "{0}: invalid command line arguments.\n"
-        "{0}: Type `{0} --help` for help.\n", argv[0]);
+      command_line_error("missing or unrecognized option");
 
       quit(status_code::command_line_error);
     }

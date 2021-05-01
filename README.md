@@ -35,20 +35,29 @@ BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
 
 
 SYNOPSIS
-   black [-k <bound>] [-B <name>] [--remove-past] [<file>]
-   black --sat-backends
-   black -v
-   black -h
+   ./black [-k <bound>] [-B <backend>] [--remove-past] [-m] [-f <formula>]
+           [<file>]
+
+   ./black [--dimacs <file>] [-B <backend>]
+   ./black --sat-backends
+   ./black -v
+   ./black -h
 
 OPTIONS
    -k, --bound <bound>        maximum bound for BMC procedures
-   -B, --sat-backend <name>   select the SAT backend to use
+   -B, --sat-backend <backend>
+                              select the SAT backend to use
+
    --remove-past              translate LTL+Past formulas into LTL before
                               checking satisfiability
 
+   -m, --model                print the model of the formula, when it exists
+   -f, --formula <formula>    LTL formula to solve
    <file>                     input formula file name.
-                              If missing, runs in interactive mode.
-                              If '-', reads from standard input in batch mode.
+                              If '-', reads from standard input.
+   --dimacs <file>            treat the input file as a DIMACS file and show
+                              the output in DIMACS format
+
    --sat-backends             print the list of available SAT backends
    -v, --version              show version and license information
    -h, --help                 print this help message

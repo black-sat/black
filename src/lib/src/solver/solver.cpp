@@ -68,7 +68,7 @@ namespace black::internal
 
   public:
     // Main algorithm
-    bool solve(std::optional<size_t> k_max_arg);
+    tribool solve(size_t k_max);
 
     /*
      * Functions that implement the SAT encoding. 
@@ -132,7 +132,7 @@ namespace black::internal
     _data = std::make_unique<_solver_t>(_data->sigma);
   }
 
-  bool solver::solve(std::optional<size_t> k_max) {
+  tribool solver::solve(size_t k_max) {
     return _data->solve(k_max);
   }
 
@@ -177,11 +177,9 @@ namespace black::internal
   /*
    * Main algorithm. Solve the formula with up to `k_max' iterations
    */
-  bool solver::_solver_t::solve(std::optional<size_t> k_max_arg)
+  tribool solver::_solver_t::solve(size_t k_max)
   {
     sat = sat::solver::get_solver(sat_backend);
-
-    size_t k_max = k_max_arg.value_or(std::numeric_limits<size_t>::max());
 
     for(size_t k = 0; k <= k_max; ++k)
     {
@@ -207,7 +205,8 @@ namespace black::internal
         return model = false;
     } // end for
 
-    return false;
+    model = false;
+    return tribool::undef;
   }
 
   // Generates the PRUNE encoding
