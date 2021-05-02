@@ -48,7 +48,10 @@ namespace black::frontend {
   void print_model(black::solver &solver, black::formula f) {
     black_assert(solver.model().has_value());
 
-    io::message("Model:", solver.model()->size());
+    if(solver.model()->loop().has_value())
+      io::message("Model:", solver.model()->size());
+    else
+      io::message("Finite model:", solver.model()->size());
 
     std::unordered_set<black::atom> atoms;
     collect_atoms(f, atoms);
@@ -65,13 +68,13 @@ namespace black::frontend {
           io::print(verbosity::message, "{}{}", comma, to_string(a));
           first = false;
         } else if(v == false) {
-          io::print(verbosity::message, "￢{}{}", comma, to_string(a));
+          io::print(verbosity::message, "{}￢{}", comma, to_string(a));
           first = false;
         }
       }
       io::print(verbosity::message, "}}");
       if(solver.model()->loop() == t)
-        io::print(verbosity::message, " <- loops here");
+        io::print(verbosity::message, " ⬅︎ loops here");
       io::print(verbosity::message, "\n");
     }
   

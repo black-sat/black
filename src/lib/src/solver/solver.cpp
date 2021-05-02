@@ -155,17 +155,17 @@ namespace black::internal
     return _solver._data->model_size;
   }
 
-  size_t model::loop() const {
+  std::optional<size_t> model::loop() const {
     black_assert(size() > 0);
     
     size_t k = size() - 1;
     for(size_t l = 0; l < k; ++l) {
        atom loop_var = _solver._data->sigma.var(std::tuple{"_loop_var", l, k});
        if(_solver._data->sat->value(loop_var))
-        return l;
+        return l + 1;
     }
 
-    return k;
+    return {};
   }
 
   tribool model::value(atom a, size_t t) const {
