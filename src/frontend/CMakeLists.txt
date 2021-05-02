@@ -28,6 +28,7 @@ set(
   FRONTEND_SRC
   src/main.cpp
   src/cli.cpp
+  src/model.cpp
 )
 
 set(
