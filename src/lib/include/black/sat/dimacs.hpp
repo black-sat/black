@@ -73,12 +73,12 @@ namespace black::sat::dimacs::internal
   public:
     solver();
 
-    virtual ~solver();
+    virtual ~solver() override;
 
     // sat::solver interface
-    virtual void assert_formula(formula f);
-    virtual bool is_sat_with(formula assumption);
-    virtual tribool value(atom a) const;
+    virtual void assert_formula(formula f) override;
+    virtual bool is_sat_with(formula assumption) override;
+    virtual tribool value(atom a) const override;
     
     // specialized DIMACS interface
 
@@ -92,7 +92,7 @@ namespace black::sat::dimacs::internal
     virtual void assert_clause(clause c) = 0;
 
     // solve the instance
-    virtual bool is_sat() = 0;
+    virtual bool is_sat() override = 0;
 
     // solve the instance assuming the given literals
     virtual bool is_sat_with(std::vector<literal> const& assumptions) = 0;
@@ -101,10 +101,10 @@ namespace black::sat::dimacs::internal
     virtual tribool value(uint32_t var) const = 0;
 
     // clears the state of the solver
-    virtual void clear() = 0;
+    virtual void clear() override = 0;
 
     // License note for whatever third-party software lies under the hood
-    virtual std::optional<std::string> license() const = 0;
+    virtual std::optional<std::string> license() const override = 0;
 
   private:
     struct _solver_t;
