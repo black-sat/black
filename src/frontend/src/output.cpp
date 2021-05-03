@@ -21,32 +21,49 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <black/frontend/output.hpp>
 #include <black/frontend/io.hpp>
-#include <black/frontend/model.hpp>
 
 #include <black/logic/parser.hpp>
 
 namespace black::frontend {
 
   static 
-  void collect_atoms(black::formula f, std::unordered_set<black::atom> &atoms) {
+  void relevant_atoms(black::formula f, std::unordered_set<black::atom> &atoms) 
+  {
     using namespace black;
     f.match(
       [&](atom a) {
         atoms.insert(a);
       },
       [&](unary, formula f1) {
-        collect_atoms(f1, atoms);
+        relevant_atoms(f1, atoms);
       },
       [&](binary, formula f1, formula f2) {
-        collect_atoms(f1, atoms);
-        collect_atoms(f2, atoms);
+        relevant_atoms(f1, atoms);
+        relevant_atoms(f2, atoms);
       }
     );
   }
 
-  void print_model(black::solver &solver, black::formula f) {
+  static
+  void readable(black::tribool result, black::solver &solver, black::formula f)
+  {
+    if(result == black::tribool::undef) {
+      io::message("UNKNOWN (stopped at k = {})", solver.last_bound());
+      return;
+    }
+
+    if(result == false) {
+      io::message("UNSAT");
+      return;
+    }
+
     black_assert(solver.model().has_value());
+    io::message("SAT");
+
+    if(!cli::print_model)
+      return;
 
     if(solver.model()->loop().has_value())
       io::message("Model:", solver.model()->size());
@@ -54,7 +71,7 @@ namespace black::frontend {
       io::message("Finite model:", solver.model()->size());
 
     std::unordered_set<black::atom> atoms;
-    collect_atoms(f, atoms);
+    relevant_atoms(f, atoms);
     
     size_t size = solver.model()->size();
     size_t width = log10(size) + 1;
@@ -78,6 +95,10 @@ namespace black::frontend {
       io::print(verbosity::message, "\n");
     }
   
+  }
+
+  void output(black::tribool result, black::solver &solver, black::formula f) {
+    readable(result, solver, f);
   }
 
 }

@@ -60,7 +60,13 @@ namespace black::internal {
       // returns tribool::undef if `k_max` is reached
       tribool solve(size_t k_max = std::numeric_limits<size_t>::max());
 
+      // Returns the model of the formula, if the last call to solve() 
+      // returned true
       std::optional<class model> model() const;
+
+      // Returns the last bound tried by the algorithm. The value returned 
+      // does not make sense before the first call to solve()
+      size_t last_bound() const;
 
       // Choose the SAT backend. The backend must exist.
       void set_sat_backend(std::string name);

@@ -60,6 +60,9 @@ namespace black::internal
     // size of the found model (if any)
     size_t model_size = 0;
 
+    // value for solver::last_bound() 
+    size_t last_bound = 0;
+
     // current SAT solver instance
     std::unique_ptr<sat::solver> sat;
 
@@ -143,6 +146,10 @@ namespace black::internal
     return {{*this}};
   }
 
+  size_t solver::last_bound() const {
+    return _data->last_bound;
+  }
+
   void solver::set_sat_backend(std::string name) {
     _data->sat_backend = std::move(name);
   }
@@ -181,7 +188,8 @@ namespace black::internal
   {
     sat = sat::solver::get_solver(sat_backend);
 
-    for(size_t k = 0; k <= k_max; ++k)
+    last_bound = 0;
+    for(size_t k = 0; k <= k_max; last_bound = k++)
     {
       // Generating the k-unraveling.
       // If it is UNSAT, then stop with UNSAT

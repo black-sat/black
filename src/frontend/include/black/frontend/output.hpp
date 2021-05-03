@@ -30,7 +30,7 @@
 namespace black::frontend 
 {
 
-  void print_model(black::solver &solver, black::formula f);
+  void output(tribool result, black::solver &solver, black::formula f);
 
 }
 

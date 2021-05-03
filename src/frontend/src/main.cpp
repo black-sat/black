@@ -24,7 +24,7 @@
 #include <black/frontend/cli.hpp>
 #include <black/frontend/io.hpp>
 #include <black/frontend/support.hpp>
-#include <black/frontend/model.hpp>
+#include <black/frontend/output.hpp>
 
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
@@ -38,6 +38,7 @@
 #include <fstream>
 #include <type_traits>
 #include <set>
+#include <atomic>
 
 using namespace black::frontend;
 
@@ -89,7 +90,7 @@ int ltl(std::optional<std::string> path, std::istream &file)
   black_assert(f.has_value());
 
   black::solver slv{sigma};
-  
+
   if (cli::sat_backend)
     slv.set_sat_backend(*cli::sat_backend);
 
@@ -101,15 +102,7 @@ int ltl(std::optional<std::string> path, std::istream &file)
   size_t bound = cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
   black::tribool res = slv.solve(bound);
 
-  if(res == black::tribool::undef) {
-    io::message("UNKNOWN (stopped at k = {})", bound);
-  } else if (res == true) {
-    io::message("SAT");
-    if(cli::print_model)
-      print_model(slv, *f);
-  } else {
-    io::message("UNSAT");
-  }
+  output(res, slv, *f);
 
   return 0;
 }
