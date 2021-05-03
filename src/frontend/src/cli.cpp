@@ -101,6 +101,10 @@ namespace black::frontend
     return black::sat::solver::backend_exists(name);
   }
 
+  static bool is_output_format(std::string const &format) {
+    return format == "readable" || format == "json";
+  }
+
   //
   // main command-line parsing entry-point
   //
@@ -122,6 +126,11 @@ namespace black::frontend
         % "translate LTL+Past formulas into LTL before checking satisfiability",
       option("-m", "--model").set(cli::print_model)
         % "print the model of the formula, when it exists",
+      (option("-o", "--output-format") 
+        & value(is_output_format, "format", cli::output_format))
+        % "Output format.\n"
+          "Accepted formats: readable, json\n"
+          "Default: readable",
       (option("-f", "--formula") & value("formula", cli::formula))
         % "LTL formula to solve",
       value("file", cli::filename).required(false)
