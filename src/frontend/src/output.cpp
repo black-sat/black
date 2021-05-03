@@ -23,13 +23,41 @@
 
 #include <black/frontend/output.hpp>
 #include <black/frontend/io.hpp>
+#include <black/frontend/cli.hpp>
 
 #include <black/logic/parser.hpp>
 
 namespace black::frontend {
 
+  std::function<void(std::string)> 
+  syntax_error_handler(std::optional<std::string> path)
+  {
+    auto readable_syntax_error = [&path](auto error) {
+      io::fatal(status_code::syntax_error, 
+                "syntax error: {}: {}\n", 
+                path ? *path : "<stdin>", error);
+    };
+
+    auto json_syntax_error = [](auto error) {
+      io::error(
+        "{{\n"
+        "    \"result\": \"ERROR\",\n"
+        "    \"error\": \"{}\"\n"
+        "}}", error);
+      quit(status_code::syntax_error);
+    };
+
+    std::function<void(std::string)> handler;
+    if(!cli::output_format || cli::output_format == "readable")
+      return readable_syntax_error;
+    else  
+      return json_syntax_error;
+    
+    black_unreachable();
+  }
+
   static 
-  void relevant_atoms(black::formula f, std::unordered_set<black::atom> &atoms) 
+  void relevant_atoms(formula f, std::unordered_set<atom> &atoms) 
   {
     using namespace black;
     f.match(
@@ -48,9 +76,9 @@ namespace black::frontend {
   }
 
   static
-  void readable(black::tribool result, black::solver &solver, black::formula f)
+  void readable(tribool result, solver &solver, formula f)
   {
-    if(result == black::tribool::undef) {
+    if(result == tribool::undef) {
       io::message("UNKNOWN (stopped at k = {})", solver.last_bound());
       return;
     }
@@ -71,7 +99,7 @@ namespace black::frontend {
     else
       io::message("Finite model:", solver.model()->size());
 
-    std::unordered_set<black::atom> atoms;
+    std::unordered_set<atom> atoms;
     relevant_atoms(f, atoms);
     
     size_t size = solver.model()->size();
@@ -95,11 +123,68 @@ namespace black::frontend {
         io::print(verbosity::message, " ⬅︎ loops here");
       io::print(verbosity::message, "\n");
     }
-  
   }
 
-  void output(black::tribool result, black::solver &solver, black::formula f) {
-    readable(result, solver, f);
+  static
+  void json(tribool result, solver &solver, formula f) {
+    io::message("{{");
+    
+    io::message("    \"result\": \"{}\",", 
+      result == tribool::undef ? "UNKNOWN" :
+      result == true  ? "SAT" : "UNSAT"
+    );
+
+    io::message("    \"k\": {}{}", 
+      solver.last_bound(),
+      cli::print_model ? "," : ""
+    );
+
+    if(result == true && cli::print_model) {
+      auto model = solver.model();
+      std::unordered_set<atom> atoms;
+      relevant_atoms(f, atoms);
+
+      io::message("    \"model\": {{");
+      io::message("        \"size\": {},", model->size());
+      if(model->loop())
+        io::message("        \"loop\": {},", *model->loop());
+
+      io::message("        \"states\": [");
+
+      for(size_t t = 0; t < model->size(); ++t) {
+        io::message("            {{");
+
+        size_t i = 0;
+        for(atom a : atoms) {
+          tribool v = model->value(a, t);
+          io::message("                \"{}\": \"{}\"{}",
+            to_string(a),
+            v == tribool::undef ? "undef" :
+            v == true           ? "true" : "false",
+            i < atoms.size() - 1 ? "," : ""
+          );
+          ++i;
+        }
+
+        io::message("            }}{}", t < model->size() - 1 ? "," : "");
+      }
+
+      io::message("        ]");
+
+      io::message("    }}");
+    }
+
+    io::message("}}");
+  }
+
+  void output(tribool result, solver &solver, formula f) {
+    if(!cli::output_format || cli::output_format == "readable")
+      return readable(result, solver, f);
+    
+    if(cli::output_format == "json")
+      return json(result, solver, f);
+    
+    black_unreachable();
   }
 
 }
