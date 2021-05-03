@@ -33,6 +33,7 @@ namespace black::frontend {
   {
     using namespace black;
     f.match(
+      [&](boolean) {},
       [&](atom a) {
         atoms.insert(a);
       },
