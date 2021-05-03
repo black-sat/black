@@ -34,14 +34,14 @@ namespace black::sat::backends
   {
   public:
     mathsat();
-    virtual ~mathsat();
+    virtual ~mathsat() override;
 
-    virtual void assert_formula(formula f);
-    virtual bool is_sat();
-    virtual bool is_sat_with(formula assumption);
-    virtual tribool value(atom a) const;
-    virtual void clear();
-    virtual std::optional<std::string> license() const;
+    virtual void assert_formula(formula f) override;
+    virtual bool is_sat() override;
+    virtual bool is_sat_with(formula assumption) override;
+    virtual tribool value(atom a) const override;
+    virtual void clear() override;
+    virtual std::optional<std::string> license() const override;
 
   private:
     struct _mathsat_t;
