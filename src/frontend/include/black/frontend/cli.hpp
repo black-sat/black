@@ -82,7 +82,7 @@ namespace black::frontend
     inline std::optional<std::string> formula;
 
     // maximum bound for BMC algorithms, if given
-    inline std::optional<int> bound;
+    inline std::optional<size_t> bound;
 
     // name of the selected SAT backend (nullopt for default)
     inline std::optional<std::string> sat_backend;
