@@ -113,16 +113,35 @@ namespace black::internal
     >
   > : std::true_type { };
   
-  template<typename Formula, typename Handler, typename ...Handlers>
-  auto dispatch(Formula f, Handler&& handler, Handlers&& ...handlers) {
-    if constexpr(std::is_invocable_v<Handler, Formula>)
-      return std::invoke(FWD(handler), f);
-    else if constexpr(can_be_unpacked<Handler, Formula>::value)
-      return unpack(FWD(handler), f);
-    else if constexpr(sizeof...(Handlers) > 0)
-      return dispatch(f, FWD(handlers)...);
+  //
+  // The dispatch() function is what does the hard job
+  //
+  template<
+    typename Formula, typename Handler, typename ... Handlers,
+    REQUIRES(std::is_invocable_v<Handler, Formula>)
+  >
+  auto dispatch(Formula f, Handler&& handler, Handlers&& ...) {
+    return std::invoke(FWD(handler), f);
+  }
 
-    black_unreachable();
+  template<
+    typename Formula, typename Handler, typename ...Handlers,
+    REQUIRES(!std::is_invocable_v<Handler, Formula>),
+    REQUIRES(can_be_unpacked<Handler, Formula>::value)
+  >
+  auto dispatch(Formula f, Handler&& handler, Handlers&& ...) {
+    return unpack(FWD(handler), f);
+  }
+
+  template<
+    typename Formula, typename H1, typename H2, typename ...Handlers,
+    REQUIRES(!std::is_invocable_v<H1, Formula>),
+    REQUIRES(!can_be_unpacked<H1, Formula>::value)
+  >
+  auto dispatch(Formula f, H1&&, H2&& h2, Handlers&& ...handlers) 
+    -> decltype(dispatch(f, FWD(h2), FWD(handlers)...)) 
+  {
+    return dispatch(f, FWD(h2), FWD(handlers)...);
   }
 
   template<typename ...Operators>
