@@ -31,12 +31,12 @@ Quick usage help:
 $ black --help
 
 BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
-        version 0.4.0
+        version 0.3.0
 
 
 SYNOPSIS
-   ./black [-k <bound>] [-B <backend>] [--remove-past] [-m] [-f <formula>]
-           [<file>]
+   ./black [-k <bound>] [-B <backend>] [--remove-past] [-m] [-o <format>] [-f
+           <formula>] [<file>]
 
    ./black [--dimacs <file>] [-B <backend>]
    ./black --sat-backends
@@ -52,6 +52,10 @@ OPTIONS
                               checking satisfiability
 
    -m, --model                print the model of the formula, when it exists
+   -o, --output-format <format>
+                              Output format.
+                              Accepted formats: readable, json
+                              Default: readable
    -f, --formula <formula>    LTL formula to solve
    <file>                     input formula file name.
                               If '-', reads from standard input.
