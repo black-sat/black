@@ -27,8 +27,13 @@
 #include <black/logic/formula.hpp>
 #include <black/solver/solver.hpp>
 
+#include <functional>
+
 namespace black::frontend 
 {
+
+  std::function<void(std::string)> 
+  syntax_error_handler(std::optional<std::string> path);
 
   void output(tribool result, black::solver &solver, black::formula f);
 

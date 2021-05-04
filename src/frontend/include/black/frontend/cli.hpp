@@ -96,6 +96,9 @@ namespace black::frontend
     // verbosity level
     inline verbosity verbosity = verbosity::message;
 
+    // output format
+    inline std::optional<std::string> output_format;
+
     // to print or not to print the model
     inline bool print_model = false;
   }

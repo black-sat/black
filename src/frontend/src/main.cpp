@@ -81,11 +81,7 @@ int ltl(std::optional<std::string> path, std::istream &file)
   black::alphabet sigma;
 
   std::optional<black::formula> f =
-    black::parse_formula(sigma, file, [&path](auto error) {
-      io::fatal(status_code::syntax_error, 
-                "syntax error: {}: {}\n", 
-                path ? *path : "<stdin>", error);
-    });
+    black::parse_formula(sigma, file, syntax_error_handler(path));
 
   black_assert(f.has_value());
 
