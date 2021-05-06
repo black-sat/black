@@ -4,7 +4,8 @@ set -eu -o pipefail
 shopt -s failglob
 
 if [ $# -ne 1 ]; then
-  echo Please provide the version number
+  echo Please provide the version number, e.g.
+  echo \$ pack.sh 0.4.0
   exit 1
 fi
 
@@ -20,7 +21,7 @@ prepare() {
   docker build docker \
     -f docker/Dockerfile.ubuntu -t black:ubuntu --build-arg GCC_VERSION=10
   docker build docker \
-    -f docker/Dockerfile.fedora -t black:fedora --build-arg VERSION=32
+    -f docker/Dockerfile.fedora -t black:fedora --build-arg VERSION=34
 }
 
 launch() {
