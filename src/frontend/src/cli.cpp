@@ -136,6 +136,9 @@ namespace black::frontend
       value("file", cli::filename).required(false)
           % "input formula file name.\n"
             "If '-', reads from standard input."
+    ) |  (
+      (option("--trace-check").set(cli::trace_check) 
+        & value("file", cli::filename))
     ) | (
       (option("--dimacs").set(cli::dimacs) & value("file", cli::filename))
         % "treat the input file as a DIMACS file and show the output in "

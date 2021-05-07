@@ -21,6 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+find_package(nlohmann_json 3.5.0 REQUIRED)
+
 #
 # Main black executable
 #
@@ -29,6 +31,7 @@ set(
   src/main.cpp
   src/cli.cpp
   src/output.cpp
+  src/tracecheck.cpp
 )
 
 set(
@@ -46,6 +49,7 @@ target_link_library_with_global_ctors(frontend PRIVATE black)
 target_compile_features(frontend PRIVATE cxx_std_17)
 target_include_directories(frontend PRIVATE include)
 target_link_libraries(frontend PRIVATE fmt::fmt clipp::clipp)
+target_link_libraries(frontend PRIVATE nlohmann_json::nlohmann_json)
 target_enable_warnings(frontend)
 target_code_coverage(frontend)
 add_sanitizers(frontend)

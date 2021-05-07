@@ -40,6 +40,8 @@
 #include <set>
 #include <atomic>
 
+#include <black/frontend/tracecheck.hpp>
+
 using namespace black::frontend;
 
 int ltl(std::optional<std::string>, std::istream &);
@@ -59,11 +61,13 @@ int main(int argc, char **argv)
     return ltl(std::nullopt, str);
   }
 
-  if(*cli::filename == "-")
-    return 
-      cli::dimacs ? 
-        dimacs(std::nullopt, std::cin) :
-        ltl(std::nullopt, std::cin);
+  if(*cli::filename == "-") {
+    if(cli::dimacs)
+      return dimacs(std::nullopt, std::cin);
+    if(cli::trace_check)
+      return trace_check(std::nullopt, std::cin);
+    return ltl(std::nullopt, std::cin);
+  }
 
   std::ifstream file{*cli::filename, std::ios::in};
 
@@ -73,7 +77,12 @@ int main(int argc, char **argv)
       *cli::filename, system_error_string(errno)
     );
 
-  return cli::dimacs ? dimacs(cli::filename, file) : ltl(cli::filename, file);
+  if(cli::dimacs)
+    return dimacs(cli::filename, file);
+  if(cli::trace_check)
+    return trace_check(cli::filename, file);
+  
+  return ltl(cli::filename, file);
 }
 
 int ltl(std::optional<std::string> path, std::istream &file)

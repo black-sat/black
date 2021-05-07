@@ -93,6 +93,9 @@ namespace black::frontend
     // the input file is a DIMACS file
     inline bool dimacs = false;
 
+    // the input file is a trace to be checked
+    inline bool trace_check = false;
+
     // verbosity level
     inline verbosity verbosity = verbosity::message;
 
