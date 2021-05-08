@@ -1,3 +1,3 @@
 #!/bin/bash
 
-black "$1"
+black solve "$1"

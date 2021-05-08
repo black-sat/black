@@ -31,11 +31,10 @@
 
 namespace black::frontend 
 {
-
-  std::function<void(std::string)> 
-  syntax_error_handler(std::optional<std::string> path);
-
-  void output(tribool result, black::solver &solver, black::formula f);
+  //
+  // Main entry point of the tool in LTL solving mode
+  //
+  int ltl();
 
 }
 

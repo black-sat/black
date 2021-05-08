@@ -30,7 +30,8 @@ set(
   FRONTEND_SRC
   src/main.cpp
   src/cli.cpp
-  src/output.cpp
+  src/ltl.cpp
+  src/dimacs.cpp
   src/tracecheck.cpp
 )
 

@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Nicola Gigante
+// (C) 2021 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,45 @@
 // SOFTWARE.
 
 #include <black/frontend/cli.hpp>
-#include <black/frontend/ltl.hpp>
+#include <black/frontend/io.hpp>
+#include <black/frontend/support.hpp>
 #include <black/frontend/dimacs.hpp>
-#include <black/frontend/tracecheck.hpp>
 
-using namespace black::frontend;
+#include <black/sat/dimacs.hpp>
 
-int main(int argc, char **argv)
-{
-  parse_command_line(argc, argv);
+#include <iostream>
+
+namespace black::frontend {
   
-  if(cli::dimacs)
-    return dimacs();
-  
-  if(cli::trace_check)
-    return trace_check();
-  
-  return ltl();
+  static
+  int dimacs(std::optional<std::string> const&, std::istream &in) 
+  {
+    using namespace black::sat;
+    
+    std::optional<dimacs::problem> problem = 
+      dimacs::parse(in, [](std::string error) {
+        io::message("{}", error);
+        exit(1);
+      });
+
+    if(!problem) {
+      io::message("Parsing problem");
+      return (int)status_code::syntax_error;
+    }
+
+    std::string backend = cli::sat_backend ? *cli::sat_backend : "z3";
+    std::optional<dimacs::solution> s = dimacs::solve(*problem, backend);
+
+    dimacs::print(std::cout, s);
+
+    return 0;
+  }
+
+  int dimacs() {
+    if(*cli::filename == "-")
+      return dimacs(std::nullopt, std::cin);
+
+    std::ifstream file = open_file(*cli::filename);
+    return dimacs(cli::filename, file);
+  }
 }

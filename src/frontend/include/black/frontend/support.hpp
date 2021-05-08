@@ -24,6 +24,7 @@
 #ifndef BLACK_FRONTEND_SUPPORT_HPP
 #define BLACK_FRONTEND_SUPPORT_HPP
 
+#include <fstream>
 #include <string>
 #include <type_traits>
 #include <cstdio>
@@ -48,6 +49,43 @@ namespace black::frontend
     strerror_r(errnum, buf, buflen);
     return buf;
 #endif
+  }
+
+  inline std::ifstream open_file(std::string const&path) {
+    std::ifstream file{path, std::ios::in};
+
+    if(!file)
+      io::fatal(status_code::filesystem_error,
+        "Unable to open file `{}`: {}",
+        path, system_error_string(errno)
+      );
+
+    return file;
+  }
+
+  inline
+  std::function<void(std::string)> 
+  formula_syntax_error_handler(std::optional<std::string> const&path)
+  {
+    auto readable_syntax_error = [path](auto error) {
+      io::fatal(status_code::syntax_error, 
+                "syntax error: {}: {}\n", 
+                path ? *path : "<stdin>", error);
+    };
+
+    auto json_syntax_error = [](auto error) {
+      io::error(
+        "{{\n"
+        "    \"result\": \"ERROR\",\n"
+        "    \"error\": \"{}\"\n"
+        "}}", error);
+      quit(status_code::syntax_error);
+    };
+
+    if(!cli::output_format || cli::output_format == "readable")
+      return readable_syntax_error;
+    
+    return json_syntax_error;
   }
 }
 

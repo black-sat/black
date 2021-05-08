@@ -21,39 +21,69 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/frontend/output.hpp>
+#include <black/frontend/ltl.hpp>
+
 #include <black/frontend/io.hpp>
 #include <black/frontend/cli.hpp>
+#include <black/frontend/support.hpp>
 
+#include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/past_remover.hpp>
+#include <black/solver/solver.hpp>
+
+#include <sstream>
 
 namespace black::frontend {
 
-  std::function<void(std::string)> 
-  syntax_error_handler(std::optional<std::string> path)
+  void output(tribool result, solver &solver, formula f);
+  
+  int ltl(std::optional<std::string> const&path, std::istream &file);
+
+  int ltl() {
+    if(!cli::filename && !cli::formula) {
+      command_line_error("please specify a filename or the --formula option");
+      quit(status_code::command_line_error);
+    }
+
+    if(cli::formula) {
+      std::istringstream str{*cli::formula};
+      return ltl(std::nullopt, str);
+    }
+
+    if(*cli::filename == "-")
+      return ltl(std::nullopt, std::cin);
+
+    std::ifstream file = open_file(*cli::filename);
+    return ltl(cli::filename, file);
+  }
+
+  int ltl(std::optional<std::string> const&path, std::istream &file)
   {
-    auto readable_syntax_error = [&path](auto error) {
-      io::fatal(status_code::syntax_error, 
-                "syntax error: {}: {}\n", 
-                path ? *path : "<stdin>", error);
-    };
+    black::alphabet sigma;
 
-    auto json_syntax_error = [](auto error) {
-      io::error(
-        "{{\n"
-        "    \"result\": \"ERROR\",\n"
-        "    \"error\": \"{}\"\n"
-        "}}", error);
-      quit(status_code::syntax_error);
-    };
+    std::optional<black::formula> f =
+      black::parse_formula(sigma, file, formula_syntax_error_handler(path));
 
-    std::function<void(std::string)> handler;
-    if(!cli::output_format || cli::output_format == "readable")
-      return readable_syntax_error;
-    else  
-      return json_syntax_error;
-    
-    black_unreachable();
+    black_assert(f.has_value());
+
+    black::solver slv{sigma};
+
+    if (cli::sat_backend)
+      slv.set_sat_backend(*cli::sat_backend);
+
+    if (cli::remove_past)
+      slv.assert_formula(black::remove_past(*f));
+    else
+      slv.assert_formula(*f);
+
+    size_t bound = 
+      cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
+    black::tribool res = slv.solve(bound);
+
+    output(res, slv, *f);
+
+    return 0;
   }
 
   static 

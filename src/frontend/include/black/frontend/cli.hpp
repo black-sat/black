@@ -94,7 +94,7 @@ namespace black::frontend
     inline bool dimacs = false;
 
     // the input file is a trace to be checked
-    inline bool trace_check = false;
+    inline std::optional<std::string> trace_check;
 
     // verbosity level
     inline verbosity verbosity = verbosity::message;

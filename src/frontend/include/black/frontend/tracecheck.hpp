@@ -30,7 +30,10 @@
 
 namespace black::frontend 
 {
-  int trace_check(std::optional<std::string> path, std::istream &file);
+  //
+  // Main entry point of the tool when in trace checking mode
+  //
+  int trace_check();
 }
 
 #endif

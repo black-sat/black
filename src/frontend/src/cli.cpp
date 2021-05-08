@@ -116,7 +116,8 @@ namespace black::frontend
     bool version = false;
     bool show_backends = false;
 
-    auto cli = (
+    auto cli = "solving mode: " % (
+      command("solve"),
       (option("-k", "--bound") & integer("bound", cli::bound))
         % "maximum bound for BMC procedures",
       (option("-B", "--sat-backend") 
@@ -136,20 +137,28 @@ namespace black::frontend
       value("file", cli::filename).required(false)
           % "input formula file name.\n"
             "If '-', reads from standard input."
-    ) |  (
-      (option("--trace-check").set(cli::trace_check) 
-        & value("file", cli::filename))
-    ) | (
-      (option("--dimacs").set(cli::dimacs) & value("file", cli::filename))
-        % "treat the input file as a DIMACS file and show the output in "
-          "DIMACS format",
-      option("-B", "--sat-backend") 
-        & value(is_backend, "backend", cli::sat_backend)
-    ) | option("--sat-backends").set(show_backends) 
+    ) |
+    "trace checking mode: " % (
+      command("check"), 
+      (required("-t","--trace") & value("trace", cli::trace_check))
+        % "trace file to check against the formula.\n"
+          "If '-', reads from standard input.",
+      (option("-f", "--formula") & value("formula", cli::formula))
+        % "formula against which to check the trace",
+      value("file", cli::filename).required(false)
+        % "formula file against which to check the trace"
+    ) | "DIMACS mode: " % (
+      command("dimacs").set(cli::dimacs),
+      (option("-B", "--sat-backend")
+        & value(is_backend, "backend", cli::sat_backend))
+        % "select the SAT backend to use",
+      value("file", cli::filename)
+        % "DIMACS file to solve"
+    ) | command("--sat-backends").set(show_backends) 
           % "print the list of available SAT backends"
-      | option("-v", "--version").set(version)
+      | command("-v", "--version").set(version)
           % "show version and license information"
-      | option("-h", "--help").set(help) % "print this help message";
+      | command("-h", "--help").set(help) % "print this help message";
 
     cli::command_name = argv[0];
 

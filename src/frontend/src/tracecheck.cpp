@@ -23,28 +23,96 @@
 
 #include <black/frontend/tracecheck.hpp>
 #include <black/frontend/io.hpp>
+#include <black/frontend/support.hpp>
+
+#include <black/logic/alphabet.hpp>
+#include <black/logic/formula.hpp>
+#include <black/logic/parser.hpp>
+#include <black/support/tribool.hpp>
+
+#include <iostream>
+#include <sstream>
 
 #define JSON_DIAGNOSTICS 1
 #include <nlohmann/json.hpp>
+
 using json = nlohmann::json;
 
 namespace black::frontend 
 {
-  static
-  json parse(std::optional<std::string>, std::istream &file) {
-    json j;
-    try {
-      j = json::parse(file);
-    } catch (json::parse_error& ex) {
-      io::fatal(status_code::syntax_error, "{}", ex.what());
-    }
+  using trace_t = std::vector<std::map<std::string, black::tribool>>;
 
-    return j;
+  static
+  int check(trace_t, formula) {
+    return 0;
   }
 
-  int trace_check(std::optional<std::string> path, std::istream &file) {
-    json j = parse(path, file);
-    
-    return 0;
+  static 
+  std::vector<std::map<std::string, black::tribool>>
+  parse_trace(std::optional<std::string> const&tracepath, std::istream &trace) {
+    json j;
+    try {
+      j = json::parse(trace);
+    } catch (json::parse_error& ex) {
+      std::string path = tracepath ? *tracepath : "<stdin>";
+      io::fatal(status_code::syntax_error, "{}:{}", *tracepath, ex.what());
+    }
+
+    return {};
+  }
+
+  static
+  int trace_check(
+    std::optional<std::string> const&path,
+    std::istream &file,
+    std::optional<std::string> const&tracepath,
+    std::istream &tracefile
+  ) {
+    black::alphabet sigma;
+
+    black::formula f = 
+      *black::parse_formula(sigma, file, formula_syntax_error_handler(path));
+
+    trace_t trace = parse_trace(tracepath, tracefile);
+
+    return check(trace, f);
+  }
+
+  int trace_check() {
+    if(!cli::filename && !cli::formula) {
+      command_line_error("please specify a filename or the --formula option");
+      quit(status_code::command_line_error);
+    }
+
+    if(*cli::filename == "-" && *cli::trace_check == "-") {
+      command_line_error(
+        "cannot read from stdin both the formula file and the trace file"
+      );
+      quit(status_code::command_line_error);
+    }
+
+    if(cli::formula) {
+      std::istringstream str{*cli::formula};
+
+      if(*cli::trace_check == "-")
+        return trace_check(std::nullopt, str, std::nullopt, std::cin);
+
+      std::ifstream tracefile = open_file(*cli::trace_check);
+      return trace_check(std::nullopt, str, cli::trace_check, tracefile);
+    }
+
+    if(*cli::filename == "-") {
+      std::ifstream tracefile = open_file(*cli::trace_check);
+      return trace_check(std::nullopt, std::cin, cli::trace_check, tracefile);
+    }
+
+    if(*cli::trace_check == "-") {
+      std::ifstream file = open_file(*cli::filename);
+      return trace_check(cli::filename, file, std::nullopt, std::cin);
+    }
+
+    std::ifstream file = open_file(*cli::filename);
+    std::ifstream tracefile = open_file(*cli::trace_check);
+    return trace_check(cli::filename, file, cli::trace_check, tracefile);
   }
 }
