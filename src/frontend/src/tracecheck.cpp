@@ -28,12 +28,12 @@
 #include <black/logic/alphabet.hpp>
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/past_remover.hpp>
 #include <black/support/tribool.hpp>
 
 #include <iostream>
 #include <sstream>
 
-#define JSON_DIAGNOSTICS 1
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -41,67 +41,129 @@ using json = nlohmann::json;
 namespace black::frontend 
 {
   struct trace_t {
-    std::optional<size_t> loop;
+    size_t loop = 0;
     std::vector<std::map<std::string, black::tribool>> states;
   };
 
+  static bool check(trace_t, formula, size_t);
+
   static
-  bool check(trace_t trace, formula f, size_t t) { 
+  bool check_atom(trace_t trace, atom a, size_t t) {
+    black_assert(a.label<std::string>().has_value());
+    std::string p = *a.label<std::string>();
+
+    auto state = trace.states[t];
+    auto it = state.find(p);
+    if(it == state.end())
+      return true;
+    
+    black::tribool value = it->second;
+    if(value == true || value == black::tribool::undef)
+      return true;
+    return false;
+  }
+
+  static
+  bool check_tomorrow(trace_t trace, tomorrow x, size_t t) {
+    if(t < trace.states.size() - 1)
+      return check(trace, x.operand(), t + 1);
+    
+    if(t >= trace.loop)
+      return check(trace, x.operand(), trace.loop);
+
+    return true;
+  }
+
+  // static
+  // bool check_yesterday(trace_t trace, yesterday y, size_t t) {
+  //   if(t == 0)
+  //     return false;
+    
+  //   if(t == trace.loop)
+  //     return check(trace, y.operand(), t - 1) || 
+  //             check(trace, y.operand(), trace.states.size() - 1);
+    
+  //   return check(trace, y.operand(), t - 1);
+  // }
+
+  // static 
+  // bool check_w_yesterday(trace_t trace, w_yesterday z, size_t t) {
+  //   if(t == 0)
+  //     return true;
+    
+  //   if(t == trace.loop)
+  //     return check(trace, z.operand(), t - 1) || 
+  //             check(trace, z.operand(), trace.states.size() - 1);
+    
+  //   return check(trace, z.operand(), t - 1);
+  // }
+
+  static
+  std::optional<size_t>
+  check_one(trace_t trace, formula f, size_t begin, size_t end) {
+    for(size_t i = begin; i < end; ++i) {
+      if(check(trace, f, i))
+        return i;
+    }
+    return {};
+  }
+
+  static
+  bool check_for_all(trace_t trace, formula f, size_t begin, size_t end) {
+    for(size_t i = begin; i < end; ++i) {
+      if(!check(trace, f, i))
+        return false;
+    }
+    return true;
+  }
+
+  static
+  bool check_until(trace_t trace, until u, size_t t) {
+    formula l = u.left();
+    formula r = u.right();
+
+    // search for 'r'
+    std::optional<size_t> rindex = check_one(trace, r, t, trace.states.size());
+    
+    // if we didn't find 'r' and we are inside the loop, continue from
+    // the beginning of the loop
+    if(!rindex.has_value())
+      rindex = check_one(trace, r, trace.loop, t);
+
+    if(!rindex.has_value())
+      return false; // we didn't find 'r', the formula is false
+
+    // check 'l' in all positions until 'r'
+    if(*rindex >= t) 
+      return check_for_all(trace, l, t, *rindex);
+    else
+      return check_for_all(trace, l, t, trace.states.size()) &&
+             check_for_all(trace, l, trace.loop, *rindex);
+  }
+
+  static
+  bool check(trace_t trace, formula f, size_t t) {
     return f.match(
       [](boolean b) {
         return b.value();
       },
       [&](atom a) {
-        black_assert(a.label<std::string>().has_value());
-        std::string p = *a.label<std::string>();
-
-        auto state = trace.states[t];
-        auto it = state.find(p);
-        if(it == state.end())
-          return true;
-        
-        black::tribool value = it->second;
-        if(value == true || value == black::tribool::undef)
-          return true;
-        return false;
+        return check_atom(trace, a, t);
       },
-      [&](tomorrow, formula f) {
-        if(t < trace.states.size() - 1)
-          return check(trace, f, t+1);
-        
-        if(trace.loop)
-          return check(trace, f, *trace.loop);
-        
-        return true;
+      [&](tomorrow x) {
+        return check_tomorrow(trace, x, t);
       },
-      [&](yesterday, formula f) {
-        if(t == trace.loop) {
-          if(t > 0)
-            return check(trace, f, t - 1) || 
-                   check(trace, f, trace.states.size() - 1);
-          if(t == 0)
-            return check(trace, f, trace.states.size() - 1);
-        }
-        
-        if(t == 0)
-          return false;
-        return check(trace, f, t - 1);
+      // [&](yesterday y) {
+      //   return check_yesterday(trace, y, t);
+      // },
+      // [&](w_yesterday z) {
+      //   return check_w_yesterday(trace, z, t);
+      // },
+      [&](until u) {
+        return check_until(trace, u, t);
       },
-      [&](w_yesterday, formula f) {
-        if(t == trace.loop) {
-          if(t > 0)
-            return check(trace, f, t - 1) || 
-                   check(trace, f, trace.states.size() - 1);
-          if(t == 0)
-            return check(trace, f, trace.states.size() - 1);
-        }
-        
-        if(t == 0)
-          return true;
-        return check(trace, f, t - 1);
-      },
-      [&](negation, formula f) {
-        return !check(trace, f, t);
+      [&](negation, formula op) {
+        return !check(trace, op, t);
       },
       [&](conjunction, formula l, formula r) {
         return check(trace, l, t) && check(trace, r, t);
@@ -115,32 +177,22 @@ namespace black::frontend
       [&](iff, formula l, formula r) {
         return check(trace, l, t) == check(trace, r, t);
       },
-      [&](eventually) {
-        alphabet *sigma = f.alphabet();
-        return check(trace, U(sigma->top(), f), t);
+      [&](eventually, formula op) {
+        return check(trace, U(op.alphabet()->top(), op), t);
       },
-      [&](once) {
-        alphabet *sigma = f.alphabet();
-        return check(trace, S(sigma->top(), f), t);
+      [&](always, formula op) {
+        return check(trace, !F(!op), t);
       },
-      [&](always, formula f) {
-        return check(trace, !F(!f), t);
+      [&](release, formula l, formula r) {
+        return check(trace, G(r) || U(r, l && r), t);
       },
-      [&](historically) {
-        return check(trace, !P(!f), t);
-      },
-      [&](until) {
-        return false;
-      },
-      [&](release) {
-        return false;
-      },
-      [&](since) {
-        return false;
-      },
-      [&](triggered) {
-        return false;
-      });
+      [](past) -> bool { 
+        io::fatal(
+          status_code::syntax_error, 
+          "trace checking is not available for LTL+Past formulas"
+        );
+      }
+    );
   }
 
   static
@@ -148,28 +200,45 @@ namespace black::frontend
     bool result = check(trace, f, 0);
     if(result)
       io::message("SATISFIED");
-    else
+    else {
       io::message("UNSATISFIED");
+      quit(status_code::failed_check);
+    }
     
     return 0;
   }
 
   static 
   trace_t
-  parse_trace(std::optional<std::string> const&tracepath, std::istream &trace) 
+  parse_trace(std::optional<std::string> const&tracepath, std::istream &file) 
   {
     std::string path = tracepath ? *tracepath : "<stdin>";
     json j;
     try {
-      j = json::parse(trace);
+      j = json::parse(file);
+
+      std::string result = j["result"];
+
+      if(cli::expected_result && result != *cli::expected_result) {
+        io::message("MISMATCH");
+        quit(status_code::failed_check);
+      }
+
+      if(result != "SAT") {
+        io::message("MATCH");
+        quit(status_code::success);
+      }
 
       json model = j["model"];
-      if(model.is_null()) 
+      if(result == "SAT" && model.is_null())
         io::fatal(status_code::syntax_error, "{}: missing model", path);
 
       trace_t trace;
       trace.loop = model["loop"];
       
+      if(model["states"].size() == 0)
+        io::fatal(status_code::syntax_error, "{}: empty model", path);
+
       for(json jstate : model["states"]) {
         std::map<std::string, black::tribool> state;
 
@@ -202,11 +271,11 @@ namespace black::frontend
         );
       }
 
+      return trace;
+
     } catch (json::exception& ex) {
       io::fatal(status_code::syntax_error, "{}:{}", path, ex.what());
     }
-
-    return {};
   }
 
   static

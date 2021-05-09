@@ -27,6 +27,8 @@
 #include <black/sat/solver.hpp>
 #include <black/support/range.hpp>
 
+#include <fmt/format.h>
+
 namespace black::internal
 {
   /*
@@ -75,7 +77,7 @@ namespace black::internal
 
     /*
      * Functions that implement the SAT encoding. 
-     * Refer to the TABLEAUX 2019 and TIME 2021 paper for details.
+     * Refer to the TABLEAUX 2019 and TIME 2021 papers for details.
      */
 
     // Make the stepped ground version of a formula, f_G^k
@@ -162,7 +164,7 @@ namespace black::internal
     return _solver._data->model_size;
   }
 
-  std::optional<size_t> model::loop() const {
+  size_t model::loop() const {
     black_assert(size() > 0);
     
     size_t k = size() - 1;
@@ -172,7 +174,7 @@ namespace black::internal
         return l + 1;
     }
 
-    return {};
+    return size();
   }
 
   tribool model::value(atom a, size_t t) const {

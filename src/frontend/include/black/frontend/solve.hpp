@@ -21,8 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_FRONTEND_MODEL_HPP
-#define BLACK_FRONTEND_MODEL_HPP
+#ifndef BLACK_FRONTEND_SOLVE_HPP
+#define BLACK_FRONTEND_SOLVE_HPP
 
 #include <black/logic/formula.hpp>
 #include <black/solver/solver.hpp>
@@ -34,8 +34,8 @@ namespace black::frontend
   //
   // Main entry point of the tool in LTL solving mode
   //
-  int ltl();
+  int solve();
 
 }
 
-#endif // BLACK_FRONTEND_MODEL_HPP
+#endif // BLACK_FRONTEND_SOLVE_HPP

@@ -107,8 +107,9 @@ foreach(TEST IN LISTS TESTS)
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
     COMMAND
       /bin/bash -c
-      "$<TARGET_FILE:frontend> \
-      --sat-backend ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | grep '^${RESULT}'"
+      "$<TARGET_FILE:frontend> solve \
+      -m -o json -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
+      $<TARGET_FILE:frontend> check -t - -e ${RESULT} '${FILE}'"
   )
 
   if(BLACK_TEST_TIMEOUT)

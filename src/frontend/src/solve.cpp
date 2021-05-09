@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/frontend/ltl.hpp>
+#include <black/frontend/solve.hpp>
 
 #include <black/frontend/io.hpp>
 #include <black/frontend/cli.hpp>
@@ -38,9 +38,9 @@ namespace black::frontend {
 
   void output(tribool result, solver &solver, formula f);
   
-  int ltl(std::optional<std::string> const&path, std::istream &file);
+  int solve(std::optional<std::string> const&path, std::istream &file);
 
-  int ltl() {
+  int solve() {
     if(!cli::filename && !cli::formula) {
       command_line_error("please specify a filename or the --formula option");
       quit(status_code::command_line_error);
@@ -48,17 +48,17 @@ namespace black::frontend {
 
     if(cli::formula) {
       std::istringstream str{*cli::formula};
-      return ltl(std::nullopt, str);
+      return solve(std::nullopt, str);
     }
 
     if(*cli::filename == "-")
-      return ltl(std::nullopt, std::cin);
+      return solve(std::nullopt, std::cin);
 
     std::ifstream file = open_file(*cli::filename);
-    return ltl(cli::filename, file);
+    return solve(cli::filename, file);
   }
 
-  int ltl(std::optional<std::string> const&path, std::istream &file)
+  int solve(std::optional<std::string> const&path, std::istream &file)
   {
     black::alphabet sigma;
 
@@ -124,10 +124,7 @@ namespace black::frontend {
     if(!cli::print_model)
       return;
 
-    if(solver.model()->loop().has_value())
-      io::message("Model:", solver.model()->size());
-    else
-      io::message("Finite model:", solver.model()->size());
+    io::message("Model:", solver.model()->size());
 
     std::unordered_set<atom> atoms;
     relevant_atoms(f, atoms);
@@ -166,7 +163,7 @@ namespace black::frontend {
 
     io::message("    \"k\": {}{}", 
       solver.last_bound(),
-      cli::print_model ? "," : ""
+      cli::print_model && result == true ? "," : ""
     );
 
     if(result == true && cli::print_model) {
@@ -177,7 +174,7 @@ namespace black::frontend {
       io::message("    \"model\": {{");
       io::message("        \"size\": {},", model->size());
       if(model->loop())
-        io::message("        \"loop\": {},", *model->loop());
+        io::message("        \"loop\": {},", model->loop());
 
       io::message("        \"states\": [");
 

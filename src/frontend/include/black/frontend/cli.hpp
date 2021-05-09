@@ -56,6 +56,7 @@ namespace black::frontend
     command_line_error = 2, // command line parsing errors
     filesystem_error = 3,   // errors related to file operations
     syntax_error = 4,       // syntax errors at logic level (formulas, etc.)
+    failed_check = 5,       // failed trace checking
   };
 
   //
@@ -95,6 +96,9 @@ namespace black::frontend
 
     // the input file is a trace to be checked
     inline std::optional<std::string> trace_check;
+
+    // the expected result when doing trace checking
+    inline std::optional<std::string> expected_result;
 
     // verbosity level
     inline verbosity verbosity = verbosity::message;

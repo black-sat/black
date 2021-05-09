@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 #include <black/frontend/cli.hpp>
-#include <black/frontend/ltl.hpp>
+#include <black/frontend/solve.hpp>
 #include <black/frontend/dimacs.hpp>
 #include <black/frontend/tracecheck.hpp>
 
@@ -38,5 +38,5 @@ int main(int argc, char **argv)
   if(cli::trace_check)
     return trace_check();
   
-  return ltl();
+  return solve();
 }

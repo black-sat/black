@@ -143,6 +143,8 @@ namespace black::frontend
       (required("-t","--trace") & value("trace", cli::trace_check))
         % "trace file to check against the formula.\n"
           "If '-', reads from standard input.",
+      (option("-e", "--expected") & value("result", cli::expected_result))
+        % "expected result (useful in testing)",
       (option("-f", "--formula") & value("formula", cli::formula))
         % "formula against which to check the trace",
       value("file", cli::filename).required(false)
