@@ -40,22 +40,170 @@ using json = nlohmann::json;
 
 namespace black::frontend 
 {
-  using trace_t = std::vector<std::map<std::string, black::tribool>>;
+  struct trace_t {
+    std::optional<size_t> loop;
+    std::vector<std::map<std::string, black::tribool>> states;
+  };
 
   static
-  int check(trace_t, formula) {
+  bool check(trace_t trace, formula f, size_t t) { 
+    return f.match(
+      [](boolean b) {
+        return b.value();
+      },
+      [&](atom a) {
+        black_assert(a.label<std::string>().has_value());
+        std::string p = *a.label<std::string>();
+
+        auto state = trace.states[t];
+        auto it = state.find(p);
+        if(it == state.end())
+          return true;
+        
+        black::tribool value = it->second;
+        if(value == true || value == black::tribool::undef)
+          return true;
+        return false;
+      },
+      [&](tomorrow, formula f) {
+        if(t < trace.states.size() - 1)
+          return check(trace, f, t+1);
+        
+        if(trace.loop)
+          return check(trace, f, *trace.loop);
+        
+        return true;
+      },
+      [&](yesterday, formula f) {
+        if(t == trace.loop) {
+          if(t > 0)
+            return check(trace, f, t - 1) || 
+                   check(trace, f, trace.states.size() - 1);
+          if(t == 0)
+            return check(trace, f, trace.states.size() - 1);
+        }
+        
+        if(t == 0)
+          return false;
+        return check(trace, f, t - 1);
+      },
+      [&](w_yesterday, formula f) {
+        if(t == trace.loop) {
+          if(t > 0)
+            return check(trace, f, t - 1) || 
+                   check(trace, f, trace.states.size() - 1);
+          if(t == 0)
+            return check(trace, f, trace.states.size() - 1);
+        }
+        
+        if(t == 0)
+          return true;
+        return check(trace, f, t - 1);
+      },
+      [&](negation, formula f) {
+        return !check(trace, f, t);
+      },
+      [&](conjunction, formula l, formula r) {
+        return check(trace, l, t) && check(trace, r, t);
+      },
+      [&](disjunction, formula l, formula r) {
+        return check(trace, l, t) || check(trace, r, t);
+      },
+      [&](implication, formula l, formula r) {
+        return !check(trace, l, t) || check(trace, r, t);
+      },
+      [&](iff, formula l, formula r) {
+        return check(trace, l, t) == check(trace, r, t);
+      },
+      [&](eventually) {
+        alphabet *sigma = f.alphabet();
+        return check(trace, U(sigma->top(), f), t);
+      },
+      [&](once) {
+        alphabet *sigma = f.alphabet();
+        return check(trace, S(sigma->top(), f), t);
+      },
+      [&](always, formula f) {
+        return check(trace, !F(!f), t);
+      },
+      [&](historically) {
+        return check(trace, !P(!f), t);
+      },
+      [&](until) {
+        return false;
+      },
+      [&](release) {
+        return false;
+      },
+      [&](since) {
+        return false;
+      },
+      [&](triggered) {
+        return false;
+      });
+  }
+
+  static
+  int check(trace_t trace, formula f) {
+    bool result = check(trace, f, 0);
+    if(result)
+      io::message("SATISFIED");
+    else
+      io::message("UNSATISFIED");
+    
     return 0;
   }
 
   static 
-  std::vector<std::map<std::string, black::tribool>>
-  parse_trace(std::optional<std::string> const&tracepath, std::istream &trace) {
+  trace_t
+  parse_trace(std::optional<std::string> const&tracepath, std::istream &trace) 
+  {
+    std::string path = tracepath ? *tracepath : "<stdin>";
     json j;
     try {
       j = json::parse(trace);
-    } catch (json::parse_error& ex) {
-      std::string path = tracepath ? *tracepath : "<stdin>";
-      io::fatal(status_code::syntax_error, "{}:{}", *tracepath, ex.what());
+
+      json model = j["model"];
+      if(model.is_null()) 
+        io::fatal(status_code::syntax_error, "{}: missing model", path);
+
+      trace_t trace;
+      trace.loop = model["loop"];
+      
+      for(json jstate : model["states"]) {
+        std::map<std::string, black::tribool> state;
+
+        for(auto it = jstate.begin(); it != jstate.end(); ++it) {
+          black::tribool value = black::tribool::undef;
+          if(it.value().get<std::string>() == "undef")
+            value = black::tribool::undef;
+          else if(it.value().get<std::string>() == "true")
+            value = true;
+          else if(it.value().get<std::string>() == "false")
+            value = false;
+          else {
+            io::fatal(
+              status_code::syntax_error, 
+              "{}: invalid proposition value",
+              path
+            );
+          }
+
+          state.insert({it.key(), value});
+        }
+        trace.states.push_back(state);
+      }
+
+      if(model["size"] != trace.states.size()) {
+        io::fatal(
+          status_code::syntax_error, 
+          "{}: \"size\" field and effective model size disagree",
+          path
+        );
+      }
+
+    } catch (json::exception& ex) {
+      io::fatal(status_code::syntax_error, "{}:{}", path, ex.what());
     }
 
     return {};
