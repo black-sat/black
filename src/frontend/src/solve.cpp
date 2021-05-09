@@ -46,6 +46,13 @@ namespace black::frontend {
       quit(status_code::command_line_error);
     }
 
+    if(cli::filename && cli::formula) {
+      command_line_error(
+        "please specify only either a filename or the --formula option"
+      );
+      quit(status_code::command_line_error);
+    }
+
     if(cli::formula) {
       std::istringstream str{*cli::formula};
       return solve(std::nullopt, str);

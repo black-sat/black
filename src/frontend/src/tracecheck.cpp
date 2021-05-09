@@ -301,6 +301,13 @@ namespace black::frontend
       quit(status_code::command_line_error);
     }
 
+    if(cli::filename && cli::formula) {
+      command_line_error(
+        "please specify only either a filename or the --formula option"
+      );
+      quit(status_code::command_line_error);
+    }
+
     if(*cli::filename == "-" && *cli::trace_check == "-") {
       command_line_error(
         "cannot read from stdin both the formula file and the trace file"
