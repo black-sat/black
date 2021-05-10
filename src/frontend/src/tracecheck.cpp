@@ -129,11 +129,21 @@ namespace black::frontend
     size_t result = f.match(
       [](boolean) -> size_t { return 1; },
       [](atom) -> size_t { return 1; },
+      [](yesterday, formula op) { return 1 + depth(op); },
+      [](w_yesterday, formula op) { return 1 + depth(op); },
+      [](once, formula op) { return 1 + depth(op); },
+      [](historically, formula op) { return 1 + depth(op); },
+      [](since, formula l, formula r) {
+        return 1 + std::max(depth(l), depth(r));
+      },
+      [](triggered, formula l, formula r) {
+        return 1 + std::max(depth(l), depth(r));
+      },
       [](unary, formula op) {
-        return 1 + depth(op);
+        return depth(op);
       },
       [](binary, formula l, formula r) {
-        return 1 + std::max(depth(l), depth(r));
+        return std::max(depth(l), depth(r));
       }
     );
 
@@ -150,7 +160,7 @@ namespace black::frontend
     size_t d = depth(u);
     black_assert(d >= 1);
 
-    size_t end = t + (period * (d + 1)) + 1;
+    size_t end = std::max(t, trace.states.size()) + (period * (d + 1)) + 1;
 
     // search for 'r'
     std::optional<size_t> rindex = check_one(trace, r, t, end);
@@ -179,6 +189,11 @@ namespace black::frontend
 
   static
   bool check(trace_t trace, formula f, size_t t) {
+
+    static std::unordered_map<std::tuple<formula, size_t>, bool> memo;
+    if(auto it = memo.find({f, t}); it != memo.end())
+      return it->second;
+
     bool result = f.match(
       [](boolean b) {
         return b.value();
@@ -235,6 +250,8 @@ namespace black::frontend
         return check(trace, H(r) || S(r, l && r), t);
       }
     );
+
+    memo.insert({{f,t}, result});
 
     io::message("check(trace, {}, {}) = {}", to_string(f), t, result);
     return result;
