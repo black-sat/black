@@ -4,7 +4,8 @@ FROM ubuntu:$VERSION
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y make cmake
 RUN apt-get update && \
-    apt-get install -y libz-dev libtsl-hopscotch-map-dev libfmt-dev libz3-dev
+    apt-get install -y libz-dev libtsl-hopscotch-map-dev libfmt-dev libz3-dev \
+                       nlohmann-json3-dev
 RUN apt-get update && apt-get install -y git wget python
 
 ARG GCC_VERSION=8
