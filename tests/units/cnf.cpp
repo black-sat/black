@@ -54,8 +54,8 @@ TEST_CASE("CNF Translation")
       formula fc = simplify_deep(f);
       s.assert_formula(!iff(fc,f));
 
-      INFO("Formula: " << f);
-      INFO("Simplification: " << fc);
+      INFO("Formula: " << f)
+      INFO("Simplification: " << fc)
       REQUIRE(!s.solve());
     }
   }
@@ -66,9 +66,9 @@ TEST_CASE("CNF Translation")
       formula fc = to_formula(sigma, to_cnf(f));
       s.assert_formula(!implies(fc,f));
 
-      INFO("Formula: " << f);
-      INFO("Simplification: " << simplify_deep(f));
-      INFO("CNF: " << fc);
+      INFO("Formula: " << f)
+      INFO("Simplification: " << simplify_deep(f))
+      INFO("CNF: " << fc)
       REQUIRE(!s.solve());
     }
   }

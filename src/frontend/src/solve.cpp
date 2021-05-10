@@ -137,7 +137,7 @@ namespace black::frontend {
     relevant_atoms(f, atoms);
     
     size_t size = solver.model()->size();
-    size_t width = static_cast<size_t>(log10(size)) + 1;
+    size_t width = static_cast<size_t>(log10((double)size)) + 1;
     for(size_t t = 0; t < size; ++t) {
       io::print(verbosity::message, "- t = {:>{}}: {{", t, width);
       bool first = true;
