@@ -4,8 +4,7 @@ FROM ubuntu:$VERSION
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y make cmake
 RUN apt-get update && \
-    apt-get install -y libz-dev libtsl-hopscotch-map-dev libfmt-dev libz3-dev \
-                       nlohmann-json3-dev
+    apt-get install -y libz-dev libtsl-hopscotch-map-dev libfmt-dev libz3-dev 
 RUN apt-get update && apt-get install -y git wget python
 
 ARG GCC_VERSION=8
@@ -21,6 +20,11 @@ WORKDIR /catch2
 RUN git checkout v2.13.0
 WORKDIR /catch2/build
 RUN cmake -DBUILD_TESTING=OFF ..
+RUN make install
+
+RUN git clone https://github.com/nlohmann/json.git /json
+WORKDIR /json/build
+RUN cmake -DJSON_BuildTests=OFF -DBUILD_TESTING=OFF ..
 RUN make install
 
 ENTRYPOINT ["/usr/bin/env", "--"]

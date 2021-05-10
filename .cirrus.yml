@@ -40,7 +40,7 @@ task:
     - make
   test_script:
     - cd build
-    - ctest -j2 -R black; ctest -j2 -R black --rerun-failed --output-on-failure
+    - ctest -j2 -R black --output-on-failure
   coverage_script:
     - cd build
     - bash <(curl -s https://codecov.io/bash);
@@ -60,7 +60,7 @@ task:
     - make
   test_script:
     - cd build 
-    - ctest -j2 -R black; ctest -j2 -R black --rerun-failed --output-on-failure
+    - ctest -j2 -R black --output-on-failure
 
 task:
   matrix:
