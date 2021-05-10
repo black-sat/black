@@ -92,8 +92,7 @@ namespace black::frontend
 
   static
   std::optional<size_t>
-  check_one(trace_t trace, formula f, size_t begin, size_t end) {
-    io::message("check_one(trace, {}, {}, {})", to_string(f), begin, end);
+  find_one(trace_t trace, formula f, size_t begin, size_t end) {
     for(size_t i = begin; i < end; ++i) {
       if(check(trace, f, i))
         return i;
@@ -103,8 +102,8 @@ namespace black::frontend
 
   static
   std::optional<size_t>
-  check_one_reverse(trace_t trace, formula f, size_t begin, size_t end) {
-    for(size_t i = begin; i-- > end;) {
+  find_one_reverse(trace_t trace, formula f, size_t begin, size_t end) {
+    for(ssize_t i = (ssize_t)begin; i >= (ssize_t)end; --i) {
       if(check(trace, f, (size_t)i))
         return i;
     }
@@ -122,11 +121,7 @@ namespace black::frontend
 
   static
   size_t depth(formula f) {
-    static std::unordered_map<formula, size_t> memo;
-    if(auto it = memo.find(f); it != memo.end())
-      return it->second;
-
-    size_t result = f.match(
+    return f.match(
       [](boolean) -> size_t { return 1; },
       [](atom) -> size_t { return 1; },
       [](yesterday, formula op) { return 1 + depth(op); },
@@ -146,9 +141,6 @@ namespace black::frontend
         return std::max(depth(l), depth(r));
       }
     );
-
-    memo.insert({f, result});
-    return result;
   }
 
   static
@@ -163,7 +155,7 @@ namespace black::frontend
     size_t end = std::max(t, trace.states.size()) + period + (period * d);
 
     // search for 'r'
-    std::optional<size_t> rindex = check_one(trace, r, t, end);
+    std::optional<size_t> rindex = find_one(trace, r, t, end);
     
     if(!rindex.has_value())
       return false; // we didn't find 'r', the formula is false
@@ -178,7 +170,7 @@ namespace black::frontend
     formula r = s.right();
     
     // search for 'r'
-    std::optional<size_t> rindex = check_one_reverse(trace, r, t, 0);
+    std::optional<size_t> rindex = find_one_reverse(trace, r, t, 0);
 
     if(!rindex.has_value())
       return false; // we didn't find 'r', the formula is false
@@ -188,8 +180,8 @@ namespace black::frontend
   }
 
   static
-  bool check(trace_t trace, formula f, size_t t) {
-
+  bool check(trace_t trace, formula f, size_t t) 
+  {
     static std::unordered_map<std::tuple<formula, size_t>, bool> memo;
     if(auto it = memo.find({f, t}); it != memo.end())
       return it->second;
@@ -253,7 +245,6 @@ namespace black::frontend
 
     memo.insert({{f,t}, result});
 
-    io::message("check(trace, {}, {}) = {}", to_string(f), t, result);
     return result;
   }
 

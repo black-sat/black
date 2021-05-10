@@ -79,7 +79,7 @@ namespace black::frontend
   static void print_help(Cli cli) {
     auto fmt = clipp::doc_formatting{}
          .first_column(3)
-         .doc_column(30)
+         .doc_column(35)
          .last_column(79);
 
     io::message("");
@@ -126,9 +126,9 @@ namespace black::frontend
       option("--remove-past").set(cli::remove_past)
         % "translate LTL+Past formulas into LTL before checking satisfiability",
       option("-m", "--model").set(cli::print_model)
-        % "print the model of the formula, when it exists",
+        % "print the model of the formula, if any",
       (option("-o", "--output-format") 
-        & value(is_output_format, "format", cli::output_format))
+        & value(is_output_format, "fmt", cli::output_format))
         % "Output format.\n"
           "Accepted formats: readable, json\n"
           "Default: readable",
@@ -145,9 +145,11 @@ namespace black::frontend
           "If '-', reads from standard input.",
       (option("-e", "--expected") & value("result", cli::expected_result))
         % "expected result (useful in testing)",
+      (option("-i", "--initial-state") & value("state", cli::initial_state))
+        % "index of the initial state over which to evaluate the formula. "
+          "Default: 0",
       (option("-f", "--formula") & value("formula", cli::formula))
         % "formula against which to check the trace",
-      (option("-i", "--initial-state") & value("state", cli::initial_state)),
       value("file", cli::filename).required(false)
         % "formula file against which to check the trace"
     ) | "DIMACS mode: " % (
