@@ -147,6 +147,7 @@ namespace black::frontend
         % "expected result (useful in testing)",
       (option("-f", "--formula") & value("formula", cli::formula))
         % "formula against which to check the trace",
+      (option("-i", "--initial-state") & value("state", cli::initial_state)),
       value("file", cli::filename).required(false)
         % "formula file against which to check the trace"
     ) | "DIMACS mode: " % (

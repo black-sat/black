@@ -33,6 +33,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 
 #include <nlohmann/json.hpp>
 
@@ -40,70 +41,71 @@ using json = nlohmann::json;
 
 namespace black::frontend 
 {
+  using state_t = std::map<std::string, black::tribool>;
+
   struct trace_t {
     std::optional<std::string> result;
     size_t loop = 0;
-    std::vector<std::map<std::string, black::tribool>> states;
+    std::vector<state_t> states;
   };
 
   static bool check(trace_t, formula, size_t);
+
+  static
+  std::optional<state_t> state_at(trace_t trace, size_t t) {
+    if(t < trace.loop)
+      return trace.states[t];
+    
+    size_t period = trace.states.size() - trace.loop;
+
+    if(period)
+      return trace.states[((t - trace.loop) % period) + trace.loop];
+    
+    if(t >= trace.states.size())
+      return {}; 
+
+    return trace.states[t];
+  }
 
   static
   bool check_atom(trace_t trace, atom a, size_t t) {
     black_assert(a.label<std::string>().has_value());
     std::string p = *a.label<std::string>();
 
-    auto state = trace.states[t];
-    auto it = state.find(p);
-    if(it == state.end())
+    std::optional<state_t> state = state_at(trace, t);
+    
+    // all the states at the end of a non-looping model are
+    // full of don't cares so we return true
+    if(!state.has_value())
+      return true;
+      
+    auto it = state->find(p);
+    if(it == state->end())
       return true;
     
     black::tribool value = it->second;
     if(value == true || value == black::tribool::undef)
       return true;
+
     return false;
   }
 
   static
-  bool check_tomorrow(trace_t trace, tomorrow x, size_t t) {
-    if(t < trace.states.size() - 1)
-      return check(trace, x.operand(), t + 1);
-    
-    if(t >= trace.loop)
-      return check(trace, x.operand(), trace.loop);
-
-    return true;
+  std::optional<size_t>
+  check_one(trace_t trace, formula f, size_t begin, size_t end) {
+    io::message("check_one(trace, {}, {}, {})", to_string(f), begin, end);
+    for(size_t i = begin; i < end; ++i) {
+      if(check(trace, f, i))
+        return i;
+    }
+    return {};
   }
-
-  // static
-  // bool check_yesterday(trace_t trace, yesterday y, size_t t) {
-  //   if(t == 0)
-  //     return false;
-    
-  //   if(t == trace.loop)
-  //     return check(trace, y.operand(), t - 1) || 
-  //             check(trace, y.operand(), trace.states.size() - 1);
-    
-  //   return check(trace, y.operand(), t - 1);
-  // }
-
-  // static 
-  // bool check_w_yesterday(trace_t trace, w_yesterday z, size_t t) {
-  //   if(t == 0)
-  //     return true;
-    
-  //   if(t == trace.loop)
-  //     return check(trace, z.operand(), t - 1) || 
-  //             check(trace, z.operand(), trace.states.size() - 1);
-    
-  //   return check(trace, z.operand(), t - 1);
-  // }
 
   static
   std::optional<size_t>
-  check_one(trace_t trace, formula f, size_t begin, size_t end) {
-    for(size_t i = begin; i < end; ++i) {
-      if(check(trace, f, i))
+  check_one_reverse(trace_t trace, formula f, ssize_t begin, ssize_t end) {
+    for(ssize_t i = begin; i >= end; --i) {
+      if(check(trace, f, (size_t)i))
         return i;
     }
     return {};
@@ -119,49 +121,85 @@ namespace black::frontend
   }
 
   static
+  size_t depth(formula f) {
+    static std::unordered_map<formula, size_t> memo;
+    if(auto it = memo.find(f); it != memo.end())
+      return it->second;
+
+    size_t result = f.match(
+      [](boolean) -> size_t { return 1; },
+      [](atom) -> size_t { return 1; },
+      [](unary, formula op) {
+        return 1 + depth(op);
+      },
+      [](binary, formula l, formula r) {
+        return 1 + std::max(depth(l), depth(r));
+      }
+    );
+
+    memo.insert({f, result});
+    return result;
+  }
+
+  static
   bool check_until(trace_t trace, until u, size_t t) {
     formula l = u.left();
     formula r = u.right();
 
+    size_t period = trace.states.size() - trace.loop;
+    size_t d = depth(u);
+    black_assert(d >= 1);
+
+    size_t end = t + (period * (d + 1)) + 1;
+
     // search for 'r'
-    std::optional<size_t> rindex = check_one(trace, r, t, trace.states.size());
+    std::optional<size_t> rindex = check_one(trace, r, t, end);
     
-    // if we didn't find 'r' and we are inside the loop, continue from
-    // the beginning of the loop
     if(!rindex.has_value())
-      rindex = check_one(trace, r, trace.loop, t);
+      return false; // we didn't find 'r', the formula is false
+
+    // check 'l' in all positions until 'r'
+    return check_for_all(trace, l, t, *rindex);
+  }
+
+  static
+  bool check_since(trace_t trace, since s, size_t t) {
+    formula l = s.left();
+    formula r = s.right();
+    
+    // search for 'r'
+    std::optional<size_t> rindex = check_one_reverse(trace, r, (ssize_t)t, 0);
 
     if(!rindex.has_value())
       return false; // we didn't find 'r', the formula is false
 
     // check 'l' in all positions until 'r'
-    if(*rindex >= t) 
-      return check_for_all(trace, l, t, *rindex);
-    else
-      return check_for_all(trace, l, t, trace.states.size()) &&
-             check_for_all(trace, l, trace.loop, *rindex);
+    return check_for_all(trace, l, *rindex + 1, t + 1);
   }
 
   static
   bool check(trace_t trace, formula f, size_t t) {
-    return f.match(
+    bool result = f.match(
       [](boolean b) {
         return b.value();
       },
       [&](atom a) {
         return check_atom(trace, a, t);
       },
-      [&](tomorrow x) {
-        return check_tomorrow(trace, x, t);
+      [&](tomorrow, formula op) {
+        return check(trace, op, t + 1);
       },
-      // [&](yesterday y) {
-      //   return check_yesterday(trace, y, t);
-      // },
-      // [&](w_yesterday z) {
-      //   return check_w_yesterday(trace, z, t);
-      // },
+      [&](yesterday, formula op) {
+        return t > 0 && check(trace, op, t - 1);
+      },
+      [&](w_yesterday, formula op) {
+        return t == 0 || check(trace, op, t - 1);
+      },
       [&](until u) {
         return check_until(trace, u, t);
+      },
+      [&](since s) {
+        return check_since(trace, s, t);
       },
       [&](negation, formula op) {
         return !check(trace, op, t);
@@ -187,18 +225,28 @@ namespace black::frontend
       [&](release, formula l, formula r) {
         return check(trace, G(r) || U(r, l && r), t);
       },
-      [](past) -> bool { 
-        io::fatal(
-          status_code::syntax_error, 
-          "trace checking is not available for LTL+Past formulas"
-        );
+      [&](once, formula op) {
+        return check(trace, S(op.alphabet()->top(), op), t);
+      },
+      [&](historically, formula op) {
+        return check(trace, !P(!op), t);
+      },
+      [&](triggered, formula l, formula r) {
+        return check(trace, H(r) || S(r, l && r), t);
       }
     );
+
+    io::message("check(trace, {}, {}) = {}", to_string(f), t, result);
+    return result;
   }
 
   static
   int check(trace_t trace, formula f) {
-    bool result = check(trace, f, 0);
+    size_t initial_state = 0;
+    if(cli::initial_state)
+      initial_state = *cli::initial_state;
+
+    bool result = check(trace, f, initial_state);
     if(result)
       io::message("SATISFIED");
     else {
@@ -259,6 +307,14 @@ namespace black::frontend
         io::fatal(
           status_code::syntax_error, 
           "{}: \"size\" field and effective model size disagree",
+          path
+        );
+      }
+
+      if(trace.loop > trace.states.size()) {
+        io::fatal(
+          status_code::syntax_error, 
+          "{}: \"loop\" field greater than model size",
           path
         );
       }
