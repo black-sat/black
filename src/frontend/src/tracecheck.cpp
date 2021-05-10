@@ -160,7 +160,7 @@ namespace black::frontend
     size_t d = depth(u);
     black_assert(d >= 1);
 
-    size_t end = std::max(t, trace.states.size()) + (period * (d + 1)) + 1;
+    size_t end = std::max(t, trace.states.size()) + period + (period * d);
 
     // search for 'r'
     std::optional<size_t> rindex = check_one(trace, r, t, end);
