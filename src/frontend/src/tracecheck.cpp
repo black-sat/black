@@ -103,8 +103,8 @@ namespace black::frontend
 
   static
   std::optional<size_t>
-  check_one_reverse(trace_t trace, formula f, ssize_t begin, ssize_t end) {
-    for(ssize_t i = begin; i >= end; --i) {
+  check_one_reverse(trace_t trace, formula f, size_t begin, size_t end) {
+    for(size_t i = begin; i-- > end;) {
       if(check(trace, f, (size_t)i))
         return i;
     }
@@ -178,7 +178,7 @@ namespace black::frontend
     formula r = s.right();
     
     // search for 'r'
-    std::optional<size_t> rindex = check_one_reverse(trace, r, (ssize_t)t, 0);
+    std::optional<size_t> rindex = check_one_reverse(trace, r, t, 0);
 
     if(!rindex.has_value())
       return false; // we didn't find 'r', the formula is false
