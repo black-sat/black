@@ -41,6 +41,7 @@ using json = nlohmann::json;
 namespace black::frontend 
 {
   struct trace_t {
+    std::optional<std::string> result;
     size_t loop = 0;
     std::vector<std::map<std::string, black::tribool>> states;
   };
@@ -217,23 +218,14 @@ namespace black::frontend
     try {
       j = json::parse(file);
 
-      std::string result = j["result"];
-
-      if(cli::expected_result && result != *cli::expected_result) {
-        io::message("MISMATCH");
-        quit(status_code::failed_check);
-      }
-
-      if(result != "SAT") {
-        io::message("MATCH");
-        quit(status_code::success);
-      }
+      trace_t trace;
+      if(!j["result"].is_null())
+        trace.result = j["result"];
 
       json model = j["model"];
-      if(result == "SAT" && model.is_null())
-        io::fatal(status_code::syntax_error, "{}: missing model", path);
+      if(model.is_null())
+        return trace;
 
-      trace_t trace;
       trace.loop = model["loop"];
       
       if(model["states"].size() == 0)
@@ -291,6 +283,18 @@ namespace black::frontend
       *black::parse_formula(sigma, file, formula_syntax_error_handler(path));
 
     trace_t trace = parse_trace(tracepath, tracefile);
+
+    if(cli::expected_result) {
+      if(trace.result != *cli::expected_result) {
+        io::message("MISMATCH");
+        quit(status_code::failed_check);
+      }
+    }
+
+    if((!trace.result || trace.result != "SAT") && trace.states.size() == 0) {
+      io::message("MATCH");
+      quit(status_code::success);
+    }
 
     return check(trace, f);
   }

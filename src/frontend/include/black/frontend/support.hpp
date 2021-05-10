@@ -29,6 +29,7 @@
 #include <type_traits>
 #include <cstdio>
 #include <cstring>
+#include <functional>
 
 namespace black::frontend
 {
