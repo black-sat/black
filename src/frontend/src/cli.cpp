@@ -79,7 +79,7 @@ namespace black::frontend
   static void print_help(Cli cli) {
     auto fmt = clipp::doc_formatting{}
          .first_column(3)
-         .doc_column(30)
+         .doc_column(35)
          .last_column(79);
 
     io::message("");
@@ -116,7 +116,8 @@ namespace black::frontend
     bool version = false;
     bool show_backends = false;
 
-    auto cli = (
+    auto cli = "solving mode: " % (
+      command("solve"),
       (option("-k", "--bound") & integer("bound", cli::bound))
         % "maximum bound for BMC procedures",
       (option("-B", "--sat-backend") 
@@ -125,9 +126,9 @@ namespace black::frontend
       option("--remove-past").set(cli::remove_past)
         % "translate LTL+Past formulas into LTL before checking satisfiability",
       option("-m", "--model").set(cli::print_model)
-        % "print the model of the formula, when it exists",
+        % "print the model of the formula, if any",
       (option("-o", "--output-format") 
-        & value(is_output_format, "format", cli::output_format))
+        & value(is_output_format, "fmt", cli::output_format))
         % "Output format.\n"
           "Accepted formats: readable, json\n"
           "Default: readable",
@@ -136,17 +137,33 @@ namespace black::frontend
       value("file", cli::filename).required(false)
           % "input formula file name.\n"
             "If '-', reads from standard input."
-    ) | (
-      (option("--dimacs").set(cli::dimacs) & value("file", cli::filename))
-        % "treat the input file as a DIMACS file and show the output in "
-          "DIMACS format",
-      option("-B", "--sat-backend") 
-        & value(is_backend, "backend", cli::sat_backend)
-    ) | option("--sat-backends").set(show_backends) 
+    ) |
+    "trace checking mode: " % (
+      command("check").set(cli::trace_checking), 
+      (required("-t","--trace") & value("trace", cli::trace))
+        % "trace file to check against the formula.\n"
+          "If '-', reads from standard input.",
+      (option("-e", "--expected") & value("result", cli::expected_result))
+        % "expected result (useful in testing)",
+      (option("-i", "--initial-state") & value("state", cli::initial_state))
+        % "index of the initial state over which to evaluate the formula. "
+          "Default: 0",
+      (option("-f", "--formula") & value("formula", cli::formula))
+        % "formula against which to check the trace",
+      value("file", cli::filename).required(false)
+        % "formula file against which to check the trace"
+    ) | "DIMACS mode: " % (
+      command("dimacs").set(cli::dimacs),
+      (option("-B", "--sat-backend")
+        & value(is_backend, "backend", cli::sat_backend))
+        % "select the SAT backend to use",
+      value("file", cli::filename)
+        % "DIMACS file to solve"
+    ) | command("--sat-backends").set(show_backends) 
           % "print the list of available SAT backends"
-      | option("-v", "--version").set(version)
+      | command("-v", "--version").set(version)
           % "show version and license information"
-      | option("-h", "--help").set(help) % "print this help message";
+      | command("-h", "--help").set(help) % "print this help message";
 
     cli::command_name = argv[0];
 

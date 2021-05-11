@@ -1,3 +1,3 @@
 #!/bin/bash
 
-black -B z3 --remove-past "$1"
+black solve -B z3 --remove-past "$1"

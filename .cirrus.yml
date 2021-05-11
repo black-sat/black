@@ -40,7 +40,7 @@ task:
     - make
   test_script:
     - cd build
-    - ctest -j2 -R black
+    - ctest -j2 -R black --output-on-failure
   coverage_script:
     - cd build
     - bash <(curl -s https://codecov.io/bash);
@@ -51,7 +51,7 @@ task:
   osx_instance:
     image: catalina-base
   download_dependencies_script:
-    - brew install cmake fmt catch2 z3 cryptominisat
+    - brew install cmake fmt catch2 z3 cryptominisat nlohmann-json
     - brew install black-sat/black/hopscotch-map
     - ./download-mathsat.sh
   debug_build_script:
@@ -60,7 +60,7 @@ task:
     - make
   test_script:
     - cd build 
-    - ctest -j2 -R black
+    - ctest -j2 -R black --output-on-failure
 
 task:
   matrix:

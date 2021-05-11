@@ -21,39 +21,76 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/frontend/output.hpp>
+#include <black/frontend/solve.hpp>
+
 #include <black/frontend/io.hpp>
 #include <black/frontend/cli.hpp>
+#include <black/frontend/support.hpp>
 
+#include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/past_remover.hpp>
+#include <black/solver/solver.hpp>
+
+#include <sstream>
 
 namespace black::frontend {
 
-  std::function<void(std::string)> 
-  syntax_error_handler(std::optional<std::string> path)
+  void output(tribool result, solver &solver, formula f);
+  
+  int solve(std::optional<std::string> const&path, std::istream &file);
+
+  int solve() {
+    if(!cli::filename && !cli::formula) {
+      command_line_error("please specify a filename or the --formula option");
+      quit(status_code::command_line_error);
+    }
+
+    if(cli::filename && cli::formula) {
+      command_line_error(
+        "please specify only either a filename or the --formula option"
+      );
+      quit(status_code::command_line_error);
+    }
+
+    if(cli::formula) {
+      std::istringstream str{*cli::formula};
+      return solve(std::nullopt, str);
+    }
+
+    if(*cli::filename == "-")
+      return solve(std::nullopt, std::cin);
+
+    std::ifstream file = open_file(*cli::filename);
+    return solve(cli::filename, file);
+  }
+
+  int solve(std::optional<std::string> const&path, std::istream &file)
   {
-    auto readable_syntax_error = [&path](auto error) {
-      io::fatal(status_code::syntax_error, 
-                "syntax error: {}: {}\n", 
-                path ? *path : "<stdin>", error);
-    };
+    black::alphabet sigma;
 
-    auto json_syntax_error = [](auto error) {
-      io::error(
-        "{{\n"
-        "    \"result\": \"ERROR\",\n"
-        "    \"error\": \"{}\"\n"
-        "}}", error);
-      quit(status_code::syntax_error);
-    };
+    std::optional<black::formula> f =
+      black::parse_formula(sigma, file, formula_syntax_error_handler(path));
 
-    std::function<void(std::string)> handler;
-    if(!cli::output_format || cli::output_format == "readable")
-      return readable_syntax_error;
-    else  
-      return json_syntax_error;
-    
-    black_unreachable();
+    black_assert(f.has_value());
+
+    black::solver slv{sigma};
+
+    if (cli::sat_backend)
+      slv.set_sat_backend(*cli::sat_backend);
+
+    if (cli::remove_past)
+      slv.assert_formula(black::remove_past(*f));
+    else
+      slv.assert_formula(*f);
+
+    size_t bound = 
+      cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
+    black::tribool res = slv.solve(bound);
+
+    output(res, slv, *f);
+
+    return 0;
   }
 
   static 
@@ -94,16 +131,13 @@ namespace black::frontend {
     if(!cli::print_model)
       return;
 
-    if(solver.model()->loop().has_value())
-      io::message("Model:", solver.model()->size());
-    else
-      io::message("Finite model:", solver.model()->size());
+    io::message("Model:", solver.model()->size());
 
     std::unordered_set<atom> atoms;
     relevant_atoms(f, atoms);
     
     size_t size = solver.model()->size();
-    size_t width = static_cast<size_t>(log10(size)) + 1;
+    size_t width = static_cast<size_t>(log10((double)size)) + 1;
     for(size_t t = 0; t < size; ++t) {
       io::print(verbosity::message, "- t = {:>{}}: {{", t, width);
       bool first = true;
@@ -136,7 +170,7 @@ namespace black::frontend {
 
     io::message("    \"k\": {}{}", 
       solver.last_bound(),
-      cli::print_model ? "," : ""
+      cli::print_model && result == true ? "," : ""
     );
 
     if(result == true && cli::print_model) {
@@ -147,7 +181,7 @@ namespace black::frontend {
       io::message("    \"model\": {{");
       io::message("        \"size\": {},", model->size());
       if(model->loop())
-        io::message("        \"loop\": {},", *model->loop());
+        io::message("        \"loop\": {},", model->loop());
 
       io::message("        \"states\": [");
 

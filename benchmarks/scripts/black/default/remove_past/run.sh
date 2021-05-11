@@ -1,3 +1,3 @@
 #!/bin/bash
 
-black --remove-past "$1"
+black solve --remove-past "$1"

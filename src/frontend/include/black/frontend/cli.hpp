@@ -56,6 +56,7 @@ namespace black::frontend
     command_line_error = 2, // command line parsing errors
     filesystem_error = 3,   // errors related to file operations
     syntax_error = 4,       // syntax errors at logic level (formulas, etc.)
+    failed_check = 5,       // failed trace checking
   };
 
   //
@@ -92,6 +93,18 @@ namespace black::frontend
 
     // the input file is a DIMACS file
     inline bool dimacs = false;
+
+    // whether we are in trace checking mode
+    inline bool trace_checking = false;
+
+    // the input trace to be checked
+    inline std::string trace;
+
+    // the expected result when doing trace checking
+    inline std::optional<std::string> expected_result;
+
+    // initial state for the evaluation of the formula in trace checking mode
+    inline std::optional<size_t> initial_state;
 
     // verbosity level
     inline verbosity verbosity = verbosity::message;

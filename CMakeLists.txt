@@ -99,7 +99,7 @@ endif()
 ## Packaging
 ##
 set(CPACK_PACKAGE_NAME "black-sat")
-set(CPACK_PACKAGE_VENDOR "University of Udine, Italy")
+set(CPACK_PACKAGE_VENDOR "The BLACK team")
 set(CPACK_PACKAGE_CONTACT "Nicola Gigante <nicola.gigante@gmail.com>")
 set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})

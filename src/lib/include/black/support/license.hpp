@@ -29,10 +29,11 @@
 namespace black {
   inline std::string_view license =
 R"(
-BLACK - Bounded Ltl sAtisfiability ChecKer
+BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
 
-(C) 2019-2020 Luca Geatti
-    2019-2020 Nicola Gigante
+(C) 2019-2021 Luca Geatti
+    2019-2021 Nicola Gigante
+    2020      Gabriele Venturato
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal 

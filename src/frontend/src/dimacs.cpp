@@ -21,22 +21,46 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_FRONTEND_MODEL_HPP
-#define BLACK_FRONTEND_MODEL_HPP
+#include <black/frontend/cli.hpp>
+#include <black/frontend/io.hpp>
+#include <black/frontend/support.hpp>
+#include <black/frontend/dimacs.hpp>
 
-#include <black/logic/formula.hpp>
-#include <black/solver/solver.hpp>
+#include <black/sat/dimacs.hpp>
 
-#include <functional>
+#include <iostream>
 
-namespace black::frontend 
-{
+namespace black::frontend {
+  
+  static
+  int dimacs(std::optional<std::string> const&, std::istream &in) 
+  {
+    using namespace black::sat;
+    
+    std::optional<dimacs::problem> problem = 
+      dimacs::parse(in, [](std::string error) {
+        io::message("{}", error);
+        exit(1);
+      });
 
-  std::function<void(std::string)> 
-  syntax_error_handler(std::optional<std::string> path);
+    if(!problem) {
+      io::message("Parsing problem");
+      return (int)status_code::syntax_error;
+    }
 
-  void output(tribool result, black::solver &solver, black::formula f);
+    std::string backend = cli::sat_backend ? *cli::sat_backend : "z3";
+    std::optional<dimacs::solution> s = dimacs::solve(*problem, backend);
 
+    dimacs::print(std::cout, s);
+
+    return 0;
+  }
+
+  int dimacs() {
+    if(*cli::filename == "-")
+      return dimacs(std::nullopt, std::cin);
+
+    std::ifstream file = open_file(*cli::filename);
+    return dimacs(cli::filename, file);
+  }
 }
-
-#endif // BLACK_FRONTEND_MODEL_HPP
