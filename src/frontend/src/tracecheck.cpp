@@ -245,7 +245,7 @@ namespace black::frontend
 
     memo.insert({{f,t}, result});
 
-    io::message("check(trace, {}, {}) = {}", to_string(f), t, result);
+    //io::message("check(trace, {}, {}) = {}", to_string(f), t, result);
     return result;
   }
 
