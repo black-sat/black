@@ -107,10 +107,8 @@ foreach(TEST IN LISTS TESTS)
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
     COMMAND
       /bin/bash -c
-      "${CMAKE_SOURCE_DIR}/crash-wrap.sh \
-      $<TARGET_FILE:frontend> solve \
+      "$<TARGET_FILE:frontend> solve \
       -m -o json -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
-      ${CMAKE_SOURCE_DIR}/crash-wrap.sh \
       $<TARGET_FILE:frontend> check -t - -e ${RESULT} '${FILE}'"
   )
 
