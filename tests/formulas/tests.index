@@ -1290,7 +1290,6 @@ future_only/rozier/pattern/C1formula/C1formula90.pltl;SAT
 future_only/rozier/pattern/Eformula/Eformula1.pltl;SAT
 future_only/rozier/pattern/Eformula/Eformula10.pltl;SAT
 future_only/rozier/pattern/Eformula/Eformula100.pltl;SAT
-future_only/rozier/pattern/Eformula/Eformula1000.pltl;SAT
 future_only/rozier/pattern/Eformula/Eformula11.pltl;SAT
 future_only/rozier/pattern/Eformula/Eformula12.pltl;SAT
 future_only/rozier/pattern/Eformula/Eformula13.pltl;SAT
@@ -1450,7 +1449,6 @@ future_only/rozier/pattern/Sformula/Sformula80.pltl;SAT
 future_only/rozier/pattern/Sformula/Sformula800.pltl;SAT
 future_only/rozier/pattern/Sformula/Sformula9.pltl;SAT
 future_only/rozier/pattern/Sformula/Sformula90.pltl;SAT
-future_only/rozier/pattern/Sformula/Sformula900.pltl;SAT
 future_only/rozier/pattern/Uformula/Uformula10.pltl;SAT
 future_only/rozier/pattern/Uformula/Uformula100.pltl;SAT
 future_only/rozier/pattern/Uformula/Uformula11.pltl;SAT
@@ -3310,7 +3308,6 @@ past/random/random_formulas_dim100/random_formulas_dim100_29.pltl;SAT
 past/random/random_formulas_dim100/random_formulas_dim100_30.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_11.pltl;UNSAT
 past/random/random_formulas_dim200/random_formulas_dim200_12.pltl;UNSAT
-past/random/random_formulas_dim200/random_formulas_dim200_14.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_16.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_17.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_23.pltl;SAT
