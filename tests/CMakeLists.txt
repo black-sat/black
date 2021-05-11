@@ -108,7 +108,7 @@ foreach(TEST IN LISTS TESTS)
     COMMAND
       /bin/bash -c
       "$<TARGET_FILE:frontend> solve \
-      -m -o json -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
+      --remove-past -m -o json -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
       $<TARGET_FILE:frontend> check -t - -e ${RESULT} '${FILE}'"
   )
 
