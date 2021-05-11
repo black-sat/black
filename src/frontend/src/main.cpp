@@ -35,7 +35,7 @@ int main(int argc, char **argv)
   if(cli::dimacs)
     return dimacs();
   
-  if(cli::trace_check)
+  if(cli::trace_checking)
     return trace_check();
   
   return solve();

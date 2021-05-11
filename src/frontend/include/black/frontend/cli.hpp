@@ -94,8 +94,11 @@ namespace black::frontend
     // the input file is a DIMACS file
     inline bool dimacs = false;
 
-    // the input file is a trace to be checked
-    inline std::optional<std::string> trace_check;
+    // whether we are in trace checking mode
+    inline bool trace_checking = false;
+
+    // the input trace to be checked
+    inline std::string trace;
 
     // the expected result when doing trace checking
     inline std::optional<std::string> expected_result;

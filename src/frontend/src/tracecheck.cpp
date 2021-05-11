@@ -376,7 +376,7 @@ namespace black::frontend
       quit(status_code::command_line_error);
     }
 
-    if(*cli::filename == "-" && *cli::trace_check == "-") {
+    if(*cli::filename == "-" && cli::trace == "-") {
       command_line_error(
         "cannot read from stdin both the formula file and the trace file"
       );
@@ -386,25 +386,25 @@ namespace black::frontend
     if(cli::formula) {
       std::istringstream str{*cli::formula};
 
-      if(*cli::trace_check == "-")
+      if(cli::trace == "-")
         return trace_check(std::nullopt, str, std::nullopt, std::cin);
 
-      std::ifstream tracefile = open_file(*cli::trace_check);
-      return trace_check(std::nullopt, str, cli::trace_check, tracefile);
+      std::ifstream tracefile = open_file(cli::trace);
+      return trace_check(std::nullopt, str, cli::trace, tracefile);
     }
 
     if(*cli::filename == "-") {
-      std::ifstream tracefile = open_file(*cli::trace_check);
-      return trace_check(std::nullopt, std::cin, cli::trace_check, tracefile);
+      std::ifstream tracefile = open_file(cli::trace);
+      return trace_check(std::nullopt, std::cin, cli::trace, tracefile);
     }
 
-    if(*cli::trace_check == "-") {
+    if(cli::trace == "-") {
       std::ifstream file = open_file(*cli::filename);
       return trace_check(cli::filename, file, std::nullopt, std::cin);
     }
 
     std::ifstream file = open_file(*cli::filename);
-    std::ifstream tracefile = open_file(*cli::trace_check);
-    return trace_check(cli::filename, file, cli::trace_check, tracefile);
+    std::ifstream tracefile = open_file(cli::trace);
+    return trace_check(cli::filename, file, cli::trace, tracefile);
   }
 }

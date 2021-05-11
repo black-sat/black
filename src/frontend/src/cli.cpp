@@ -139,8 +139,8 @@ namespace black::frontend
             "If '-', reads from standard input."
     ) |
     "trace checking mode: " % (
-      command("check"), 
-      (required("-t","--trace") & value("trace", cli::trace_check))
+      command("check").set(cli::trace_checking), 
+      (required("-t","--trace") & value("trace", cli::trace))
         % "trace file to check against the formula.\n"
           "If '-', reads from standard input.",
       (option("-e", "--expected") & value("result", cli::expected_result))
