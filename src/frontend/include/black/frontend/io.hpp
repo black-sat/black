@@ -71,9 +71,6 @@ namespace black::frontend::io
   auto print(verbosity v, Args&&... args)
     -> std::void_t<decltype(fmt::print(std::forward<Args>(args)...))>
   {
-    if(v > cli::verbosity)
-      return;
-
     FILE *file = stream_for_verbosity(v);
 
     if(v == verbosity::fatal)

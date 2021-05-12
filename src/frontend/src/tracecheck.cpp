@@ -75,7 +75,7 @@ namespace black::frontend
     std::optional<state_t> state = state_at(trace, t);
     
     // all the states at the end of a non-looping model are
-    // full of don't cares so we return true
+    // full of don't cares so we return true (we may choose false as well)
     if(!state.has_value())
       return true;
       
@@ -243,9 +243,11 @@ namespace black::frontend
       }
     );
 
+    if(cli::verbose)
+      io::message("{} at t = {} is {}", to_string(f), t, result);
+
     memo.insert({{f,t}, result});
 
-    //io::message("check(trace, {}, {}) = {}", to_string(f), t, result);
     return result;
   }
 
@@ -257,9 +259,9 @@ namespace black::frontend
 
     bool result = check(trace, f, initial_state);
     if(result)
-      io::message("SATISFIED");
+      io::message("TRUE");
     else {
-      io::message("UNSATISFIED");
+      io::message("FALSE");
       quit(status_code::failed_check);
     }
     
