@@ -38,8 +38,9 @@ task:
     - mkdir build && cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ..
     - make
-  binaries_artifacts:
-    path: "build/*"
+  always:
+    binaries_artifacts:
+      path: "build/*"
   test_script:
     - cd build
     - ctest -j2 -R black --output-on-failure
