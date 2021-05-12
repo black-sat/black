@@ -40,7 +40,8 @@ task:
     - make
   always:
     binaries_artifacts:
-      path: "build/*"
+      path: "build/black"
+      path: "build/src/lib/libblack.so"
   test_script:
     - cd build
     - ctest -j2 -R black --output-on-failure
