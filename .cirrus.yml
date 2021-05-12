@@ -35,6 +35,8 @@ task:
           VERSION: 20.04
           GCC_VERSION: 10
   debug_build_script:
+    binaries_artifacts:
+      path: "build/*"
     - mkdir build && cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ..
     - make
