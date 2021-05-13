@@ -1,0 +1,13 @@
+{
+    "result": "SAT",
+    "k": 0,
+    "model": {
+        "size": 1,
+        "loop": 1,
+        "states": [
+            {
+                "p": "true"
+            }
+        ]
+    }
+}

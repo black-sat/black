@@ -74,7 +74,6 @@ if(Catch2_FOUND)
   add_test(
     NAME unit_tests 
     COMMAND "$<TARGET_FILE:unit_tests>"
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/units"
   )
 
   message(STATUS "Unit tests enabled")
@@ -83,6 +82,15 @@ else()
     "Catch2 missing. Unit tests disabled (correctness test suite still enabled)"
   )
 endif()
+
+#
+# CLI tests
+#
+add_test(
+  NAME "CLI" 
+  COMMAND ${CMAKE_SOURCE_DIR}/tests/cli-tests.sh 
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
 
 #
 # Formulas test set
