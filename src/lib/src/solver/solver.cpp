@@ -381,8 +381,8 @@ namespace black::internal
         return to_ground_snf(op,k) && ground(X(a), k);
       },
       [&,this](release r, formula left, formula right) {
-        return to_ground_snf(right,k) &&
-            (to_ground_snf(left,k) || ground(X(r), k));
+        return (to_ground_snf(left,k) && to_ground_snf(right,k)) ||
+            (to_ground_snf(right,k) && ground(X(r), k));
       },
       [&,this](since s, formula left, formula right) {
         return to_ground_snf(right,k) ||
