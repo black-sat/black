@@ -428,7 +428,7 @@ namespace black::internal
       case unary::type::historically:
         return unary::type::once;
     }
-    black_unreachable();
+    black_unreachable(); // LCOV_EXCL_LINE
   }
 
   static constexpr binary::type dual(binary::type t)
@@ -448,9 +448,9 @@ namespace black::internal
         return binary::type::since;
       case binary::type::iff:
       case binary::type::implication:
-        black_unreachable(); // these two operators do not have simple duals
+        black_unreachable(); // LCOV_EXCL_LINE
     }
-    black_unreachable();
+    black_unreachable(); // LCOV_EXCL_LINE
   }
 
   atom solver::_solver_t::ground(formula f, size_t k) {

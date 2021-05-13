@@ -33,13 +33,18 @@ TEST_CASE("Testing solver")
   alphabet sigma;
   black::solver slv{sigma};
 
-  SECTION("SAT formula") {
+  SECTION("Basic solver usage") {
+    REQUIRE(slv.sat_backend() == "z3");
+    
     auto p = sigma.var("p");
     
-    formula f = !p && !X(p) && FG(p);
+    formula f = !p && iff(!X(p), FG(p)) && implies(p, !p);
 
     slv.assert_formula(f);
 
-    REQUIRE(slv.solve());
+    REQUIRE(!slv.solve());
+
+    auto model = slv.model();
+    REQUIRE(!model.has_value());
   }
 }

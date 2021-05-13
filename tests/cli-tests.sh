@@ -113,3 +113,16 @@ fi
 cat <<END | should_fail ./black dimacs -
 p cnf
 END
+
+cat <<END | should_fail ./black dimacs -
+c missing header
+1 2 3 0
+END
+
+cat <<END | should_fail ./black dimacs -
+p cnf 1 3
+1 2 3 
+END
+
+cat <<END | should_fail ./black dimacs -
+END

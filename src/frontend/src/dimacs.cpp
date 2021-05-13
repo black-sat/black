@@ -37,11 +37,15 @@ namespace black::frontend {
   {
     using namespace black::sat;
     
+    bool error = false;
     std::optional<dimacs::problem> problem = 
-      dimacs::parse(in, [](std::string error) {
-        io::message("{}: {}", cli::command_name, error);
-        quit(status_code::syntax_error);
+      dimacs::parse(in, [&](std::string str) {
+        io::message("{}: {}", cli::command_name, str);
+        error = true;
       });
+    
+    if(error)
+      quit(status_code::syntax_error);
 
     black_assert(problem.has_value());
 
