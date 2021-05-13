@@ -55,7 +55,6 @@ if(Catch2_FOUND)
   set(
     UNIT_TESTS
     units/cnf.cpp
-    units/hash.cpp
     units/formula.cpp
     units/main.cpp
     units/match.cpp
@@ -72,7 +71,11 @@ if(Catch2_FOUND)
   target_code_coverage(unit_tests)
   add_sanitizers(unit_tests)
 
-  add_test(NAME unit_tests COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
+  add_test(
+    NAME unit_tests 
+    COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests"
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
 
   message(STATUS "Unit tests enabled")
 else()

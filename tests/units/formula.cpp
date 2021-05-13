@@ -68,6 +68,7 @@ TEST_CASE("Handles")
   REQUIRE(ftop != fbottom);
 
   SECTION("Formula casting and type checking") {
+    REQUIRE(ftop.formula_type() == formula::type::boolean);
     REQUIRE(ftop.is<boolean>());
     REQUIRE(fbottom.is<boolean>());
     REQUIRE(fp.is<atom>());
