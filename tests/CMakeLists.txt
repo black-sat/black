@@ -55,13 +55,13 @@ if(Catch2_FOUND)
   set(
     UNIT_TESTS
     units/cnf.cpp
-    units/hash.cpp
     units/formula.cpp
     units/main.cpp
     units/match.cpp
     units/parser.cpp
     units/solver.cpp
     units/past_remover.cpp
+    units/support.cpp
   )
 
   add_executable(unit_tests ${UNIT_TESTS})
@@ -71,7 +71,14 @@ if(Catch2_FOUND)
   target_code_coverage(unit_tests)
   add_sanitizers(unit_tests)
 
-  add_test(NAME unit_tests COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
+  add_test(
+    NAME unit_tests 
+    COMMAND "$<TARGET_FILE:unit_tests>"
+  )
+
+  set_property(
+    TARGET unit_tests PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+  )
 
   message(STATUS "Unit tests enabled")
 else()
@@ -79,6 +86,15 @@ else()
     "Catch2 missing. Unit tests disabled (correctness test suite still enabled)"
   )
 endif()
+
+#
+# CLI tests
+#
+add_test(
+  NAME "CLI" 
+  COMMAND ${CMAKE_SOURCE_DIR}/tests/cli-tests.sh 
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
 
 #
 # Formulas test set

@@ -98,7 +98,7 @@ namespace black::sat::dimacs::internal
       return std::nullopt;
     }
 
-    return literal{ 
+    return literal{ // LCOV_EXCL_LINE
       /*sign=*/ (v >= 0), 
       /*var=*/  static_cast<uint32_t>(abs(v))
     };
@@ -151,24 +151,24 @@ namespace black::sat::dimacs::internal
     return fmt::format("{}{}", l.sign ? "" : "-", l.var);
   }
 
-  void print(std::ostream &out, problem p) {
-    out << fmt::format("c BLACK v{}\n", black::version);
+  // void print(std::ostream &out, problem p) {
+  //   out << fmt::format("c BLACK v{}\n", black::version);
 
-    size_t nclauses = p.clauses.size();
-    uint32_t nvars = 0;
-    for(dimacs::clause c : p.clauses)
-      for(dimacs::literal l : c.literals)
-        nvars = l.var > nvars ? l.var : nvars;
+  //   size_t nclauses = p.clauses.size();
+  //   uint32_t nvars = 0;
+  //   for(dimacs::clause c : p.clauses)
+  //     for(dimacs::literal l : c.literals)
+  //       nvars = l.var > nvars ? l.var : nvars;
 
-    out << fmt::format("p cnf {} {}\n", nvars, nclauses);
+  //   out << fmt::format("p cnf {} {}\n", nvars, nclauses);
 
-    for(dimacs::clause c : p.clauses) {
-      for(dimacs::literal l : c.literals) {
-        out << to_string(l) << ' ';
-      }
-      out << "0\n";
-    }
-  }
+  //   for(dimacs::clause c : p.clauses) {
+  //     for(dimacs::literal l : c.literals) {
+  //       out << to_string(l) << ' ';
+  //     }
+  //     out << "0\n";
+  //   }
+  // }
 
   void print(std::ostream &out, std::optional<solution> const& s) {
     out << fmt::format("c BLACK v{}\n", black::version);
@@ -183,9 +183,10 @@ namespace black::sat::dimacs::internal
     out << "v ";
     int i = 0;
     for(dimacs::literal l : s->assignments) {
-      if(i % 4)
+      if(i % 4 == 0)
         out << "\nv ";
       out << to_string(l) << ' ';
+      ++i;
     }
     out << '\n';
   }

@@ -25,6 +25,7 @@
 
 #include <black/support/meta.hpp>
 #include <black/support/hash.hpp>
+#include <black/support/tribool.hpp>
 
 #include <string>
 #include <tuple>
@@ -32,18 +33,35 @@
 #include <vector>
 #include <cstring>
 
-//
-// Static checks before any actual test case
-//
+TEST_CASE("Testing black::tribool")
+{
+  black::tribool tb1 = black::tribool::undef;
+  black::tribool tb2 = true;
+  black::tribool tb3 = false;
+  
+  SECTION("Equalities") {
+    REQUIRE(tb1 == tb1);
+    REQUIRE(tb1 != tb2);
+    REQUIRE(tb1 != tb3);
 
-// Consistency of enums
-namespace static_checks {
+    REQUIRE(tb1 != true);
+    REQUIRE(true != tb1);
+    REQUIRE(tb1 != false);
+    REQUIRE(false != tb1);
 
+    REQUIRE(tb2 == true);
+    REQUIRE(tb2 != false);
+    REQUIRE(tb3 == false);
+    REQUIRE(tb3 != true);
+  }
+
+  SECTION("operator!") {
+    REQUIRE(!tb1);
+    REQUIRE(tb2);
+    REQUIRE(!tb3);
+  }
 }
 
-//
-// Test cases
-//
 TEST_CASE("Hashing functions for tuples")
 {
   using key_type = std::tuple<int, char, char>;
@@ -83,8 +101,10 @@ TEST_CASE("any_hashable class")
     REQUIRE(any_hash(h) == int_hash(i));
 
     std::optional opt = h.to<int>();
+    std::optional c = h.to<char>();
 
     REQUIRE(opt.has_value());
+    REQUIRE(!c.has_value());
     REQUIRE(*opt == 42);
 
     h = &i; // reassign with different type

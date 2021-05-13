@@ -37,16 +37,17 @@ namespace black::frontend {
   {
     using namespace black::sat;
     
+    bool error = false;
     std::optional<dimacs::problem> problem = 
-      dimacs::parse(in, [](std::string error) {
-        io::message("{}", error);
-        exit(1);
+      dimacs::parse(in, [&](std::string str) {
+        io::message("{}: {}", cli::command_name, str);
+        error = true;
       });
+    
+    if(error)
+      quit(status_code::syntax_error);
 
-    if(!problem) {
-      io::message("Parsing problem");
-      return (int)status_code::syntax_error;
-    }
+    black_assert(problem.has_value());
 
     std::string backend = cli::sat_backend ? *cli::sat_backend : "z3";
     std::optional<dimacs::solution> s = dimacs::solve(*problem, backend);
