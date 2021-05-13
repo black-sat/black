@@ -389,8 +389,8 @@ namespace black::internal
             (to_ground_snf(left,k) && ground(Y(s), k));
       },
       [&,this](triggered t, formula left, formula right) {
-        return to_ground_snf(right,k) &&
-            (to_ground_snf(left,k) || ground(Z(t), k));
+        return (to_ground_snf(left,k) && to_ground_snf(right,k) ) ||
+            (to_ground_snf(right,k) && ground(Z(t), k));
       },
       [&,this](once o, formula op) {
         return to_ground_snf(op,k) || ground(Y(o), k);
