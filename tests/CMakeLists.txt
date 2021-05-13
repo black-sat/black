@@ -76,6 +76,10 @@ if(Catch2_FOUND)
     COMMAND "$<TARGET_FILE:unit_tests>"
   )
 
+  set_property(
+    TARGET unit_tests PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+  )
+
   message(STATUS "Unit tests enabled")
 else()
   message(STATUS
