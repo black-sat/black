@@ -46,7 +46,7 @@ TEST_CASE("Handles")
   atom ftwo = sigma.var(42);
 
   SECTION("Basic booleans and atoms allocation") {
-    REQUIRE(!top.value());
+    REQUIRE(top.value());
     REQUIRE(!bottom.value());
     REQUIRE(p.label<std::string>().value() == "p");
     REQUIRE(q.label<std::string>().value() == "q");
