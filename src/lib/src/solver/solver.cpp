@@ -307,11 +307,19 @@ namespace black::internal
       return iff( ground(xyz_req, l), ground(xyz_req, k) );
     };
 
+    auto close_loop = [&](auto req) {
+      formula op = req.operand();
+      return iff(ground(req, l+1), to_ground_snf(op, k));
+    };
+
     formula x = big_and(sigma, xrequests, make_loop);
     formula y = big_and(sigma, yrequests, make_loop);
     formula z = big_and(sigma, zrequests, make_loop);
 
-    return x && y && z;
+    formula yy = big_and(sigma, yrequests, close_loop);
+    formula zz = big_and(sigma, zrequests, close_loop);
+
+    return x && y && z && yy && zz;
   }
 
 
@@ -381,16 +389,16 @@ namespace black::internal
         return to_ground_snf(op,k) && ground(X(a), k);
       },
       [&,this](release r, formula left, formula right) {
-        return to_ground_snf(right,k) &&
-            (to_ground_snf(left,k) || ground(X(r), k));
+        return (to_ground_snf(left,k) && to_ground_snf(right,k)) ||
+            (to_ground_snf(right,k) && ground(X(r), k));
       },
       [&,this](since s, formula left, formula right) {
         return to_ground_snf(right,k) ||
             (to_ground_snf(left,k) && ground(Y(s), k));
       },
       [&,this](triggered t, formula left, formula right) {
-        return to_ground_snf(right,k) &&
-            (to_ground_snf(left,k) || ground(Z(t), k));
+        return (to_ground_snf(left,k) && to_ground_snf(right,k) ) ||
+            (to_ground_snf(right,k) && ground(Z(t), k));
       },
       [&,this](once o, formula op) {
         return to_ground_snf(op,k) || ground(Y(o), k);

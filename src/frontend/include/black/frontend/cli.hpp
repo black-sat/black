@@ -106,8 +106,8 @@ namespace black::frontend
     // initial state for the evaluation of the formula in trace checking mode
     inline std::optional<size_t> initial_state;
 
-    // verbosity level
-    inline verbosity verbosity = verbosity::message;
+    // verbose output
+    inline bool verbose = false;
 
     // output format
     inline std::optional<std::string> output_format;

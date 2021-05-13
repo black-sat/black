@@ -148,6 +148,8 @@ namespace black::frontend
       (option("-i", "--initial-state") & value("state", cli::initial_state))
         % "index of the initial state over which to evaluate the formula. "
           "Default: 0",
+      (option("--verbose").set(cli::verbose))
+        % "output a verbose log",
       (option("-f", "--formula") & value("formula", cli::formula))
         % "formula against which to check the trace",
       value("file", cli::filename).required(false)

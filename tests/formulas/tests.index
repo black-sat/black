@@ -3213,8 +3213,6 @@ future_only/rozier/formulas/n2/P0.95/L100/P0.95N2L100_6.pltl;SAT
 future_only/rozier/formulas/n2/P0.95/L100/P0.95N2L100_7.pltl;SAT
 future_only/rozier/formulas/n2/P0.95/L100/P0.95N2L100_8.pltl;SAT
 future_only/rozier/formulas/n2/P0.95/L100/P0.95N2L100_9.pltl;SAT
-future_only/regressions/iff.pltl;UNSAT
-future_only/regressions/iff2.pltl;UNSAT
 past/crscounter/crscounter_N8/crscounter_N8_i0.pltl;SAT
 past/crscounter/crscounter_N8/crscounter_N8_i1.pltl;SAT
 past/crscounter/crscounter_N8/crscounter_N8_i5.pltl;UNSAT
@@ -3308,9 +3306,13 @@ past/random/random_formulas_dim100/random_formulas_dim100_29.pltl;SAT
 past/random/random_formulas_dim100/random_formulas_dim100_30.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_11.pltl;UNSAT
 past/random/random_formulas_dim200/random_formulas_dim200_12.pltl;UNSAT
+past/random/random_formulas_dim200/random_formulas_dim200_14.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_16.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_17.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_23.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_24.pltl;SAT
 past/random/random_formulas_dim200/random_formulas_dim200_30.pltl;SAT
-future_only/regressions/github_29.pltl;UNSAT
+regressions/github_29.pltl;UNSAT
+regressions/iff.pltl;UNSAT
+regressions/iff2.pltl;UNSAT
+regressions/yrequests.pltl;SAT
