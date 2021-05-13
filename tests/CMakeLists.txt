@@ -62,6 +62,7 @@ if(Catch2_FOUND)
     units/parser.cpp
     units/solver.cpp
     units/past_remover.cpp
+    units/support.cpp
   )
 
   add_executable(unit_tests ${UNIT_TESTS})

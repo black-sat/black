@@ -65,7 +65,7 @@ namespace black::internal
     }
     
     explicit operator bool() const { return _value == _true; }
-    bool operator !() const { return _value == _false; }
+    bool operator !() const { return _value != _true; }
 
 
   private:
