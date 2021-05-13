@@ -73,8 +73,8 @@ if(Catch2_FOUND)
 
   add_test(
     NAME unit_tests 
-    COMMAND "${CMAKE_CURRENT_BINARY_DIR}/unit_tests"
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    COMMAND "$<TARGET_FILE:unit_tests>"
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/units"
   )
 
   message(STATUS "Unit tests enabled")
