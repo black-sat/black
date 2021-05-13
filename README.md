@@ -1,4 +1,4 @@
-# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black)  ![MIT](https://img.shields.io/badge/license-MIT-brightgreen) [![Latest release](https://badgen.net/github/release/black-sat/black)](https://github.com/black-sat/black/releases/tag/v0.4.0)
+# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black)  ![MIT](https://img.shields.io/badge/license-MIT-brightgreen) [![Latest release](https://badgen.net/github/release/black-sat/black)](https://github.com/black-sat/black/releases/tag/v0.5.0)
 
 BLACK (short for Bounded Ltl sAtisfiability ChecKer) is a tool for testing the
 satisfiability of LTL formulas based on the SAT encoding of the tableau method
@@ -23,7 +23,7 @@ Quick installation instructions:
 
 | Ubuntu ≥ 20.04             | Fedora 34 | macOS ≥ 10.14 with [Homebrew][Homebrew] |
 |----------------------------|------------------------------|-----------------------------|
-| [![Download](https://badgen.net/badge/Download%20v0.4.0/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.4.0/.rpm/green)][pkg.rpm]| |
+| [![Download](https://badgen.net/badge/Download%20v0.5.0/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.5.0/.rpm/green)][pkg.rpm]| |
 | How to install:<br/>`$ sudo apt install ⟨file⟩` | How to install:<br/>`$ sudo dnf install ⟨file⟩` |How to install:<br/>`$ brew install black-sat/black/black-sat`|
 
 Quick usage help:
@@ -31,40 +31,55 @@ Quick usage help:
 $ black --help
 
 BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
-        version 0.3.0
+        version 0.5.0
 
 
 SYNOPSIS
-   ./black [-k <bound>] [-B <backend>] [--remove-past] [-m] [-o <format>] [-f
+   ./black solve [-k <bound>] [-B <backend>] [--remove-past] [-m] [-o <fmt>]
+           [-f <formula>] [<file>]
+
+   ./black check -t <trace> [-e <result>] [-i <state>] [--verbose] [-f
            <formula>] [<file>]
 
-   ./black [--dimacs <file>] [-B <backend>]
+   ./black dimacs [-B <backend>] <file>
    ./black --sat-backends
    ./black -v
    ./black -h
 
 OPTIONS
-   -k, --bound <bound>        maximum bound for BMC procedures
-   -B, --sat-backend <backend>
-                              select the SAT backend to use
+   solving mode: 
+       -k, --bound <bound>         maximum bound for BMC procedures
+       -B, --sat-backend <backend> select the SAT backend to use
+       --remove-past               translate LTL+Past formulas into LTL before
+                                   checking satisfiability
 
-   --remove-past              translate LTL+Past formulas into LTL before
-                              checking satisfiability
+       -m, --model                 print the model of the formula, if any
+       -o, --output-format <fmt>   Output format.
+                                   Accepted formats: readable, json
+                                   Default: readable
+       -f, --formula <formula>     LTL formula to solve
+       <file>                      input formula file name.
+                                   If '-', reads from standard input.
 
-   -m, --model                print the model of the formula, when it exists
-   -o, --output-format <format>
-                              Output format.
-                              Accepted formats: readable, json
-                              Default: readable
-   -f, --formula <formula>    LTL formula to solve
-   <file>                     input formula file name.
-                              If '-', reads from standard input.
-   --dimacs <file>            treat the input file as a DIMACS file and show
-                              the output in DIMACS format
+   trace checking mode: 
+       -t, --trace <trace>         trace file to check against the formula.
+                                   If '-', reads from standard input.
+       -e, --expected <result>     expected result (useful in testing)
+       -i, --initial-state <state> index of the initial state over which to
+                                   evaluate the formula. Default: 0
 
-   --sat-backends             print the list of available SAT backends
-   -v, --version              show version and license information
-   -h, --help                 print this help message
+       --verbose                   output a verbose log
+       -f, --formula <formula>     formula against which to check the trace
+       <file>                      formula file against which to check the
+                                   trace
+
+   DIMACS mode: 
+       -B, --sat-backend <backend> select the SAT backend to use
+       <file>                      DIMACS file to solve
+
+   --sat-backends                  print the list of available SAT backends
+   -v, --version                   show version and license information
+   -h, --help                      print this help message
 ```
 
 
@@ -86,5 +101,5 @@ OPTIONS
 [Home]: https://github.com/black-sat/black/wiki/Home 
 [Installation]: https://github.com/black-sat/black/wiki/Installation 
 [Usage]: https://github.com/black-sat/black/wiki/Usage 
-[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.4.0/black-sat-0.4.0-1.x86_64.deb
-[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.4.0/black-sat-0.4.0-1.x86_64.rpm
+[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.5.0/black-sat-0.5.0-1.x86_64.deb
+[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.5.0/black-sat-0.5.0-1.x86_64.rpm
