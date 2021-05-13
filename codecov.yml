@@ -1,7 +1,7 @@
 coverage:
   precision: 2
-  round: down
-  range: "90...100"
+  round: up
+  range: "70...90"
 ignore:
   - "external"
   - "tests"
