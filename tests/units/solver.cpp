@@ -41,10 +41,11 @@ TEST_CASE("Testing solver")
     formula f = !p && iff(!X(p), FG(p)) && implies(p, !p);
 
     slv.assert_formula(f);
+    
+    REQUIRE(!model.has_value());
 
     REQUIRE(slv.solve());
 
     auto model = slv.model();
-    REQUIRE(!model.has_value());
   }
 }
