@@ -212,13 +212,10 @@ namespace black::frontend {
   }
 
   void output(tribool result, solver &solver, formula f) {
-    if(!cli::output_format || cli::output_format == "readable")
-      return readable(result, solver, f);
-    
     if(cli::output_format == "json")
       return json(result, solver, f);
-    
-    black_unreachable();
+
+    return readable(result, solver, f);
   }
 
 }
