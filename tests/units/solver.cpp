@@ -42,10 +42,10 @@ TEST_CASE("Testing solver")
 
     slv.assert_formula(f);
     
+    auto model = slv.model();
     REQUIRE(!model.has_value());
 
     REQUIRE(slv.solve());
 
-    auto model = slv.model();
   }
 }
