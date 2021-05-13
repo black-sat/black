@@ -180,8 +180,8 @@ namespace black::sat::backends
         return msat_make_iff(env, 
           to_mathsat(i.left()), to_mathsat(i.right()));
       },
-      [](temporal) -> msat_term {
-        black_unreachable();
+      [](temporal) -> msat_term { // LCOV_EXCL_LINE
+        black_unreachable(); // LCOV_EXCL_LINE
       }
     );
   }

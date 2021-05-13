@@ -35,14 +35,14 @@ TEST_CASE("Testing solver")
 
   SECTION("Basic solver usage") {
     REQUIRE(slv.sat_backend() == "z3");
-    
+
     auto p = sigma.var("p");
     
     formula f = !p && iff(!X(p), FG(p)) && implies(p, !p);
 
     slv.assert_formula(f);
 
-    REQUIRE(!slv.solve());
+    REQUIRE(slv.solve());
 
     auto model = slv.model();
     REQUIRE(!model.has_value());
