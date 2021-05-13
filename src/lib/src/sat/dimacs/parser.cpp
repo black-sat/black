@@ -93,7 +93,7 @@ namespace black::sat::dimacs::internal
       return std::nullopt;
       
     int32_t v = 0;
-    if(!(in >> v)
+    if(!(in >> v)) {
       handler("expected literal");
       return std::nullopt;
     }
