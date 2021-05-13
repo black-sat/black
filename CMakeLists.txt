@@ -30,8 +30,6 @@ project(
   DESCRIPTION "BLACK (Bounded Lᴛʟ sAtisfiability ChecKer)"
 )
 
-add_compile_options(-rdynamic)
-
 # User options
 option(ENABLE_TESTS "Enable test suite" ON)
 option(STATIC_BUILD "Perform a static build" OFF)
