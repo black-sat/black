@@ -83,7 +83,7 @@ namespace black::internal
 
         // clausal form for conjunctions:
         //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ r) ∧ (!l ∨ !r ∨ f)
-        clauses.insert(clauses.end(), {
+        clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
           {{false, fresh(f)}, {true, fresh(l)}},
           {{false, fresh(f)}, {true, fresh(r)}},
           {{false, fresh(l)}, {false, fresh(r)}, {true, fresh(f)}}
@@ -96,7 +96,7 @@ namespace black::internal
 
         // clausal form for disjunctions:
         //   f <-> (l ∨ r) == (f ∨ !l) ∧ (f ∨ !r) ∧ (l ∨ r ∨ !f)
-        clauses.insert(clauses.end(), {
+        clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
           {{true, fresh(f)}, {false, fresh(l)}},
           {{true, fresh(f)}, {false, fresh(r)}},
           {{true, fresh(l)}, {true, fresh(r)}, {false, fresh(f)}}
@@ -109,7 +109,7 @@ namespace black::internal
 
         // clausal form for double implications:
         //    f <-> (l -> r) == (!f ∨ !l ∨ r) ∧ (f ∨ l) ∧ (f ∨ !r)
-        clauses.insert(clauses.end(), {
+        clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
           {{false, fresh(f)}, {false, fresh(l)}, {true, fresh(r)}},
           {{true,  fresh(f)}, {true,  fresh(l)}},
           {{true,  fresh(f)}, {false, fresh(r)}}
@@ -123,7 +123,7 @@ namespace black::internal
         // clausal form for double implications:
         //    f <-> (l <-> r) == (!f ∨ !l ∨  r) ∧ (!f ∨ l ∨ !r) ∧
         //                       ( f ∨ !l ∨ !r) ∧ ( f ∨ l ∨  r)
-        clauses.insert(clauses.end(), {
+        clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
           {{false, fresh(f)}, {false, fresh(l)}, {true,  fresh(r)}},
           {{false, fresh(f)}, {true,  fresh(l)}, {false, fresh(r)}},
           {{true,  fresh(f)}, {false, fresh(l)}, {false, fresh(r)}},
@@ -136,7 +136,7 @@ namespace black::internal
           [&](atom a) {
             // clausal form for negations:
             // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
-            clauses.insert(clauses.end(), {
+            clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
               {{false, fresh(f)}, {false, fresh(a)}},
               {{true,  fresh(f)}, {true,  fresh(a)}}
             });
@@ -148,7 +148,7 @@ namespace black::internal
             //       simplify_deep() removes double negations
             // clausal form for identity:
             // f <-> p == (!f ∨ p) ∧ (f ∨ !p)
-            clauses.insert(clauses.end(), {
+            clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
               {{false, fresh(f)}, {true, fresh(op)}},
               {{true,  fresh(f)}, {false,  fresh(op)}}
             });
@@ -159,7 +159,7 @@ namespace black::internal
 
             // clausal form for negated conjunction:
             //   f <-> !(l ∧ r) == (!f ∨ !l ∨ !r) ∧ (f ∨ l) ∧ (f ∨ r)
-            clauses.insert(clauses.end(), {
+            clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
               {{false, fresh(f)}, {false, fresh(l)}, {false, fresh(r)}},
               {{true,  fresh(f)}, {true, fresh(l)}},
               {{true,  fresh(f)}, {true, fresh(r)}},
@@ -171,7 +171,7 @@ namespace black::internal
 
             // clausal form for negated disjunction:
             //   f <-> !(l ∨ r) == (f ∨ l ∨ r) ∧ (!f ∨ !l) ∧ (!f ∨ !r)
-            clauses.insert(clauses.end(), {
+            clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
               {{true,  fresh(f)}, {true,  fresh(l)}, {true, fresh(r)}},
               {{false, fresh(f)}, {false, fresh(l)}},
               {{false, fresh(f)}, {false, fresh(r)}},
@@ -184,7 +184,7 @@ namespace black::internal
 
             // clausal form for negated implication:
             //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ !r) ∧ (!l ∨ r ∨ f)
-            clauses.insert(clauses.end(), {
+            clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
               {{false, fresh(f)}, {true, fresh(l)}},
               {{false, fresh(f)}, {false, fresh(r)}},
               {{false, fresh(l)}, {true, fresh(r)}, {true, fresh(f)}}
@@ -197,17 +197,17 @@ namespace black::internal
             // clausal form for negated double implication (xor):
             //    f <-> !(l <-> r) == (!f ∨ !l ∨ !r) ∧ (!f ∨  l ∨ r) ∧
             //                        (f  ∨  l ∨ !r) ∧ (f  ∨ !l ∨ r)
-            clauses.insert(clauses.end(), {
+            clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
               {{false, fresh(f)}, {false, fresh(l)}, {false, fresh(r)}},
               {{false, fresh(f)}, {true,  fresh(l)}, {true,  fresh(r)}},
               {{true,  fresh(f)}, {true,  fresh(l)}, {false, fresh(r)}},
               {{true,  fresh(f)}, {false, fresh(l)}, {true,  fresh(r)}}
             });
           },
-          [](temporal) { black_unreachable(); }
+          [](temporal) { black_unreachable(); } // LCOV_EXCL_LINE
         );
       },
-      [](temporal) { black_unreachable(); }
+      [](temporal) { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 
