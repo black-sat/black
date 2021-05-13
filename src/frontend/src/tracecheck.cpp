@@ -230,7 +230,7 @@ namespace black::frontend
         return check(trace, !F(!op), t);
       },
       [&](release, formula l, formula r) {
-        return check(trace, !(U(!l, !r)), t);
+        return check(trace, !U(!l, !r), t);
       },
       [&](once, formula op) {
         return check(trace, S(op.alphabet()->top(), op), t);

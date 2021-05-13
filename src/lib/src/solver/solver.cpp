@@ -307,11 +307,19 @@ namespace black::internal
       return iff( ground(xyz_req, l), ground(xyz_req, k) );
     };
 
+    auto close_loop = [&](auto req) {
+      formula op = req.operand();
+      return iff(ground(req, l+1), to_ground_snf(op, k));
+    };
+
     formula x = big_and(sigma, xrequests, make_loop);
     formula y = big_and(sigma, yrequests, make_loop);
     formula z = big_and(sigma, zrequests, make_loop);
 
-    return x && y && z;
+    formula yy = big_and(sigma, yrequests, close_loop);
+    formula zz = big_and(sigma, zrequests, close_loop);
+
+    return x && y && z && yy && zz;
   }
 
 
