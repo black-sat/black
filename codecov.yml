@@ -5,4 +5,4 @@ coverage:
 ignore:
   - "external"
   - "tests"
-  - "src/lib/include/support/assert.hpp"
+  - "src/lib/include/black/support/assert.hpp"
