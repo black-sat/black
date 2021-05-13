@@ -125,4 +125,6 @@ p cnf 1 3
 END
 
 cat <<END | should_fail ./black dimacs -
+p cnf 1 3
+1 2 a 0
 END

@@ -93,12 +93,12 @@ namespace black::sat::dimacs::internal
       return std::nullopt;
       
     int32_t v = 0;
-    if(!(in >> v)) {
+    if(!(in >> v)
       handler("expected literal");
       return std::nullopt;
     }
 
-    return literal{ 
+    return literal{ // LCOV_EXCL_LINE
       /*sign=*/ (v >= 0), 
       /*var=*/  static_cast<uint32_t>(abs(v))
     };
