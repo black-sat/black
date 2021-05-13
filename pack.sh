@@ -5,7 +5,7 @@ shopt -s failglob
 
 if [ $# -ne 1 ]; then
   echo Please provide the version number, e.g.
-  echo \$ pack.sh 0.4.0
+  echo \$ $0 0.4.0
   exit 1
 fi
 
@@ -52,7 +52,7 @@ build() {
   rm -rf "$SRC_DIR/build"
   mkdir build
   $env cmake -DENABLE_CMSAT=NO .. || die
-  $env make -j18 || die
+  $env make || die
   $env cpack -G $gen || die
 
   mkdir -p "$SRC_DIR/packages"

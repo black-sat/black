@@ -26,7 +26,7 @@ RUN make install
 
 RUN git clone https://github.com/nlohmann/json.git /json
 WORKDIR /json/build
-RUN cmake ..
+RUN cmake -DJSON_BuildTests=OFF -DBUILD_TESTING=OFF ..
 RUN make
 RUN make install
 
