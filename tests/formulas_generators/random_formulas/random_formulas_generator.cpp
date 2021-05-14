@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 #include <black/logic/parser.hpp>
-#include <black/debug/random_formula.hpp>
+#include <black/internal/debug/random_formula.hpp>
 
 #include <iostream>
 #include <functional>

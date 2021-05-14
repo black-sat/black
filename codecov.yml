@@ -6,3 +6,4 @@ ignore:
   - "external"
   - "tests"
   - "src/lib/include/black/support/assert.hpp"
+  - "src/lib/src/debug/random_formula.cpp"

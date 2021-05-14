@@ -30,7 +30,7 @@
 // no. 1 (October 1, 2002): 57–70. https://doi.org/10.1007/s100090200070.
 //
 
-#include <black/debug/random_formula.hpp>
+#include <black/internal/debug/random_formula.hpp>
 
 #include <black/logic/alphabet.hpp>
 
