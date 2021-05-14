@@ -12,11 +12,13 @@ should_fail() {
 ./black --version
 ./black --sat-backends
 
-./black solve -m -f 'G F (p & !q)' | grep -w SAT
-./black solve -f 'p & !p' | grep -w UNSAT
+./black solve -m -f 'G F (p && !q)' | grep -w SAT
+./black solve -f 'p && !p' | grep -w UNSAT
 ./black solve -k 1 -f 'G (Z False || Y !p2)' | grep UNKNOWN
 echo G F p | ./black solve -
-
+should_fail ./black solve -f 'F(p = q)'
+should_fail ./black solve -f 'F(p - q)'
+should_fail ./black solve -f 'F(p < q)'
 should_fail ./black solve non-existent.pltl
 should_fail ./black solve -f 'F' # syntax error
 should_fail ./black solve -o json -f 'F'

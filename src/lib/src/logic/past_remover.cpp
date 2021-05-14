@@ -64,7 +64,7 @@ namespace black::internal {
           if (!label) return; // not a translator atom
 
           formula psi = label->formula;
-          return psi.match(
+          return psi.match( // LCOV_EXCL_LINE
               [&](yesterday y, formula op) {
                 formula sem_y = yesterday_semantics(a, y);
 
@@ -91,7 +91,7 @@ namespace black::internal {
                 gen_semantics(left, sem);
                 gen_semantics(right, sem);
               },
-              [](otherwise) { black_unreachable(); }
+              [](otherwise) { black_unreachable(); } // LCOV_EXCL_LINE
           );
         },
         [&](unary, formula op) { gen_semantics(op, sem); },

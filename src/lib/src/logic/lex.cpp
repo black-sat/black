@@ -63,16 +63,14 @@ namespace black::internal
           }
           return std::nullopt;
 
-        // '=' or '=>'
+        // '=>'
         case '=':
           s.get();
           if (s.peek() == '>') {
             s.get();
             return token{binary::type::implication};
           }
-          else {
-            return token{binary::type::iff};
-          }
+          return std::nullopt;
 
         // '<->' or '<=>' or '<>'
         case '<':
@@ -82,16 +80,7 @@ namespace black::internal
 
           if (s.peek() == '>') {
             s.get();
-            return ch != '<' ? token{binary::type::iff}
-                             : token{unary::type::eventually};
-          }
-          return std::nullopt;
-
-        case '[':
-          s.get();
-          if (s.peek() == ']') {
-            s.get();
-            return token{unary::type::always};
+            return token{binary::type::iff};
           }
           return std::nullopt;
       }
