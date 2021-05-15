@@ -35,8 +35,6 @@
 
 #include <string>
 
-#include <cstdio>
-
 BLACK_REGISTER_SAT_BACKEND(mathsat)
 
 namespace black::sat::backends

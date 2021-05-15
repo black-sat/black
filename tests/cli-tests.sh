@@ -15,6 +15,7 @@ should_fail() {
 ./black solve -m -f 'G F (p && !q)' | grep -w SAT
 ./black solve -f 'p && !p' | grep -w UNSAT
 ./black solve -k 1 -f 'G (Z False || Y !p2)' | grep UNKNOWN
+./black solve --remove-past -f 'G (Z False || Y !p2)' | grep SAT
 echo G F p | ./black solve -
 should_fail ./black solve non-existent.pltl
 should_fail ./black solve -f 'F' # syntax error
@@ -93,6 +94,20 @@ cat <<END | should_fail ./black check -t - -f 'p'
   "model": {
     "size": 1,
     "loop": 2,
+    "states": [
+      {
+        "p": "true"
+      }
+    ]
+  }
+}
+END
+
+cat <<END | ./black check -t - -f 'q'
+{
+  "model": {
+    "size": 1,
+    "loop": 1,
     "states": [
       {
         "p": "true"

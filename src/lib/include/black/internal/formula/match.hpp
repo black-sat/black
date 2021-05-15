@@ -159,7 +159,7 @@ namespace black::internal
       if(f.is<Case>())
         return dispatch(*f.to<Case>(), FWD(handlers)...);
       
-      black_unreachable();
+      black_unreachable(); // LCOV_EXCL_LINE
     }
   };
 

@@ -85,7 +85,7 @@ namespace black::sat::backends
       fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(e)); // LCOV_EXCL_LINE
     else
       fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(c, e)); // LCOV_EXCL_LINE
-    std::abort();
+    std::abort(); // LCOV_EXCL_LINE
   }
 
   // end trick
@@ -234,8 +234,8 @@ namespace black::sat::backends
       [this](iff, formula left, formula right) {
         return Z3_mk_iff(context, to_z3(left), to_z3(right));
       },
-      [](temporal) -> Z3_ast {
-        black_unreachable();
+      [](temporal) -> Z3_ast { // LCOV_EXCL_LINE
+        black_unreachable(); // LCOV_EXCL_LINE
       }
     );
   }

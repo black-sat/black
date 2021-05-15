@@ -61,10 +61,8 @@ namespace black::frontend
     if(period)
       return trace.states[((t - trace.loop) % period) + trace.loop];
     
-    if(t >= trace.states.size())
-      return {}; 
-
-    return trace.states[t];
+    black_assert(t >= trace.states.size());
+    return {};
   }
 
   static
