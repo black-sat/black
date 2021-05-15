@@ -33,22 +33,25 @@ namespace black::sat::backends
 {
 
   struct minisat::_minisat_t {
-    Minisat::SimpSolver solver;
+    std::unique_ptr<Minisat::SimpSolver> solver;
     size_t nvars;
     bool model_available = false;
+
+    _minisat_t() {
+      solver = std::make_unique<Minisat::SimpSolver>();
+      solver->verbosity = -1;
+      solver->use_elim = false;
+      solver->newVar();
+    }
   };
 
-  minisat::minisat() : _data{std::make_unique<_minisat_t>()} { 
-    _data->solver.verbosity = -1;
-    _data->solver.use_elim = false;
-    _data->solver.newVar();
-  }
+  minisat::minisat() : _data{std::make_unique<_minisat_t>()} { }
 
   minisat::~minisat() { }
 
   void minisat::new_vars(size_t n) {
     for(size_t i = 0; i < n; ++i) {
-      _data->solver.newVar();
+      _data->solver->newVar();
       _data->nvars++;
     }
   }
@@ -63,11 +66,11 @@ namespace black::sat::backends
       lits.push(Minisat::mkLit(lit.var, !lit.sign));
     }
 
-    _data->solver.addClause(lits);
+    _data->solver->addClause(lits);
   }
   
   bool minisat::is_sat() {
-    bool result = _data->solver.solve();
+    bool result = _data->solver->solve();
     _data->model_available = result;
 
     return result;
@@ -79,7 +82,7 @@ namespace black::sat::backends
       lits.push(Minisat::mkLit(lit.var, !lit.sign));
     }
 
-    bool result = _data->solver.solve(lits);
+    bool result = _data->solver->solve(lits);
     _data->model_available = result;
 
     return result;
@@ -90,14 +93,15 @@ namespace black::sat::backends
       return tribool::undef;
     
     return 
-      _data->solver.modelValue(Minisat::Var(v)) == Minisat::l_True ? 
+      _data->solver->modelValue(Minisat::Var(v)) == Minisat::l_True ? 
         tribool{true} :
-      _data->solver.modelValue(Minisat::Var(v)) == Minisat::l_False ? 
+      _data->solver->modelValue(Minisat::Var(v)) == Minisat::l_False ? 
         tribool{false} : 
         tribool::undef;
   }
 
   void minisat::clear() {
+    this->clear_vars();
     _data = std::make_unique<_minisat_t>();
   }
 

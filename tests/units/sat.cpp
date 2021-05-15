@@ -21,56 +21,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <ostream>
-
-#include <black/logic/alphabet.hpp>
-#include <black/logic/parser.hpp>
-
 #include <catch2/catch.hpp>
+#include <black/solver/solver.hpp>
+#include <black/sat/solver.hpp>
+#include <black/sat/dimacs.hpp>
 
-using namespace black;
+TEST_CASE("SAT backends") {
 
-TEST_CASE("Syntax errors") {
+  std::vector<std::string> backends = {"z3", "mathsat", "cmsat", "minisat"};
 
-  alphabet sigma;
-  std::vector<std::string> tests = {
-    "F", "F(p U)", "p || q &&", "(p && q", "(", 
-    "F(p = q)", "F(p - q)", "F(p < q)"
-  };
+  black::alphabet sigma;
+  auto p = sigma.var("p");
+  auto q = sigma.var("q");
 
-  for(std::string s : tests) {
-    DYNAMIC_SECTION("Test formula: " << s) 
-    {
-      auto result = parse_formula(sigma, s);
+  for(auto backend : backends) {
+    DYNAMIC_SECTION("SAT backend: " << backend) {
+      if(black::sat::solver::backend_exists(backend)) {
+        auto slv = black::sat::solver::get_solver(backend);
 
-      REQUIRE(!result.has_value());
+        REQUIRE(slv->value(p) == black::tribool::undef);
+
+        slv->assert_formula(p);
+        if(auto *dimacs = dynamic_cast<black::sat::dimacs::solver*>(slv.get())){
+          REQUIRE(dimacs->nvars() > 0);
+          REQUIRE(dimacs->value(42) == black::tribool::undef);
+        }
+        
+        REQUIRE(slv->is_sat());
+        REQUIRE(slv->value(p) == true);
+        REQUIRE(slv->value(q) == black::tribool::undef);
+
+        slv->clear();
+        slv->assert_formula(!p);
+        
+        REQUIRE(slv->is_sat());
+        REQUIRE(slv->value(p) == false);
+      }
     }
   }
-
-}
-
-TEST_CASE("Rountrip of parser and pretty-printer")
-{
-  alphabet sigma;
-
-  atom p = sigma.var("p");
-  atom q = sigma.var("q");
-
-  std::vector<formula> tests = {
-    p, !p, X(p), F(p), G(p), P(p), H(p), XF(p), GF(p), XG(p),
-    p && q, p || q, U(p,q), S(p,q), R(p,q), T(p,q),
-    p && (X(U(p,q)) || XF(!q)),
-    p && implies(Y(S(p,q)), GF(!p)),
-    U(p, !(GF(q))),
-    !(iff(p || q, !q && p))
-  };
-
-  for(formula f : tests) {
-    DYNAMIC_SECTION("Roundtrip for formula: " << f) {
-      auto result = parse_formula(sigma, to_string(f));
-
-      REQUIRE(result.has_value());
-      CHECK(*result == f);
-    }
-  }
+  
 }

@@ -16,12 +16,9 @@ should_fail() {
 ./black solve -f 'p && !p' | grep -w UNSAT
 ./black solve -k 1 -f 'G (Z False || Y !p2)' | grep UNKNOWN
 echo G F p | ./black solve -
-should_fail ./black solve -f 'F(p = q)'
-should_fail ./black solve -f 'F(p - q)'
-should_fail ./black solve -f 'F(p < q)'
 should_fail ./black solve non-existent.pltl
 should_fail ./black solve -f 'F' # syntax error
-should_fail ./black solve -o json -f 'F'
+should_fail ./black solve -o json -f 'F' # syntax error in JSON format
 should_fail ./black solve 
 should_fail ./black solve -f 'p' file.pltl
 should_fail ./black 

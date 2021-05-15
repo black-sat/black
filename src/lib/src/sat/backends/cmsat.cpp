@@ -33,22 +33,25 @@ BLACK_REGISTER_SAT_BACKEND(cmsat)
 namespace black::sat::backends
 {
   struct cmsat::_cmsat_t {
-    CMSat::SATSolver solver;
+    std::unique_ptr<CMSat::SATSolver> solver;
     bool model_available = false;
+
+    _cmsat_t() {
+      solver = std::make_unique<CMSat::SATSolver>();
+      solver->new_var();
+    }
   };
 
-  cmsat::cmsat() : _data{std::make_unique<_cmsat_t>()} { 
-    _data->solver.new_var();
-  }
+  cmsat::cmsat() : _data{std::make_unique<_cmsat_t>()} { }
 
   cmsat::~cmsat() = default;
 
   void cmsat::new_vars(size_t n) {
-    _data->solver.new_vars(n);
+    _data->solver->new_vars(n);
   }
   
   size_t cmsat::nvars() const { 
-    return _data->solver.nVars();
+    return _data->solver->nVars();
   }
 
   void cmsat::assert_clause(dimacs::clause cl) {
@@ -57,11 +60,11 @@ namespace black::sat::backends
       lits.push_back(CMSat::Lit{lit.var, !lit.sign});
     }
 
-    _data->solver.add_clause(lits);
+    _data->solver->add_clause(lits);
   }
 
   bool cmsat::is_sat() {
-    CMSat::lbool ret = _data->solver.solve();
+    CMSat::lbool ret = _data->solver->solve();
     bool result = (ret == CMSat::l_True);
     _data->model_available = result;
 
@@ -74,7 +77,7 @@ namespace black::sat::backends
       lits.push_back(CMSat::Lit{lit.var, !lit.sign});
     }
 
-    CMSat::lbool ret = _data->solver.solve(&lits);
+    CMSat::lbool ret = _data->solver->solve(&lits);
     bool result = (ret == CMSat::l_True);
     _data->model_available = result;
 
@@ -85,7 +88,7 @@ namespace black::sat::backends
     if(!_data->model_available)
       return tribool::undef;
 
-    std::vector<CMSat::lbool> const& model = _data->solver.get_model();
+    std::vector<CMSat::lbool> const& model = _data->solver->get_model();
     if(v >= model.size())
       return tribool::undef;
 
@@ -95,6 +98,7 @@ namespace black::sat::backends
   }
 
   void cmsat::clear() {
+    this->clear_vars();
     _data = std::make_unique<_cmsat_t>();
   }
 

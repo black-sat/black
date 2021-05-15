@@ -106,6 +106,9 @@ namespace black::sat::dimacs::internal
     // License note for whatever third-party software lies under the hood
     virtual std::optional<std::string> license() const override = 0;
 
+  protected:
+    void clear_vars();
+
   private:
     struct _solver_t;
     std::unique_ptr<_solver_t> _data;

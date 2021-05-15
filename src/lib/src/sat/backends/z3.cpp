@@ -34,10 +34,7 @@ BLACK_REGISTER_SAT_BACKEND(z3)
 
 namespace black::sat::backends 
 {
-  // TODO: generalize with the same function in cnf.cpp
   inline atom fresh(formula f) {
-    if(f.is<atom>())
-      return *f.to<atom>();
     return f.alphabet()->var(f);
   }
 
@@ -72,22 +69,22 @@ namespace black::sat::backends
   namespace z3_compat_wrap {
     template<REQUIRES(!z3_is_old())>
     Z3_string Z3_get_error_msg(Z3_error_code) {
-      black_unreachable();
+      black_unreachable(); // LCOV_EXCL_LINE
     }
 
     template<REQUIRES(z3_is_old())>
     Z3_string Z3_get_error_msg(Z3_context, Z3_error_code) {
-      black_unreachable();
+      black_unreachable(); // LCOV_EXCL_LINE
     }
   }
   
   [[noreturn]]
-  static void error_handler(Z3_context c, Z3_error_code e) {
+  static void error_handler(Z3_context c, Z3_error_code e) { // LCOV_EXCL_LINE
     using namespace z3_compat_wrap;
     if constexpr (z3_is_old())
-      fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(e));
+      fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(e)); // LCOV_EXCL_LINE
     else
-      fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(c, e));
+      fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(c, e)); // LCOV_EXCL_LINE
     std::abort();
   }
 
@@ -168,8 +165,7 @@ namespace black::sat::backends
     Z3_ast res;
     Z3_bool_opt ok = 
       Z3_model_eval(_data->context, *_data->model, term, false, &res);
-    if(!ok)
-      return tribool::undef;
+    black_assert(ok);
 
     Z3_lbool lres = Z3_get_bool_value(_data->context, res);
     

@@ -50,9 +50,9 @@ namespace black::internal
             return *name;
           if(auto fname = a.label<std::pair<formula,int>>(); fname.has_value())
             return
-              fmt::format("<{},{}>", to_string(fname->first), fname->second);
+              fmt::format("<{},{}>", to_string(fname->first), fname->second); // LCOV_EXCL_LINE
           if(auto fname = a.label<past_label>(); fname.has_value())
-            return fmt::format("<{}>", to_string(fname->formula));
+            return fmt::format("<{}>", to_string(fname->formula)); // LCOV_EXCL_LINE
           else
             return fmt::format("<{:x}>", to_underlying(formula{a}.unique_id()));
         },
@@ -166,7 +166,7 @@ namespace black::internal
       if(!peek() || precedence(op) < precedence(*peek())) {
         rhs = parse_binary_rhs(prec + 1, *rhs);
         if(!rhs)
-          return {};
+          return error("Expected right operand to binary operator");
       }
 
       black_assert(op.is<binary::type>());

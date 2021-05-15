@@ -97,6 +97,10 @@ namespace black::sat::dimacs::internal
     return this->value(var);
   }
 
+  void solver::clear_vars() {
+    _data = std::make_unique<_solver_t>();
+  }
+
   formula to_formula(alphabet &sigma, dimacs::clause const& c) {
     return big_or(sigma, c.literals, [&](literal l) {
       atom a = sigma.var(l.var);
