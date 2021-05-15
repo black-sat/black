@@ -372,11 +372,11 @@ namespace black::internal
       [&](disjunction, formula left, formula right) {
         return to_ground_snf(left,k) || to_ground_snf(right,k);
       },
-      [&](implication) -> formula {
-        black_unreachable(); // removed by to_nnf() LCOV_EXCL_LINE 
+      [&](implication) -> formula { // LCOV_EXCL_LINE 
+        black_unreachable(); // LCOV_EXCL_LINE 
       },
-      [&](iff) -> formula {
-        black_unreachable(); // removed by to_nnf() LCOV_EXCL_LINE
+      [&](iff) -> formula { // LCOV_EXCL_LINE 
+        black_unreachable(); // LCOV_EXCL_LINE
       },
       [&,this](until u, formula left, formula right) {
         return to_ground_snf(right,k) ||
