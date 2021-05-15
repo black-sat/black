@@ -52,7 +52,7 @@ build() {
   rm -rf "$SRC_DIR/build"
   mkdir build
   $env cmake -DENABLE_CMSAT=NO .. || die
-  $env make || die
+  $env make -j 3 || die
   $env cpack -G $gen || die
 
   mkdir -p "$SRC_DIR/packages"

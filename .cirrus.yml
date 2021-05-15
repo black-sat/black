@@ -62,7 +62,7 @@ task:
     - ./download-mathsat.sh
   debug_build_script:
     - mkdir -p build && cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug ..
+    - cmake -DCMAKE_BUILD_TYPE=Release ..
     - make
   test_script:
     - cd build 
