@@ -30,21 +30,6 @@
 
 namespace black::frontend
 {
-  // Levels of output verbosity
-  enum class verbosity : int8_t {
-    fatal   =  1,
-    error   =  2,
-    warning =  3,
-    message =  4,
-    debug   =  5,
-    trace   =  6
-  };
-
-  // Comparison between verbosity levels
-  inline bool operator<(verbosity v1, verbosity v2) {
-    return static_cast<int8_t>(v1) < static_cast<int8_t>(v2);
-  }
-
   //
   // Status codes returned from the executable to the environment.
   // It's useful to return meaningful codes and document them to help

@@ -116,22 +116,22 @@ namespace black::frontend {
   void readable(tribool result, solver &solver, formula f)
   {
     if(result == tribool::undef) {
-      io::message("UNKNOWN (stopped at k = {})", solver.last_bound());
+      io::println("UNKNOWN (stopped at k = {})", solver.last_bound());
       return;
     }
 
     if(result == false) {
-      io::message("UNSAT");
+      io::println("UNSAT");
       return;
     }
 
     black_assert(solver.model().has_value());
-    io::message("SAT");
+    io::println("SAT");
 
     if(!cli::print_model)
       return;
 
-    io::message("Model:", solver.model()->size());
+    io::println("Model:", solver.model()->size());
 
     std::unordered_set<atom> atoms;
     relevant_atoms(f, atoms);
@@ -139,36 +139,36 @@ namespace black::frontend {
     size_t size = solver.model()->size();
     size_t width = static_cast<size_t>(log10((double)size)) + 1;
     for(size_t t = 0; t < size; ++t) {
-      io::print(verbosity::message, "- t = {:>{}}: {{", t, width);
+      io::print("- t = {:>{}}: {{", t, width);
       bool first = true;
       for(atom a : atoms) {
         tribool v = solver.model()->value(a, t);
         const char *comma = first ? "" : ", ";
         if(v == true) {
-          io::print(verbosity::message, "{}{}", comma, to_string(a));
+          io::print("{}{}", comma, to_string(a));
           first = false;
         } else if(v == false) {
-          io::print(verbosity::message, "{}￢{}", comma, to_string(a));
+          io::print("{}￢{}", comma, to_string(a));
           first = false;
         }
       }
-      io::print(verbosity::message, "}}");
+      io::print("}}");
       if(solver.model()->loop() == t)
-        io::print(verbosity::message, " ⬅︎ loops here");
-      io::print(verbosity::message, "\n");
+        io::print(" ⬅︎ loops here");
+      io::print("\n");
     }
   }
 
   static
   void json(tribool result, solver &solver, formula f) {
-    io::message("{{");
+    io::println("{{");
     
-    io::message("    \"result\": \"{}\",", 
+    io::println("    \"result\": \"{}\",", 
       result == tribool::undef ? "UNKNOWN" :
       result == true  ? "SAT" : "UNSAT"
     );
 
-    io::message("    \"k\": {}{}", 
+    io::println("    \"k\": {}{}", 
       solver.last_bound(),
       cli::print_model && result == true ? "," : ""
     );
@@ -178,20 +178,20 @@ namespace black::frontend {
       std::unordered_set<atom> atoms;
       relevant_atoms(f, atoms);
 
-      io::message("    \"model\": {{");
-      io::message("        \"size\": {},", model->size());
+      io::println("    \"model\": {{");
+      io::println("        \"size\": {},", model->size());
       if(model->loop())
-        io::message("        \"loop\": {},", model->loop());
+        io::println("        \"loop\": {},", model->loop());
 
-      io::message("        \"states\": [");
+      io::println("        \"states\": [");
 
       for(size_t t = 0; t < model->size(); ++t) {
-        io::message("            {{");
+        io::println("            {{");
 
         size_t i = 0;
         for(atom a : atoms) {
           tribool v = model->value(a, t);
-          io::message("                \"{}\": \"{}\"{}",
+          io::println("                \"{}\": \"{}\"{}",
             to_string(a),
             v == tribool::undef ? "undef" :
             v == true           ? "true" : "false",
@@ -200,15 +200,15 @@ namespace black::frontend {
           ++i;
         }
 
-        io::message("            }}{}", t < model->size() - 1 ? "," : "");
+        io::println("            }}{}", t < model->size() - 1 ? "," : "");
       }
 
-      io::message("        ]");
+      io::println("        ]");
 
-      io::message("    }}");
+      io::println("    }}");
     }
 
-    io::message("}}");
+    io::println("}}");
   }
 
   void output(tribool result, solver &solver, formula f) {
