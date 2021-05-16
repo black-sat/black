@@ -242,7 +242,7 @@ namespace black::frontend
     );
 
     if(cli::verbose)
-      io::message("{} at t = {} is {}", to_string(f), t, result);
+      io::println("{} at t = {} is {}", to_string(f), t, result);
 
     memo.insert({{f,t}, result});
 
@@ -257,9 +257,9 @@ namespace black::frontend
 
     bool result = check(trace, f, initial_state);
     if(result)
-      io::message("TRUE");
+      io::println("TRUE");
     else {
-      io::message("FALSE");
+      io::println("FALSE");
       quit(status_code::failed_check);
     }
     
@@ -351,13 +351,13 @@ namespace black::frontend
 
     if(cli::expected_result) {
       if(trace.result != *cli::expected_result) {
-        io::message("MISMATCH");
+        io::println("MISMATCH");
         quit(status_code::failed_check);
       }
     }
 
     if((!trace.result || trace.result != "SAT") && trace.states.size() == 0) {
-      io::message("MATCH");
+      io::println("MATCH");
       quit(status_code::success);
     }
 

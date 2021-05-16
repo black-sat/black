@@ -40,7 +40,7 @@ namespace black::frontend {
     bool error = false;
     std::optional<dimacs::problem> problem = 
       dimacs::parse(in, [&](std::string str) {
-        io::message("{}: {}", cli::command_name, str);
+        io::println("{}: {}", cli::command_name, str);
         error = true;
       });
     

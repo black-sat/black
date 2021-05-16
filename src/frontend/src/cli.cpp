@@ -56,21 +56,21 @@ namespace black::frontend
   }
 
   static void print_header() {
-    io::message("BLACK - Bounded Lᴛʟ sAtisfiability ChecKer");
-    io::message("        version {}", black::version);
+    io::println("BLACK - Bounded Lᴛʟ sAtisfiability ChecKer");
+    io::println("        version {}", black::version);
   }
 
   static void print_version() {
     static std::string sep(80, '-');
 
     print_header();
-    io::message("{}", sep);
-    io::message("{}", black::license);
+    io::println("{}", sep);
+    io::println("{}", black::license);
     for(auto name : black::sat::solver::backends()) {
       auto backend = black::sat::solver::get_solver(name);
       if(auto l = backend->license(); l) {
-        io::message("{}", sep);
-        io::message("{}", *l);
+        io::println("{}", sep);
+        io::println("{}", *l);
       }
     }
   }
@@ -82,18 +82,18 @@ namespace black::frontend
          .doc_column(35)
          .last_column(79);
 
-    io::message("");
+    io::println("");
     print_header();
-    io::message("");
+    io::println("");
 
-    io::message("\n{}", clipp::make_man_page(cli, cli::command_name, fmt));
+    io::println("\n{}", clipp::make_man_page(cli, cli::command_name, fmt));
   }
 
   static void print_sat_backends() {
     print_header();
-    io::message("\nAvailable SAT backends:");
+    io::println("\nAvailable SAT backends:");
     for(auto backend : black::sat::solver::backends()) {
-      io::message(" - {}", backend);
+      io::println(" - {}", backend);
     }
   }
 

@@ -48,66 +48,47 @@
 namespace black::frontend::io
 {
   //
-  // Utility functions to test whether stdout or stderr are terminals
-  //
-  inline bool stdout_is_terminal() {
-    return isatty(fileno(stdout));
-  }
-
-  inline bool stderr_is_terminal() {
-    return isatty(fileno(stderr));
-  }
-
-  // We use <cstdio> from the C standard library to avoid to propagate the
-  // inclusion of <iostream> to all the program.
-  inline FILE *stream_for_verbosity(verbosity v) {
-    return v > verbosity::warning ? stdout : stderr;
-  }
-
-  //
-  // io::print(verbosity, format, args...)
+  // io::print(format, args...)
   //
   template<typename... Args>
-  auto print(verbosity v, Args&&... args)
-    -> std::void_t<decltype(fmt::print(std::forward<Args>(args)...))>
+  auto print(Args&&... args)
+    -> std::void_t<decltype(fmt::print(stdout, std::forward<Args>(args)...))>
   {
-    FILE *file = stream_for_verbosity(v);
-
-    if(v == verbosity::fatal)
-      fmt::print(file, "{}: ", cli::command_name);
-
-    fmt::print(file, std::forward<Args>(args)...);
+    fmt::print(stdout, std::forward<Args>(args)...);
   }
 
   //
   // println() is just as print(), but prints a newline
   //
   template<typename... Args>
-  auto println(verbosity v, Args&&... args)
+  auto println(Args&&... args)
     -> std::void_t<decltype(fmt::print(std::forward<Args>(args)...))>
   {
-    print(v, std::forward<Args>(args)...);
-    fmt::print(stream_for_verbosity(v), "\n");
+    print(std::forward<Args>(args)...);
+    print("\n");
   }
 
   //
-  // Specific versions of println() for each verbosity level
+  // io::error(format, args...)
   //
-  #define declare_verbose_print(Verbosity)                              \
-    template<typename... Args>                                          \
-    auto Verbosity(Args&& ...args)                                      \
-      -> std::void_t<decltype(fmt::print(std::forward<Args>(args)...))> \
-    {                                                                   \
-      println(verbosity::Verbosity, std::forward<Args>(args)...);       \
-    }
+  template<typename... Args>
+  auto error(Args&&... args)
+    -> std::void_t<decltype(fmt::print(stderr, std::forward<Args>(args)...))>
+  {
+    fmt::print(stderr, std::forward<Args>(args)...);
+  }
 
-  declare_verbose_print(error)
-  declare_verbose_print(warning)
-  declare_verbose_print(message)
-  declare_verbose_print(debug)
-  declare_verbose_print(trace)
+  //
+  // io:errorln() is just as error(), but prints a newline
+  //
+  template<typename... Args>
+  auto errorln(Args&&... args)
+    -> std::void_t<decltype(error(std::forward<Args>(args)...))>
+  {
+    error(std::forward<Args>(args)...);
+    error("\n");
+  }
 
-  #undef declare_verbose_print
 
   //
   // fatal() is different, as it also quits the program,
@@ -116,9 +97,10 @@ namespace black::frontend::io
   template<typename... Args>
   [[ noreturn ]]
   auto fatal(status_code v, Args&&... args)
-    -> decltype(fmt::print(std::forward<Args>(args)...))
+    -> decltype(print(std::forward<Args>(args)...))
   {
-    println(verbosity::fatal, std::forward<Args>(args)...);
+    error("{}: ", cli::command_name);
+    errorln(std::forward<Args>(args)...);
 
     quit(v);
   }
