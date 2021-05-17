@@ -35,13 +35,46 @@ TEST_CASE("Job queue") {
 
   q.start();
 
-  std::future<int> result0 = q.enqueue([]{ return 0; });
-  std::future<int> result1 = q.enqueue([]{ return 1; });
-  std::future<int> result2 = q.enqueue([]{ return 2; });
-  std::future<int> result3 = q.enqueue([]{ return 3; });
+  SECTION("future<void>") {
+    bool results[4] = { };
+    std::future<void> result0 = q.enqueue([&results]{ results[0] = true; });
+    std::future<void> result1 = q.enqueue([&results]{ results[1] = true; });
+    std::future<void> result2 = q.enqueue([&results]{ results[2] = true; });
+    std::future<void> result3 = q.enqueue([&results]{ results[3] = true; });
+
+    result0.get();
+    result1.get();
+    result2.get();
+    result3.get();
+
+    for(int i = 0; i < 4; ++i) {
+      REQUIRE(results[i] == true);
+    }
+  }
+
+  SECTION("future<int>") {
+    std::future<int> result0 = q.enqueue([]{ return 0; });
+    std::future<int> result1 = q.enqueue([]{ return 1; });
+    std::future<int> result2 = q.enqueue([]{ return 2; });
+    std::future<int> result3 = q.enqueue([]{ return 3; });
+    
+    REQUIRE(result0.get() == 0);
+    REQUIRE(result1.get() == 1);
+    REQUIRE(result2.get() == 2);
+    REQUIRE(result3.get() == 3);
+  }
   
-  REQUIRE(result0.get() == 0);
-  REQUIRE(result1.get() == 1);
-  REQUIRE(result2.get() == 2);
-  REQUIRE(result3.get() == 3);
+  SECTION("Exceptions") {
+    std::future<void> result = q.enqueue([]{ throw 42; });
+
+    int answer = 0;
+    try {
+      result.get();
+    } catch (int x) {
+      answer = x;
+    }
+
+    REQUIRE(answer == 42);
+  }
+
 }

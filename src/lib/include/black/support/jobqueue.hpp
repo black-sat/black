@@ -63,14 +63,16 @@ namespace black {
 //
 // Implementation
 //
-namespace black::internal {
-  struct jobqueue::_invokable_t {
+namespace black::internal 
+{
+  struct jobqueue::_invokable_t 
+  {
     virtual ~_invokable_t() = default;
     virtual void invoke() = 0;
   protected:
     _invokable_t() = default;
-    _invokable_t(_invokable_t&&) = default;
-    _invokable_t& operator=(_invokable_t&&) noexcept = default;
+    _invokable_t(_invokable_t&&) = delete;
+    _invokable_t& operator=(_invokable_t&&) noexcept = delete;
   };
 
   template<typename F, typename R>
@@ -78,8 +80,6 @@ namespace black::internal {
   {
     _invoker_t(F&& f) : _func(std::move(f)) { }
     _invoker_t(F const& f) : _func(f) { }
-    _invoker_t(_invoker_t&&) = default;
-    _invoker_t& operator=(_invoker_t&&) = default;
 
     std::future<R> get_future() { return _promise.get_future(); }
 
