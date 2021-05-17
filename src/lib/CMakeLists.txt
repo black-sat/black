@@ -74,18 +74,19 @@ configure_file(include/black/support/config.hpp.in ${CMAKE_BINARY_DIR}/include/b
 # black library
 #
 set (
-   LIB_SRC
-   src/logic/formula.cpp
-   src/logic/lex.cpp
-   src/logic/parser.cpp
-   src/logic/past_remover.cpp
-   src/sat/solver.cpp
-   src/logic/cnf.cpp
-   src/sat/dimacs/solver.cpp
-   src/sat/dimacs/parser.cpp
-   src/sat/backends/z3.cpp
-   src/solver/solver.cpp
-   src/debug/random_formula.cpp
+  LIB_SRC
+  src/logic/formula.cpp
+  src/logic/lex.cpp
+  src/logic/parser.cpp
+  src/logic/past_remover.cpp
+  src/logic/cnf.cpp
+  src/sat/solver.cpp
+  src/sat/dimacs/solver.cpp
+  src/sat/dimacs/parser.cpp
+  src/sat/backends/z3.cpp
+  src/solver/solver.cpp
+  src/debug/random_formula.cpp
+  src/support/jobqueue.cpp
 )
    
    
@@ -110,26 +111,40 @@ endif()
 
 set (
   LIB_HEADERS
-  include/black/internal/formula/base.hpp
-  include/black/internal/formula/impl.hpp
-  include/black/internal/formula/match.hpp
-  include/black/internal/alphabet_impl.hpp
-  include/black/logic/alphabet.hpp
+  include/black/logic/parser.hpp
   include/black/logic/formula.hpp
   include/black/logic/lex.hpp
-  include/black/logic/parser.hpp
-  include/black/sat/solver.hpp
   include/black/logic/cnf.hpp
-  include/black/sat/dimacs.hpp
+  include/black/logic/alphabet.hpp
+  include/black/logic/past_remover.hpp
+  include/black/internal/formula/match.hpp
+  include/black/internal/formula/base.hpp
+  include/black/internal/formula/impl.hpp
+  include/black/internal/alphabet_impl.hpp
+  include/black/internal/debug/random_formula.hpp
   include/black/solver/solver.hpp
-  include/black/logic/past_remover.hpp)
+  include/black/support/hash.hpp
+  include/black/support/meta.hpp
+  include/black/support/license.hpp
+  include/black/support/assert.hpp
+  include/black/support/common.hpp
+  include/black/support/range.hpp
+  include/black/support/tribool.hpp
+  include/black/support/jobqueue.hpp
+  include/black/sat/dimacs.hpp
+  include/black/sat/solver.hpp
+  include/black/sat/backends/cmsat.hpp
+  include/black/sat/backends/minisat.hpp
+  include/black/sat/backends/z3.hpp
+  include/black/sat/backends/mathsat.hpp
+)
 
 #
 # Main black library.
 #
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PRIVATE fmt::fmt)
+target_link_libraries(black PRIVATE fmt::fmt concurrentqueue)
 target_link_libraries(black PUBLIC tsl::hopscotch_map)
 target_include_directories(black PUBLIC  
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
