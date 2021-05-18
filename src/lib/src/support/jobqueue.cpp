@@ -40,12 +40,9 @@ namespace black::internal
     void worker();
   };
 
-  jobqueue::jobqueue() : _data{std::make_unique<_jobqueue_t>()} { }
-  jobqueue::~jobqueue() {
-    stop();
-  }
-
-  void jobqueue::start(unsigned int nthreads) {
+  jobqueue::jobqueue(unsigned int nthreads) 
+    : _data{std::make_unique<_jobqueue_t>()} 
+  {
     for(unsigned i = 0; i < nthreads; ++i) {
       _data->threads.push_back(std::thread{[this] {
         _data->worker();
@@ -53,7 +50,7 @@ namespace black::internal
     }
   }
 
-  void jobqueue::stop() {
+  jobqueue::~jobqueue() {
     _data->stop = true;
     for(size_t i = 0; i < _data->threads.size(); ++i) {
       _data->threads[i].join();
@@ -61,7 +58,7 @@ namespace black::internal
     _data->threads.clear();
   }
 
-  void jobqueue::enqueue_impl(std::unique_ptr<_invokable_t> job) {
+  void jobqueue::submit_impl(std::unique_ptr<_invokable_t> job) {
     _data->queue.enqueue(std::move(job));
   }
 

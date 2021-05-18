@@ -33,14 +33,12 @@ using namespace black;
 TEST_CASE("Job queue") {
   jobqueue q;
 
-  q.start();
-
   SECTION("future<void>") {
     bool results[4] = { };
-    std::future<void> result0 = q.enqueue([&results]{ results[0] = true; });
-    std::future<void> result1 = q.enqueue([&results]{ results[1] = true; });
-    std::future<void> result2 = q.enqueue([&results]{ results[2] = true; });
-    std::future<void> result3 = q.enqueue([&results]{ results[3] = true; });
+    std::future<void> result0 = q.submit([&results]{ results[0] = true; });
+    std::future<void> result1 = q.submit([&results]{ results[1] = true; });
+    std::future<void> result2 = q.submit([&results]{ results[2] = true; });
+    std::future<void> result3 = q.submit([&results]{ results[3] = true; });
 
     result0.get();
     result1.get();
@@ -53,10 +51,10 @@ TEST_CASE("Job queue") {
   }
 
   SECTION("future<int>") {
-    std::future<int> result0 = q.enqueue([]{ return 0; });
-    std::future<int> result1 = q.enqueue([]{ return 1; });
-    std::future<int> result2 = q.enqueue([]{ return 2; });
-    std::future<int> result3 = q.enqueue([]{ return 3; });
+    std::future<int> result0 = q.submit([]{ return 0; });
+    std::future<int> result1 = q.submit([]{ return 1; });
+    std::future<int> result2 = q.submit([]{ return 2; });
+    std::future<int> result3 = q.submit([]{ return 3; });
     
     REQUIRE(result0.get() == 0);
     REQUIRE(result1.get() == 1);
@@ -65,7 +63,7 @@ TEST_CASE("Job queue") {
   }
   
   SECTION("Exceptions") {
-    std::future<void> result = q.enqueue([]{ throw 42; });
+    std::future<void> result = q.submit([]{ throw 42; });
 
     int answer = 0;
     try {

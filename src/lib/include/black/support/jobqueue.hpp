@@ -34,21 +34,18 @@ namespace black::internal
   class jobqueue 
   {
     public:
-      jobqueue();
+      jobqueue(unsigned int nthreads = std::thread::hardware_concurrency());
       ~jobqueue();
 
-      void start(unsigned int nthreads = std::thread::hardware_concurrency());
-      void stop();
-
       template<typename F, typename R = std::invoke_result_t<F>>
-      std::future<R> enqueue(F&& job);
+      std::future<R> submit(F&& job);
 
     private:
       struct _invokable_t;
       template<typename R, typename F>
       struct _invoker_t;
 
-      void enqueue_impl(std::unique_ptr<_invokable_t>);
+      void submit_impl(std::unique_ptr<_invokable_t>);
       
       struct _jobqueue_t;
       std::unique_ptr<_jobqueue_t> _data;
@@ -81,7 +78,7 @@ namespace black::internal
     _invoker_t(F&& f) : _func(std::move(f)) { }
     _invoker_t(F const& f) : _func(f) { }
 
-    std::future<R> get_future() { return _promise.get_future(); }
+    std::future<R> future() { return _promise.get_future(); }
 
     void invoke() override {
       try {
@@ -101,13 +98,13 @@ namespace black::internal
   };
 
   template<typename F, typename R>
-  std::future<R> jobqueue::enqueue(F&& job)
+  std::future<R> jobqueue::submit(F&& job)
   {
     auto invoker = std::make_unique<_invoker_t<F, R>>(std::forward<F>(job));
     
-    std::future<R> future = invoker->get_future();
+    std::future<R> future = invoker->future();
 
-    enqueue_impl(std::move(invoker));
+    submit_impl(std::move(invoker));
 
     return future;
   }
