@@ -96,15 +96,14 @@ TEST_CASE("Translation for basic past formulas")
   }
 
   SECTION("Translation produces an equisatisfiable formula") {
-    black::solver slv{sigma};
+    black::solver slv;
 
     for(test t : tests) {
       DYNAMIC_SECTION("Check for formula: " << t.formula) {
-        slv.assert_formula(
+        slv.set_formula(
           formula{!implies(remove_past(t.formula), t.formula)}
         );
         CHECK(!slv.solve()); // check validity
-        slv.clear();
       }
     }
   }

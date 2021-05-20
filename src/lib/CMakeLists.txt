@@ -79,11 +79,12 @@ set (
    src/logic/lex.cpp
    src/logic/parser.cpp
    src/logic/past_remover.cpp
-   src/sat/solver.cpp
    src/logic/cnf.cpp
+   src/sat/solver.cpp
    src/sat/dimacs/solver.cpp
    src/sat/dimacs/parser.cpp
    src/sat/backends/z3.cpp
+   src/solver/encoding.cpp
    src/solver/solver.cpp
    src/debug/random_formula.cpp
 )
@@ -110,19 +111,33 @@ endif()
 
 set (
   LIB_HEADERS
-  include/black/internal/formula/base.hpp
-  include/black/internal/formula/impl.hpp
-  include/black/internal/formula/match.hpp
-  include/black/internal/alphabet_impl.hpp
-  include/black/logic/alphabet.hpp
+  include/black/logic/parser.hpp
   include/black/logic/formula.hpp
   include/black/logic/lex.hpp
-  include/black/logic/parser.hpp
-  include/black/sat/solver.hpp
   include/black/logic/cnf.hpp
-  include/black/sat/dimacs.hpp
+  include/black/logic/alphabet.hpp
+  include/black/logic/past_remover.hpp
+  include/black/internal/formula/match.hpp
+  include/black/internal/formula/base.hpp
+  include/black/internal/formula/impl.hpp
+  include/black/internal/alphabet_impl.hpp
+  include/black/internal/debug/random_formula.hpp
   include/black/solver/solver.hpp
-  include/black/logic/past_remover.hpp)
+  include/black/support/hash.hpp
+  include/black/support/meta.hpp
+  include/black/support/license.hpp
+  include/black/support/assert.hpp
+  include/black/support/common.hpp
+  include/black/support/range.hpp
+  include/black/support/tribool.hpp
+  include/black/sat/dimacs.hpp
+  include/black/sat/solver.hpp
+  include/black/sat/backends/cmsat.hpp
+  include/black/sat/backends/minisat.hpp
+  include/black/sat/backends/z3.hpp
+  include/black/sat/backends/mathsat.hpp
+  src/include/black/solver/encoding.hpp
+)
 
 #
 # Main black library.
@@ -136,6 +151,7 @@ target_include_directories(black PUBLIC
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
+target_include_directories(black PRIVATE src/include)
 target_compile_features(black PUBLIC cxx_std_17)
 target_enable_warnings(black)
 target_code_coverage(black)

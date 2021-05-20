@@ -74,15 +74,15 @@ namespace black::frontend {
 
     black_assert(f.has_value());
 
-    black::solver slv{sigma};
+    black::solver slv;
 
     if (cli::sat_backend)
       slv.set_sat_backend(*cli::sat_backend);
 
     if (cli::remove_past)
-      slv.assert_formula(black::remove_past(*f));
+      slv.set_formula(black::remove_past(*f));
     else
-      slv.assert_formula(*f);
+      slv.set_formula(*f);
 
     size_t bound = 
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
