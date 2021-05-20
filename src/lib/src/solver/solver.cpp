@@ -95,7 +95,7 @@ namespace black::internal
 
   size_t model::loop() const {
     black_assert(size() > 0);
-    black_assert(!_solver._data->encoder);
+    black_assert(_solver._data->encoder);
     
     size_t k = size() - 1;
     for(size_t l = 0; l < k; ++l) {
