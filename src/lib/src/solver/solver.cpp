@@ -101,7 +101,8 @@ namespace black::internal
     for(size_t l = 0; l < k; ++l) {
       atom loop_var = 
         _solver._data->encoder->sigma->var(std::tuple{"_loop_var", l, k});
-      if(_solver._data->sat->value(loop_var))
+      tribool value = _solver._data->sat->value(loop_var);
+      if(value == true || value == tribool::undef)
         return l + 1;
     }
 
