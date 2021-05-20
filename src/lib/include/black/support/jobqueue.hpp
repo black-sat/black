@@ -24,6 +24,8 @@
 #ifndef BLACK_SUPPORT_JOBQUEUE_HPP
 #define BLACK_SUPPORT_JOBQUEUE_HPP
 
+#include <black/support/meta.hpp>
+
 #include <memory>
 #include <thread>
 #include <future>
@@ -38,7 +40,14 @@ namespace black::internal
       ~jobqueue();
 
       template<typename F, typename R = std::invoke_result_t<F>>
-      std::future<R> submit(F&& job);
+      std::future<R> submit(F job);
+
+      template<
+        typename F, typename ...Args,
+        typename R = std::invoke_result_t<F, Args...>,
+        REQUIRES(sizeof...(Args) > 0)
+      >
+      std::future<R> submit(F job, Args ...args);
 
     private:
       struct _invokable_t;
@@ -98,7 +107,7 @@ namespace black::internal
   };
 
   template<typename F, typename R>
-  std::future<R> jobqueue::submit(F&& job)
+  std::future<R> jobqueue::submit(F job)
   {
     auto invoker = std::make_unique<_invoker_t<F, R>>(std::forward<F>(job));
     
@@ -107,6 +116,17 @@ namespace black::internal
     submit_impl(std::move(invoker));
 
     return future;
+  }
+
+  template<
+    typename F, typename ...Args,
+    typename R,
+    REQUIRES_OUT_OF_LINE(sizeof...(Args) > 0)
+  >
+  std::future<R> jobqueue::submit(F job, Args ...args) {
+    auto lambda = [=] { return job(args...); };
+
+    return submit(lambda);
   }
 }
 

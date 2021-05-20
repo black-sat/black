@@ -62,6 +62,13 @@ TEST_CASE("Job queue") {
     REQUIRE(result3.get() == 3);
   }
   
+  SECTION("Jobs with arguments") {
+    auto job = [](int x) { return x * 2; };
+    std::future<int> result = q.submit(job, 21);
+    
+    REQUIRE(result.get() == 42);
+  }
+  
   SECTION("Exceptions") {
     std::future<void> result = q.submit([]{ throw 42; });
 
@@ -74,5 +81,6 @@ TEST_CASE("Job queue") {
 
     REQUIRE(answer == 42);
   }
+
 
 }
