@@ -74,19 +74,20 @@ configure_file(include/black/support/config.hpp.in ${CMAKE_BINARY_DIR}/include/b
 # black library
 #
 set (
-  LIB_SRC
-  src/logic/formula.cpp
-  src/logic/lex.cpp
-  src/logic/parser.cpp
-  src/logic/past_remover.cpp
-  src/logic/cnf.cpp
-  src/sat/solver.cpp
-  src/sat/dimacs/solver.cpp
-  src/sat/dimacs/parser.cpp
-  src/sat/backends/z3.cpp
-  src/solver/solver.cpp
-  src/debug/random_formula.cpp
-  src/support/jobqueue.cpp
+   LIB_SRC
+   src/logic/formula.cpp
+   src/logic/lex.cpp
+   src/logic/parser.cpp
+   src/logic/past_remover.cpp
+   src/logic/cnf.cpp
+   src/sat/solver.cpp
+   src/sat/dimacs/solver.cpp
+   src/sat/dimacs/parser.cpp
+   src/sat/backends/z3.cpp
+   src/solver/encoding.cpp
+   src/solver/solver.cpp
+   src/debug/random_formula.cpp
+   src/support/jobqueue.cpp
 )
    
    
@@ -137,6 +138,7 @@ set (
   include/black/sat/backends/minisat.hpp
   include/black/sat/backends/z3.hpp
   include/black/sat/backends/mathsat.hpp
+  src/include/black/solver/encoding.hpp
 )
 
 #
@@ -151,6 +153,7 @@ target_include_directories(black PUBLIC
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
+target_include_directories(black PRIVATE src/include)
 target_compile_features(black PUBLIC cxx_std_17)
 target_enable_warnings(black)
 target_code_coverage(black)

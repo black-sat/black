@@ -46,13 +46,13 @@ TEST_CASE("CNF Translation")
     tests.push_back(black::random_boolean_formula(sigma, 10, symbols));
   }
 
-  solver s{sigma};
+  solver s;
 
   SECTION("Simplification of random formulas") {
     for(formula f : tests)
     { 
       formula fc = simplify_deep(f);
-      s.assert_formula(!iff(fc,f));
+      s.set_formula(!iff(fc,f));
 
       INFO("Formula: " << f)
       INFO("Simplification: " << fc)
@@ -64,7 +64,7 @@ TEST_CASE("CNF Translation")
     for(formula f : tests) 
     { 
       formula fc = to_formula(sigma, to_cnf(f));
-      s.assert_formula(!implies(fc,f));
+      s.set_formula(!implies(fc,f));
 
       INFO("Formula: " << f)
       INFO("Simplification: " << simplify_deep(f))

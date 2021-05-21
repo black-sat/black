@@ -35,8 +35,6 @@
 #include <string>
 #include <numeric>
 
-#include <tsl/hopscotch_map.h>
-
 namespace black::internal {
 
   // main solver class
@@ -45,16 +43,12 @@ namespace black::internal {
     public:
       friend class model;
 
-      // Constructor
-      explicit solver(alphabet &a);
-
+      // Constructor and destructor
+      solver();
       ~solver();
 
       // Asserts a formula
-      void assert_formula(formula f);
-
-      // Clears the solver set of formulas
-      void clear();
+      void set_formula(formula f);
 
       // Solve the formula with up to `k_max' iterations
       // returns tribool::undef if `k_max` is reached
