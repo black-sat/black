@@ -102,8 +102,8 @@ namespace black::internal
     for(size_t l = 0; l < k; ++l) {
       atom loop_var = _solver._data->encoder->loop_var(l, k);
       tribool value = _solver._data->sat->value(loop_var);
-      black_assert(value != tribool::undef);
-      if(value)
+      
+      if(value == true || value == tribool::undef)
         return l + 1;
     }
 
