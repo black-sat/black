@@ -26,6 +26,9 @@
 #include <black/solver/encoding.hpp>
 #include <black/support/range.hpp>
 
+#include <string_view>
+
+using namespace std::literals;
 
 namespace black::internal 
 {
@@ -78,18 +81,22 @@ namespace black::internal
     );
   }
 
+  atom encoder::loop_var(size_t l, size_t k) {
+    return sigma->var(std::tuple{"_loop_var"sv, l, k});
+  }
+
   // Generates the encoding for LOOP_k
   // This is modified to allow the extraction of the loop index when printing
   // the model of the formula
   formula encoder::k_loop(size_t k) {
     formula axioms = big_and(*sigma, range(0,k), [&](size_t l) {
-      atom loop_var = sigma->var(std::tuple{"_loop_var", l, k});
+      atom loop_var = this->loop_var(l, k);
       return iff(loop_var, l_to_k_loop(l, k) && l_to_k_period(l, k));
     });
     
 
     return axioms && big_or(*sigma, range(0, k), [&](size_t l) {
-      return sigma->var(std::tuple{"_loop_var", l, k});
+      return loop_var(l, k);
     });
   }
 

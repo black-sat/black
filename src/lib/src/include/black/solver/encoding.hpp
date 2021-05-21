@@ -51,7 +51,7 @@ namespace black::internal {
     formula frm;
 
     // the alphabet of frm
-    alphabet *sigma;
+    alphabet *sigma = nullptr;
 
     // X/Y/Z-requests from the formula's closure
     std::vector<tomorrow> xrequests;
@@ -66,6 +66,9 @@ namespace black::internal {
 
     // Extract the x-eventuality from an x-request
     static std::optional<formula> get_xev(tomorrow xreq);
+
+    // Return the loop var for the loop from l to k
+    atom loop_var(size_t l, size_t k);
 
     // Make the stepped ground version of a formula, f_G^k
     atom ground(formula f, size_t k);

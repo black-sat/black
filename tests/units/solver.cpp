@@ -39,13 +39,17 @@ TEST_CASE("Testing solver")
 
     auto p = sigma.var("p");
     
-    formula f = !p && iff(!X(p), FG(p)) && implies(p, !p);
+    formula f1 = !p && iff(!X(p), FG(p)) && implies(p, !p);
+    formula f2 = p && !p;
 
-    slv.set_formula(f);
+    slv.set_formula(f1);
     
     auto model = slv.model();
     REQUIRE(!model.has_value());
 
     REQUIRE(slv.solve());
+
+    slv.set_formula(f2);
+    REQUIRE(!slv.model().has_value());
   }
 }

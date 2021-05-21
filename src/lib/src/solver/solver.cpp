@@ -28,8 +28,6 @@
 #include <black/sat/solver.hpp>
 #include <black/support/range.hpp>
 
-#include <fmt/format.h>
-
 namespace black::internal
 {
   /*
@@ -63,6 +61,9 @@ namespace black::internal
   solver::~solver() = default;
 
   void solver::set_formula(formula f) {
+    _data->model = false;
+    _data->model_size = 0;
+    _data->last_bound = 0;
     _data->encoder = encoder{f};
   }
 
@@ -99,10 +100,10 @@ namespace black::internal
     
     size_t k = size() - 1;
     for(size_t l = 0; l < k; ++l) {
-      atom loop_var = 
-        _solver._data->encoder->sigma->var(std::tuple{"_loop_var", l, k});
+      atom loop_var = _solver._data->encoder->loop_var(l, k);
       tribool value = _solver._data->sat->value(loop_var);
-      if(value == true || value == tribool::undef)
+      black_assert(value != tribool::undef);
+      if(value)
         return l + 1;
     }
 
