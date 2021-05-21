@@ -31,21 +31,25 @@ using namespace black;
 TEST_CASE("Testing solver")
 {
   alphabet sigma;
-  black::solver slv{sigma};
+  black::solver slv;
 
   SECTION("Basic solver usage") {
     REQUIRE(slv.sat_backend() == "z3");
+    REQUIRE(slv.solve() == tribool::undef);
 
     auto p = sigma.var("p");
     
-    formula f = !p && iff(!X(p), FG(p)) && implies(p, !p);
+    formula f1 = !p && iff(!X(p), FG(p)) && implies(p, !p);
+    formula f2 = p && !p;
 
-    slv.assert_formula(f);
+    slv.set_formula(f1);
     
     auto model = slv.model();
     REQUIRE(!model.has_value());
 
     REQUIRE(slv.solve());
 
+    slv.set_formula(f2);
+    REQUIRE(!slv.model().has_value());
   }
 }
