@@ -23,6 +23,8 @@
 
 #include <black/sat/dimacs.hpp>
 
+#include <tsl/hopscotch_map.h>
+
 namespace black::sat::dimacs::internal
 {
   struct solver::_solver_t {

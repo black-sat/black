@@ -39,12 +39,9 @@
 #include <string>
 #include <optional>
 
-namespace black {
-  class alphabet; // forward declaration, declared in alphabet.hpp
-}
-
 namespace black::internal
 {
+  class alphabet; // forward declaration, declared in alphabet.hpp
   class formula;
 
   constexpr bool is_boolean_type(formula_type type) {
@@ -146,28 +143,29 @@ namespace black::internal
   struct handle_base
   {
     friend class formula;
-    friend class black::alphabet;
+    friend class alphabet;
 
-    handle_base(black::alphabet *sigma, F *f) : _alphabet{sigma}, _formula{f}
+    handle_base(alphabet *sigma, F *f) 
+      : _alphabet{sigma}, _formula{f}
     { black_assert(_formula); }
 
     // This constructor takes a tuple instead of two arguments in order to
     // directly receive the return value of allocate_formula() below
-    handle_base(std::pair<black::alphabet *, F *> args)
+    handle_base(std::pair<alphabet *, F *> args)
       : handle_base{args.first, args.second} { }
 
     operator otherwise() const { return {}; }
 
     operator formula() const;
 
-    black::alphabet *alphabet() const;
+    alphabet *alphabet() const;
 
     formula_id unique_id() const;
 
   protected:
     using handled_formula_t = F;
 
-    static std::optional<H> cast(black::alphabet *sigma, formula_base *f) {
+    static std::optional<H> cast(class alphabet *sigma, formula_base *f) {
       if(auto ptr = formula_cast<typename H::handled_formula_t *>(f); ptr)
         return std::optional<H>{H{sigma, ptr}};
       return std::nullopt;
@@ -175,14 +173,14 @@ namespace black::internal
 
     // Implemented after alphabet class
     template<typename FType, typename Arg>
-    static std::pair<black::alphabet *, unary_t *>
+    static std::pair<class alphabet *, unary_t *>
     allocate_unary(FType type, Arg const&arg);
 
     template<typename FType, typename Arg1, typename Arg2>
-    static std::pair<black::alphabet *, binary_t *>
+    static std::pair<class alphabet *, binary_t *>
     allocate_binary(FType type, Arg1 const&arg1, Arg2 const&arg2);
 
-    black::alphabet *_alphabet;
+    class alphabet *_alphabet;
     F *_formula;
   };
 

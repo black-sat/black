@@ -83,7 +83,7 @@ TEST_CASE("Translation for basic past formulas")
                 && (!p_YS && G(iff(X(p_YS), p_S)))},
       {T(p,q),  (!p_T && G(iff(p_T, !q || (!p && p_YT))))
                 && (!p_YT && G(iff(X(p_YT), p_T)))},
-      {P(p),    (p_P && G(iff(p_P, p || (sigma.top() && p_YP))))
+      {O(p),    (p_P && G(iff(p_P, p || (sigma.top() && p_YP))))
                 && (!p_YP && G(iff(X(p_YP), p_P)))},
       {H(p),    (!p_H && G(iff(p_H, !p || (sigma.top() && p_YH))))
                 && (!p_YH && G(iff(X(p_YH), p_H)))}

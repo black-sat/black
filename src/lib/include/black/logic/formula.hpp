@@ -59,10 +59,6 @@ namespace black::internal {
 
 #include <black/internal/formula/base.hpp>
 
-namespace black {
-  class alphabet;
-}
-
 namespace black::internal
 {
   class formula
@@ -94,7 +90,7 @@ namespace black::internal
     type formula_type() const;
 
     // Gets the alphabet that manages this formula
-    black::alphabet *alphabet() const;
+    alphabet *alphabet() const;
 
     //
     // The to() function converts a formula into a specific kind of
@@ -128,7 +124,7 @@ namespace black::internal
     formula_id unique_id() const;
 
   private:
-    black::alphabet *_alphabet; // the alphabet the formula comes from
+    class alphabet *_alphabet; // the alphabet the formula comes from
     formula_base *_formula; // concrete object representing the formula
 
     friend struct formula_base;
@@ -138,7 +134,7 @@ namespace black::internal
 
   // Public constructor, but for internal use
   public:
-    explicit formula(black::alphabet *sigma, formula_base *f)
+    explicit formula(class alphabet *sigma, formula_base *f)
       : _alphabet{sigma}, _formula{f} { black_assert(f != nullptr); }
   };
 
@@ -278,29 +274,30 @@ namespace black::internal
   // with user code, because these names are *not* exported by the `black`
   // namespace, but are found by argument-dependent lookup.
   //
-  auto operator !(formula f);
-  auto operator &&(formula f1, formula f2);
-  auto operator ||(formula f1, formula f2);
-  auto implies(formula f1, formula f2);
+  negation operator !(formula f);
+  conjunction operator &&(formula f1, formula f2);
+  disjunction operator ||(formula f1, formula f2);
+  implication implies(formula f1, formula f2);
 
-  auto X(formula f);
-  auto Y(formula f);
-  auto F(formula f);
-  auto G(formula f);
-  auto P(formula f);
-  auto H(formula f);
+  tomorrow     X(formula f);
+  yesterday    Y(formula f);
+  w_yesterday  Z(formula f);
+  eventually   F(formula f);
+  always       G(formula f);
+  once         O(formula f);
+  historically H(formula f);
 
-  auto U(formula f1, formula f2);
-  auto R(formula f1, formula f2);
-  auto S(formula f1, formula f2);
-  auto T(formula f1, formula f2);
+  until     U(formula f1, formula f2);
+  release   R(formula f1, formula f2);
+  since     S(formula f1, formula f2);
+  triggered T(formula f1, formula f2);
 
-  auto XF(formula f);
-  auto XG(formula f);
-  auto FG(formula f);
-  auto GF(formula f);
-  auto YP(formula f);
-  auto YH(formula f);
+  tomorrow   XF(formula f);
+  tomorrow   XG(formula f);
+  eventually FG(formula f);
+  always     GF(formula f);
+  yesterday  YP(formula f);
+  yesterday  YH(formula f);
 
   //
   // Utility functions
@@ -380,5 +377,6 @@ namespace black {
 }
 
 #include <black/internal/formula/impl.hpp>
+#include <black/logic/alphabet.hpp>
 
 #endif // BLACK_LOGIC_FORMULA_HPP_

@@ -43,7 +43,7 @@ namespace black::internal {
           return sub_past(!S(!left, !right));
         },
         [](once p, formula op) { return sub_past(S(p.alphabet()->top(), op)); },
-        [](historically, formula op) { return sub_past(!P(!op)); },
+        [](historically, formula op) { return sub_past(!O(!op)); },
         [](boolean b) { return b; },
         [](atom a) { return a; },
         [](unary u, formula op) {

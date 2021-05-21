@@ -33,6 +33,16 @@ project(
 # User options
 option(ENABLE_TESTS "Enable test suite" ON)
 option(STATIC_BUILD "Perform a static build" OFF)
+option(ENABLE_CLANG_TIDY "Enable Clang Tidy invocation" OFF)
+
+set(CLANG_TIDY_PATH "clang-tidy" CACHE FILEPATH "PATH to clang-tidy executable")
+if(ENABLE_CLANG_TIDY)
+  message(STATUS "Clang Tidy enabled")
+  set(
+    CMAKE_CXX_CLANG_TIDY 
+    ${CLANG_TIDY_PATH} -header-filter=. -warnings-as-errors=* 
+    -checks=clang-analyzer-*,portability-*,bugprone-*,-bugprone-forwarding-reference-overload)
+endif()
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "")
   message(STATUS "Build configuration not defined. Defaulting to Release")

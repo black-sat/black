@@ -234,7 +234,7 @@ namespace black::frontend
         return check(trace, S(op.alphabet()->top(), op), t);
       },
       [&](historically, formula op) {
-        return check(trace, !P(!op), t);
+        return check(trace, !O(!op), t);
       },
       [&](triggered, formula l, formula r) {
         return check(trace, !S(!l, !r), t);

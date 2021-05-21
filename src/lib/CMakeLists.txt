@@ -75,6 +75,7 @@ configure_file(include/black/support/config.hpp.in ${CMAKE_BINARY_DIR}/include/b
 #
 set (
    LIB_SRC
+   src/logic/alphabet.cpp
    src/logic/formula.cpp
    src/logic/lex.cpp
    src/logic/parser.cpp
@@ -120,7 +121,7 @@ set (
   include/black/internal/formula/match.hpp
   include/black/internal/formula/base.hpp
   include/black/internal/formula/impl.hpp
-  include/black/internal/alphabet_impl.hpp
+  include/black/internal/formula/alphabet.hpp
   include/black/internal/debug/random_formula.hpp
   include/black/solver/solver.hpp
   include/black/support/hash.hpp
@@ -144,8 +145,7 @@ set (
 #
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PRIVATE fmt::fmt)
-target_link_libraries(black PUBLIC tsl::hopscotch_map)
+target_link_libraries(black PRIVATE fmt::fmt tsl::hopscotch_map)
 target_include_directories(black PUBLIC  
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>

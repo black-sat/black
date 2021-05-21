@@ -32,11 +32,7 @@
 #include <deque>
 #include <memory>
 
-namespace black {
-
-  namespace internal {
-    struct alphabet_impl;
-  }
+namespace black::internal {
 
   //
   // The alphabet class is the only entry point to create formulas.
@@ -51,8 +47,12 @@ namespace black {
   {
   public:
     alphabet();
+    ~alphabet();
     alphabet(alphabet const&) = delete; // Alphabets are non-copyable
     alphabet(alphabet &&) = default; // but movable
+
+    alphabet &operator=(alphabet const&) = delete; // non-copy-assignable
+    alphabet &operator=(alphabet &&) = default; // but move-assignable
 
     // Entry point to obtain a trivially true or trivially false boolean formula
     struct boolean boolean(bool value);
@@ -71,14 +71,29 @@ namespace black {
     formula from_id(formula_id);
 
   private:
-    std::unique_ptr<internal::alphabet_impl> _impl;
+    struct alphabet_impl;
+    std::unique_ptr<alphabet_impl> _impl;
 
     template<typename, typename>
-    friend struct internal::handle_base;
+    friend struct handle_base;
+
+    atom_t *allocate_atom(any_hashable _label);
+    unary_t *allocate_unary(unary::type type, formula_base* arg);
+    binary_t *
+    allocate_binary(binary::type type, formula_base* arg1, formula_base* arg2);
+    
+    template<typename T, REQUIRES(is_hashable<T>)>
+    atom_t *allocate_atom(T&& _label) {
+      return allocate_atom(any_hashable{FWD(_label)});
+    }
   };
 
-} // namespace black
+} // namespace black::internal
 
-#include <black/internal/alphabet_impl.hpp>
+namespace black {
+  using alphabet = internal::alphabet;
+}
+
+#include <black/internal/formula/alphabet.hpp>
 
 #endif // BLACK_ALPHABET_HPP
