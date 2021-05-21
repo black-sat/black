@@ -35,7 +35,7 @@ BLACK_REGISTER_SAT_BACKEND(z3)
 namespace black::sat::backends 
 {
   inline atom fresh(formula f) {
-    return f.alphabet()->var(f);
+    return f.sigma()->var(f);
   }
 
   struct z3::_z3_t {

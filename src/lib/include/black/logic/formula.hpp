@@ -90,7 +90,7 @@ namespace black::internal
     type formula_type() const;
 
     // Gets the alphabet that manages this formula
-    alphabet *alphabet() const;
+    alphabet *sigma() const;
 
     //
     // The to() function converts a formula into a specific kind of

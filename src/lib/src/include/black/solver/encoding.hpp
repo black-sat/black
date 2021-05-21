@@ -41,7 +41,7 @@ namespace black::internal {
   //
   struct encoder 
   {
-    encoder(formula f) : frm{f}, sigma{frm.alphabet()}
+    encoder(formula f) : frm{f}, sigma{frm.sigma()}
     {
       frm = to_nnf(frm);
       add_xyz_requests(frm);

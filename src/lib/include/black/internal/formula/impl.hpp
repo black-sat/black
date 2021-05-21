@@ -53,7 +53,7 @@ namespace black::internal
     return _formula->type;
   }
 
-  inline alphabet *formula::alphabet() const {
+  inline alphabet *formula::sigma() const {
     return _alphabet;
   }
 
@@ -115,7 +115,7 @@ namespace black::internal
   }
 
   template<typename H, typename F>
-  alphabet *handle_base<H,F>::alphabet() const {
+  alphabet *handle_base<H,F>::sigma() const {
     return _alphabet;
   }
 

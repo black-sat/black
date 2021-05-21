@@ -158,7 +158,7 @@ namespace black::internal
 
     operator formula() const;
 
-    alphabet *alphabet() const;
+    alphabet *sigma() const;
 
     formula_id unique_id() const;
 
