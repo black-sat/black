@@ -78,7 +78,7 @@ namespace black::internal {
   {
     // !true -> false, !false -> true
     if(auto b = op.to<boolean>(); b)
-      return n.alphabet()->boolean(!b->value()); 
+      return n.sigma()->boolean(!b->value()); 
     
     // !!p -> p
     if(auto nop = op.to<negation>(); nop)
@@ -88,7 +88,7 @@ namespace black::internal {
   }
 
   formula simplify_and(conjunction c, formula l, formula r) {
-    alphabet &sigma = *c.alphabet();
+    alphabet &sigma = *c.sigma();
     std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
     if(!bl && !br)
@@ -105,7 +105,7 @@ namespace black::internal {
   }
 
   formula simplify_or(disjunction d, formula l, formula r) {
-    alphabet &sigma = *d.alphabet();
+    alphabet &sigma = *d.sigma();
     std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
     if(!bl && !br)
@@ -121,7 +121,7 @@ namespace black::internal {
   }
 
   formula simplify_implication(implication t, formula l, formula r) {
-    alphabet &sigma = *t.alphabet();
+    alphabet &sigma = *t.sigma();
     std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
     if(!bl && !br)
@@ -137,7 +137,7 @@ namespace black::internal {
   }
 
   formula simplify_iff(iff f, formula l, formula r) {
-    alphabet &sigma = *f.alphabet();
+    alphabet &sigma = *f.sigma();
     std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
     if(!bl && !br)

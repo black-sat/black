@@ -23,6 +23,8 @@
 
 #include <black/sat/dimacs.hpp>
 
+#include <tsl/hopscotch_map.h>
+
 namespace black::sat::dimacs::internal
 {
   struct solver::_solver_t {
@@ -80,7 +82,7 @@ namespace black::sat::dimacs::internal
   // TODO: optimize corner cases (e.g. if assumption is already a literal)
   bool solver::is_sat_with(formula assumption) 
   { 
-    atom fresh = assumption.alphabet()->var(assumption);
+    atom fresh = assumption.sigma()->var(assumption);
 
     this->assert_formula(iff(fresh, assumption));
 

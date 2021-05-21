@@ -54,16 +54,8 @@ namespace black::internal
             s.get();
           return token{binary::type::disjunction};
 
-        // '->'
+        // '->' and '=>'
         case '-':
-          s.get();
-          if (s.peek() == '>') {
-            s.get();
-            return token{binary::type::implication};
-          }
-          return std::nullopt;
-
-        // '=>'
         case '=':
           s.get();
           if (s.peek() == '>') {
@@ -76,7 +68,7 @@ namespace black::internal
         case '<':
           s.get();
           if (s.peek() == '-' || s.peek() == '=')
-            ch = char(s.get());
+            s.get();
 
           if (s.peek() == '>') {
             s.get();

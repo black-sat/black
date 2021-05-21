@@ -222,7 +222,7 @@ namespace black::frontend
         return check(trace, l, t) == check(trace, r, t);
       },
       [&](eventually, formula op) {
-        return check(trace, U(op.alphabet()->top(), op), t);
+        return check(trace, U(op.sigma()->top(), op), t);
       },
       [&](always, formula op) {
         return check(trace, !F(!op), t);
@@ -231,10 +231,10 @@ namespace black::frontend
         return check(trace, !U(!l, !r), t);
       },
       [&](once, formula op) {
-        return check(trace, S(op.alphabet()->top(), op), t);
+        return check(trace, S(op.sigma()->top(), op), t);
       },
       [&](historically, formula op) {
-        return check(trace, !P(!op), t);
+        return check(trace, !O(!op), t);
       },
       [&](triggered, formula l, formula r) {
         return check(trace, !S(!l, !r), t);

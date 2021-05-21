@@ -53,7 +53,7 @@ namespace black::internal
     return _formula->type;
   }
 
-  inline alphabet *formula::alphabet() const {
+  inline alphabet *formula::sigma() const {
     return _alphabet;
   }
 
@@ -115,7 +115,7 @@ namespace black::internal
   }
 
   template<typename H, typename F>
-  alphabet *handle_base<H,F>::alphabet() const {
+  alphabet *handle_base<H,F>::sigma() const {
     return _alphabet;
   }
 
@@ -172,7 +172,7 @@ namespace black::internal
   struct operator_base : handle_base<H, F>
   {
     friend class formula;
-    friend class black::alphabet;
+    friend class alphabet;
 
     using base_t = handle_base<H, F>;
     using base_t::base_t;
@@ -282,17 +282,17 @@ namespace black::internal
   // The ones taking boolean args need alphabet hence are implemented in 
   // alphabet_impl.hpp
   //
-  inline auto operator !(formula f) { return negation(f); }
+  inline negation operator !(formula f) { return negation(f); }
 
-  inline auto operator &&(formula f1, formula f2) {
+  inline conjunction operator &&(formula f1, formula f2) {
     return conjunction(f1, f2);
   }
 
-  inline auto operator ||(formula f1, formula f2) {
+  inline disjunction operator ||(formula f1, formula f2) {
     return disjunction(f1, f2);
   }
 
-  inline auto implies(formula f1, formula f2) {
+  inline implication implies(formula f1, formula f2) {
     return implication(f1, f2);
   }
 
@@ -300,25 +300,25 @@ namespace black::internal
   // Note: these are found by ADL, and are *not* exported by the `black`
   //       namespace. This means the worringly generic names do not risk to
   //       cause name clashes with user names
-  inline auto X(formula f) { return tomorrow(f);     }
-  inline auto Y(formula f) { return yesterday(f);    }
-  inline auto Z(formula f) { return w_yesterday(f);  }
-  inline auto F(formula f) { return eventually(f);   }
-  inline auto G(formula f) { return always(f);       }
-  inline auto P(formula f) { return once(f);         }
-  inline auto H(formula f) { return historically(f); }
+  inline tomorrow     X(formula f) { return tomorrow(f);     }
+  inline yesterday    Y(formula f) { return yesterday(f);    }
+  inline w_yesterday  Z(formula f) { return w_yesterday(f);  }
+  inline eventually   F(formula f) { return eventually(f);   }
+  inline always       G(formula f) { return always(f);       }
+  inline once         O(formula f) { return once(f);         }
+  inline historically H(formula f) { return historically(f); }
 
-  inline auto U(formula f1, formula f2) { return until(f1,f2);     }
-  inline auto R(formula f1, formula f2) { return release(f1,f2);   }
-  inline auto S(formula f1, formula f2) { return since(f1,f2);     }
-  inline auto T(formula f1, formula f2) { return triggered(f1,f2); }
+  inline until     U(formula f1, formula f2) { return until(f1,f2);     }
+  inline release   R(formula f1, formula f2) { return release(f1,f2);   }
+  inline since     S(formula f1, formula f2) { return since(f1,f2);     }
+  inline triggered T(formula f1, formula f2) { return triggered(f1,f2); }
 
-  inline auto XF(formula f) { return X(F(f)); }
-  inline auto XG(formula f) { return X(G(f)); }
-  inline auto FG(formula f) { return F(G(f)); }
-  inline auto GF(formula f) { return G(F(f)); }
-  inline auto YP(formula f) { return Y(P(f)); }
-  inline auto YH(formula f) { return Y(H(f)); }
+  inline tomorrow   XF(formula f) { return X(F(f)); }
+  inline tomorrow   XG(formula f) { return X(G(f)); }
+  inline eventually FG(formula f) { return F(G(f)); }
+  inline always     GF(formula f) { return G(F(f)); }
+  inline yesterday  YO(formula f) { return Y(O(f)); }
+  inline yesterday  YH(formula f) { return Y(H(f)); }
 
 }
 

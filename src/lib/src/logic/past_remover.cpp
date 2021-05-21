@@ -27,7 +27,7 @@
 
 namespace black::internal {
   formula sub_past(formula f) {
-    alphabet *alpha = f.alphabet();
+    alphabet *alpha = f.sigma();
 
     return f.match(
         [&](yesterday, formula op) {
@@ -42,8 +42,8 @@ namespace black::internal {
         [](triggered, formula left, formula right) {
           return sub_past(!S(!left, !right));
         },
-        [](once p, formula op) { return sub_past(S(p.alphabet()->top(), op)); },
-        [](historically, formula op) { return sub_past(!P(!op)); },
+        [](once p, formula op) { return sub_past(S(p.sigma()->top(), op)); },
+        [](historically, formula op) { return sub_past(!O(!op)); },
         [](boolean b) { return b; },
         [](atom a) { return a; },
         [](unary u, formula op) {
@@ -80,7 +80,7 @@ namespace black::internal {
                 gen_semantics(op, sem);
               },
               [&](since s, formula left, formula right) {
-                alphabet *alpha = f.alphabet();
+                alphabet *alpha = f.sigma();
                 atom y = alpha->var(past_label{Y(a)});
                 formula sem_s = since_semantics(a, s, y);
                 formula sem_y = yesterday_semantics(y, Y(a));

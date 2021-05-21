@@ -57,7 +57,7 @@ TEST_CASE("Rountrip of parser and pretty-printer")
   atom q = sigma.var("q");
 
   std::vector<formula> tests = {
-    p, !p, X(p), F(p), G(p), P(p), H(p), XF(p), GF(p), XG(p),
+    p, !p, X(p), F(p), G(p), O(p), H(p), XF(p), GF(p), XG(p),
     p && q, p || q, U(p,q), S(p,q), R(p,q), T(p,q),
     p && (X(U(p,q)) || XF(!q)),
     p && implies(Y(S(p,q)), GF(!p)),

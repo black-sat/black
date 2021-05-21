@@ -38,7 +38,7 @@ namespace black::internal
   inline atom fresh(formula f) {
     if(f.is<atom>())
       return *f.to<atom>();
-    atom a = f.alphabet()->var(f);
+    atom a = f.sigma()->var(f);
     return a;
   }
 
