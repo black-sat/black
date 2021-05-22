@@ -73,6 +73,7 @@ include(GitSubmodules) # To automatically fetch dependencies
 include(EnableWarnings) # Common warnings to enable or disable
 include(CodeCoverage) # Code to enable code coverage instrumentation
 include(GNUInstallDirs) # Correct and portable installation paths
+include(CheckIPOSupported) # Check if we can do LTO
 
 update_git_submodules(FATAL) # Fetch git submodules
 
@@ -90,6 +91,11 @@ add_subdirectory(external/clipp EXCLUDE_FROM_ALL)
 target_mark_as_system(clipp)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DBLACK_ASSERT_DISABLE")
+check_ipo_supported(RESULT IPO_SUPPORTED LANGUAGES C CXX)
+if(IPO_SUPPORTED)
+  message(STATUS "Link-Time Optimization enabled")
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE YES)
+endif()
 
 # Black library and frontend
 add_subdirectory(src/lib)
