@@ -41,14 +41,12 @@ namespace black::internal {
   //
   struct encoder 
   {
-    encoder(formula f) : _frm{f}, _sigma{_frm.sigma()}
+    encoder(formula f, bool finite) 
+      : _frm{f}, _sigma{_frm.sigma()}, _finite{finite}
     {
       _frm = to_nnf(_frm);
       _add_xyz_requests(_frm);
     }
-
-    bool finite() const { return _finite; }
-    void set_finite(bool f) { _finite = f; }
 
     // Return the loop var for the loop from l to k
     atom loop_var(size_t l, size_t k);

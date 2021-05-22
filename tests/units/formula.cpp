@@ -67,6 +67,11 @@ TEST_CASE("Handles")
   REQUIRE(ftop == ftop);
   REQUIRE(ftop != fbottom);
 
+  auto id = fp.unique_id();
+  formula fback = sigma.from_id(id);
+
+  REQUIRE(fback == fp);
+
   SECTION("Formula casting and type checking") {
     REQUIRE(ftop.formula_type() == formula::type::boolean);
     REQUIRE(ftop.is<boolean>());
@@ -208,6 +213,9 @@ TEST_CASE("Boolean constants simplification")
 
   REQUIRE(simplify_deep(X(sigma.top())) == sigma.top());
   REQUIRE(simplify_deep(X(p)) == X(p));
+  REQUIRE(simplify_deep(wX(sigma.top())) == sigma.top());
+  REQUIRE(simplify_deep(wX(sigma.bottom())) == wX(sigma.bottom()));
+  REQUIRE(simplify_deep(wX(p)) == wX(p));
   REQUIRE(simplify_deep(F(sigma.top())) == sigma.top());
   REQUIRE(simplify_deep(F(p)) == F(p));
   REQUIRE(simplify_deep(G(sigma.top())) == sigma.top());

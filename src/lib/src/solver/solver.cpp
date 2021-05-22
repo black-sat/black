@@ -64,12 +64,7 @@ namespace black::internal
     _data->model = false;
     _data->model_size = 0;
     _data->last_bound = 0;
-    _data->encoder = encoder{f};
-    _data->encoder->set_finite(finite);
-  }
-
-  bool solver::finite() const {
-    return _data->encoder && _data->encoder->finite();
+    _data->encoder = encoder{f, finite};
   }
 
   tribool solver::solve(size_t k_max) {
