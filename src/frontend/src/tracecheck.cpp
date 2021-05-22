@@ -194,6 +194,9 @@ namespace black::frontend
       [&](tomorrow, formula op) {
         return check(trace, op, t + 1);
       },
+      [&](w_tomorrow, formula op) {
+        return check(trace, op, t + 1);
+      },
       [&](yesterday, formula op) {
         return t > 0 && check(trace, op, t - 1);
       },

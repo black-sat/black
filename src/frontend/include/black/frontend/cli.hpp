@@ -76,6 +76,9 @@ namespace black::frontend
     // past removing before executing the SAT-encoding (disabled by default)
     inline bool remove_past = false;
 
+    // set whether formulas are to be interpreted as LTLf
+    inline bool finite = false;
+
     // the input file is a DIMACS file
     inline bool dimacs = false;
 

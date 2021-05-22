@@ -66,6 +66,7 @@ namespace black::internal {
       simplify_implication,
       simplify_iff,
       simplify_tomorrow,
+      simplify_w_tomorrow,
       simplify_eventually,
       simplify_always,
       simplify_until,
@@ -157,6 +158,17 @@ namespace black::internal {
       return op;
 
     return x;
+  }
+
+  formula simplify_w_tomorrow(w_tomorrow x, formula op) {
+    return op.match(
+      [&](boolean b) -> formula {
+        if(b.value())
+          return b;
+        return x;
+      },
+      [&](otherwise) { return x; }
+    );
   }
 
   formula simplify_eventually(eventually e, formula op) { 

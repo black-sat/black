@@ -80,9 +80,9 @@ namespace black::frontend {
       slv.set_sat_backend(*cli::sat_backend);
 
     if (cli::remove_past)
-      slv.set_formula(black::remove_past(*f));
+      slv.set_formula(black::remove_past(*f), cli::finite);
     else
-      slv.set_formula(*f);
+      slv.set_formula(*f, cli::finite);
 
     size_t bound = 
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();

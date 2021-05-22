@@ -47,8 +47,12 @@ namespace black::internal {
       solver();
       ~solver();
 
-      // Asserts a formula
-      void set_formula(formula f);
+      // Sets the formula to solve.
+      // If `finite` is true, it is interpreted over finite models
+      void set_formula(formula f, bool finite = false);
+
+      // Tell whether the formula is being interpreted over finite models
+      bool finite() const;
 
       // Solve the formula with up to `k_max' iterations
       // returns tribool::undef if `k_max` is reached

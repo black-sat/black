@@ -156,6 +156,7 @@ TEST_CASE("Handles")
       return u.match(
         [](negation)     { return "negation"s;       },
         [](tomorrow)     { return "tomorrow"s;       },
+        [](w_tomorrow)   { return "weak tomorrow"s;  },
         [](yesterday)    { return "yesterday"s;      },
         [](w_yesterday)  { return "weak yesterday"s; },
         [](always)       { return "always"s;         },
