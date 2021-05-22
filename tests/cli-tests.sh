@@ -36,6 +36,9 @@ should_fail ./black check -t ../tests/test-trace.json -f !p
 cat ../tests/test-trace.json | ./black check -t - -f p
 echo p | ./black check -t ../tests/test-trace.json -
 
+./black solve -m -o json -f 'G F p' | \
+  should_fail ./black check -t - --finite -f 'G F p'
+
 cat <<END | should_fail ./black check -t - -e SAT -f 'p'
 {
   "result": "UNSAT"

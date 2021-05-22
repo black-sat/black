@@ -178,6 +178,11 @@ namespace black::frontend
   }
 
   static
+  bool state_exists(trace_t trace, size_t t) {
+    return !cli::finite || t < trace.states.size();
+  }
+
+  static
   bool check(trace_t trace, formula f, size_t t) 
   {
     static std::unordered_map<std::tuple<formula, size_t>, bool> memo;
@@ -192,10 +197,10 @@ namespace black::frontend
         return check_atom(trace, a, t);
       },
       [&](tomorrow, formula op) {
-        return check(trace, op, t + 1);
+        return state_exists(trace, t + 1) && check(trace, op, t + 1);
       },
       [&](w_tomorrow, formula op) {
-        return check(trace, op, t + 1);
+        return !state_exists(trace, t + 1) || check(trace, op, t + 1);
       },
       [&](yesterday, formula op) {
         return t > 0 && check(trace, op, t - 1);
@@ -286,7 +291,16 @@ namespace black::frontend
       if(model.is_null())
         return trace;
 
-      trace.loop = model["loop"];
+      if(!cli::finite)
+        trace.loop = model["loop"];
+      else
+        trace.loop = model["size"];
+
+      if(cli::finite && !model["loop"].is_null())
+        io::fatal(
+          status_code::syntax_error, 
+          "expected a finite model, but a \"loop\" field is present"
+        );
       
       if(model["states"].size() == 0)
         io::fatal(status_code::syntax_error, "{}: empty model", path);
