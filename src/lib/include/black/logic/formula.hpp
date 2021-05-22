@@ -39,6 +39,7 @@ namespace black::internal {
     // unary formulas
     negation,
     tomorrow,
+    w_tomorrow,
     yesterday,
     w_yesterday,
     always,
@@ -174,6 +175,7 @@ namespace black::internal
     enum class type : uint8_t {
       negation     = to_underlying(formula::type::negation),
       tomorrow,
+      w_tomorrow,
       yesterday,
       w_yesterday,
       always,
@@ -245,6 +247,7 @@ namespace black::internal
   // Unary operators. Same public interface as struct `unary`
   struct negation;
   struct tomorrow;
+  struct w_tomorrow;
   struct yesterday;
   struct w_yesterday;
   struct always;
@@ -280,6 +283,7 @@ namespace black::internal
   implication implies(formula f1, formula f2);
 
   tomorrow     X(formula f);
+  w_tomorrow  wX(formula f);
   yesterday    Y(formula f);
   w_yesterday  Z(formula f);
   eventually   F(formula f);
@@ -318,6 +322,7 @@ namespace black::internal
   formula simplify_implication(implication c, formula l, formula r);
   formula simplify_iff(iff c, formula l, formula r);
   formula simplify_tomorrow(tomorrow n, formula op);
+  formula simplify_w_tomorrow(w_tomorrow n, formula op);
   formula simplify_eventually(eventually n, formula op);
   formula simplify_always(always n, formula op);
   formula simplify_until(until c, formula l, formula r);

@@ -67,6 +67,7 @@ namespace black::internal {
       if(_logic != logic_t::boolean) {
         _ops.insert(_ops.end(), {
           unary::type::tomorrow,
+          unary::type::w_tomorrow,
           unary::type::always,
           unary::type::eventually,
           binary::type::until,

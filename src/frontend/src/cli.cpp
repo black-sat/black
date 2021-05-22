@@ -125,6 +125,8 @@ namespace black::frontend
         % "select the SAT backend to use",
       option("--remove-past").set(cli::remove_past)
         % "translate LTL+Past formulas into LTL before checking satisfiability",
+      option("--finite").set(cli::finite)
+        % "treat formulas as LTLf and look for finite models",
       option("-m", "--model").set(cli::print_model)
         % "print the model of the formula, if any",
       (option("-o", "--output-format") 
@@ -148,6 +150,8 @@ namespace black::frontend
       (option("-i", "--initial-state") & value("state", cli::initial_state))
         % "index of the initial state over which to evaluate the formula. "
           "Default: 0",
+      option("--finite").set(cli::finite)
+        % "treat formulas as LTLf and expect a finite model",
       (option("--verbose").set(cli::verbose))
         % "output a verbose log",
       (option("-f", "--formula") & value("formula", cli::formula))

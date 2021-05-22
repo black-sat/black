@@ -1,0 +1,1 @@
+((X !F (p2) U H F X !wX(O((p4) R ((p2) -> (O((p5) | Y True) & (wX False R ((p5) -> (p4)))))) | ((p5) U (p1)))) -> (True S (p3))) & (X(F True -> O wX((p2) R False)) | (True & wX True))

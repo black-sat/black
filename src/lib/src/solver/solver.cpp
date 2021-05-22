@@ -60,11 +60,11 @@ namespace black::internal
   solver::solver() : _data{std::make_unique<_solver_t>()} { }
   solver::~solver() = default;
 
-  void solver::set_formula(formula f) {
+  void solver::set_formula(formula f, bool finite) {
     _data->model = false;
     _data->model_size = 0;
     _data->last_bound = 0;
-    _data->encoder = encoder{f};
+    _data->encoder = encoder{f, finite};
   }
 
   tribool solver::solve(size_t k_max) {
@@ -103,7 +103,7 @@ namespace black::internal
       atom loop_var = _solver._data->encoder->loop_var(l, k);
       tribool value = _solver._data->sat->value(loop_var);
       
-      if(value == true || value == tribool::undef)
+      if(value == true)
         return l + 1;
     }
 
@@ -128,6 +128,7 @@ namespace black::internal
     
     sat = sat::solver::get_solver(sat_backend);
 
+    model = false;
     last_bound = 0;
     for(size_t k = 0; k <= k_max; last_bound = k++)
     {
@@ -135,7 +136,7 @@ namespace black::internal
       // If it is UNSAT, then stop with UNSAT
       sat->assert_formula(encoder->k_unraveling(k));
       if(!sat->is_sat())
-        return model = false;
+        return false;
 
       // else, continue to check EMPTY and LOOP.
       // If the k-unrav is SAT assuming EMPTY or LOOP, then stop with SAT
@@ -150,10 +151,9 @@ namespace black::internal
       // If the PRUNE is UNSAT, the formula is UNSAT
       sat->assert_formula(!encoder->prune(k));
       if(!sat->is_sat())
-        return model = false;
+        return false;
     } // end for
 
-    model = false;
     return tribool::undef;
   }
 

@@ -91,14 +91,15 @@ namespace black::internal
   constexpr std::string_view to_string(unary::type const& t)
   {
     constexpr std::string_view toks[] = {
-      "!", // negation
-      "X", // tomorrow
-      "Y", // yesterday
-      "Z", // weak yesterday
-      "G", // always
-      "F", // eventually
-      "O", // once
-      "H", // historically
+      "!",  // negation
+      "X",  // tomorrow
+      "wX", // weak tomorrow
+      "Y",  // yesterday
+      "Z",  // weak yesterday
+      "G",  // always
+      "F",  // eventually
+      "O",  // once
+      "H",  // historically
     };
 
     return toks[to_underlying(t) - to_underlying(unary::type::negation)];

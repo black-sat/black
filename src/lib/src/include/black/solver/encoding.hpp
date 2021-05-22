@@ -41,31 +41,12 @@ namespace black::internal {
   //
   struct encoder 
   {
-    encoder(formula f) : frm{f}, sigma{frm.sigma()}
+    encoder(formula f, bool finite) 
+      : _frm{f}, _sigma{_frm.sigma()}, _finite{finite}
     {
-      frm = to_nnf(frm);
-      add_xyz_requests(frm);
+      _frm = to_nnf(_frm);
+      _add_xyz_requests(_frm);
     }
-
-    // the formula to encode
-    formula frm;
-
-    // the alphabet of frm
-    alphabet *sigma = nullptr;
-
-    // X/Y/Z-requests from the formula's closure
-    std::vector<tomorrow> xrequests;
-    std::vector<yesterday> yrequests;
-    std::vector<w_yesterday> zrequests;
-
-    // cache to memoize to_nnf() calls
-    tsl::hopscotch_map<formula, formula> nnf_cache;
-
-    // collect X/Y/Z-requests
-    void add_xyz_requests(formula f);
-
-    // Extract the x-eventuality from an x-request
-    static std::optional<formula> get_xev(tomorrow xreq);
 
     // Return the loop var for the loop from l to k
     atom loop_var(size_t l, size_t k);
@@ -75,7 +56,6 @@ namespace black::internal {
 
     // Put a formula in negated normal form
     formula to_nnf(formula f);
-    formula to_nnf_inner(formula f);
 
     // Put a formula in Stepped Normal Form
     formula to_ground_snf(formula f, size_t k);
@@ -100,6 +80,30 @@ namespace black::internal {
 
     // Generates the k-unraveling for the given k
     formula k_unraveling(size_t k);
+
+  private:
+    // the formula to encode
+    formula _frm;
+
+    // the alphabet of frm
+    alphabet *_sigma = nullptr;
+
+    // encode for finite models
+    bool _finite = false;
+
+    // X/Y/Z-requests from the formula's closure
+    std::vector<unary> _xrequests;
+    std::vector<yesterday> _yrequests;
+    std::vector<w_yesterday> _zrequests;
+
+    // cache to memoize to_nnf() calls
+    tsl::hopscotch_map<formula, formula> _nnf_cache;
+
+    // collect X/Y/Z-requests
+    void _add_xyz_requests(formula f);
+
+    // Extract the x-eventuality from an x-request
+    static std::optional<formula> _get_xev(unary xreq);
   };
 
 }

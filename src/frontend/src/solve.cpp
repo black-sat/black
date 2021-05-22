@@ -80,9 +80,9 @@ namespace black::frontend {
       slv.set_sat_backend(*cli::sat_backend);
 
     if (cli::remove_past)
-      slv.set_formula(black::remove_past(*f));
+      slv.set_formula(black::remove_past(*f), cli::finite);
     else
-      slv.set_formula(*f);
+      slv.set_formula(*f, cli::finite);
 
     size_t bound = 
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
@@ -131,7 +131,10 @@ namespace black::frontend {
     if(!cli::print_model)
       return;
 
-    io::println("Model:", solver.model()->size());
+    if(cli::finite)
+      io::println("Finite model:");
+    else
+      io::println("Model:");
 
     std::unordered_set<atom> atoms;
     relevant_atoms(f, atoms);
@@ -180,7 +183,7 @@ namespace black::frontend {
 
       io::println("    \"model\": {{");
       io::println("        \"size\": {},", model->size());
-      if(model->loop())
+      if(!cli::finite)
         io::println("        \"loop\": {},", model->loop());
 
       io::println("        \"states\": [");

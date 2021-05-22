@@ -97,6 +97,7 @@ namespace black::internal
       {"False", token{false}},
       {"NOT",   token{unary::type::negation}},
       {"X",     token{unary::type::tomorrow}},
+      {"wX",    token{unary::type::w_tomorrow}},
       {"Y",     token{unary::type::yesterday}},
       {"Z",     token{unary::type::w_yesterday}},
       {"F",     token{unary::type::eventually}},

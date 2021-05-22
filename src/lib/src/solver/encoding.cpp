@@ -35,8 +35,8 @@ namespace black::internal
   // Generates the PRUNE encoding
   formula encoder::prune(size_t k)
   {
-    return big_or(*sigma, range(0, k), [&](size_t l) {
-      return big_or(*sigma, range(l + 1, k), [&](size_t j) {
+    return big_or(*_sigma, range(0, k), [&](size_t l) {
+      return big_or(*_sigma, range(l + 1, k), [&](size_t j) {
         return l_to_k_loop(l,j) && l_to_k_loop(j,k) && l_j_k_prune(l,j,k);
       });
     });
@@ -45,18 +45,18 @@ namespace black::internal
 
   // Generates the _lPRUNE_j^k encoding
   formula encoder::l_j_k_prune(size_t l, size_t j, size_t k) {
-    return big_and(*sigma, xrequests, [&](tomorrow xreq) -> formula {
-      auto req = get_xev(xreq); // consider only X-eventualities
+    return big_and(*_sigma, _xrequests, [&](unary xreq) -> formula {
+      auto req = _get_xev(xreq); // consider only X-eventualities
       if(!req)
-        return sigma->top();
+        return _sigma->top();
 
       // Creating the encoding
-      formula inner_impl = big_or(*sigma, range(j + 1, k + 1), [&](size_t i) {
+      formula inner_impl = big_or(*_sigma, range(j + 1, k + 1), [&](size_t i) {
         return to_ground_snf(*req, i);
       });
       
       formula first_conj = ground(xreq, k) && inner_impl;
-      formula second_conj = big_or(*sigma, range(l + 1, j + 1), [&](size_t i) {
+      formula second_conj = big_or(*_sigma, range(l + 1, j + 1), [&](size_t i) {
         return to_ground_snf(*req, i);
       });
 
@@ -67,13 +67,20 @@ namespace black::internal
 
   // Generates the encoding for EMPTY_k
   formula encoder::k_empty(size_t k) {
-    return big_and(*sigma, xrequests, [&](tomorrow req) {
-      return !ground(req, k);
+    return big_and(*_sigma, _xrequests, [&,this](unary req) -> formula {
+      if(!_finite || req.formula_type() == unary::type::tomorrow)
+        return !ground(req, k);
+      return _sigma->top();
     });
   }
 
   // extract the requested formula from an X-eventuality
-  std::optional<formula> encoder::get_xev(tomorrow xreq) {
+  std::optional<formula> encoder::_get_xev(unary xreq) {
+    black_assert(
+      xreq.formula_type() == unary::type::tomorrow ||
+      xreq.formula_type() == unary::type::w_tomorrow
+    );
+
     return xreq.operand().match(
       [](eventually e) { return std::optional{e.operand()}; },
       [](until u) { return std::optional{u.right()}; },
@@ -82,34 +89,37 @@ namespace black::internal
   }
 
   atom encoder::loop_var(size_t l, size_t k) {
-    return sigma->var(std::tuple{"_loop_var"sv, l, k});
+    return _sigma->var(std::tuple{"_loop_var"sv, l, k});
   }
 
   // Generates the encoding for LOOP_k
   // This is modified to allow the extraction of the loop index when printing
   // the model of the formula
   formula encoder::k_loop(size_t k) {
-    formula axioms = big_and(*sigma, range(0,k), [&](size_t l) {
+    if(_finite)
+      return _sigma->bottom();
+
+    formula axioms = big_and(*_sigma, range(0,k), [&](size_t l) {
       atom loop_var = this->loop_var(l, k);
       return iff(loop_var, l_to_k_loop(l, k) && l_to_k_period(l, k));
     });
     
 
-    return axioms && big_or(*sigma, range(0, k), [&](size_t l) {
+    return axioms && big_or(*_sigma, range(0, k), [&](size_t l) {
       return loop_var(l, k);
     });
   }
 
   // Generates the encoding for _lP_k
   formula encoder::l_to_k_period(size_t l, size_t k) {
-    return big_and(*sigma, xrequests, [&](tomorrow xreq) -> formula {
-      auto req = get_xev(xreq); // consider only X-eventualities
+    return big_and(*_sigma, _xrequests, [&](unary xreq) -> formula {
+      auto req = _get_xev(xreq); // consider only X-eventualities
       if(!req)
-        return sigma->top();
+        return _sigma->top();
       
       // Creating the encoding
       formula atom_phi_k = ground(xreq, k);
-      formula body_impl = big_or(*sigma, range(l + 1, k + 1), [&](size_t i) {
+      formula body_impl = big_or(*_sigma, range(l + 1, k + 1), [&](size_t i) {
         return to_ground_snf(*req, i);
       });
 
@@ -129,12 +139,12 @@ namespace black::internal
       return iff(ground(req, l+1), to_ground_snf(op, k));
     };
 
-    formula x = big_and(*sigma, xrequests, make_loop);
-    formula y = big_and(*sigma, yrequests, make_loop);
-    formula z = big_and(*sigma, zrequests, make_loop);
+    formula x = big_and(*_sigma, _xrequests, make_loop);
+    formula y = big_and(*_sigma, _yrequests, make_loop);
+    formula z = big_and(*_sigma, _zrequests, make_loop);
 
-    formula yy = big_and(*sigma, yrequests, close_loop);
-    formula zz = big_and(*sigma, zrequests, close_loop);
+    formula yy = big_and(*_sigma, _yrequests, close_loop);
+    formula zz = big_and(*_sigma, _zrequests, close_loop);
 
     return x && y && z && yy && zz;
   }
@@ -143,20 +153,20 @@ namespace black::internal
   // Generates the k-unraveling step for the given k.
   formula encoder::k_unraveling(size_t k) {
     if (k == 0) {
-      formula y = big_and(*sigma, yrequests, [&](formula f) {
+      formula y = big_and(*_sigma, _yrequests, [&](formula f) {
         return !to_ground_snf(f, k);
       });
 
-      formula z = big_and(*sigma, zrequests, [&](formula f) {
+      formula z = big_and(*_sigma, _zrequests, [&](formula f) {
         return to_ground_snf(f, k);
       });
 
-      return to_ground_snf(frm, k) && y && z;
+      return to_ground_snf(_frm, k) && y && z;
     }
 
     // STEP
     // X(\alpha)_G^{k} <-> snf(\alpha)_G^{k+1}
-    formula step = big_and(*sigma, xrequests, [&](tomorrow xreq) {
+    formula step = big_and(*_sigma, _xrequests, [&](unary xreq) {
       return iff( ground(xreq, k - 1), to_ground_snf(xreq.operand(), k) );
     });
 
@@ -166,8 +176,8 @@ namespace black::internal
       return iff( ground(yz_req, k), to_ground_snf(yz_req.operand(), k - 1) );
     };
 
-    formula y = big_and(*sigma, yrequests, make_yz);
-    formula z = big_and(*sigma, zrequests, make_yz);
+    formula y = big_and(*_sigma, _yrequests, make_yz);
+    formula z = big_and(*_sigma, _zrequests, make_yz);
     
     return step && y && z;
   }
@@ -180,6 +190,7 @@ namespace black::internal
       [&](boolean)      { return f; },
       [&](atom)         { return ground(f, k); },
       [&](tomorrow)     { return ground(f, k); },
+      [&](w_tomorrow)   { return ground(f, k); },
       [&](yesterday)    { return ground(f, k); },
       [&](w_yesterday)  { return ground(f, k); },
       [&](negation n)   { return !to_ground_snf(n.operand(),k); },
@@ -203,11 +214,11 @@ namespace black::internal
         return to_ground_snf(op,k) || ground(X(e), k);
       },
       [&,this](always a, formula op) {
-        return to_ground_snf(op,k) && ground(X(a), k);
+        return to_ground_snf(op,k) && ground(wX(a), k);
       },
       [&,this](release r, formula left, formula right) {
         return (to_ground_snf(left,k) && to_ground_snf(right,k)) ||
-            (to_ground_snf(right,k) && ground(X(r), k));
+            (to_ground_snf(right,k) && ground(wX(r), k));
       },
       [&,this](since s, formula left, formula right) {
         return to_ground_snf(right,k) ||
@@ -231,7 +242,9 @@ namespace black::internal
     switch(t) {
       case unary::type::negation:
       case unary::type::tomorrow:
-        return t;
+        return unary::type::w_tomorrow;
+      case unary::type::w_tomorrow:
+        return unary::type::tomorrow;
       case unary::type::yesterday:
         return unary::type::w_yesterday;
       case unary::type::w_yesterday:
@@ -271,22 +284,15 @@ namespace black::internal
   }
 
   atom encoder::ground(formula f, size_t k) {
-    return sigma->var(std::pair(f,k));
+    return _sigma->var(std::pair(f,k));
   }
 
   // Transformation in NNF
   formula encoder::to_nnf(formula f) {
-    if(auto it = nnf_cache.find(f); it != nnf_cache.end())
+    if(auto it = _nnf_cache.find(f); it != _nnf_cache.end())
       return it->second;
 
-    formula n = to_nnf_inner(f);
-    nnf_cache.insert({f, n});
-    return n;
-  }
-
-  formula encoder::to_nnf_inner(formula f)
-  {
-    return f.match(
+    formula nnf = f.match(
       [](boolean b) { return b; },
       [](atom a)    { return a; },
       // Push the negation down to literals
@@ -328,37 +334,41 @@ namespace black::internal
         return binary(b.formula_type(), to_nnf(b.left()), to_nnf(b.right()));
       }
     );
+
+    _nnf_cache.insert({f, nnf});
+    return nnf;
   }
 
   /* Following the definition of "closure":
-   * - if f is a future operator, then X(f) is in xrequests
-   * - if f is S or O, then Y(f) is in yrequests
-   * - if f is T or H, then Z(f) is in zrequests
+   * - if f is a future operator, then X(f) is in _xrequests
+   * - if f is S or O, then Y(f) is in _yrequests
+   * - if f is T or H, then Z(f) is in _zrequests
    */
-  void encoder::add_xyz_requests(formula f)
+  void encoder::_add_xyz_requests(formula f)
   {
     f.match(
-      [&](tomorrow t)     { xrequests.push_back(t); },
-      [&](yesterday y)    { yrequests.push_back(y); },
-      [&](w_yesterday z)  { zrequests.push_back(z); },
-      [&](until u)        { xrequests.push_back(X(u)); },
-      [&](release r)      { xrequests.push_back(X(r)); },
-      [&](always a)       { xrequests.push_back(X(a)); },
-      [&](eventually e)   { xrequests.push_back(X(e)); },
-      [&](since s)        { yrequests.push_back(Y(s)); },
-      [&](once o)         { yrequests.push_back(Y(o)); },
-      [&](triggered t)    { zrequests.push_back(Z(t)); },
-      [&](historically h) { zrequests.push_back(Z(h)); },
+      [&](tomorrow t)     { _xrequests.push_back(t);     },
+      [&](w_tomorrow w)   { _xrequests.push_back(w);     },
+      [&](yesterday y)    { _yrequests.push_back(y);     },
+      [&](w_yesterday z)  { _zrequests.push_back(z);     },
+      [&](until u)        { _xrequests.push_back(X(u));  },
+      [&](release r)      { _xrequests.push_back(wX(r)); },
+      [&](always a)       { _xrequests.push_back(wX(a)); },
+      [&](eventually e)   { _xrequests.push_back(X(e));  },
+      [&](since s)        { _yrequests.push_back(Y(s));  },
+      [&](once o)         { _yrequests.push_back(Y(o));  },
+      [&](triggered t)    { _zrequests.push_back(Z(t));  },
+      [&](historically h) { _zrequests.push_back(Z(h));  },
       [](otherwise)       { }
     );
 
     f.match(
       [&](unary, formula op) {
-        add_xyz_requests(op);
+        _add_xyz_requests(op);
       },
       [&](binary, formula left, formula right) {
-        add_xyz_requests(left);
-        add_xyz_requests(right);
+        _add_xyz_requests(left);
+        _add_xyz_requests(right);
       },
       [](otherwise) { }
     );

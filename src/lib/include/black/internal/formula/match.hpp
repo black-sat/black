@@ -65,6 +65,7 @@ namespace std {
     declare_destructuring_arity(atom,         0)
     declare_destructuring_arity(negation,     1)
     declare_destructuring_arity(tomorrow,     1)
+    declare_destructuring_arity(w_tomorrow,   1)
     declare_destructuring_arity(yesterday,    1)
     declare_destructuring_arity(w_yesterday,  1)
     declare_destructuring_arity(always,       1)
@@ -185,6 +186,7 @@ namespace black::internal
     atom,
     negation,
     tomorrow,
+    w_tomorrow,
     yesterday,
     w_yesterday,
     always,
@@ -204,6 +206,7 @@ namespace black::internal
   using unary_ltl_ops = syntax<
     negation,
     tomorrow,
+    w_tomorrow,
     yesterday,
     w_yesterday,
     always,
@@ -283,6 +286,7 @@ namespace std {
   declare_formula_ct(binary)
   declare_common_type(negation,     unary)
   declare_common_type(tomorrow,     unary)
+  declare_common_type(w_tomorrow,   unary)
   declare_common_type(yesterday,    unary)
   declare_common_type(w_yesterday,  unary)
   declare_common_type(always,       unary)
@@ -369,6 +373,7 @@ namespace black::internal
 
   using future_ltl_ops = syntax<
     tomorrow,
+    w_tomorrow,
     always,
     eventually,
     until,
@@ -377,6 +382,7 @@ namespace black::internal
 
   using temporal_ltl_ops = syntax<
     tomorrow,
+    w_tomorrow,
     always,
     eventually,
     until,

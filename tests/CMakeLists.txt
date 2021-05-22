@@ -119,14 +119,20 @@ foreach(TEST IN LISTS TESTS)
   list(GET TEST 1 RESULT)
 
   set(TEST_NAME "black:${FILE}:${RESULT}")
+  set(FINITE_OPT "")
+  string(FIND "${FILE}" "finite_models" FOUND)
+  if(FOUND GREATER_EQUAL 0)
+    set(FINITE_OPT "--finite")
+  endif()
+  
   add_test(
     NAME "${TEST_NAME}"
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
     COMMAND
       /bin/bash -c
       "$<TARGET_FILE:frontend> solve \
-      -m -o json -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
-      $<TARGET_FILE:frontend> check -t - -e ${RESULT} '${FILE}'"
+      -m -o json ${FINITE_OPT} -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
+      $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} -e ${RESULT} '${FILE}'"
   )
 
   if(BLACK_TEST_TIMEOUT)

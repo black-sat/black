@@ -254,6 +254,7 @@ namespace black::internal
   
   declare_operator(negation,     unary)
   declare_operator(tomorrow,     unary)
+  declare_operator(w_tomorrow,   unary)
   declare_operator(yesterday,    unary)
   declare_operator(w_yesterday,  unary)
   declare_operator(always,       unary)
@@ -301,6 +302,7 @@ namespace black::internal
   //       namespace. This means the worringly generic names do not risk to
   //       cause name clashes with user names
   inline tomorrow     X(formula f) { return tomorrow(f);     }
+  inline w_tomorrow  wX(formula f) { return w_tomorrow(f);   }
   inline yesterday    Y(formula f) { return yesterday(f);    }
   inline w_yesterday  Z(formula f) { return w_yesterday(f);  }
   inline eventually   F(formula f) { return eventually(f);   }
