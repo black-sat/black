@@ -1,9 +1,9 @@
-# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black)  ![MIT](https://img.shields.io/badge/license-MIT-brightgreen) [![Latest release](https://badgen.net/github/release/black-sat/black)](https://github.com/black-sat/black/releases/tag/v0.5.2) [![codecov](https://codecov.io/gh/black-sat/black/branch/master/graph/badge.svg?token=ZETQF5NZ6X)](https://codecov.io/gh/black-sat/black)
+# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black)  ![MIT](https://img.shields.io/badge/license-MIT-brightgreen) [![Latest release](https://badgen.net/github/release/black-sat/black)](https://github.com/black-sat/black/releases/tag/v0.6.0) [![codecov](https://codecov.io/gh/black-sat/black/branch/master/graph/badge.svg?token=ZETQF5NZ6X)](https://codecov.io/gh/black-sat/black)
 
-BLACK (short for Bounded Ltl sAtisfiability ChecKer) is a tool for testing the
-satisfiability of LTL formulas based on the SAT encoding of the tableau method
-described [here][Reynolds]. An in depth description of the encoding and the
-whole algorithm has been published in the proceedings of the TABLEAUX 2019 
+BLACK (short for Bounded Lᴛʟ sAtisfiability ChecKer) is a tool for testing the
+satisfiability of LTL and LTLf formulas based on the SAT encoding of the tableau
+method described [here][Reynolds]. An in depth description of the encoding and
+the whole algorithm has been published in the proceedings of the TABLEAUX 2019
 conference.
 
 [Luca Geatti][Geatti], [Nicola Gigante][Gigante], [Angelo Montanari][Montanari]  
@@ -23,7 +23,7 @@ Quick installation instructions:
 
 | Ubuntu ≥ 20.04             | Fedora 34 | macOS ≥ 10.14 with [Homebrew][Homebrew] |
 |----------------------------|------------------------------|-----------------------------|
-| [![Download](https://badgen.net/badge/Download%20v0.5.2/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.5.2/.rpm/green)][pkg.rpm]| |
+| [![Download](https://badgen.net/badge/Download%20v0.6.0/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.6.0/.rpm/green)][pkg.rpm]| |
 | How to install:<br/>`$ sudo apt install ⟨file⟩` | How to install:<br/>`$ sudo dnf install ⟨file⟩` |How to install:<br/>`$ brew install black-sat/black/black-sat`|
 
 Quick usage help:
@@ -31,15 +31,15 @@ Quick usage help:
 $ black --help
 
 BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
-        version 0.5.2
+        version 0.6.0
 
 
 SYNOPSIS
-   ./black solve [-k <bound>] [-B <backend>] [--remove-past] [-m] [-o <fmt>]
-           [-f <formula>] [<file>]
+   ./black solve [-k <bound>] [-B <backend>] [--remove-past] [--finite] [-m]
+           [-o <fmt>] [-f <formula>] [<file>]
 
-   ./black check -t <trace> [-e <result>] [-i <state>] [--verbose] [-f
-           <formula>] [<file>]
+   ./black check -t <trace> [-e <result>] [-i <state>] [--finite] [--verbose]
+           [-f <formula>] [<file>]
 
    ./black dimacs [-B <backend>] <file>
    ./black --sat-backends
@@ -52,6 +52,9 @@ OPTIONS
        -B, --sat-backend <backend> select the SAT backend to use
        --remove-past               translate LTL+Past formulas into LTL before
                                    checking satisfiability
+
+       --finite                    treat formulas as LTLf and look for finite
+                                   models
 
        -m, --model                 print the model of the formula, if any
        -o, --output-format <fmt>   Output format.
@@ -67,6 +70,9 @@ OPTIONS
        -e, --expected <result>     expected result (useful in testing)
        -i, --initial-state <state> index of the initial state over which to
                                    evaluate the formula. Default: 0
+
+       --finite                    treat formulas as LTLf and expect a finite
+                                   model
 
        --verbose                   output a verbose log
        -f, --formula <formula>     formula against which to check the trace
@@ -101,5 +107,5 @@ OPTIONS
 [Home]: https://github.com/black-sat/black/wiki/Home 
 [Installation]: https://github.com/black-sat/black/wiki/Installation 
 [Usage]: https://github.com/black-sat/black/wiki/Usage 
-[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.5.2/black-sat-0.5.2-1.x86_64.deb
-[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.5.2/black-sat-0.5.2-1.x86_64.rpm
+[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.6.0/black-sat-0.6.0-1.x86_64.deb
+[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.6.0/black-sat-0.6.0-1.x86_64.rpm
