@@ -42,22 +42,15 @@ set(
   include/black/frontend/support.hpp
 )
 
-include(LinkGlobalCtors)
-
 add_executable(frontend ${FRONTEND_SRC} ${FRONTEND_HEADERS})
-target_link_library_with_global_ctors(frontend PRIVATE black)
 
 target_compile_features(frontend PRIVATE cxx_std_17)
 target_include_directories(frontend PRIVATE include)
-target_link_libraries(frontend PRIVATE fmt::fmt clipp::clipp)
+target_link_libraries(frontend PRIVATE black fmt::fmt clipp::clipp)
 target_link_libraries(frontend PRIVATE nlohmann_json::nlohmann_json)
 target_enable_warnings(frontend)
 target_code_coverage(frontend)
 add_sanitizers(frontend)
-
-if(STATIC_BUILD)
-  target_link_libraries(frontend PRIVATE "-static -pthread")
-endif()
 
 set_property(TARGET frontend PROPERTY OUTPUT_NAME black)
 set_property(TARGET frontend PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

@@ -32,7 +32,6 @@ project(
 
 # User options
 option(ENABLE_TESTS "Enable test suite" ON)
-option(STATIC_BUILD "Perform a static build" OFF)
 option(ENABLE_CLANG_TIDY "Enable Clang Tidy invocation" OFF)
 
 set(CLANG_TIDY_PATH "clang-tidy" CACHE FILEPATH "PATH to clang-tidy executable")
@@ -51,15 +50,7 @@ else()
   message(STATUS "Build configuration: '${CMAKE_BUILD_TYPE}'")
 endif()
 
-if(STATIC_BUILD)
-  set(CMAKE_LINK_FLAGS_DEBUG "${CMAKE_LINK_FLAGS} -static")
-  set(CMAKE_LINK_FLAGS_RELEASE "${CMAKE_LINK_FLAGS} -static")
-  set(BUILD_SHARED_LIBS OFF)
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-  message(STATUS "Static build enabled")
-else()
-  set(BUILD_SHARED_LIBS ON)
-endif()
+set(BUILD_SHARED_LIBS ON)
 
 #
 # Additional modules

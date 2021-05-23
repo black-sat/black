@@ -34,11 +34,11 @@ set(BLACK_TESTS_SAT_BACKEND "z3" CACHE STRING "SAT backend used in tests")
 #
 add_executable(crscounter_generator
         formulas_generators/crscounter/crscounter_generator.cpp)
-target_link_library_with_global_ctors(crscounter_generator PRIVATE black)
+target_link_libraries(crscounter_generator PRIVATE black)
 
 add_executable(random_formulas_generator
         formulas_generators/random_formulas/random_formulas_generator.cpp)
-target_link_library_with_global_ctors(random_formulas_generator PRIVATE black)
+target_link_libraries(random_formulas_generator PRIVATE black)
 
 set_target_properties(
   crscounter_generator random_formulas_generator 
@@ -66,8 +66,7 @@ if(Catch2_FOUND)
   )
 
   add_executable(unit_tests ${UNIT_TESTS})
-  target_link_library_with_global_ctors(unit_tests PRIVATE black)
-  target_link_libraries(unit_tests PRIVATE Catch2::Catch2)
+  target_link_libraries(unit_tests PRIVATE black Catch2::Catch2)
   target_enable_warnings(unit_tests)
   target_code_coverage(unit_tests)
   add_sanitizers(unit_tests)
@@ -129,7 +128,7 @@ foreach(TEST IN LISTS TESTS)
     NAME "${TEST_NAME}"
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
     COMMAND
-      /bin/bash -c
+      /bin/sh -c
       "$<TARGET_FILE:frontend> solve \
       -m -o json ${FINITE_OPT} -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
       $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} -e ${RESULT} '${FILE}'"
