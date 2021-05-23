@@ -68,7 +68,7 @@ task:
   freebsd_instance:
     image_family: freebsd-13-0
   download_dependencies_script:
-    - yes | pkg install libfmt nlohmann-json z3 cryptominisat
+    - yes | pkg install cmake libfmt nlohmann-json z3 cryptominisat
   debug_build_script:
     - mkdir -p build && cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug ..
