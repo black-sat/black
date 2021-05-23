@@ -69,6 +69,11 @@ task:
     image_family: freebsd-13-0
   download_dependencies_script:
     - yes | pkg install cmake libfmt nlohmann-json z3 cryptominisat
+  install_hopscotch_script:
+    - git clone https://github.com/Tessil/hopscotch-map.git
+    - cd hopscotch-map
+    - cmake .
+    - make install
   debug_build_script:
     - mkdir -p build && cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug ..
