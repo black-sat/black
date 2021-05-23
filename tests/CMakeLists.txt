@@ -128,7 +128,7 @@ foreach(TEST IN LISTS TESTS)
     NAME "${TEST_NAME}"
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
     COMMAND
-      /bin/bash -c
+      /bin/sh -c
       "$<TARGET_FILE:frontend> solve \
       -m -o json ${FINITE_OPT} -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
       $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} -e ${RESULT} '${FILE}'"
