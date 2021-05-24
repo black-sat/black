@@ -223,3 +223,7 @@ packages
 
 # CLion settings
 .idea
+
+# Visual Studio settings
+.vs
+CMakeSettings.json

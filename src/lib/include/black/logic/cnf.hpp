@@ -24,7 +24,7 @@
 #ifndef BLACK_CNF_HPP_
 #define BLACK_CNF_HPP_
 
-
+#include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
 
@@ -32,9 +32,9 @@
 #include <initializer_list>
 #include <memory>
 
-namespace black::internal 
+namespace black::internal
 {
-  
+
   // TODO: Compress the boolean into the pointer to the atom
   struct literal {
     bool sign;
@@ -48,11 +48,11 @@ namespace black::internal
     clause(std::vector<literal> lits) : literals(std::move(lits)) { }
     clause(std::initializer_list<literal> elems) : literals{elems} { }
   };
-  
-  struct cnf 
+
+  struct cnf
   {
     std::vector<clause> clauses;
-    
+
     cnf() = default;
     cnf(std::vector<clause> _clauses) : clauses(std::move(_clauses)) { }
     cnf(std::initializer_list<clause> elems) : clauses{elems} { }
@@ -60,11 +60,17 @@ namespace black::internal
   };
 
   // Tseitin conversion to CNF
+  BLACK_EXPORT
   cnf to_cnf(formula f);
 
   // Conversion of literals, clauses and cnfs to formulas
+  BLACK_EXPORT
   formula to_formula(literal lit);
+
+  BLACK_EXPORT
   formula to_formula(alphabet &sigma, clause c);
+
+  BLACK_EXPORT
   formula to_formula(alphabet &sigma, cnf c);
 }
 
