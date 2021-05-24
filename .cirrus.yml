@@ -113,5 +113,7 @@ task:
 
 task:
   name: Windows (MSVC 2019)
+  windows_container:
+    image: cirrusci/windowsservercore:2019
   script:
     - cl
