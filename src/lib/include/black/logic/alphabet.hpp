@@ -24,6 +24,7 @@
 #ifndef BLACK_ALPHABET_HPP
 #define BLACK_ALPHABET_HPP
 
+#include <black/support/common.hpp>
 #include <black/support/meta.hpp>
 #include <black/logic/formula.hpp>
 
@@ -43,16 +44,16 @@ namespace black::internal {
   // The alphabet handles memory management for formulas: memory allocated for
   // formulas is alive as long as the corresponding alphabet object is alive.
   //
-  class alphabet
+  class BLACK_EXPORT alphabet
   {
   public:
     alphabet();
     ~alphabet();
     alphabet(alphabet const&) = delete; // Alphabets are non-copyable
-    alphabet(alphabet &&) = default; // but movable
+    alphabet(alphabet &&); // but movable
 
     alphabet &operator=(alphabet const&) = delete; // non-copy-assignable
-    alphabet &operator=(alphabet &&) = default; // but move-assignable
+    alphabet &operator=(alphabet &&); // but move-assignable
 
     // Entry point to obtain a trivially true or trivially false boolean formula
     struct boolean boolean(bool value);

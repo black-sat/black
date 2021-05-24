@@ -24,6 +24,7 @@
 #ifndef BLACK_SAT_SOLVER_HPP
 #define BLACK_SAT_SOLVER_HPP
 
+#include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
 #include <black/support/tribool.hpp>
 
@@ -38,7 +39,7 @@ namespace black::sat
   //
   // Generic interface to backend SAT solvers
   //  
-  class solver 
+  class BLACK_EXPORT solver 
   {
   public:
     // default constructor

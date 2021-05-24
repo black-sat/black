@@ -24,6 +24,7 @@
 #ifndef BLACK_SOLVER_HPP
 #define BLACK_SOLVER_HPP
 
+#include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
 #include <black/support/tribool.hpp>
@@ -38,7 +39,7 @@
 namespace black::internal {
 
   // main solver class
-  class solver 
+  class BLACK_EXPORT solver 
   {
     public:
       friend class model;
@@ -75,7 +76,7 @@ namespace black::internal {
 
   }; // end class Black Solver
 
-  class model
+  class BLACK_EXPORT model
   {
     public:
       size_t size() const;

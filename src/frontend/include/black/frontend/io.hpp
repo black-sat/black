@@ -32,7 +32,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
-#include <unistd.h>
 
 //
 // Functions in this file should be used as the only way to output anything

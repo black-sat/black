@@ -24,10 +24,10 @@
 #ifndef BLACK_COMMON_H
 #define BLACK_COMMON_H
 
-#include <black/support/meta.hpp>
-#include <black/support/config.hpp>
-#include <black/support/license.hpp>
-#include <black/support/assert.hpp>
-#include <black/support/hash.hpp>
+#ifdef _MSC_VER
+  #define BLACK_EXPORT __declspec(dllexport)
+#else
+  #define BLACK_EXPORT
+#endif
 
 #endif // BLACK_COMMON_H
