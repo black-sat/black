@@ -1,119 +1,112 @@
-# task:
-#   environment:
-#     CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
-#   matrix:
-#     - name: Fedora 29 (g++ 8)
-#       container:
-#         dockerfile: docker/Dockerfile.fedora
-#         docker_arguments:
-#           VERSION: 29
-#     - name: Fedora 31 (g++ 9)
-#       container:
-#         dockerfile: docker/Dockerfile.fedora
-#         docker_arguments:
-#           VERSION: 31
-#     - name: Fedora 32 (g++ 10)
-#       container:
-#         dockerfile: docker/Dockerfile.fedora
-#         docker_arguments:
-#           VERSION: 32
-#     - name: Ubuntu 20.04 (g++ 9)
-#       container:
-#         dockerfile: docker/Dockerfile.ubuntu
-#         docker_arguments:
-#           VERSION: 20.04
-#           GCC_VERSION: 9
-#     - name: Ubuntu 20.04 (g++ 10)
-#       container:
-#         dockerfile: docker/Dockerfile.ubuntu
-#         docker_arguments:
-#           VERSION: 20.04
-#           GCC_VERSION: 10
-#   debug_build_script:
-#     - mkdir build && cd build
-#     - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ..
-#     - make
-#   always:
-#     binaries_artifacts:
-#       path: "build/black"
-#       path: "build/src/lib/libblack.so"
-#   test_script:
-#     - cd build
-#     - ./unit_tests
-#     - ../tests/cli-tests.sh
-#     - ctest -j2 -R black --output-on-failure
-#   coverage_script:
-#     - cd build
-#     - bash <(curl -s https://codecov.io/bash);
+task:
+  environment:
+    CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
+  matrix:
+    - name: Fedora 29 (g++ 8)
+      container:
+        dockerfile: docker/Dockerfile.fedora
+        docker_arguments:
+          VERSION: 29
+    - name: Fedora 31 (g++ 9)
+      container:
+        dockerfile: docker/Dockerfile.fedora
+        docker_arguments:
+          VERSION: 31
+    - name: Fedora 32 (g++ 10)
+      container:
+        dockerfile: docker/Dockerfile.fedora
+        docker_arguments:
+          VERSION: 32
+    - name: Ubuntu 20.04 (g++ 9)
+      container:
+        dockerfile: docker/Dockerfile.ubuntu
+        docker_arguments:
+          VERSION: 20.04
+          GCC_VERSION: 9
+    - name: Ubuntu 20.04 (g++ 10)
+      container:
+        dockerfile: docker/Dockerfile.ubuntu
+        docker_arguments:
+          VERSION: 20.04
+          GCC_VERSION: 10
+  debug_build_script:
+    - mkdir build && cd build
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ..
+    - make
+  always:
+    binaries_artifacts:
+      path: "build/black"
+      path: "build/src/lib/libblack.so"
+  test_script:
+    - cd build
+    - ./unit_tests
+    - ../tests/cli-tests.sh
+    - ctest -j2 -R black --output-on-failure
+  coverage_script:
+    - cd build
+    - bash <(curl -s https://codecov.io/bash);
 
-
-# task:
-#   name: macOS (Apple clang)
-#   osx_instance:
-#     image: catalina-base
-#   download_dependencies_script:
-#     - brew install cmake fmt catch2 z3 cryptominisat nlohmann-json
-#     - brew install black-sat/black/hopscotch-map
-#     - ./download-mathsat.sh
-#   debug_build_script:
-#     - mkdir -p build && cd build
-#     - cmake -DCMAKE_BUILD_TYPE=Release ..
-#     - make
-#   test_script:
-#     - cd build 
-#     - ctest -j2 -R black --output-on-failure
-
-# task:
-#   name: FreeBSD 13 (Clang 11)
-#   freebsd_instance:
-#     image_family: freebsd-13-0
-#   download_dependencies_script:
-#     - yes | pkg install git cmake libfmt nlohmann-json z3 cryptominisat
-#   install_hopscotch_script:
-#     - git clone https://github.com/Tessil/hopscotch-map.git
-#     - cd hopscotch-map
-#     - cmake .
-#     - make install
-#   debug_build_script:
-#     - mkdir -p build && cd build
-#     - cmake -DCMAKE_BUILD_TYPE=Debug ..
-#     - make
-#   test_script:
-#     - cd build
-#     - ctest -j2 -R black --output-on-failure
-
-# task:
-#   matrix:
-#     - name: Fedora 32 (with CryptoMiniSAT backend)
-#       environment:
-#         BACKEND: cmsat
-#     - name: Fedora 32 (with MathSAT backend)
-#       environment:
-#         BACKEND: mathsat
-#   container:
-#     dockerfile: docker/Dockerfile.fedora
-#     docker_arguments:
-#       VERSION: 32
-#   environment:
-#     CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
-#   download_mathsat_script:
-#     - ./download-mathsat.sh
-#   debug_build_script:
-#     - mkdir -p build && cd build
-#     - cmake -DCMAKE_BUILD_TYPE=Debug -DBLACK_TESTS_SAT_BACKEND=$BACKEND -DCODE_COVERAGE=ON ..
-#     - make
-#   test_script:
-#     - cd build 
-#     - ./unit_tests
-#     - ../tests/cli-tests.sh
-#     - ctest -j2 -R black
-#   coverage_script:
-#     - cd build
-#     - bash <(curl -s https://codecov.io/bash);
 
 task:
-  name: Windows (MSVC 2019)
-  windows_container:
-    image: cirrusci/visualstudio2019
-  script:
-    - cl
+  name: macOS (Apple clang)
+  osx_instance:
+    image: catalina-base
+  download_dependencies_script:
+    - brew install cmake fmt catch2 z3 cryptominisat nlohmann-json
+    - brew install black-sat/black/hopscotch-map
+    - ./download-mathsat.sh
+  debug_build_script:
+    - mkdir -p build && cd build
+    - cmake -DCMAKE_BUILD_TYPE=Release ..
+    - make
+  test_script:
+    - cd build 
+    - ctest -j2 -R black --output-on-failure
+
+task:
+  name: FreeBSD 13 (Clang 11)
+  freebsd_instance:
+    image_family: freebsd-13-0
+  download_dependencies_script:
+    - yes | pkg install git cmake libfmt nlohmann-json z3 cryptominisat
+  install_hopscotch_script:
+    - git clone https://github.com/Tessil/hopscotch-map.git
+    - cd hopscotch-map
+    - cmake .
+    - make install
+  debug_build_script:
+    - mkdir -p build && cd build
+    - cmake -DCMAKE_BUILD_TYPE=Debug ..
+    - make
+  test_script:
+    - cd build
+    - ctest -j2 -R black --output-on-failure
+
+task:
+  matrix:
+    - name: Fedora 32 (with CryptoMiniSAT backend)
+      environment:
+        BACKEND: cmsat
+    - name: Fedora 32 (with MathSAT backend)
+      environment:
+        BACKEND: mathsat
+  container:
+    dockerfile: docker/Dockerfile.fedora
+    docker_arguments:
+      VERSION: 32
+  environment:
+    CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
+  download_mathsat_script:
+    - ./download-mathsat.sh
+  debug_build_script:
+    - mkdir -p build && cd build
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DBLACK_TESTS_SAT_BACKEND=$BACKEND -DCODE_COVERAGE=ON ..
+    - make
+  test_script:
+    - cd build 
+    - ./unit_tests
+    - ../tests/cli-tests.sh
+    - ctest -j2 -R black
+  coverage_script:
+    - cd build
+    - bash <(curl -s https://codecov.io/bash);
