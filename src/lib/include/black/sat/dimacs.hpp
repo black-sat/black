@@ -24,6 +24,7 @@
 #ifndef BLACK_SAT_DIMACS_HPP
 #define BLACK_SAT_DIMACS_HPP
 
+#include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
 #include <black/logic/alphabet.hpp>
 #include <black/sat/solver.hpp>
@@ -48,27 +49,38 @@ namespace black::sat::dimacs::internal
     std::vector<clause> clauses;
   };
 
+  BLACK_EXPORT
   std::optional<problem> parse(
     std::istream &in, std::function<void(std::string)> error_handler
   );
 
+  BLACK_EXPORT
   std::string to_string(literal l);
+
+  BLACK_EXPORT
   void print(std::ostream &out, problem p);
 
   struct solution {
     std::vector<literal> assignments;
   };
 
+  BLACK_EXPORT
   formula to_formula(alphabet &sigma, clause const& c);
+
+  BLACK_EXPORT
   formula to_formula(alphabet &sigma, problem const& p);
+
+  BLACK_EXPORT
   std::optional<solution> solve(problem const& p, std::string backend);
+
+  BLACK_EXPORT
   void print(std::ostream &out, std::optional<solution> const& s);
 
   //
   // A specialized instance of sat::solver for backends with 
   // DIMACS-based interfaces (e.g. MiniSAT and CryptoMiniSAT)
   //
-  class solver : public sat::solver 
+  class BLACK_EXPORT solver : public sat::solver 
   {
   public:
     solver();

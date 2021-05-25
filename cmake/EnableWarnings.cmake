@@ -59,7 +59,10 @@ set(
 )
 
 # MSVC
-set(MSVC_WARNINGS /wd4068 /wd4702 /W4 /WX)
+set(
+  MSVC_WARNINGS 
+  /wd4068 /wd4702 /wd4127 /wd4459 /wd4573 /wd4251 /wd4244
+)
 
 #
 # target_enable_warnings()

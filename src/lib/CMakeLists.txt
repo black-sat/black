@@ -22,12 +22,22 @@
 # SOFTWARE.
 
 
+option(ENABLE_Z3 "Enable the Z3 backend, if found" ON)
 option(ENABLE_MATHSAT "Enable the MathSAT backend, if found" ON)
 option(ENABLE_CMSAT "Enable the CryptoMiniSAT backend, if found" ON)
 option(ENABLE_MINISAT "Enable the MiniSAT backend, if found" ON)
 
-find_package(Z3 REQUIRED) # default backend
-message(STATUS "Enabling Z3 backend...")
+if(ENABLE_Z3)
+  find_package(Z3)
+
+  if(Z3_FOUND)
+    message(STATUS "Z3 solver found! Enabling the Z3 backend...")
+  else()
+    message(STATUS "Z3 solver not found. Disabling the Z3 backend...")
+  endif()
+else()
+  message(STATUS "Z3 backend disabled.")
+endif()
 
 if(ENABLE_MATHSAT)
   find_package(MathSAT)
@@ -84,21 +94,21 @@ set (
    src/sat/solver.cpp
    src/sat/dimacs/solver.cpp
    src/sat/dimacs/parser.cpp
-   src/sat/backends/z3.cpp
    src/solver/encoding.cpp
    src/solver/solver.cpp
    src/debug/random_formula.cpp
 )
-   
-   
+
+if(Z3_FOUND)
+  set(LIB_SRC ${LIB_SRC} src/sat/backends/z3.cpp)
+endif()
+
 if(MathSAT_FOUND)
-  set(LIB_SRC ${LIB_SRC} 
-    src/sat/backends/mathsat.cpp include/black/sat/backends/mathsat.hpp)
+  set(LIB_SRC ${LIB_SRC} src/sat/backends/mathsat.cpp)
 endif()
 
 if(MiniSAT_FOUND)
-  set(LIB_SRC ${LIB_SRC} 
-    src/sat/backends/minisat.cpp include/black/sat/backends/minisat.hpp)
+  set(LIB_SRC ${LIB_SRC} src/sat/backends/minisat.cpp)
   set_source_files_properties(
     src/sat/backends/minisat.cpp 
     PROPERTIES COMPILE_FLAGS -fpermissive
@@ -106,8 +116,7 @@ if(MiniSAT_FOUND)
 endif()
 
 if(CryptoMiniSAT_FOUND)
-  set(LIB_SRC ${LIB_SRC} 
-    src/sat/backends/cmsat.cpp include/black/sat/backends/cmsat.hpp)
+  set(LIB_SRC ${LIB_SRC} src/sat/backends/cmsat.cpp)
 endif()
 
 set (
@@ -156,6 +165,8 @@ target_compile_features(black PUBLIC cxx_std_17)
 target_enable_warnings(black)
 target_code_coverage(black)
 add_sanitizers(black)
+
+set_property(TARGET black PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 if(MathSAT_FOUND)
   target_link_libraries(black PRIVATE MathSAT)

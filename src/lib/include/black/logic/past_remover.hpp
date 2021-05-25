@@ -62,6 +62,7 @@ namespace black::internal {
   }
 
   // Exposed procedure which puts together everything
+  BLACK_EXPORT
   formula remove_past(formula);
 
 } // end namespace black::internal

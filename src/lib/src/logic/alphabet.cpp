@@ -56,6 +56,9 @@ namespace black::internal {
 
   alphabet::~alphabet() = default;
 
+  alphabet::alphabet(alphabet&&) = default;
+  alphabet &alphabet::operator=(alphabet&&) = default;
+
   boolean alphabet::boolean(bool value) {
     return value ? top() : bottom();
   }

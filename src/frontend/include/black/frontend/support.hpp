@@ -31,6 +31,11 @@
 #include <cstring>
 #include <functional>
 
+#if defined(_MSC_VER)
+  #include <BaseTsd.h>
+  using ssize_t = SSIZE_T;
+#endif
+
 namespace black::frontend
 {
   //
@@ -41,15 +46,19 @@ namespace black::frontend
     char buf[255];
     const int buflen = sizeof(buf);
 
-    // strerror has different return types on Linux and MacOS
-#ifdef _GNU_SOURCE
-    // GNU-specific version
-    return strerror_r(errnum, buf, buflen);
-#else
-    // XSI-compliant systems, including MacOS
-    strerror_r(errnum, buf, buflen);
-    return buf;
-#endif
+    // strerror has different signatures on different systems
+    #ifdef _GNU_SOURCE
+        // GNU-specific version
+        return strerror_r(errnum, buf, buflen);
+    #elif defined(_MSC_VER)
+        // Microsoft-specific version
+        strerror_s(buf, buflen, errnum);
+        return buf;
+    #else
+        // XSI-compliant systems, including MacOS and FreeBSD
+        strerror_r(errnum, buf, buflen);
+        return buf;
+    #endif
   }
 
   inline std::ifstream open_file(std::string const&path) {

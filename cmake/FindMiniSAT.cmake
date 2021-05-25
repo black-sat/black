@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-find_package(ZLIB REQUIRED)
+find_package(ZLIB)
 
 ##
 ## Find the MiniSAT SAT solver
@@ -45,6 +45,7 @@ find_package_handle_standard_args(MiniSAT
   REQUIRED_VARS
     MiniSAT_LIBRARY
     MiniSAT_INCLUDE_DIR
+    ZLIB_LIBRARIES
   VERSION_VAR MiniSAT_VERSION
 )
 

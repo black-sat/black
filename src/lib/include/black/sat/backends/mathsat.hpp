@@ -24,13 +24,14 @@
 #ifndef BLACK_SAT_MATHSAT_HPP
 #define BLACK_SAT_MATHSAT_HPP
 
+#include <black/support/common.hpp>
 #include <black/sat/solver.hpp>
 
 #include <memory>
 
 namespace black::sat::backends
 {
-  class mathsat : public ::black::sat::solver
+  class BLACK_EXPORT mathsat : public ::black::sat::solver
   {
   public:
     mathsat();

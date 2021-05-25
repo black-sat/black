@@ -24,6 +24,7 @@
 #ifndef BLACK_LEX_H_
 #define BLACK_LEX_H_
 
+#include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
 
 #include <iostream>
@@ -140,7 +141,7 @@ namespace black::internal
     }, tok._data);
   }
 
-  class lexer
+  class BLACK_EXPORT lexer
   {
   public:
     explicit lexer(std::istream &stream) : _stream(stream) {}

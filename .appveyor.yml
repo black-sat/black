@@ -1,0 +1,102 @@
+#
+# BLACK - Bounded Ltl sAtisfiability ChecKer
+#
+# (C) 2021 Nicola Gigante
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+image:
+  - Visual Studio 2019
+
+init:
+  - git config --global core.autocrlf input
+
+clone_folder: c:\projects\black
+
+install:
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - cd C:\Projects
+  - mkdir dependencies
+  - git clone https://github.com/Tessil/hopscotch-map.git
+  - cd hopscotch-map
+  - mkdir build
+  - cd build
+  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies ..
+  - cmake --build .
+  - cmake --build . --target install
+  - cd C:\Projects
+  - curl -fsSL -o fmt.zip https://github.com/fmtlib/fmt/releases/download/7.1.3/fmt-7.1.3.zip
+  - 7z x fmt.zip
+  - cd fmt-7.1.3
+  - mkdir build
+  - cd build
+  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DFMT_TEST=NO ..
+  - cmake --build .
+  - cmake --build . --target install
+  - cd C:\Projects
+  - git clone https://github.com/nlohmann/json.git
+  - cd json
+  - mkdir build
+  - cd build
+  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DJSON_BuildTests=OFF ..
+  - cmake --build .
+  - cmake --build . --target install
+  - cd C:\Projects
+  - curl -fsSL -o z3.zip https://github.com/Z3Prover/z3/releases/download/z3-4.8.10/z3-4.8.10-x64-win.zip
+  - 7z x z3.zip
+  - move z3-4.8.10-x64-win z3
+  - curl -fsSL -o catch.zip https://github.com/catchorg/Catch2/archive/refs/tags/v2.13.6.zip
+  - 7z x catch.zip
+  - cd Catch2-2.13.6
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DBUILD_TESTING=OFF ..
+  - cmake --build .
+  - cmake --build . --target install
+
+platform: x64
+
+build_script:
+  - cd C:\Projects\black
+  - mkdir build
+  - cd build
+  - set CC=cl
+  - set CXX=cl
+  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies \
+    -DCMAKE_BUILD_TYPE=Release -DENABLE_FORMULAS_TESTS=NO \
+    -DZ3_LIBRARY=C:\Projects\z3\bin\libz3.lib \
+    -DZ3_INCLUDE_DIR=C:\Projects\z3\include ..
+  - cmake --build .
+  - copy C:\Projects\z3\bin\libz3.dll .
+  - mkdir C:\BLACK
+  - cd C:\
+  - copy C:\Projects\black\build\src\lib\black.lib C:\BLACK
+  - copy C:\Projects\black\build\black.dll C:\BLACK
+  - copy C:\Projects\black\build\black.exe C:\BLACK
+  - xcopy C:\Projects\black\src\lib\include C:\BLACK\include\ /E /H
+  - copy C:\Projects\z3\bin\libz3.dll C:\BLACK
+  - 7z a -tzip black-win-x64.zip C:\BLACK
+  - move black-win-x64.zip C:\Projects\black
+
+test_script:
+  - cd C:\projects\black\build
+  - ctest --output-on-failure
+
+artifacts:
+  - path: black-win-x64.zip

@@ -24,6 +24,7 @@
 #ifndef BLACK_PARSER_H_
 #define BLACK_PARSER_H_
 
+#include <black/support/common.hpp>
 #include <black/logic/alphabet.hpp>
 #include <black/logic/lex.hpp>
 
@@ -36,7 +37,7 @@ namespace black::internal
   //
   // Class to parse LTL formulas
   //
-  class parser
+  class BLACK_EXPORT parser
   {
   public:
     using error_handler = std::function<void(std::string)>;
@@ -70,24 +71,29 @@ namespace black::internal
   };
 
   // Easy entry-point for parsing formulas
+  BLACK_EXPORT
   std::optional<formula>
   parse_formula(alphabet &sigma, std::string const&s,
                 parser::error_handler error);
 
+  BLACK_EXPORT
   std::optional<formula>
   parse_formula(alphabet &sigma, std::istream &s,
                 parser::error_handler error);
 
+  BLACK_EXPORT
   inline std::optional<formula>
   parse_formula(alphabet &sigma, std::string const&s) {
     return parse_formula(sigma, s, [](auto){});
   }
 
+  BLACK_EXPORT
   inline std::optional<formula>
   parse_formula(alphabet &sigma, std::istream &s) {
     return parse_formula(sigma, s, [](auto){});
   }
 
+  BLACK_EXPORT
   std::string to_string(formula f);
 
   inline std::ostream &operator<<(std::ostream &stream, formula const&f) {

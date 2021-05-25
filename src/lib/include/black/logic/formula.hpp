@@ -24,6 +24,8 @@
 #ifndef BLACK_LOGIC_FORMULA_HPP_
 #define BLACK_LOGIC_FORMULA_HPP_
 
+#include <black/support/common.hpp>
+
 #include <optional>
 #include <cstdint>
 
@@ -311,24 +313,14 @@ namespace black::internal
   // Currently, it only removes true/false constants, where possible.
   // This function acts on the *top-level* operator.
   // Use simplify_deep() to recursively simplify the whole formula
+  BLACK_EXPORT
   formula simplify(formula f);
 
+  BLACK_EXPORT
   formula simplify_deep(formula f);
 
-  // type-specific versions of simplify()
-  formula simplify_negation(negation n, formula op);
-  formula simplify_and(conjunction c, formula l, formula r);
-  formula simplify_or(disjunction c, formula l, formula r);
-  formula simplify_implication(implication c, formula l, formula r);
-  formula simplify_iff(iff c, formula l, formula r);
-  formula simplify_tomorrow(tomorrow n, formula op);
-  formula simplify_w_tomorrow(w_tomorrow n, formula op);
-  formula simplify_eventually(eventually n, formula op);
-  formula simplify_always(always n, formula op);
-  formula simplify_until(until c, formula l, formula r);
-  formula simplify_release(release c, formula l, formula r);
-
   // true if there is any true/false constant in the formula
+  BLACK_EXPORT
   bool has_constants(formula f);
 
   // Conjunct multiple formulas generated from a range

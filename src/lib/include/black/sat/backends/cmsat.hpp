@@ -21,11 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <black/support/common.hpp>
 #include <black/sat/dimacs.hpp>
 
 namespace black::sat::backends 
 {
-  class cmsat : public ::black::sat::dimacs::solver
+  class BLACK_EXPORT cmsat : public ::black::sat::dimacs::solver
   {
   public:
     cmsat();

@@ -56,25 +56,7 @@ namespace black::internal {
     );
   }
 
-  formula simplify(formula f) {
-    return f.match(
-      [ ](boolean b) -> formula { return b; },
-      [ ](atom a) -> formula { return a; },
-      simplify_negation,
-      simplify_and,
-      simplify_or,
-      simplify_implication,
-      simplify_iff,
-      simplify_tomorrow,
-      simplify_w_tomorrow,
-      simplify_eventually,
-      simplify_always,
-      simplify_until,
-      simplify_release,
-      [&](past) -> formula { /* TODO */ black_unreachable(); } // LCOV_EXCL_LINE
-    );
-  }
-
+  static
   formula simplify_negation(negation n, formula op) 
   {
     // !true -> false, !false -> true
@@ -88,6 +70,7 @@ namespace black::internal {
     return n;
   }
 
+  static
   formula simplify_and(conjunction c, formula l, formula r) {
     alphabet &sigma = *c.sigma();
     std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
@@ -105,6 +88,7 @@ namespace black::internal {
     return sigma.boolean(bl->value() && br->value());
   }
 
+  static
   formula simplify_or(disjunction d, formula l, formula r) {
     alphabet &sigma = *d.sigma();
     std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
@@ -121,6 +105,7 @@ namespace black::internal {
     return sigma.boolean(bl->value() || br->value());
   }
 
+  static
   formula simplify_implication(implication t, formula l, formula r) {
     alphabet &sigma = *t.sigma();
     std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
@@ -137,6 +122,7 @@ namespace black::internal {
     return sigma.boolean(!bl->value() || br->value());
   }
 
+  static
   formula simplify_iff(iff f, formula l, formula r) {
     alphabet &sigma = *f.sigma();
     std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
@@ -153,6 +139,7 @@ namespace black::internal {
     return sigma.boolean(bl->value() == br->value());
   }
 
+  static
   formula simplify_tomorrow(tomorrow x, formula op) { 
     if(op.is<boolean>())
       return op;
@@ -160,6 +147,7 @@ namespace black::internal {
     return x;
   }
 
+  static
   formula simplify_w_tomorrow(w_tomorrow x, formula op) {
     return op.match(
       [&](boolean b) -> formula {
@@ -171,6 +159,7 @@ namespace black::internal {
     );
   }
 
+  static
   formula simplify_eventually(eventually e, formula op) { 
     if(op.is<boolean>())
       return op;
@@ -178,6 +167,7 @@ namespace black::internal {
     return e;
   }
 
+  static
   formula simplify_always(always g, formula op) { 
     if(op.is<boolean>())
       return op;
@@ -185,6 +175,7 @@ namespace black::internal {
     return g;
   }
 
+  static
   formula simplify_until(until u, formula l, formula r) {
     std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
@@ -197,6 +188,7 @@ namespace black::internal {
     return *br;
   }
 
+  static
   formula simplify_release(release s, formula l, formula r) {
     std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
@@ -207,5 +199,24 @@ namespace black::internal {
       return bl->value() ? r : G(r);
 
     return *br;
+  }
+
+  formula simplify(formula f) {
+    return f.match(
+      [ ](boolean b) -> formula { return b; },
+      [ ](atom a) -> formula { return a; },
+      simplify_negation,
+      simplify_and,
+      simplify_or,
+      simplify_implication,
+      simplify_iff,
+      simplify_tomorrow,
+      simplify_w_tomorrow,
+      simplify_eventually,
+      simplify_always,
+      simplify_until,
+      simplify_release,
+      [&](past) -> formula { /* TODO */ black_unreachable(); } // LCOV_EXCL_LINE
+    );
   }
 }
