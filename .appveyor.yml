@@ -114,7 +114,7 @@ install:
   - cd C:\Projects
   - curl -fsSL -o z3.zip https://github.com/Z3Prover/z3/releases/download/z3-4.8.10/z3-4.8.10-x64-win.zip
   - 7z x z3.zip
-  - dir
+  - move z3-4.8.10-x64-win z3
 
 #---------------------------------#
 #       build configuration       #
@@ -135,15 +135,16 @@ build_script:
   - cd build
   - set CC=cl
   - set CXX=cl
-  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DCMAKE_BUILD_TYPE=Release -DZ3_LIBRARY=C:\Projects\z3-4.8.10-x64-win\bin\libz3.lib -DZ3_INCLUDE_DIR=C:\Projects\z3-4.8.10-x64-win\include ..
+  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DCMAKE_BUILD_TYPE=Release -DZ3_LIBRARY=C:\Projects\z3\bin\libz3.lib -DZ3_INCLUDE_DIR=C:\Projects\z3\include ..
   - cmake --build .
+  - copy C:\Projects\z3\bin\libz3.dll .
   - mkdir C:\BLACK
   - cd C:\
   - copy C:\Projects\black\build\src\lib\black.lib C:\BLACK
   - copy C:\Projects\black\build\black.dll C:\BLACK
   - copy C:\Projects\black\build\black.exe C:\BLACK
   - xcopy C:\Projects\black\src\lib\include C:\BLACK\include\ /E /H
-  - copy C:\Projects\z3-4.8.10-x64-win\bin\libz3.dll C:\BLACK
+  - copy C:\Projects\z3\bin\libz3.dll C:\BLACK
   - 7z a -tzip black.zip C:\BLACK
 
 # to disable automatic builds
