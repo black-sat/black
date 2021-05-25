@@ -88,7 +88,7 @@ install:
   - cd C:\Projects
   - mkdir dependencies
   - git clone https://github.com/Tessil/hopscotch-map.git
-  - cd hopscotch_map
+  - cd hopscotch-map
   - mkdir build
   - cd build
   - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies ..
