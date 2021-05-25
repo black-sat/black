@@ -18,7 +18,7 @@ BLACK is:
 * **Lightweight**: low memory consuption even for large formulas
 * **Flexible**: supports LTL and LTL+Past both on infinite and finite models
 * **Robust**: rock-solid stability with 100% test coverage
-* **Multiplatform**: works on Linux, macOS and Windows
+* **Multiplatform**: works on Linux, macOS, Windows and FreeBSD
 * **Easy to use**: easy to install binary packages provided for all platforms
 * **Embeddable**: use BLACK's library API to integrate BLACK's solver into your code
 
