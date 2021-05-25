@@ -95,8 +95,8 @@ install:
   - cmake --build .
   - cmake --build . --target install
   - cd C:\Projects
-  - curl -fsS https://github.com/fmtlib/fmt/releases/download/7.1.3/fmt-7.1.3.zip
-  - 7z x fmt-7.1.3.zip
+  - curl -fsSL -o fmt.zip https://github.com/fmtlib/fmt/releases/download/7.1.3/fmt-7.1.3.zip
+  - 7z x fmt.zip
   - cd fmt-7.1.3
   - mkdir build
   - cd build
