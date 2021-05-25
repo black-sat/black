@@ -84,6 +84,7 @@ clone_folder: c:\projects\black
 #   - msmq                # start Queuing services
 
 install:
+  -  call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
   
 
 #---------------------------------#
@@ -101,14 +102,13 @@ configuration: Release
 
 # to run your custom scripts instead of automatic MSBuild
 build_script:
-  - cl
-  # - cd C:\Projects\black
-  # - mkdir build
-  # - cd build
-  # - set CC=cl
-  # - set CXX=cl
-  # - cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-  # - cmake --build .
+  - cd C:\Projects\black
+  - mkdir build
+  - cd build
+  - set CC=cl
+  - set CXX=cl
+  - cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+  - cmake --build .
 
 # to disable automatic builds
 #build: off
