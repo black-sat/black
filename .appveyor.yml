@@ -104,6 +104,8 @@ build_script:
   - cd C:\Projects\black
   - mkdir build
   - cd build
+  - set CC=cl
+  - set CXX=cl
   - cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
   - cmake --build .
 
