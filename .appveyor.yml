@@ -82,6 +82,8 @@ clone_folder: c:\projects\black
 
 install:
   - choco install cmake
+  - cd C:\Projects
+  - appveyor DownloadFile 
 
 #---------------------------------#
 #       build configuration       #
@@ -98,6 +100,11 @@ configuration: Release
 
 # to run your custom scripts instead of automatic MSBuild
 build_script:
+  - cd C:\Projects\black
+  - mkdir build
+  - cd build
+  - cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+  - cmake --build .
 
 # to disable automatic builds
 #build: off
