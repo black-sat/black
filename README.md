@@ -1,4 +1,4 @@
-# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black)  ![MIT](https://img.shields.io/badge/license-MIT-brightgreen) [![Latest release](https://badgen.net/github/release/black-sat/black)](https://github.com/black-sat/black/releases/tag/v0.6.0) [![codecov](https://codecov.io/gh/black-sat/black/branch/master/graph/badge.svg?token=ZETQF5NZ6X)](https://codecov.io/gh/black-sat/black)
+# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black) ![appveyor](https://ci.appveyor.com/api/projects/status/github/black-sat/black?branch=master&svg=true) ![MIT](https://img.shields.io/badge/license-MIT-brightgreen) [![Latest release](https://badgen.net/github/release/black-sat/black)](https://github.com/black-sat/black/releases/tag/v0.6.1) [![codecov](https://codecov.io/gh/black-sat/black/branch/master/graph/badge.svg?token=ZETQF5NZ6X)](https://codecov.io/gh/black-sat/black)
 
 BLACK (short for Bounded Lᴛʟ sAtisfiability ChecKer) is a tool for testing the
 satisfiability of LTL and LTLf formulas based on the SAT encoding of the tableau
@@ -13,25 +13,27 @@ Analytic Tableaux and Related Methods*, [TABLEAUX 2019][Tableaux], pages 3‑20
 DOI: 10.1007/978-3-030-29026-9_1  
 [Full Text][Paper], [DBLP][DBLP]
 
-See the project's wiki for the [Documentation][Home]. In particular:
+BLACK is:
+* **Fast**: based on a state-of-the-art SAT-based encoding 
+* **Lightweight**: low memory consuption even for large formulas
+* **Flexible**: supports LTL and LTL+Past both on infinite and finite models
+* **Robust**: rock-solid stability with 100% test coverage
+* **Multiplatform**: works on Linux, macOS and Windows
+* **Easy to use**: easy to install binary packages provided for all platforms
+* **Embeddable**: use BLACK's library API to integrate BLACK's solver into your code
 
-1. [Installation][Installation]
+See the [Documentation][Home] on how to use BLACK. In particular:
+
+1. [Downloads and Installation][Installation]
 2. [Usage][Usage]
 3. (coming soon...) BLACK Library API
-
-Quick installation instructions:
-
-| Ubuntu ≥ 20.04             | Fedora 34 | macOS ≥ 10.14 with [Homebrew][Homebrew] |
-|----------------------------|------------------------------|-----------------------------|
-| [![Download](https://badgen.net/badge/Download%20v0.6.0/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.6.0/.rpm/green)][pkg.rpm]| |
-| How to install:<br/>`$ sudo apt install ⟨file⟩` | How to install:<br/>`$ sudo dnf install ⟨file⟩` |How to install:<br/>`$ brew install black-sat/black/black-sat`|
 
 Quick usage help:
 ```
 $ black --help
 
 BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
-        version 0.6.0
+        version 0.6.1
 
 
 SYNOPSIS
@@ -107,5 +109,3 @@ OPTIONS
 [Home]: https://github.com/black-sat/black/wiki/Home 
 [Installation]: https://github.com/black-sat/black/wiki/Installation 
 [Usage]: https://github.com/black-sat/black/wiki/Usage 
-[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.6.0/black-sat-0.6.0-1.x86_64.deb
-[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.6.0/black-sat-0.6.0-1.x86_64.rpm
