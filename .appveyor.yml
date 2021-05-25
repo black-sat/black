@@ -9,7 +9,7 @@
 #---------------------------------#
 
 # # version format
-# version: 1.0.{build}
+version: 0.6.0
 
 # branches to build
 # branches:
@@ -156,8 +156,8 @@ build_script:
   - copy C:\Projects\black\build\black.exe C:\BLACK
   - xcopy C:\Projects\black\src\lib\include C:\BLACK\include\ /E /H
   - copy C:\Projects\z3\bin\libz3.dll C:\BLACK
-  - 7z a -tzip black.zip C:\BLACK
-  - move black.zip C:\Projects\black
+  - 7z a -tzip black-{version}-win-x64.zip C:\BLACK
+  - move black-{version}-win-x64.zip C:\Projects\black
 
 # to disable automatic builds
 #build: off
@@ -184,4 +184,4 @@ test_script:
 artifacts:
 
   # pushing a single file
-  - path: black.zip
+  - path: black-{version}-win-x64.zip
