@@ -33,9 +33,12 @@
 using namespace black;
 using namespace std::literals;
 
-TEST_CASE("Handles")
+TEST_CASE("Formula manipulation")
 {
   alphabet sigma;
+  alphabet sigma0 = std::move(sigma);
+
+  sigma = std::move(sigma0);
 
   boolean top = sigma.top();
   boolean bottom = sigma.bottom();
