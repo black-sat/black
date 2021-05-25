@@ -134,7 +134,7 @@ build_script:
   - cd build
   - set CC=cl
   - set CXX=cl
-  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DCMAKE_BUILD_TYPE=Release -DZ3_LIBRARY=C:\Projects\z3\bin\libz3.lib ..
+  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DCMAKE_BUILD_TYPE=Release -DZ3_LIBRARY=C:\Projects\z3-4.8.10-x64-win\bin\libz3.lib ..
   - cmake --build .
   - mkdir C:\BLACK
 
