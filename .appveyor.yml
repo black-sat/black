@@ -111,6 +111,9 @@ install:
   - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DJSON_BuildTests=OFF ..
   - cmake --build .
   - cmake --build . --target install
+  - cd C:\Projects
+  - curl -fsSL -o z3.zip https://github.com/Z3Prover/z3/releases/download/z3-4.8.10/z3-4.8.10-x64-win.zip
+  - 7z x z3.zip
 
 #---------------------------------#
 #       build configuration       #
@@ -131,8 +134,9 @@ build_script:
   - cd build
   - set CC=cl
   - set CXX=cl
-  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DCMAKE_BUILD_TYPE=Release ..
+  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DCMAKE_BUILD_TYPE=Release -DZ3_LIBRARY=C:\Projects\z3\bin\libz3.lib ..
   - cmake --build .
+  - mkdir C:\BLACK
 
 # to disable automatic builds
 #build: off
@@ -145,7 +149,7 @@ build_script:
 
 # to run your custom scripts instead of automatic tests
 test_script:
-  - echo This is my custom test script
+  - ctest --output-on-failure
 
 # to disable automatic tests 
 #test: off
