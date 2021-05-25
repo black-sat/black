@@ -1,0 +1,126 @@
+# Notes:
+#   - Minimal appveyor.yml file is an empty file. All sections are optional.
+#   - Indent each level of configuration with 2 spaces. Do not use tabs!
+#   - All section names are case-sensitive.
+#   - Section names should be unique on each level.
+
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+
+# # version format
+# version: 1.0.{build}
+
+# branches to build
+# branches:
+#   # whitelist
+#   only:
+#     - master
+#     - production
+
+#   # blacklist
+#   except:
+#     - gh-pages
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+# Operating system (build VM template)
+# os: Windows Server 2012
+
+# scripts that are called at very beginning, before repo cloning
+init:
+  - git config --global core.autocrlf input
+
+# clone directory
+clone_folder: c:\projects\black
+
+# setting up etc\hosts file
+# hosts:
+#   queue-server: 127.0.0.1
+#   db.server.com: 127.0.0.2
+
+# environment variables
+# environment:
+#   my_var1: value1
+#   my_var2: value2
+#   # this is how to set encrypted variable. Go to "Encrypt data" page in account menu to encrypt data.
+#   my_secure_var1:
+#     secure: FW3tJ3fMncxvs58/ifSP7w==
+
+# environment:
+#  global:
+#    connection_string: server=12;password=13;
+#    service_url: https://127.0.0.1:8090
+#
+#  matrix:
+#  - db: mysql
+#    provider: mysql
+#
+#  - db: mssql
+#    provider: mssql
+#    password:
+#      secure: $#(JFDA)jQ@#$
+
+# this is how to allow failing jobs in the matrix
+# matrix:
+#   allow_failures:
+#     - platform: x86
+#       configuration: Debug
+#     - platform: x64
+#       configuration: Release
+
+# enable service required for build/tests
+# services:
+#   - mssql2012sp1        # start SQL Server 2012 SP1 Express
+#   - mssql2012sp1rs      # start SQL Server 2012 SP1 Express and Reporting Services
+#   - mssql2008r2sp2      # start SQL Server 2008 R2 SP2 Express
+#   - mssql2008r2sp2rs    # start SQL Server 2008 R2 SP2 Express and Reporting Services
+#   - iis                 # start IIS
+#   - msmq                # start Queuing services
+
+install:
+  - choco install cmake
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+platform: x64
+configuration: Release
+
+# # scripts to run before build
+# before_build:
+
+# # scripts to run after build
+# after_build:
+
+# to run your custom scripts instead of automatic MSBuild
+build_script:
+
+# to disable automatic builds
+#build: off
+
+# # scripts to run before tests
+# before_test:
+
+# # scripts to run after tests
+# after_test:
+
+# to run your custom scripts instead of automatic tests
+test_script:
+  - echo This is my custom test script
+
+# to disable automatic tests 
+#test: off
+
+
+#---------------------------------#
+#      artifacts configuration    #
+#---------------------------------#
+
+artifacts:
+
+  # pushing a single file
+  - path: test.zip
