@@ -115,7 +115,7 @@ build_script:
   - cd build
   - set CC=cl
   - set CXX=cl
-  - cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DCMAKE_BUILD_TYPE=Release ..
   - cmake --build .
 
 # to disable automatic builds
