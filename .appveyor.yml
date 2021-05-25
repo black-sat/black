@@ -137,6 +137,13 @@ build_script:
   - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DCMAKE_BUILD_TYPE=Release -DZ3_LIBRARY=C:\Projects\z3-4.8.10-x64-win\bin\libz3.lib ..
   - cmake --build .
   - mkdir C:\BLACK
+  - cd C:\
+  - copy C:\Projects\black\build\src\lib\black.lib C:\BLACK
+  - copy C:\Projects\black\build\black.dll C:\BLACK
+  - copy C:\Projects\black\build\black.exe C:\BLACK
+  - xcopy C:\Projects\black\src\lib\include C:\BLACK\include\ /E /H
+  - copy C:\Projects\z3-4.8.10-x64-win\bin\libz3.dll C:\BLACK
+  - 7z a -tzip black.zip C:\BLACK
 
 # to disable automatic builds
 #build: off
@@ -162,4 +169,4 @@ test_script:
 artifacts:
 
   # pushing a single file
-  - path: test.zip
+  - path: C:\black.zip
