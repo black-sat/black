@@ -103,13 +103,20 @@ install:
   - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DFMT_TEST=NO ..
   - cmake --build .
   - cmake --build . --target install
+  - cd C:\Projects
+  - git clone https://github.com/nlohmann/json.git
+  - cd json
+  - mkdir build
+  - cd build
+  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DJSON_BuildTests=OFF ..
+  - cmake --build .
+  - cmake --build . --target install
 
 #---------------------------------#
 #       build configuration       #
 #---------------------------------#
 
 platform: x64
-configuration: Release
 
 # # scripts to run before build
 # before_build:
