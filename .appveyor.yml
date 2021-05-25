@@ -1,87 +1,33 @@
-# Notes:
-#   - Minimal appveyor.yml file is an empty file. All sections are optional.
-#   - Indent each level of configuration with 2 spaces. Do not use tabs!
-#   - All section names are case-sensitive.
-#   - Section names should be unique on each level.
-
-#---------------------------------#
-#      general configuration      #
-#---------------------------------#
-
-# # version format
-# version: 0.6.0
-
-# branches to build
-# branches:
-#   # whitelist
-#   only:
-#     - master
-#     - production
-
-#   # blacklist
-#   except:
-#     - gh-pages
-
-#---------------------------------#
-#    environment configuration    #
-#---------------------------------#
-
-# Operating system (build VM template)
-# os: Windows Server 2012
+#
+# BLACK - Bounded Ltl sAtisfiability ChecKer
+#
+# (C) 2021 Nicola Gigante
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 image:
   - Visual Studio 2019
 
-# scripts that are called at very beginning, before repo cloning
 init:
   - git config --global core.autocrlf input
 
-# clone directory
 clone_folder: c:\projects\black
-
-# setting up etc\hosts file
-# hosts:
-#   queue-server: 127.0.0.1
-#   db.server.com: 127.0.0.2
-
-# environment variables
-# environment:
-#   my_var1: value1
-#   my_var2: value2
-#   # this is how to set encrypted variable. Go to "Encrypt data" page in account menu to encrypt data.
-#   my_secure_var1:
-#     secure: FW3tJ3fMncxvs58/ifSP7w==
-
-# environment:
-#  global:
-#    connection_string: server=12;password=13;
-#    service_url: https://127.0.0.1:8090
-#
-#  matrix:
-#  - db: mysql
-#    provider: mysql
-#
-#  - db: mssql
-#    provider: mssql
-#    password:
-#      secure: $#(JFDA)jQ@#$
-
-# this is how to allow failing jobs in the matrix
-# matrix:
-#   allow_failures:
-#     - platform: x86
-#       configuration: Debug
-#     - platform: x64
-#       configuration: Release
-
-# enable service required for build/tests
-# services:
-#   - mssql2012sp1        # start SQL Server 2012 SP1 Express
-#   - mssql2012sp1rs      # start SQL Server 2012 SP1 Express and Reporting Services
-#   - mssql2008r2sp2      # start SQL Server 2008 R2 SP2 Express
-#   - mssql2008r2sp2rs    # start SQL Server 2008 R2 SP2 Express and Reporting Services
-#   - iis                 # start IIS
-#   - msmq                # start Queuing services
 
 install:
   - call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
@@ -124,19 +70,8 @@ install:
   - cmake --build .
   - cmake --build . --target install
 
-#---------------------------------#
-#       build configuration       #
-#---------------------------------#
-
 platform: x64
 
-# # scripts to run before build
-# before_build:
-
-# # scripts to run after build
-# after_build:
-
-# to run your custom scripts instead of automatic MSBuild
 build_script:
   - cd C:\Projects\black
   - mkdir build
@@ -159,29 +94,9 @@ build_script:
   - 7z a -tzip black-win-x64.zip C:\BLACK
   - move black-win-x64.zip C:\Projects\black
 
-# to disable automatic builds
-#build: off
-
-# # scripts to run before tests
-# before_test:
-
-# # scripts to run after tests
-# after_test:
-
-# to run your custom scripts instead of automatic tests
 test_script:
   - cd C:\projects\black\build
   - ctest --output-on-failure
 
-# to disable automatic tests 
-#test: off
-
-
-#---------------------------------#
-#      artifacts configuration    #
-#---------------------------------#
-
 artifacts:
-
-  # pushing a single file
   - path: black-win-x64.zip
