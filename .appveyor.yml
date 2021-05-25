@@ -115,6 +115,14 @@ install:
   - curl -fsSL -o z3.zip https://github.com/Z3Prover/z3/releases/download/z3-4.8.10/z3-4.8.10-x64-win.zip
   - 7z x z3.zip
   - move z3-4.8.10-x64-win z3
+  - curl -fsSL -o catch.zip https://github.com/catchorg/Catch2/archive/refs/tags/v2.13.6.zip
+  - 7z x catch.zip
+  - cd Catch2-2.13.6
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DBUILD_TESTING=OFF ..
+  - cmake --build .
+  - cmake --build . --target install
 
 #---------------------------------#
 #       build configuration       #
@@ -135,7 +143,10 @@ build_script:
   - cd build
   - set CC=cl
   - set CXX=cl
-  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DCMAKE_BUILD_TYPE=Release -DZ3_LIBRARY=C:\Projects\z3\bin\libz3.lib -DZ3_INCLUDE_DIR=C:\Projects\z3\include ..
+  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies \
+    -DCMAKE_BUILD_TYPE=Release -DENABLE_FORMULAS_TESTS=NO \
+    -DZ3_LIBRARY=C:\Projects\z3\bin\libz3.lib \
+    -DZ3_INCLUDE_DIR=C:\Projects\z3\include ..
   - cmake --build .
   - copy C:\Projects\z3\bin\libz3.dll .
   - mkdir C:\BLACK

@@ -52,6 +52,10 @@ target_enable_warnings(frontend)
 target_code_coverage(frontend)
 add_sanitizers(frontend)
 
+if(WIN32)
+	target_link_options(frontend PRIVATE /stack:8388608)
+endif()
+
 set_property(TARGET frontend PROPERTY OUTPUT_NAME black)
 set_property(TARGET frontend PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 

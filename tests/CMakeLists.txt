@@ -97,51 +97,52 @@ endif()
 #
 # Formulas test set
 #
+if(ENABLE_FORMULAS_TESTS)
+  message(STATUS "Configuring test suite...")
 
-message(STATUS "Configuring test suite...")
+  file(STRINGS formulas/tests.index TESTS)
 
-file(STRINGS formulas/tests.index TESTS)
+  list(LENGTH TESTS TESTSLENGTH)
+  message(STATUS "Found ${TESTSLENGTH} test formulas")
 
-list(LENGTH TESTS TESTSLENGTH)
-message(STATUS "Found ${TESTSLENGTH} test formulas")
-
-option(BLACK_TEST_TIMEOUT "Set a timeout for tests" OFF)
-set(TEST_TIMEOUT_SECS 3 CACHE STRING "Seconds of timeout for tests")
-
-if(BLACK_TEST_TIMEOUT)
-  message(STATUS "Tests timeout set to ${TEST_TIMEOUT_SECS} seconds")
-endif()
-
-foreach(TEST IN LISTS TESTS)
-  list(GET TEST 0 FILE)
-  list(GET TEST 1 RESULT)
-
-  set(TEST_NAME "black:${FILE}:${RESULT}")
-  set(FINITE_OPT "")
-  string(FIND "${FILE}" "finite_models" FOUND)
-  if(FOUND GREATER_EQUAL 0)
-    set(FINITE_OPT "--finite")
-  endif()
-  
-  set(SHELL_CMD /bin/sh -c)
-  if(WIN32)
-    set(SHELL_CMD powershell -Command)
-  endif()
-
-  add_test(
-    NAME "${TEST_NAME}"
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
-    COMMAND
-      ${SHELL_CMD}
-      "$<TARGET_FILE:frontend> solve \
-      -m -o json ${FINITE_OPT} -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
-      $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} -e ${RESULT} '${FILE}'"
-  )
+  option(BLACK_TEST_TIMEOUT "Set a timeout for tests" OFF)
+  set(TEST_TIMEOUT_SECS 3 CACHE STRING "Seconds of timeout for tests")
 
   if(BLACK_TEST_TIMEOUT)
-    set_tests_properties(
-      "${TEST_NAME}" PROPERTIES TIMEOUT ${BLACK_TEST_TIMEOUT}
-    )
+    message(STATUS "Tests timeout set to ${TEST_TIMEOUT_SECS} seconds")
   endif()
 
-endforeach()
+  foreach(TEST IN LISTS TESTS)
+    list(GET TEST 0 FILE)
+    list(GET TEST 1 RESULT)
+
+    set(TEST_NAME "black:${FILE}:${RESULT}")
+    set(FINITE_OPT "")
+    string(FIND "${FILE}" "finite_models" FOUND)
+    if(FOUND GREATER_EQUAL 0)
+      set(FINITE_OPT "--finite")
+    endif()
+    
+    set(SHELL_CMD /bin/sh -c)
+    if(WIN32)
+      set(SHELL_CMD powershell -Command)
+    endif()
+
+    add_test(
+      NAME "${TEST_NAME}"
+      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
+      COMMAND
+        ${SHELL_CMD}
+        "$<TARGET_FILE:frontend> solve \
+        -m -o json ${FINITE_OPT} -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
+        $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} -e ${RESULT} '${FILE}'"
+    )
+
+    if(BLACK_TEST_TIMEOUT)
+      set_tests_properties(
+        "${TEST_NAME}" PROPERTIES TIMEOUT ${BLACK_TEST_TIMEOUT}
+      )
+    endif()
+
+  endforeach()
+endif()

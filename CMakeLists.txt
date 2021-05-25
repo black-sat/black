@@ -32,6 +32,7 @@ project(
 
 # User options
 option(ENABLE_TESTS "Enable test suite" ON)
+option(ENABLE_FORMULAS_TESTS "Enable the formulas test suite" ON)
 option(ENABLE_CLANG_TIDY "Enable Clang Tidy invocation" OFF)
 
 set(CLANG_TIDY_PATH "clang-tidy" CACHE FILEPATH "PATH to clang-tidy executable")
