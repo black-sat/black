@@ -156,6 +156,7 @@ build_script:
 
 # to run your custom scripts instead of automatic tests
 test_script:
+  - cd C:\projects\black\build
   - ctest --output-on-failure
 
 # to disable automatic tests 
@@ -169,4 +170,4 @@ test_script:
 artifacts:
 
   # pushing a single file
-  - path: C:\black.zip
+  - path: ..\..\black.zip
