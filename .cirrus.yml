@@ -110,3 +110,11 @@ task:
   coverage_script:
     - cd build
     - bash <(curl -s https://codecov.io/bash);
+
+task:
+  name: Windows (MSVC 2019)
+  windows_container:
+    image: cirrusci/visualstudio2019
+  build_script:
+    - cl
+    - cmake --version
