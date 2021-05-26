@@ -21,6 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <black/support/config.hpp>
 #include <black/frontend/cli.hpp>
 #include <black/frontend/io.hpp>
 #include <black/frontend/support.hpp>
@@ -49,7 +50,8 @@ namespace black::frontend {
 
     black_assert(problem.has_value());
 
-    std::string backend = cli::sat_backend ? *cli::sat_backend : "z3";
+    std::string backend = 
+      cli::sat_backend ? *cli::sat_backend : BLACK_DEFAULT_BACKEND;
     std::optional<dimacs::solution> s = dimacs::solve(*problem, backend);
 
     dimacs::print(std::cout, s);

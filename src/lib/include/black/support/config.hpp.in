@@ -36,4 +36,6 @@ namespace black {
   inline std::string_view version = BLACK_VERSION;
 }
 
+#define BLACK_DEFAULT_BACKEND "${BLACK_DEFAULT_BACKEND}"
+
 #endif // BLACK_CONFIG_HPP_

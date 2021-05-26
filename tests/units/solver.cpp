@@ -23,6 +23,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <black/support/config.hpp>
 #include <black/logic/formula.hpp>
 #include <black/solver/solver.hpp>
 
@@ -34,7 +35,7 @@ TEST_CASE("Testing solver")
   black::solver slv;
 
   SECTION("Basic solver usage") {
-    REQUIRE(slv.sat_backend() == "z3");
+    REQUIRE(slv.sat_backend() == BLACK_DEFAULT_BACKEND);
     REQUIRE(slv.solve() == tribool::undef);
 
     auto p = sigma.var("p");
