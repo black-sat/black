@@ -27,6 +27,25 @@ option(ENABLE_MATHSAT "Enable the MathSAT backend, if found" ON)
 option(ENABLE_CMSAT "Enable the CryptoMiniSAT backend, if found" ON)
 option(ENABLE_MINISAT "Enable the MiniSAT backend, if found" ON)
 
+set(
+  BLACK_DEFAULT_BACKEND "z3"
+  CACHE STRING "Default backend called when no -B option is given. Possible values: z3, mathsat, minisat, cmsat"
+)
+
+if(
+  NOT (BLACK_DEFAULT_BACKEND STREQUAL "z3") AND
+  NOT (BLACK_DEFAULT_BACKEND STREQUAL "mathsat") AND
+  NOT (BLACK_DEFAULT_BACKEND STREQUAL "minisat") AND
+  NOT (BLACK_DEFAULT_BACKEND STREQUAL "cmsat")
+)
+  message(
+    FATAL_ERROR 
+    "Unrecognized value for the BLACK_DEFAULT_BACKEND variable: "
+    "'${BLACK_DEFAULT_BACKEND}'\n"
+    "Possible values: z3, mathsat, minisat, cmsat"
+  )
+endif()
+
 if(ENABLE_Z3)
   find_package(Z3)
 
@@ -75,6 +94,46 @@ if(ENABLE_CMSAT)
   endif()
 else()
   message(STATUS "CryptoMiniSAT backend disabled.")
+endif()
+
+if(NOT Z3_FOUND AND BLACK_DEFAULT_BACKEND STREQUAL "z3")
+  message(
+    FATAL_ERROR 
+    "Z3 set as default backend but not found or disabled.\n"
+    "Please install Z3 or set BLACK_DEFAULT_BACKEND differently.")
+endif()
+
+if(NOT MathSAT_FOUND AND BLACK_DEFAULT_BACKEND STREQUAL "mathsat")
+  message(
+    FATAL_ERROR 
+    "MathSAT set as default backend but not found or disabled.\n"
+    "Please install MathSAT or set BLACK_DEFAULT_BACKEND differently.")
+endif()
+
+if(NOT MiniSAT_FOUND AND BLACK_DEFAULT_BACKEND STREQUAL "minisat")
+  message(
+    FATAL_ERROR 
+    "MiniSAT set as default backend but not found or disabled.\n"
+    "Please install MiniSAT or set BLACK_DEFAULT_BACKEND differently.")
+endif()
+
+if(NOT CryptoMiniSAT_FOUND AND BLACK_DEFAULT_BACKEND STREQUAL "cmsat")
+  message(
+    FATAL_ERROR 
+    "CryptoMiniSAT set as default backend but not found or disabled.\n"
+    "Please install CryptoMiniSAT or set BLACK_DEFAULT_BACKEND differently.")
+endif()
+
+if(
+  (NOT Z3_FOUND) AND 
+  (NOT MathSAT_FOUND) AND 
+  (NOT MiniSAT_FOUND) AND
+  (NOT CryptoMiniSAT_FOUND) 
+)
+  message(
+    FATAL_ERROR 
+    "No SAT backend found! At least one SAT backend is required for building"
+  )
 endif()
 
 # configure config header

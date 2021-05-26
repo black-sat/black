@@ -23,10 +23,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <black/support/config.hpp>
+#include <black/support/range.hpp>
 #include <black/solver/solver.hpp>
 #include <black/solver/encoding.hpp>
 #include <black/sat/solver.hpp>
-#include <black/support/range.hpp>
 
 namespace black::internal
 {
@@ -51,7 +52,7 @@ namespace black::internal
     std::unique_ptr<sat::solver> sat;
 
     // the name of the currently chosen sat backend
-    std::string sat_backend = "z3"; // sensible default
+    std::string sat_backend = BLACK_DEFAULT_BACKEND; // sensible default
 
     // Main algorithm
     tribool solve(size_t k_max);

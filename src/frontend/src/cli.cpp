@@ -93,7 +93,8 @@ namespace black::frontend
     print_header();
     io::println("\nAvailable SAT backends:");
     for(auto backend : black::sat::solver::backends()) {
-      io::println(" - {}", backend);
+      bool star = backend == BLACK_DEFAULT_BACKEND;
+      io::println(" - {} {}", backend, star ? "*" : "");
     }
   }
 
