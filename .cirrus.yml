@@ -50,7 +50,7 @@ task:
 task:
   name: macOS (Apple clang)
   osx_instance:
-    image: catalina-base
+    image: big-sur-base
   download_dependencies_script:
     - brew install cmake fmt catch2 z3 cryptominisat nlohmann-json
     - brew install black-sat/black/hopscotch-map
