@@ -26,34 +26,41 @@
 
 #include <tsl/hopscotch_map.h>
 
+#include <iostream>
+
 namespace black::sat
 {
   namespace internal {
     namespace {
-      tsl::hopscotch_map<std::string_view, backend_init_hook::backend_ctor> 
-        _backends;
+      using backends_map = 
+        tsl::hopscotch_map<std::string_view, backend_init_hook::backend_ctor>;
+      
+      std::unique_ptr<backends_map> _backends = nullptr;
     }
     
     backend_init_hook::backend_init_hook(
       std::string_view name, backend_ctor ctor
     ) {
-      black_assert(_backends.find(name) == _backends.end());
-      _backends.insert({name, ctor});
+      if(!_backends)
+        _backends = std::make_unique<backends_map>();
+
+      black_assert(_backends->find(name) == _backends->end());
+      _backends->insert({name, ctor});
     }
   }
 
   bool solver::backend_exists(std::string_view name) {
     using namespace black::sat::internal;
     
-    return _backends.find(name) != _backends.end();
+    return _backends->find(name) != _backends->end();
   }
 
   std::unique_ptr<solver> solver::get_solver(std::string_view name) 
   {
     using namespace black::sat::internal;
-    auto it = _backends.find(name); 
+    auto it = _backends->find(name); 
     
-    black_assert(it != _backends.end());
+    black_assert(it != _backends->end());
     
     return (it->second)();
   }
@@ -63,7 +70,7 @@ namespace black::sat
 
     std::vector<std::string_view> result;
 
-    for(auto [key,elem] : _backends) {
+    for(auto [key,elem] : *_backends) {
       result.push_back(key);
     }
 
