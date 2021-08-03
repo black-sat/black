@@ -113,6 +113,7 @@ namespace black::internal
       "->",  // implication
       "<->", // iff
       "U",   // until
+      "W",   // weak until
       "R",   // release
       "S",   // since
       "T",   // triggered

@@ -235,8 +235,14 @@ namespace black::frontend
       [&](always, formula op) {
         return check(trace, !F(!op), t);
       },
+      [&](w_until, formula l, formula r) {
+        return check(trace, G(l) || U(l, r), t);
+      },
       [&](release, formula l, formula r) {
         return check(trace, !U(!l, !r), t);
+      },
+      [&](s_release, formula l, formula r) {
+        return check(trace, !W(!l, !r), t);
       },
       [&](once, formula op) {
         return check(trace, S(op.sigma()->top(), op), t);

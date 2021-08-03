@@ -189,6 +189,23 @@ namespace black::internal {
   }
 
   static
+  formula simplify_w_until(w_until w, formula l, formula r) {
+    alphabet &sigma = *w.sigma();
+    std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+
+    if(!bl && !br)
+      return w;
+
+    if(bl && !br)
+      return bl->value() ? sigma.top() : r;
+
+    if(!bl && br)
+      return br->value() ? formula{sigma.top()} : G(l);
+
+    return sigma.boolean(bl->value() || br->value());
+  }
+
+  static
   formula simplify_release(release s, formula l, formula r) {
     std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
 
@@ -199,6 +216,23 @@ namespace black::internal {
       return bl->value() ? r : G(r);
 
     return *br;
+  }
+
+  static
+  formula simplify_s_release(s_release s, formula l, formula r) {
+    alphabet &sigma = *s.sigma();
+    std::optional<boolean> bl = l.to<boolean>(), br = r.to<boolean>();
+
+    if(!bl && !br)
+      return s;
+    
+    if(bl && !br)
+      return bl->value() ? r : sigma.bottom();
+
+    if(!bl && br)
+      return br->value() ? F(l) : formula{sigma.bottom()};
+
+    return sigma.boolean(bl->value() && br->value());
   }
 
   formula simplify(formula f) {
@@ -216,6 +250,8 @@ namespace black::internal {
       simplify_always,
       simplify_until,
       simplify_release,
+      simplify_w_until,
+      simplify_s_release,
       [&](past) -> formula { /* TODO */ black_unreachable(); } // LCOV_EXCL_LINE
     );
   }

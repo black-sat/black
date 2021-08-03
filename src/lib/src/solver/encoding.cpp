@@ -210,6 +210,10 @@ namespace black::internal
         return to_ground_snf(right,k) ||
             (to_ground_snf(left,k) && ground(X(u), k));
       },
+      [&,this](w_until w, formula left, formula right) {
+        return to_ground_snf(right, k) ||
+            (to_ground_snf(left,k) && ground(wX(w), k));
+      },
       [&,this](eventually e, formula op) {
         return to_ground_snf(op,k) || ground(X(e), k);
       },
@@ -219,6 +223,10 @@ namespace black::internal
       [&,this](release r, formula left, formula right) {
         return (to_ground_snf(left,k) && to_ground_snf(right,k)) ||
             (to_ground_snf(right,k) && ground(wX(r), k));
+      },
+      [&,this](s_release r, formula left, formula right) {
+        return (to_ground_snf(left,k) && to_ground_snf(right,k)) ||
+            (to_ground_snf(right,k) && ground(X(r), k));
       },
       [&,this](since s, formula left, formula right) {
         return to_ground_snf(right,k) ||
@@ -272,6 +280,10 @@ namespace black::internal
         return binary::type::release;
       case binary::type::release:
         return binary::type::until;
+      case binary::type::w_until:
+        return binary::type::s_release;
+      case binary::type::s_release:
+        return binary::type::w_until;
       case binary::type::since:
         return binary::type::triggered;
       case binary::type::triggered:
@@ -353,6 +365,8 @@ namespace black::internal
       [&](w_yesterday z)  { _zrequests.push_back(z);     },
       [&](until u)        { _xrequests.push_back(X(u));  },
       [&](release r)      { _xrequests.push_back(wX(r)); },
+      [&](w_until r)      { _xrequests.push_back(wX(r)); },
+      [&](s_release r)    { _xrequests.push_back(X(r));  },
       [&](always a)       { _xrequests.push_back(wX(a)); },
       [&](eventually e)   { _xrequests.push_back(X(e));  },
       [&](since s)        { _yrequests.push_back(Y(s));  },

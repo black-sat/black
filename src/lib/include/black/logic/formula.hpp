@@ -55,6 +55,8 @@ namespace black::internal {
     iff,
     until,
     release,
+    w_until,
+    s_release,
     since,
     triggered
   };
@@ -215,6 +217,8 @@ namespace black::internal
       iff,
       until,
       release,
+      w_until,
+      s_release,
       since,
       triggered
     };
@@ -264,6 +268,8 @@ namespace black::internal
   struct iff;
   struct until;
   struct release;
+  struct w_until;
+  struct s_release;
   struct since;
   struct triggered;
 
@@ -295,6 +301,8 @@ namespace black::internal
 
   until     U(formula f1, formula f2);
   release   R(formula f1, formula f2);
+  w_until   W(formula f1, formula f2);
+  s_release M(formula f1, formula f2);
   since     S(formula f1, formula f2);
   triggered T(formula f1, formula f2);
 

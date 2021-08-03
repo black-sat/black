@@ -72,6 +72,8 @@ namespace black::internal {
           unary::type::eventually,
           binary::type::until,
           binary::type::release,
+          binary::type::w_until,
+          binary::type::s_release
         });
       }
 

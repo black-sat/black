@@ -111,6 +111,8 @@ namespace black::internal
       {"U",     token{binary::type::until}},
       {"R",     token{binary::type::release}},
       {"V",     token{binary::type::release}},
+      {"W",     token{binary::type::w_until}},
+      {"M",     token{binary::type::s_release}},
       {"S",     token{binary::type::since}},
       {"T",     token{binary::type::triggered}}
     };
