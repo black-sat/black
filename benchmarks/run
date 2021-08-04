@@ -274,12 +274,12 @@ bench_formula()
 
 bench_all()
 {
-  [ "$1" ] || die "Please specify the output file"
+  [ "$1" ] || die "Please specify the index file"
+  indexfile=$1
+  [ "$2" ] || die "Please specify the output file"
   output=$1
 
   setup
-
-  indexfile=formulas/index
 
   # Get total number of formulas
   total=$(cat $indexfile | wc -l | sed 's/ //g')
@@ -340,9 +340,10 @@ Commands:
                                   while a progress report is written to standard
                                   error.
 
-  bench_all <file>                Runs the full benchmark of all formulas with
-                                  all solvers in all modes, writing the output
-                                  data on the given \`file\`.
+  bench_all <index> <output>      Runs the full benchmark of all formulas 
+                                  listed in the \`index\` file, with all 
+                                  solvers in all modes, writing the output data 
+                                  on the given \`output\` file.
 
 ENVIRONMENT VARIABLES:
   Benchmark timeout (in seconds) can be set through the \`TIMEOUT\` environment
