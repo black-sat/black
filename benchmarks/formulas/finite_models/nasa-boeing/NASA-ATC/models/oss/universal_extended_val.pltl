@@ -1,0 +1,1 @@
+G (hasfault ->  G hasfault) & G (hasfault ->  F !hasfault) & True

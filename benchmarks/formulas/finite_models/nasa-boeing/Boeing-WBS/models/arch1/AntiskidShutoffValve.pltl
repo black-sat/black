@@ -1,0 +1,1 @@
+(True -> ( G ((LiVar784 | ascmd) -> LiVar749) &  G ((LiVar783 & !ascmd) -> (LiVar748 & LiVar395)))) & True

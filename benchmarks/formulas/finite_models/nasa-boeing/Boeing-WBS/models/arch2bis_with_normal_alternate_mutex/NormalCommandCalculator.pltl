@@ -1,0 +1,1 @@
+(True ->  G (((power & brakecmd) & !ascmd) <-> brakeascmd)) & True

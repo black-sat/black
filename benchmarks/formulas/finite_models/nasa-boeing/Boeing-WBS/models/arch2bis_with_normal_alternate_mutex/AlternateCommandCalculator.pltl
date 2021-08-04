@@ -1,0 +1,1 @@
+(True ->  G ((power & (ascmdin1 | ascmdin2)) <-> ascmdout)) & True
