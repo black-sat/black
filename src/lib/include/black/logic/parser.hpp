@@ -109,8 +109,9 @@ namespace black::internal
       {40}, // implication
       {40}, // iff
       {50}, // until
-      {50}, // weak until
       {50}, // release
+      {50}, // weak until
+      {50}, // strong release
       {50}, // since
       {50}, // triggered
     };
