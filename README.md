@@ -4,14 +4,7 @@ BLACK (short for Bounded Lᴛʟ sAtisfiability ChecKer) is a tool for testing th
 satisfiability of LTL and LTLf formulas based on the SAT encoding of the tableau
 method described [here][Reynolds]. An in depth description of the encoding and
 the whole algorithm has been published in the proceedings of the TABLEAUX 2019
-conference.
-
-[Luca Geatti][Geatti], [Nicola Gigante][Gigante], [Angelo Montanari][Montanari]  
-A SAT-based encoding of the one-pass and tree-shaped tableau system for LTL. 
-In: *Proceedings of the 28th International Conference on Automated Reasoning with 
-Analytic Tableaux and Related Methods*, [TABLEAUX 2019][Tableaux], pages 3‑20  
-DOI: 10.1007/978-3-030-29026-9_1  
-[Full Text][Paper], [DBLP][DBLP]
+conference (see the Publications section below).
 
 BLACK is:
 * **Fast**: based on a state-of-the-art SAT-based encoding 
@@ -90,6 +83,36 @@ OPTIONS
    -h, --help                      print this help message
 ```
 
+## Publications
+The algorithm and encoding employed by BLACK is described in detail in this paper:
+
+[Luca Geatti][Geatti], [Nicola Gigante][Gigante], [Angelo Montanari][Montanari]  
+A SAT-based encoding of the one-pass and tree-shaped tableau system for LTL. 
+In: *Proceedings of the 28th International Conference on Automated Reasoning with 
+Analytic Tableaux and Related Methods*, [TABLEAUX 2019][Tableaux], pages 3‑20  
+DOI: 10.1007/978-3-030-29026-9_1  
+[Full Text][Paper], [DBLP][DBLP]
+
+You can cite the above paper with the following BibTeX entry:
+
+```
+@inproceedings{GeattiGM19,
+  author    = {Luca Geatti and
+               Nicola Gigante and
+               Angelo Montanari},
+  editor    = {Serenella Cerrito and Andrei Popescu},
+  title     = {A SAT-Based Encoding of the One-Pass and Tree-Shaped Tableau System
+               for {LTL}},
+  booktitle = {Proceedings of the 28th International Conference on Automated Reasoning 
+               with Analytic Tableaux and Related Methods},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {11714},
+  pages     = {3--20},
+  publisher = {Springer},
+  year      = {2019},
+  doi       = {10.1007/978-3-030-29026-9\_1}
+}
+```
 
 [Reynolds]: https://arxiv.org/abs/1609.04102
 [CMake]: https://cmake.org
