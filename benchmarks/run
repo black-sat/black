@@ -18,6 +18,10 @@ if [ -z "$(which bc)" ]; then
   die "Please install the 'bc' utility"
 fi
 
+if [ -z "$(which parallel)" ]; then
+  die "Please install the 'parallel' utility"
+fi
+
 # timeout time in seconds
 if [ -z "$TIMEOUT" ]; then
   TIMEOUT=300 # five minutes
@@ -323,7 +327,7 @@ bench_all()
   [ "$1" ] || die "Please specify the index file"
   indexfile=$1
   [ "$2" ] || die "Please specify the output file"
-  output=$1
+  output=$2
 
   setup
 
