@@ -341,9 +341,12 @@ Commands:
 
 ENVIRONMENT VARIABLES:
   Benchmark timeout (in seconds) can be set through the \`TIMEOUT\` environment
-  variables. The default is 300 seconds.
+  variable. The default is 300 seconds.
 
-  Memory control through cgroups-v1 can be disabled setting the \'MCAP\'
+  Maximum memory limit for tested processes can be se through the \`MEMORY_MAX\`
+  environment variable. The default is 3G (three gigabytes).
+
+  Memory control through systemd can be disabled setting the \'MCAP\'
   environment variable to \'false\'. It is enabled by default.
 
 EXAMPLES:
