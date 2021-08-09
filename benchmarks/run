@@ -1,15 +1,5 @@
 #!/bin/bash
 
-# timeout time in seconds
-if [ -z "$TIMEOUT" ]; then
-  TIMEOUT=300 # five minutes
-fi
-
-# enable memory cap by default
-if [ -z "$MCAP" ]; then
-  MCAP=true
-fi
-
 # utilities
 report() {
   echo $@ >&2
@@ -24,13 +14,28 @@ die() {
   exit 1
 }
 
+if [ -z "$(which bc)" ]; then
+  die "Please install the 'bc' utility"
+fi
+
+# timeout time in seconds
+if [ -z "$TIMEOUT" ]; then
+  TIMEOUT=300 # five minutes
+fi
+
+# memory limit for processes
+if [ -z "$MEMORY_MAX" ]; then
+  MEMORY_MAX=3G # three gigabytes
+fi
+
+# disable memory cap by default
+if [ -z "$MCAP" ]; then
+  MCAP=true
+fi
+
 if $MCAP; then
   mcap() {
-    if [ -z "$cpu" ]; then
-      cpu=1
-    fi
-
-    cgexec -g "memory:benchmark/cpu$cpu" $@
+    systemd-run --quiet --user --scope -p MemoryMax=$MEMORY_MAX -p MemorySwapMax=0 $@
   }
 
   has_mcap() {
@@ -149,7 +154,7 @@ setup() {
   # get list of solvers run modes
   modes=$(for s in $solvers; do
     if [ -d "scripts/$s" ]; then
-      find "scripts/$s" -mindepth 1 -type d \
+      find "scripts/$s" -mindepth 1 \( ! -regex '.*/\..*' \)  -type d \
         | sed 's|^.*scripts/||' | sed 's|/$||'
     fi
   done)
@@ -219,6 +224,47 @@ setup_run() {
 list() {
   setup
 }
+
+disable() {
+  mode=$1
+  shift
+
+  if [ -z "$mode" ]; then
+    die "Please specify a solver/mode to disable"
+  fi
+
+  # Reset working directory
+  cd "$(git rev-parse --show-toplevel)/benchmarks"
+
+  # find solvers directory
+  solvers_dir=$(pwd)/scripts
+
+  basename=$(basename $solvers_dir/$mode)
+  dirname=$(dirname $solvers_dir/$mode)
+  
+  mv "$solvers_dir/$mode" "$dirname/.$basename"
+}
+
+enable() {
+  mode=$1
+  shift
+
+  if [ -z "$mode" ]; then
+    die "Please specify a solver/mode to enable"
+  fi
+
+  # Reset working directory
+  cd "$(git rev-parse --show-toplevel)/benchmarks"
+
+  # find solvers directory
+  solvers_dir=$(pwd)/scripts
+
+  basename=$(basename $solvers_dir/$mode)
+  dirname=$(dirname $solvers_dir/$mode)
+  
+  mv "$dirname/.$basename" "$solvers_dir/$mode" 
+}
+
 
 # runs one specific solver mode on one formula
 run() {
@@ -325,6 +371,10 @@ Usage: $0 <command> [args..]
 Commands:
   list                            Lists all the detected solvers and modes
 
+  disable <solver/mode>           Disables the specified \`mode\` of \`solver\`
+  
+  enable <solver/mode>            Enables the specified \`mode\` of \`solver\`
+
   run <solver/mode> <formula>     Runs \`solver\` with the given \`mode\`
                                   (e.g. nuXmv/sbmc) over the given \`formula\`.
                                   If it returns \`err\`, try the \`bench\`
@@ -347,10 +397,13 @@ Commands:
 
 ENVIRONMENT VARIABLES:
   Benchmark timeout (in seconds) can be set through the \`TIMEOUT\` environment
-  variables. The default is 300 seconds.
+  variable. The default is 300 seconds.
 
-  Memory control through cgroups-v1 can be disabled setting the \`MCAP\`
-  environment variable to \`false\`. It is enabled by default.
+  Maximum memory limit for tested processes can be se through the \`MEMORY_MAX\`
+  environment variable. The default is 3G (three gigabytes).
+
+  Memory control through systemd can be disabled setting the \'MCAP\'
+  environment variable to \'false\'. It is enabled by default.
 
 EXAMPLES:
   \$ $0 bench black/default future_only/acacia/example/demo-v1.pltl
@@ -363,7 +416,7 @@ EXAMPLES:
   - nuXmv/sbmc...done
 
   \$ cat demo-v1.dat
-  future_only/acacia/example/demo-v1.pltl future_only acacia 0.020 SAT 0.096 SAT 0.042 SAT
+  future_only/acacia/example/demo-v1.pltl 0.020 0.096 0.042
 HELP
 }
 
