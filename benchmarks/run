@@ -148,7 +148,7 @@ setup() {
   # get list of solvers run modes
   modes=$(for s in $solvers; do
     if [ -d "scripts/$s" ]; then
-      find "scripts/$s" -mindepth 1 -type d \
+      find "scripts/$s" -mindepth 1 \( ! -regex '.*/\..*' \)  -type d \
         | sed 's|^.*scripts/||' | sed 's|/$||'
     fi
   done)
@@ -218,6 +218,47 @@ setup_run() {
 list() {
   setup
 }
+
+disable() {
+  mode=$1
+  shift
+
+  if [ -z "$mode" ]; then
+    die "Please specify a solver/mode to disable"
+  fi
+
+  # Reset working directory
+  cd "$(git rev-parse --show-toplevel)/benchmarks"
+
+  # find solvers directory
+  solvers_dir=$(pwd)/scripts
+
+  basename=$(basename $solvers_dir/$mode)
+  dirname=$(dirname $solvers_dir/$mode)
+  
+  mv "$solvers_dir/$mode" "$dirname/.$basename"
+}
+
+enable() {
+  mode=$1
+  shift
+
+  if [ -z "$mode" ]; then
+    die "Please specify a solver/mode to enable"
+  fi
+
+  # Reset working directory
+  cd "$(git rev-parse --show-toplevel)/benchmarks"
+
+  # find solvers directory
+  solvers_dir=$(pwd)/scripts
+
+  basename=$(basename $solvers_dir/$mode)
+  dirname=$(dirname $solvers_dir/$mode)
+  
+  mv "$dirname/.$basename" "$solvers_dir/$mode" 
+}
+
 
 # runs one specific solver mode on one formula
 run() {
@@ -321,6 +362,10 @@ Usage: $0 <command> [args..]
 
 Commands:
   list                            Lists all the detected solvers and modes
+
+  disable <solver/mode>           Disables the specified \`mode\` of \`solver\`
+  
+  enable <solver/mode>            Enables the specified \`mode\` of \`solver\`
 
   run <solver/mode> <formula>     Runs \`solver\` with the given \`mode\`
                                   (e.g. nuXmv/sbmc) over the given \`formula\`
