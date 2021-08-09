@@ -5,6 +5,11 @@ if [ -z "$TIMEOUT" ]; then
   TIMEOUT=300 # five minutes
 fi
 
+# memory limit for processes
+if [ -z "$MEMORY_MAX" ]; then
+  MEMORY_MAX=3G # three gigabytes
+fi
+
 # disable memory cap by default
 if [ -z "$MCAP" ]; then
   MCAP=true
@@ -26,11 +31,7 @@ die() {
 
 if $MCAP; then
   mcap() {
-    if [ -z "$cpu" ]; then
-      cpu=1
-    fi
-
-    cgexec -g "memory:benchmark/cpu$cpu" $@
+    systemd-run --quiet --user --scope -p MemoryMax=$MEMORY_MAX -p MemorySwapMax=0 $@
   }
 
   has_mcap() {
