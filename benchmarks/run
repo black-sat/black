@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# utilities
+report() {
+  echo $@ >&2
+}
+
+output() {
+  echo $@
+}
+
+die() {
+  report $1
+  exit 1
+}
+
+if [ -z "$(which bc)" ]; then
+  die "Please install the 'bc' utility"
+fi
+
 # timeout time in seconds
 if [ -z "$TIMEOUT" ]; then
   TIMEOUT=300 # five minutes
@@ -14,20 +32,6 @@ fi
 if [ -z "$MCAP" ]; then
   MCAP=true
 fi
-
-# utilities
-report() {
-  echo $@ >&2
-}
-
-output() {
-  echo $@
-}
-
-die() {
-  report $1
-  exit 1
-}
 
 if $MCAP; then
   mcap() {
@@ -395,17 +399,17 @@ ENVIRONMENT VARIABLES:
   environment variable to \'false\'. It is enabled by default.
 
 EXAMPLES:
-  \$ $0 bench black/default formulas/acacia/example/demo-v1.pltl
+  \$ $0 bench black/default future_only/acacia/example/demo-v1.pltl
   0.019
 
-  \$ $0 bench_formula formulas/acacia/example/demo-v1.pltl > demo-v1.dat
-  Benchmarking formula: formulas/acacia/example/demo-v1.pltl
+  \$ $0 bench_formula future_only/acacia/example/demo-v1.pltl > demo-v1.dat
+  Benchmarking formula: future_only/acacia/example/demo-v1.pltl
   - black/default...done
   - nuXmv/klive...done
   - nuXmv/sbmc...done
 
   \$ cat demo-v1.dat
-  formulas/acacia/example/demo-v1.pltl 0.020 0.096 0.042
+  future_only/acacia/example/demo-v1.pltl 0.020 0.096 0.042
 HELP
 }
 
