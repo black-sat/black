@@ -18,21 +18,27 @@ def is_number(s):
 
 
 def main(argv):
-    parser = argparse.ArgumentParser(description='Parser for make-plots-time.py')
+    parser = argparse.ArgumentParser(description='Parser for make-scatter-plot.py')
     parser.add_argument('datafile', metavar='datafile', 
                         nargs='?', default='_error_',
-                        help='name of the data file')
+                        help='Name of the data file')
     parser.add_argument('xtool', metavar='xtool', 
                         nargs='?', default='_error_',
-                        help='name of the tool for the x-axis')
+                        help='Name of the tool for the x-axis')
     parser.add_argument('ytool', metavar='ytool', 
                         nargs='?', default='_error_',
-                        help='name of the tool for the y-axis')
+                        help='Name of the tool for the y-axis')
     parser.add_argument('errortime', metavar='errortime', type=int,
-                        default='0',
+                        default=0,
                         help='In order to distinguish the benchmarks that have an error from those that'
                              'reach the timeout, we define the ERRORTIME as the timeout time plus 180'
                              'seconds')
+    parser.add_argument('-p', '--png', dest='pngopt', 
+                        action='store_true', default=0,
+                        help='Dumps the png file with the plot.')
+    parser.add_argument('-t', '--html', dest='htmlopt',
+                        action='store_true', default=0,
+                        help='Opens the browser with the interactive plot.')
     args = parser.parse_args()
     
     # check on the options
@@ -46,7 +52,7 @@ def main(argv):
     #datafile's name without path
     datafile_name = args.datafile.split('/')[-1]
     #path for image
-    img_path_name = args.xtool.replace("/","")+"."+args.ytool.replace("/","")+"."+datafile_name.replace(".csv",".png").replace(".dat",".png")
+    img_path_name = "scatterplot"+args.xtool.replace("/","")+"."+args.ytool.replace("/","")+"."+datafile_name.replace(".csv",".png").replace(".dat",".png")
 
 
     # categories dictionary:
@@ -158,8 +164,10 @@ def main(argv):
     )
 
     # save img
-    fig.write_image(img_path_name)
-    fig.show()
+    if args.pngopt:
+        fig.write_image(img_path_name)
+    if args.htmlopt:
+        fig.show()
 
 
 
