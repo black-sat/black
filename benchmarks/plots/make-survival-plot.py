@@ -171,7 +171,7 @@ def main(argv):
 
     if args.pngopt:
         # save file into 'img' folder
-        fig.savefig(img_path_name)
+        fig.write_image(img_path_name)
     if args.htmlopt:
         # show
         fig.show()
