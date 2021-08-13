@@ -1,6 +1,8 @@
 import os, os.path, sys, argparse
 import csv 
-import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+import numpy as np
 
 
 
@@ -29,9 +31,15 @@ def main(argv):
     parser.add_argument('-p', '--png', dest='pngopt', 
                         action='store_true', default=0,
                         help='Dumps the png file with the plot.')
-    parser.add_argument('-t', '--html', dest='htmlopt',
+    parser.add_argument('-m', '--html', dest='htmlopt',
                         action='store_true', default=0,
                         help='Opens the browser with the interactive plot.')
+    parser.add_argument('-t', '--threshold', dest='threshold',
+                        default=0,
+                        help='Threshold value (= maximum value for the x-axis).')
+    parser.add_argument('-i', '--tiks', dest='tiks',
+                        default=0,
+                        help='Number of tiks of the x-axis.')
     args = parser.parse_args()
 
 
@@ -90,76 +98,83 @@ def main(argv):
                 # take times
                 for toolname in toolsnames:
                     time = line[toolsnumcol[toolname]]
+                    # check is the benchmark terminated or is an error
                     if is_number(time):
                         toolstimes[toolname] += [float(time)]
                         # compute the max
                         toolsmaxtimes[toolname] = float(time) if float(time) > toolsmaxtimes[toolname] else toolsmaxtimes[toolname]
 
 
+    # create the instants
+    instants = []
+    inst_num = 0
+    factor = float(args.threshold)/float(args.tiks)
+    while ( inst_num < float(args.threshold) + factor ):
+        instants.append( inst_num )
+        inst_num += factor
 
-        # create the instants
-        instants = []
-        inst_num = 0
-        factor = args.timeout/20
-        while ( inst_num < args.timeout + factor ):
-            instants.append( inst_num )
-            inst_num += factor
-
-
-        ### count the # of benchmarks solved in less than "instant" seconds, for
-        ### each tool
-
-        # dictionary:  name  =>  list of % of solved benchs in less than
-        # "instant" seconds
-        toolspercent = {}
-        for toolname in toolsnames:
-            toolspercent[toolname] = []
-
-        for toolname in toolsnames:
-            for instant in instants:
-                counter = 0
-                for tooltime in toolstimes[toolname]:
-                    if tooltime < instant:
-                        counter += 1
-                toolspercent[toolname] += [counter/total_bench_counter]
-               
+    ## TODO: remove it!
+    #aalta_counter = 0
+    #black_counter = 0
+    #for toolname in toolsnames:
+    #    for time in toolstimes[toolname]:
+    #        if time < 0.7:
+    #            if toolname=='black/finite':
+    #                aalta_counter += 1
+    #            if toolname=='aalta/finite':
+    #                black_counter+=1
+    #print("aalta_counter = "+str(aalta_counter))
+    #print("black_counter = "+str(black_counter))
 
 
-        ### Create plot
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)#, axisbg="1.0")
 
-        for toolname in toolsnames:
-            plt.plot(instants, toolspercent[toolname], label=toolname)
+    ### count the # of benchmarks solved in less than "instant" seconds, for
+    ### each tool
 
-        
-        # grid
-        ax.grid(color='b', ls = '-.', lw = 0.25)
-        
-        # ticks
-        #ticks_x = [ round((max_x / 10)*i,3) for i in range(0,10) ]
-        #ticks_y = [ round((max_y / 10)*i,3) for i in range(0,10) ]
-        #plt.xticks(ticks_x, ticks_x, rotation='vertical')
-        #plt.yticks(ticks_y, ticks_y)
-        # limits
-        #ax.set_ylim(0,180)
-        #ax.set_xlim(0,180)
-        # pad between axis values
-        #ax.xaxis.labelpad = 10
-        # labels
-        ax.set_xlabel("Time (sec.)")
-        ax.set_ylabel("Percentage of Completion (%)")
-        # title
-        plt.title('Survival plot')
-        plt.legend()
-        
+    # dictionary:  name  =>  list of % of solved benchs in less than
+    # "instant" seconds
+    toolspercent = {}
+    for toolname in toolsnames:
+        toolspercent[toolname] = []
 
-        if args.pngopt:
-            # save file into 'img' folder
-            fig.savefig(img_path_name)
-        if args.htmlopt:
-            # show
-            plt.show()
+    for toolname in toolsnames:
+        for instant in instants:
+            counter = 0
+            for tooltime in toolstimes[toolname]:
+                if tooltime <= instant:
+                    counter += 1
+            toolspercent[toolname] += [counter/total_bench_counter]
+
+    ##TODO: remove it!
+    #for toolname in toolsnames:
+    #    print(toolname)
+    #    counter = 0
+    #    for instant in instants:
+    #        if 0.3 <= instant and instant <= 0.5:
+    #            print(toolspercent[toolname][counter])
+    #        counter += 1
+    #    print('\n\n')
+     
+
+    ### Create the Survival Plot
+    fig = go.Figure()
+    for toolname in toolsnames:
+        fig.add_trace(go.Scatter(
+                      x=instants[1:], 
+                      y=toolspercent[toolname][1:],
+                      mode='lines+markers',
+                      name=toolname))
+    
+    # labels
+    fig.update_xaxes(title_text="Time (sec.)")
+    fig.update_yaxes(title_text="Percentage of Completion (%)")
+
+    if args.pngopt:
+        # save file into 'img' folder
+        fig.savefig(img_path_name)
+    if args.htmlopt:
+        # show
+        fig.show()
 
 
 

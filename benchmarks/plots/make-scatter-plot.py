@@ -36,7 +36,7 @@ def main(argv):
     parser.add_argument('-p', '--png', dest='pngopt', 
                         action='store_true', default=0,
                         help='Dumps the png file with the plot.')
-    parser.add_argument('-t', '--html', dest='htmlopt',
+    parser.add_argument('-m', '--html', dest='htmlopt',
                         action='store_true', default=0,
                         help='Opens the browser with the interactive plot.')
     args = parser.parse_args()
