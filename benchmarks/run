@@ -25,16 +25,19 @@ fi
 # timeout time in seconds
 if [ -z "$TIMEOUT" ]; then
   TIMEOUT=300 # five minutes
+  export TIMEOUT
 fi
 
 # memory limit for processes
 if [ -z "$MEMORY_MAX" ]; then
   MEMORY_MAX=3G # three gigabytes
+  export MEMORY_MAX
 fi
 
 # disable memory cap by default
 if [ -z "$MCAP" ]; then
   MCAP=true
+  export MCAP
 fi
 
 if $MCAP; then
