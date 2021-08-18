@@ -42,6 +42,9 @@ def main(argv):
     parser.add_argument('-i', '--tiks', dest='tiks',
                         default=0,
                         help='Number of tiks of the x-axis.')
+    parser.add_argument('-d', '--no-legend', dest='nolegendopt',
+                        action='store_true', default=0,
+                        help='If set, suppresses the generation of the legend')
     args = parser.parse_args()
 
 
@@ -169,6 +172,7 @@ def main(argv):
                           color=PLOTLY_COLORS[counter]
                       ),
                       name=toolname,
+                      showlegend=False if args.nolegendopt else True
                       ),
             row=1,col=1)
         fig.add_trace(go.Scatter(
@@ -179,7 +183,8 @@ def main(argv):
                           color=PLOTLY_COLORS[counter]
                       ),
                       name=toolname,
-                      showlegend=False),
+                      showlegend=False if args.nolegendopt else True
+                      ),
             row=1,col=2)
         counter += 1
     
