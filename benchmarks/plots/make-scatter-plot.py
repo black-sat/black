@@ -193,11 +193,13 @@ def main(argv):
     # name the two axis
     fig.update_xaxes(
         title_text=args.xtool,
-        type="log" if args.logopt else ""
+        type="log" if args.logopt else "",
+        dtick=1
     )
     fig.update_yaxes(
         title_text=args.ytool,
-        type="log" if args.logopt else ""
+        type="log" if args.logopt else "",
+        dtick=1
     )
 
     # name the two axis
@@ -218,7 +220,7 @@ def main(argv):
     fig.update_yaxes(
         title_text='', # share the label on the y-axis
         type="log" if args.logopt else "",
-        row=1,col=2)
+        row=1, col=2)
 
 
     fig.update_layout(
