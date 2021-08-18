@@ -215,7 +215,7 @@ def main(argv):
     
     # Legend
     fig.update_layout(
-        #height=600, width=1100,
+        height=600, width=1100,
         legend=dict(
             orientation="h",
             y=-0.15,
