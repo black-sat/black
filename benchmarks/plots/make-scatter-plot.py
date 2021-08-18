@@ -60,7 +60,7 @@ def main(argv):
     #datafile's name without path
     datafile_name = args.datafile.split('/')[-1]
     #path for image
-    img_path_name = "scatterplot"+args.xtool.replace("/","")+"."+args.ytool.replace("/","")+"."+datafile_name.replace(".csv",".pdf").replace(".dat",".pdf")
+    img_path_name = "scatterplot."+args.xtool.replace("/","")+"."+args.ytool.replace("/","")+"."+datafile_name.replace(".csv",".pdf").replace(".dat",".pdf")
 
 
     # categories dictionaries (one for SAT and one for UNSAT):
@@ -213,6 +213,7 @@ def main(argv):
     fig.update_yaxes(
         title_text=args.ytool,
         type="log" if args.logopt else "",
+        scaleanchor = "x", scaleratio = 1, # same scale of x-axis
         row=1,col=1)
 
     # name the two axis
@@ -223,6 +224,7 @@ def main(argv):
     fig.update_yaxes(
         title_text='', # share the label on the y-axis
         type="log" if args.logopt else "",
+        scaleanchor = "x", scaleratio = 1, # same scale of x-axis
         row=1, col=2)
 
 
@@ -241,6 +243,9 @@ def main(argv):
         #    #color="RebeccaPurple"
         #)
     )
+
+    # remove margins
+    fig['layout'].update(margin=dict(l=0,r=0,b=0,t=0))
 
     # save img
     if args.pdfopt:

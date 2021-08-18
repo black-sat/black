@@ -64,7 +64,7 @@ def main(argv):
     #datafile's name without path
     datafile_name = args.datafile.split('/')[-1]
     #path for image
-    img_path_name = "survivalplot"+datafile_name.replace(".csv",".pdf").replace(".dat",".pdf")
+    img_path_name = "survivalplot."+datafile_name.replace(".csv",".pdf").replace(".dat",".pdf")
     # number of column for tools: it's a dictionary:   name => numcol
     toolsnumcol={}
     # number of benchmarks
@@ -183,7 +183,7 @@ def main(argv):
                           color=PLOTLY_COLORS[counter]
                       ),
                       name=toolname,
-                      showlegend=False if args.nolegendopt else True
+                      showlegend=False
                       ),
             row=1,col=2)
         counter += 1
@@ -202,6 +202,17 @@ def main(argv):
         col=2,
         type="log")
     fig.update_yaxes(title_text="",row=1,col=2) #share label of y-axis
+    
+    # Legend
+    fig.update_layout(
+        #height=600, width=1100,
+        legend=dict(
+            orientation="h",
+            y=-0.15,
+        ))
+    
+    # remove margins
+    fig['layout'].update(margin=dict(l=0,r=0,b=0,t=0))
 
     if args.pdfopt:
         # save file into 'img' folder
