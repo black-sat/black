@@ -195,13 +195,23 @@ def main(argv):
         col=1,
         type="log"
         )
-    fig.update_yaxes(title_text="Percentage of Completion (%)",row=1,col=1)
+    fig.update_yaxes(
+        title_text="Percentage of Completion (%)",
+        row=1,
+        col=1,
+        scaleanchor = "x", scaleratio = 1, # same scale of x-axis
+        )
     fig.update_xaxes(
         title_text="Time (sec.)",
         row=1,
         col=2,
         type="log")
-    fig.update_yaxes(title_text="",row=1,col=2) #share label of y-axis
+    fig.update_yaxes(
+        title_text="", #share label of y-axis
+        row=1,
+        col=2,
+        scaleanchor = "x", scaleratio = 1, # same scale of x-axis
+        )
     
     # Legend
     fig.update_layout(
