@@ -1,14 +1,11 @@
 import os, os.path, sys, argparse
 import csv 
+import plotly
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import numpy as np
 
-DEFAULT_PLOTLY_COLORS=['rgb(31, 119, 180)', 'rgb(255, 127, 14)',
-                       'rgb(44, 160, 44)', 'rgb(214, 39, 40)',
-                       'rgb(148, 103, 189)', 'rgb(140, 86, 75)',
-                       'rgb(227, 119, 194)', 'rgb(127, 127, 127)',
-                       'rgb(188, 189, 34)', 'rgb(23, 190, 207)']
+PLOTLY_COLORS = plotly.colors.DEFAULT_PLOTLY_COLORS
 
 
 # Function for checking if a string "s" is a number.
@@ -68,7 +65,8 @@ def main(argv):
     # number of column for tools: it's a dictionary:   name => numcol
     toolsnumcol={}
     # number of benchmarks
-    total_bench_counter = 0
+    sat_total_bench_counter = 0
+    unsat_total_bench_counter = 0
     # tools'times : it is a dictionary:  name => list of times
     # one for SAT one for UNSAT
     sat_toolstimes={}
@@ -103,7 +101,10 @@ def main(argv):
                     if line[toolsnumcol[toolname]+1].strip() == 'SAT':
                         is_sat = 1
                 # increment 'total_bench_counter'
-                total_bench_counter += 1
+                if is_sat:
+                    sat_total_bench_counter += 1
+                else:
+                    unsat_total_bench_counter += 1
                 # take times
                 for toolname in toolsnames:
                     time = line[toolsnumcol[toolname]]
@@ -141,12 +142,12 @@ def main(argv):
             for tooltime in sat_toolstimes[toolname]:
                 if tooltime <= instant:
                     counter += 1
-            sat_toolspercent[toolname] += [counter/total_bench_counter]
+            sat_toolspercent[toolname] += [counter/sat_total_bench_counter]
             counter = 0
             for tooltime in unsat_toolstimes[toolname]:
                 if tooltime <= instant:
                     counter += 1
-            unsat_toolspercent[toolname] += [counter/total_bench_counter]
+            unsat_toolspercent[toolname] += [counter/unsat_total_bench_counter]
 
 
     ### Create the Survival Plot
@@ -165,7 +166,7 @@ def main(argv):
                       y=sat_toolspercent[toolname][1:],
                       mode='lines',
                       line=dict(
-                          color=DEFAULT_PLOTLY_COLORS[counter]
+                          color=PLOTLY_COLORS[counter]
                       ),
                       name=toolname,
                       ),
@@ -175,7 +176,7 @@ def main(argv):
                       y=unsat_toolspercent[toolname][1:],
                       mode='lines',
                       line=dict(
-                          color=DEFAULT_PLOTLY_COLORS[counter]
+                          color=PLOTLY_COLORS[counter]
                       ),
                       name=toolname,
                       showlegend=False),
@@ -183,9 +184,18 @@ def main(argv):
         counter += 1
     
     # labels
-    fig.update_xaxes(title_text="Time (sec.)",row=1,col=1)
+    fig.update_xaxes(
+        title_text="Time (sec.)",
+        row=1,
+        col=1,
+        type="log"
+        )
     fig.update_yaxes(title_text="Percentage of Completion (%)",row=1,col=1)
-    fig.update_xaxes(title_text="Time (sec.)",row=1,col=2)
+    fig.update_xaxes(
+        title_text="Time (sec.)",
+        row=1,
+        col=2,
+        type="log")
     fig.update_yaxes(title_text="",row=1,col=2) #share label of y-axis
 
     if args.pdfopt:

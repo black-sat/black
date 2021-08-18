@@ -1,9 +1,11 @@
 import os, os.path, sys, argparse
 import csv 
+import plotly
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import numpy as np
 
+PLOTLY_COLORS = plotly.colors.DEFAULT_PLOTLY_COLORS
 
 
 # Function for checking if a string "s" is a number.
@@ -148,6 +150,14 @@ def main(argv):
 
     ### Add a TRACE for each category in SAT and UNSAT
 
+    # color_categories
+    color_categories = {}
+    color_counter = 6
+    for category in list(sat_categories.keys())+list(unsat_categories.keys()):
+        if not category in color_categories:
+            color_categories[category] = PLOTLY_COLORS[color_counter]
+            color_counter = (color_counter + 1) % len(PLOTLY_COLORS)
+
     # SAT
     for category in sat_categories:
         fig.add_trace(go.Scatter(
@@ -157,8 +167,10 @@ def main(argv):
             marker=dict(
                 symbol='triangle-up',
                 size=5,
+                color=color_categories[category]
             ),
             name=category,
+            legendgroup="group"+category,
             showlegend=True),
             row=1,col=1)
 
@@ -171,9 +183,11 @@ def main(argv):
             marker=dict(
                 symbol='triangle-up',
                 size=5,
+                color=color_categories[category]
             ),
             name=category,
-            showlegend=True),
+            legendgroup="group"+category,
+            showlegend=False if category in sat_categories else True),
             row=1,col=2)
 
     # name the two axis
