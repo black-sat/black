@@ -44,6 +44,9 @@ def main(argv):
     parser.add_argument('-l', '--log', dest='logopt',
                         action='store_true', default=0,
                         help='Uses the logarithmic scale for the x- and y-axis.')
+    parser.add_argument('-d', '--no-legend', dest='nolegendopt',
+                        action='store_true', default=0,
+                        help='If set, suppresses the generation of the legend')
     args = parser.parse_args()
     
     # check on the options
@@ -152,7 +155,7 @@ def main(argv):
 
     # color_categories
     color_categories = {}
-    color_counter = 6
+    color_counter = 3
     for category in list(sat_categories.keys())+list(unsat_categories.keys()):
         if not category in color_categories:
             color_categories[category] = PLOTLY_COLORS[color_counter]
@@ -171,7 +174,7 @@ def main(argv):
             ),
             name=category,
             legendgroup="group"+category,
-            showlegend=True),
+            showlegend=False if args.nolegendopt else True),
             row=1,col=1)
 
     # UNSAT
@@ -187,7 +190,7 @@ def main(argv):
             ),
             name=category,
             legendgroup="group"+category,
-            showlegend=False if category in sat_categories else True),
+            showlegend=False if category in sat_categories or args.nolegendopt else True),
             row=1,col=2)
 
     # name the two axis
