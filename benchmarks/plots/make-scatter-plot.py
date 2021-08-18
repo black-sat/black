@@ -33,12 +33,15 @@ def main(argv):
                         help='In order to distinguish the benchmarks that have an error from those that'
                              'reach the timeout, we define the ERRORTIME as the timeout time plus 180'
                              'seconds')
-    parser.add_argument('-p', '--png', dest='pngopt', 
+    parser.add_argument('-p', '--pdf', dest='pdfopt', 
                         action='store_true', default=0,
-                        help='Dumps the png file with the plot.')
+                        help='Dumps the pdf file with the plot.')
     parser.add_argument('-m', '--html', dest='htmlopt',
                         action='store_true', default=0,
                         help='Opens the browser with the interactive plot.')
+    parser.add_argument('-l', '--log', dest='logopt',
+                        action='store_true', default=0,
+                        help='Uses the logarithmic scale for the x- and y-axis.')
     args = parser.parse_args()
     
     # check on the options
@@ -52,23 +55,24 @@ def main(argv):
     #datafile's name without path
     datafile_name = args.datafile.split('/')[-1]
     #path for image
-    img_path_name = "scatterplot"+args.xtool.replace("/","")+"."+args.ytool.replace("/","")+"."+datafile_name.replace(".csv",".png").replace(".dat",".png")
+    img_path_name = "scatterplot"+args.xtool.replace("/","")+"."+args.ytool.replace("/","")+"."+datafile_name.replace(".csv",".pdf").replace(".dat",".pdf")
 
 
-    # categories dictionary:
+    # categories dictionaries (one for SAT and one for UNSAT):
     # 
     #   {category_1} -> ([category_1_time_x], [category_1_time_y]),
     #   {category_2} -> ([category_2_time_x], [category_2_time_y]),
     #       ...
     #   {category_3} -> ([category_n_time_x], [category_n_time_y])
     # 
-    categories      = {}
+    sat_categories          = {}
+    unsat_categories        = {}
     # number of column for xtool
-    numcol_xtool    = -1
+    numcol_xtool            = -1
     # number of column for ytool
-    numcol_ytool    = -1
+    numcol_ytool            = -1
     # number of column for family
-    numcol_family   = -1
+    numcol_family           = -1
 
     # opening the datafile 
     with open(args.datafile, mode ='r') as data_handle: 
@@ -97,7 +101,9 @@ def main(argv):
 
                 # check the current times for xtool and ytool
                 time_xtool = 0 
+                x_is_sat = 0
                 if 'SAT' in line[numcol_xtool+1] or 'UNSAT' in line[numcol_xtool+1]:
+                    x_is_sat = 1 if line[numcol_xtool+1].strip() == 'SAT' else 0
                     if is_number(line[numcol_xtool]):
                         time_xtool = float(line[numcol_xtool])
                     else:
@@ -107,7 +113,9 @@ def main(argv):
                     time_xtool = float(args.errortime)
                 
                 time_ytool = 0 
+                y_is_sat = 0
                 if 'SAT' in line[numcol_ytool+1] or 'UNSAT' in line[numcol_ytool+1]:
+                    y_is_sat = 1 if line[numcol_ytool+1].strip() == 'SAT' else 0
                     if is_number(line[numcol_ytool]):
                         time_ytool = float(line[numcol_ytool])
                     else:
@@ -116,35 +124,87 @@ def main(argv):
                 else:
                     time_ytool = float(args.errortime)
 
-                # insert the times into the 'categories' dictionary
-                categories[category] = (
-                    categories[category][0]+[time_xtool] if category in categories else [time_xtool],
-                    categories[category][1]+[time_ytool] if category in categories else [time_ytool]
-                )
+                # check the results and insert the times into the 'categories' dictionary
+                if x_is_sat or y_is_sat:
+                    sat_categories[category] = (
+                        sat_categories[category][0]+[time_xtool] if category in sat_categories else [time_xtool],
+                        sat_categories[category][1]+[time_ytool] if category in sat_categories else [time_ytool]
+                    )
+                else:
+                    unsat_categories[category] = (
+                        unsat_categories[category][0]+[time_xtool] if category in unsat_categories else [time_xtool],
+                        unsat_categories[category][1]+[time_ytool] if category in unsat_categories else [time_ytool]
+                    )
 
 
-    ### scatter plot for time
-    fig = go.Figure()
+    ### scatter plot for time (fig = go.Figure())
+    fig = make_subplots(
+        rows=1, 
+        cols=2,
+        shared_yaxes=True, # sharing the y-axis
+        horizontal_spacing = 0.02 # spacing between the two subplots
+    )
 
 
-    ## Add a TRACE for each category
+    ### Add a TRACE for each category in SAT and UNSAT
 
-    for category in categories:
+    # SAT
+    for category in sat_categories:
         fig.add_trace(go.Scatter(
-            x=categories[category][0],
-            y=categories[category][1],
+            x=sat_categories[category][0],
+            y=sat_categories[category][1],
             mode='markers',
             marker=dict(
                 symbol='triangle-up',
-                size=10
+                size=5,
             ),
             name=category,
-            #showlegend=False
-            ))
+            showlegend=True),
+            row=1,col=1)
+
+    # UNSAT
+    for category in unsat_categories:
+        fig.add_trace(go.Scatter(
+            x=unsat_categories[category][0],
+            y=unsat_categories[category][1],
+            mode='markers',
+            marker=dict(
+                symbol='triangle-up',
+                size=5,
+            ),
+            name=category,
+            showlegend=True),
+            row=1,col=2)
 
     # name the two axis
-    fig.update_xaxes( title_text=args.xtool)
-    fig.update_yaxes( title_text=args.ytool)
+    fig.update_xaxes(
+        title_text=args.xtool,
+        type="log" if args.logopt else ""
+    )
+    fig.update_yaxes(
+        title_text=args.ytool,
+        type="log" if args.logopt else ""
+    )
+
+    # name the two axis
+    fig.update_xaxes(
+        title_text=args.xtool,
+        type="log" if args.logopt else "",
+        row=1,col=1)
+    fig.update_yaxes(
+        title_text=args.ytool,
+        type="log" if args.logopt else "",
+        row=1,col=1)
+
+    # name the two axis
+    fig.update_xaxes(
+        title_text=args.xtool,
+        type="log" if args.logopt else "",
+        row=1,col=2)
+    fig.update_yaxes(
+        title_text='', # share the label on the y-axis
+        type="log" if args.logopt else "",
+        row=1,col=2)
 
 
     fig.update_layout(
@@ -164,7 +224,7 @@ def main(argv):
     )
 
     # save img
-    if args.pngopt:
+    if args.pdfopt:
         fig.write_image(img_path_name)
     if args.htmlopt:
         fig.show()

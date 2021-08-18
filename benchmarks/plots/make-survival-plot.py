@@ -4,6 +4,11 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import numpy as np
 
+DEFAULT_PLOTLY_COLORS=['rgb(31, 119, 180)', 'rgb(255, 127, 14)',
+                       'rgb(44, 160, 44)', 'rgb(214, 39, 40)',
+                       'rgb(148, 103, 189)', 'rgb(140, 86, 75)',
+                       'rgb(227, 119, 194)', 'rgb(127, 127, 127)',
+                       'rgb(188, 189, 34)', 'rgb(23, 190, 207)']
 
 
 # Function for checking if a string "s" is a number.
@@ -28,9 +33,9 @@ def main(argv):
     parser.add_argument('timeout', metavar='timeout', type=int,
                         default=0,
                         help='Value for the timeout.')
-    parser.add_argument('-p', '--png', dest='pngopt', 
+    parser.add_argument('-p', '--pdf', dest='pdfopt', 
                         action='store_true', default=0,
-                        help='Dumps the png file with the plot.')
+                        help='Dumps the pdf file with the plot.')
     parser.add_argument('-m', '--html', dest='htmlopt',
                         action='store_true', default=0,
                         help='Opens the browser with the interactive plot.')
@@ -59,15 +64,15 @@ def main(argv):
     #datafile's name without path
     datafile_name = args.datafile.split('/')[-1]
     #path for image
-    img_path_name = "survivalplot"+datafile_name.replace(".csv",".png").replace(".dat",".png")
+    img_path_name = "survivalplot"+datafile_name.replace(".csv",".pdf").replace(".dat",".pdf")
     # number of column for tools: it's a dictionary:   name => numcol
     toolsnumcol={}
     # number of benchmarks
     total_bench_counter = 0
     # tools'times : it is a dictionary:  name => list of times
-    toolstimes={}
-    # tools'max times
-    toolsmaxtimes={}
+    # one for SAT one for UNSAT
+    sat_toolstimes={}
+    unsat_toolstimes={}
 
 
     # opening the datafile 
@@ -81,10 +86,9 @@ def main(argv):
             line = [el for el in line if el!='']
             if header:
                 for toolname in toolsnames:
-                    # initializing toolsmaxtimes
-                    toolsmaxtimes[toolname]=0
-                    # initializing toolsmaxtimes
-                    toolstimes[toolname]=[]
+                    # initializing
+                    sat_toolstimes[toolname]=[]
+                    unsat_toolstimes[toolname]=[]
                     colindex = 0
                     # computing toolsnumcol
                     for col in line:
@@ -93,6 +97,11 @@ def main(argv):
                         colindex += 1
                 header = False
             else:
+                # retrieve the result of this benchmarks
+                is_sat = 0
+                for toolname in toolsnames:
+                    if line[toolsnumcol[toolname]+1].strip() == 'SAT':
+                        is_sat = 1
                 # increment 'total_bench_counter'
                 total_bench_counter += 1
                 # take times
@@ -100,9 +109,10 @@ def main(argv):
                     time = line[toolsnumcol[toolname]]
                     # check is the benchmark terminated or is an error
                     if is_number(time):
-                        toolstimes[toolname] += [float(time)]
-                        # compute the max
-                        toolsmaxtimes[toolname] = float(time) if float(time) > toolsmaxtimes[toolname] else toolsmaxtimes[toolname]
+                        if is_sat:
+                            sat_toolstimes[toolname] += [float(time)]
+                        else:
+                            unsat_toolstimes[toolname] += [float(time)]
 
 
     # create the instants
@@ -113,63 +123,72 @@ def main(argv):
         instants.append( inst_num )
         inst_num += factor
 
-    ## TODO: remove it!
-    #aalta_counter = 0
-    #black_counter = 0
-    #for toolname in toolsnames:
-    #    for time in toolstimes[toolname]:
-    #        if time < 0.7:
-    #            if toolname=='black/finite':
-    #                aalta_counter += 1
-    #            if toolname=='aalta/finite':
-    #                black_counter+=1
-    #print("aalta_counter = "+str(aalta_counter))
-    #print("black_counter = "+str(black_counter))
-
-
 
     ### count the # of benchmarks solved in less than "instant" seconds, for
     ### each tool
 
     # dictionary:  name  =>  list of % of solved benchs in less than
     # "instant" seconds
-    toolspercent = {}
+    sat_toolspercent = {}
+    unsat_toolspercent = {}
     for toolname in toolsnames:
-        toolspercent[toolname] = []
+        sat_toolspercent[toolname] = []
+        unsat_toolspercent[toolname] = []
 
     for toolname in toolsnames:
         for instant in instants:
             counter = 0
-            for tooltime in toolstimes[toolname]:
+            for tooltime in sat_toolstimes[toolname]:
                 if tooltime <= instant:
                     counter += 1
-            toolspercent[toolname] += [counter/total_bench_counter]
+            sat_toolspercent[toolname] += [counter/total_bench_counter]
+            counter = 0
+            for tooltime in unsat_toolstimes[toolname]:
+                if tooltime <= instant:
+                    counter += 1
+            unsat_toolspercent[toolname] += [counter/total_bench_counter]
 
-    ##TODO: remove it!
-    #for toolname in toolsnames:
-    #    print(toolname)
-    #    counter = 0
-    #    for instant in instants:
-    #        if 0.3 <= instant and instant <= 0.5:
-    #            print(toolspercent[toolname][counter])
-    #        counter += 1
-    #    print('\n\n')
-     
 
     ### Create the Survival Plot
-    fig = go.Figure()
+    fig = make_subplots(
+        rows=1, 
+        cols=2,
+        shared_yaxes=True, # sharing the y-axis
+        horizontal_spacing = 0.02 # spacing between the two subplots
+    )
+
+    # plot
+    counter = 0
     for toolname in toolsnames:
         fig.add_trace(go.Scatter(
                       x=instants[1:], 
-                      y=toolspercent[toolname][1:],
-                      mode='lines+markers',
-                      name=toolname))
+                      y=sat_toolspercent[toolname][1:],
+                      mode='lines',
+                      line=dict(
+                          color=DEFAULT_PLOTLY_COLORS[counter]
+                      ),
+                      name=toolname,
+                      ),
+            row=1,col=1)
+        fig.add_trace(go.Scatter(
+                      x=instants[1:], 
+                      y=unsat_toolspercent[toolname][1:],
+                      mode='lines',
+                      line=dict(
+                          color=DEFAULT_PLOTLY_COLORS[counter]
+                      ),
+                      name=toolname,
+                      showlegend=False),
+            row=1,col=2)
+        counter += 1
     
     # labels
-    fig.update_xaxes(title_text="Time (sec.)")
-    fig.update_yaxes(title_text="Percentage of Completion (%)")
+    fig.update_xaxes(title_text="Time (sec.)",row=1,col=1)
+    fig.update_yaxes(title_text="Percentage of Completion (%)",row=1,col=1)
+    fig.update_xaxes(title_text="Time (sec.)",row=1,col=2)
+    fig.update_yaxes(title_text="",row=1,col=2) #share label of y-axis
 
-    if args.pngopt:
+    if args.pdfopt:
         # save file into 'img' folder
         fig.write_image(img_path_name)
     if args.htmlopt:
