@@ -193,7 +193,8 @@ def main(argv):
         title_text="Time (sec.)",
         row=1,
         col=1,
-        type="log"
+        type="log",
+        dtick=1
         )
     fig.update_yaxes(
         title_text="Percentage of Completion (%)",
@@ -205,7 +206,8 @@ def main(argv):
         title_text="Time (sec.)",
         row=1,
         col=2,
-        type="log")
+        type="log",
+        dtick=1)
     fig.update_yaxes(
         title_text="", #share label of y-axis
         row=1,
