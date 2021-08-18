@@ -233,7 +233,7 @@ def main(argv):
         legend=dict(
             orientation="h",
             #yanchor="bottom",
-            y=-0.25,
+            y=-0.15,
             #xanchor="right",
             #x=1
         ),
