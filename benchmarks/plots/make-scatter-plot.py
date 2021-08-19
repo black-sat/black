@@ -115,6 +115,7 @@ def main(argv):
                         bench_is_sat = 0
                         break
                     if not 'err' in col.strip():
+                        print(line)
                         sys.exit('Error in the datafile')
 
                 # check the current times for xtool and ytool
@@ -152,11 +153,13 @@ def main(argv):
 
                 # check the results 
                 if bench_is_sat == 0 and (x_is_sat == 1 or y_is_sat == 1):
-                    sys.exit('Error: found different results.')
+                    print(line)
+                    print('Error: found different results.')
                 if bench_is_sat == 1 and (x_is_sat == 0 or y_is_sat == 0):
-                    sys.exit('Error: found different results.')
+                    print(line)
+                    print('Error: found different results.')
                 if (x_is_sat==1 and y_is_sat==0) or (x_is_sat==0 and y_is_sat==1):
-                    sys.exit('Error: found different results.')
+                    print('Error: found different results.')
 
                 # insert times in the right category
                 if bench_is_sat == 1:
