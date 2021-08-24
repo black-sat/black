@@ -103,22 +103,41 @@ def main(argv):
             else:
                 # take category name
                 category=line[numcol_family].strip()
+                
+                # take result of benchmark
+                # 0 = UNSAT,  1 = SAT,  2 = err
+                bench_is_sat = 2
+                for col in line[4::2]: # the results start at index 4 of the datafile. We take only the even positions.
+                    if col.strip() == 'SAT':
+                        bench_is_sat = 1
+                        break
+                    if col.strip() == 'UNSAT':
+                        bench_is_sat = 0
+                        break
+                    if not 'err' in col.strip():
+                        print(line)
+                        sys.exit('Error in the datafile')
 
                 # check the current times for xtool and ytool
                 time_xtool = 0 
-                x_is_sat = 0
+                x_is_sat = 2 # 0 = UNSAT,  1 = SAT,  2 = err
                 if 'SAT' in line[numcol_xtool+1] or 'UNSAT' in line[numcol_xtool+1]:
+                    # result
                     x_is_sat = 1 if line[numcol_xtool+1].strip() == 'SAT' else 0
+                    #time
                     if is_number(line[numcol_xtool]):
                         time_xtool = float(line[numcol_xtool])
                     else:
                         print(line)
                         sys.exit('Error in the datafile: a time is not a number')
-                else:
+                elif 'err' in line[numcol_xtool+1]:
+                    x_is_sat = 2 
                     time_xtool = float(args.errortime)
+                else:
+                    sys.exit('Error: unreachable code')
                 
                 time_ytool = 0 
-                y_is_sat = 0
+                y_is_sat = 2
                 if 'SAT' in line[numcol_ytool+1] or 'UNSAT' in line[numcol_ytool+1]:
                     y_is_sat = 1 if line[numcol_ytool+1].strip() == 'SAT' else 0
                     if is_number(line[numcol_ytool]):
@@ -126,20 +145,37 @@ def main(argv):
                     else:
                         print(line)
                         sys.exit('Error in the datafile: a time is not a number')
-                else:
+                elif 'err' in line[numcol_ytool+1]:
+                    y_is_sat = 2
                     time_ytool = float(args.errortime)
+                else:
+                    sys.exit('Error: unreachable code')
 
-                # check the results and insert the times into the 'categories' dictionary
-                if x_is_sat or y_is_sat:
+                # check the results 
+                if bench_is_sat == 0 and (x_is_sat == 1 or y_is_sat == 1):
+                    print(line)
+                    print('Error: found different results.')
+                if bench_is_sat == 1 and (x_is_sat == 0 or y_is_sat == 0):
+                    print(line)
+                    print('Error: found different results.')
+                if (x_is_sat==1 and y_is_sat==0) or (x_is_sat==0 and y_is_sat==1):
+                    print('Error: found different results.')
+
+                # insert times in the right category
+                if bench_is_sat == 1:
                     sat_categories[category] = (
                         sat_categories[category][0]+[time_xtool] if category in sat_categories else [time_xtool],
                         sat_categories[category][1]+[time_ytool] if category in sat_categories else [time_ytool]
                     )
-                else:
+                elif bench_is_sat == 0:
                     unsat_categories[category] = (
                         unsat_categories[category][0]+[time_xtool] if category in unsat_categories else [time_xtool],
                         unsat_categories[category][1]+[time_ytool] if category in unsat_categories else [time_ytool]
                     )
+                else: # bench_is_sat == 2
+                    continue
+
+
 
 
     ### scatter plot for time (fig = go.Figure())
