@@ -114,6 +114,8 @@ namespace black::internal
       "<->", // iff
       "U",   // until
       "R",   // release
+      "W",   // weak until
+      "M",   // strong release
       "S",   // since
       "T",   // triggered
     };

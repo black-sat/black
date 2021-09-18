@@ -1,0 +1,1 @@
+(True -> (( G ((LiVar785 & systemvalidity) -> (LiVar750 & LiVar790)) &  G (((LiVar786 | !systemvalidity) & LiVar799) -> (LiVar751 & LiVar789))) &  G (((LiVar786 | !systemvalidity) & LiVar800) -> (LiVar751 & LiVar790)))) & True

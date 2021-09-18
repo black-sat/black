@@ -267,6 +267,8 @@ namespace black::internal
   declare_operator(iff,         binary)
   declare_operator(until,       binary)
   declare_operator(release,     binary)
+  declare_operator(w_until,     binary)
+  declare_operator(s_release,   binary)
   declare_operator(since,       binary)
   declare_operator(triggered,   binary)
 
@@ -310,10 +312,12 @@ namespace black::internal
   inline once         O(formula f) { return once(f);         }
   inline historically H(formula f) { return historically(f); }
 
-  inline until     U(formula f1, formula f2) { return until(f1,f2);     }
-  inline release   R(formula f1, formula f2) { return release(f1,f2);   }
-  inline since     S(formula f1, formula f2) { return since(f1,f2);     }
-  inline triggered T(formula f1, formula f2) { return triggered(f1,f2); }
+  inline until     U(formula f1, formula f2) { return until(f1,f2);      }
+  inline release   R(formula f1, formula f2) { return release(f1,f2);    }
+  inline w_until   W(formula f1, formula f2) { return w_until(f1, f2);   }
+  inline s_release M(formula f1, formula f2) { return s_release(f1, f2); }
+  inline since     S(formula f1, formula f2) { return since(f1,f2);      }
+  inline triggered T(formula f1, formula f2) { return triggered(f1,f2);  }
 
   inline tomorrow   XF(formula f) { return X(F(f)); }
   inline tomorrow   XG(formula f) { return X(G(f)); }

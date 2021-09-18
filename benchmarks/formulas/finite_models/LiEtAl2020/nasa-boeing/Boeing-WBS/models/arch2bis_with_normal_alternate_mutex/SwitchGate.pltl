@@ -1,0 +1,1 @@
+(True -> (( G (validity1 -> (cmdout <-> cmdin1)) &  G ((!validity1 & validity2) -> (cmdout <-> cmdin2))) &  G ((!validity1 & !validity2) -> LiVar819))) & True

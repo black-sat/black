@@ -1,0 +1,1 @@
+(True -> ( G (LiVar743 -> LiVar322) &  G (LiVar730 -> LiVar359))) & (True -> ( G (LiVar743 -> LiVar356) &  G (LiVar730 -> LiVar374))) & (True -> ( G (LiVar745 -> LiVar357) &  G (LiVar731 -> LiVar375))) & True

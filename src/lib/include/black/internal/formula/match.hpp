@@ -78,6 +78,8 @@ namespace std {
     declare_destructuring_arity(iff,          2)
     declare_destructuring_arity(until,        2)
     declare_destructuring_arity(release,      2)
+    declare_destructuring_arity(w_until,      2)
+    declare_destructuring_arity(s_release,    2)
     declare_destructuring_arity(since,        2)
     declare_destructuring_arity(triggered,    2)
 
@@ -199,6 +201,8 @@ namespace black::internal
     iff,
     until,
     release,
+    w_until,
+    s_release,
     since,
     triggered
   >;
@@ -222,6 +226,8 @@ namespace black::internal
     iff,
     until,
     release,
+    w_until,
+    s_release,
     since,
     triggered
   >;
@@ -299,6 +305,8 @@ namespace std {
   declare_common_type(iff,          binary)
   declare_common_type(until,        binary)
   declare_common_type(release,      binary)
+  declare_common_type(w_until,      binary)
+  declare_common_type(s_release,    binary)
   declare_common_type(since,        binary)
   declare_common_type(triggered,    binary)
 
@@ -377,7 +385,9 @@ namespace black::internal
     always,
     eventually,
     until,
-    release
+    release,
+    w_until,
+    s_release
   >;
 
   using temporal_ltl_ops = syntax<
@@ -387,6 +397,8 @@ namespace black::internal
     eventually,
     until,
     release,
+    w_until,
+    s_release,
     yesterday,
     w_yesterday,
     once,

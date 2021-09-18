@@ -1,0 +1,1 @@
+(True ->  G ((power & electricalpedalpos) <-> brakecmd)) & True

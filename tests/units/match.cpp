@@ -467,7 +467,9 @@ TEST_CASE("Non-formula matchers")
           [](eventually) { return 3; },
           [](always) { return 4; },
           [](until) { return 5; },
-          [](release) { return 6; }
+          [](release) { return 6; },
+          [](w_until) { return 7; },
+          [](s_release) { return 8; }
         );
       },
       [](otherwise) { return 42; }
@@ -506,12 +508,14 @@ TEST_CASE("Non-formula matchers")
           [](eventually)   { return 4; },
           [](until)        { return 5; },
           [](release)      { return 6; },
-          [](yesterday)    { return 7; },
-          [](w_yesterday)  { return 8; },
-          [](once)         { return 9; },
-          [](historically) { return 10; },
-          [](since)        { return 11; },
-          [](triggered)    { return 12; }
+          [](w_until)      { return 7; },
+          [](s_release)    { return 8; },
+          [](yesterday)    { return 9; },
+          [](w_yesterday)  { return 10; },
+          [](once)         { return 11; },
+          [](historically) { return 12; },
+          [](since)        { return 13; },
+          [](triggered)    { return 14; }
         );
       },
       [](propositional) -> int { black_unreachable(); }

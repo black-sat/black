@@ -18,19 +18,26 @@ if [ -z "$(which bc)" ]; then
   die "Please install the 'bc' utility"
 fi
 
+if [ -z "$(which parallel)" ]; then
+  die "Please install the 'parallel' utility"
+fi
+
 # timeout time in seconds
 if [ -z "$TIMEOUT" ]; then
   TIMEOUT=300 # five minutes
+  export TIMEOUT
 fi
 
 # memory limit for processes
 if [ -z "$MEMORY_MAX" ]; then
   MEMORY_MAX=3G # three gigabytes
+  export MEMORY_MAX
 fi
 
 # disable memory cap by default
 if [ -z "$MCAP" ]; then
   MCAP=true
+  export MCAP
 fi
 
 if $MCAP; then
@@ -104,7 +111,9 @@ measure() {
   fi
 
   # re-output the command's standard error
-  cat $errorfile >&2
+  print_errors() {
+    cat $errorfile >&2
+  }
 
   # define the call-backs for the caller
   print_time() {
@@ -279,6 +288,7 @@ bench()
   setup_run $@
 
   do_run measure > /dev/null
+  print_errors
   print_time
   output
 }
@@ -290,7 +300,8 @@ bench_formula()
   formula=$1
   cpu=$2
 
-  family=$(echo "$formula" | cut -d/ -f1)
+  type=$(echo "$formula" | cut -d/ -f1)
+  family=$(echo "$formula" | cut -d/ -f2)
 
   statusmsg="Benchmarking formula: $formula"
   if [ "$PARALLEL_SEQ" -a "$indexfile" ]; then
@@ -303,7 +314,7 @@ bench_formula()
 
   report $statusmsg
 
-  output -n $formula $family
+  output -n $formula $type $family
   for mode in $modes; do
     report -n "- $mode..."
     setup_run $mode "$formula"
@@ -316,12 +327,12 @@ bench_formula()
 
 bench_all()
 {
-  [ "$1" ] || die "Please specify the output file"
-  output=$1
+  [ "$1" ] || die "Please specify the index file"
+  indexfile=$1
+  [ "$2" ] || die "Please specify the output file"
+  output=$2
 
   setup
-
-  indexfile=formulas/index
 
   # Get total number of formulas
   total=$(cat $indexfile | wc -l | sed 's/ //g')
@@ -344,7 +355,7 @@ bench_all()
   # print header of the output table
   if [ ! -f "$output" ]; then
     {
-      output -n "formula family"
+      output -n "formula type family"
       for mode in $modes; do
         \printf " $mode $mode:result"
       done
@@ -372,10 +383,12 @@ Commands:
   enable <solver/mode>            Enables the specified \`mode\` of \`solver\`
 
   run <solver/mode> <formula>     Runs \`solver\` with the given \`mode\`
-                                  (e.g. nuXmv/sbmc) over the given \`formula\`
+                                  (e.g. nuXmv/sbmc) over the given \`formula\`.
+                                  If it returns \`err\`, try the \`bench\`
+                                  command (below) to see the error details.
 
   bench <solver/mode> <formula>   Benchmarks \`solver\` with the given \`mode\`
-                                  (e.g. nuXmv/sbmc) over the given \`formula\`
+                                  (e.g. nuXmv/sbmc) over the given \`formula\`.
 
   bench_formula <formula>         Benchmarks the given \`formula\` with all
                                   solvers in all modes.
@@ -384,9 +397,10 @@ Commands:
                                   while a progress report is written to standard
                                   error.
 
-  bench_all <file>                Runs the full benchmark of all formulas with
-                                  all solvers in all modes, writing the output
-                                  data on the given \`file\`
+  bench_all <index> <output>      Runs the full benchmark of all formulas 
+                                  listed in the \`index\` file, with all 
+                                  solvers in all modes, writing the output data 
+                                  on the given \`output\` file.
 
 ENVIRONMENT VARIABLES:
   Benchmark timeout (in seconds) can be set through the \`TIMEOUT\` environment
