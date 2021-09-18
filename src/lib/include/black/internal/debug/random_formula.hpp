@@ -26,20 +26,24 @@
 
 #include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
+#include <random>
 
 namespace black::internal {
 
   BLACK_EXPORT
   formula random_ltl_formula(
-    alphabet &sigma, int n, std::vector<std::string> const& symbols);
+      std::mt19937& gen, alphabet& sigma, int n,
+      std::vector<std::string> const& symbols);
 
   BLACK_EXPORT
   formula random_ltlp_formula(
-    alphabet &sigma, int n, std::vector<std::string> const& symbols);
+      std::mt19937& gen, alphabet& sigma, int n,
+      std::vector<std::string> const& symbols);
 
   BLACK_EXPORT
   formula random_boolean_formula(
-    alphabet &sigma, int n, std::vector<std::string> const& symbols);
+      std::mt19937& gen, alphabet& sigma, int n,
+      std::vector<std::string> const& symbols);
 
 }
 

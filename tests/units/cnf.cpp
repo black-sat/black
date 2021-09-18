@@ -34,6 +34,7 @@ using namespace black;
 TEST_CASE("CNF Translation")
 {
   alphabet sigma;
+  std::mt19937 gen((std::random_device())());
 
   std::vector<std::string> symbols = {
     "p1", "p2", "p3", "p4", "p5", "p6",
@@ -43,7 +44,7 @@ TEST_CASE("CNF Translation")
 
   std::vector<formula> tests;
   for(int i = 0 ; i <= 30; ++i) {
-    tests.push_back(black::random_boolean_formula(sigma, 10, symbols));
+    tests.push_back(black::random_boolean_formula(gen, sigma, 10, symbols));
   }
 
   solver s;

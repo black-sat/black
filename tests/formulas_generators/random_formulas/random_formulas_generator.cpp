@@ -26,7 +26,6 @@
 
 #include <iostream>
 #include <functional>
-#include <map>
 #include <random>
 #include <variant>
 #include <cstring>
@@ -47,14 +46,17 @@ void help() {
       << "\nGenerator for random LTL(+Past) formulas.\n"
       << "\nUsage: random_formulas_generator [options]\n"
       << "\nOptions:\n"
-      << "\t--num <x> : Number of formulas wanted, must be x>0. Default is 1.\n"
-      << "\t--dim <x> : Dimension of each generated formula, must be x>0.\n"
-      << "\t          : Default is a random number between " << DIM_MIN
+      << "\t--num <x>   : Number of formulas wanted, must be x>0. Default is 1."
+      << "\n"
+      << "\t--dim <x>   : Dimension of each generated formula, must be x>0.\n"
+      << "\t            : Default is a random number between " << DIM_MIN
       << " and " << DIM_MAX << ".\n"
-      << "\t--ap <xs> : Set of propositional given in the form '[p,q,..]'.\n"
-      << "\t          : Default is a set '[p1,..,pn]' with n the log2 of the\n"
-      << "\t          : dimension of the generated formula."
-      << "\t--ltl     : Use only LTL operators. Default is to use LTL+Past.\n";
+      << "\t--ap <xs>   : Set of propositional given in the form '[p,q,..]'.\n"
+      << "\t            : Default is a set '[p1,..,pn]' with n the log2 of the"
+      << "\n"
+      << "\t            : dimension of the generated formula.\n"
+      << "\t--ltl       : Use only LTL operators. Default is to use LTL+Past.\n"
+      << "\t--seed <x>  : Integer number used to init the random generator.\n";
   exit(1);
 }
 
@@ -88,6 +90,7 @@ std::vector<std::string> parse_ap(std::string str_ap) {
 int main(int argc, char **argv) {
   std::mt19937 gen((std::random_device())());
   std::uniform_int_distribution<> distrib(DIM_MIN, DIM_MAX);
+  unsigned int s = 0;
   int num = 1, dim = distrib(gen);
   logic_t logic = logic_t::ltlp;
   std::vector<std::string> ap;
@@ -115,6 +118,10 @@ int main(int argc, char **argv) {
       ap_set = true;
     } else if (std::strcmp(argv[i], "--ltl") == 0) {
       logic = logic_t::ltl;
+    } else if (std::strcmp(argv[i], "--seed") == 0) {
+      s = (uint32_t) std::stoul(argv[++i]);
+      gen.seed(s);
+      dim = distrib(gen); // need to re-generate the dimension
     } else {
       std::cerr << "Unknown argument: " << argv[i] << "\n";
       help();
@@ -140,8 +147,8 @@ int main(int argc, char **argv) {
   for (int j=0; j<num; j++) {
     formula f = logic == 
       logic_t::ltl ? 
-        black::random_ltl_formula(sigma, dim, ap) : 
-        black::random_ltlp_formula(sigma, dim, ap);
+        black::random_ltl_formula(gen, sigma, dim, ap) :
+        black::random_ltlp_formula(gen, sigma, dim, ap);
     std::cout << to_string(f) << "\n";
   }
 

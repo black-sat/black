@@ -45,14 +45,15 @@ namespace black::internal {
     ltlp 
   };
 
-  class rand_formula_gen 
+  class rand_formula_gen
   {
     using op_t = std::variant<unary::type, binary::type>;
 
   public:
     rand_formula_gen(
-      alphabet &sigma, logic_t l, const std::vector<std::string>& symbols
-    ) : _logic{l}, _sigma{sigma}
+        std::mt19937& gen, alphabet& sigma, logic_t l,
+        const std::vector<std::string>& symbols
+    ) : _gen{gen}, _logic{l}, _sigma{sigma}
     {
       // base boolean operators
       _ops = {
@@ -105,9 +106,9 @@ namespace black::internal {
     formula random_formula(int n);
 
   private:
-    std::mt19937 _gen{std::random_device{}()};
+    std::mt19937& _gen;
     logic_t _logic;
-    alphabet &_sigma;
+    alphabet& _sigma;
     std::vector<op_t> _ops;
     std::vector<unary::type> _unary_ops; // subset of _ops
     std::vector<formula> _ap;            // AP U {True,False}
@@ -154,20 +155,26 @@ namespace black::internal {
       }
     }
   }
-  
+
   formula random_boolean_formula(
-    alphabet &sigma, int n, const std::vector<std::string> &symbols) {
-    return rand_formula_gen{sigma, logic_t::boolean, symbols}.random_formula(n);
+      std::mt19937& gen, alphabet& sigma, int n,
+      std::vector<std::string> const& symbols) {
+    return rand_formula_gen{gen, sigma, logic_t::boolean, symbols}
+      .random_formula(n);
   }
-  
+
   formula random_ltl_formula(
-    alphabet &sigma, int n, const std::vector<std::string> &symbols) {
-    return rand_formula_gen{sigma, logic_t::ltl, symbols}.random_formula(n);
+      std::mt19937& gen, alphabet& sigma, int n,
+      std::vector<std::string> const& symbols) {
+    return rand_formula_gen{gen, sigma, logic_t::ltl, symbols}
+      .random_formula(n);
   }
-  
+
   formula random_ltlp_formula(
-    alphabet &sigma, int n, const std::vector<std::string> &symbols) {
-    return rand_formula_gen{sigma, logic_t::ltlp, symbols}.random_formula(n);
+      std::mt19937& gen, alphabet& sigma, int n,
+      std::vector<std::string> const& symbols) {
+    return rand_formula_gen{gen, sigma, logic_t::ltlp, symbols}
+      .random_formula(n);
   }
 
 }
