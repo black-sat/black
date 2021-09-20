@@ -106,6 +106,15 @@ int main(int argc, char **argv) {
         std::cerr << "Invalid argument: " << e.what() << "\n";
         exit(1);
       }
+    } else if (std::strcmp(argv[i], "--seed") == 0) {
+      try {
+        s = (uint32_t) std::stoul(argv[++i]);
+      } catch (const std::invalid_argument& e) {
+        std::cerr << "Invalid argument: " << e.what() << "\n";
+        exit(1);
+      }
+      gen.seed(s);
+      dim = distrib(gen); // need to re-generate the dimension
     } else if (std::strcmp(argv[i], "--dim") == 0) {
       try {
         dim = std::stoi(argv[++i]);
@@ -118,10 +127,6 @@ int main(int argc, char **argv) {
       ap_set = true;
     } else if (std::strcmp(argv[i], "--ltl") == 0) {
       logic = logic_t::ltl;
-    } else if (std::strcmp(argv[i], "--seed") == 0) {
-      s = (uint32_t) std::stoul(argv[++i]);
-      gen.seed(s);
-      dim = distrib(gen); // need to re-generate the dimension
     } else {
       std::cerr << "Unknown argument: " << argv[i] << "\n";
       help();
