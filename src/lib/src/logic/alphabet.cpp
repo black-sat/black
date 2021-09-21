@@ -111,7 +111,7 @@ namespace black::internal {
 
     binary_t *f =
       &_impl->_binaries.emplace_back(
-        static_cast<formula_type>(type), arg1, arg2
+        static_cast<formula_type>(type), arg1, arg2 // LCOV_EXCL_LINE
       );
     _impl->_binaries_map.insert({{type, arg1, arg2}, f});
 
