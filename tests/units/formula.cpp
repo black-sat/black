@@ -227,9 +227,21 @@ TEST_CASE("Boolean constants simplification")
   REQUIRE(simplify_deep(U(sigma.top(), p)) == F(p));
   REQUIRE(simplify_deep(U(sigma.bottom(), p)) == p);
   REQUIRE(simplify_deep(U(p, sigma.top())) == sigma.top());
+  REQUIRE(simplify_deep(W(p,p)) == W(p,p));
+  REQUIRE(simplify_deep(W(sigma.top(), p)) == sigma.top());
+  REQUIRE(simplify_deep(W(p, sigma.top())) == sigma.top());
+  REQUIRE(simplify_deep(W(p, sigma.bottom())) == G(p));
+  REQUIRE(simplify_deep(W(sigma.top(), sigma.top())) == sigma.top());
 
   REQUIRE(simplify_deep(R(p, !p)) == R(p, !p));
   REQUIRE(simplify_deep(R(sigma.top(), p)) == p);
   REQUIRE(simplify_deep(R(sigma.bottom(), p)) == G(p));
   REQUIRE(simplify_deep(R(p, sigma.top())) == sigma.top());
+  REQUIRE(simplify_deep(M(p,p)) == M(p,p));
+  REQUIRE(simplify_deep(M(sigma.top(), p)) == p);
+  REQUIRE(simplify_deep(M(sigma.bottom(), p)) == sigma.bottom());
+  REQUIRE(simplify_deep(M(p, sigma.top())) == F(p));
+  REQUIRE(simplify_deep(M(p, sigma.bottom())) == sigma.bottom());
+  REQUIRE(simplify_deep(M(sigma.top(), sigma.top())) == sigma.top());
+  
 }
