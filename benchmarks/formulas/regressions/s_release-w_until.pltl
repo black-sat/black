@@ -1,1 +1,1 @@
-p M (q W r)
+p M (q W !(r M !(w W s)))
