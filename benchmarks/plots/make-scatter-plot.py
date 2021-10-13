@@ -129,7 +129,11 @@ def main(argv):
                         time_xtool = float(line[numcol_xtool])
                     else:
                         print(line)
-                        sys.exit('Error in the datafile: a time is not a number')
+                        sys.exit('Error in the datafile for tool '+
+                                 args.xtool+' : the result is '+
+                                 line[numcol_xtool+1].strip()+
+                                 ' but the associated time is '+
+                                 str(line[numcol_xtool].strip()))
                 elif 'err' in line[numcol_xtool+1]:
                     x_is_sat = 2 
                     time_xtool = float(args.errortime)
@@ -144,7 +148,11 @@ def main(argv):
                         time_ytool = float(line[numcol_ytool])
                     else:
                         print(line)
-                        sys.exit('Error in the datafile: a time is not a number')
+                        sys.exit('Error in the datafile for tool '+
+                                 args.ytool+' : the result is '+
+                                 line[numcol_ytool+1].strip()+
+                                 ' but the associated time is '+
+                                 str(line[numcol_ytool].strip()))
                 elif 'err' in line[numcol_ytool+1]:
                     y_is_sat = 2
                     time_ytool = float(args.errortime)
