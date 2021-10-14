@@ -194,6 +194,10 @@ setup_run() {
     postscript=cat
   fi
 
+  do_prescript() {
+    $prescript "formulas/$formula"
+  }
+
   do_run() {
     wrapper=$@
 
@@ -203,7 +207,7 @@ setup_run() {
 
     # Pre-process input
     input=$(mktemp)
-    $prescript "formulas/$formula" > $input
+    do_prescript > $input
 
     # Run
     $wrapper $runscript $input 2>&1
@@ -272,6 +276,12 @@ enable() {
   mv "$dirname/.$basename" "$solvers_dir/$mode" 
 }
 
+# prints the result of the preprocessing for the specified solver/mode
+convert() {
+  setup &> /dev/null
+  setup_run $@
+  do_prescript
+}
 
 # runs one specific solver mode on one formula
 run() {
@@ -386,6 +396,10 @@ Commands:
                                   (e.g. nuXmv/sbmc) over the given \`formula\`.
                                   If it returns \`err\`, try the \`bench\`
                                   command (below) to see the error details.
+  
+  convert <solver/mode> <formula> Runs the preprocessing script for the 
+                                  specified \`solver\` with the given \`mode\`, 
+                                  showing the result.
 
   bench <solver/mode> <formula>   Benchmarks \`solver\` with the given \`mode\`
                                   (e.g. nuXmv/sbmc) over the given \`formula\`.
