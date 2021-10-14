@@ -194,11 +194,15 @@ namespace black::internal
       [&](yesterday)    { return ground(f, k); },
       [&](w_yesterday)  { return ground(f, k); },
       [&](negation n)   { return !to_ground_snf(n.operand(),k); },
-      [&](conjunction, formula left, formula right) {
-        return to_ground_snf(left,k) && to_ground_snf(right,k);
+      [&](big_conjunction c) {
+        return big_and(*f.sigma(), c.operands(), [&](formula op) {
+          return to_ground_snf(op, k);
+        });
       },
-      [&](disjunction, formula left, formula right) {
-        return to_ground_snf(left,k) || to_ground_snf(right,k);
+      [&](big_disjunction c) {
+        return big_or(*f.sigma(), c.operands(), [&](formula op) {
+          return to_ground_snf(op, k);
+        });
       },
       [&](implication) -> formula { // LCOV_EXCL_LINE 
         black_unreachable(); // LCOV_EXCL_LINE 
@@ -324,6 +328,16 @@ namespace black::internal
           [&](iff, formula left, formula right) {
             return to_nnf(!implies(left,right)) || to_nnf(!implies(right,left));
           },
+          [&](big_conjunction c) {
+            return big_or(*f.sigma(), c.operands(), [&](formula op) {
+              return to_nnf(!op);
+            });
+          },
+          [&](big_disjunction c) {
+            return big_and(*f.sigma(), c.operands(), [&](formula op) {
+              return to_nnf(!op);
+            });
+          },
           [&](binary b, formula left, formula right) {
             return binary(
                 dual(b.formula_type()),
@@ -341,6 +355,16 @@ namespace black::internal
       },
       [&](iff, formula left, formula right) {
 	      return to_nnf(implies(left, right)) && to_nnf(implies(right, left));
+      },
+      [&](big_conjunction c) {
+        return big_and(*f.sigma(), c.operands(), [&](formula op) {
+          return to_nnf(op);
+        });
+      },
+      [&](big_disjunction c) {
+        return big_or(*f.sigma(), c.operands(), [&](formula op) {
+          return to_nnf(op);
+        });
       },
       [&](binary b) {
         return binary(b.formula_type(), to_nnf(b.left()), to_nnf(b.right()));
@@ -379,6 +403,14 @@ namespace black::internal
     f.match(
       [&](unary, formula op) {
         _add_xyz_requests(op);
+      },
+      [&](big_conjunction c) {
+        for(formula op : c.operands())
+          _add_xyz_requests(op);
+      },
+      [&](big_disjunction c) {
+        for(formula op : c.operands())
+          _add_xyz_requests(op);
       },
       [&](binary, formula left, formula right) {
         _add_xyz_requests(left);
