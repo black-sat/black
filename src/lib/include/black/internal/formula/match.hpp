@@ -27,7 +27,7 @@
 #include <vector>
 #include <functional>
 #include <type_traits>
-#include <stack>
+#include <queue>
 
 #ifndef BLACK_LOGIC_FORMULA_HPP_
   #error "This header file cannot be included alone, "\
@@ -332,20 +332,20 @@ namespace black::internal
     std::vector<formula> _operands;
 
     void flatten(Formula c) {
-      std::stack<Formula> stack;
-      stack.push(c);
+      std::queue<Formula> queue;
+      queue.push(c);
 
-      while(!stack.empty()) {
-        Formula f = stack.top();
-        stack.pop();
+      while(!queue.empty()) {
+        Formula f = queue.front();
+        queue.pop();
         
         if(f.left().template is<Formula>())
-          stack.push(*f.left().template to<Formula>());
+          queue.push(*f.left().template to<Formula>());
         else
           _operands.push_back(f.left());
 
         if(f.right().template is<Formula>())
-          stack.push(*f.right().template to<Formula>());
+          queue.push(*f.right().template to<Formula>());
         else
           _operands.push_back(f.right());
       }
