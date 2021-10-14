@@ -276,10 +276,6 @@ namespace black::internal
   static constexpr binary::type dual(binary::type t)
   {
     switch(t) {
-      case binary::type::conjunction:
-        return binary::type::disjunction;
-      case binary::type::disjunction:
-        return binary::type::conjunction;
       case binary::type::until:
         return binary::type::release;
       case binary::type::release:
@@ -292,9 +288,11 @@ namespace black::internal
         return binary::type::triggered;
       case binary::type::triggered:
         return binary::type::since;
-      case binary::type::iff:  // LCOV_EXCL_LINE
-      case binary::type::implication:
-        black_unreachable(); // LCOV_EXCL_LINE
+      case binary::type::conjunction: // LCOV_EXCL_LINE
+      case binary::type::disjunction: // LCOV_EXCL_LINE
+      case binary::type::iff:         // LCOV_EXCL_LINE
+      case binary::type::implication: // LCOV_EXCL_LINE
+        black_unreachable();          // LCOV_EXCL_LINE
     }
     black_unreachable(); // LCOV_EXCL_LINE
   }
