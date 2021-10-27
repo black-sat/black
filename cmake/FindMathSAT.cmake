@@ -38,7 +38,7 @@ set(MATHSAT_ARCH_NAME "mathsat5-${CMAKE_SYSTEM_NAME}-${CURRENT_ARCH}")
 
 find_library(
   MathSAT_LIBRARY
-  NAMES libmathsat.a mathsat
+  NAMES libmathsat.a
   PATHS "${CMAKE_SOURCE_DIR}/external/mathsat5/"
         "${CMAKE_SOURCE_DIR}/external/${MATHSAT_ARCH_NAME}/"
   PATH_SUFFIXES "/lib/"
