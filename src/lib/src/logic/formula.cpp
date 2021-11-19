@@ -32,7 +32,7 @@ namespace black::internal {
   {
     return f.match(
       [](boolean) { return true; },
-      [](atom) { return false; },
+      [](proposition) { return false; },
       [](unary, formula op) { return has_constants(op); },
       [](binary, formula l, formula r) { 
         return has_constants(l) || has_constants(r);
@@ -43,7 +43,7 @@ namespace black::internal {
   formula simplify_deep(formula f) {
     return f.match(
       [](boolean b) { return simplify(b); },
-      [](atom a) { return simplify(a); },
+      [](proposition a) { return simplify(a); },
       [](unary u, formula op) { 
         return simplify(unary(u.formula_type(), simplify_deep(op)));
       },
@@ -238,7 +238,7 @@ namespace black::internal {
   formula simplify(formula f) {
     return f.match(
       [ ](boolean b) -> formula { return b; },
-      [ ](atom a) -> formula { return a; },
+      [ ](proposition a) -> formula { return a; },
       simplify_negation,
       simplify_and,
       simplify_or,

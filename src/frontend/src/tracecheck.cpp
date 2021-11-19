@@ -66,7 +66,7 @@ namespace black::frontend
   }
 
   static
-  bool check_atom(trace_t trace, atom a, size_t t) {
+  bool check_proposition(trace_t trace, proposition a, size_t t) {
     black_assert(a.label<std::string>().has_value());
     std::string p = *a.label<std::string>();
 
@@ -121,7 +121,7 @@ namespace black::frontend
   size_t depth(formula f) {
     return f.match(
       [](boolean) -> size_t { return 1; },
-      [](atom) -> size_t { return 1; },
+      [](proposition) -> size_t { return 1; },
       [](yesterday, formula op) { return 1 + depth(op); },
       [](w_yesterday, formula op) { return 1 + depth(op); },
       [](once, formula op) { return 1 + depth(op); },
@@ -193,8 +193,8 @@ namespace black::frontend
       [](boolean b) {
         return b.value();
       },
-      [&](atom a) {
-        return check_atom(trace, a, t);
+      [&](proposition a) {
+        return check_proposition(trace, a, t);
       },
       [&](tomorrow, formula op) {
         return state_exists(trace, t + 1) && check(trace, op, t + 1);

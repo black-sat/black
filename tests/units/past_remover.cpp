@@ -39,8 +39,8 @@ TEST_CASE("Translation idempotency on future only formulas")
 {
   alphabet sigma;
 
-  atom p = sigma.var("p");
-  atom q = sigma.var("q");
+  proposition p = sigma.prop("p");
+  proposition q = sigma.prop("q");
 
   std::vector<formula> tests = {
       p, !p, X(p), F(p), G(p), XF(p), GF(p), XG(p),
@@ -62,19 +62,19 @@ TEST_CASE("Translation for basic past formulas")
 {
   alphabet sigma;
 
-  atom p = sigma.var("p");
-  atom q = sigma.var("q");
+  proposition p = sigma.prop("p");
+  proposition q = sigma.prop("q");
 
-  atom p_Y  = sigma.var(internal::past_label{Y(p)});
-  atom p_Z  = sigma.var(internal::past_label{Z(p)});
-  atom p_S  = sigma.var(internal::past_label{S(p,q)});
-  atom p_YS = sigma.var(internal::past_label{Y(p_S)});
-  atom p_T  = sigma.var(internal::past_label{S(!p,!q)});
-  atom p_YT = sigma.var(internal::past_label{Y(p_T)});
-  atom p_P  = sigma.var(internal::past_label{S(sigma.top(),p)});
-  atom p_YP = sigma.var(internal::past_label{Y(p_P)});
-  atom p_H  = sigma.var(internal::past_label{S(sigma.top(),!p)});
-  atom p_YH = sigma.var(internal::past_label{Y(p_H)});
+  proposition p_Y  = sigma.prop(internal::past_label{Y(p)});
+  proposition p_Z  = sigma.prop(internal::past_label{Z(p)});
+  proposition p_S  = sigma.prop(internal::past_label{S(p,q)});
+  proposition p_YS = sigma.prop(internal::past_label{Y(p_S)});
+  proposition p_T  = sigma.prop(internal::past_label{S(!p,!q)});
+  proposition p_YT = sigma.prop(internal::past_label{Y(p_T)});
+  proposition p_P  = sigma.prop(internal::past_label{S(sigma.top(),p)});
+  proposition p_YP = sigma.prop(internal::past_label{Y(p_P)});
+  proposition p_H  = sigma.prop(internal::past_label{S(sigma.top(),!p)});
+  proposition p_YH = sigma.prop(internal::past_label{Y(p_H)});
 
   std::vector<test> tests = {
       {Y(p),    p_Y && (!p_Y && G(iff(X(p_Y), p)))},

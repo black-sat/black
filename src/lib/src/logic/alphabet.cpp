@@ -37,18 +37,18 @@ namespace black::internal {
     boolean_t            _top{true};
     boolean_t            _bottom{false};
 
-    std::deque<atom_t>   _atoms;
-    std::deque<unary_t>  _unaries;
-    std::deque<binary_t> _binaries;
+    std::deque<proposition_t> _props;
+    std::deque<unary_t>       _unaries;
+    std::deque<binary_t>      _binaries;
 
     using unary_key = std::tuple<unary::type, formula_base*>;
     using binary_key = std::tuple<binary::type,
                                   formula_base*,
                                   formula_base*>;
 
-    tsl::hopscotch_map<any_hashable, atom_t*> _atoms_map;
-    tsl::hopscotch_map<unary_key,   unary_t*> _unaries_map;
-    tsl::hopscotch_map<binary_key, binary_t*> _binaries_map;
+    tsl::hopscotch_map<any_hashable, proposition_t*> _props_map;
+    tsl::hopscotch_map<unary_key,   unary_t*>        _unaries_map;
+    tsl::hopscotch_map<binary_key, binary_t*>        _binaries_map;
   };
 
   alphabet::alphabet()
@@ -76,15 +76,15 @@ namespace black::internal {
     formula{this, reinterpret_cast<formula_base *>(static_cast<uintptr_t>(id))};
   }
 
-  atom_t *alphabet::allocate_atom(any_hashable _label)
+  proposition_t *alphabet::allocate_proposition(any_hashable _label)
   {
     any_hashable label{FWD(_label)};
 
-    if(auto it = _impl->_atoms_map.find(label); it != _impl->_atoms_map.end())
+    if(auto it = _impl->_props_map.find(label); it != _impl->_props_map.end())
       return it->second;
 
-    atom_t *a = &_impl->_atoms.emplace_back(label);
-    _impl->_atoms_map.insert({label, a});
+    proposition_t *a = &_impl->_props.emplace_back(label);
+    _impl->_props_map.insert({label, a});
 
     return a;
   }

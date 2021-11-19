@@ -53,8 +53,8 @@ TEST_CASE("Rountrip of parser and pretty-printer")
 {
   alphabet sigma;
 
-  atom p = sigma.var("p");
-  atom q = sigma.var("q");
+  proposition p = sigma.prop("p");
+  proposition q = sigma.prop("q");
 
   std::vector<formula> tests = {
     p, !p, X(p), F(p), G(p), O(p), H(p), XF(p), GF(p), XG(p),

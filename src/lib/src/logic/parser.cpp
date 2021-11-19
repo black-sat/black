@@ -45,7 +45,7 @@ namespace black::internal
     {
       using namespace std::literals;
       return f.match(
-        [&](atom a) {
+        [&](proposition a) {
           if(auto name = a.label<std::string>(); name.has_value())
             return *name;
           if(auto fname = a.label<std::pair<formula,int>>(); fname.has_value())
@@ -186,17 +186,17 @@ namespace black::internal
     return _alphabet.boolean(*tok->data<bool>());
   }
 
-  std::optional<formula> parser::parse_atom()
+  std::optional<formula> parser::parse_proposition()
   {
-    // Assume we are on an atom
-    black_assert(peek() && peek()->token_type() == token::type::atom);
+    // Assume we are on a proposition
+    black_assert(peek() && peek()->token_type() == token::type::proposition);
 
     std::optional<token> tok = consume();
 
     black_assert(tok);
-    black_assert(tok->token_type() == token::type::atom);
+    black_assert(tok->token_type() == token::type::proposition);
 
-    return _alphabet.var(*tok->data<std::string_view>());
+    return _alphabet.prop(*tok->data<std::string_view>());
   }
 
   std::optional<formula> parser::parse_unary()
@@ -235,8 +235,8 @@ namespace black::internal
 
     if(peek()->token_type() == token::type::boolean)
       return parse_boolean();
-    if(peek()->token_type() == token::type::atom)
-      return parse_atom();
+    if(peek()->token_type() == token::type::proposition)
+      return parse_proposition();
     if(peek()->is<unary::type>())
       return parse_unary();
     if(peek()->is<token::punctuation>() &&

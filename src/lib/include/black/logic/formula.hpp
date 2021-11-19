@@ -37,7 +37,7 @@ namespace black::internal {
   //
   enum class formula_type : uint8_t {
     boolean = 1,
-    atom,
+    proposition,
     // unary formulas
     negation,
     tomorrow,
@@ -156,15 +156,15 @@ namespace black::internal
     bool value() const { return _formula->value; }
   };
 
-  struct atom : handle_base<atom, atom_t>
+  struct proposition : handle_base<proposition, proposition_t>
   {
     // inheriting base class constructors (for internal use)
-    using handle_base<atom, atom_t>::handle_base;
+    using handle_base<proposition, proposition_t>::handle_base;
 
-    // The generic label of the atom
+    // The generic label of the proposition
     std::any label() const;
 
-    // The label of the atom, as a specific type
+    // The label of the proposition, as a specific type
     // The result is empty if the type is wrong.
     template<typename T>
     std::optional<T> label() const;
@@ -359,7 +359,7 @@ namespace black::internal
 // Names exported from the `black` namespace
 namespace black {
   using internal::boolean;
-  using internal::atom;
+  using internal::proposition;
   using internal::unary;
   using internal::binary;
   using internal::formula;

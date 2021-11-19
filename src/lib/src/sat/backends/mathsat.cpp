@@ -101,7 +101,7 @@ namespace black::sat::backends
     return (res == MSAT_SAT);
   }
 
-  tribool mathsat::value(atom a) const {
+  tribool mathsat::value(proposition a) const {
     auto it = _data->terms.find(a);
     if(it == _data->terms.end())
       return tribool::undef;
@@ -141,12 +141,12 @@ namespace black::sat::backends
         return b.value() ? 
           msat_make_true(env) : msat_make_false(env);
       },
-      [this](atom a) {
-        msat_decl msat_atom =
+      [this](proposition a) {
+        msat_decl msat_prop =
           msat_declare_function(env, to_string(a.unique_id()).c_str(),
           msat_get_bool_type(env));
 
-        return msat_make_constant(env, msat_atom);
+        return msat_make_constant(env, msat_prop);
       },
       [this](negation n) {
         return msat_make_not(env, to_mathsat(n.operand()));

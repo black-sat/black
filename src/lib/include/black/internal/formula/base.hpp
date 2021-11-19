@@ -48,8 +48,8 @@ namespace black::internal
     return type == formula_type::boolean;
   }
 
-  constexpr bool is_atom_type(formula_type type) {
-    return type == formula_type::atom;
+  constexpr bool is_proposition_type(formula_type type) {
+    return type == formula_type::proposition;
   }
 
   constexpr bool is_unary_type(formula_type type) {
@@ -79,12 +79,12 @@ namespace black::internal
     bool value{};
   };
 
-  struct atom_t : formula_base
+  struct proposition_t : formula_base
   {
-    static constexpr auto accepts_type = is_atom_type;
+    static constexpr auto accepts_type = is_proposition_type;
 
-    atom_t(any_hashable const& _label)
-      : formula_base{formula_type::atom}, label{_label} {}
+    proposition_t(any_hashable const& _label)
+      : formula_base{formula_type::proposition}, label{_label} {}
 
     any_hashable label;
   };

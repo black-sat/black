@@ -94,20 +94,20 @@ namespace black::frontend {
   }
 
   static 
-  void relevant_atoms(formula f, std::unordered_set<atom> &atoms) 
+  void relevant_props(formula f, std::unordered_set<proposition> &props) 
   {
     using namespace black;
     f.match(
       [&](boolean) {},
-      [&](atom a) {
-        atoms.insert(a);
+      [&](proposition a) {
+        props.insert(a);
       },
       [&](unary, formula f1) {
-        relevant_atoms(f1, atoms);
+        relevant_props(f1, props);
       },
       [&](binary, formula f1, formula f2) {
-        relevant_atoms(f1, atoms);
-        relevant_atoms(f2, atoms);
+        relevant_props(f1, props);
+        relevant_props(f2, props);
       }
     );
   }
@@ -136,15 +136,15 @@ namespace black::frontend {
     else
       io::println("Model:");
 
-    std::unordered_set<atom> atoms;
-    relevant_atoms(f, atoms);
+    std::unordered_set<proposition> props;
+    relevant_props(f, props);
     
     size_t size = solver.model()->size();
     size_t width = static_cast<size_t>(log10((double)size)) + 1;
     for(size_t t = 0; t < size; ++t) {
       io::print("- t = {:>{}}: {{", t, width);
       bool first = true;
-      for(atom a : atoms) {
+      for(proposition a : props) {
         tribool v = solver.model()->value(a, t);
         const char *comma = first ? "" : ", ";
         if(v == true) {
@@ -178,8 +178,8 @@ namespace black::frontend {
 
     if(result == true && cli::print_model) {
       auto model = solver.model();
-      std::unordered_set<atom> atoms;
-      relevant_atoms(f, atoms);
+      std::unordered_set<proposition> props;
+      relevant_props(f, props);
 
       io::println("    \"model\": {{");
       io::println("        \"size\": {},", model->size());
@@ -192,13 +192,13 @@ namespace black::frontend {
         io::println("            {{");
 
         size_t i = 0;
-        for(atom a : atoms) {
+        for(proposition a : props) {
           tribool v = model->value(a, t);
           io::println("                \"{}\": \"{}\"{}",
             to_string(a),
             v == tribool::undef ? "undef" :
             v == true           ? "true" : "false",
-            i < atoms.size() - 1 ? "," : ""
+            i < props.size() - 1 ? "," : ""
           );
           ++i;
         }

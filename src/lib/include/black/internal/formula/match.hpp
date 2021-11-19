@@ -63,7 +63,7 @@ namespace std {
     };
 
     declare_destructuring_arity(boolean,      0)
-    declare_destructuring_arity(atom,         0)
+    declare_destructuring_arity(proposition,  0)
     declare_destructuring_arity(negation,     1)
     declare_destructuring_arity(tomorrow,     1)
     declare_destructuring_arity(w_tomorrow,   1)
@@ -186,7 +186,7 @@ namespace black::internal
 
   using ltl = syntax<
     boolean,
-    atom,
+    proposition,
     negation,
     tomorrow,
     w_tomorrow,
@@ -288,7 +288,7 @@ namespace std {
 
   declare_formula_ct(formula)
   declare_formula_ct(boolean)
-  declare_formula_ct(atom)
+  declare_formula_ct(proposition)
   declare_formula_ct(unary)
   declare_formula_ct(binary)
   declare_common_type(negation,     unary)
@@ -418,7 +418,7 @@ namespace black::internal
   
   using propositional_ops = syntax<
     boolean,
-    atom,
+    proposition,
     negation,
     conjunction,
     disjunction,

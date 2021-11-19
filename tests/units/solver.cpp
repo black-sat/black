@@ -38,7 +38,7 @@ TEST_CASE("Testing solver")
     REQUIRE(slv.sat_backend() == BLACK_DEFAULT_BACKEND);
     REQUIRE(slv.solve() == tribool::undef);
 
-    auto p = sigma.var("p");
+    auto p = sigma.prop("p");
     
     formula f1 = !p && iff(!X(p), FG(p)) && implies(p, !p);
     formula f2 = p && !p;

@@ -34,8 +34,8 @@ BLACK_REGISTER_SAT_BACKEND(z3)
 
 namespace black::sat::backends 
 {
-  inline atom fresh(formula f) {
-    return f.sigma()->var(f);
+  inline proposition fresh(formula f) {
+    return f.sigma()->prop(f);
   }
 
   struct z3::_z3_t {
@@ -153,7 +153,7 @@ namespace black::sat::backends
     return result;
   }
 
-  tribool z3::value(atom a) const {
+  tribool z3::value(proposition a) const {
     if(!_data->model)
       return tribool::undef;
     
@@ -200,7 +200,7 @@ namespace black::sat::backends
       [this](boolean b) {
         return b.value() ? Z3_mk_true(context) : Z3_mk_false(context);
       },
-      [this](atom a) {
+      [this](proposition a) {
         Z3_sort sort = Z3_mk_bool_sort(context);
         Z3_symbol symbol = 
           Z3_mk_string_symbol(context, to_string(a.unique_id()).c_str());

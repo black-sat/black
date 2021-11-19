@@ -43,7 +43,7 @@ namespace black::internal
   {
     enum class type : uint8_t {
       boolean = 0,
-      atom,
+      proposition,
       unary_operator,
       binary_operator,
       punctuation
@@ -82,7 +82,7 @@ namespace black::internal
     // data related to recognized tokens
     std::variant<
       bool,             // booleans
-      std::string_view, // atoms
+      std::string_view, // propositions
       unary::type,      // unary operator
       binary::type,     // binary operator
       punctuation       // any non-logical token

@@ -38,7 +38,7 @@ using namespace black;
 template<typename T1, typename T2, typename R>
 constexpr bool check = std::is_same_v<std::common_type_t<T1, T2>, R>;
 
-static_assert(check<boolean, atom,         formula>);
+static_assert(check<boolean, proposition,  formula>);
 static_assert(check<boolean, boolean,      formula>);
 static_assert(check<boolean, negation,     formula>);
 static_assert(check<boolean, tomorrow,     formula>);
@@ -58,25 +58,25 @@ static_assert(check<boolean, release,      formula>);
 static_assert(check<boolean, since,        formula>);
 static_assert(check<boolean, triggered,    formula>);
 
-static_assert(check<atom, atom,         formula>);
-static_assert(check<atom, boolean,      formula>);
-static_assert(check<atom, negation,     formula>);
-static_assert(check<atom, tomorrow,     formula>);
-static_assert(check<atom, w_tomorrow,   formula>);
-static_assert(check<atom, yesterday,    formula>);
-static_assert(check<atom, w_yesterday,  formula>);
-static_assert(check<atom, always,       formula>);
-static_assert(check<atom, eventually,   formula>);
-static_assert(check<atom, once,         formula>);
-static_assert(check<atom, historically, formula>);
-static_assert(check<atom, conjunction,  formula>);
-static_assert(check<atom, disjunction,  formula>);
-static_assert(check<atom, implication,  formula>);
-static_assert(check<atom, iff,          formula>);
-static_assert(check<atom, until,        formula>);
-static_assert(check<atom, release,      formula>);
-static_assert(check<atom, since,        formula>);
-static_assert(check<atom, triggered,    formula>);
+static_assert(check<proposition, proposition,  formula>);
+static_assert(check<proposition, boolean,      formula>);
+static_assert(check<proposition, negation,     formula>);
+static_assert(check<proposition, tomorrow,     formula>);
+static_assert(check<proposition, w_tomorrow,   formula>);
+static_assert(check<proposition, yesterday,    formula>);
+static_assert(check<proposition, w_yesterday,  formula>);
+static_assert(check<proposition, always,       formula>);
+static_assert(check<proposition, eventually,   formula>);
+static_assert(check<proposition, once,         formula>);
+static_assert(check<proposition, historically, formula>);
+static_assert(check<proposition, conjunction,  formula>);
+static_assert(check<proposition, disjunction,  formula>);
+static_assert(check<proposition, implication,  formula>);
+static_assert(check<proposition, iff,          formula>);
+static_assert(check<proposition, until,        formula>);
+static_assert(check<proposition, release,      formula>);
+static_assert(check<proposition, since,        formula>);
+static_assert(check<proposition, triggered,    formula>);
 
 static_assert(check<tomorrow, boolean,      formula>);
 static_assert(check<tomorrow, negation,     unary>);
@@ -116,7 +116,7 @@ static_assert(check<w_tomorrow, release,      formula>);
 static_assert(check<w_tomorrow, since,        formula>);
 static_assert(check<w_tomorrow, triggered,    formula>);
 
-static_assert(check<yesterday, atom,         formula>);
+static_assert(check<yesterday, proposition,  formula>);
 static_assert(check<yesterday, boolean,      formula>);
 static_assert(check<yesterday, negation,     unary>);
 static_assert(check<yesterday, tomorrow,     unary>);
@@ -136,7 +136,7 @@ static_assert(check<yesterday, release,      formula>);
 static_assert(check<yesterday, since,        formula>);
 static_assert(check<yesterday, triggered,    formula>);
 
-static_assert(check<w_yesterday, atom,         formula>);
+static_assert(check<w_yesterday, proposition,  formula>);
 static_assert(check<w_yesterday, boolean,      formula>);
 static_assert(check<w_yesterday, negation,     unary>);
 static_assert(check<w_yesterday, tomorrow,     unary>);
@@ -156,7 +156,7 @@ static_assert(check<w_yesterday, release,      formula>);
 static_assert(check<w_yesterday, since,        formula>);
 static_assert(check<w_yesterday, triggered,    formula>);
 
-static_assert(check<always, atom,         formula>);
+static_assert(check<always, proposition,  formula>);
 static_assert(check<always, boolean,      formula>);
 static_assert(check<always, negation,     unary>);
 static_assert(check<always, tomorrow,     unary>);
@@ -176,7 +176,7 @@ static_assert(check<always, release,      formula>);
 static_assert(check<always, since,        formula>);
 static_assert(check<always, triggered,    formula>);
 
-static_assert(check<eventually, atom,         formula>);
+static_assert(check<eventually, proposition,  formula>);
 static_assert(check<eventually, boolean,      formula>);
 static_assert(check<eventually, negation,     unary>);
 static_assert(check<eventually, tomorrow,     unary>);
@@ -196,7 +196,7 @@ static_assert(check<eventually, release,      formula>);
 static_assert(check<eventually, since,        formula>);
 static_assert(check<eventually, triggered,    formula>);
 
-static_assert(check<once, atom,         formula>);
+static_assert(check<once, proposition,  formula>);
 static_assert(check<once, boolean,      formula>);
 static_assert(check<once, negation,     unary>);
 static_assert(check<once, tomorrow,     unary>);
@@ -216,7 +216,7 @@ static_assert(check<once, release,      formula>);
 static_assert(check<once, since,        formula>);
 static_assert(check<once, triggered,    formula>);
 
-static_assert(check<historically, atom,         formula>);
+static_assert(check<historically, proposition,  formula>);
 static_assert(check<historically, boolean,      formula>);
 static_assert(check<historically, negation,     unary>);
 static_assert(check<historically, tomorrow,     unary>);
@@ -236,7 +236,7 @@ static_assert(check<historically, release,      formula>);
 static_assert(check<historically, since,        formula>);
 static_assert(check<historically, triggered,    formula>);
 
-static_assert(check<conjunction, atom,         formula>);
+static_assert(check<conjunction, proposition,  formula>);
 static_assert(check<conjunction, boolean,      formula>);
 static_assert(check<conjunction, negation,     formula>);
 static_assert(check<conjunction, tomorrow,     formula>);
@@ -256,7 +256,7 @@ static_assert(check<conjunction, release,      binary>);
 static_assert(check<conjunction, since,        binary>);
 static_assert(check<conjunction, triggered,    binary>);
 
-static_assert(check<disjunction, atom,         formula>);
+static_assert(check<disjunction, proposition,  formula>);
 static_assert(check<disjunction, boolean,      formula>);
 static_assert(check<disjunction, negation,     formula>);
 static_assert(check<disjunction, tomorrow,     formula>);
@@ -276,7 +276,7 @@ static_assert(check<disjunction, release,      binary>);
 static_assert(check<disjunction, since,        binary>);
 static_assert(check<disjunction, triggered,    binary>);
 
-static_assert(check<implication, atom,         formula>);
+static_assert(check<implication, proposition,  formula>);
 static_assert(check<implication, boolean,      formula>);
 static_assert(check<implication, negation,     formula>);
 static_assert(check<implication, tomorrow,     formula>);
@@ -296,7 +296,7 @@ static_assert(check<implication, release,      binary>);
 static_assert(check<implication, since,        binary>);
 static_assert(check<implication, triggered,    binary>);
 
-static_assert(check<iff, atom,         formula>);
+static_assert(check<iff, proposition,  formula>);
 static_assert(check<iff, boolean,      formula>);
 static_assert(check<iff, negation,     formula>);
 static_assert(check<iff, tomorrow,     formula>);
@@ -316,7 +316,7 @@ static_assert(check<iff, release,      binary>);
 static_assert(check<iff, since,        binary>);
 static_assert(check<iff, triggered,    binary>);
 
-static_assert(check<until, atom,         formula>);
+static_assert(check<until, proposition,  formula>);
 static_assert(check<until, boolean,      formula>);
 static_assert(check<until, negation,     formula>);
 static_assert(check<until, tomorrow,     formula>);
@@ -336,7 +336,7 @@ static_assert(check<until, release,      binary>);
 static_assert(check<until, since,        binary>);
 static_assert(check<until, triggered,    binary>);
 
-static_assert(check<release, atom,         formula>);
+static_assert(check<release, proposition,  formula>);
 static_assert(check<release, boolean,      formula>);
 static_assert(check<release, negation,     formula>);
 static_assert(check<release, tomorrow,     formula>);
@@ -356,7 +356,7 @@ static_assert(check<release, release,      release>);
 static_assert(check<release, since,        binary>);
 static_assert(check<release, triggered,    binary>);
 
-static_assert(check<since, atom,         formula>);
+static_assert(check<since, proposition,  formula>);
 static_assert(check<since, boolean,      formula>);
 static_assert(check<since, negation,     formula>);
 static_assert(check<since, tomorrow,     formula>);
@@ -376,7 +376,7 @@ static_assert(check<since, release,      binary>);
 static_assert(check<since, since,        since>);
 static_assert(check<since, triggered,    binary>);
 
-static_assert(check<triggered, atom,         formula>);
+static_assert(check<triggered, proposition,  formula>);
 static_assert(check<triggered, boolean,      formula>);
 static_assert(check<triggered, negation,     formula>);
 static_assert(check<triggered, tomorrow,     formula>);
@@ -401,11 +401,11 @@ TEST_CASE("Non-formula matchers")
 {
   alphabet sigma;
 
-  atom p1 = sigma.var("p1");
-  atom p2 = sigma.var("p2");
-  atom p3 = sigma.var("p3");
-  atom p4 = sigma.var("p4");
-  atom p5 = sigma.var("p5");
+  proposition p1 = sigma.prop("p1");
+  proposition p2 = sigma.prop("p2");
+  proposition p3 = sigma.prop("p3");
+  proposition p4 = sigma.prop("p4");
+  proposition p5 = sigma.prop("p5");
 
   SECTION("big_conjunction matcher") {
     formula f = (p1 && p2) && (p3 && (p4 && p5));
@@ -484,7 +484,7 @@ TEST_CASE("Non-formula matchers")
       [](propositional p) {
         return p.match(
           [](boolean) { return 1; },
-          [](atom) { return 2; },
+          [](proposition) { return 2; },
           [](negation) { return 3; },
           [](conjunction) { return 4; },
           [](disjunction) { return 5; },

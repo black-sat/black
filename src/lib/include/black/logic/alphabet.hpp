@@ -38,8 +38,9 @@ namespace black::internal {
   //
   // The alphabet class is the only entry point to create formulas.
   //
-  // The only way to build formulas is to request some atom from the alphabet,
-  // and then combine them using the logical operators defined in <formula.hpp>
+  // The only way to build formulas is to request some proposition from the 
+  // alphabet, and then combine them using the logical operators defined in 
+  // <formula.hpp>
   //
   // The alphabet handles memory management for formulas: memory allocated for
   // formulas is alive as long as the corresponding alphabet object is alive.
@@ -62,11 +63,11 @@ namespace black::internal {
     struct boolean top();
     struct boolean bottom();
 
-    // Entry point to obtain an atomic formula, i.e., a proposition variable
-    // Atoms can be labelled by a piece of data of any type T, as long as
+    // Entry point to obtain a proposition.
+    // Propositions can be labelled by a piece of data of any type T, as long as
     // T is Hashable (see the std::unordered_map documentation for reference)
     template<typename T, REQUIRES(internal::is_hashable<T>)>
-    atom var(T&& label);
+    struct proposition prop(T&& label);
 
     // Function to obtain a formula given its unique id
     formula from_id(formula_id);
@@ -78,14 +79,14 @@ namespace black::internal {
     template<typename, typename>
     friend struct handle_base;
 
-    atom_t *allocate_atom(any_hashable _label);
+    proposition_t *allocate_proposition(any_hashable _label);
     unary_t *allocate_unary(unary::type type, formula_base* arg);
     binary_t *
     allocate_binary(binary::type type, formula_base* arg1, formula_base* arg2);
     
     template<typename T, REQUIRES(is_hashable<T>)>
-    atom_t *allocate_atom(T&& _label) {
-      return allocate_atom(any_hashable{FWD(_label)});
+    proposition_t *allocate_proposition(T&& _label) {
+      return allocate_proposition(any_hashable{FWD(_label)});
     }
   };
 

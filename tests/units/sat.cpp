@@ -31,8 +31,8 @@ TEST_CASE("SAT backends") {
   std::vector<std::string> backends = {"z3", "mathsat", "cmsat", "minisat"};
 
   black::alphabet sigma;
-  auto p = sigma.var("p");
-  auto q = sigma.var("q");
+  auto p = sigma.prop("p");
+  auto q = sigma.prop("q");
 
   for(auto backend : backends) {
     DYNAMIC_SECTION("SAT backend: " << backend) {

@@ -28,10 +28,10 @@
 namespace black::sat::dimacs::internal
 {
   struct solver::_solver_t {
-    tsl::hopscotch_map<atom, uint32_t> vars;
+    tsl::hopscotch_map<proposition, uint32_t> vars;
 
-    // retrieve the var number or add it if the atom is not registered
-    uint32_t var(atom a) {
+    // retrieve the var number or add it if the proposition is not registered
+    uint32_t var(proposition a) {
       if(auto it = vars.find(a); it != vars.end())
         return it->second;
 
@@ -58,7 +58,7 @@ namespace black::sat::dimacs::internal
     size_t old_size = _data->vars.size();
     for(black::clause cl : c.clauses) {
       for(black::literal lit : cl.literals) {
-        _data->var(lit.atom);
+        _data->var(lit.proposition);
       }
     }
     
@@ -71,7 +71,7 @@ namespace black::sat::dimacs::internal
     for(black::clause cl : c.clauses) {
       dimacs::clause dcl;
       for(black::literal lit : cl.literals) {
-        dcl.literals.push_back({ lit.sign, _data->var(lit.atom) });
+        dcl.literals.push_back({ lit.sign, _data->var(lit.proposition) });
       }
 
       // assert the clause
@@ -82,21 +82,21 @@ namespace black::sat::dimacs::internal
   // TODO: optimize corner cases (e.g. if assumption is already a literal)
   bool solver::is_sat_with(formula assumption) 
   { 
-    atom fresh = assumption.sigma()->var(assumption);
+    proposition fresh = assumption.sigma()->prop(assumption);
 
     this->assert_formula(iff(fresh, assumption));
 
     return this->is_sat_with({{true, _data->var(fresh)}});
   }
 
-  tribool solver::value(atom a) const {
+  tribool solver::value(proposition a) const {
     auto it = _data->vars.find(a);
     if(it == _data->vars.end())
       return tribool::undef;
 
-    uint32_t var = it->second;
+    uint32_t prop = it->second;
 
-    return this->value(var);
+    return this->value(prop);
   }
 
   void solver::clear_vars() {
@@ -105,7 +105,7 @@ namespace black::sat::dimacs::internal
 
   formula to_formula(alphabet &sigma, dimacs::clause const& c) {
     return big_or(sigma, c.literals, [&](literal l) {
-      atom a = sigma.var(l.var);
+      proposition a = sigma.prop(l.var);
       return l.sign ? formula{a} : formula{!a};
     });
   }
@@ -132,7 +132,7 @@ namespace black::sat::dimacs::internal
 
     solution s;
     for(uint32_t i = 1; i <= nvars; ++i) {
-      atom a = sigma.var(i);
+      proposition a = sigma.prop(i);
       tribool v = solver->value(a);
       if(v == tribool::undef)
         continue;

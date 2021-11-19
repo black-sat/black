@@ -124,13 +124,13 @@ namespace black::internal
     return formula{*this}.unique_id();
   }
 
-  // struct atom
-  inline std::any atom::label() const {
+  // struct proposition
+  inline std::any proposition::label() const {
     return _formula->label.any();
   }
 
   template<typename T>
-  std::optional<T> atom::label() const {
+  std::optional<T> proposition::label() const {
     return _formula->label.to<T>();
   }
 
@@ -274,7 +274,7 @@ namespace black::internal
 
   declare_formula_hash(formula)
   declare_formula_hash(boolean)
-  declare_formula_hash(atom)
+  declare_formula_hash(proposition)
   declare_formula_hash(unary)
   declare_formula_hash(binary)
 

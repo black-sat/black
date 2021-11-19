@@ -34,11 +34,11 @@ namespace black::internal
     tsl::hopscotch_set<formula> &memo
   );
 
-  // TODO: disambiguate fresh variables
-  inline atom fresh(formula f) {
-    if(f.is<atom>())
-      return *f.to<atom>();
-    atom a = f.sigma()->var(f);
+  // TODO: disambiguate fresh propositions
+  inline proposition fresh(formula f) {
+    if(f.is<proposition>())
+      return *f.to<proposition>();
+    proposition a = f.sigma()->prop(f);
     return a;
   }
 
@@ -74,8 +74,8 @@ namespace black::internal
 
     memo.insert(f);
     f.match(
-      [](boolean) { },
-      [](atom)  {  },
+      [](boolean)     { },
+      [](proposition) { },
       [&](conjunction, formula l, formula r) 
       {
         tseitin(l, clauses, memo);
@@ -133,7 +133,7 @@ namespace black::internal
       [&](negation, formula arg) {
         return arg.match(
           [&](boolean) { },
-          [&](atom a) {
+          [&](proposition a) {
             // clausal form for negations:
             // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
             clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
@@ -212,7 +212,7 @@ namespace black::internal
   }
 
   formula to_formula(literal lit) {
-    return lit.sign ? formula{lit.atom} : formula{!lit.atom};
+    return lit.sign ? formula{lit.proposition} : formula{!lit.proposition};
   }
 
   formula to_formula(alphabet &sigma, clause c) {

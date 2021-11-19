@@ -37,7 +37,7 @@ namespace black::sat::backends
     virtual void assert_formula(formula f) override;
     virtual bool is_sat() override;
     virtual bool is_sat_with(formula assumption) override;
-    virtual tribool value(atom a) const override;
+    virtual tribool value(proposition a) const override;
     virtual void clear() override;
     virtual std::optional<std::string> license() const override;
 

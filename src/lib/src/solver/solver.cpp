@@ -101,8 +101,8 @@ namespace black::internal
     
     size_t k = size() - 1;
     for(size_t l = 0; l < k; ++l) {
-      atom loop_var = _solver._data->encoder->loop_var(l, k);
-      tribool value = _solver._data->sat->value(loop_var);
+      proposition loop_prop = _solver._data->encoder->loop_prop(l, k);
+      tribool value = _solver._data->sat->value(loop_prop);
       
       if(value == true)
         return l + 1;
@@ -111,10 +111,10 @@ namespace black::internal
     return size();
   }
 
-  tribool model::value(atom a, size_t t) const {
+  tribool model::value(proposition a, size_t t) const {
     black_assert(_solver._data->encoder);
     
-    atom u = _solver._data->encoder->ground(a, t);
+    proposition u = _solver._data->encoder->ground(a, t);
 
     return _solver._data->sat->value(u);
   }

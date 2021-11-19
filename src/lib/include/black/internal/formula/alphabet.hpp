@@ -33,12 +33,12 @@ namespace black::internal {
   // Out-of-line definitions of methods of class `alphabet`
   //
   template<typename T, REQUIRES_OUT_OF_LINE(internal::is_hashable<T>)>
-  inline atom alphabet::var(T&& label) {
+  inline proposition alphabet::prop(T&& label) {
     if constexpr(std::is_constructible_v<std::string,T>) {
       return
-        atom{this, allocate_atom(std::string{FWD(label)})};
+        proposition{this, allocate_proposition(std::string{FWD(label)})};
     } else {
-      return atom{this, allocate_atom(FWD(label))};
+      return proposition{this, allocate_proposition(FWD(label))};
     }
   }
 

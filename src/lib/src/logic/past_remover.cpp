@@ -31,13 +31,13 @@ namespace black::internal {
 
     return f.match(
         [&](yesterday, formula op) {
-          return alpha->var(past_label{Y(sub_past(op))});
+          return alpha->prop(past_label{Y(sub_past(op))});
         },
         [&](w_yesterday, formula op) {
-          return alpha->var(past_label{Z(sub_past(op))});
+          return alpha->prop(past_label{Z(sub_past(op))});
         },
         [&](since, formula left, formula right) {
-          return alpha->var(past_label{S(sub_past(left), sub_past(right))});
+          return alpha->prop(past_label{S(sub_past(left), sub_past(right))});
         },
         [](triggered, formula left, formula right) {
           return sub_past(!S(!left, !right));
@@ -45,7 +45,7 @@ namespace black::internal {
         [](once p, formula op) { return sub_past(S(p.sigma()->top(), op)); },
         [](historically, formula op) { return sub_past(!O(!op)); },
         [](boolean b) { return b; },
-        [](atom a) { return a; },
+        [](proposition a) { return a; },
         [](unary u, formula op) {
           return unary(u.formula_type(), sub_past(op));
         },
@@ -58,10 +58,10 @@ namespace black::internal {
   void gen_semantics(formula f, std::vector<formula> &sem) {
     return f.match(
         [](boolean) {},
-        [&](atom a) {
+        [&](proposition a) {
           std::optional<past_label> label = a.label<past_label>();
 
-          if (!label) return; // not a translator atom
+          if (!label) return; // not a translator proposition
 
           formula psi = label->formula;
           return psi.match( // LCOV_EXCL_LINE
@@ -81,7 +81,7 @@ namespace black::internal {
               },
               [&](since s, formula left, formula right) {
                 alphabet *alpha = f.sigma();
-                atom y = alpha->var(past_label{Y(a)});
+                proposition y = alpha->prop(past_label{Y(a)});
                 formula sem_s = since_semantics(a, s, y);
                 formula sem_y = yesterday_semantics(y, Y(a));
 

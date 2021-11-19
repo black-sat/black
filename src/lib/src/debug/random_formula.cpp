@@ -99,7 +99,7 @@ namespace black::internal {
 
       _ap = {_sigma.top(), _sigma.bottom()};
       for (const std::string& s : symbols) {
-        _ap.push_back(_sigma.var("(" + s + ")"));
+        _ap.push_back(_sigma.prop("(" + s + ")"));
       }
     }
 
@@ -113,13 +113,13 @@ namespace black::internal {
     std::vector<unary::type> _unary_ops; // subset of _ops
     std::vector<formula> _ap;            // AP U {True,False}
 
-    formula random_atom();
+    formula random_proposition();
     unary::type random_unary_operator();
     op_t random_operator();
 
   }; // class rand_formula_gen
 
-  formula rand_formula_gen::random_atom() {
+  formula rand_formula_gen::random_proposition() {
     std::uniform_int_distribution<size_t> dist(0, _ap.size()-1);
     return _ap[dist(_gen)];
   }
@@ -136,7 +136,7 @@ namespace black::internal {
 
   formula rand_formula_gen::random_formula(int n) { // must be n >= 1
     if (n == 1) {
-      return random_atom();
+      return random_proposition();
     } else {
       if (n == 2) {
         unary::type op = random_unary_operator();

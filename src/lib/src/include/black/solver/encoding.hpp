@@ -49,10 +49,10 @@ namespace black::internal {
     }
 
     // Return the loop var for the loop from l to k
-    atom loop_var(size_t l, size_t k);
+    proposition loop_prop(size_t l, size_t k);
 
     // Make the stepped ground version of a formula, f_G^k
-    atom ground(formula f, size_t k);
+    proposition ground(formula f, size_t k);
 
     // Put a formula in negated normal form
     formula to_nnf(formula f);

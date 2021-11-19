@@ -88,8 +88,8 @@ namespace black::internal
     );
   }
 
-  atom encoder::loop_var(size_t l, size_t k) {
-    return _sigma->var(std::tuple{"_loop_var"sv, l, k});
+  proposition encoder::loop_prop(size_t l, size_t k) {
+    return _sigma->prop(std::tuple{"_loop_prop"sv, l, k});
   }
 
   // Generates the encoding for LOOP_k
@@ -100,13 +100,13 @@ namespace black::internal
       return _sigma->bottom();
 
     formula axioms = big_and(*_sigma, range(0,k), [&](size_t l) {
-      atom loop_var = this->loop_var(l, k);
-      return iff(loop_var, l_to_k_loop(l, k) && l_to_k_period(l, k));
+      proposition loop_prop = this->loop_prop(l, k);
+      return iff(loop_prop, l_to_k_loop(l, k) && l_to_k_period(l, k));
     });
     
 
     return axioms && big_or(*_sigma, range(0, k), [&](size_t l) {
-      return loop_var(l, k);
+      return loop_prop(l, k);
     });
   }
 
@@ -118,12 +118,12 @@ namespace black::internal
         return _sigma->top();
       
       // Creating the encoding
-      formula atom_phi_k = ground(xreq, k);
+      formula proposition_phi_k = ground(xreq, k);
       formula body_impl = big_or(*_sigma, range(l + 1, k + 1), [&](size_t i) {
         return to_ground_snf(*req, i);
       });
 
-      return implies(atom_phi_k, body_impl);
+      return implies(proposition_phi_k, body_impl);
     });
   }
 
@@ -188,7 +188,7 @@ namespace black::internal
   formula encoder::to_ground_snf(formula f, size_t k) {
     return f.match(
       [&](boolean)      { return f; },
-      [&](atom)         { return ground(f, k); },
+      [&](proposition)  { return ground(f, k); },
       [&](tomorrow)     { return ground(f, k); },
       [&](w_tomorrow)   { return ground(f, k); },
       [&](yesterday)    { return ground(f, k); },
@@ -297,8 +297,8 @@ namespace black::internal
     black_unreachable(); // LCOV_EXCL_LINE
   }
 
-  atom encoder::ground(formula f, size_t k) {
-    return _sigma->var(std::pair(f,k));
+  proposition encoder::ground(formula f, size_t k) {
+    return _sigma->prop(std::pair(f,k));
   }
 
   // Transformation in NNF
@@ -308,12 +308,12 @@ namespace black::internal
 
     formula nnf = f.match(
       [](boolean b) { return b; },
-      [](atom a)    { return a; },
+      [](proposition a)    { return a; },
       // Push the negation down to literals
       [&](negation n) {
         return n.operand().match(
-          [](boolean b) { return !b; },
-          [](atom a)    { return !a; },
+          [](boolean b)     { return !b; },
+          [](proposition a) { return !a; },
           [&](negation, formula op) { // special case for double negation
             return to_nnf(op);
           },
