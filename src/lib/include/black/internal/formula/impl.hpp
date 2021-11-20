@@ -26,7 +26,7 @@
 
 #ifndef BLACK_LOGIC_FORMULA_HPP_
   #error "This header file cannot be included alone, "\
-         "please include <black/logic/formula.hpp> instead"
+         "please include <black/logic/formula.hpp> instead."
 #endif
 
 #include <charconv>
@@ -74,7 +74,6 @@ namespace black::internal
     return std::hash<formula_base*>{}(_formula);
   }
 
-  // Implementation of formula::to_sat() under alphabet's in alphabet_impl.hpp
   // Implementation of formula::match() in match.hpp, included below
 
   /*

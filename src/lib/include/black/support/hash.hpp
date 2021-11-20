@@ -30,9 +30,10 @@
 #include <any>
 #include <tuple>
 #include <optional>
+#include <vector>
 
 //
-// std::hash specialization for tuples and pairs.
+// std::hash specialization for tuples, pairs, and vectors
 // See https://stackoverflow.com/a/27952689/3206471
 // and https://stackoverflow.com/questions/35985960
 // for an explanation of the hashing function combination technique

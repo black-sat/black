@@ -42,7 +42,18 @@ namespace black::internal {
     }
   }
 
+  template<typename T, REQUIRES_OUT_OF_LINE(internal::is_hashable<T>)>
+  inline variable alphabet::var(T&& label) { 
+    if constexpr(std::is_constructible_v<std::string,T>) {
+      return
+        variable{this, allocate_variable(std::string{FWD(label)})};
+    } else {
+      return variable{this, allocate_variable(FWD(label))};
+    }
+  }
+
   // Out-of-line implementations from the handle_base class in formula.hpp,
+  // and from the term_handle_base class in term.hpp,
   // placed here to have a complete alphabet type
   template<typename H, typename F>
   template<typename FType, typename Arg>
@@ -80,6 +91,35 @@ namespace black::internal {
     binary_t *object = sigma->allocate_binary(
       type, arg1._formula, arg2._formula
     );
+
+    return {sigma, object};
+  }
+
+  template<typename H, typename T>
+  std::pair<alphabet *, application_t *>
+  term_handle_base<H, T>::allocate_application(
+    std::string const&name, std::vector<term> const&args
+  ) {
+    black_assert(!args.empty());
+
+    class alphabet *sigma = args[0]._alphabet;
+
+    std::vector<term_base *> ts;
+    for(term t : args)
+      ts.push_back(t._term);
+
+    application_t *object = sigma->allocate_application(name, ts);
+
+    return {sigma, object};
+  }
+
+  template<typename H, typename T>
+  template<typename Arg>
+  std::pair<alphabet *, next_t *>
+  term_handle_base<H, T>::allocate_next(Arg arg) {
+    class alphabet *sigma = arg._alphabet;
+
+    next_t *object = sigma->allocate_next(arg._term);
 
     return {sigma, object};
   }

@@ -151,36 +151,36 @@ namespace black::internal
   template<typename ...Operators>
   struct syntax { };
 
-  template<typename ...Cases>
+  template<typename Formula, typename ...Cases>
   struct matcher;
 
-  template<typename Case>
-  struct matcher<syntax<Case>> {
+  template<typename Formula, typename Case>
+  struct matcher<Formula, syntax<Case>> {
     template<typename ...Handlers>
-    static auto match(formula f, Handlers&& ...handlers)
-      -> decltype(dispatch(*f.to<Case>(), FWD(handlers)...))
+    static auto match(Formula f, Handlers&& ...handlers)
+      -> decltype(dispatch(*f.template to<Case>(), FWD(handlers)...))
     {
-      if(f.is<Case>())
-        return dispatch(*f.to<Case>(), FWD(handlers)...);
+      if(f.template is<Case>())
+        return dispatch(*f.template to<Case>(), FWD(handlers)...);
       
       black_unreachable(); // LCOV_EXCL_LINE
     }
   };
 
-  template<typename Case, typename ...Cases>
-  struct matcher<syntax<Case, Cases...>>
+  template<typename Formula, typename Case, typename ...Cases>
+  struct matcher<Formula, syntax<Case, Cases...>>
   {
     template<typename ...Handlers>
-    static auto match(formula f, Handlers&& ...handlers) 
+    static auto match(Formula f, Handlers&& ...handlers) 
       -> std::common_type_t<
-        decltype(dispatch(*f.to<Case>(), FWD(handlers)...)),
-        decltype(matcher<syntax<Cases...>>::match(f, FWD(handlers)...))
+        decltype(dispatch(*f.template to<Case>(), FWD(handlers)...)),
+        decltype(matcher<Formula, syntax<Cases...>>::match(f, FWD(handlers)...))
       >
     {
-      if(f.is<Case>())
-        return dispatch(*f.to<Case>(), FWD(handlers)...);
+      if(f.template is<Case>())
+        return dispatch(*f.template to<Case>(), FWD(handlers)...);
       else
-        return matcher<syntax<Cases...>>::match(f, FWD(handlers)...);
+        return matcher<Formula, syntax<Cases...>>::match(f, FWD(handlers)...);
     }
   };
 
@@ -235,17 +235,17 @@ namespace black::internal
 
   template<typename ...Handlers>
   auto formula::match(Handlers&& ...handlers) const {
-    return matcher<ltl>::match(*this, FWD(handlers)...);
+    return matcher<formula, ltl>::match(*this, FWD(handlers)...);
   }
 
   template<typename ...Handlers>
   auto unary::match(Handlers&& ...handlers) const {
-    return matcher<unary_ltl_ops>::match(*this, FWD(handlers)...);
+    return matcher<formula, unary_ltl_ops>::match(*this, FWD(handlers)...);
   }
 
   template<typename ...Handlers>
   auto binary::match(Handlers&& ...handlers) const {
-    return matcher<binary_ltl_ops>::match(*this, FWD(handlers)...);
+    return matcher<formula, binary_ltl_ops>::match(*this, FWD(handlers)...);
   }
 }
 
@@ -372,7 +372,7 @@ namespace black::internal
 
     template<typename ...Handlers>
     auto match(Handlers&& ...handlers) const {
-      return matcher<syntax<Operators...>>::match(_f, FWD(handlers)...);
+      return matcher<class formula, syntax<Operators...>>::match(_f, FWD(handlers)...);
     }
 
   private:

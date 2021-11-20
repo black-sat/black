@@ -26,7 +26,7 @@
 
 #ifndef BLACK_LOGIC_FORMULA_HPP_
   #error "This header file cannot be included alone, "\
-         "please include <black/logic/formula.hpp> instead"
+         "please include <black/logic/formula.hpp> instead."
 #endif
 
 #include <black/support/meta.hpp>

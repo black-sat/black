@@ -27,6 +27,7 @@
 #include <black/support/common.hpp>
 #include <black/support/meta.hpp>
 #include <black/logic/formula.hpp>
+#include <black/logic/term.hpp>
 
 #include <string>
 #include <unordered_map>
@@ -67,7 +68,13 @@ namespace black::internal {
     // Propositions can be labelled by a piece of data of any type T, as long as
     // T is Hashable (see the std::unordered_map documentation for reference)
     template<typename T, REQUIRES(internal::is_hashable<T>)>
-    struct proposition prop(T&& label);
+    proposition prop(T&& label);
+
+    // Enty point to obtain variables.
+    // Propositions can be labelled by a piece of data of any type T, as long as
+    // T is Hashable (see the std::unordered_map documentation for reference)
+    template<typename T, REQUIRES(internal::is_hashable<T>)>
+    variable var(T&& label);
 
     // Function to obtain a formula given its unique id
     formula from_id(formula_id);
@@ -79,6 +86,10 @@ namespace black::internal {
     template<typename, typename>
     friend struct handle_base;
 
+    template<typename, typename>
+    friend struct term_handle_base;
+
+    // formulas allocation
     proposition_t *allocate_proposition(any_hashable _label);
     unary_t *allocate_unary(unary::type type, formula_base* arg);
     binary_t *
@@ -88,6 +99,18 @@ namespace black::internal {
     proposition_t *allocate_proposition(T&& _label) {
       return allocate_proposition(any_hashable{FWD(_label)});
     }
+
+    // terms allocation
+    variable_t *allocate_variable(any_hashable _label);
+    template<typename T, REQUIRES(is_hashable<T>)>
+    variable_t *allocate_variable(T&& _label) {
+      return allocate_variable(any_hashable{FWD(_label)});
+    }
+
+    next_t *allocate_next(term_base *arg);
+    application_t*allocate_application(
+      std::string const&name, std::vector<term_base *> const&args
+    );
   };
 
 } // namespace black::internal
