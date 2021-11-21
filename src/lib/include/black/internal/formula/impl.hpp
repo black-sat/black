@@ -133,6 +133,70 @@ namespace black::internal
     return _formula->label.to<T>();
   }
 
+  // struct atom
+  inline atom::atom(relation const&r, std::vector<term> const&terms)
+    : handle_base<atom, atom_t>{allocate_atom(r, terms)} { }
+
+  inline std::vector<term> atom::terms() const {
+    std::vector<term> result;
+    for(term_base *t : _formula->terms)
+      result.push_back(term{_alphabet, t});
+    
+    return result;
+  }
+
+  // struct relation
+  inline relation::relation(known_relation r) : _data{r} { }
+  inline relation::relation(std::string const& name) : _data{name}{ }
+
+  inline bool operator==(relation const&r1, relation const&r2) {
+    return r1._data == r2._data;
+  }
+
+  inline bool operator!=(relation const&r1, relation const&r2) {
+    return r1._data != r2._data;
+  }
+
+  template<typename... T>
+  inline atom relation::operator()(T ...args) {
+    std::array<term, sizeof...(args)> _args = {args...};
+    std::vector<term> argsv;
+    std::copy(_args.begin(), _args.end(), std::back_inserter(argsv));
+
+    return atom(*this, argsv);
+  }
+
+  inline std::optional<relation::known_relation> relation::known() const {
+    if(std::holds_alternative<known_relation>(_data))
+      return {std::get<known_relation>(_data)};
+    return std::nullopt;
+  }
+
+  inline std::string relation::name() const {
+    if(std::holds_alternative<std::string>(_data))
+      return std::get<std::string>(_data);
+
+    black_assert(std::holds_alternative<known_relation>(_data));
+    known_relation r = std::get<known_relation>(_data);
+    switch(r) {
+      case equal:
+        return "==";
+      case not_equal:
+        return "!=";
+      case less_than:
+        return "<";
+      case less_than_equal:
+        return "<=";
+      case greater_than:
+        return ">";
+      case greater_than_equal:
+        return ">=";
+      default:
+        black_unreachable();
+    }
+
+  }
+
   // struct unary
   inline unary::unary(type t, formula f)
     : handle_base<unary, unary_t>{allocate_unary(t, f)} { }
@@ -325,6 +389,42 @@ namespace black::internal
   inline yesterday  YO(formula f) { return Y(O(f)); }
   inline yesterday  YH(formula f) { return Y(H(f)); }
 
+  // shorthands for known relations
+  inline atom operator==(term t1, term t2) {
+    return atom{relation::equal, {t1, t2}};
+  }
+  
+  inline atom operator!=(term t1, term t2) {
+    return atom{relation::not_equal, {t1, t2}};
+  }
+
+  inline atom operator<(term t1, term t2) {
+    return atom{relation::less_than, {t1, t2}};
+  }
+
+  inline atom operator<=(term t1, term t2) {
+    return atom{relation::less_than_equal, {t1, t2}};
+  }
+
+  inline atom operator>(term t1, term t2) {
+    return atom{relation::greater_than, {t1, t2}};
+  }
+
+  inline atom operator>=(term t1, term t2) {
+    return atom{relation::greater_than_equal, {t1, t2}};
+  }
+}
+
+namespace std {
+  template<>
+  struct hash<::black::internal::relation> {
+    size_t operator()(black::internal::relation const&r) const {
+      if(auto k = r.known(); k)
+        return hash<uint8_t>{}(static_cast<uint8_t>(*k));
+
+      return hash<std::string>{}(r.name());
+    }
+  };
 }
 
 #include <black/internal/formula/match.hpp>

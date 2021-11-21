@@ -88,9 +88,6 @@ namespace black::internal {
       term(term const&) = default;
       term(term &&) = default;
 
-      friend bool operator==(term t1, term t2);
-      friend bool operator!=(term t1, term t2);
-
       term &operator=(term const&) = default;
       term &operator=(term &&) = default;
 
@@ -121,6 +118,9 @@ namespace black::internal {
       
       template<typename, typename>
       friend struct term_handle_base;
+
+      template<typename, typename>
+      friend struct handle_base;
 
     public:
       explicit term(class alphabet *sigma, term_base *t)

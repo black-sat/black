@@ -37,8 +37,9 @@ namespace black::internal {
   // Instead, refer to it as formula::type, as declared below.
   //
   enum class formula_type : uint8_t {
-    boolean = 1,
-    proposition,
+    boolean = 1, // true and false
+    proposition, // p, q, r, ...
+    atom,        // R(t1, ..., tn)
     // unary formulas
     negation,
     tomorrow,
@@ -60,6 +61,42 @@ namespace black::internal {
     s_release,
     since,
     triggered
+  };
+
+  struct atom;
+
+  struct relation 
+  {
+    enum known_relation : uint8_t {
+      equal = 1,
+      not_equal,
+      less_than,
+      less_than_equal,
+      greater_than,
+      greater_than_equal
+    };
+
+    relation() = delete;
+    relation(known_relation);
+    relation(std::string const&name);
+
+    relation(relation const&) = default;
+    relation(relation &&) = default;
+
+    friend bool operator==(relation const&r1, relation const&r2);
+    friend bool operator!=(relation const&r1, relation const&r2);
+
+    relation &operator=(relation const&) = default;
+    relation &operator=(relation &&) = default;
+
+    template<typename... T>
+    atom operator()(T ...args);
+
+    std::optional<known_relation> known() const;
+    std::string name() const;
+
+  private:
+    std::variant<known_relation, std::string> _data;
   };
 }
 
@@ -169,6 +206,17 @@ namespace black::internal
     // The result is empty if the type is wrong.
     template<typename T>
     std::optional<T> label() const;
+  };
+
+  struct atom : handle_base<atom, atom_t>
+  {
+    // inheriting base class constructors (for internal use)
+    using handle_base<atom, atom_t>::handle_base;
+
+    atom(relation const&r, std::vector<term> const& terms);
+
+    relation rel() const;
+    std::vector<term> terms() const;
   };
 
   struct unary : handle_base<unary, unary_t>
@@ -314,6 +362,14 @@ namespace black::internal
   yesterday  YP(formula f);
   yesterday  YH(formula f);
 
+  // Shortcut for known relations
+  atom operator==(term t1, term t2);
+  atom operator!=(term t1, term t2);
+  atom  operator<(term t1, term t2);
+  atom operator<=(term t1, term t2);
+  atom  operator>(term t1, term t2);
+  atom operator>=(term t1, term t2);
+
   //
   // Utility functions
   //
@@ -361,11 +417,14 @@ namespace black::internal
 namespace black {
   using internal::boolean;
   using internal::proposition;
+  using internal::relation;
+  using internal::atom;
   using internal::unary;
   using internal::binary;
   using internal::formula;
   using internal::formula_id;
   using internal::otherwise;
+
 
   using internal::simplify;
   using internal::simplify_deep;

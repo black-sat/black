@@ -24,7 +24,6 @@
 #include <catch2/catch.hpp>
 
 #include <black/logic/alphabet.hpp>
-#include <black/logic/term.hpp>
 
 using namespace black;
 
@@ -42,7 +41,7 @@ TEST_CASE("Terms manipulation") {
   term app1 = f(n1, n2);
   term app2 = n1 + n2;
 
-  REQUIRE(app1 != app2);
+  REQUIRE(app1.unique_id() != app2.unique_id());
 
   std::string s = app1.match(
     [](constant)    { return "c1"; },
@@ -60,4 +59,12 @@ TEST_CASE("Terms manipulation") {
   );
 
   REQUIRE(s == "n2");
+
+  relation r{"r"};
+
+  atom a1 = r(app1, app2);
+  atom a2 = app1 <= app2;
+
+  REQUIRE(a1 != a2);
+
 }

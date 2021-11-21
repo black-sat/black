@@ -61,6 +61,7 @@ namespace black::internal {
     boolean_t            _bottom{false};
 
     std::deque<proposition_t> _props;
+    std::deque<atom_t>        _atoms;
     std::deque<unary_t>       _unaries;
     std::deque<binary_t>      _binaries;
 
@@ -74,8 +75,10 @@ namespace black::internal {
                                   formula_base*,
                                   formula_base*>;
     using application_key = std::tuple<function, std::vector<term_base *>>;
+    using atom_key = std::tuple<relation, std::vector<term_base *>>;
 
     tsl::hopscotch_map<any_hashable, proposition_t*> _props_map;
+    tsl::hopscotch_map<atom_key,     atom_t*>        _atoms_map;
     tsl::hopscotch_map<unary_key,    unary_t*>       _unaries_map;
     tsl::hopscotch_map<binary_key,   binary_t*>      _binaries_map;
 
@@ -117,8 +120,21 @@ namespace black::internal {
     if(auto it = _impl->_props_map.find(label); it != _impl->_props_map.end())
       return it->second;
 
-    proposition_t *a = &_impl->_props.emplace_back(label);
-    _impl->_props_map.insert({label, a});
+    proposition_t *p = &_impl->_props.emplace_back(label);
+    _impl->_props_map.insert({label, p});
+
+    return p;
+  }
+
+  atom_t *alphabet::allocate_atom(
+    relation const&r, std::vector<term_base *> const&terms
+  ) {
+    if(auto it = 
+        _impl->_atoms_map.find({r, terms}); it != _impl->_atoms_map.end())
+      return it->second;
+
+    atom_t *a = &_impl->_atoms.emplace_back(r, terms);
+    _impl->_atoms_map.insert({{r, terms}, a});
 
     return a;
   }

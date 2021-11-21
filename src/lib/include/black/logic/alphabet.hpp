@@ -96,6 +96,7 @@ namespace black::internal {
 
     // formulas allocation
     proposition_t *allocate_proposition(any_hashable _label);
+    atom_t *allocate_atom(relation const&, std::vector<term_base *> const&);
     unary_t *allocate_unary(unary::type type, formula_base* arg);
     binary_t *
     allocate_binary(binary::type type, formula_base* arg1, formula_base* arg2);

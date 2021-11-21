@@ -59,6 +59,23 @@ namespace black::internal {
   // and from the term_handle_base class in term.hpp,
   // placed here to have a complete alphabet type
   template<typename H, typename F>
+  std::pair<class alphabet *, atom_t *>
+  handle_base<H, F>::allocate_atom(
+    relation const&r, std::vector<term> const& terms
+  ) {
+    black_assert(!terms.empty());
+    class alphabet *sigma = terms[0]._alphabet;
+
+    std::vector<term_base *> _terms;
+    for(term t : terms)
+      _terms.push_back(t._term);
+
+    atom_t *object = sigma->allocate_atom(r, _terms);
+
+    return {sigma, object};
+  }
+
+  template<typename H, typename F>
   template<typename FType, typename Arg>
   std::pair<alphabet *, unary_t *>
   handle_base<H, F>::allocate_unary(FType type, Arg const&arg)

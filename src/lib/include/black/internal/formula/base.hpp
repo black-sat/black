@@ -53,6 +53,10 @@ namespace black::internal
     return type == formula_type::proposition;
   }
 
+  constexpr bool is_atom_type(formula_type type) {
+    return type == formula_type::atom;
+  }
+
   constexpr bool is_unary_type(formula_type type) {
     return to_underlying(type) >= to_underlying(formula_type::negation) &&
            to_underlying(type) <= to_underlying(formula_type::historically);
@@ -88,6 +92,17 @@ namespace black::internal
       : formula_base{formula_type::proposition}, label{_label} {}
 
     any_hashable label;
+  };
+
+  struct atom_t : formula_base
+  {
+    static constexpr auto accepts_type = is_atom_type;
+
+    atom_t(relation const&_r, std::vector<term_base *>_terms)
+      : formula_base{formula_type::atom}, r{_r}, terms{_terms} { }
+
+    relation r;
+    std::vector<term_base *> terms;
   };
 
   struct unary_t : formula_base
@@ -168,6 +183,9 @@ namespace black::internal
     }
 
     // Implemented after alphabet class
+    static std::pair<class alphabet *, atom_t *>
+    allocate_atom(relation const&r, std::vector<term> const& terms);
+
     template<typename FType, typename Arg>
     static std::pair<class alphabet *, unary_t *>
     allocate_unary(FType type, Arg const&arg);

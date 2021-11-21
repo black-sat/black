@@ -36,14 +36,6 @@ namespace black::internal
   /*
    * Out-of-line definitions for class `term`
    */
-  inline bool operator==(term t1, term t2) {
-    return t1._term == t2._term;
-  }
-
-  inline bool operator!=(term t1, term t2) {
-    return !(t1 == t2);
-  }
-
   inline term::type term::term_type() const {
     return _term->type;
   }
