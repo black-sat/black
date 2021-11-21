@@ -25,7 +25,6 @@
 #define BLACK_ALPHABET_IMPL_HPP
 
 #include <black/support/meta.hpp>
-#include <black/logic/formula.hpp>
 
 namespace black::internal {
 

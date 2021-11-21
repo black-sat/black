@@ -383,6 +383,5 @@ namespace black {
 }
 
 #include <black/internal/formula/impl.hpp>
-#include <black/logic/alphabet.hpp>
 
 #endif // BLACK_LOGIC_FORMULA_HPP_
