@@ -250,10 +250,10 @@ TEST_CASE("Boolean constants simplification")
 TEST_CASE("Terms manipulation") {
   alphabet sigma;
 
-  auto x = sigma.var("x");
+  auto c = sigma.constant(42);
   auto y = sigma.var("y");
 
-  auto n1 = next(x);
+  auto n1 = next(c);
   auto n2 = next(y);
 
   term app1 = application("f", {n1, n2});

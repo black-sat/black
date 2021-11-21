@@ -64,6 +64,7 @@ namespace black::internal {
     std::deque<unary_t>       _unaries;
     std::deque<binary_t>      _binaries;
 
+    std::deque<constant_t>    _consts;
     std::deque<variable_t>    _vars;
     std::deque<next_t>        _nexts;
     std::deque<application_t> _apps;
@@ -72,15 +73,15 @@ namespace black::internal {
     using binary_key = std::tuple<binary::type,
                                   formula_base*,
                                   formula_base*>;
-    using next_key = term_base *;
     using application_key = std::tuple<std::string, std::vector<term_base *>>;
 
     tsl::hopscotch_map<any_hashable, proposition_t*> _props_map;
     tsl::hopscotch_map<unary_key,    unary_t*>       _unaries_map;
     tsl::hopscotch_map<binary_key,   binary_t*>      _binaries_map;
 
+    tsl::hopscotch_map<int,             constant_t*>    _consts_map;
     tsl::hopscotch_map<any_hashable,    variable_t*>    _vars_map;
-    tsl::hopscotch_map<next_key,        next_t*>        _nexts_map;
+    tsl::hopscotch_map<term_base *,     next_t*>        _nexts_map;
     tsl::hopscotch_map<application_key, application_t*> _apps_map;
   };
 
@@ -162,6 +163,18 @@ namespace black::internal {
     _impl->_binaries_map.insert({{type, arg1, arg2}, f});
 
     return f;
+  }
+
+  constant_t *alphabet::allocate_constant(int c)
+  {
+    auto it = _impl->_consts_map.find(c);
+    if(it != _impl->_consts_map.end())
+      return it->second;
+
+    constant_t *t = &_impl->_consts.emplace_back(c);
+    _impl->_consts_map.insert({c,t});
+
+    return t;
   }
 
   next_t *alphabet::allocate_next(term_base *arg)

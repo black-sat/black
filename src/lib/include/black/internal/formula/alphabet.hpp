@@ -52,6 +52,10 @@ namespace black::internal {
     }
   }
 
+  inline constant alphabet::constant(int c) {
+    return {this, allocate_constant(c)};
+  }
+
   // Out-of-line implementations from the handle_base class in formula.hpp,
   // and from the term_handle_base class in term.hpp,
   // placed here to have a complete alphabet type

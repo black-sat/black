@@ -76,6 +76,11 @@ namespace black::internal {
     template<typename T, REQUIRES(internal::is_hashable<T>)>
     variable var(T&& label);
 
+    // Enty point to obtain constants.
+    // For now only integer constants are supported
+    // TODO: Generalize constants
+    struct constant constant(int c);
+
     // Function to obtain a formula given its unique id
     formula from_id(formula_id);
 
@@ -102,6 +107,7 @@ namespace black::internal {
 
     // terms allocation
     variable_t *allocate_variable(any_hashable _label);
+    constant_t *allocate_constant(int c);
     template<typename T, REQUIRES(is_hashable<T>)>
     variable_t *allocate_variable(T&& _label) {
       return allocate_variable(any_hashable{FWD(_label)});
