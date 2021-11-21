@@ -86,10 +86,10 @@ namespace black::internal
   {
     static constexpr auto accepts_type = is_application_type;
 
-    application_t(std::string const&_f, std::vector<term_base *> const&_args)
+    application_t(function _f, std::vector<term_base *> const&_args)
       : term_base{term_type::application}, f{_f}, args{_args} {}
 
-    std::string f;
+    function f;
     std::vector<term_base *> args;
   };
 
@@ -145,7 +145,7 @@ namespace black::internal
     }
 
     static std::pair<class alphabet *, application_t *>
-    allocate_application(std::string const&name, std::vector<term> const&args);
+    allocate_application(function const&func, std::vector<term> const&args);
 
     template<typename Arg>
     static std::pair<class alphabet *, next_t *>

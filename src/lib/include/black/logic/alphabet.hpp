@@ -115,7 +115,7 @@ namespace black::internal {
 
     next_t *allocate_next(term_base *arg);
     application_t*allocate_application(
-      std::string const&name, std::vector<term_base *> const&args
+      function const&func, std::vector<term_base *> const&args
     );
   };
 

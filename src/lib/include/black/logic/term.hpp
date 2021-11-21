@@ -24,8 +24,10 @@
 #ifndef BLACK_TERM_HPP
 #define BLACK_TERM_HPP
 
+#include <black/support/meta.hpp>
 #include <black/logic/formula.hpp>
 #include <cstdint>
+#include <variant>
 
 namespace black::internal {
   
@@ -34,6 +36,43 @@ namespace black::internal {
     variable,
     application,
     next
+  };
+
+  struct application;
+
+  struct function 
+  {
+    enum known_function : uint8_t {
+      negation = 1,
+      subtraction,
+      addition,
+      multiplication,
+      division,
+      modulo,
+      abs
+    };
+
+    function() = delete;
+    function(known_function);
+    function(std::string const&name);
+
+    function(function const&) = default;
+    function(function &&) = default;
+
+    friend bool operator==(function const&f1, function const&f2);
+    friend bool operator!=(function const&f1, function const&f2);
+
+    function &operator=(function const&) = default;
+    function &operator=(function &&) = default;
+
+    template<typename... T>
+    application operator()(T ...args);
+
+    std::optional<known_function> known() const;
+    std::string name() const;
+
+  private:
+    std::variant<known_function, std::string> _data;
   };
 }
 
@@ -108,9 +147,9 @@ namespace black::internal {
   {
     using term_handle_base<application, application_t>::term_handle_base;
 
-    application(std::string const& label, std::vector<term> const&args);
+    application(function const&func, std::vector<term> const&args);
 
-    std::string function_name() const;
+    function func() const;
 
     std::vector<term> arguments() const;
   };
@@ -123,6 +162,13 @@ namespace black::internal {
 
     term argument() const;
   };
+
+  // Syntactic sugar for known functions
+  application operator-(term);
+  application operator-(term, term);
+  application operator+(term, term);
+  application operator*(term, term);
+  application operator/(term, term);
 }
 
 // Names exported from the `black` namespace
@@ -132,6 +178,7 @@ namespace black {
   using internal::variable;
   using internal::application;
   using internal::next;
+  using internal::function;
 }
 
 #include <black/internal/term/impl.hpp>

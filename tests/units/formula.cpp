@@ -256,8 +256,10 @@ TEST_CASE("Terms manipulation") {
   auto n1 = next(c);
   auto n2 = next(y);
 
-  term app1 = application("f", {n1, n2});
-  term app2 = application("g", {n1, n2});
+  function f{"f"};
+
+  term app1 = f(n1, n2);
+  term app2 = n1 + n2;
 
   REQUIRE(app1 != app2);
 

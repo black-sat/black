@@ -73,7 +73,7 @@ namespace black::internal {
     using binary_key = std::tuple<binary::type,
                                   formula_base*,
                                   formula_base*>;
-    using application_key = std::tuple<std::string, std::vector<term_base *>>;
+    using application_key = std::tuple<function, std::vector<term_base *>>;
 
     tsl::hopscotch_map<any_hashable, proposition_t*> _props_map;
     tsl::hopscotch_map<unary_key,    unary_t*>       _unaries_map;
@@ -190,15 +190,15 @@ namespace black::internal {
   }
 
   application_t *alphabet::allocate_application(
-    std::string const& name, std::vector<term_base *> const&args
+    function const& func, std::vector<term_base *> const&args
   )
   {
-    auto it = _impl->_apps_map.find({name, args});
+    auto it = _impl->_apps_map.find({func, args});
     if(it != _impl->_apps_map.end())
       return it->second;
 
-    application_t *t = &_impl->_apps.emplace_back(name, args);
-    _impl->_apps_map.insert({{name, args}, t});
+    application_t *t = &_impl->_apps.emplace_back(func, args);
+    _impl->_apps_map.insert({{func, args}, t});
 
     return t; 
   }

@@ -102,7 +102,7 @@ namespace black::internal {
   template<typename H, typename T>
   std::pair<alphabet *, application_t *>
   term_handle_base<H, T>::allocate_application(
-    std::string const&name, std::vector<term> const&args
+    function const&func, std::vector<term> const&args
   ) {
     black_assert(!args.empty());
 
@@ -112,7 +112,7 @@ namespace black::internal {
     for(term t : args)
       ts.push_back(t._term);
 
-    application_t *object = sigma->allocate_application(name, ts);
+    application_t *object = sigma->allocate_application(func, ts);
 
     return {sigma, object};
   }
