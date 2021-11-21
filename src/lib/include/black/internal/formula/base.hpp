@@ -32,6 +32,7 @@
 #include <black/support/meta.hpp>
 #include <black/support/assert.hpp>
 #include <black/support/hash.hpp>
+#include <black/internal/match.hpp>
 
 #include <type_traits>
 #include <array>
@@ -127,11 +128,6 @@ namespace black::internal
       return static_cast<F *>(f);
     return nullptr;
   }
-
-  /*
-   * Dummy type for default case in formula matchers
-   */
-  struct otherwise {};
 
   /*
    * Unique opaque id for formulas

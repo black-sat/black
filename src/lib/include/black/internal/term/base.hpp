@@ -31,6 +31,7 @@
 
 #include <black/support/assert.hpp>
 #include <black/support/hash.hpp>
+#include <black/internal/match.hpp>
 
 #include <vector>
 

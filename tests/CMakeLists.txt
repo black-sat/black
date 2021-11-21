@@ -52,6 +52,7 @@ if(Catch2_FOUND)
     UNIT_TESTS
     units/cnf.cpp
     units/formula.cpp
+    units/term.cpp
     units/main.cpp
     units/match.cpp
     units/parser.cpp

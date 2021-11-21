@@ -24,7 +24,6 @@
 #include <catch2/catch.hpp>
 
 #include <black/logic/formula.hpp>
-#include <black/logic/term.hpp>
 #include <black/logic/alphabet.hpp>
 #include <black/logic/parser.hpp>
 
@@ -245,38 +244,4 @@ TEST_CASE("Boolean constants simplification")
   REQUIRE(simplify_deep(M(p, sigma.bottom())) == sigma.bottom());
   REQUIRE(simplify_deep(M(sigma.top(), sigma.top())) == sigma.top());
   
-}
-
-TEST_CASE("Terms manipulation") {
-  alphabet sigma;
-
-  auto c = sigma.constant(42);
-  auto y = sigma.var("y");
-
-  auto n1 = next(c);
-  auto n2 = next(y);
-
-  function f{"f"};
-
-  term app1 = f(n1, n2);
-  term app2 = n1 + n2;
-
-  REQUIRE(app1 != app2);
-
-  std::string s = app1.match(
-    [](constant)    { return "c1"; },
-    [](variable)    { return "v1"; },
-    [](application a) { 
-      black_assert(a.arguments().size() > 0);
-      return a.arguments()[0].match(
-        [](constant) { return "c2"; },
-        [](variable) { return "v2"; },
-        [](application) { return "a2"; },
-        [](next) { return "n2"; }
-      );
-    },
-    [](next)        { return "n1"; }
-  );
-
-  REQUIRE(s == "n2");
 }

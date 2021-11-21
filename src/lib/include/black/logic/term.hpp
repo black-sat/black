@@ -25,7 +25,6 @@
 #define BLACK_TERM_HPP
 
 #include <black/support/meta.hpp>
-#include <black/logic/formula.hpp>
 #include <cstdint>
 #include <variant>
 
