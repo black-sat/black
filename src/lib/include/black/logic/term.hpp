@@ -26,6 +26,8 @@
 
 #include <black/support/meta.hpp>
 #include <cstdint>
+#include <string>
+#include <optional>
 #include <variant>
 
 namespace black::internal {
@@ -181,6 +183,5 @@ namespace black {
 }
 
 #include <black/internal/term/impl.hpp>
-#include <black/logic/alphabet.hpp>
 
 #endif

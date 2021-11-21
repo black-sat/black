@@ -25,6 +25,7 @@
 #define BLACK_LOGIC_FORMULA_HPP_
 
 #include <black/support/common.hpp>
+#include <black/logic/term.hpp>
 
 #include <optional>
 #include <cstdint>
