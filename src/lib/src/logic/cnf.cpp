@@ -76,6 +76,7 @@ namespace black::internal
     f.match(
       [](boolean)     { },
       [](proposition) { },
+      [](atom)        { },
       [&](conjunction, formula l, formula r) 
       {
         tseitin(l, clauses, memo);
@@ -133,6 +134,7 @@ namespace black::internal
       [&](negation, formula arg) {
         return arg.match(
           [&](boolean) { },
+          [&](atom) { },
           [&](proposition a) {
             // clausal form for negations:
             // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
@@ -207,6 +209,7 @@ namespace black::internal
           [](temporal) { black_unreachable(); } // LCOV_EXCL_LINE
         );
       },
+      [](atom)     { black_unreachable(); }, // LCOV_EXCL_LINE
       [](temporal) { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }

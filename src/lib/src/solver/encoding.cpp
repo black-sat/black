@@ -188,6 +188,7 @@ namespace black::internal
   formula encoder::to_ground_snf(formula f, size_t k) {
     return f.match(
       [&](boolean)      { return f; },
+      [&](atom) -> formula { black_unreachable(); },
       [&](proposition)  { return ground(f, k); },
       [&](tomorrow)     { return ground(f, k); },
       [&](w_tomorrow)   { return ground(f, k); },
@@ -308,12 +309,14 @@ namespace black::internal
 
     formula nnf = f.match(
       [](boolean b) { return b; },
-      [](proposition a)    { return a; },
+      [](proposition p) { return p; },
+      [](atom a) { return a; },
       // Push the negation down to literals
       [&](negation n) {
         return n.operand().match(
           [](boolean b)     { return !b; },
-          [](proposition a) { return !a; },
+          [](proposition p) { return !p; },
+          [](atom a)        { return !a; },
           [&](negation, formula op) { // special case for double negation
             return to_nnf(op);
           },

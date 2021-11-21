@@ -45,16 +45,19 @@ namespace black::internal
     {
       using namespace std::literals;
       return f.match(
-        [&](proposition a) {
-          if(auto name = a.label<std::string>(); name.has_value())
+        [&](proposition p) {
+          if(auto name = p.label<std::string>(); name.has_value())
             return *name;
-          if(auto fname = a.label<std::pair<formula,int>>(); fname.has_value())
+          if(auto fname = p.label<std::pair<formula,int>>(); fname.has_value())
             return
               fmt::format("<{},{}>", to_string(fname->first), fname->second); // LCOV_EXCL_LINE
-          if(auto fname = a.label<past_label>(); fname.has_value())
+          if(auto fname = p.label<past_label>(); fname.has_value())
             return fmt::format("<{}>", to_string(fname->formula)); // LCOV_EXCL_LINE
           else
-            return fmt::format("<{:x}>", to_underlying(formula{a}.unique_id()));
+            return fmt::format("<{:x}>", to_underlying(formula{p}.unique_id()));
+        },
+        [](atom) {
+          return "<atom>"s;
         },
         [](boolean b) {
           return b.value() ? "True" : "False";

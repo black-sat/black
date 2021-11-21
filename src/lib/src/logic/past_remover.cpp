@@ -45,7 +45,8 @@ namespace black::internal {
         [](once p, formula op) { return sub_past(S(p.sigma()->top(), op)); },
         [](historically, formula op) { return sub_past(!O(!op)); },
         [](boolean b) { return b; },
-        [](proposition a) { return a; },
+        [](proposition p) { return p; },
+        [](atom a) { return a; },
         [](unary u, formula op) {
           return unary(u.formula_type(), sub_past(op));
         },
@@ -58,6 +59,7 @@ namespace black::internal {
   void gen_semantics(formula f, std::vector<formula> &sem) {
     return f.match(
         [](boolean) {},
+        [](atom) {},
         [&](proposition a) {
           std::optional<past_label> label = a.label<past_label>();
 

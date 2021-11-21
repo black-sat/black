@@ -200,10 +200,13 @@ namespace black::sat::backends
       [this](boolean b) {
         return b.value() ? Z3_mk_true(context) : Z3_mk_false(context);
       },
-      [this](proposition a) {
+      [this](atom) -> Z3_ast {
+        black_unreachable();
+      },
+      [this](proposition p) {
         Z3_sort sort = Z3_mk_bool_sort(context);
         Z3_symbol symbol = 
-          Z3_mk_string_symbol(context, to_string(a.unique_id()).c_str());
+          Z3_mk_string_symbol(context, to_string(p.unique_id()).c_str());
         
         return Z3_mk_const(context, symbol, sort);
       },

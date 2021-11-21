@@ -492,7 +492,7 @@ TEST_CASE("Non-formula matchers")
           [](iff) { return 7; }
         );
       },
-      [](temporal) -> int { black_unreachable(); }
+      [](otherwise) -> int { black_unreachable(); }
     );
     REQUIRE(i == 6);
   }
@@ -518,7 +518,7 @@ TEST_CASE("Non-formula matchers")
           [](triggered)    { return 14; }
         );
       },
-      [](propositional) -> int { black_unreachable(); }
+      [](otherwise) -> int { black_unreachable(); }
     );
     REQUIRE(i == 3);
   }  

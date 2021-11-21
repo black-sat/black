@@ -99,8 +99,9 @@ namespace black::frontend {
     using namespace black;
     f.match(
       [&](boolean) {},
-      [&](proposition a) {
-        props.insert(a);
+      [&](atom) {},
+      [&](proposition p) {
+        props.insert(p);
       },
       [&](unary, formula f1) {
         relevant_props(f1, props);
