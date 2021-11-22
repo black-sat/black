@@ -245,6 +245,10 @@ namespace black::sat::backends
     );
   }
 
+  bool z3::supports_theory(theory) const {
+    return true; // TODO: check if the actual theory is supported
+  }
+
   std::optional<std::string> z3::license() const {
     return
 R"(

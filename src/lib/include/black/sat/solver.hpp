@@ -34,14 +34,42 @@
 #include <vector>
 
 namespace black::sat 
-{  
-
+{
   //
   // Generic interface to backend SAT solvers
   //  
   class BLACK_EXPORT solver 
   {
   public:
+
+    // List of SMT-LIB2 logics
+    enum theory {
+      AUFLIA,
+      AUFLIRA,
+      AUFNIRA,
+      LIA,
+      LRA,
+      QF_ABV,
+      QF_AUFBV,
+      QF_AUFLIA,
+      QF_AX,
+      QF_BV,
+      QF_IDL,
+      QF_LIA,
+      QF_LRA,
+      QF_NIA,
+      QF_NRA,
+      QF_RDL,
+      QF_UF,
+      QF_UFBV,
+      QF_UFIDL,
+      QF_UFLIA,
+      QF_UFLRA,
+      QF_UFNRA,
+      UFLRA,
+      UFNIA
+    };
+
     // default constructor
     solver() = default;
 
@@ -54,6 +82,9 @@ namespace black::sat
     solver &operator=(const solver &) = delete;
 
     virtual ~solver() = default;
+
+    // tells whether the current solver supports the specified theory
+    virtual bool supports_theory(theory t) const = 0;
 
     // assert a formula, adding it to the current context
     virtual void assert_formula(formula f) = 0;
