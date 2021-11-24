@@ -90,6 +90,9 @@ namespace black::internal {
       term &operator=(term const&) = default;
       term &operator=(term &&) = default;
 
+      friend bool operator==(term, term);
+      friend bool operator!=(term, term);
+
       using type = black::internal::term_type;
 
       type term_type() const;

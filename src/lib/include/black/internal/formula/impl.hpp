@@ -394,11 +394,11 @@ namespace black::internal
   inline yesterday  YH(formula f) { return Y(H(f)); }
 
   // shorthands for known relations
-  inline atom operator==(term t1, term t2) {
+  inline atom equal(term t1, term t2) {
     return atom{relation::equal, {t1, t2}};
   }
   
-  inline atom operator!=(term t1, term t2) {
+  inline atom not_equal(term t1, term t2) {
     return atom{relation::not_equal, {t1, t2}};
   }
 

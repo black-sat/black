@@ -363,8 +363,8 @@ namespace black::internal
   yesterday  YH(formula f);
 
   // Shortcut for known relations
-  atom operator==(term t1, term t2);
-  atom operator!=(term t1, term t2);
+  atom      equal(term t1, term t2);
+  atom  not_equal(term t1, term t2);
   atom  operator<(term t1, term t2);
   atom operator<=(term t1, term t2);
   atom  operator>(term t1, term t2);

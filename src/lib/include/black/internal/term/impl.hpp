@@ -36,6 +36,14 @@ namespace black::internal
   /*
    * Out-of-line definitions for class `term`
    */
+  inline bool operator==(term t1, term t2) {
+    return t1._term == t2._term;
+  }
+
+  inline bool operator!=(term t1, term t2) {
+    return t1._term != t2._term;
+  }
+
   inline term::type term::term_type() const {
     return _term->type;
   }
@@ -271,12 +279,21 @@ namespace std {
     }
   };
 
-  template<>
-  struct hash<::black::internal::term_id> {
-    size_t operator()(black::internal::term_id const& id) const {
-      return hash<uintptr_t>{}(static_cast<uintptr_t>(id));
-    }
-  };
+  #define declare_term_hash(Type)                              \
+    template<>                                                    \
+    struct hash<black::internal::Type> {                          \
+      size_t operator()(black::internal::Type const&f) const {    \
+        return black::internal::term{f}.hash();                   \
+      }                                                           \
+    };
+
+  declare_term_hash(term)
+  declare_term_hash(constant)
+  declare_term_hash(variable)
+  declare_term_hash(application)
+  declare_term_hash(next)
+
+  #undef declare_term_hash
 }
 
 
