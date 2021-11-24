@@ -43,7 +43,9 @@ namespace black::internal
   {
     enum class type : uint8_t {
       boolean = 0,
-      proposition,
+      identifier,
+      relation,
+      function,
       unary_operator,
       binary_operator,
       punctuation
@@ -58,6 +60,8 @@ namespace black::internal
 
     constexpr token(bool b)               : _data{b} { }
     constexpr token(std::string_view s)   : _data{s} { }
+    constexpr token(relation::type t)     : _data{t} { }
+    constexpr token(function::type t)     : _data{t} { }
     constexpr token(unary::type t)        : _data{t} { }
     constexpr token(binary::type t)       : _data{t} { }
     constexpr token(punctuation s) : _data{s} { }
@@ -82,14 +86,16 @@ namespace black::internal
     // data related to recognized tokens
     std::variant<
       bool,             // booleans
-      std::string_view, // propositions
+      std::string_view, // identifiers
+      relation::type,   // known relations
+      function::type,   // known functions
       unary::type,      // unary operator
       binary::type,     // binary operator
       punctuation       // any non-logical token
     > _data;
   };
 
-  constexpr std::string_view to_string(unary::type const& t)
+  constexpr std::string_view to_string(unary::type t)
   {
     constexpr std::string_view toks[] = {
       "!",  // negation
@@ -106,7 +112,7 @@ namespace black::internal
     return toks[to_underlying(t) - to_underlying(unary::type::negation)];
   }
 
-  constexpr std::string_view to_string(binary::type const& t) {
+  constexpr std::string_view to_string(binary::type t) {
     constexpr std::string_view toks[] = {
       "&",   // conjunction
       "|",   // disjunction
@@ -123,6 +129,32 @@ namespace black::internal
     return toks[to_underlying(t) - to_underlying(binary::type::conjunction)];
   }
 
+  constexpr std::string_view to_string(relation::type t) {
+    constexpr std::string_view toks[] = {
+      "=",  // equal
+      "!=", // not_equal
+      "<",  // less_than
+      "<=", // less_than_equal
+      ">",  // greater_than
+      ">="  // greater_than_equal
+    };
+
+    return toks[to_underlying(t)];
+  }
+
+  constexpr std::string_view to_string(function::type t) {
+    constexpr std::string_view toks[] = {
+      "-",   // negation
+      "-",   // subtraction
+      "+",   // addition
+      "*",   // multiplication
+      "/",   // division
+      "mod", // modulo
+    };
+
+    return toks[to_underlying(t)];
+  }
+
   constexpr std::string_view to_string(token const &tok)
   {
     using namespace std::literals;
@@ -130,6 +162,8 @@ namespace black::internal
     return std::visit( overloaded {
       [](bool b)             { return b ? "true"sv : "false"sv; },
       [](std::string_view s) { return s; },
+      [](relation::type t)   { return to_string(t); },
+      [](function::type t)   { return to_string(t); },
       [](unary::type t)      { return to_string(t); },
       [](binary::type t)     { return to_string(t); },
       [](token::punctuation s) {

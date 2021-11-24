@@ -67,8 +67,8 @@ namespace black::internal {
 
   struct relation 
   {
-    enum known_relation : uint8_t {
-      equal = 1,
+    enum type : uint8_t {
+      equal,
       not_equal,
       less_than,
       less_than_equal,
@@ -77,7 +77,7 @@ namespace black::internal {
     };
 
     relation() = delete;
-    relation(known_relation);
+    relation(type);
     relation(std::string const&name);
 
     relation(relation const&) = default;
@@ -92,11 +92,11 @@ namespace black::internal {
     template<typename... T>
     atom operator()(T ...args);
 
-    std::optional<known_relation> known() const;
+    std::optional<type> known_type() const;
     std::string name() const;
 
   private:
-    std::variant<known_relation, std::string> _data;
+    std::variant<type, std::string> _data;
   };
 }
 

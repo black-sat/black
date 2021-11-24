@@ -189,15 +189,15 @@ namespace black::internal
     return _alphabet.boolean(*tok->data<bool>());
   }
 
-  std::optional<formula> parser::parse_proposition()
+  std::optional<formula> parser::parse_identifier()
   {
-    // Assume we are on a proposition
-    black_assert(peek() && peek()->token_type() == token::type::proposition);
+    // Assume we are on a identifier
+    black_assert(peek() && peek()->token_type() == token::type::identifier);
 
     std::optional<token> tok = consume();
 
     black_assert(tok);
-    black_assert(tok->token_type() == token::type::proposition);
+    black_assert(tok->token_type() == token::type::identifier);
 
     return _alphabet.prop(*tok->data<std::string_view>());
   }
@@ -238,8 +238,8 @@ namespace black::internal
 
     if(peek()->token_type() == token::type::boolean)
       return parse_boolean();
-    if(peek()->token_type() == token::type::proposition)
-      return parse_proposition();
+    if(peek()->token_type() == token::type::identifier)
+      return parse_identifier();
     if(peek()->is<unary::type>())
       return parse_unary();
     if(peek()->is<token::punctuation>() &&

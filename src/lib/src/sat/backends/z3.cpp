@@ -256,7 +256,7 @@ namespace black::sat::backends
           z3_terms.push_back(to_z3(t));
 
         // we know how to encode known relations
-        if(auto k = a.rel().known(); k) {
+        if(auto k = a.rel().known_type(); k) {
           black_assert(z3_terms.size() == 2);
           switch(*k) {
             case relation::equal:
@@ -342,7 +342,7 @@ namespace black::sat::backends
           z3_terms.push_back(to_z3(t));
         
         // We know how to encode known functions
-        if(auto k = a.func().known(); k) {
+        if(auto k = a.func().known_type(); k) {
           switch(*k) {
             case function::negation:
               black_assert(z3_terms.size() == 1);

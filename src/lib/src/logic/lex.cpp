@@ -44,6 +44,12 @@ namespace black::internal
           s.get();
           return token{token::punctuation::right_paren};
         case '!':
+          s.get();
+          if(s.peek() == '=') {
+            s.get();
+            return token{relation::type::not_equal};
+          }
+          return token{unary::type::negation};
         case '~':
           s.get();
           return token{unary::type::negation};
@@ -63,25 +69,51 @@ namespace black::internal
 
         // '->' and '=>'
         case '-':
+          s.get();
+          if (s.peek() == '>') {
+            s.get();
+            return token{binary::type::implication};
+          }
+          return token{function::type::subtraction};
         case '=':
           s.get();
           if (s.peek() == '>') {
             s.get();
             return token{binary::type::implication};
           }
-          return std::nullopt;
+          return token{relation::type::equal};
+        
+        case '>':
+          s.get();
+          if(s.peek() == '=') {
+            s.get();
+            return token{relation::type::greater_than_equal};
+          }
+          return token{relation::type::greater_than};
 
         // '<->' or '<=>' or '<>'
         case '<':
           s.get();
           if (s.peek() == '-' || s.peek() == '=')
             s.get();
+          else
+            return token{relation::type::less_than};
 
           if (s.peek() == '>') {
             s.get();
             return token{binary::type::iff};
           }
-          return std::nullopt;
+          return token{relation::type::less_than_equal};
+
+        case '+':
+          s.get();
+          return token{function::type::addition};
+        case '*':
+          s.get();
+          return token{function::type::multiplication};
+        case '/':
+          s.get();
+          return token{function::type::division};
       }
 
       // TODO: garantire che se restituiamo nullopt, lo stream non è avanzato

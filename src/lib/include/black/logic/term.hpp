@@ -43,8 +43,8 @@ namespace black::internal {
 
   struct function 
   {
-    enum known_function : uint8_t {
-      negation = 1,
+    enum type : uint8_t {
+      negation,
       subtraction,
       addition,
       multiplication,
@@ -53,7 +53,7 @@ namespace black::internal {
     };
 
     function() = delete;
-    function(known_function);
+    function(type);
     function(std::string const&name);
 
     function(function const&) = default;
@@ -68,11 +68,11 @@ namespace black::internal {
     template<typename... T>
     application operator()(T ...args);
 
-    std::optional<known_function> known() const;
+    std::optional<type> known_type() const;
     std::string name() const;
 
   private:
-    std::variant<known_function, std::string> _data;
+    std::variant<type, std::string> _data;
   };
 }
 

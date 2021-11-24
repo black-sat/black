@@ -159,7 +159,7 @@ namespace black::internal {
   }
 
   // struct function
-  inline function::function(known_function f) : _data{f} { }
+  inline function::function(type f) : _data{f} { }
   inline function::function(std::string const&name) : _data{name} { }
 
   inline bool operator==(function const&f1, function const&f2) {
@@ -179,9 +179,9 @@ namespace black::internal {
     return application(*this, argsv);
   }
 
-  inline std::optional<function::known_function> function::known() const {
-    if(std::holds_alternative<known_function>(_data))
-      return std::get<known_function>(_data);
+  inline std::optional<function::type> function::known_type() const {
+    if(std::holds_alternative<type>(_data))
+      return std::get<type>(_data);
     return std::nullopt;
   }
 
@@ -189,8 +189,8 @@ namespace black::internal {
     if(std::holds_alternative<std::string>(_data))
       return std::get<std::string>(_data);
     
-    black_assert(std::holds_alternative<known_function>(_data));
-    known_function func = std::get<known_function>(_data);
+    black_assert(std::holds_alternative<type>(_data));
+    type func = std::get<type>(_data);
     switch(func) {
       case negation:
       case subtraction:
@@ -248,7 +248,7 @@ namespace std {
   template<>
   struct hash<::black::internal::function> {
     size_t operator()(black::internal::function const&f) const {
-      if(auto k = f.known(); k)
+      if(auto k = f.known_type(); k)
         return hash<uint8_t>{}(static_cast<uint8_t>(*k));
 
       return hash<std::string>{}(f.name());
