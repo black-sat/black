@@ -39,7 +39,7 @@ template<typename T1, typename T2, typename R>
 constexpr bool check = std::is_same_v<std::common_type_t<T1, T2>, R>;
 
 static_assert(check<boolean, proposition,  formula>);
-static_assert(check<boolean, boolean,      formula>);
+static_assert(check<boolean, boolean,      boolean>);
 static_assert(check<boolean, negation,     formula>);
 static_assert(check<boolean, tomorrow,     formula>);
 static_assert(check<boolean, w_tomorrow,   formula>);
@@ -58,7 +58,7 @@ static_assert(check<boolean, release,      formula>);
 static_assert(check<boolean, since,        formula>);
 static_assert(check<boolean, triggered,    formula>);
 
-static_assert(check<proposition, proposition,  formula>);
+static_assert(check<proposition, proposition,  proposition>);
 static_assert(check<proposition, boolean,      formula>);
 static_assert(check<proposition, negation,     formula>);
 static_assert(check<proposition, tomorrow,     formula>);

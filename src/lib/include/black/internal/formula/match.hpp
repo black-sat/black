@@ -184,15 +184,20 @@ namespace std {
       using type = black::formula;                                           \
     };
 
-  #define declare_formula_ct(Type)           \
-    template<typename T>                     \
-    struct common_type<                      \
-      enable_if_t<                           \
-        is_convertible_v<T, black::formula>, \
-        black::Type                          \
-      >, T                                   \
-    > {                                      \
-      using type = black::formula;           \
+  #define declare_formula_ct(Type)                   \
+    template<>                                       \
+    struct common_type<black::Type, black::Type> {   \
+      using type = black::Type;                      \
+    };                                               \
+                                                     \
+    template<typename T>                             \
+    struct common_type<                              \
+      enable_if_t<                                   \
+        is_convertible_v<T, black::formula>,         \
+        black::Type                                  \
+      >, T                                           \
+    > {                                              \
+      using type = black::formula;                   \
     };
 
   declare_formula_ct(formula)
