@@ -25,7 +25,7 @@
 #define BLACK_SAT_SOLVER_HPP
 
 #include <black/support/common.hpp>
-#include <black/logic/formula.hpp>
+#include <black/logic/alphabet.hpp>
 #include <black/support/tribool.hpp>
 
 #include <memory>
@@ -42,34 +42,6 @@ namespace black::sat
   {
   public:
 
-    // List of SMT-LIB2 logics
-    enum theory {
-      AUFLIA,
-      AUFLIRA,
-      AUFNIRA,
-      LIA,
-      LRA,
-      QF_ABV,
-      QF_AUFBV,
-      QF_AUFLIA,
-      QF_AX,
-      QF_BV,
-      QF_IDL,
-      QF_LIA,
-      QF_LRA,
-      QF_NIA,
-      QF_NRA,
-      QF_RDL,
-      QF_UF,
-      QF_UFBV,
-      QF_UFIDL,
-      QF_UFLIA,
-      QF_UFLRA,
-      QF_UFNRA,
-      UFLRA,
-      UFNIA
-    };
-
     // default constructor
     solver() = default;
 
@@ -84,7 +56,7 @@ namespace black::sat
     virtual ~solver() = default;
 
     // tells whether the current solver supports the specified theory
-    virtual bool supports_theory(theory t) const = 0;
+    virtual bool supports_logic(logic t) const = 0;
 
     // assert a formula, adding it to the current context
     virtual void assert_formula(formula f) = 0;

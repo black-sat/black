@@ -33,8 +33,33 @@
 #include <unordered_map>
 #include <deque>
 #include <memory>
+#include <optional>
 
 namespace black::internal {
+
+  //
+  // List of supported SMT-LIB2 logics. 
+  // We support (yet) only logics that make sense in a mono-sorted setting,
+  // so no arrays nor bitvectors. Quantifiers are also not supported yet.
+  //
+  enum class logic {
+    QF_IDL,
+    QF_LIA,
+    QF_LRA,
+    QF_NIA,
+    QF_NRA,
+    QF_RDL,
+    QF_UFIDL,
+    QF_UFLIA,
+    QF_UFLRA,
+    QF_UFNRA
+  };
+
+  // The only built-in sorts supported (yet)
+  enum class sort {
+    Int,
+    Real
+  };
 
   //
   // The alphabet class is the only entry point to create formulas.
@@ -56,6 +81,11 @@ namespace black::internal {
 
     alphabet &operator=(alphabet const&) = delete; // non-copy-assignable
     alphabet &operator=(alphabet &&); // but move-assignable
+
+    // set and get the logic currently selected. 
+    // The default is no logic, (logic() returns nullopt).
+    void set_logic(logic l);
+    std::optional<enum logic> logic() const;
 
     // Entry point to obtain a trivially true or trivially false boolean formula
     struct boolean boolean(bool value);
@@ -84,6 +114,9 @@ namespace black::internal {
     // Function to obtain a formula given its unique id
     formula from_id(formula_id);
 
+    // Function to obtain a term given its unique id
+    term from_id(term_id);
+
   private:
     struct alphabet_impl;
     std::unique_ptr<alphabet_impl> _impl;
@@ -101,29 +134,42 @@ namespace black::internal {
     binary_t *
     allocate_binary(binary::type type, formula_base* arg1, formula_base* arg2);
     
-    template<typename T, REQUIRES(is_hashable<T>)>
-    proposition_t *allocate_proposition(T&& _label) {
-      return allocate_proposition(any_hashable{FWD(_label)});
-    }
-
     // terms allocation
     variable_t *allocate_variable(any_hashable _label);
     constant_t *allocate_constant(int c);
-    template<typename T, REQUIRES(is_hashable<T>)>
-    variable_t *allocate_variable(T&& _label) {
-      return allocate_variable(any_hashable{FWD(_label)});
-    }
-
     next_t *allocate_next(term_base *arg);
     application_t*allocate_application(
       function const&func, std::vector<term_base *> const&args
     );
   };
 
+  // function that returns the default sort associated with a logic
+  inline sort sort_of_logic(logic l) {
+    switch(l) {
+      case logic::QF_IDL:
+      case logic::QF_LIA:
+      case logic::QF_NIA:
+      case logic::QF_UFIDL:
+      case logic::QF_UFLIA:
+        return sort::Int;
+      case logic::QF_LRA:
+      case logic::QF_NRA:
+      case logic::QF_RDL:
+      case logic::QF_UFLRA:
+      case logic::QF_UFNRA:
+        return sort::Real;
+      default:
+        black_unreachable();
+    }
+  }
+
 } // namespace black::internal
 
 namespace black {
-  using alphabet = internal::alphabet;
+  using internal::alphabet;
+  using internal::logic;
+  using internal::sort;
+  using internal::sort_of_logic;
 }
 
 #include <black/internal/formula/alphabet.hpp>

@@ -35,9 +35,11 @@ namespace black::internal {
   inline proposition alphabet::prop(T&& label) {
     if constexpr(std::is_constructible_v<std::string,T>) {
       return
-        proposition{this, allocate_proposition(std::string{FWD(label)})};
+        proposition{this, 
+          allocate_proposition(any_hashable{std::string{FWD(label)}})
+        };
     } else {
-      return proposition{this, allocate_proposition(FWD(label))};
+      return proposition{this, allocate_proposition(any_hashable{FWD(label)})};
     }
   }
 
@@ -45,9 +47,11 @@ namespace black::internal {
   inline variable alphabet::var(T&& label) { 
     if constexpr(std::is_constructible_v<std::string,T>) {
       return
-        variable{this, allocate_variable(std::string{FWD(label)})};
+        variable{this, 
+          allocate_variable(any_hashable{std::string{FWD(label)}})
+        };
     } else {
-      return variable{this, allocate_variable(FWD(label))};
+      return variable{this, allocate_variable(any_hashable{FWD(label)})};
     }
   }
 

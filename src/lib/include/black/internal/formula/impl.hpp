@@ -137,6 +137,10 @@ namespace black::internal
   inline atom::atom(relation const&r, std::vector<term> const&terms)
     : handle_base<atom, atom_t>{allocate_atom(r, terms)} { }
 
+  inline relation atom::rel() const {
+    return _formula->r;
+  }
+
   inline std::vector<term> atom::terms() const {
     std::vector<term> result;
     for(term_base *t : _formula->terms)

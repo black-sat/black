@@ -187,7 +187,7 @@ namespace black::sat::backends
     );
   }
 
-  bool mathsat::supports_theory(theory) const {
+  bool mathsat::supports_logic(logic ) const {
     return true; // TODO: check if the actual theory is supported
   }
 

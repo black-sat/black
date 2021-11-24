@@ -29,6 +29,9 @@
 #include <tsl/hopscotch_map.h>
 
 #include <limits>
+#include <optional>
+#include <string>
+#include <memory>
 
 BLACK_REGISTER_SAT_BACKEND(z3)
 
@@ -43,10 +46,18 @@ namespace black::sat::backends
     Z3_solver solver;
     std::optional<Z3_model> model;
 
-    tsl::hopscotch_map<formula, Z3_ast> terms;
+    tsl::hopscotch_map<formula, Z3_ast> formulas;
+    tsl::hopscotch_map<term_id, Z3_ast> terms;
 
     Z3_ast to_z3(formula);
+    Z3_ast to_z3(term);
+    Z3_sort to_z3(sort);
     Z3_ast to_z3_inner(formula);
+    Z3_ast to_z3_inner(term);
+
+    Z3_func_decl to_z3_func_decl(
+      alphabet *sigma, std::string const&name, int arity, bool is_relation
+    );
   };
 
   //
@@ -157,8 +168,8 @@ namespace black::sat::backends
     if(!_data->model)
       return tribool::undef;
     
-    auto it = _data->terms.find(a);
-    if(it == _data->terms.end())
+    auto it = _data->formulas.find(a);
+    if(it == _data->formulas.end())
       return tribool::undef;
     
     Z3_ast term = it->second;
@@ -182,16 +193,55 @@ namespace black::sat::backends
     Z3_solver_reset(_data->context, _data->solver);
   }
 
+  Z3_sort z3::_z3_t::to_z3(sort s) {
+    switch(s){
+      case sort::Int:
+        return Z3_mk_int_sort(context);
+      case sort::Real:
+        return Z3_mk_real_sort(context);
+      default:
+        black_unreachable();
+    }
+  }
+
   // TODO: Factor out common logic with mathsat.cpp
   Z3_ast z3::_z3_t::to_z3(formula f) 
   {
-    if(auto it = terms.find(f); it != terms.end()) 
+    if(auto it = formulas.find(f); it != formulas.end()) 
       return it->second;
 
-    Z3_ast term = to_z3_inner(f);
-    terms.insert({f, term});
+    Z3_ast z3_f = to_z3_inner(f);
+    formulas.insert({f, z3_f});
 
-    return term;
+    return z3_f;
+  }
+
+  Z3_ast z3::_z3_t::to_z3(term t) {
+    if(auto it = terms.find(t.unique_id()); it != terms.end()) 
+      return it->second;
+
+    Z3_ast z3_t = to_z3_inner(t);
+    terms.insert({t.unique_id(), z3_t});
+
+    return z3_t;
+  }
+
+  Z3_func_decl z3::_z3_t::to_z3_func_decl(
+    alphabet *sigma, std::string const&name, int arity, bool is_relation
+  ) {
+    black_assert(arity > 0);
+    black_assert(sigma->logic().has_value());
+
+    Z3_symbol symbol = Z3_mk_string_symbol(context, name.c_str());
+    Z3_sort s = to_z3(sort_of_logic(*sigma->logic()));
+    Z3_sort bool_s = Z3_mk_bool_sort(context);
+    
+    std::unique_ptr<Z3_sort[]> domain = std::make_unique<Z3_sort[]>(arity);
+    std::fill(domain.get(), domain.get() + arity, s);
+    
+    return Z3_mk_func_decl(
+      context, symbol, arity, domain.get(), is_relation ? s : bool_s
+    );
   }
 
   Z3_ast z3::_z3_t::to_z3_inner(formula f) 
@@ -200,8 +250,35 @@ namespace black::sat::backends
       [this](boolean b) {
         return b.value() ? Z3_mk_true(context) : Z3_mk_false(context);
       },
-      [this](atom) -> Z3_ast {
-        black_unreachable();
+      [this](atom a) -> Z3_ast {
+        std::vector<Z3_ast> z3_terms;
+        for(term t : a.terms())
+          z3_terms.push_back(to_z3(t));
+
+        // we know how to encode known relations
+        if(auto k = a.rel().known(); k) {
+          black_assert(z3_terms.size() == 2);
+          switch(*k) {
+            case relation::equal:
+              return Z3_mk_eq(context, z3_terms[0], z3_terms[1]);
+            case relation::not_equal:
+              return Z3_mk_distinct(context, z3_terms.size(), z3_terms.data());
+            case relation::less_than:
+              return Z3_mk_lt(context, z3_terms[0], z3_terms[1]);
+            case relation::less_than_equal: 
+              return Z3_mk_le(context, z3_terms[0], z3_terms[1]);
+            case relation::greater_than:
+              return Z3_mk_gt(context, z3_terms[0], z3_terms[1]);
+            case relation::greater_than_equal:
+              return Z3_mk_ge(context, z3_terms[0], z3_terms[1]);
+          }
+        }
+
+        // Otherwise we go for uninterpreted relations
+        Z3_func_decl rel = 
+          to_z3_func_decl(a.sigma(), a.rel().name(), z3_terms.size(), true);
+        
+        return Z3_mk_app(context, rel, z3_terms.size(), z3_terms.data());
       },
       [this](proposition p) {
         Z3_sort sort = Z3_mk_bool_sort(context);
@@ -245,7 +322,61 @@ namespace black::sat::backends
     );
   }
 
-  bool z3::supports_theory(theory) const {
+  Z3_ast z3::_z3_t::to_z3_inner(term t) {
+    return t.match(
+      [&](constant c) {
+        return Z3_mk_int(context, c.value(), Z3_mk_int_sort(context));
+      },
+      [&](variable v) {
+        Z3_symbol symbol = 
+          Z3_mk_string_symbol(context, to_string(v.unique_id()).c_str());
+
+        std::optional<logic> l = t.sigma()->logic();
+        black_assert(l.has_value());
+        return Z3_mk_const(context, symbol, to_z3(sort_of_logic(*l)));
+      },
+      [&](application a) { 
+        black_assert(a.sigma()->logic().has_value());
+        std::vector<Z3_ast> z3_terms;
+        for(term t : a.arguments())
+          z3_terms.push_back(to_z3(t));
+        
+        // We know how to encode known functions
+        if(auto k = a.func().known(); k) {
+          switch(*k) {
+            case function::negation:
+              black_assert(z3_terms.size() == 1);
+              return Z3_mk_unary_minus(context, z3_terms[0]);
+            case function::subtraction:
+              return Z3_mk_sub(context, z3_terms.size(), z3_terms.data());
+            case function::addition:
+              return Z3_mk_add(context, z3_terms.size(), z3_terms.data());
+            case function::multiplication:
+              return Z3_mk_mul(context, z3_terms.size(), z3_terms.data());
+            case function::division:
+              black_assert(z3_terms.size() == 2);
+              return Z3_mk_div(context, z3_terms[0], z3_terms[1]);
+            case function::modulo:
+              black_assert(z3_terms.size() == 2);
+              black_assert(sort_of_logic(*a.sigma()->logic()) == sort::Int);
+              return Z3_mk_mod(context, z3_terms[0], z3_terms[1]);
+            default:
+              black_unreachable();
+          }
+        }
+
+        // Otherwise we go for uninterpreted functions
+        Z3_func_decl func = 
+          to_z3_func_decl(a.sigma(), a.func().name(), z3_terms.size(), false);
+        
+        return Z3_mk_app(context, func, z3_terms.size(), z3_terms.data());
+      },
+      // We should not have any next(var) term at this point
+      [&](next) -> Z3_ast { black_unreachable(); }
+    );
+  }
+
+  bool z3::supports_logic(logic ) const {
     return true; // TODO: check if the actual theory is supported
   }
 

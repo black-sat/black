@@ -49,8 +49,7 @@ namespace black::internal {
       addition,
       multiplication,
       division,
-      modulo,
-      abs
+      modulo
     };
 
     function() = delete;
@@ -175,6 +174,7 @@ namespace black::internal {
 // Names exported from the `black` namespace
 namespace black {
   using internal::term;
+  using internal::term_id;
   using internal::constant;
   using internal::variable;
   using internal::application;

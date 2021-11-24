@@ -39,7 +39,7 @@ namespace black::sat::backends
     virtual bool is_sat_with(formula assumption) override;
     virtual tribool value(proposition a) const override;
     virtual void clear() override;
-    virtual bool supports_theory(theory t) const;
+    virtual bool supports_logic(logic  t) const;
     virtual std::optional<std::string> license() const override;
 
   private:

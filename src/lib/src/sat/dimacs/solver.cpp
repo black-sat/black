@@ -99,7 +99,7 @@ namespace black::sat::dimacs::internal
     return this->value(prop);
   }
 
-  bool solver::supports_theory(theory) const { return false; }
+  bool solver::supports_logic(logic ) const { return false; }
 
   void solver::clear_vars() {
     _data = std::make_unique<_solver_t>();

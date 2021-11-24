@@ -203,8 +203,6 @@ namespace black::internal {
         return "/";
       case modulo:
         return "mod";
-      case abs:
-        return "abs";
       default:
         black_unreachable();
     }
@@ -270,6 +268,13 @@ namespace std {
         return hash<uint8_t>{}(static_cast<uint8_t>(*k));
 
       return hash<std::string>{}(f.name());
+    }
+  };
+
+  template<>
+  struct hash<::black::internal::term_id> {
+    size_t operator()(black::internal::term_id const& id) const {
+      return hash<uintptr_t>{}(static_cast<uintptr_t>(id));
     }
   };
 }

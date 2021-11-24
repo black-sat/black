@@ -57,6 +57,8 @@ namespace black::internal {
 
     alphabet            *_sigma;
 
+    std::optional<enum logic> _logic{};
+
     boolean_t            _top{true};
     boolean_t            _bottom{false};
 
@@ -96,6 +98,14 @@ namespace black::internal {
   alphabet::alphabet(alphabet&&) = default;
   alphabet &alphabet::operator=(alphabet&&) = default;
 
+  void alphabet::set_logic(enum logic l) {
+    _impl->_logic = l;
+  }
+
+  std::optional<logic> alphabet::logic() const {
+    return _impl->_logic;
+  }
+
   boolean alphabet::boolean(bool value) {
     return value ? top() : bottom();
   }
@@ -111,6 +121,11 @@ namespace black::internal {
   formula alphabet::from_id(formula_id id) {
     return
     formula{this, reinterpret_cast<formula_base *>(static_cast<uintptr_t>(id))};
+  }
+
+  term alphabet::from_id(term_id id) {
+    return
+    term{this, reinterpret_cast<term_base *>(static_cast<uintptr_t>(id))};
   }
 
   proposition_t *alphabet::allocate_proposition(any_hashable _label)
