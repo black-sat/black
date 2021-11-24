@@ -240,7 +240,7 @@ namespace black::sat::backends
     std::fill(domain.get(), domain.get() + arity, s);
     
     return Z3_mk_func_decl(
-      context, symbol, arity, domain.get(), is_relation ? s : bool_s
+      context, symbol, arity, domain.get(), is_relation ? bool_s : s
     );
   }
 

@@ -151,10 +151,162 @@ namespace black::internal {
 } // namespace black::internal
 
 /*
- * Functions from formula.hpp that need the alphabet class
+ * Functions from formula.hpp and term.hpp that need the alphabet class
  */
 namespace black::internal {
    
+  //
+  // Operators from term.hpp
+  //
+  inline application operator-(term t) {
+    return application(function::negation, {t});
+  }
+
+  inline application operator-(term t1, term t2) {
+    return application{function::subtraction, {t1, t2}};
+  }
+
+  inline application operator-(term t1, int v) {
+    term t2 = t1.sigma()->constant(v);
+    return application{function::subtraction, {t1, t2}};
+  }
+
+  inline application operator-(int v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return application{function::subtraction, {t1, t2}};
+  }
+  
+  inline application operator+(term t1, term t2) {
+    return application{function::addition, {t1, t2}};
+  }
+
+  inline application operator+(term t1, int v) {
+    term t2 = t1.sigma()->constant(v);
+    return application{function::addition, {t1, t2}};
+  }
+
+  inline application operator+(int v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return application{function::addition, {t1, t2}};
+  }
+  
+  inline application operator*(term t1, term t2) {
+    return application{function::multiplication, {t1, t2}};
+  }
+
+  inline application operator*(term t1, int v) {
+    term t2 = t1.sigma()->constant(v);
+    return application{function::multiplication, {t1, t2}};
+  }
+
+  inline application operator*(int v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return application{function::multiplication, {t1, t2}};
+  }
+  
+  inline application operator/(term t1, term t2) {
+    return application{function::division, {t1, t2}};
+  }
+
+  inline application operator/(term t1, int v) {
+    term t2 = t1.sigma()->constant(v);
+    return application{function::division, {t1, t2}};
+  }
+
+  inline application operator/(int v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return application{function::division, {t1, t2}};
+  }
+
+  //
+  // Operators from formula.hpp
+  //
+  // shorthands for known relations
+  inline atom operator==(term t1, term t2) {
+    return atom{relation::equal, {t1, t2}};
+  }
+  
+  inline atom operator==(term t1, int v) {
+    term t2 = t1.sigma()->constant(v);
+    return atom{relation::equal, {t1, t2}};
+  }
+
+  inline atom operator==(int v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return atom{relation::equal, {t1, t2}};
+  }
+
+  inline atom operator!=(term t1, term t2) {
+    return atom{relation::not_equal, {t1, t2}};
+  }
+  
+  inline atom operator!=(term t1, int v) {
+    term t2 = t1.sigma()->constant(v);
+    return atom{relation::not_equal, {t1, t2}};
+  }
+
+  inline atom operator!=(int v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return atom{relation::not_equal, {t1, t2}};
+  }
+
+  inline atom operator<(term t1, term t2) {
+    return atom{relation::less_than, {t1, t2}};
+  }
+  
+  inline atom operator<(term t1, int v) {
+    term t2 = t1.sigma()->constant(v);
+    return atom{relation::less_than, {t1, t2}};
+  }
+
+  inline atom operator<(int v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return atom{relation::less_than, {t1, t2}};
+  }
+
+  inline atom operator<=(term t1, term t2) {
+    return atom{relation::less_than_equal, {t1, t2}};
+  }
+  
+  inline atom operator<=(term t1, int v) {
+    term t2 = t1.sigma()->constant(v);
+    return atom{relation::less_than_equal, {t1, t2}};
+  }
+
+  inline atom operator<=(int v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return atom{relation::less_than_equal, {t1, t2}};
+  }
+
+  inline atom operator>(term t1, term t2) {
+    return atom{relation::greater_than, {t1, t2}};
+  }
+  
+  inline atom operator>(term t1, int v) {
+    term t2 = t1.sigma()->constant(v);
+    return atom{relation::greater_than, {t1, t2}};
+  }
+
+  inline atom operator>(int v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return atom{relation::greater_than, {t1, t2}};
+  }
+
+  inline atom operator>=(term t1, term t2) {
+    return atom{relation::greater_than_equal, {t1, t2}};
+  }
+  
+  inline atom operator>=(term t1, int v) {
+    term t2 = t1.sigma()->constant(v);
+    return atom{relation::greater_than_equal, {t1, t2}};
+  }
+
+  inline atom operator>=(int v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return atom{relation::greater_than_equal, {t1, t2}};
+  }
+
+  
   // Conjunct multiple formulas generated from a range,
   // avoiding useless true formulas at the beginning of the fold
   template<typename Iterator, typename EndIterator, typename F>

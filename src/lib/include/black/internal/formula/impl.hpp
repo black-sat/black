@@ -392,31 +392,6 @@ namespace black::internal
   inline always     GF(formula f) { return G(F(f)); }
   inline yesterday  YO(formula f) { return Y(O(f)); }
   inline yesterday  YH(formula f) { return Y(H(f)); }
-
-  // shorthands for known relations
-  inline atom equal(term t1, term t2) {
-    return atom{relation::equal, {t1, t2}};
-  }
-  
-  inline atom not_equal(term t1, term t2) {
-    return atom{relation::not_equal, {t1, t2}};
-  }
-
-  inline atom operator<(term t1, term t2) {
-    return atom{relation::less_than, {t1, t2}};
-  }
-
-  inline atom operator<=(term t1, term t2) {
-    return atom{relation::less_than_equal, {t1, t2}};
-  }
-
-  inline atom operator>(term t1, term t2) {
-    return atom{relation::greater_than, {t1, t2}};
-  }
-
-  inline atom operator>=(term t1, term t2) {
-    return atom{relation::greater_than_equal, {t1, t2}};
-  }
 }
 
 namespace std {

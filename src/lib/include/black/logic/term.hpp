@@ -90,9 +90,6 @@ namespace black::internal {
       term &operator=(term const&) = default;
       term &operator=(term &&) = default;
 
-      friend bool operator==(term, term);
-      friend bool operator!=(term, term);
-
       using type = black::internal::term_type;
 
       type term_type() const;
@@ -169,9 +166,17 @@ namespace black::internal {
   // Syntactic sugar for known functions
   application operator-(term);
   application operator-(term, term);
+  application operator-(term, int);
+  application operator-(int, term);
   application operator+(term, term);
+  application operator+(term, int);
+  application operator+(int, term);
   application operator*(term, term);
+  application operator*(term, int);
+  application operator*(int, term);
   application operator/(term, term);
+  application operator/(term, int);
+  application operator/(int, term);
 }
 
 // Names exported from the `black` namespace

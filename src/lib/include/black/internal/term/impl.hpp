@@ -36,14 +36,6 @@ namespace black::internal
   /*
    * Out-of-line definitions for class `term`
    */
-  inline bool operator==(term t1, term t2) {
-    return t1._term == t2._term;
-  }
-
-  inline bool operator!=(term t1, term t2) {
-    return t1._term != t2._term;
-  }
-
   inline term::type term::term_type() const {
     return _term->type;
   }
@@ -246,26 +238,10 @@ namespace black::internal {
     return term{_alphabet, _term->arg};
   }
 
-  inline application operator-(term t) {
-    return application(function::negation, {t});
-  }
-
-  inline application operator-(term t1, term t2) {
-    return application{function::subtraction, {t1, t2}};
-  }
-  
-  inline application operator+(term t1, term t2) {
-    return application{function::addition, {t1, t2}};
-  }
-  
-  inline application operator*(term t1, term t2) {
-    return application{function::multiplication, {t1, t2}};
-  }
-
-  inline application operator/(term t1, term t2) {
-    return application{function::division, {t1, t2}};
-  }
-
+  //
+  // operators on terms defined in internal/formula/alphabet.hpp
+  // to have a complete alphabet type
+  //
 }
 
 namespace std {
@@ -279,21 +255,12 @@ namespace std {
     }
   };
 
-  #define declare_term_hash(Type)                              \
-    template<>                                                    \
-    struct hash<black::internal::Type> {                          \
-      size_t operator()(black::internal::Type const&f) const {    \
-        return black::internal::term{f}.hash();                   \
-      }                                                           \
-    };
-
-  declare_term_hash(term)
-  declare_term_hash(constant)
-  declare_term_hash(variable)
-  declare_term_hash(application)
-  declare_term_hash(next)
-
-  #undef declare_term_hash
+  template<>
+  struct hash<::black::internal::term_id> {
+    size_t operator()(black::internal::term_id id) const {
+      return hash<uintptr_t>{}(static_cast<uintptr_t>(id));
+    }
+  };
 }
 
 

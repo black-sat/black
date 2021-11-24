@@ -48,6 +48,8 @@ namespace black::internal {
       _add_xyz_requests(_frm);
     }
 
+    formula get_formula() const;
+
     // Return the loop var for the loop from l to k
     proposition loop_prop(size_t l, size_t k);
 

@@ -24,6 +24,9 @@
 #include <catch2/catch.hpp>
 
 #include <black/logic/alphabet.hpp>
+#include <black/solver/solver.hpp>
+
+#include <iostream>
 
 using namespace black;
 
@@ -67,4 +70,25 @@ TEST_CASE("Terms manipulation") {
 
   REQUIRE(a1 != a2);
 
+}
+
+TEST_CASE("Test formulas") {
+  alphabet sigma;
+  sigma.set_logic(logic::QF_UFLRA);
+
+  variable x1 = sigma.var("x1");
+  variable x2 = sigma.var("x2");
+  variable x3 = sigma.var("x3");
+  function f{"f"};
+  
+  formula phi = G(x1 == x2) && F(f(x1) == x3);
+  formula psi = G(next(x1) == x1 + 1) && F(x1 == 42);
+
+  solver slv;
+  
+  slv.set_formula(phi);
+  REQUIRE(slv.solve() == true);
+
+  slv.set_formula(psi);
+  REQUIRE(slv.solve() == true);
 }

@@ -55,7 +55,7 @@ namespace black::internal
     std::string sat_backend = BLACK_DEFAULT_BACKEND; // sensible default
 
     // Main algorithm
-    tribool solve(size_t k_max);
+    tribool solve(size_t k_max, bool semi_decision);
   };
 
   solver::solver() : _data{std::make_unique<_solver_t>()} { }
@@ -68,8 +68,14 @@ namespace black::internal
     _data->encoder = encoder{f, finite};
   }
 
-  tribool solver::solve(size_t k_max) {
-    return _data->solve(k_max);
+  tribool solver::solve(size_t k_max, bool semi_decision) {
+    if(!_data->encoder.has_value())
+      return true;
+    
+    if(_data->encoder->get_formula().sigma()->logic().has_value())
+      semi_decision = true;
+    
+    return _data->solve(k_max, semi_decision);
   }
 
   std::optional<model> solver::model() const {
@@ -120,9 +126,10 @@ namespace black::internal
   }
 
   /*
-   * Main algorithm. Solve the formula with up to `k_max' iterations
+   * Main algorithm. Solve the formula with up to `k_max' iterations.
+   * If semi_decision = true, we disable the PRUNE rule.
    */
-  tribool solver::_solver_t::solve(size_t k_max)
+  tribool solver::_solver_t::solve(size_t k_max, bool semi_decision)
   {
     if(!encoder)
       return tribool::undef;
@@ -150,9 +157,11 @@ namespace black::internal
 
       // else, generate the PRUNE
       // If the PRUNE is UNSAT, the formula is UNSAT
-      sat->assert_formula(!encoder->prune(k));
-      if(!sat->is_sat())
-        return false;
+      if(!semi_decision) {
+        sat->assert_formula(!encoder->prune(k));
+        if(!sat->is_sat())
+          return false;
+      }
     } // end for
 
     return tribool::undef;

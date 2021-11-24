@@ -32,6 +32,10 @@ using namespace std::literals;
 
 namespace black::internal 
 {
+  formula encoder::get_formula() const {
+    return _frm;
+  }
+
   // Generates the PRUNE encoding
   formula encoder::prune(size_t k)
   {
@@ -51,14 +55,16 @@ namespace black::internal
         return _sigma->top();
 
       // Creating the encoding
-      formula inner_impl = big_or(*_sigma, range(j + 1, k + 1), [&](size_t i) {
-        return to_ground_snf(*req, i);
-      });
-      
+      formula inner_impl = 
+        big_or(*_sigma, range(j + 1, k + 1), [&](size_t i) {
+          return to_ground_snf(*req, i);
+        });
+
       formula first_conj = ground(xreq, k) && inner_impl;
-      formula second_conj = big_or(*_sigma, range(l + 1, j + 1), [&](size_t i) {
-        return to_ground_snf(*req, i);
-      });
+      formula second_conj = 
+        big_or(*_sigma, range(l + 1, j + 1), [&](size_t i) {
+          return to_ground_snf(*req, i);
+        });
 
       return implies(first_conj, second_conj);
     });
@@ -119,9 +125,10 @@ namespace black::internal
       
       // Creating the encoding
       formula proposition_phi_k = ground(xreq, k);
-      formula body_impl = big_or(*_sigma, range(l + 1, k + 1), [&](size_t i) {
-        return to_ground_snf(*req, i);
-      });
+      formula body_impl = 
+        big_or(*_sigma, range(l + 1, k + 1), [&](size_t i) {
+          return to_ground_snf(*req, i);
+        });
 
       return implies(proposition_phi_k, body_impl);
     });
@@ -307,7 +314,7 @@ namespace black::internal
   term encoder::stepped(term t, size_t k) {
     return t.match(
       [](constant c) { return c; },
-      [&](variable) { return _sigma->var(std::pair(t, k)); },
+      [&](variable) { return _sigma->var(std::pair(t.unique_id(), k)); },
       [&](application a) {
         std::vector<term> terms;
         for(term ti : a.arguments())
@@ -328,7 +335,7 @@ namespace black::internal
   // Transformation in NNF
   formula encoder::to_nnf(formula f) {
     if(auto it = _nnf_cache.find(f); it != _nnf_cache.end())
-      return it->second;
+      return it->second;     
 
     formula nnf = f.match(
       [](boolean b) { return b; },

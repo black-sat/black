@@ -36,7 +36,7 @@ TEST_CASE("Testing solver")
 
   SECTION("Basic solver usage") {
     REQUIRE(slv.sat_backend() == BLACK_DEFAULT_BACKEND);
-    REQUIRE(slv.solve() == tribool::undef);
+    REQUIRE(slv.solve() == true);
 
     auto p = sigma.prop("p");
     

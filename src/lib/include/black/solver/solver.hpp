@@ -50,11 +50,18 @@ namespace black::internal {
 
       // Sets the formula to solve.
       // If `finite` is true, it is interpreted over finite models
+      // If the alphabet of the formula is set to any SMT logic,
+      // the `finite` argument is ignored and always treated as `true`.
       void set_formula(formula f, bool finite = false);
 
       // Solve the formula with up to `k_max' iterations
       // returns tribool::undef if `k_max` is reached
-      tribool solve(size_t k_max = std::numeric_limits<size_t>::max());
+      //
+      //
+      tribool solve(
+        size_t k_max = std::numeric_limits<size_t>::max(),
+        bool semi_decision = false
+      );
 
       // Returns the model of the formula, if the last call to solve() 
       // returned true
