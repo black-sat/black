@@ -54,6 +54,9 @@ namespace black::internal {
     // Make the stepped ground version of a formula, f_G^k
     proposition ground(formula f, size_t k);
 
+    // Make the stepped version of a term, t_G^k
+    term stepped(term t, size_t k);
+
     // Put a formula in negated normal form
     formula to_nnf(formula f);
 

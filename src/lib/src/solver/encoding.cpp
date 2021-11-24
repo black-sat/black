@@ -188,7 +188,13 @@ namespace black::internal
   formula encoder::to_ground_snf(formula f, size_t k) {
     return f.match(
       [&](boolean)      { return f; },
-      [&](atom) -> formula { black_unreachable(); },
+      [&](atom a)       { 
+        std::vector<term> terms;
+        for(term t : a.terms())
+          terms.push_back(stepped(t, k));
+
+        return atom(a.rel(), terms);
+      },
       [&](proposition)  { return ground(f, k); },
       [&](tomorrow)     { return ground(f, k); },
       [&](w_tomorrow)   { return ground(f, k); },
@@ -296,6 +302,23 @@ namespace black::internal
         black_unreachable();          // LCOV_EXCL_LINE
     }
     black_unreachable(); // LCOV_EXCL_LINE
+  }
+
+  term encoder::stepped(term t, size_t k) {
+    return t.match(
+      [](constant c) { return c; },
+      [&](variable) { return _sigma->var(std::pair(t, k)); },
+      [&](application a) {
+        std::vector<term> terms;
+        for(term ti : a.arguments())
+          terms.push_back(stepped(ti, k));
+        
+        return application(a.func(), terms);
+      },
+      [&](next n) {
+        return stepped(n.argument(), k + 1);
+      }
+    );
   }
 
   proposition encoder::ground(formula f, size_t k) {
