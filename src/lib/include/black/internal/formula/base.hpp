@@ -88,10 +88,10 @@ namespace black::internal
   {
     static constexpr auto accepts_type = is_proposition_type;
 
-    proposition_t(any_hashable const& _label)
+    proposition_t(identifier const& _label)
       : formula_base{formula_type::proposition}, label{_label} {}
 
-    any_hashable label;
+    identifier label;
   };
 
   struct atom_t : formula_base

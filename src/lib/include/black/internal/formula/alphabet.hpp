@@ -36,10 +36,10 @@ namespace black::internal {
     if constexpr(std::is_constructible_v<std::string,T>) {
       return
         proposition{this, 
-          allocate_proposition(any_hashable{std::string{FWD(label)}})
+          allocate_proposition(identifier{std::string{FWD(label)}})
         };
     } else {
-      return proposition{this, allocate_proposition(any_hashable{FWD(label)})};
+      return proposition{this, allocate_proposition(identifier{FWD(label)})};
     }
   }
 
@@ -48,10 +48,10 @@ namespace black::internal {
     if constexpr(std::is_constructible_v<std::string,T>) {
       return
         variable{this, 
-          allocate_variable(any_hashable{std::string{FWD(label)}})
+          allocate_variable(identifier{std::string{FWD(label)}})
         };
     } else {
-      return variable{this, allocate_variable(any_hashable{FWD(label)})};
+      return variable{this, allocate_variable(identifier{FWD(label)})};
     }
   }
 

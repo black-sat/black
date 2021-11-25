@@ -128,14 +128,14 @@ namespace black::internal {
     friend struct term_handle_base;
 
     // formulas allocation
-    proposition_t *allocate_proposition(any_hashable _label);
+    proposition_t *allocate_proposition(identifier _label);
     atom_t *allocate_atom(relation const&, std::vector<term_base *> const&);
     unary_t *allocate_unary(unary::type type, formula_base* arg);
     binary_t *
     allocate_binary(binary::type type, formula_base* arg1, formula_base* arg2);
     
     // terms allocation
-    variable_t *allocate_variable(any_hashable _label);
+    variable_t *allocate_variable(identifier _label);
     constant_t *allocate_constant(int c);
     next_t *allocate_next(term_base *arg);
     application_t*allocate_application(

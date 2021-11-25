@@ -79,13 +79,13 @@ namespace black::internal {
     using application_key = std::tuple<function, std::vector<term_base *>>;
     using atom_key = std::tuple<relation, std::vector<term_base *>>;
 
-    tsl::hopscotch_map<any_hashable, proposition_t*> _props_map;
+    tsl::hopscotch_map<identifier, proposition_t*>   _props_map;
     tsl::hopscotch_map<atom_key,     atom_t*>        _atoms_map;
     tsl::hopscotch_map<unary_key,    unary_t*>       _unaries_map;
     tsl::hopscotch_map<binary_key,   binary_t*>      _binaries_map;
 
     tsl::hopscotch_map<int,             constant_t*>    _consts_map;
-    tsl::hopscotch_map<any_hashable,    variable_t*>    _vars_map;
+    tsl::hopscotch_map<identifier,    variable_t*>      _vars_map;
     tsl::hopscotch_map<term_base *,     next_t*>        _nexts_map;
     tsl::hopscotch_map<application_key, application_t*> _apps_map;
   };
@@ -128,9 +128,9 @@ namespace black::internal {
     term{this, reinterpret_cast<term_base *>(static_cast<uintptr_t>(id))};
   }
 
-  proposition_t *alphabet::allocate_proposition(any_hashable _label)
+  proposition_t *alphabet::allocate_proposition(identifier _label)
   {
-    any_hashable label{FWD(_label)};
+    identifier label{FWD(_label)};
 
     if(auto it = _impl->_props_map.find(label); it != _impl->_props_map.end())
       return it->second;
@@ -154,9 +154,9 @@ namespace black::internal {
     return a;
   }
 
-  variable_t *alphabet::allocate_variable(any_hashable _label)
+  variable_t *alphabet::allocate_variable(identifier _label)
   {
-    any_hashable label{FWD(_label)};
+    identifier label{FWD(_label)};
 
     if(auto it = _impl->_vars_map.find(label); it != _impl->_vars_map.end())
       return it->second;

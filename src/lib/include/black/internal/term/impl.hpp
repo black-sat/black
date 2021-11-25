@@ -154,8 +154,13 @@ namespace black::internal {
   }
 
   // struct variable
-  inline std::any variable::label() const {
-    return _term->label.any();
+  inline identifier variable::label() const {
+    return _term->label;
+  }
+
+  template<typename T>
+  std::optional<T> variable::label() const {
+    return _term->label.to<T>();
   }
 
   // struct function

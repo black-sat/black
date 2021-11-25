@@ -77,10 +77,10 @@ namespace black::internal
   {
     static constexpr auto accepts_type = is_variable_type;
 
-    variable_t(any_hashable const& _label)
+    variable_t(identifier const& _label)
       : term_base{term_type::variable}, label{_label} {}
 
-    any_hashable label;
+    identifier label;
   };
 
   struct application_t : term_base

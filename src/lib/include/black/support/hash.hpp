@@ -132,19 +132,19 @@ namespace black::internal
   //
   // Type-erased hashable value
   //
-  class any_hashable
+  class identifier
   {
   public:
-    any_hashable() = default;
-    any_hashable(any_hashable const&) = default;
-    any_hashable(any_hashable&&) = default;
+    identifier() = default;
+    identifier(identifier const&) = default;
+    identifier(identifier&&) = default;
 
     template<
       typename T,
-      REQUIRES(!std::is_convertible_v<T, any_hashable>),
+      REQUIRES(!std::is_convertible_v<T, identifier>),
       REQUIRES(is_hashable<std::decay_t<T>>)
     >
-    explicit any_hashable(T&& value)
+    explicit identifier(T&& value)
       : _any(FWD(value)), _hash(make_hasher(value)), _cmp(make_cmp(value)) {}
 
     size_t hash() const {
@@ -152,15 +152,15 @@ namespace black::internal
       return _hash(_any);
     }
 
-    any_hashable &operator=(any_hashable const&) = default;
-    any_hashable &operator=(any_hashable&&) = default;
+    identifier &operator=(identifier const&) = default;
+    identifier &operator=(identifier&&) = default;
 
-    bool operator==(any_hashable const&other) const {
+    bool operator==(identifier const&other) const {
       return _cmp(_any, other);
     }
 
     template<typename T, REQUIRES(is_hashable<std::decay_t<T>>)>
-    any_hashable &operator=(T&& value) {
+    identifier &operator=(T&& value) {
       _any = FWD(value);
       _hash = make_hasher(value);
       _cmp = make_cmp(value);
@@ -196,7 +196,7 @@ namespace black::internal
 
   private:
     using hasher_t = size_t (*)(std::any const&);
-    using comparator_t = bool (*)(std::any const&, any_hashable const&);
+    using comparator_t = bool (*)(std::any const&, identifier const&);
 
     std::any _any;
     hasher_t _hash;
@@ -214,7 +214,7 @@ namespace black::internal
 
     template<typename T>
     comparator_t make_cmp(T const&) {
-      return [](std::any const&me, any_hashable const&other) -> bool {
+      return [](std::any const&me, identifier const&other) -> bool {
         T const* v = std::any_cast<T>(&me);
         T const* otherv = other.get<T>();
 
@@ -226,11 +226,15 @@ namespace black::internal
   };
 }
 
-// std::hash specialization for any_hashable
+namespace black {
+  using internal::identifier;
+}
+
+// std::hash specialization for identifier
 namespace std {
   template<>
-  struct hash<black::internal::any_hashable> {
-    size_t operator()(black::internal::any_hashable const&h) const {
+  struct hash<black::internal::identifier> {
+    size_t operator()(black::internal::identifier const&h) const {
       return h.hash();
     }
   };

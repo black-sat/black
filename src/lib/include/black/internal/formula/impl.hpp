@@ -124,8 +124,8 @@ namespace black::internal
   }
 
   // struct proposition
-  inline std::any proposition::label() const {
-    return _formula->label.any();
+  inline identifier proposition::label() const {
+    return _formula->label;
   }
 
   template<typename T>
@@ -184,7 +184,7 @@ namespace black::internal
     type r = std::get<type>(_data);
     switch(r) {
       case equal:
-        return "==";
+        return "=";
       case not_equal:
         return "!=";
       case less_than:

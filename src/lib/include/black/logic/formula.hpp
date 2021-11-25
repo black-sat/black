@@ -200,7 +200,7 @@ namespace black::internal
     using handle_base<proposition, proposition_t>::handle_base;
 
     // The generic label of the proposition
-    std::any label() const;
+    identifier label() const;
 
     // The label of the proposition, as a specific type
     // The result is empty if the type is wrong.

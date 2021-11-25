@@ -137,7 +137,7 @@ namespace black::internal {
   {
     using term_handle_base<variable, variable_t>::term_handle_base;
 
-    std::any label() const;
+    identifier label() const;
 
     template<typename T>
     std::optional<T> label() const;

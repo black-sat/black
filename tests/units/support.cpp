@@ -85,7 +85,7 @@ TEST_CASE("Hashing functions for tuples")
   }
 }
 
-TEST_CASE("any_hashable class")
+TEST_CASE("identifier class")
 {
   using namespace black::internal;
 
@@ -93,10 +93,10 @@ TEST_CASE("any_hashable class")
 
   SECTION("Base types") {
     int i = 42;
-    any_hashable h{i};
+    identifier h{i};
 
     std::hash<int> int_hash;
-    std::hash<any_hashable> any_hash;
+    std::hash<identifier> any_hash;
 
     REQUIRE(any_hash(h) == int_hash(i));
 
@@ -117,7 +117,7 @@ TEST_CASE("any_hashable class")
   SECTION("C strings") {
     char const* str = "hello";
 
-    any_hashable h{str};
+    identifier h{str};
 
     std::optional opt = h.to<char const*>();
 
@@ -131,7 +131,7 @@ TEST_CASE("any_hashable class")
     std::vector<bool> v = {true,false,true,false};
 
     SECTION("By value") {
-      any_hashable h{s};
+      identifier h{s};
 
       std::optional opt = h.to<std::string>();
 
@@ -146,7 +146,7 @@ TEST_CASE("any_hashable class")
     }
 
     SECTION("By move") {
-      any_hashable h{std::move(s)};
+      identifier h{std::move(s)};
 
       std::optional opt = h.to<std::string>();
 

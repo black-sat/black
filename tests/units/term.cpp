@@ -25,8 +25,7 @@
 
 #include <black/logic/alphabet.hpp>
 #include <black/solver/solver.hpp>
-
-#include <iostream>
+#include <black/logic/parser.hpp>
 
 using namespace black;
 
