@@ -55,6 +55,7 @@ namespace black::internal
     std::optional<token> consume();
     std::optional<token> peek(token::type, std::string const&err);
     std::optional<token> consume(token::type, std::string const&err);
+    std::optional<token> consume_punctuation(token::punctuation p);
     std::nullopt_t error(std::string const&s);
 
     std::optional<formula> parse_binary_rhs(int precedence, formula lhs);
@@ -95,6 +96,9 @@ namespace black::internal
 
   BLACK_EXPORT
   std::string to_string(formula f);
+  
+  BLACK_EXPORT
+  std::string to_string(term t);
 
   inline std::ostream &operator<<(std::ostream &stream, formula const&f) {
     return (stream << to_string(f));

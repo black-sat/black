@@ -43,6 +43,9 @@ namespace black::internal
         case ')':
           s.get();
           return token{token::punctuation::right_paren};
+        case ',':
+          s.get();
+          return token{token::punctuation::comma};
         case '!':
           s.get();
           if(s.peek() == '=') {

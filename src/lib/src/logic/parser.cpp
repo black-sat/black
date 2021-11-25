@@ -34,61 +34,134 @@ namespace black::internal
         parens = (!parent.is<conjunction>() && !parent.is<disjunction>())
               || (parent.formula_type() != arg.formula_type());
       }
+      if(arg.is<atom>() && arg.to<atom>()->rel().known_type().has_value())
+        parens = true;
+
       return parens;
     }
 
-    inline std::string parens_if_needed(formula f, bool needs_parens) {
-      return needs_parens ? "(" + to_string(f) + ")" : to_string(f);
-    }
-
-    std::string to_string_impl(formula f, std::optional<int>)
-    {
-      using namespace std::literals;
-      return f.match(
-        [&](proposition p) {
-          if(auto name = p.label<std::string>(); name.has_value())
-            return *name;
-          if(auto fname = p.label<std::pair<formula,int>>(); fname.has_value())
-            return
-              fmt::format("<{},{}>", to_string(fname->first), fname->second); // LCOV_EXCL_LINE
-          if(auto fname = p.label<past_label>(); fname.has_value())
-            return fmt::format("<{}>", to_string(fname->formula)); // LCOV_EXCL_LINE
-          else
-            return fmt::format("<{:x}>", to_underlying(formula{p}.unique_id()));
+    inline bool does_need_parens(term /* parent */, term arg) {
+      return arg.match(
+        [](application a) {
+          return a.func().known_type().has_value();
         },
-        [](atom) {
-          return "<atom>"s;
-        },
-        [](boolean b) {
-          return b.value() ? "True" : "False";
-        },
-        [](negation n) {
-          auto arg = n.operand();
-          bool needs_parens = does_need_parens(n, arg);
-          return fmt::format("!{}", parens_if_needed(arg, needs_parens));
-        },
-        [](unary u) {
-          auto arg = u.operand();
-          bool needs_parens = does_need_parens(u, arg);
-          return fmt::format("{}{}{}",
-                             to_string(u.formula_type()),
-                             needs_parens ? "" : " ",
-                             parens_if_needed(arg, needs_parens));
-        },
-        [](binary b) {
-          auto lhs = b.left(), rhs = b.right();
-          return
-            fmt::format("{} {} {}",
-                        parens_if_needed(lhs, does_need_parens(b, lhs)),
-                        to_string(b.formula_type()),
-                        parens_if_needed(rhs, does_need_parens(b, rhs)));
+        [](otherwise) {
+          return false;
         }
       );
     }
+
+    template<typename T>
+    std::string parens_if_needed(T t, bool needs_parens) {
+      return needs_parens ? "(" + to_string(t) + ")" : to_string(t);
+    }
   }
 
-  std::string to_string(formula f) {
-    return to_string_impl(f, {});
+  std::string to_string(term t)
+  {
+    using namespace std::literals;
+    return t.match(
+      [&](constant c) {
+        return fmt::format("{}", c.value());
+      },
+      [&](variable x) {
+        if(auto name = x.label<std::string>(); name.has_value())
+          return *name;
+        if(auto fname = x.label<std::pair<term_id,int>>(); fname.has_value()) {
+          term t = t.sigma()->from_id(fname->first);
+          return
+            fmt::format("<{},{}>", to_string(t), fname->second);
+        }
+        return fmt::format("<{:x}>", to_underlying(term{x}.unique_id()));
+      },
+      [&](application a) {
+        if(auto t = a.func().known_type(); t) {
+          if(t == function::type::negation)
+            return fmt::format("-{}", to_string(a.arguments()[0]));
+          else {
+            term lhs = a.arguments()[0];
+            term rhs = a.arguments()[1];
+            return fmt::format("{} {} {}", 
+              parens_if_needed(lhs, does_need_parens(a, lhs)),
+              a.func().name(),
+              parens_if_needed(rhs, does_need_parens(a, rhs))
+            );
+          }
+            
+        }
+        std::string result = 
+          a.func().name() + "(" + to_string(a.arguments()[0]);
+        for(size_t i = 1; i < a.arguments().size(); ++i) {
+          result += ", " + to_string(a.arguments()[i]);
+        }
+        result += ")";
+
+        return result;
+      },
+      [&](next n) {
+        return fmt::format("next({})", to_string(n.argument()));
+      }
+    );
+  }
+
+  std::string to_string(formula f)
+  {
+    using namespace std::literals;
+    return f.match(
+      [&](proposition p) {
+        if(auto name = p.label<std::string>(); name.has_value())
+          return *name;
+        if(auto fname = p.label<std::pair<formula,int>>(); fname.has_value())
+          return
+            fmt::format("<{},{}>", to_string(fname->first), fname->second); // LCOV_EXCL_LINE
+        if(auto fname = p.label<past_label>(); fname.has_value())
+          return fmt::format("<{}>", to_string(fname->formula)); // LCOV_EXCL_LINE
+        else
+          return fmt::format("<{:x}>", to_underlying(formula{p}.unique_id()));
+      },
+      [](atom a) {
+        if(auto t = a.rel().known_type(); t)
+          return fmt::format(
+            "{} {} {}", 
+            to_string(a.terms()[0]),
+            a.rel().name(), 
+            to_string(a.terms()[1])
+          );
+        
+        std::string result = 
+          a.rel().name() + "(" + to_string(a.terms()[0]);
+        for(size_t i = 1; i < a.terms().size(); ++i) {
+          result += ", " + to_string(a.terms()[i]);
+        }
+        result += ")";
+
+        return result;
+      },
+      [](boolean b) {
+        return b.value() ? "True" : "False";
+      },
+      [](negation n) {
+        auto arg = n.operand();
+        bool needs_parens = does_need_parens(n, arg);
+        return fmt::format("!{}", parens_if_needed(arg, needs_parens));
+      },
+      [](unary u) {
+        auto arg = u.operand();
+        bool needs_parens = does_need_parens(u, arg);
+        return fmt::format("{}{}{}",
+                            to_string(u.formula_type()),
+                            needs_parens ? "" : " ",
+                            parens_if_needed(arg, needs_parens));
+      },
+      [](binary b) {
+        auto lhs = b.left(), rhs = b.right();
+        return
+          fmt::format("{} {} {}",
+                      parens_if_needed(lhs, does_need_parens(b, lhs)),
+                      to_string(b.formula_type()),
+                      parens_if_needed(rhs, does_need_parens(b, rhs)));
+      }
+    );
   }
 
   // Easy entry-point for parsing formulas
@@ -137,6 +210,18 @@ namespace black::internal
 
   std::optional<token> parser::consume(token::type t, std::string const&err) {
     auto tok = peek(t, err);
+    if(tok)
+      _lex.get();
+    return tok;
+  }
+
+  std::optional<token> 
+  parser::consume_punctuation(token::punctuation p) {
+    auto tok = peek();
+    if(!tok || !tok->is<token::punctuation>() ||
+        tok->data<token::punctuation>() != p) {
+      return error("Expected '" + std::string{to_string(p)} + "'");
+    }
     if(tok)
       _lex.get();
     return tok;
@@ -226,7 +311,7 @@ namespace black::internal
     if(!formula)
       return {}; // error raised by parse();
 
-    if(!consume(token::type::punctuation, "')'"))
+    if(!consume_punctuation(token::punctuation::right_paren))
       return {}; // error raised by consume()
 
     return formula;

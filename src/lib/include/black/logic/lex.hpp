@@ -55,7 +55,8 @@ namespace black::internal
     enum class punctuation : uint8_t {
       // non-logical tokens
       left_paren,
-      right_paren
+      right_paren,
+      comma
     };
 
     constexpr token(bool b)               : _data{b} { }
@@ -155,25 +156,28 @@ namespace black::internal
     return toks[to_underlying(t)];
   }
 
+  constexpr std::string_view to_string(token::punctuation p) {
+    constexpr std::string_view toks[] = {
+      "(", // left_paren
+      ")", // right_paren
+      ","  // comma
+    };
+
+    return toks[to_underlying(p)];
+  }
+
   constexpr std::string_view to_string(token const &tok)
   {
     using namespace std::literals;
 
     return std::visit( overloaded {
-      [](bool b)             { return b ? "true"sv : "false"sv; },
-      [](std::string_view s) { return s; },
-      [](relation::type t)   { return to_string(t); },
-      [](function::type t)   { return to_string(t); },
-      [](unary::type t)      { return to_string(t); },
-      [](binary::type t)     { return to_string(t); },
-      [](token::punctuation s) {
-        switch(s) {
-          case token::punctuation::left_paren:
-            return "("sv;
-          case token::punctuation::right_paren:
-            return ")"sv;
-        }
-      }
+      [](bool b)               { return b ? "true"sv : "false"sv; },
+      [](std::string_view s)   { return s; },
+      [](relation::type t)     { return to_string(t); },
+      [](function::type t)     { return to_string(t); },
+      [](unary::type t)        { return to_string(t); },
+      [](binary::type t)       { return to_string(t); },
+      [](token::punctuation p) { return to_string(p); }
     }, tok._data);
   }
 
