@@ -32,6 +32,19 @@ namespace black::internal
 {
   namespace {
 
+    std::optional<token> digits(std::istream &s)
+    {
+      std::string data;
+      while(isdigit(s.peek())) {
+        data += s.peek();
+        s.get();
+      }
+      if(data.empty())
+        return {};
+      
+      return token{stoi(data)};
+    }
+
     std::optional<token> symbol(std::istream &s)
     {
       char ch = char(s.peek());
@@ -192,6 +205,9 @@ namespace black::internal
 
     if (!_stream.good())
       return std::nullopt;
+
+    if(std::optional<token> t = digits(_stream); t)
+      return t;
 
     if(std::optional<token> t = symbol(_stream); t)
       return t;
