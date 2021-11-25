@@ -60,10 +60,17 @@ namespace black::internal
 
     std::optional<formula> parse_binary_rhs(int precedence, formula lhs);
     std::optional<formula> parse_boolean();
-    std::optional<formula> parse_identifier();
+    std::optional<formula> parse_atom();
     std::optional<formula> parse_unary();
     std::optional<formula> parse_parens();
     std::optional<formula> parse_primary();
+
+    std::optional<term> parse_term();
+    std::optional<term> parse_term_primary();
+    std::optional<term> parse_term_binary_rhs(int precedence, term lhs);
+    std::optional<term> parse_term_constant();
+    std::optional<term> parse_term_unary_minus();
+    std::optional<term> parse_term_var_or_func();
 
   private:
     alphabet &_alphabet;

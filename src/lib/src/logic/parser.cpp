@@ -274,17 +274,25 @@ namespace black::internal
     return _alphabet.boolean(*tok->data<bool>());
   }
 
-  std::optional<formula> parser::parse_identifier()
+  std::optional<formula> parser::parse_atom()
   {
-    // Assume we are on a identifier
-    black_assert(peek() && peek()->token_type() == token::type::identifier);
+    std::optional<term> lhs = parse_term();
+    if(!lhs)
+      return {};
 
-    std::optional<token> tok = consume();
+    if(!peek() || !peek()->is<relation::type>())
+      return error(
+        "Expected binary relation, found " + std::string{to_string(*peek())}
+      );
 
-    black_assert(tok);
-    black_assert(tok->token_type() == token::type::identifier);
+    relation::type r = *peek()->data<relation::type>();
+    consume();
 
-    return _alphabet.prop(*tok->data<std::string_view>());
+    std::optional<term> rhs = parse_term();
+    if(!rhs)
+      return {};
+
+    return atom(relation{r}, {*lhs, *rhs});
   }
 
   std::optional<formula> parser::parse_unary()
@@ -323,8 +331,10 @@ namespace black::internal
 
     if(peek()->token_type() == token::type::boolean)
       return parse_boolean();
-    if(peek()->token_type() == token::type::identifier)
-      return parse_identifier();
+    if(peek()->token_type() == token::type::constant ||
+       peek()->data<function::type>() == function::type::subtraction ||
+       peek()->token_type() == token::type::identifier)
+      return parse_atom();
     if(peek()->is<unary::type>())
       return parse_unary();
     if(peek()->is<token::punctuation>() &&
@@ -332,6 +342,86 @@ namespace black::internal
        return parse_parens();
 
     return error("Expected formula");
+  }
+
+  std::optional<term> parser::parse_term() {
+    std::optional<term> lhs = parse_term_primary();
+    if(!lhs)
+      return error("Expected term");
+    
+    return parse_term_binary_rhs(0, *lhs);
+  }
+
+  std::optional<term> parser::parse_term_primary() {
+    if(!peek())
+      return {};
+
+    if(peek()->token_type() == token::type::constant)
+      return parse_term_constant();
+
+    if(peek()->data<function::type>() == function::type::subtraction)
+      return parse_term_unary_minus();
+
+    if(peek()->token_type() == token::type::identifier)
+      return parse_term_var_or_func();
+
+    return error("Expected term, found " + std::string{to_string(*peek())});
+  }
+
+  std::optional<term> parser::parse_term_binary_rhs(int, term lhs) {
+    return lhs;
+  }
+
+  std::optional<term> parser::parse_term_constant() {
+    black_assert(peek());
+    black_assert(peek()->token_type() == token::type::constant);
+
+    token tok = *peek();
+    consume();
+
+    return _alphabet.constant(*tok.data<int>());
+  }
+
+  std::optional<term> parser::parse_term_unary_minus() {
+    black_assert(peek());
+    black_assert(peek()->data<function::type>() == function::type::subtraction);
+
+    consume();
+    std::optional<term> t = parse_term();
+    if(!t)
+      return {};
+    return application(function{function::type::negation}, {*t});
+  }
+
+  std::optional<term> parser::parse_term_var_or_func() {
+    black_assert(peek());
+    black_assert(peek()->token_type() == token::type::identifier);
+
+    std::string id{*peek()->data<std::string_view>()};
+    consume();
+
+    // if there is no open paren this is a simple variable
+    if(!peek() || 
+        peek()->data<token::punctuation>() != token::punctuation::left_paren)
+      return _alphabet.var(id);
+
+    // otherwise it is a function application
+    std::vector<term> terms;
+    do {      
+      consume();
+      std::optional<term> t = parse_term();
+      if(!t)
+        return {};
+      terms.push_back(*t);
+    } while(
+      peek() && 
+      peek()->data<token::punctuation>() == token::punctuation::comma
+    );
+
+    if(!consume_punctuation(token::punctuation::right_paren))
+      return {};
+
+    return application(function{id}, terms);
   }
 
 } // namespace black::internal
