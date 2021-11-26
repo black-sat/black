@@ -35,6 +35,21 @@ namespace black::internal
     std::optional<token> digits(std::istream &s)
     {
       std::string data;
+
+      // integer part
+      while(isdigit(s.peek())) {
+        data += char(s.peek());
+        s.get();
+      }
+      if(data.empty())
+        return {};
+
+      if(s.peek() == '.')
+        s.get();
+      else
+        return token{stoi(data)};
+
+      // fractional part
       while(isdigit(s.peek())) {
         data += char(s.peek());
         s.get();
@@ -42,7 +57,7 @@ namespace black::internal
       if(data.empty())
         return {};
       
-      return token{stoi(data)};
+      return token{stod(data)};
     }
 
     std::optional<token> symbol(std::istream &s)

@@ -130,7 +130,7 @@ namespace black::internal {
   {
     using term_handle_base<constant, constant_t>::term_handle_base;
 
-    int value() const { return _term->value; }
+    std::variant<int,double> value() const { return _term->value; }
   };
 
   struct variable : term_handle_base<variable, variable_t>

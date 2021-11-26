@@ -324,10 +324,46 @@ namespace black::sat::backends
     );
   }
 
+  //
+  // Thanks to Leonardo Taglialegne
+  //
+  std::pair<int, int> double_to_fraction(double n) {
+    uint64_t a = floor(n), b = 1;
+    uint64_t c = ceil(n), d = 1;
+
+    uint64_t num = 1;
+    uint64_t denum = 1;
+    while(
+      a + c <= std::numeric_limits<int>::max() &&
+      b + d <= std::numeric_limits<int>::max() &&
+      (double)num/denum != n
+    ) {
+      num = a + c;
+      denum = b + d;
+
+      if((double)num/denum > n) {
+        c = num;
+        d = denum;
+      } else {
+        a = num;
+        b = denum;
+      }
+    }
+
+    return {static_cast<int>(num), static_cast<int>(denum)};
+  }
+
   Z3_ast z3::_z3_t::to_z3_inner(term t) {
     return t.match(
       [&](constant c) {
-        return Z3_mk_int(context, c.value(), Z3_mk_int_sort(context));
+        if(std::holds_alternative<int>(c.value()))
+          return Z3_mk_int(
+            context, std::get<int>(c.value()), Z3_mk_int_sort(context)
+          );
+        else {
+          auto [num,denum] = double_to_fraction(std::get<double>(c.value()));
+          return Z3_mk_real(context, num, denum);
+        }
       },
       [&](variable v) {
         Z3_symbol symbol = 

@@ -62,7 +62,10 @@ namespace black::internal
     using namespace std::literals;
     return t.match(
       [&](constant c) {
-        return fmt::format("{}", c.value());
+        if(std::holds_alternative<int>(c.value()))
+          return fmt::format("{}", std::get<int>(c.value()));
+        else
+          return fmt::format("{}", std::get<double>(c.value()));
       },
       [&](variable x) {
         if(auto name = x.label<std::string>(); name.has_value())
@@ -331,7 +334,7 @@ namespace black::internal
 
     if(peek()->token_type() == token::type::boolean)
       return parse_boolean();
-    if(peek()->token_type() == token::type::constant ||
+    if(peek()->token_type() == token::type::integer ||
        peek()->data<function::type>() == function::type::subtraction ||
        peek()->token_type() == token::type::identifier ||
        peek()->data<token::keyword>() == token::keyword::next)
@@ -370,7 +373,8 @@ namespace black::internal
     if(!peek())
       return {};
 
-    if(peek()->token_type() == token::type::constant)
+    if(peek()->token_type() == token::type::integer ||
+       peek()->token_type() == token::type::real)
       return parse_term_constant();
 
     if(peek()->data<function::type>() == function::type::subtraction)
@@ -412,12 +416,18 @@ namespace black::internal
 
   std::optional<term> parser::parse_term_constant() {
     black_assert(peek());
-    black_assert(peek()->token_type() == token::type::constant);
+    black_assert(
+      peek()->token_type() == token::type::integer ||
+      peek()->token_type() == token::type::real
+    );
 
     token tok = *peek();
     consume();
 
-    return _alphabet.constant(*tok.data<int>());
+    if(tok.token_type() == token::type::integer)
+      return _alphabet.constant(*tok.data<int>());
+    else
+      return _alphabet.constant(*tok.data<double>());
   }
 
   std::optional<term> parser::parse_term_unary_minus() {

@@ -42,7 +42,8 @@ namespace black::internal
   {
     enum class type : uint8_t {
       boolean = 0,
-      constant,
+      integer,
+      real,
       identifier,
       keyword,
       relation,
@@ -67,6 +68,7 @@ namespace black::internal
 
     constexpr token(bool b)               : _data{b} { }
     constexpr token(int c)                : _data{c} { }
+    constexpr token(double d)             : _data{d} { }
     constexpr token(std::string_view s)   : _data{s} { }
     constexpr token(keyword k)            : _data{k} { }
     constexpr token(relation::type t)     : _data{t} { }
@@ -95,7 +97,8 @@ namespace black::internal
     // data related to recognized tokens
     std::variant<
       bool,             // booleans
-      int,              // constants
+      int,              // integers
+      double,           // reals
       std::string_view, // identifiers
       keyword,          // keywords
       relation::type,   // known relations
@@ -191,6 +194,7 @@ namespace black::internal
     return std::visit( overloaded {
       [](bool b)               { return b ? "true"sv : "false"sv; },
       [](int c)                { return to_string(c); },
+      [](double d)             { return to_string(d); },
       [](std::string_view s)   { return s; },
       [](token::keyword k)     { return to_string(k); },
       [](relation::type t)     { return to_string(t); },

@@ -117,6 +117,7 @@ namespace black::internal {
     // For now only integer constants are supported
     // TODO: Generalize constants
     struct constant constant(int c);
+    struct constant constant(double c);
 
     // Function to obtain a formula given its unique id
     formula from_id(formula_id);

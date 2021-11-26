@@ -69,8 +69,11 @@ namespace black::internal
 
     constant_t(int c)
       : term_base{term_type::constant}, value{c} {}
+    
+    constant_t(double c)
+      : term_base{term_type::constant}, value{c} {}
 
-    int value{};
+    std::variant<int, double> value{};
   };
 
   struct variable_t : term_base
