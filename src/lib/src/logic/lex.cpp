@@ -26,7 +26,7 @@
 
 #include <map>
 #include <algorithm>
-#include <iostream>
+#include <istream>
 
 namespace black::internal
 {

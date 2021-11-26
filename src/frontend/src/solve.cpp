@@ -32,6 +32,7 @@
 #include <black/logic/past_remover.hpp>
 #include <black/solver/solver.hpp>
 
+#include <iostream>
 #include <sstream>
 
 namespace black::frontend {
@@ -77,21 +78,23 @@ namespace black::frontend {
 
     black_assert(f.has_value());
 
-    black::solver slv;
+    std::cout << to_string(*f) << "\n";
 
-    if (cli::sat_backend)
-      slv.set_sat_backend(*cli::sat_backend);
+    // black::solver slv;
 
-    if (cli::remove_past)
-      slv.set_formula(black::remove_past(*f), cli::finite);
-    else
-      slv.set_formula(*f, cli::finite);
+    // if (cli::sat_backend)
+    //   slv.set_sat_backend(*cli::sat_backend);
 
-    size_t bound = 
-      cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
-    black::tribool res = slv.solve(bound);
+    // if (cli::remove_past)
+    //   slv.set_formula(black::remove_past(*f), cli::finite);
+    // else
+    //   slv.set_formula(*f, cli::finite);
 
-    output(res, slv, *f);
+    // size_t bound = 
+    //   cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
+    // black::tribool res = slv.solve(bound);
+
+    // output(res, slv, *f);
 
     return 0;
   }

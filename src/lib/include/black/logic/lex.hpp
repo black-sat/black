@@ -27,7 +27,6 @@
 #include <black/support/common.hpp>
 #include <black/logic/formula.hpp>
 
-#include <iostream>
 #include <cassert>
 #include <cctype>
 

@@ -26,8 +26,6 @@
 
 #include <tsl/hopscotch_map.h>
 
-#include <iostream>
-
 namespace black::sat
 {
   namespace internal {

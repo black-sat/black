@@ -349,8 +349,9 @@ namespace black::internal
       [&](variable x) {
         return _alphabet.prop(x.label());
       },
-      [&](application a) {
-        black_assert(!a.func().known_type());
+      [&](application a) -> std::optional<formula> {
+        if(a.func().known_type())
+          return error("Expected formula, found term");
         return atom(relation{a.func().name()}, a.arguments());
       },
       [](otherwise) -> std::optional<formula> { black_unreachable(); }
@@ -389,7 +390,7 @@ namespace black::internal
 
   std::optional<term> parser::parse_term_binary_rhs(int prec, term lhs) {
     while(1) {
-      if(!peek() || precedence(*peek()) < prec)
+      if(!peek() || func_precedence(*peek()) < prec)
          return {lhs};
 
       token op = *consume();
@@ -398,12 +399,12 @@ namespace black::internal
       if(!rhs)
         return error("Expected right operand to binary function symbol");
 
-      if(!peek() || precedence(op) < precedence(*peek())) {
+      if(!peek() || func_precedence(op) < func_precedence(*peek())) {
         rhs = parse_term_binary_rhs(prec + 1, *rhs);
         if(!rhs)
           return error("Expected right operand to binary function symbol");
       }
-
+      
       black_assert(op.is<function::type>());
       lhs = application(function{*op.data<function::type>()}, {lhs, *rhs});
     }

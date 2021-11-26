@@ -118,7 +118,7 @@ namespace black::internal
   constexpr std::optional<int> precedence(token const&tok)
   {
     // Attention: this must remain in sync with token::token_type
-    constexpr std::optional<int> bops[] = {
+    constexpr std::optional<int> ops[] = {
       {30}, // conjunction
       {20}, // disjunction
       {40}, // implication
@@ -131,6 +131,14 @@ namespace black::internal
       {50}, // triggered
     };
 
+    if(auto t = tok.data<binary::type>(); t)
+      return ops[to_underlying(*t) - to_underlying(binary::type::conjunction)];
+
+    return {};
+  }
+
+  constexpr std::optional<int> func_precedence(token const&tok)
+  {
     constexpr std::optional<int> fops[] = {
       {},   // negation
       {20}, // subtraction
@@ -140,13 +148,10 @@ namespace black::internal
       {30}  // modulo
     };
 
-    if(auto t = tok.data<binary::type>(); t)
-      return bops[to_underlying(*t) - to_underlying(binary::type::conjunction)];
-
     if(auto t = tok.data<function::type>(); t)
       return fops[to_underlying(*t)];
 
-    return std::nullopt;
+    return {};
   }
 
 } // namespace black::internal
