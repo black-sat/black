@@ -78,23 +78,21 @@ namespace black::frontend {
 
     black_assert(f.has_value());
 
-    std::cout << to_string(*f) << "\n";
+    black::solver slv;
 
-    // black::solver slv;
+    if (cli::sat_backend)
+      slv.set_sat_backend(*cli::sat_backend);
 
-    // if (cli::sat_backend)
-    //   slv.set_sat_backend(*cli::sat_backend);
+    if (cli::remove_past)
+      slv.set_formula(black::remove_past(*f), cli::finite);
+    else
+      slv.set_formula(*f, cli::finite);
 
-    // if (cli::remove_past)
-    //   slv.set_formula(black::remove_past(*f), cli::finite);
-    // else
-    //   slv.set_formula(*f, cli::finite);
+    size_t bound = 
+      cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
+    black::tribool res = slv.solve(bound);
 
-    // size_t bound = 
-    //   cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
-    // black::tribool res = slv.solve(bound);
-
-    // output(res, slv, *f);
+    output(res, slv, *f);
 
     return 0;
   }
