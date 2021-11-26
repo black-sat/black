@@ -327,16 +327,16 @@ namespace black::sat::backends
   //
   // Thanks to Leonardo Taglialegne
   //
-  std::pair<int, int> double_to_fraction(double n) {
-    uint64_t a = floor(n), b = 1;
-    uint64_t c = ceil(n), d = 1;
+  static std::pair<int, int> double_to_fraction(double n) {
+    uint64_t a = (uint64_t)floor(n), b = 1;
+    uint64_t c = (uint64_t)ceil(n), d = 1;
 
     uint64_t num = 1;
     uint64_t denum = 1;
     while(
       a + c <= std::numeric_limits<int>::max() &&
       b + d <= std::numeric_limits<int>::max() &&
-      (double)num/denum != n
+      ((double)num/denum != n)
     ) {
       num = a + c;
       denum = b + d;
