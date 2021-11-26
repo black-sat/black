@@ -280,11 +280,12 @@ namespace black::internal
     if(!lhs)
       return {};
 
+    // if there is no relation symbol after the term, 
+    // the term was not a term after all, but a relational atom
     if(!peek() || !peek()->is<relation::type>())
-      return error(
-        "Expected binary relation, found " + std::string{to_string(*peek())}
-      );
+      return correct_term_to_formula(*lhs);
 
+    // otherwise we parse the rhs and form the atom
     relation::type r = *peek()->data<relation::type>();
     consume();
 
@@ -309,7 +310,6 @@ namespace black::internal
 
   std::optional<formula> parser::parse_parens() {
     black_assert(peek());
-    black_assert(peek()->is<token::punctuation>());
     black_assert(
       peek()->data<token::punctuation>() == token::punctuation::left_paren);
 
@@ -333,15 +333,28 @@ namespace black::internal
       return parse_boolean();
     if(peek()->token_type() == token::type::constant ||
        peek()->data<function::type>() == function::type::subtraction ||
-       peek()->token_type() == token::type::identifier)
+       peek()->token_type() == token::type::identifier ||
+       peek()->data<token::keyword>() == token::keyword::next)
       return parse_atom();
     if(peek()->is<unary::type>())
       return parse_unary();
-    if(peek()->is<token::punctuation>() &&
-       peek()->data<token::punctuation>() == token::punctuation::left_paren)
+    if(peek()->data<token::punctuation>() == token::punctuation::left_paren)
        return parse_parens();
 
     return error("Expected formula");
+  }
+
+  std::optional<formula> parser::correct_term_to_formula(term t) {
+    return t.match(
+      [&](variable x) {
+        return _alphabet.prop(x.label());
+      },
+      [&](application a) {
+        black_assert(!a.func().known_type());
+        return atom(relation{a.func().name()}, a.arguments());
+      },
+      [](otherwise) -> std::optional<formula> { black_unreachable(); }
+    );
   }
 
   std::optional<term> parser::parse_term() {
@@ -362,14 +375,38 @@ namespace black::internal
     if(peek()->data<function::type>() == function::type::subtraction)
       return parse_term_unary_minus();
 
+    if(peek()->data<token::keyword>() == token::keyword::next)
+       return parse_term_next();
+
     if(peek()->token_type() == token::type::identifier)
       return parse_term_var_or_func();
+
+    if(peek()->data<token::punctuation>() == token::punctuation::left_paren)
+      return parse_term_parens();
 
     return error("Expected term, found " + std::string{to_string(*peek())});
   }
 
-  std::optional<term> parser::parse_term_binary_rhs(int, term lhs) {
-    return lhs;
+  std::optional<term> parser::parse_term_binary_rhs(int prec, term lhs) {
+    while(1) {
+      if(!peek() || precedence(*peek()) < prec)
+         return {lhs};
+
+      token op = *consume();
+
+      std::optional<term> rhs = parse_term_primary();
+      if(!rhs)
+        return error("Expected right operand to binary function symbol");
+
+      if(!peek() || precedence(op) < precedence(*peek())) {
+        rhs = parse_term_binary_rhs(prec + 1, *rhs);
+        if(!rhs)
+          return error("Expected right operand to binary function symbol");
+      }
+
+      black_assert(op.is<function::type>());
+      lhs = application(function{*op.data<function::type>()}, {lhs, *rhs});
+    }
   }
 
   std::optional<term> parser::parse_term_constant() {
@@ -391,6 +428,24 @@ namespace black::internal
     if(!t)
       return {};
     return application(function{function::type::negation}, {*t});
+  }
+
+  std::optional<term> parser::parse_term_next() {
+    black_assert(peek()->data<token::keyword>() == token::keyword::next);
+
+    consume();
+
+    if(!consume_punctuation(token::punctuation::left_paren))
+      return {};
+
+    std::optional<term> t = parse_term();
+    if(!t)
+      return {};
+
+    if(!consume_punctuation(token::punctuation::right_paren))
+      return {};
+
+    return next(*t);
   }
 
   std::optional<term> parser::parse_term_var_or_func() {
@@ -422,6 +477,23 @@ namespace black::internal
       return {};
 
     return application(function{id}, terms);
+  }
+
+  std::optional<term> parser::parse_term_parens() {
+    black_assert(peek());
+    black_assert(
+      peek()->data<token::punctuation>() == token::punctuation::left_paren);
+
+    consume(); // Consume left paren '('
+
+    std::optional<term> t = parse_term();
+    if(!t)
+      return {}; // error raised by parse();
+
+    if(!consume_punctuation(token::punctuation::right_paren))
+      return {}; // error raised by consume()
+
+    return t;
   }
 
 } // namespace black::internal

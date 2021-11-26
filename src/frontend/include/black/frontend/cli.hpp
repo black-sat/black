@@ -73,6 +73,9 @@ namespace black::frontend
     // name of the selected SAT backend (nullopt for default)
     inline std::optional<std::string> sat_backend;
 
+    // logic selected to solve the problem
+    inline std::optional<std::string> logic;
+
     // past removing before executing the SAT-encoding (disabled by default)
     inline bool remove_past = false;
 

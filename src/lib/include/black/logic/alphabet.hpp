@@ -61,6 +61,13 @@ namespace black::internal {
     Real
   };
 
+  // function that returns the default sort associated with a logic
+  inline sort sort_of_logic(logic l);
+
+  // functions to go to/from logics and strings
+  std::optional<logic> logic_from_string(std::string const&);
+  std::string_view to_string(logic);
+
   //
   // The alphabet class is the only entry point to create formulas.
   //
@@ -143,26 +150,6 @@ namespace black::internal {
     );
   };
 
-  // function that returns the default sort associated with a logic
-  inline sort sort_of_logic(logic l) {
-    switch(l) {
-      case logic::QF_IDL:
-      case logic::QF_LIA:
-      case logic::QF_NIA:
-      case logic::QF_UFIDL:
-      case logic::QF_UFLIA:
-        return sort::Int;
-      case logic::QF_LRA:
-      case logic::QF_NRA:
-      case logic::QF_RDL:
-      case logic::QF_UFLRA:
-      case logic::QF_UFNRA:
-        return sort::Real;
-      default:
-        black_unreachable();
-    }
-  }
-
 } // namespace black::internal
 
 namespace black {
@@ -170,6 +157,8 @@ namespace black {
   using internal::logic;
   using internal::sort;
   using internal::sort_of_logic;
+  using internal::logic_from_string;
+  using internal::to_string;
 }
 
 #include <black/internal/formula/alphabet.hpp>

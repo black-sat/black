@@ -69,6 +69,9 @@ namespace black::frontend {
   {
     black::alphabet sigma;
 
+    if(cli::logic)
+      sigma.set_logic(*logic_from_string(*cli::logic));
+
     std::optional<black::formula> f =
       black::parse_formula(sigma, file, formula_syntax_error_handler(path));
 

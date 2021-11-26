@@ -45,6 +45,7 @@ namespace black::internal
       boolean = 0,
       constant,
       identifier,
+      keyword,
       relation,
       function,
       unary_operator,
@@ -60,9 +61,15 @@ namespace black::internal
       comma
     };
 
+    // we only have one keyword yet
+    enum class keyword : uint8_t {
+      next
+    };
+
     constexpr token(bool b)               : _data{b} { }
     constexpr token(int c)                : _data{c} { }
     constexpr token(std::string_view s)   : _data{s} { }
+    constexpr token(keyword k)            : _data{k} { }
     constexpr token(relation::type t)     : _data{t} { }
     constexpr token(function::type t)     : _data{t} { }
     constexpr token(unary::type t)        : _data{t} { }
@@ -91,6 +98,7 @@ namespace black::internal
       bool,             // booleans
       int,              // constants
       std::string_view, // identifiers
+      keyword,          // keywords
       relation::type,   // known relations
       function::type,   // known functions
       unary::type,      // unary operator
@@ -131,6 +139,14 @@ namespace black::internal
     };
 
     return toks[to_underlying(t) - to_underlying(binary::type::conjunction)];
+  }
+
+  constexpr std::string_view to_string(token::keyword k) {
+    constexpr std::string_view toks[] = {
+      "next"
+    };
+
+    return toks[to_underlying(k)];
   }
 
   constexpr std::string_view to_string(relation::type t) {
@@ -177,6 +193,7 @@ namespace black::internal
       [](bool b)               { return b ? "true"sv : "false"sv; },
       [](int c)                { return to_string(c); },
       [](std::string_view s)   { return s; },
+      [](token::keyword k)     { return to_string(k); },
       [](relation::type t)     { return to_string(t); },
       [](function::type t)     { return to_string(t); },
       [](unary::type t)        { return to_string(t); },

@@ -150,6 +150,7 @@ namespace black::internal
     static constexpr std::pair<std::string_view, token> operators[] = {
       {"True",  token{true}},
       {"False", token{false}},
+      {"next",  token{token::keyword::next}},
       {"NOT",   token{unary::type::negation}},
       {"X",     token{unary::type::tomorrow}},
       {"wX",    token{unary::type::w_tomorrow}},

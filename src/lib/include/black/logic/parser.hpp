@@ -65,12 +65,16 @@ namespace black::internal
     std::optional<formula> parse_parens();
     std::optional<formula> parse_primary();
 
+    std::optional<formula> correct_term_to_formula(term t);
+
     std::optional<term> parse_term();
     std::optional<term> parse_term_primary();
     std::optional<term> parse_term_binary_rhs(int precedence, term lhs);
     std::optional<term> parse_term_constant();
     std::optional<term> parse_term_unary_minus();
+    std::optional<term> parse_term_next();
     std::optional<term> parse_term_var_or_func();
+    std::optional<term> parse_term_parens();
 
   private:
     alphabet &_alphabet;
@@ -114,7 +118,7 @@ namespace black::internal
   constexpr std::optional<int> precedence(token const&tok)
   {
     // Attention: this must remain in sync with token::token_type
-    constexpr std::optional<int> ops[] = {
+    constexpr std::optional<int> bops[] = {
       {30}, // conjunction
       {20}, // disjunction
       {40}, // implication
@@ -127,8 +131,20 @@ namespace black::internal
       {50}, // triggered
     };
 
+    constexpr std::optional<int> fops[] = {
+      {},   // negation
+      {20}, // subtraction
+      {20}, // addition
+      {30}, // multiplication
+      {30}, // division
+      {30}  // modulo
+    };
+
     if(auto t = tok.data<binary::type>(); t)
-      return ops[to_underlying(*t) - to_underlying(binary::type::conjunction)];
+      return bops[to_underlying(*t) - to_underlying(binary::type::conjunction)];
+
+    if(auto t = tok.data<function::type>(); t)
+      return fops[to_underlying(*t)];
 
     return std::nullopt;
   }
