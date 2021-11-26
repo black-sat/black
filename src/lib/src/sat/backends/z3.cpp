@@ -33,6 +33,8 @@
 #include <string>
 #include <memory>
 
+#include <iostream>
+
 BLACK_REGISTER_SAT_BACKEND(z3)
 
 namespace black::sat::backends 
@@ -196,8 +198,10 @@ namespace black::sat::backends
   Z3_sort z3::_z3_t::to_z3(sort s) {
     switch(s){
       case sort::Int:
+        std::cout << "Int\n";
         return Z3_mk_int_sort(context);
       case sort::Real:
+        std::cout << "Real\n";
         return Z3_mk_real_sort(context);
     }
     black_unreachable();
@@ -229,10 +233,10 @@ namespace black::sat::backends
     alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
   ) {
     black_assert(arity > 0);
-    black_assert(sigma->logic().has_value());
+    black_assert(sigma->domain().has_value());
 
     Z3_symbol symbol = Z3_mk_string_symbol(context, name.c_str());
-    Z3_sort s = to_z3(sort_of_logic(*sigma->logic()));
+    Z3_sort s = to_z3(*sigma->domain());
     Z3_sort bool_s = Z3_mk_bool_sort(context);
     
     std::unique_ptr<Z3_sort[]> domain = std::make_unique<Z3_sort[]>(arity);
@@ -369,12 +373,12 @@ namespace black::sat::backends
         Z3_symbol symbol = 
           Z3_mk_string_symbol(context, to_string(v.unique_id()).c_str());
 
-        std::optional<logic> l = t.sigma()->logic();
-        black_assert(l.has_value());
-        return Z3_mk_const(context, symbol, to_z3(sort_of_logic(*l)));
+        std::optional<sort> s = t.sigma()->domain();
+        black_assert(s.has_value());
+        return Z3_mk_const(context, symbol, to_z3(*s));
       },
       [&](application a) { 
-        black_assert(a.sigma()->logic().has_value());
+        black_assert(a.sigma()->domain().has_value());
         std::vector<Z3_ast> z3_terms;
         for(term t2 : a.arguments())
           z3_terms.push_back(to_z3(t2));
@@ -399,7 +403,6 @@ namespace black::sat::backends
               return Z3_mk_div(context, z3_terms[0], z3_terms[1]);
             case function::modulo:
               black_assert(z3_terms.size() == 2);
-              black_assert(sort_of_logic(*a.sigma()->logic()) == sort::Int);
               return Z3_mk_mod(context, z3_terms[0], z3_terms[1]);
           }
           black_unreachable();
@@ -418,7 +421,7 @@ namespace black::sat::backends
     );
   }
 
-  bool z3::supports_logic(logic ) const {
+  bool z3::is_smt() const {
     return true; // TODO: check if the actual theory is supported
   }
 

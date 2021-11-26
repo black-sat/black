@@ -37,36 +37,11 @@
 
 namespace black::internal {
 
-  //
-  // List of supported SMT-LIB2 logics. 
-  // We support (yet) only logics that make sense in a mono-sorted setting,
-  // so no arrays nor bitvectors. Quantifiers are also not supported yet.
-  //
-  enum class logic {
-    QF_IDL,
-    QF_LIA,
-    QF_LRA,
-    QF_NIA,
-    QF_NRA,
-    QF_RDL,
-    QF_UFIDL,
-    QF_UFLIA,
-    QF_UFLRA,
-    QF_UFNRA
-  };
-
   // The only built-in sorts supported (yet)
   enum class sort {
     Int,
     Real
   };
-
-  // function that returns the default sort associated with a logic
-  inline sort sort_of_logic(logic l);
-
-  // functions to go to/from logics and strings
-  std::optional<logic> logic_from_string(std::string const&);
-  std::string_view to_string(logic);
 
   //
   // The alphabet class is the only entry point to create formulas.
@@ -89,10 +64,10 @@ namespace black::internal {
     alphabet &operator=(alphabet const&) = delete; // non-copy-assignable
     alphabet &operator=(alphabet &&); // but move-assignable
 
-    // set and get the logic currently selected. 
-    // The default is no logic, (logic() returns nullopt).
-    void set_logic(logic l);
-    std::optional<enum logic> logic() const;
+    // set and get the default domain for variables
+    // The default is no domain set, i.e. variables not allowed
+    void set_domain(sort s);
+    std::optional<sort> domain() const;
 
     // Entry point to obtain a trivially true or trivially false boolean formula
     struct boolean boolean(bool value);
@@ -155,12 +130,8 @@ namespace black::internal {
 } // namespace black::internal
 
 namespace black {
-  using internal::alphabet;
-  using internal::logic;
   using internal::sort;
-  using internal::sort_of_logic;
-  using internal::logic_from_string;
-  using internal::to_string;
+  using internal::alphabet;
 }
 
 #include <black/internal/formula/alphabet.hpp>

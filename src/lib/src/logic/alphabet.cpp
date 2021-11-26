@@ -57,7 +57,7 @@ namespace black::internal {
 
     alphabet            *_sigma;
 
-    std::optional<enum logic> _logic{};
+    std::optional<sort> _domain{};
 
     boolean_t            _top{true};
     boolean_t            _bottom{false};
@@ -99,12 +99,12 @@ namespace black::internal {
   alphabet::alphabet(alphabet&&) = default;
   alphabet &alphabet::operator=(alphabet&&) = default;
 
-  void alphabet::set_logic(enum logic l) {
-    _impl->_logic = l;
+  void alphabet::set_domain(sort s) {
+    _impl->_domain = s;
   }
 
-  std::optional<logic> alphabet::logic() const {
-    return _impl->_logic;
+  std::optional<sort> alphabet::domain() const {
+    return _impl->_domain;
   }
 
   boolean alphabet::boolean(bool value) {

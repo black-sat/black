@@ -91,7 +91,7 @@ namespace black::sat::dimacs::internal
     virtual void assert_formula(formula f) override;
     virtual bool is_sat_with(formula assumption) override;
     virtual tribool value(proposition a) const override;
-    virtual bool supports_logic(logic t) const override;
+    virtual bool is_smt() const override;
     
     // specialized DIMACS interface
 

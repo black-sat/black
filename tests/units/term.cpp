@@ -73,7 +73,7 @@ TEST_CASE("Terms manipulation") {
 
 TEST_CASE("Test formulas") {
   alphabet sigma;
-  sigma.set_logic(logic::QF_UFLRA);
+  sigma.set_domain(sort::Int);
 
   variable x1 = sigma.var("x1");
   variable x2 = sigma.var("x2");

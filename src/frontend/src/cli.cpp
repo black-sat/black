@@ -106,8 +106,8 @@ namespace black::frontend
     return format == "readable" || format == "json";
   }
 
-  static bool is_logic(std::string const&logic) {
-    return black::logic_from_string(logic).has_value();
+  static bool is_sort(std::string const& s) {
+    return s == "integers" || s == "reals";
   }
 
   //
@@ -134,8 +134,8 @@ namespace black::frontend
         % "treat formulas as LTLf and look for finite models",
       option("-m", "--model").set(cli::print_model)
         % "print the model of the formula, if any",
-      (option("-l", "--logic")
-        & value(is_logic, "logic", cli::logic))
+      (option("-d", "--domain")
+        & value(is_sort, "sort", cli::domain))
         % "select the SMT logic to solve for",
       (option("-o", "--output-format") 
         & value(is_output_format, "fmt", cli::output_format))

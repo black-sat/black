@@ -70,8 +70,8 @@ namespace black::frontend {
   {
     black::alphabet sigma;
 
-    if(cli::logic)
-      sigma.set_logic(*logic_from_string(*cli::logic));
+    if(cli::domain)
+      sigma.set_domain(cli::domain == "integers" ? sort::Int : sort::Real);
 
     std::optional<black::formula> f =
       black::parse_formula(sigma, file, formula_syntax_error_handler(path));

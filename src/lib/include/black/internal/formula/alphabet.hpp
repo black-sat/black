@@ -28,49 +28,6 @@
 
 namespace black::internal {
 
-  static constexpr std::string_view logics_names[] = {
-    "QF_IDL",
-    "QF_LIA",
-    "QF_LRA",
-    "QF_NIA",
-    "QF_NRA",
-    "QF_RDL",
-    "QF_UFIDL",
-    "QF_UFLIA",
-    "QF_UFLRA",
-    "QF_UFNRA"
-  };
-
-  inline sort sort_of_logic(logic l) {
-    switch(l) {
-      case logic::QF_IDL:
-      case logic::QF_LIA:
-      case logic::QF_NIA:
-      case logic::QF_UFIDL:
-      case logic::QF_UFLIA:
-        return sort::Int;
-      case logic::QF_LRA:
-      case logic::QF_NRA:
-      case logic::QF_RDL:
-      case logic::QF_UFLRA:
-      case logic::QF_UFNRA:
-        return sort::Real;
-    }
-    black_unreachable();
-  }
-
-  inline std::optional<logic> logic_from_string(std::string const&s){
-    auto it = std::find(begin(logics_names), end(logics_names), s);
-    if(it == std::end(logics_names))
-      return {};
-
-    return static_cast<logic>(it - std::begin(logics_names));
-  }
-
-  inline std::string_view to_string(logic l) {
-    return logics_names[to_underlying(l)];
-  }
-
   //
   // Out-of-line definitions of methods of class `alphabet`
   //

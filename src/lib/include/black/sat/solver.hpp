@@ -56,7 +56,7 @@ namespace black::sat
     virtual ~solver() = default;
 
     // tells whether the current solver supports the specified theory
-    virtual bool supports_logic(logic t) const = 0;
+    virtual bool is_smt() const = 0;
 
     // assert a formula, adding it to the current context
     virtual void assert_formula(formula f) = 0;
