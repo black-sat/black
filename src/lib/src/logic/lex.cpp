@@ -36,7 +36,7 @@ namespace black::internal
     {
       std::string data;
       while(isdigit(s.peek())) {
-        data += s.peek();
+        data += char(s.peek());
         s.get();
       }
       if(data.empty())

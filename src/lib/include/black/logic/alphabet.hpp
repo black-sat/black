@@ -150,6 +150,28 @@ namespace black::internal {
     );
   };
 
+<<<<<<< HEAD
+=======
+  // function that returns the default sort associated with a logic
+  inline sort sort_of_logic(logic l) {
+    switch(l) {
+      case logic::QF_IDL:
+      case logic::QF_LIA:
+      case logic::QF_NIA:
+      case logic::QF_UFIDL:
+      case logic::QF_UFLIA:
+        return sort::Int;
+      case logic::QF_LRA:
+      case logic::QF_NRA:
+      case logic::QF_RDL:
+      case logic::QF_UFLRA:
+      case logic::QF_UFNRA:
+        return sort::Real;
+    }
+    black_unreachable();
+  }
+
+>>>>>>> 79e80617b5ef57e79f49ea1599237f21aa5b52d3
 } // namespace black::internal
 
 namespace black {
