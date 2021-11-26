@@ -68,15 +68,15 @@ namespace black::internal
         if(auto name = x.label<std::string>(); name.has_value())
           return *name;
         if(auto fname = x.label<std::pair<term_id,int>>(); fname.has_value()) {
-          term t = t.sigma()->from_id(fname->first);
+          term t2 = t.sigma()->from_id(fname->first);
           return
-            fmt::format("<{},{}>", to_string(t), fname->second);
+            fmt::format("<{},{}>", to_string(t2), fname->second);
         }
         return fmt::format("<{:x}>", to_underlying(term{x}.unique_id()));
       },
       [&](application a) {
-        if(auto t = a.func().known_type(); t) {
-          if(t == function::type::negation)
+        if(auto t2 = a.func().known_type(); t2) {
+          if(t2 == function::type::negation)
             return fmt::format("-{}", to_string(a.arguments()[0]));
           else {
             term lhs = a.arguments()[0];

@@ -158,9 +158,8 @@ namespace black::internal {
       case logic::QF_UFLRA:
       case logic::QF_UFNRA:
         return sort::Real;
-      default:
-        black_unreachable();
     }
+    black_unreachable();
   }
 
 } // namespace black::internal

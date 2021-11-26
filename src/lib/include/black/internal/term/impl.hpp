@@ -197,20 +197,19 @@ namespace black::internal {
     black_assert(std::holds_alternative<type>(_data));
     type func = std::get<type>(_data);
     switch(func) {
-      case negation:
-      case subtraction:
+      case type::negation:
+      case type::subtraction:
         return "-";
-      case addition:
+      case type::addition:
         return "+";
-      case multiplication:
+      case type::multiplication:
         return "*";
-      case division:
+      case type::division:
         return "/";
-      case modulo:
+      case type::modulo:
         return "mod";
-      default:
-        black_unreachable();
     }
+    black_unreachable();
   }
 
   // struct application

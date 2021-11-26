@@ -195,10 +195,8 @@ namespace black::internal
         return ">";
       case greater_than_equal:
         return ">=";
-      default:
-        black_unreachable();
     }
-
+    black_unreachable();
   }
 
   // struct unary

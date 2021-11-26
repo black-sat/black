@@ -56,7 +56,7 @@ namespace black::sat::backends
     Z3_ast to_z3_inner(term);
 
     Z3_func_decl to_z3_func_decl(
-      alphabet *sigma, std::string const&name, int arity, bool is_relation
+      alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
     );
   };
 
@@ -199,9 +199,8 @@ namespace black::sat::backends
         return Z3_mk_int_sort(context);
       case sort::Real:
         return Z3_mk_real_sort(context);
-      default:
-        black_unreachable();
     }
+    black_unreachable();
   }
 
   // TODO: Factor out common logic with mathsat.cpp
@@ -227,7 +226,7 @@ namespace black::sat::backends
   }
 
   Z3_func_decl z3::_z3_t::to_z3_func_decl(
-    alphabet *sigma, std::string const&name, int arity, bool is_relation
+    alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
   ) {
     black_assert(arity > 0);
     black_assert(sigma->logic().has_value());
@@ -262,7 +261,8 @@ namespace black::sat::backends
             case relation::equal:
               return Z3_mk_eq(context, z3_terms[0], z3_terms[1]);
             case relation::not_equal:
-              return Z3_mk_distinct(context, z3_terms.size(), z3_terms.data());
+              return Z3_mk_distinct(
+                context, unsigned(z3_terms.size()), z3_terms.data());
             case relation::less_than:
               return Z3_mk_lt(context, z3_terms[0], z3_terms[1]);
             case relation::less_than_equal: 
@@ -276,9 +276,11 @@ namespace black::sat::backends
 
         // Otherwise we go for uninterpreted relations
         Z3_func_decl rel = 
-          to_z3_func_decl(a.sigma(), a.rel().name(), z3_terms.size(), true);
+          to_z3_func_decl(
+            a.sigma(), a.rel().name(), unsigned(z3_terms.size()), true);
         
-        return Z3_mk_app(context, rel, z3_terms.size(), z3_terms.data());
+        return 
+          Z3_mk_app(context, rel, unsigned(z3_terms.size()), z3_terms.data());
       },
       [this](proposition p) {
         Z3_sort sort = Z3_mk_bool_sort(context);
@@ -338,8 +340,8 @@ namespace black::sat::backends
       [&](application a) { 
         black_assert(a.sigma()->logic().has_value());
         std::vector<Z3_ast> z3_terms;
-        for(term t : a.arguments())
-          z3_terms.push_back(to_z3(t));
+        for(term t2 : a.arguments())
+          z3_terms.push_back(to_z3(t2));
         
         // We know how to encode known functions
         if(auto k = a.func().known_type(); k) {
@@ -348,11 +350,14 @@ namespace black::sat::backends
               black_assert(z3_terms.size() == 1);
               return Z3_mk_unary_minus(context, z3_terms[0]);
             case function::subtraction:
-              return Z3_mk_sub(context, z3_terms.size(), z3_terms.data());
+              return 
+                Z3_mk_sub(context, unsigned(z3_terms.size()), z3_terms.data());
             case function::addition:
-              return Z3_mk_add(context, z3_terms.size(), z3_terms.data());
+              return 
+                Z3_mk_add(context, unsigned(z3_terms.size()), z3_terms.data());
             case function::multiplication:
-              return Z3_mk_mul(context, z3_terms.size(), z3_terms.data());
+              return 
+                Z3_mk_mul(context, unsigned(z3_terms.size()), z3_terms.data());
             case function::division:
               black_assert(z3_terms.size() == 2);
               return Z3_mk_div(context, z3_terms[0], z3_terms[1]);
@@ -360,16 +365,17 @@ namespace black::sat::backends
               black_assert(z3_terms.size() == 2);
               black_assert(sort_of_logic(*a.sigma()->logic()) == sort::Int);
               return Z3_mk_mod(context, z3_terms[0], z3_terms[1]);
-            default:
-              black_unreachable();
           }
+          black_unreachable();
         }
 
         // Otherwise we go for uninterpreted functions
         Z3_func_decl func = 
-          to_z3_func_decl(a.sigma(), a.func().name(), z3_terms.size(), false);
+          to_z3_func_decl(
+            a.sigma(), a.func().name(), unsigned(z3_terms.size()), false);
         
-        return Z3_mk_app(context, func, z3_terms.size(), z3_terms.data());
+        return 
+          Z3_mk_app(context, func, unsigned(z3_terms.size()), z3_terms.data());
       },
       // We should not have any next(var) term at this point
       [&](next) -> Z3_ast { black_unreachable(); }
