@@ -145,6 +145,7 @@ namespace black::internal {
     // terms allocation
     variable_t *allocate_variable(identifier _label);
     constant_t *allocate_constant(int c);
+    constant_t *allocate_constant(double c);
     next_t *allocate_next(term_base *arg);
     application_t*allocate_application(
       function const&func, std::vector<term_base *> const&args
