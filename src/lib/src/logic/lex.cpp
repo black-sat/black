@@ -28,6 +28,8 @@
 #include <algorithm>
 #include <istream>
 
+#include <iostream>
+
 namespace black::internal
 {
   namespace {
@@ -44,9 +46,10 @@ namespace black::internal
       if(data.empty())
         return {};
 
-      if(s.peek() == '.')
+      if(s.peek() == '.') {
+        data += '.';
         s.get();
-      else
+      } else
         return token{stoi(data)};
 
       // fractional part

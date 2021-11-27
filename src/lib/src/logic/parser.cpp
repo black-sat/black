@@ -23,6 +23,7 @@
 
 #include <string>
 #include <sstream>
+#include <iostream>
 
 namespace black::internal
 {
@@ -349,6 +350,15 @@ namespace black::internal
 
   std::optional<formula> parser::correct_term_to_formula(term t) {
     return t.match(
+      [&](constant c) -> std::optional<formula> {
+        std::string v;
+        if(std::holds_alternative<int>(c.value()))
+          v = std::to_string(std::get<int>(c.value()));
+        else
+          v = std::to_string(std::get<double>(c.value()));
+
+        return error("Expected formula, found numeric constant: " + v);
+      },
       [&](variable x) {
         return _alphabet.prop(x.label());
       },
@@ -357,7 +367,9 @@ namespace black::internal
           return error("Expected formula, found term");
         return atom(relation{a.func().name()}, a.arguments());
       },
-      [](otherwise) -> std::optional<formula> { black_unreachable(); }
+      [&](next) -> std::optional<formula> { 
+        return error("Expected formula, found 'next' expression");
+      }
     );
   }
 

@@ -198,10 +198,8 @@ namespace black::sat::backends
   Z3_sort z3::_z3_t::to_z3(sort s) {
     switch(s){
       case sort::Int:
-        std::cout << "Int\n";
         return Z3_mk_int_sort(context);
       case sort::Real:
-        std::cout << "Real\n";
         return Z3_mk_real_sort(context);
     }
     black_unreachable();
