@@ -57,6 +57,10 @@ namespace black::internal
     return type == formula_type::atom;
   }
 
+  constexpr bool is_quantifier_type(formula_type type) {
+    return type == formula_type::quantifier;
+  }
+
   constexpr bool is_unary_type(formula_type type) {
     return to_underlying(type) >= to_underlying(formula_type::negation) &&
            to_underlying(type) <= to_underlying(formula_type::historically);
@@ -103,6 +107,19 @@ namespace black::internal
 
     relation r;
     std::vector<term_base *> terms;
+  };
+
+  struct quantifier_t : formula_base 
+  {
+    static constexpr auto accepts_type = is_quantifier_type;
+
+    quantifier_t(quantifier_type _t, variable_t *_var, formula_base *_matrix) 
+      : formula_base{formula_type::quantifier}, 
+        qtype{_t}, var{_var}, matrix{_matrix} { }
+
+    quantifier_type qtype;
+    variable_t *var;
+    formula_base *matrix;
   };
 
   struct unary_t : formula_base
@@ -185,6 +202,9 @@ namespace black::internal
     // Implemented after alphabet class
     static std::pair<class alphabet *, atom_t *>
     allocate_atom(relation const&r, std::vector<term> const& terms);
+    
+    static std::pair<class alphabet *, quantifier_t *>
+    allocate_quantifier(quantifier_type t, variable var, formula matrix);
 
     template<typename FType, typename Arg>
     static std::pair<class alphabet *, unary_t *>

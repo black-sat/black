@@ -63,7 +63,9 @@ namespace black::internal
 
     // we only have one keyword yet
     enum class keyword : uint8_t {
-      next
+      next,
+      exists,
+      forall
     };
 
     constexpr token(bool b)               : _data{b} { }

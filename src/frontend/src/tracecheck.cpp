@@ -123,6 +123,7 @@ namespace black::frontend
       [](boolean) -> size_t { return 1; },
       [](proposition) -> size_t { return 1; },
       [](atom) -> size_t { return 1; },
+      [](quantifier) -> size_t { return 1; },
       [](yesterday, formula op) { return 1 + depth(op); },
       [](w_yesterday, formula op) { return 1 + depth(op); },
       [](once, formula op) { return 1 + depth(op); },
@@ -198,6 +199,9 @@ namespace black::frontend
         return check_proposition(trace, a, t);
       },
       [&](atom) -> bool {
+        black_unreachable();
+      },
+      [&](quantifier) -> bool {
         black_unreachable();
       },
       [&](tomorrow, formula op) {

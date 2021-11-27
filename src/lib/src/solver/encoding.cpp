@@ -202,6 +202,9 @@ namespace black::internal
 
         return atom(a.rel(), terms);
       },
+      [&](quantifier)  -> formula {
+        black_unreachable();
+      },
       [&](proposition)  { return ground(f, k); },
       [&](tomorrow)     { return ground(f, k); },
       [&](w_tomorrow)   { return ground(f, k); },
@@ -341,12 +344,22 @@ namespace black::internal
       [](boolean b) { return b; },
       [](proposition p) { return p; },
       [](atom a) { return a; },
+      [&](quantifier q) {
+        return quantifier(q.quantifier_type(), q.var(), to_nnf(q.matrix()));
+      },
       // Push the negation down to literals
       [&](negation n) {
         return n.operand().match(
           [](boolean b)     { return !b; },
           [](proposition p) { return !p; },
           [](atom a)        { return !a; },
+          [&](quantifier q) {
+            quantifier::type dual = 
+              q.quantifier_type() == quantifier::type::exists ? 
+              quantifier::type::forall : quantifier::type::exists;
+
+            return quantifier(dual, q.var(), to_nnf(!q.matrix()));
+          },
           [&](negation, formula op) { // special case for double negation
             return to_nnf(op);
           },

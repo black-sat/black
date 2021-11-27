@@ -199,6 +199,26 @@ namespace black::internal
     black_unreachable();
   }
 
+  // struct quantifier
+  inline quantifier::quantifier(
+    enum quantifier_type t, variable var, formula matrix
+  )
+    : handle_base<quantifier, quantifier_t>{
+      allocate_quantifier(t, var, matrix)
+    } {}
+  
+  inline quantifier::type quantifier::quantifier_type() const {
+    return _formula->qtype;
+  }
+
+  inline variable quantifier::var() const {
+    return variable{_alphabet, _formula->var};
+  }
+
+  inline formula quantifier::matrix() const {
+    return formula{_alphabet, _formula->matrix};
+  }
+
   // struct unary
   inline unary::unary(type t, formula f)
     : handle_base<unary, unary_t>{allocate_unary(t, f)} { }

@@ -47,6 +47,7 @@ namespace black::internal {
         [](boolean b) { return b; },
         [](proposition p) { return p; },
         [](atom a) { return a; },
+        [](quantifier q) { return q; },
         [](unary u, formula op) {
           return unary(u.formula_type(), sub_past(op));
         },
@@ -60,6 +61,7 @@ namespace black::internal {
     return f.match(
         [](boolean) {},
         [](atom) {},
+        [](quantifier) {},
         [&](proposition a) {
           std::optional<past_label> label = a.label<past_label>();
 

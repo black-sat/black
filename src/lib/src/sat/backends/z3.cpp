@@ -284,6 +284,9 @@ namespace black::sat::backends
         return 
           Z3_mk_app(context, rel, unsigned(z3_terms.size()), z3_terms.data());
       },
+      [this](quantifier) -> Z3_ast {
+        black_unreachable();
+      },
       [this](proposition p) {
         Z3_sort sort = Z3_mk_bool_sort(context);
         Z3_symbol symbol = 

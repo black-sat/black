@@ -83,6 +83,20 @@ namespace black::internal {
   }
 
   template<typename H, typename F>
+  std::pair<class alphabet *, quantifier_t *>
+  handle_base<H,F>::allocate_quantifier(
+    quantifier_type t, variable var, formula matrix
+  )
+  {
+    class alphabet *sigma = matrix.sigma();
+
+    quantifier_t *object = 
+      sigma->allocate_quantifier(t, var._term, matrix._formula);
+    
+    return {sigma, object};
+  }
+
+  template<typename H, typename F>
   template<typename FType, typename Arg>
   std::pair<alphabet *, unary_t *>
   handle_base<H, F>::allocate_unary(FType type, Arg const&arg)

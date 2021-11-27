@@ -64,6 +64,7 @@ namespace black::internal {
 
     std::deque<proposition_t> _props;
     std::deque<atom_t>        _atoms;
+    std::deque<quantifier_t>  _quantifiers;
     std::deque<unary_t>       _unaries;
     std::deque<binary_t>      _binaries;
 
@@ -76,14 +77,18 @@ namespace black::internal {
     using binary_key = std::tuple<binary::type,
                                   formula_base*,
                                   formula_base*>;
+    using quantifier_key = std::tuple<
+      quantifier_type, variable_t *, formula_base *
+    >;
     using application_key = std::tuple<function, std::vector<term_base *>>;
     using atom_key = std::tuple<relation, std::vector<term_base *>>;
     using constant_key = std::variant<int, double>;
 
-    tsl::hopscotch_map<identifier, proposition_t*> _props_map;
-    tsl::hopscotch_map<atom_key,   atom_t*>        _atoms_map;
-    tsl::hopscotch_map<unary_key,  unary_t*>       _unaries_map;
-    tsl::hopscotch_map<binary_key, binary_t*>      _binaries_map;
+    tsl::hopscotch_map<identifier,     proposition_t*> _props_map;
+    tsl::hopscotch_map<atom_key,       atom_t*>        _atoms_map;
+    tsl::hopscotch_map<quantifier_key, quantifier_t*>  _quantifiers_map;
+    tsl::hopscotch_map<unary_key,      unary_t*>       _unaries_map;
+    tsl::hopscotch_map<binary_key,     binary_t*>      _binaries_map;
 
     tsl::hopscotch_map<constant_key,    constant_t*>    _consts_map;
     tsl::hopscotch_map<identifier,      variable_t*>    _vars_map;
@@ -153,6 +158,19 @@ namespace black::internal {
     _impl->_atoms_map.insert({{r, terms}, a});
 
     return a;
+  }
+
+  quantifier_t *alphabet::allocate_quantifier(
+    quantifier_type type, variable_t *var, formula_base *matrix
+  ) {
+    if(auto it = _impl->_quantifiers_map.find({type, var, matrix}); 
+            it != _impl->_quantifiers_map.end())
+      return it->second;
+
+    quantifier_t *q = &_impl->_quantifiers.emplace_back(type, var, matrix);
+    _impl->_quantifiers_map.insert({{type, var, matrix}, q});
+
+    return q;
   }
 
   variable_t *alphabet::allocate_variable(identifier _label)

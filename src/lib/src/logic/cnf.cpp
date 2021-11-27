@@ -77,6 +77,7 @@ namespace black::internal
       [](boolean)     { },
       [](proposition) { },
       [](atom)        { },
+      [](quantifier)  { },
       [&](conjunction, formula l, formula r) 
       {
         tseitin(l, clauses, memo);
@@ -135,6 +136,7 @@ namespace black::internal
         return arg.match(
           [&](boolean) { },
           [&](atom) { },
+          [&](quantifier) { },
           [&](proposition a) {
             // clausal form for negations:
             // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)

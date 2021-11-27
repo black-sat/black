@@ -40,6 +40,7 @@ namespace black::internal {
     boolean = 1, // true and false
     proposition, // p, q, r, ...
     atom,        // R(t1, ..., tn)
+    quantifier,  // exists/forall
     // unary formulas
     negation,
     tomorrow,
@@ -61,6 +62,11 @@ namespace black::internal {
     s_release,
     since,
     triggered
+  };
+
+  enum class quantifier_type : uint8_t {
+    exists,
+    forall
   };
 
   struct atom;
@@ -217,6 +223,20 @@ namespace black::internal
 
     relation rel() const;
     std::vector<term> terms() const;
+  };
+
+  struct quantifier : handle_base<quantifier, quantifier_t>
+  {
+    using type = ::black::internal::quantifier_type;
+
+    // inheriting base class constructors (for internal use)
+    using handle_base<quantifier, quantifier_t>::handle_base;
+
+    quantifier(type t, variable var, formula matrix);
+
+    type quantifier_type() const;
+    variable var() const;
+    formula matrix() const;
   };
 
   struct unary : handle_base<unary, unary_t>
@@ -431,12 +451,12 @@ namespace black {
   using internal::proposition;
   using internal::relation;
   using internal::atom;
+  using internal::quantifier;
   using internal::unary;
   using internal::binary;
   using internal::formula;
   using internal::formula_id;
   using internal::otherwise;
-
 
   using internal::simplify;
   using internal::simplify_deep;

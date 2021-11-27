@@ -142,6 +142,9 @@ namespace black::internal
   protected:
     using handled_term_t = T;
 
+    template<typename,typename>
+    friend struct handle_base;
+
     static std::optional<H> cast(class alphabet *sigma, term_base *t) {
       if(auto ptr = term_cast<typename H::handled_term_t *>(t); ptr)
         return std::optional<H>{H{sigma, ptr}};

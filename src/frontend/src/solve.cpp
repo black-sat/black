@@ -104,6 +104,9 @@ namespace black::frontend {
     f.match(
       [&](boolean) {},
       [&](atom) {},
+      [&](quantifier q) {
+        relevant_props(q.matrix(), props);
+      },
       [&](proposition p) {
         props.insert(p);
       },
