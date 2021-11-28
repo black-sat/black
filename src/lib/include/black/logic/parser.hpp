@@ -40,15 +40,28 @@ namespace black::internal
   class BLACK_EXPORT parser
   {
   public:
+    enum feature : uint8_t {
+      temporal = 1,
+      past = 2,
+      first_order = 4,
+      quantifiers = 8,
+      forall = 16
+    };
+
+    struct result {
+      formula result;
+      uint8_t features;
+    };
+
     using error_handler = std::function<void(std::string)>;
 
     parser(alphabet &sigma, std::istream &stream, error_handler error)
-      : _alphabet(sigma), _lex(stream), _error(std::move(error))
+      : _alphabet(sigma), _lex(stream), _features{0}, _error(std::move(error))
     {
       _lex.get();
     }
 
-    std::optional<formula> parse();
+    std::optional<result> parse();
 
   private:
     std::optional<token> peek();
@@ -58,6 +71,9 @@ namespace black::internal
     std::optional<token> consume_punctuation(token::punctuation p);
     std::nullopt_t error(std::string const&s);
 
+    void set_features(token const &tok);
+
+    std::optional<formula> parse_formula();
     std::optional<formula> parse_binary_rhs(int precedence, formula lhs);
     std::optional<formula> parse_boolean();
     std::optional<formula> parse_atom();
@@ -80,28 +96,29 @@ namespace black::internal
   private:
     alphabet &_alphabet;
     lexer _lex;
+    uint8_t _features = 0;
     std::function<void(std::string)> _error;
   };
 
   // Easy entry-point for parsing formulas
   BLACK_EXPORT
-  std::optional<formula>
+  std::optional<parser::result>
   parse_formula(alphabet &sigma, std::string const&s,
                 parser::error_handler error);
 
   BLACK_EXPORT
-  std::optional<formula>
+  std::optional<parser::result>
   parse_formula(alphabet &sigma, std::istream &s,
                 parser::error_handler error);
 
   BLACK_EXPORT
-  inline std::optional<formula>
+  inline std::optional<parser::result>
   parse_formula(alphabet &sigma, std::string const&s) {
     return parse_formula(sigma, s, [](auto){});
   }
 
   BLACK_EXPORT
-  inline std::optional<formula>
+  inline std::optional<parser::result>
   parse_formula(alphabet &sigma, std::istream &s) {
     return parse_formula(sigma, s, [](auto){});
   }

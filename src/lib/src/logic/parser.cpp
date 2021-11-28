@@ -183,7 +183,7 @@ namespace black::internal
   }
 
   // Easy entry-point for parsing formulas
-  std::optional<formula>
+  std::optional<parser::result>
   parse_formula(alphabet &sigma, std::string const&s,
                 parser::error_handler error)
   {
@@ -194,7 +194,7 @@ namespace black::internal
   }
 
   // Easy entry-point for parsing formulas
-  std::optional<formula>
+  std::optional<parser::result>
   parse_formula(alphabet &sigma, std::istream &stream,
                 parser::error_handler error)
   {
@@ -221,15 +221,19 @@ namespace black::internal
 
   std::optional<token> parser::consume() {
     auto tok = peek();
-    if(tok)
+    if(tok) {
+      set_features(*tok);
       _lex.get();
+    }
     return tok;
   }
 
   std::optional<token> parser::consume(token::type t, std::string const&err) {
     auto tok = peek(t, err);
-    if(tok)
+    if(tok) {
+      set_features(*tok);
       _lex.get();
+    }
     return tok;
   }
 
@@ -240,8 +244,10 @@ namespace black::internal
         tok->data<token::punctuation>() != p) {
       return error("Expected '" + std::string{to_string(p)} + "'");
     }
-    if(tok)
+    if(tok) {
+      set_features(*tok);
       _lex.get();
+    }
     return tok;
   }
 
@@ -249,8 +255,59 @@ namespace black::internal
     _error(s);
     return std::nullopt;
   }
+  
+  //
+  // This function sets the detected feature of the formula based on the
+  // scanned tokens.
+  //
+  void parser::set_features(token const& tok) 
+  {
+    if(auto k = tok.data<token::keyword>(); k) { // next, exists, forall
+      _features |= feature::first_order;
+      if(k == token::keyword::exists || k == token::keyword::forall) {
+        _features |= feature::quantifiers;
+        if(k == token::keyword::forall)
+          _features |= feature::forall;
+      }
+    }
 
-  std::optional<formula> parser::parse() {
+    if(auto type = tok.data<binary::type>(); type) {
+      if(to_underlying(*type) >= to_underlying(binary::type::until))
+        _features |= feature::temporal;
+      if(to_underlying(*type) >= to_underlying(binary::type::since))
+        _features |= feature::past;
+    }
+    
+    if(auto type = tok.data<unary::type>(); type) {
+      switch(*type) {
+        case unary::type::negation:
+          break;
+        case unary::type::yesterday:
+        case unary::type::w_yesterday:
+        case unary::type::once:
+        case unary::type::historically: 
+          _features |= feature::past;
+          _features |= feature::temporal;
+          break;
+        case unary::type::tomorrow:
+        case unary::type::w_tomorrow:
+        case unary::type::always:
+        case unary::type::eventually:
+          _features |= feature::temporal;
+          break;
+      }
+    }
+  }
+
+  std::optional<parser::result> parser::parse() {
+    std::optional<formula> f = parse_formula();
+    if(!f)
+      return {};
+
+    return {{*f, _features}};
+  }
+
+  std::optional<formula> parser::parse_formula() {
     std::optional<formula> lhs = parse_primary();
     if(!lhs)
       return error("Expected formula");
@@ -300,8 +357,10 @@ namespace black::internal
 
     // if there is no relation symbol after the term, 
     // the term was not a term after all, but a relational atom
-    if(!peek() || !peek()->is<relation::type>())
+    if(!peek() || !peek()->is<relation::type>()) {
+      _features |= feature::first_order;
       return correct_term_to_formula(*lhs);
+    }
 
     // otherwise we parse the rhs and form the atom
     relation::type r = *peek()->data<relation::type>();
@@ -311,6 +370,7 @@ namespace black::internal
     if(!rhs)
       return {};
 
+    _features |= feature::first_order;
     return atom(relation{r}, {*lhs, *rhs});
   }
 
@@ -335,7 +395,7 @@ namespace black::internal
     if(!dot || dot->data<token::punctuation>() != token::punctuation::dot)
       return error("Expected dot after quantifier");
 
-    std::optional<formula> matrix = parse();
+    std::optional<formula> matrix = parse_formula();
     if(!matrix)
       return {};
 
@@ -363,7 +423,7 @@ namespace black::internal
 
     consume(); // Consume left paren '('
 
-    std::optional<formula> formula = parse();
+    std::optional<formula> formula = parse_formula();
     if(!formula)
       return {}; // error raised by parse();
 

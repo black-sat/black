@@ -375,8 +375,12 @@ namespace black::frontend
   ) {
     black::alphabet sigma;
 
-    black::formula f = 
-      *black::parse_formula(sigma, file, formula_syntax_error_handler(path));
+    std::optional<black::parser::result> result = 
+      black::parse_formula(sigma, file, formula_syntax_error_handler(path));
+
+    black_assert(result.has_value());
+
+    formula f = result->result;
 
     trace_t trace = parse_trace(tracepath, tracefile);
 

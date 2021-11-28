@@ -73,10 +73,12 @@ namespace black::frontend {
     if(cli::domain)
       sigma.set_domain(cli::domain == "integers" ? sort::Int : sort::Real);
 
-    std::optional<black::formula> f =
+    std::optional<black::parser::result> result =
       black::parse_formula(sigma, file, formula_syntax_error_handler(path));
 
-    black_assert(f.has_value());
+    black_assert(result.has_value());
+
+    formula f = result->result;
 
     black::solver slv;
 
@@ -84,15 +86,15 @@ namespace black::frontend {
       slv.set_sat_backend(*cli::sat_backend);
 
     if (cli::remove_past)
-      slv.set_formula(black::remove_past(*f), cli::finite);
+      slv.set_formula(black::remove_past(f), cli::finite);
     else
-      slv.set_formula(*f, cli::finite);
+      slv.set_formula(f, cli::finite);
 
     size_t bound = 
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
     black::tribool res = slv.solve(bound);
 
-    output(res, slv, *f);
+    output(res, slv, f);
 
     return 0;
   }
