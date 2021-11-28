@@ -23,7 +23,6 @@
 
 #include <string>
 #include <sstream>
-#include <iostream>
 
 namespace black::internal
 {
@@ -315,6 +314,36 @@ namespace black::internal
     return atom(relation{r}, {*lhs, *rhs});
   }
 
+  std::optional<formula> parser::parse_quantifier() {
+    black_assert(peek());
+    black_assert(
+      peek()->data<token::keyword>() == token::keyword::exists ||
+      peek()->data<token::keyword>() == token::keyword::forall
+    );
+
+    quantifier::type q = 
+      consume()->data<token::keyword>() == token::keyword::exists ? 
+      quantifier::type::exists : quantifier::type::forall;
+
+    std::optional<token> vartok = consume(token::type::identifier, "variable");
+    if(!vartok)
+      return {};
+        
+    std::string varname{*vartok->data<std::string_view>()};
+
+    std::optional<token> dot = consume();
+    if(!dot || dot->data<token::punctuation>() != token::punctuation::dot)
+      return error("Expected dot after quantifier");
+
+    std::optional<formula> matrix = parse();
+    if(!matrix)
+      return {};
+
+    variable var = _alphabet.var(varname);
+
+    return quantifier(q, var, *matrix);
+  }
+
   std::optional<formula> parser::parse_unary()
   {
     std::optional<token> op = consume(); // consume unary op
@@ -355,6 +384,9 @@ namespace black::internal
        peek()->token_type() == token::type::identifier ||
        peek()->data<token::keyword>() == token::keyword::next)
       return parse_atom();
+    if(peek()->data<token::keyword>() == token::keyword::exists ||
+       peek()->data<token::keyword>() == token::keyword::forall)
+      return parse_quantifier();
     if(peek()->is<unary::type>())
       return parse_unary();
     if(peek()->data<token::punctuation>() == token::punctuation::left_paren)

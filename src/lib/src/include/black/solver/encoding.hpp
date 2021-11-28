@@ -57,13 +57,16 @@ namespace black::internal {
     proposition ground(formula f, size_t k);
 
     // Make the stepped version of a term, t_G^k
-    term stepped(term t, size_t k);
+    term stepped(term t, size_t k, std::vector<variable> const& scope);
 
     // Put a formula in negated normal form
     formula to_nnf(formula f);
 
     // Put a formula in Stepped Normal Form
     formula to_ground_snf(formula f, size_t k);
+    formula to_ground_snf(
+      formula f, size_t k, std::vector<variable> const&scope
+    );
 
     // Generates the PRUNE encoding
     formula prune(size_t k);

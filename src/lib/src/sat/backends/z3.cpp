@@ -24,6 +24,7 @@
 
 #include <black/sat/backends/z3.hpp>
 #include <black/logic/alphabet.hpp>
+#include <black/logic/parser.hpp>
 
 #include <z3.h>
 #include <tsl/hopscotch_map.h>
@@ -115,7 +116,15 @@ namespace black::sat::backends
 
     Z3_del_config(cfg);
 
-    _data->solver = Z3_mk_solver(_data->context);
+    Z3_tactic qe = Z3_mk_tactic(_data->context, "qe");
+    Z3_tactic_inc_ref(_data->context, qe);
+    Z3_tactic smt = Z3_mk_tactic(_data->context, "smt");
+    Z3_tactic_inc_ref(_data->context, smt);
+
+    Z3_tactic qe_smt = Z3_tactic_and_then(_data->context, qe, smt);
+    Z3_tactic_inc_ref(_data->context, qe_smt);
+
+    _data->solver = Z3_mk_solver_from_tactic(_data->context, qe_smt);
     Z3_solver_inc_ref(_data->context, _data->solver);
   }
 
@@ -150,7 +159,7 @@ namespace black::sat::backends
     return result;
   }
 
-  bool z3::is_sat() { 
+  bool z3::is_sat() {
     Z3_lbool res = Z3_solver_check(_data->context, _data->solver);
 
     bool result = (res == Z3_L_TRUE);
@@ -284,8 +293,13 @@ namespace black::sat::backends
         return 
           Z3_mk_app(context, rel, unsigned(z3_terms.size()), z3_terms.data());
       },
-      [this](quantifier) -> Z3_ast {
-        black_unreachable();
+      [this](quantifier q) {
+        Z3_app var = Z3_to_app(context, to_z3(q.var()));
+        return Z3_mk_quantifier_const(
+          context, 
+          q.quantifier_type() == quantifier::type::forall,
+          0, 1, &var, 0, nullptr, to_z3(q.matrix())
+        );
       },
       [this](proposition p) {
         Z3_sort sort = Z3_mk_bool_sort(context);

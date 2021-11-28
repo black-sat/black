@@ -77,6 +77,9 @@ namespace black::internal
         case ',':
           s.get();
           return token{token::punctuation::comma};
+        case '.':
+          s.get();
+          return token{token::punctuation::dot};
         case '!':
           s.get();
           if(s.peek() == '=') {

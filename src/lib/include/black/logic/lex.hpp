@@ -58,7 +58,8 @@ namespace black::internal
       // non-logical tokens
       left_paren,
       right_paren,
-      comma
+      comma,
+      dot
     };
 
     // we only have one keyword yet

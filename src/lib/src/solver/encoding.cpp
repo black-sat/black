@@ -193,32 +193,42 @@ namespace black::internal
   // Turns the current formula into Stepped Normal Form
   // Note: this has to be run *after* the transformation to NNF (to_nnf() below)
   formula encoder::to_ground_snf(formula f, size_t k) {
+    return to_ground_snf(f, k, {});
+  }
+
+  formula encoder::to_ground_snf(
+    formula f, size_t k, std::vector<variable> const&scope
+  ) {
     return f.match(
       [&](boolean)      { return f; },
       [&](atom a)       { 
         std::vector<term> terms;
         for(term t : a.terms())
-          terms.push_back(stepped(t, k));
+          terms.push_back(stepped(t, k, scope));
 
         return atom(a.rel(), terms);
       },
-      [&](quantifier)  -> formula {
-        black_unreachable();
+      [&](quantifier q) {
+        std::vector<variable> new_scope = scope;
+        new_scope.push_back(q.var());
+        return quantifier(
+          q.quantifier_type(), q.var(), to_ground_snf(q.matrix(), k, new_scope)
+        );
       },
       [&](proposition)  { return ground(f, k); },
       [&](tomorrow)     { return ground(f, k); },
       [&](w_tomorrow)   { return ground(f, k); },
       [&](yesterday)    { return ground(f, k); },
       [&](w_yesterday)  { return ground(f, k); },
-      [&](negation n)   { return !to_ground_snf(n.operand(),k); },
+      [&](negation n)   { return !to_ground_snf(n.operand(),k, scope); },
       [&](big_conjunction c) {
         return big_and(*f.sigma(), c.operands(), [&](formula op) {
-          return to_ground_snf(op, k);
+          return to_ground_snf(op, k, scope);
         });
       },
       [&](big_disjunction c) {
         return big_or(*f.sigma(), c.operands(), [&](formula op) {
-          return to_ground_snf(op, k);
+          return to_ground_snf(op, k, scope);
         });
       },
       [&](implication) -> formula { // LCOV_EXCL_LINE 
@@ -228,40 +238,40 @@ namespace black::internal
         black_unreachable(); // LCOV_EXCL_LINE
       },
       [&,this](until u, formula left, formula right) {
-        return to_ground_snf(right,k) ||
-            (to_ground_snf(left,k) && ground(X(u), k));
+        return to_ground_snf(right,k, scope) ||
+            (to_ground_snf(left,k, scope) && ground(X(u), k));
       },
       [&,this](w_until w, formula left, formula right) {
         return to_ground_snf(right, k) ||
-            (to_ground_snf(left,k) && ground(wX(w), k));
+            (to_ground_snf(left,k, scope) && ground(wX(w), k));
       },
       [&,this](eventually e, formula op) {
-        return to_ground_snf(op,k) || ground(X(e), k);
+        return to_ground_snf(op,k, scope) || ground(X(e), k);
       },
       [&,this](always a, formula op) {
-        return to_ground_snf(op,k) && ground(wX(a), k);
+        return to_ground_snf(op,k, scope) && ground(wX(a), k);
       },
       [&,this](release r, formula left, formula right) {
-        return (to_ground_snf(left,k) && to_ground_snf(right,k)) ||
-            (to_ground_snf(right,k) && ground(wX(r), k));
+        return (to_ground_snf(left,k, scope) && to_ground_snf(right,k)) ||
+            (to_ground_snf(right,k, scope) && ground(wX(r), k));
       },
       [&,this](s_release r, formula left, formula right) {
-        return (to_ground_snf(left,k) && to_ground_snf(right,k)) ||
-            (to_ground_snf(right,k) && ground(X(r), k));
+        return (to_ground_snf(left,k, scope) && to_ground_snf(right,k)) ||
+            (to_ground_snf(right,k, scope) && ground(X(r), k));
       },
       [&,this](since s, formula left, formula right) {
-        return to_ground_snf(right,k) ||
-            (to_ground_snf(left,k) && ground(Y(s), k));
+        return to_ground_snf(right,k, scope) ||
+            (to_ground_snf(left,k, scope) && ground(Y(s), k));
       },
       [&,this](triggered t, formula left, formula right) {
-        return (to_ground_snf(left,k) && to_ground_snf(right,k) ) ||
-            (to_ground_snf(right,k) && ground(Z(t), k));
+        return (to_ground_snf(left,k, scope) && to_ground_snf(right,k, scope))
+          || (to_ground_snf(right,k, scope) && ground(Z(t), k));
       },
       [&,this](once o, formula op) {
-        return to_ground_snf(op,k) || ground(Y(o), k);
+        return to_ground_snf(op,k, scope) || ground(Y(o), k);
       },
       [&,this](historically h, formula op) {
-        return to_ground_snf(op,k) && ground(Z(h), k);
+        return to_ground_snf(op,k, scope) && ground(Z(h), k);
       }
     );
   }
@@ -314,19 +324,24 @@ namespace black::internal
     black_unreachable(); // LCOV_EXCL_LINE
   }
 
-  term encoder::stepped(term t, size_t k) {
+  term encoder::stepped(term t, size_t k, std::vector<variable> const&scope) {
     return t.match(
       [](constant c) { return c; },
-      [&](variable) { return _sigma->var(std::pair(t.unique_id(), k)); },
+      [&](variable x) { 
+        for(variable v : scope)
+          if(x.unique_id() == v.unique_id())
+            return x;
+        return _sigma->var(std::pair(t.unique_id(), k)); 
+      },
       [&](application a) {
         std::vector<term> terms;
         for(term ti : a.arguments())
-          terms.push_back(stepped(ti, k));
+          terms.push_back(stepped(ti, k, scope));
         
         return application(a.func(), terms);
       },
       [&](next n) {
-        return stepped(n.argument(), k + 1);
+        return stepped(n.argument(), k + 1, scope);
       }
     );
   }
