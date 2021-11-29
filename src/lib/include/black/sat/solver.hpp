@@ -35,6 +35,11 @@
 
 namespace black::sat 
 {
+  enum class feature {
+    smt,
+    quantifiers
+  };
+
   //
   // Generic interface to backend SAT solvers
   //  
@@ -48,15 +53,13 @@ namespace black::sat
     static std::vector<std::string_view> backends();
     static bool backend_exists(std::string_view name);
     static std::unique_ptr<solver> get_solver(std::string_view name);
+    static bool backend_has_feature(std::string_view name, feature f);
 
     // solver is a polymorphic, non-copyable type
     solver(const solver &) = delete;
     solver &operator=(const solver &) = delete;
 
     virtual ~solver() = default;
-
-    // tells whether the current solver supports the specified theory
-    virtual bool is_smt() const = 0;
 
     // assert a formula, adding it to the current context
     virtual void assert_formula(formula f) = 0;
@@ -83,16 +86,19 @@ namespace black::sat
   namespace internal {
     struct backend_init_hook {
       using backend_ctor = std::unique_ptr<solver> (*)();
-      backend_init_hook(std::string_view, backend_ctor);
+      backend_init_hook(
+        std::string_view, backend_ctor, std::vector<black::sat::feature>
+      );
     };
 
-    #define BLACK_REGISTER_SAT_BACKEND(Backend) \
+    #define BLACK_REGISTER_SAT_BACKEND(Backend, ...) \
       static const black::sat::internal::backend_init_hook \
         Backend##_init_hook_{ \
           #Backend, \
           []() -> std::unique_ptr<::black::sat::solver> { \
             return std::make_unique<::black::sat::backends::Backend>(); \
-          } \
+          }, \
+          __VA_ARGS__ \
         };
   }
 }

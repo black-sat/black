@@ -35,7 +35,7 @@
 
 #include <string>
 
-BLACK_REGISTER_SAT_BACKEND(mathsat)
+BLACK_REGISTER_SAT_BACKEND(mathsat, {black::sat::feature::smt})
 
 namespace black::sat::backends
 {

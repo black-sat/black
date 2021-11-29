@@ -31,19 +31,26 @@ namespace black::sat
   namespace internal {
     namespace {
       using backends_map = 
-        tsl::hopscotch_map<std::string_view, backend_init_hook::backend_ctor>;
+        tsl::hopscotch_map<
+          std::string_view, 
+          std::pair<
+            backend_init_hook::backend_ctor, 
+            std::vector<black::sat::feature>
+          >
+        >;
       
       std::unique_ptr<backends_map> _backends = nullptr;
     }
     
     backend_init_hook::backend_init_hook(
-      std::string_view name, backend_ctor ctor
+      std::string_view name, backend_ctor ctor, 
+      std::vector<black::sat::feature> features
     ) {
       if(!_backends)
         _backends = std::make_unique<backends_map>();
 
       black_assert(_backends->find(name) == _backends->end());
-      _backends->insert({name, ctor});
+      _backends->insert({name, {ctor, features}});
     }
   }
 
@@ -60,7 +67,20 @@ namespace black::sat
     
     black_assert(it != _backends->end());
     
-    return (it->second)();
+    return (it->second.first)();
+  }
+
+  bool solver::backend_has_feature(std::string_view name, feature f)
+  {
+    using namespace black::sat::internal;
+    auto it = _backends->find(name);
+
+    if(it == _backends->end())
+      return false;
+
+    std::vector<feature> features = it->second.second;
+
+    return std::find(features.begin(), features.end(), f) != features.end();
   }
 
   std::vector<std::string_view> solver::backends() {

@@ -23,6 +23,8 @@
 
 #include <black/frontend/solve.hpp>
 
+#include <black/support/config.hpp>
+
 #include <black/frontend/io.hpp>
 #include <black/frontend/cli.hpp>
 #include <black/frontend/support.hpp>
@@ -31,6 +33,7 @@
 #include <black/logic/parser.hpp>
 #include <black/logic/past_remover.hpp>
 #include <black/solver/solver.hpp>
+#include <black/sat/solver.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -78,12 +81,58 @@ namespace black::frontend {
 
     black_assert(result.has_value());
 
-    formula f = result->result;
+    auto [f, features] = *result;
+
+    std::string backend = BLACK_DEFAULT_BACKEND;
+
+    if (cli::sat_backend)
+      backend = *cli::sat_backend;
+
+    black_assert(black::sat::solver::backend_exists(backend));
+
+    if((features & black::parser::feature::first_order) && 
+       !black::sat::solver::backend_has_feature(backend, 
+          black::sat::feature::smt))
+    {
+      io::errorln(
+        "{}: the `{}` backend does not support first-order formulas.",
+        cli::command_name, backend
+      );
+      quit(status_code::failure);
+    }
+
+    if((features & black::parser::feature::quantifiers) && 
+       !black::sat::solver::backend_has_feature(backend, 
+          black::sat::feature::quantifiers))
+    {
+      io::errorln(
+        "{}: the `{}` backend does not support "
+        "quantified first-order formulas.",
+        cli::command_name, backend
+      );
+      quit(status_code::failure);
+    }
+
+    if(!cli::domain && (features & parser::feature::first_order)) {
+      command_line_error(
+        "the --domain option is required for first-order formulas."
+      );
+      quit(status_code::command_line_error);
+    }
+
+    if(!cli::semi_decision && (features & parser::feature::nextvar)) {
+      cli::semi_decision = true;
+      io::errorln(
+      "{0}: warning: use of `next` terms implies the --semi-decision option.\n"
+      "{0}: warning: execution may not terminate.\n"
+      "{0}: warning: pass the --semi-decision option explicitly to silence "
+      "this warning.", cli::command_name
+      );
+    }
 
     black::solver slv;
 
-    if (cli::sat_backend)
-      slv.set_sat_backend(*cli::sat_backend);
+    slv.set_sat_backend(backend);
 
     if (cli::remove_past)
       slv.set_formula(black::remove_past(f), cli::finite);
@@ -92,7 +141,7 @@ namespace black::frontend {
 
     size_t bound = 
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
-    black::tribool res = slv.solve(bound);
+    black::tribool res = slv.solve(bound, cli::semi_decision);
 
     output(res, slv, f);
 

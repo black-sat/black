@@ -90,7 +90,6 @@ namespace black::internal
               parens_if_needed(rhs, does_need_parens(a, rhs))
             );
           }
-            
         }
         std::string result = 
           a.func().name() + "(" + to_string(a.arguments()[0]);
@@ -264,9 +263,15 @@ namespace black::internal
   {
     if(auto k = tok.data<token::keyword>(); k) { // next, exists, forall
       _features |= feature::first_order;
-      if(k == token::keyword::exists || k == token::keyword::forall) {
-        _features |= feature::quantifiers;
-        if(k == token::keyword::forall)
+      switch(*k){
+        case token::keyword::next:
+          _features |= feature::nextvar;
+          break;
+        case token::keyword::exists:
+          _features |= feature::quantifiers;
+          break;
+        case token::keyword::forall:
+          _features |= feature::quantifiers;
           _features |= feature::forall;
       }
     }
@@ -294,7 +299,7 @@ namespace black::internal
         case unary::type::always:
         case unary::type::eventually:
           _features |= feature::temporal;
-          break;
+          break;  
       }
     }
   }
@@ -357,10 +362,8 @@ namespace black::internal
 
     // if there is no relation symbol after the term, 
     // the term was not a term after all, but a relational atom
-    if(!peek() || !peek()->is<relation::type>()) {
-      _features |= feature::first_order;
+    if(!peek() || !peek()->is<relation::type>())
       return correct_term_to_formula(*lhs);
-    }
 
     // otherwise we parse the rhs and form the atom
     relation::type r = *peek()->data<relation::type>();
@@ -472,6 +475,7 @@ namespace black::internal
       [&](application a) -> std::optional<formula> {
         if(a.func().known_type())
           return error("Expected formula, found term");
+        _features |= feature::first_order;
         return atom(relation{a.func().name()}, a.arguments());
       },
       [&](next) -> std::optional<formula> { 

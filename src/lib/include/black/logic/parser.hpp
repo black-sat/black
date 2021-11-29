@@ -45,7 +45,8 @@ namespace black::internal
       past = 2,
       first_order = 4,
       quantifiers = 8,
-      forall = 16
+      forall = 16,
+      nextvar = 32
     };
 
     struct result {

@@ -27,7 +27,7 @@
 #include <minisat/simp/SimpSolver.h>
 #include <tsl/hopscotch_map.h>
 
-BLACK_REGISTER_SAT_BACKEND(minisat)
+BLACK_REGISTER_SAT_BACKEND(minisat, {})
 
 namespace black::sat::backends
 {

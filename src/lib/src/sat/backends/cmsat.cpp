@@ -28,7 +28,7 @@
 
 #include <tsl/hopscotch_map.h>
 
-BLACK_REGISTER_SAT_BACKEND(cmsat)
+BLACK_REGISTER_SAT_BACKEND(cmsat, {})
 
 namespace black::sat::backends
 {

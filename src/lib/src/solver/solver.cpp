@@ -72,9 +72,6 @@ namespace black::internal
     if(!_data->encoder.has_value())
       return true;
     
-    if(_data->encoder->get_formula().sigma()->domain().has_value())
-      semi_decision = true;
-    
     return _data->solve(k_max, semi_decision);
   }
 

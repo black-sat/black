@@ -136,7 +136,13 @@ namespace black::frontend
         % "print the model of the formula, if any",
       (option("-d", "--domain")
         & value(is_sort, "sort", cli::domain))
-        % "select the SMT logic to solve for",
+        % "select the domain for first-order variables.\n"
+          "Mandatory for first-order formulas.\n"
+          "Accepted domains: integers, reals",
+      option("-s", "--semi-decision").set(cli::semi_decision)
+        % "disable termination checks for unsatisfiable formulas, speeding up "
+          "the execution for satisfiable ones.\n"
+          "Note: the use of `next(x)` terms in formulas implies this option.",
       (option("-o", "--output-format") 
         & value(is_output_format, "fmt", cli::output_format))
         % "Output format.\n"

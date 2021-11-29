@@ -57,7 +57,11 @@ namespace black::internal {
       // Solve the formula with up to `k_max' iterations
       // returns tribool::undef if `k_max` is reached
       //
+      // If `semi_decision` is true, the termination rules for unsatisfiable 
+      // formulas are disabled, speeding up solving of satisfiable ones.
       //
+      // WARNING: `semi_decision = false` with first-order formulas using 
+      //          next(x) terms results in an *incomplete* algorithm.
       tribool solve(
         size_t k_max = std::numeric_limits<size_t>::max(),
         bool semi_decision = false

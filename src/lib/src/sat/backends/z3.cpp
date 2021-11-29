@@ -36,7 +36,9 @@
 
 #include <iostream>
 
-BLACK_REGISTER_SAT_BACKEND(z3)
+BLACK_REGISTER_SAT_BACKEND(z3, {
+  black::sat::feature::smt, black::sat::feature::quantifiers
+})
 
 namespace black::sat::backends 
 {
@@ -434,10 +436,6 @@ namespace black::sat::backends
       // We should not have any next(var) term at this point
       [&](next) -> Z3_ast { black_unreachable(); }
     );
-  }
-
-  bool z3::is_smt() const {
-    return true; // TODO: check if the actual theory is supported
   }
 
   std::optional<std::string> z3::license() const {
