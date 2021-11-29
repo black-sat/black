@@ -74,14 +74,14 @@ namespace black::internal
 
     void set_features(token const &tok);
 
-    std::optional<formula> parse_formula();
-    std::optional<formula> parse_binary_rhs(int precedence, formula lhs);
+    std::optional<formula> parse_formula(bool quantified);
+    std::optional<formula> parse_binary_rhs(int, formula, bool);
     std::optional<formula> parse_boolean();
     std::optional<formula> parse_atom();
     std::optional<formula> parse_quantifier();
-    std::optional<formula> parse_unary();
-    std::optional<formula> parse_parens();
-    std::optional<formula> parse_primary();
+    std::optional<formula> parse_unary(bool quantified);
+    std::optional<formula> parse_parens(bool quantified);
+    std::optional<formula> parse_primary(bool quantified);
 
     std::optional<formula> correct_term_to_formula(term t);
 

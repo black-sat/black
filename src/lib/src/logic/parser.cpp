@@ -305,34 +305,46 @@ namespace black::internal
   }
 
   std::optional<parser::result> parser::parse() {
-    std::optional<formula> f = parse_formula();
+    std::optional<formula> f = parse_formula(false);
     if(!f)
       return {};
+
+    if(peek())
+      return 
+        error("Expected end of formula, found " + 
+          std::string{to_string(*peek())});
 
     return {{*f, _features}};
   }
 
-  std::optional<formula> parser::parse_formula() {
-    std::optional<formula> lhs = parse_primary();
+  std::optional<formula> parser::parse_formula(bool quantified) {
+    std::optional<formula> lhs = parse_primary(quantified);
     if(!lhs)
       return error("Expected formula");
 
-    return parse_binary_rhs(0, *lhs);
+    return parse_binary_rhs(0, *lhs, quantified);
   }
 
-  std::optional<formula> parser::parse_binary_rhs(int prec, formula lhs) {
+  std::optional<formula> parser::parse_binary_rhs(
+    int prec, formula lhs, bool quantified
+  ) {
     while(1) {
       if(!peek() || precedence(*peek()) < prec)
          return {lhs};
 
       token op = *consume();
+      std::optional<binary::type> btype = op.data<binary::type>();
 
-      std::optional<formula> rhs = parse_primary();
+      if(btype && to_underlying(*btype) >= to_underlying(binary::type::until))
+        return 
+          error("Temporal operators inside quantifiers are not supported.");
+
+      std::optional<formula> rhs = parse_primary(quantified);
       if(!rhs)
         return error("Expected right operand to binary operator");
 
       if(!peek() || precedence(op) < precedence(*peek())) {
-        rhs = parse_binary_rhs(prec + 1, *rhs);
+        rhs = parse_binary_rhs(prec + 1, *rhs, quantified);
         if(!rhs)
           return error("Expected right operand to binary operator");
       }
@@ -398,7 +410,7 @@ namespace black::internal
     if(!dot || dot->data<token::punctuation>() != token::punctuation::dot)
       return error("Expected dot after quantifier");
 
-    std::optional<formula> matrix = parse_formula();
+    std::optional<formula> matrix = parse_formula(true);
     if(!matrix)
       return {};
 
@@ -407,26 +419,30 @@ namespace black::internal
     return quantifier(q, var, *matrix);
   }
 
-  std::optional<formula> parser::parse_unary()
+  std::optional<formula> parser::parse_unary(bool quantified)
   {
     std::optional<token> op = consume(); // consume unary op
     black_assert(op && op->is<unary::type>());
 
-    std::optional<formula> formula = parse_primary();
+    if(quantified && op->data<unary::type>() != unary::type::negation)
+      return error("Temporal operators inside quantifiers are not supported.");
+
+    std::optional<formula> formula = parse_primary(quantified);
     if(!formula)
       return {};
 
+    std::cout << "I'm quantified\n";
     return unary(*op->data<unary::type>(), *formula);
   }
 
-  std::optional<formula> parser::parse_parens() {
+  std::optional<formula> parser::parse_parens(bool quantified) {
     black_assert(peek());
     black_assert(
       peek()->data<token::punctuation>() == token::punctuation::left_paren);
 
     consume(); // Consume left paren '('
 
-    std::optional<formula> formula = parse_formula();
+    std::optional<formula> formula = parse_formula(quantified);
     if(!formula)
       return {}; // error raised by parse();
 
@@ -436,7 +452,7 @@ namespace black::internal
     return formula;
   }
 
-  std::optional<formula> parser::parse_primary() {
+  std::optional<formula> parser::parse_primary(bool quantified) {
     if(!peek())
       return {};
 
@@ -451,9 +467,9 @@ namespace black::internal
        peek()->data<token::keyword>() == token::keyword::forall)
       return parse_quantifier();
     if(peek()->is<unary::type>())
-      return parse_unary();
+      return parse_unary(quantified);
     if(peek()->data<token::punctuation>() == token::punctuation::left_paren)
-       return parse_parens();
+       return parse_parens(quantified);
 
     return error("Expected formula");
   }
