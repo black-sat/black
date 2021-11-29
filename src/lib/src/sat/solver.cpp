@@ -75,8 +75,7 @@ namespace black::sat
     using namespace black::sat::internal;
     auto it = _backends->find(name);
 
-    if(it == _backends->end())
-      return false;
+    black_assert(it != _backends->end());
 
     std::vector<feature> features = it->second.second;
 
