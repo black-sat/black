@@ -431,7 +431,6 @@ namespace black::internal
     if(!formula)
       return {};
 
-    std::cout << "I'm quantified\n";
     return unary(*op->data<unary::type>(), *formula);
   }
 

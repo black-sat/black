@@ -34,8 +34,6 @@
 #include <string>
 #include <memory>
 
-#include <iostream>
-
 BLACK_REGISTER_SAT_BACKEND(z3, {
   black::sat::feature::smt, black::sat::feature::quantifiers
 })
@@ -50,6 +48,7 @@ namespace black::sat::backends
     Z3_context context;
     Z3_solver solver;
     std::optional<Z3_model> model;
+    bool solver_upgraded = false;
 
     tsl::hopscotch_map<formula, Z3_ast> formulas;
     tsl::hopscotch_map<term_id, Z3_ast> terms;
@@ -63,6 +62,8 @@ namespace black::sat::backends
     Z3_func_decl to_z3_func_decl(
       alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
     );
+
+    void upgrade_solver();
   };
 
   //
@@ -118,15 +119,7 @@ namespace black::sat::backends
 
     Z3_del_config(cfg);
 
-    Z3_tactic qe = Z3_mk_tactic(_data->context, "qe");
-    Z3_tactic_inc_ref(_data->context, qe);
-    Z3_tactic smt = Z3_mk_tactic(_data->context, "smt");
-    Z3_tactic_inc_ref(_data->context, smt);
-
-    Z3_tactic qe_smt = Z3_tactic_and_then(_data->context, qe, smt);
-    Z3_tactic_inc_ref(_data->context, qe_smt);
-
-    _data->solver = Z3_mk_solver_from_tactic(_data->context, qe_smt);
+    _data->solver = Z3_mk_solver(_data->context);
     Z3_solver_inc_ref(_data->context, _data->solver);
   }
 
@@ -136,7 +129,8 @@ namespace black::sat::backends
   }
 
   void z3::assert_formula(formula f) { 
-    Z3_solver_assert(_data->context, _data->solver, _data->to_z3(f));
+    Z3_ast ast = _data->to_z3(f); // this call must stay on its own line
+    Z3_solver_assert(_data->context, _data->solver, ast);
   }
   
   bool z3::is_sat_with(formula f) {
@@ -204,6 +198,33 @@ namespace black::sat::backends
 
   void z3::clear() { 
     Z3_solver_reset(_data->context, _data->solver);
+  }
+
+  void z3::_z3_t::upgrade_solver() {
+    if(solver_upgraded)
+      return;
+
+    Z3_tactic qe = Z3_mk_tactic(context, "qe");
+    Z3_tactic_inc_ref(context, qe);
+    Z3_tactic smt = Z3_mk_tactic(context, "smt");
+    Z3_tactic_inc_ref(context, smt);
+
+    Z3_tactic qe_smt = Z3_tactic_and_then(context, qe, smt);
+    Z3_tactic_inc_ref(context, qe_smt);
+
+    Z3_solver new_solver = Z3_mk_solver_from_tactic(context, qe_smt);
+    Z3_solver_inc_ref(context, new_solver);
+
+    Z3_ast_vector assertions = Z3_solver_get_assertions(context, solver);
+
+    for(unsigned i = 0; i < Z3_ast_vector_size(context, assertions); ++i) {
+      Z3_ast assertion = Z3_ast_vector_get(context, assertions, i);
+      Z3_solver_assert(context, new_solver, assertion);
+    }
+
+    Z3_solver_dec_ref(context, solver);
+    solver = new_solver;
+    solver_upgraded = true;
   }
 
   Z3_sort z3::_z3_t::to_z3(sort s) {
@@ -297,10 +318,12 @@ namespace black::sat::backends
       },
       [this](quantifier q) {
         Z3_app var = Z3_to_app(context, to_z3(q.var()));
+        bool forall = q.quantifier_type() == quantifier::type::forall;
+        if(forall)
+          upgrade_solver();
+
         return Z3_mk_quantifier_const(
-          context, 
-          q.quantifier_type() == quantifier::type::forall,
-          0, 1, &var, 0, nullptr, to_z3(q.matrix())
+          context, forall, 0, 1, &var, 0, nullptr, to_z3(q.matrix())
         );
       },
       [this](proposition p) {
