@@ -21,6 +21,8 @@
 
 #include <fmt/format.h>
 
+#include <tsl/hopscotch_map.h>
+
 #include <string>
 #include <sstream>
 
@@ -206,11 +208,74 @@ namespace black::internal
 // Implementation of parser class
 namespace black::internal
 {
-  std::optional<token> parser::peek() {
+  struct parser::_parser_t {
+    alphabet &_alphabet;
+    lexer _lex;
+    uint8_t _features = 0;
+    std::function<void(std::string)> _error;
+    tsl::hopscotch_map<std::string, int> _func_arities;
+    tsl::hopscotch_map<std::string, int> _rel_arities;
+
+    _parser_t(alphabet &sigma, std::istream &stream, error_handler error)
+      : _alphabet(sigma), _lex(stream), _features{0}, _error(std::move(error))
+    {
+      _lex.get();
+    }
+
+    std::optional<token> peek();
+    std::optional<token> consume();
+    std::optional<token> peek(token::type, std::string const&err);
+    std::optional<token> consume(token::type, std::string const&err);
+    std::optional<token> consume_punctuation(token::punctuation p);
+    std::nullopt_t error(std::string const&s);
+
+    void set_features(token const &tok);
+
+    std::optional<formula> parse_formula(bool quantified);
+    std::optional<formula> parse_binary_rhs(int, formula, bool);
+    std::optional<formula> parse_boolean();
+    std::optional<formula> parse_atom();
+    std::optional<formula> parse_quantifier();
+    std::optional<formula> parse_unary(bool quantified);
+    std::optional<formula> parse_parens(bool quantified);
+    std::optional<formula> parse_primary(bool quantified);
+
+    std::optional<formula> correct_term_to_formula(term t);
+
+    std::optional<term> parse_term();
+    std::optional<term> parse_term_primary();
+    std::optional<term> parse_term_binary_rhs(int precedence, term lhs);
+    std::optional<term> parse_term_constant();
+    std::optional<term> parse_term_unary_minus();
+    std::optional<term> parse_term_next();
+    std::optional<term> parse_term_var_or_func();
+    std::optional<term> parse_term_parens();
+  };
+
+  parser::parser(alphabet &sigma, std::istream &stream, error_handler error)
+    : _data(std::make_unique<_parser_t>(sigma, stream, error)) { }
+
+  parser::~parser() = default;
+
+  std::optional<parser::result> parser::parse() {
+    std::optional<formula> f = _data->parse_formula(false);
+    if(!f)
+      return {};
+
+    if(_data->peek())
+      return 
+        _data->error("Expected end of formula, found " + 
+          std::string{to_string(*_data->peek())});
+
+    return {{*f, _data->_features}};
+  }
+
+  std::optional<token> parser::_parser_t::peek() {
     return _lex.peek();
   }
 
-  std::optional<token> parser::peek(token::type t, std::string const&err) {
+  std::optional<token> 
+  parser::_parser_t::peek(token::type t, std::string const&err) {
     auto tok = peek();
     if(!tok || tok->token_type() != t)
       return error("Expected " + err);
@@ -218,7 +283,7 @@ namespace black::internal
     return tok;
   }
 
-  std::optional<token> parser::consume() {
+  std::optional<token> parser::_parser_t::consume() {
     auto tok = peek();
     if(tok) {
       set_features(*tok);
@@ -227,7 +292,8 @@ namespace black::internal
     return tok;
   }
 
-  std::optional<token> parser::consume(token::type t, std::string const&err) {
+  std::optional<token> 
+  parser::_parser_t::consume(token::type t, std::string const&err) {
     auto tok = peek(t, err);
     if(tok) {
       set_features(*tok);
@@ -237,7 +303,7 @@ namespace black::internal
   }
 
   std::optional<token> 
-  parser::consume_punctuation(token::punctuation p) {
+  parser::_parser_t::consume_punctuation(token::punctuation p) {
     auto tok = peek();
     if(!tok || !tok->is<token::punctuation>() ||
         tok->data<token::punctuation>() != p) {
@@ -250,7 +316,7 @@ namespace black::internal
     return tok;
   }
 
-  std::nullopt_t parser::error(std::string const&s) {
+  std::nullopt_t parser::_parser_t::error(std::string const&s) {
     _error(s);
     return std::nullopt;
   }
@@ -259,7 +325,7 @@ namespace black::internal
   // This function sets the detected feature of the formula based on the
   // scanned tokens.
   //
-  void parser::set_features(token const& tok) 
+  void parser::_parser_t::set_features(token const& tok) 
   {
     if(auto k = tok.data<token::keyword>(); k) { // next, exists, forall
       _features |= feature::first_order;
@@ -304,20 +370,7 @@ namespace black::internal
     }
   }
 
-  std::optional<parser::result> parser::parse() {
-    std::optional<formula> f = parse_formula(false);
-    if(!f)
-      return {};
-
-    if(peek())
-      return 
-        error("Expected end of formula, found " + 
-          std::string{to_string(*peek())});
-
-    return {{*f, _features}};
-  }
-
-  std::optional<formula> parser::parse_formula(bool quantified) {
+  std::optional<formula> parser::_parser_t::parse_formula(bool quantified) {
     std::optional<formula> lhs = parse_primary(quantified);
     if(!lhs)
       return error("Expected formula");
@@ -325,7 +378,7 @@ namespace black::internal
     return parse_binary_rhs(0, *lhs, quantified);
   }
 
-  std::optional<formula> parser::parse_binary_rhs(
+  std::optional<formula> parser::_parser_t::parse_binary_rhs(
     int prec, formula lhs, bool quantified
   ) {
     while(1) {
@@ -354,7 +407,7 @@ namespace black::internal
     }
   }
 
-  std::optional<formula> parser::parse_boolean()
+  std::optional<formula> parser::_parser_t::parse_boolean()
   {
     black_assert(peek() && peek()->token_type() == token::type::boolean);
 
@@ -366,7 +419,7 @@ namespace black::internal
     return _alphabet.boolean(*tok->data<bool>());
   }
 
-  std::optional<formula> parser::parse_atom()
+  std::optional<formula> parser::_parser_t::parse_atom()
   {
     std::optional<term> lhs = parse_term();
     if(!lhs)
@@ -389,7 +442,7 @@ namespace black::internal
     return atom(relation{r}, {*lhs, *rhs});
   }
 
-  std::optional<formula> parser::parse_quantifier() {
+  std::optional<formula> parser::_parser_t::parse_quantifier() {
     black_assert(peek());
     black_assert(
       peek()->data<token::keyword>() == token::keyword::exists ||
@@ -419,7 +472,7 @@ namespace black::internal
     return quantifier(q, var, *matrix);
   }
 
-  std::optional<formula> parser::parse_unary(bool quantified)
+  std::optional<formula> parser::_parser_t::parse_unary(bool quantified)
   {
     std::optional<token> op = consume(); // consume unary op
     black_assert(op && op->is<unary::type>());
@@ -434,7 +487,7 @@ namespace black::internal
     return unary(*op->data<unary::type>(), *formula);
   }
 
-  std::optional<formula> parser::parse_parens(bool quantified) {
+  std::optional<formula> parser::_parser_t::parse_parens(bool quantified) {
     black_assert(peek());
     black_assert(
       peek()->data<token::punctuation>() == token::punctuation::left_paren);
@@ -451,7 +504,7 @@ namespace black::internal
     return formula;
   }
 
-  std::optional<formula> parser::parse_primary(bool quantified) {
+  std::optional<formula> parser::_parser_t::parse_primary(bool quantified) {
     if(!peek())
       return {};
 
@@ -473,7 +526,7 @@ namespace black::internal
     return error("Expected formula");
   }
 
-  std::optional<formula> parser::correct_term_to_formula(term t) {
+  std::optional<formula> parser::_parser_t::correct_term_to_formula(term t) {
     return t.match(
       [&](constant c) -> std::optional<formula> {
         std::string v;
@@ -491,6 +544,16 @@ namespace black::internal
         if(a.func().known_type())
           return error("Expected formula, found term");
         _features |= feature::first_order;
+
+        std::string id = a.func().name();
+
+        if(auto it = _rel_arities.find(id); it != _rel_arities.end())
+          if((size_t)it->second != a.arguments().size())
+            return error(
+              "Relation symbol '" + id + "' used twice with different arities"
+            );
+
+        _rel_arities.insert({id, a.arguments().size()});
         return atom(relation{a.func().name()}, a.arguments());
       },
       [&](next) -> std::optional<formula> { 
@@ -499,7 +562,7 @@ namespace black::internal
     );
   }
 
-  std::optional<term> parser::parse_term() {
+  std::optional<term> parser::_parser_t::parse_term() {
     std::optional<term> lhs = parse_term_primary();
     if(!lhs)
       return error("Expected term");
@@ -507,7 +570,7 @@ namespace black::internal
     return parse_term_binary_rhs(0, *lhs);
   }
 
-  std::optional<term> parser::parse_term_primary() {
+  std::optional<term> parser::_parser_t::parse_term_primary() {
     if(!peek())
       return {};
 
@@ -530,7 +593,8 @@ namespace black::internal
     return error("Expected term, found " + std::string{to_string(*peek())});
   }
 
-  std::optional<term> parser::parse_term_binary_rhs(int prec, term lhs) {
+  std::optional<term> 
+  parser::_parser_t::parse_term_binary_rhs(int prec, term lhs) {
     while(1) {
       if(!peek() || func_precedence(*peek()) < prec)
          return {lhs};
@@ -552,7 +616,7 @@ namespace black::internal
     }
   }
 
-  std::optional<term> parser::parse_term_constant() {
+  std::optional<term> parser::_parser_t::parse_term_constant() {
     black_assert(peek());
     black_assert(
       peek()->token_type() == token::type::integer ||
@@ -568,7 +632,7 @@ namespace black::internal
       return _alphabet.constant(*tok.data<double>());
   }
 
-  std::optional<term> parser::parse_term_unary_minus() {
+  std::optional<term> parser::_parser_t::parse_term_unary_minus() {
     black_assert(peek());
     black_assert(peek()->data<function::type>() == function::type::subtraction);
 
@@ -579,7 +643,7 @@ namespace black::internal
     return application(function{function::type::negation}, {*t});
   }
 
-  std::optional<term> parser::parse_term_next() {
+  std::optional<term> parser::_parser_t::parse_term_next() {
     black_assert(peek()->data<token::keyword>() == token::keyword::next);
 
     consume();
@@ -597,7 +661,7 @@ namespace black::internal
     return next(*t);
   }
 
-  std::optional<term> parser::parse_term_var_or_func() {
+  std::optional<term> parser::_parser_t::parse_term_var_or_func() {
     black_assert(peek());
     black_assert(peek()->token_type() == token::type::identifier);
 
@@ -625,10 +689,17 @@ namespace black::internal
     if(!consume_punctuation(token::punctuation::right_paren))
       return {};
 
+    if(auto it = _func_arities.find(id); it != _func_arities.end())
+      if((size_t)it->second != terms.size())
+        return error(
+          "Function symbol '" + id + "' used twice with different arities"
+        );
+
+    _func_arities.insert({id, terms.size()});
     return application(function{id}, terms);
   }
 
-  std::optional<term> parser::parse_term_parens() {
+  std::optional<term> parser::_parser_t::parse_term_parens() {
     black_assert(peek());
     black_assert(
       peek()->data<token::punctuation>() == token::punctuation::left_paren);

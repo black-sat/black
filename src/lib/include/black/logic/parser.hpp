@@ -31,6 +31,7 @@
 #include <istream>
 #include <ostream>
 #include <functional>
+#include <memory>
 
 namespace black::internal
 {
@@ -56,49 +57,14 @@ namespace black::internal
 
     using error_handler = std::function<void(std::string)>;
 
-    parser(alphabet &sigma, std::istream &stream, error_handler error)
-      : _alphabet(sigma), _lex(stream), _features{0}, _error(std::move(error))
-    {
-      _lex.get();
-    }
+    parser(alphabet &sigma, std::istream &stream, error_handler error);
+    ~parser();
 
     std::optional<result> parse();
 
   private:
-    std::optional<token> peek();
-    std::optional<token> consume();
-    std::optional<token> peek(token::type, std::string const&err);
-    std::optional<token> consume(token::type, std::string const&err);
-    std::optional<token> consume_punctuation(token::punctuation p);
-    std::nullopt_t error(std::string const&s);
-
-    void set_features(token const &tok);
-
-    std::optional<formula> parse_formula(bool quantified);
-    std::optional<formula> parse_binary_rhs(int, formula, bool);
-    std::optional<formula> parse_boolean();
-    std::optional<formula> parse_atom();
-    std::optional<formula> parse_quantifier();
-    std::optional<formula> parse_unary(bool quantified);
-    std::optional<formula> parse_parens(bool quantified);
-    std::optional<formula> parse_primary(bool quantified);
-
-    std::optional<formula> correct_term_to_formula(term t);
-
-    std::optional<term> parse_term();
-    std::optional<term> parse_term_primary();
-    std::optional<term> parse_term_binary_rhs(int precedence, term lhs);
-    std::optional<term> parse_term_constant();
-    std::optional<term> parse_term_unary_minus();
-    std::optional<term> parse_term_next();
-    std::optional<term> parse_term_var_or_func();
-    std::optional<term> parse_term_parens();
-
-  private:
-    alphabet &_alphabet;
-    lexer _lex;
-    uint8_t _features = 0;
-    std::function<void(std::string)> _error;
+    struct _parser_t;
+    std::unique_ptr<_parser_t> _data;
   };
 
   // Easy entry-point for parsing formulas
