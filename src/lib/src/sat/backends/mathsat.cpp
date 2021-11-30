@@ -41,11 +41,19 @@ namespace black::sat::backends
 {
   struct mathsat::_mathsat_t {
     msat_env env;
-    tsl::hopscotch_map<formula, msat_term> terms;
+    tsl::hopscotch_map<formula, msat_term> formulas;
+    tsl::hopscotch_map<term_id, msat_term> terms;
+    tsl::hopscotch_map<std::string, msat_decl> functions;
+    tsl::hopscotch_map<term_id, msat_decl> variables;
     std::optional<msat_model> model;
 
     msat_term to_mathsat(formula);
     msat_term to_mathsat_inner(formula);
+    msat_term to_mathsat(term);
+    msat_term to_mathsat_inner(term);
+    msat_type to_mathsat(sort);
+    msat_decl to_mathsat(alphabet *, std::string const&, int, bool);
+    msat_decl to_mathsat(variable);
 
     ~_mathsat_t() {
       if(model)
@@ -102,8 +110,8 @@ namespace black::sat::backends
   }
 
   tribool mathsat::value(proposition a) const {
-    auto it = _data->terms.find(a);
-    if(it == _data->terms.end())
+    auto it = _data->formulas.find(a);
+    if(it == _data->formulas.end())
       return tribool::undef;
 
     if(!_data->model)
@@ -125,11 +133,11 @@ namespace black::sat::backends
 
   msat_term mathsat::_mathsat_t::to_mathsat(formula f) 
   {
-    if(auto it = terms.find(f); it != terms.end()) 
+    if(auto it = formulas.find(f); it != formulas.end()) 
       return it->second;
 
     msat_term term = to_mathsat_inner(f);
-    terms.insert({f, term});
+    formulas.insert({f, term});
 
     return term;
   }
@@ -142,7 +150,41 @@ namespace black::sat::backends
           msat_make_true(env) : msat_make_false(env);
       },
       [this](atom a) {
-        black_unreachable();
+        std::vector<msat_term> args;
+        for(term t : a.terms())
+          args.push_back(to_mathsat(t));
+        
+        // we know how to encode known relations
+        if(auto k = a.rel().known_type(); k) {
+          black_assert(z3_terms.size() == 2);
+          switch(*k) {
+            case relation::equal:
+              return msat_make_eq(env, args[0], args[1]);
+            case relation::not_equal:
+              return msat_make_not(env, msat_make_eq(env, args[0], args[1]));
+            case relation::less_than:
+              return msat_make_and(env,
+                msat_make_leq(env, args[0], args[1]),
+                msat_make_not(env, msat_make_eq(env, args[0], args[1]))
+              );
+            case relation::less_than_equal: 
+              return msat_make_leq(env, args[0], args[1]);
+            case relation::greater_than:
+              return msat_make_not(env, msat_make_leq(env, args[0], args[1]));
+            case relation::greater_than_equal:
+              return msat_make_or(env,
+                msat_make_eq(env, args[0], args[1]),
+                msat_make_not(env, msat_make_leq(env, args[0], args[1]))
+              );
+          }
+        }
+
+        msat_decl rel = to_mathsat(a.sigma(), a.rel().name(), args.size(),true);
+
+        return msat_make_term(env, rel, args.data());
+      },
+      [this](quantifier) -> msat_term {
+        black_unreachable(); // mathsat does not support quantifiers
       },
       [this](proposition p) {
         msat_decl msat_prop =
@@ -187,8 +229,118 @@ namespace black::sat::backends
     );
   }
 
-  bool mathsat::supports_logic(logic ) const {
-    return true; // TODO: check if the actual theory is supported
+  msat_type mathsat::_mathsat_t::to_mathsat(sort s) {
+    if(s == sort::Int)
+      return msat_get_integer_type(env);
+    
+    return msat_get_rational_type(env);
+  }
+
+  msat_decl mathsat::_mathsat_t::to_mathsat(
+    alphabet *sigma, std::string const&name, int arity, bool is_relation
+  ) {
+    black_assert(!f.known_type());
+    if(auto it = functions.find(name); it != functions.end())
+      return it->second;
+
+    black_assert(sigma->domain());
+    msat_type type = to_mathsat(*sigma->domain());
+    msat_type bool_type = msat_get_bool_type(env);
+
+    std::vector<msat_type> types(arity, type);
+
+    msat_type functype = msat_get_function_type(
+      env, types.data(), arity, is_relation ? bool_type : type
+    );
+    msat_decl d = msat_declare_function(env, name.c_str(), functype);
+
+    functions.insert({name, d});
+
+    return d;
+  }
+
+  msat_decl mathsat::_mathsat_t::to_mathsat(variable x) {
+    if(auto it = variables.find(x.unique_id()); it != variables.end())
+      return it->second;
+
+    black_assert(x.sigma()->domain());
+    msat_type t = to_mathsat(*x.sigma()->domain());
+
+    msat_decl var = 
+      msat_declare_function(env, to_string(x.unique_id()).c_str(), t);
+
+    return var;
+  }
+
+  msat_term mathsat::_mathsat_t::to_mathsat(term t) 
+  {
+    if(auto it = terms.find(t.unique_id()); it != terms.end()) 
+      return it->second;
+
+    msat_term term = to_mathsat_inner(t);
+    terms.insert({t.unique_id(), term});
+
+    return term;
+  }
+  
+  msat_term mathsat::_mathsat_t::to_mathsat_inner(term t) {
+    return t.match(
+      [&](constant c) {
+        if(std::holds_alternative<int>(c.value()))
+          return
+            msat_make_number(env, 
+              std::to_string(std::get<int>(c.value())).c_str());
+        else
+          return
+            msat_make_number(env,
+              std::to_string(std::get<double>(c.value())).c_str());
+      },
+      [&](variable x) {
+        return msat_make_constant(env, to_mathsat(x));
+      },
+      [&](application a) {
+        std::vector<msat_term> args;
+        for(term t : a.arguments())
+          args.push_back(to_mathsat(t));
+
+        black_assert(a.arguments().size() > 0);
+
+        // We know how to encode known functions
+        if(auto k = a.func().known_type(); k) {
+          switch(*k) {
+            case function::negation:
+              black_assert(args.size() == 1);
+              return msat_make_times(env, msat_make_number(env, "-1"), args[0]);
+            case function::subtraction:
+              black_assert(args.size() == 2);
+              return msat_make_plus(env, 
+                args[0],
+                msat_make_times(env, msat_make_number(env, "-1"), args[1])
+              );
+            case function::addition:
+              black_assert(args.size() == 2);
+              return 
+                msat_make_plus(env, args[0], args[1]);
+            case function::multiplication:
+              black_assert(args.size() == 2);
+              return 
+                msat_make_times(env, args[0], args[1]);
+            case function::division:
+              black_assert(args.size() == 2);
+              return msat_make_divide(env, args[0], args[1]);
+            case function::modulo:
+              black_unreachable();
+          }
+          black_unreachable();
+        }
+
+        msat_decl func = to_mathsat(
+          a.arguments()[0].sigma(), a.func().name(), args.size(), false
+        );
+        return msat_make_uf(env, func, args.data());
+      },
+      [&](next) -> msat_term { black_unreachable(); }
+    );
   }
 
   std::optional<std::string> mathsat::license() const {
