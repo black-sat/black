@@ -242,6 +242,7 @@ namespace black::internal
 
     std::optional<formula> correct_term_to_formula(term t);
 
+    std::optional<term> register_term(term t);
     std::optional<term> parse_term();
     std::optional<term> parse_term_primary();
     std::optional<term> parse_term_binary_rhs(int precedence, term lhs);
@@ -388,7 +389,8 @@ namespace black::internal
       token op = *consume();
       std::optional<binary::type> btype = op.data<binary::type>();
 
-      if(btype && to_underlying(*btype) >= to_underlying(binary::type::until))
+      if(quantified && 
+         btype && to_underlying(*btype) >= to_underlying(binary::type::until))
         return 
           error("Temporal operators inside quantifiers are not supported.");
 
@@ -430,6 +432,9 @@ namespace black::internal
     if(!peek() || !peek()->is<relation::type>())
       return correct_term_to_formula(*lhs);
 
+    if(!register_term(*lhs))
+      return {};
+
     // otherwise we parse the rhs and form the atom
     relation::type r = *peek()->data<relation::type>();
     consume();
@@ -438,6 +443,9 @@ namespace black::internal
     if(!rhs)
       return {};
 
+    if(!register_term(*rhs))
+      return {};
+    
     _features |= feature::first_order;
     return atom(relation{r}, {*lhs, *rhs});
   }
@@ -553,12 +561,41 @@ namespace black::internal
               "Relation symbol '" + id + "' used twice with different arities"
             );
 
+        if(auto it = _func_arities.find(id); it != _func_arities.end())
+          return error(
+            "Relation symbol '" + id + "' already used as a function symbol"
+          );
+
         _rel_arities.insert({id, a.arguments().size()});
         return atom(relation{a.func().name()}, a.arguments());
       },
       [&](next) -> std::optional<formula> { 
         return error("Expected formula, found 'next' expression");
       }
+    );
+  }
+
+  std::optional<term> parser::_parser_t::register_term(term t) 
+  { 
+    return t.match(
+      [&](application app) -> std::optional<term> {
+        std::string id = app.func().name();
+
+        if(auto it = _func_arities.find(id); it != _func_arities.end())
+          if((size_t)it->second != app.arguments().size())
+            return error(
+              "Function symbol '" + id + "' used twice with different arities"
+            );
+
+        if(auto it = _rel_arities.find(id); it != _rel_arities.end())
+          return error(
+            "Function symbol '" + id + "' already used as a relation symbol"
+          );
+        _func_arities.insert({id, app.arguments().size()});
+
+        return t;
+      },
+      [&](otherwise) -> std::optional<term> { return t; }
     );
   }
 
@@ -605,6 +642,9 @@ namespace black::internal
       if(!rhs)
         return error("Expected right operand to binary function symbol");
 
+      if(!register_term(lhs) || !register_term(*rhs))
+        return {};
+
       if(!peek() || func_precedence(op) < func_precedence(*peek())) {
         rhs = parse_term_binary_rhs(prec + 1, *rhs);
         if(!rhs)
@@ -640,6 +680,8 @@ namespace black::internal
     std::optional<term> t = parse_term();
     if(!t)
       return {};
+    if(!register_term(*t))
+      return {};
     return application(function{function::type::negation}, {*t});
   }
 
@@ -655,13 +697,17 @@ namespace black::internal
     if(!t)
       return {};
 
+    if(!register_term(*t))
+      return {};
+
     if(!consume_punctuation(token::punctuation::right_paren))
       return {};
 
     return next(*t);
   }
 
-  std::optional<term> parser::_parser_t::parse_term_var_or_func() {
+  std::optional<term> 
+  parser::_parser_t::parse_term_var_or_func() {
     black_assert(peek());
     black_assert(peek()->token_type() == token::type::identifier);
 
@@ -680,6 +726,8 @@ namespace black::internal
       std::optional<term> t = parse_term();
       if(!t)
         return {};
+      if(!register_term(*t))
+        return {};
       terms.push_back(*t);
     } while(
       peek() && 
@@ -689,13 +737,6 @@ namespace black::internal
     if(!consume_punctuation(token::punctuation::right_paren))
       return {};
 
-    if(auto it = _func_arities.find(id); it != _func_arities.end())
-      if((size_t)it->second != terms.size())
-        return error(
-          "Function symbol '" + id + "' used twice with different arities"
-        );
-
-    _func_arities.insert({id, terms.size()});
     return application(function{id}, terms);
   }
 
