@@ -380,7 +380,15 @@ namespace black::frontend
 
     black_assert(result.has_value());
 
-    formula f = result->result;
+    auto [f, features] = *result;
+    
+    if(features & parser::feature::first_order) {
+      io::errorln(
+        "{}: trace checking is not supported (yet) for first-order formulas.",
+        cli::command_name
+      );
+      quit(status_code::command_line_error);
+    }
 
     trace_t trace = parse_trace(tracepath, tracefile);
 

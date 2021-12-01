@@ -120,6 +120,13 @@ namespace black::frontend {
       quit(status_code::command_line_error);
     }
 
+    if(cli::print_model && (features & parser::feature::first_order)) {
+      command_line_error(
+        "model extraction is not supported (yet) for first-order formulas."
+      );
+      quit(status_code::command_line_error);
+    }
+
     if(!cli::semi_decision && (features & parser::feature::nextvar)) {
       cli::semi_decision = true;
       io::errorln(
