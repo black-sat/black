@@ -457,7 +457,8 @@ namespace black::sat::backends
           Z3_mk_app(context, func, unsigned(z3_terms.size()), z3_terms.data());
       },
       // We should not have any next(var) term at this point
-      [&](next) -> Z3_ast { black_unreachable(); }
+      [&](next) -> Z3_ast { black_unreachable(); },
+      [&](wnext) -> Z3_ast { black_unreachable(); }
     );
   }
 

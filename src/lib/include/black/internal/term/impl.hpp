@@ -64,7 +64,8 @@ namespace black::internal
     constant,
     variable,
     application,
-    next
+    next,
+    wnext
   >;
 
   template<typename ...Handlers>
@@ -78,6 +79,11 @@ namespace black::internal
 
   template<size_t I, REQUIRES(I == 0)>
   term get(next n) {
+    return n.argument();
+  }
+  
+  template<size_t I, REQUIRES(I == 0)>
+  term get(wnext n) {
     return n.argument();
   }
 } // namespace black::internal
@@ -95,8 +101,17 @@ namespace std {
     struct tuple_size<::black::internal::next>
       : std::integral_constant<int, 1> { };
 
+  template<>
+    struct tuple_size<::black::internal::wnext>
+      : std::integral_constant<int, 1> { };
+
   template<size_t I>
     struct tuple_element<I, ::black::internal::next> {
+      using type = ::black::internal::term;
+    };
+
+  template<size_t I>
+    struct tuple_element<I, ::black::internal::wnext> {
       using type = ::black::internal::term;
     };
 
@@ -239,6 +254,14 @@ namespace black::internal {
     : term_handle_base<next, next_t>{allocate_next(arg)} { }
 
   inline term next::argument() const {
+    return term{_alphabet, _term->arg};
+  }
+  
+  // struct wnext
+  inline wnext::wnext(term arg)
+    : term_handle_base<wnext, wnext_t>{allocate_wnext(arg)} { }
+
+  inline term wnext::argument() const {
     return term{_alphabet, _term->arg};
   }
 

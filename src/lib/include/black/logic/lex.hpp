@@ -65,6 +65,7 @@ namespace black::internal
     // we only have one keyword yet
     enum class keyword : uint8_t {
       next,
+      wnext,
       exists,
       forall
     };

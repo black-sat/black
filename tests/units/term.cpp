@@ -54,10 +54,12 @@ TEST_CASE("Terms manipulation") {
         [](constant) { return "c2"; },
         [](variable) { return "v2"; },
         [](application) { return "a2"; },
-        [](next) { return "n2"; }
+        [](next) { return "n2"; },
+        [](wnext) { return "w2"; }
       );
     },
-    [](next)        { return "n1"; }
+    [](next)        { return "n1"; },
+    [](wnext)       { return "w1"; }
   );
 
   REQUIRE(s == "n2");

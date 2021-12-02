@@ -172,6 +172,7 @@ namespace black::internal
       {"True",   token{true}},
       {"False",  token{false}},
       {"next",   token{token::keyword::next}},
+      {"wnext",  token{token::keyword::wnext}},
       {"exists", token{token::keyword::exists}},
       {"forall", token{token::keyword::forall}},
       {"NOT",    token{unary::type::negation}},

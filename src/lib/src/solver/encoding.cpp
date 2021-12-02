@@ -342,6 +342,9 @@ namespace black::internal
       },
       [&](next n) {
         return stepped(n.argument(), k + 1, scope);
+      },
+      [&](wnext n) {
+        return stepped(n.argument(), k + 1, scope);
       }
     );
   }

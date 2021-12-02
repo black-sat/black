@@ -104,6 +104,9 @@ namespace black::internal
       },
       [&](next n) {
         return fmt::format("next({})", to_string(n.argument()));
+      },
+      [&](wnext n) {
+        return fmt::format("wnext({})", to_string(n.argument()));
       }
     );
   }
@@ -249,6 +252,7 @@ namespace black::internal
     std::optional<term> parse_term_constant();
     std::optional<term> parse_term_unary_minus();
     std::optional<term> parse_term_next();
+    std::optional<term> parse_term_wnext();
     std::optional<term> parse_term_var_or_func();
     std::optional<term> parse_term_parens();
   };
@@ -332,6 +336,7 @@ namespace black::internal
       _features |= feature::first_order;
       switch(*k){
         case token::keyword::next:
+        case token::keyword::wnext:
           _features |= feature::nextvar;
           break;
         case token::keyword::exists:
@@ -571,6 +576,9 @@ namespace black::internal
       },
       [&](next) -> std::optional<formula> { 
         return error("Expected formula, found 'next' expression");
+      },
+      [&](wnext) -> std::optional<formula> { 
+        return error("Expected formula, found 'wnext' expression");
       }
     );
   }
@@ -620,6 +628,9 @@ namespace black::internal
 
     if(peek()->data<token::keyword>() == token::keyword::next)
        return parse_term_next();
+
+    if(peek()->data<token::keyword>() == token::keyword::wnext)
+       return parse_term_wnext();
 
     if(peek()->token_type() == token::type::identifier)
       return parse_term_var_or_func();
@@ -704,6 +715,27 @@ namespace black::internal
       return {};
 
     return next(*t);
+  }
+
+  std::optional<term> parser::_parser_t::parse_term_wnext() {
+    black_assert(peek()->data<token::keyword>() == token::keyword::wnext);
+
+    consume();
+
+    if(!consume_punctuation(token::punctuation::left_paren))
+      return {};
+
+    std::optional<term> t = parse_term();
+    if(!t)
+      return {};
+
+    if(!register_term(*t))
+      return {};
+
+    if(!consume_punctuation(token::punctuation::right_paren))
+      return {};
+
+    return wnext(*t);
   }
 
   std::optional<term> 

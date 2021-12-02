@@ -36,7 +36,8 @@ namespace black::internal {
     constant,
     variable,
     application,
-    next
+    next,
+    wnext
   };
 
   struct application;
@@ -163,6 +164,15 @@ namespace black::internal {
     term argument() const;
   };
 
+  struct wnext : term_handle_base<wnext, wnext_t>
+  {
+    using term_handle_base<wnext, wnext_t>::term_handle_base;
+
+    wnext(term arg);
+
+    term argument() const;
+  };
+
   // Syntactic sugar for known functions
   application operator-(term);
   application operator-(term, term);
@@ -187,6 +197,7 @@ namespace black {
   using internal::variable;
   using internal::application;
   using internal::next;
+  using internal::wnext;
   using internal::function;
 }
 

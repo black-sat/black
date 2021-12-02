@@ -56,6 +56,10 @@ namespace black::internal
     return type == term_type::next;
   }
 
+  constexpr bool is_wnext_type(term_type type) {
+    return type == term_type::wnext;
+  }
+
   struct term_base
   {
     term_base(term_type t) : type{t} { }
@@ -103,6 +107,16 @@ namespace black::internal
 
     next_t(term_base *_arg)
       : term_base{term_type::next}, arg{_arg} {}
+
+    term_base *arg{};
+  };
+
+  struct wnext_t : term_base
+  {
+    static constexpr auto accepts_type = is_wnext_type;
+
+    wnext_t(term_base *_arg)
+      : term_base{term_type::wnext}, arg{_arg} {}
 
     term_base *arg{};
   };
@@ -157,6 +171,10 @@ namespace black::internal
     template<typename Arg>
     static std::pair<class alphabet *, next_t *>
     allocate_next(Arg arg);
+
+    template<typename Arg>
+    static std::pair<class alphabet *, wnext_t *>
+    allocate_wnext(Arg arg);
 
     class alphabet *_alphabet;
     T *_term;

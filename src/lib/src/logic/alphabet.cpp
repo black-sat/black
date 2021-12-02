@@ -71,6 +71,7 @@ namespace black::internal {
     std::deque<constant_t>    _consts;
     std::deque<variable_t>    _vars;
     std::deque<next_t>        _nexts;
+    std::deque<wnext_t>       _wnexts;
     std::deque<application_t> _apps;
 
     using unary_key = std::tuple<unary::type, formula_base*>;
@@ -93,6 +94,7 @@ namespace black::internal {
     tsl::hopscotch_map<constant_key,    constant_t*>    _consts_map;
     tsl::hopscotch_map<identifier,      variable_t*>    _vars_map;
     tsl::hopscotch_map<term_base *,     next_t*>        _nexts_map;
+    tsl::hopscotch_map<term_base *,     wnext_t*>       _wnexts_map;
     tsl::hopscotch_map<application_key, application_t*> _apps_map;
   };
 
@@ -247,6 +249,18 @@ namespace black::internal {
 
     next_t *t = &_impl->_nexts.emplace_back(arg);
     _impl->_nexts_map.insert({arg, t});
+
+    return t;
+  }
+
+  wnext_t *alphabet::allocate_wnext(term_base *arg)
+  {
+    auto it = _impl->_wnexts_map.find(arg);
+    if(it != _impl->_wnexts_map.end())
+      return it->second;
+
+    wnext_t *t = &_impl->_wnexts.emplace_back(arg);
+    _impl->_wnexts_map.insert({arg, t});
 
     return t;
   }

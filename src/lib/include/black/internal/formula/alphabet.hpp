@@ -165,6 +165,17 @@ namespace black::internal {
     return {sigma, object};
   }
   
+  template<typename H, typename T>
+  template<typename Arg>
+  std::pair<alphabet *, wnext_t *>
+  term_handle_base<H, T>::allocate_wnext(Arg arg) {
+    class alphabet *sigma = arg._alphabet;
+
+    wnext_t *object = sigma->allocate_wnext(arg._term);
+
+    return {sigma, object};
+  }
+  
 } // namespace black::internal
 
 /*
