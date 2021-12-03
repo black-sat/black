@@ -72,7 +72,7 @@ namespace black::internal
       [&](variable x) {
         if(auto name = x.label<std::string>(); name.has_value())
           return *name;
-        if(auto fname = x.label<std::pair<term_id,int>>(); fname.has_value()) {
+        if(auto fname = x.label<std::pair<term_id,size_t>>(); fname.has_value()) {
           term t2 = t.sigma()->from_id(fname->first);
           return
             fmt::format("<{},{}>", to_string(t2), fname->second);
@@ -118,7 +118,7 @@ namespace black::internal
       [&](proposition p) {
         if(auto name = p.label<std::string>(); name.has_value())
           return *name;
-        if(auto fname = p.label<std::pair<formula,int>>(); fname.has_value())
+        if(auto fname = p.label<std::pair<formula,size_t>>(); fname.has_value())
           return
             fmt::format("<{},{}>", to_string(fname->first), fname->second); // LCOV_EXCL_LINE
         if(auto fname = p.label<past_label>(); fname.has_value())
@@ -526,7 +526,8 @@ namespace black::internal
     if(peek()->token_type() == token::type::integer ||
        peek()->data<function::type>() == function::type::subtraction ||
        peek()->token_type() == token::type::identifier ||
-       peek()->data<token::keyword>() == token::keyword::next)
+       peek()->data<token::keyword>() == token::keyword::next ||
+       peek()->data<token::keyword>() == token::keyword::wnext)
       return parse_atom();
     if(peek()->data<token::keyword>() == token::keyword::exists ||
        peek()->data<token::keyword>() == token::keyword::forall)

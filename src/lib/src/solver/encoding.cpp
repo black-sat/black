@@ -73,11 +73,19 @@ namespace black::internal
 
   // Generates the encoding for EMPTY_k
   formula encoder::k_empty(size_t k) {
-    return big_and(*_sigma, _xrequests, [&,this](unary req) -> formula {
-      if(!_finite || req.formula_type() == unary::type::tomorrow)
-        return !ground(req, k);
-      return _sigma->top();
-    });
+    formula tomorrows = 
+      big_and(*_sigma, _xrequests, [&,this](unary req) -> formula {
+        if(!_finite || req.formula_type() == unary::type::tomorrow)
+          return !ground(req, k);
+        return _sigma->top();
+      });
+
+    formula nexts =
+      big_and(*_sigma, _atomic_requests, [&](atom a) -> formula {
+        return !to_ground_snf(a, k);
+      });
+    
+    return tomorrows && nexts;
   }
 
   // extract the requested formula from an X-eventuality
@@ -189,6 +197,31 @@ namespace black::internal
     return step && y && z;
   }
 
+  bool encoder::term_is_weak(term t) {
+    bool has_next = false;
+    bool has_wnext = false;
+
+    std::function<void(term)> check = [&](term t2) {
+      t2.match(
+        [](constant) { },
+        [](variable) { },
+        [&](application a) {
+          for(term t3 : a.arguments())
+            check(t3);
+        },
+        [&](next) {
+          has_next = true;
+        },
+        [&](wnext) {
+          has_wnext = true;
+        }
+      );
+    };
+
+    check(t);
+
+    return !has_next && has_wnext;
+  }
 
   // Turns the current formula into Stepped Normal Form
   // Note: this has to be run *after* the transformation to NNF (to_nnf() below)
@@ -201,10 +234,16 @@ namespace black::internal
   ) {
     return f.match(
       [&](boolean)      { return f; },
-      [&](atom a)       { 
+      [&](atom a) -> formula { 
         std::vector<term> terms;
-        for(term t : a.terms())
+        bool weak = false;
+        for(term t : a.terms()) {
+          weak = weak || term_is_weak(t);
           terms.push_back(stepped(t, k, scope));
+        }
+
+        if(weak)
+          return ground(wX(f.sigma()->bottom()), k) || atom(a.rel(), terms);
 
         return atom(a.rel(), terms);
       },
@@ -444,6 +483,9 @@ namespace black::internal
    */
   void encoder::_add_xyz_requests(formula f)
   {
+    if(f == _frm)
+      _xrequests.push_back(wX(_sigma->bottom()));
+    
     f.match(
       [&](tomorrow t)     { _xrequests.push_back(t);     },
       [&](w_tomorrow w)   { _xrequests.push_back(w);     },
@@ -477,6 +519,46 @@ namespace black::internal
       [&](binary, formula left, formula right) {
         _add_xyz_requests(left);
         _add_xyz_requests(right);
+      },
+      [](otherwise) { }
+    );
+  }
+
+  void encoder::_add_atomic_requests(formula f) {
+    std::function<bool(term)> term_has_next = [&](term t) {
+      return t.match(
+        [](constant) { return false; },
+        [](variable) { return false; },
+        [](next) { return true; },
+        [&](application a) {
+          bool has_next = false;
+          for(term arg : a.arguments())
+            has_next = has_next || term_has_next(arg);
+          return has_next;
+        },
+        [&](wnext n) {
+          return term_has_next(n.argument());
+        }
+      );
+    };
+
+    f.match(
+      [&](atom a) {
+        bool has_next = false;
+        for(term t : a.terms()) 
+          has_next = has_next || term_has_next(t);
+        if(has_next)
+          _atomic_requests.push_back(a);
+      },
+      [&](quantifier q) {
+        _add_atomic_requests(q.matrix());
+      },
+      [&](unary, formula arg) {
+        _add_atomic_requests(arg);
+      },
+      [&](binary, formula left, formula right) {
+        _add_atomic_requests(left);
+        _add_atomic_requests(right);
       },
       [](otherwise) { }
     );

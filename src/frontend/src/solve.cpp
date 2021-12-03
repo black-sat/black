@@ -90,6 +90,9 @@ namespace black::frontend {
 
     black_assert(black::sat::solver::backend_exists(backend));
 
+    if(features & black::parser::feature::first_order)
+      cli::finite = true;
+
     if((features & black::parser::feature::first_order) && 
        !black::sat::solver::backend_has_feature(backend, 
           black::sat::feature::smt))
