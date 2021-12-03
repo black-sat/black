@@ -168,7 +168,7 @@ namespace black::internal
 
   std::optional<token> lexer::_identifier()
   {
-    static constexpr std::pair<std::string_view, token> operators[] = {
+    static std::pair<std::string_view, token> operators[] = {
       {"True",   token{true}},
       {"False",  token{false}},
       {"next",   token{token::keyword::next}},
@@ -216,8 +216,7 @@ namespace black::internal
     if(it != std::end(operators))
       return {it->second};
 
-    _lexed_identifiers.push_back(std::move(id));
-    return token{std::string_view{_lexed_identifiers.back()}};
+    return token{std::move(id)};
   }
 
   std::optional<token> lexer::_lex()

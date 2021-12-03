@@ -70,24 +70,24 @@ namespace black::internal
       forall
     };
 
-    constexpr token(bool b)               : _data{b} { }
-    constexpr token(int c)                : _data{c} { }
-    constexpr token(double d)             : _data{d} { }
-    constexpr token(std::string_view s)   : _data{s} { }
-    constexpr token(keyword k)            : _data{k} { }
-    constexpr token(relation::type t)     : _data{t} { }
-    constexpr token(function::type t)     : _data{t} { }
-    constexpr token(unary::type t)        : _data{t} { }
-    constexpr token(binary::type t)       : _data{t} { }
-    constexpr token(punctuation s) : _data{s} { }
+    token(bool b)               : _data{b} { }
+    token(int c)                : _data{c} { }
+    token(double d)             : _data{d} { }
+    token(std::string s)        : _data{std::move(s)} { }
+    token(keyword k)            : _data{k} { }
+    token(relation::type t)     : _data{t} { }
+    token(function::type t)     : _data{t} { }
+    token(unary::type t)        : _data{t} { }
+    token(binary::type t)       : _data{t} { }
+    token(punctuation s) : _data{s} { }
 
     template<typename T>
-    constexpr bool is() const {
+    bool is() const {
       return std::holds_alternative<T>(_data);
     }
 
     template<typename T>
-    constexpr std::optional<T> data() const {
+    std::optional<T> data() const {
       if(auto p = std::get_if<T>(&_data); p)
         return {*p};
       return std::nullopt;
@@ -95,25 +95,25 @@ namespace black::internal
 
     type token_type() const { return static_cast<type>(_data.index()); }
 
-    friend constexpr std::string_view to_string(token const &tok);
+    friend std::string to_string(token const &tok);
 
   private:
     // data related to recognized tokens
     std::variant<
-      bool,             // booleans
-      int,              // integers
-      double,           // reals
-      std::string_view, // identifiers
-      keyword,          // keywords
-      relation::type,   // known relations
-      function::type,   // known functions
-      unary::type,      // unary operator
-      binary::type,     // binary operator
-      punctuation       // any non-logical token
+      bool,           // booleans
+      int,            // integers
+      double,         // reals
+      std::string,    // identifiers
+      keyword,        // keywords
+      relation::type, // known relations
+      function::type, // known functions
+      unary::type,    // unary operator
+      binary::type,   // binary operator
+      punctuation     // any non-logical token
     > _data;
   };
 
-  constexpr std::string_view to_string(unary::type t)
+  inline std::string to_string(unary::type t)
   {
     constexpr std::string_view toks[] = {
       "!",  // negation
@@ -127,10 +127,12 @@ namespace black::internal
       "H",  // historically
     };
 
-    return toks[to_underlying(t) - to_underlying(unary::type::negation)];
+    return std::string{
+      toks[to_underlying(t) - to_underlying(unary::type::negation)]
+    };
   }
 
-  constexpr std::string_view to_string(binary::type t) {
+  inline std::string to_string(binary::type t) {
     constexpr std::string_view toks[] = {
       "&",   // conjunction
       "|",   // disjunction
@@ -144,18 +146,23 @@ namespace black::internal
       "T",   // triggered
     };
 
-    return toks[to_underlying(t) - to_underlying(binary::type::conjunction)];
+    return std::string{
+      toks[to_underlying(t) - to_underlying(binary::type::conjunction)]
+    };
   }
 
-  constexpr std::string_view to_string(token::keyword k) {
+  inline std::string to_string(token::keyword k) {
     constexpr std::string_view toks[] = {
-      "next"
+      "next",
+      "wnext",
+      "exists",
+      "forall"
     };
 
-    return toks[to_underlying(k)];
+    return std::string{toks[to_underlying(k)]};
   }
 
-  constexpr std::string_view to_string(relation::type t) {
+  inline std::string to_string(relation::type t) {
     constexpr std::string_view toks[] = {
       "=",  // equal
       "!=", // not_equal
@@ -165,10 +172,10 @@ namespace black::internal
       ">="  // greater_than_equal
     };
 
-    return toks[to_underlying(t)];
+    return std::string{toks[to_underlying(t)]};
   }
 
-  constexpr std::string_view to_string(function::type t) {
+  inline std::string to_string(function::type t) {
     constexpr std::string_view toks[] = {
       "-",   // negation
       "-",   // subtraction
@@ -178,28 +185,29 @@ namespace black::internal
       "mod", // modulo
     };
 
-    return toks[to_underlying(t)];
+    return std::string{toks[to_underlying(t)]};
   }
 
-  constexpr std::string_view to_string(token::punctuation p) {
+  inline std::string to_string(token::punctuation p) {
     constexpr std::string_view toks[] = {
       "(", // left_paren
       ")", // right_paren
-      ","  // comma
+      ",", // comma
+      "."  // dot
     };
 
-    return toks[to_underlying(p)];
+    return std::string{toks[to_underlying(p)]};
   }
 
-  constexpr std::string_view to_string(token const &tok)
+  inline std::string to_string(token const &tok)
   {
     using namespace std::literals;
 
     return std::visit( overloaded {
-      [](bool b)               { return b ? "true"sv : "false"sv; },
+      [](bool b)               { return b ? "true"s : "false"s; },
       [](int c)                { return to_string(c); },
       [](double d)             { return to_string(d); },
-      [](std::string_view s)   { return s; },
+      [](std::string s)        { return s; },
       [](token::keyword k)     { return to_string(k); },
       [](relation::type t)     { return to_string(t); },
       [](function::type t)     { return to_string(t); },
@@ -224,8 +232,6 @@ namespace black::internal
 
     std::optional<token> _token = std::nullopt;
     std::istream &_stream;
-
-    std::vector<std::string> _lexed_identifiers;
   };
 
   std::ostream &operator<<(std::ostream &s, token const &t);

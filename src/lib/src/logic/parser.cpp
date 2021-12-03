@@ -270,7 +270,7 @@ namespace black::internal
     if(_data->peek())
       return 
         _data->error("Expected end of formula, found " + 
-          std::string{to_string(*_data->peek())});
+          to_string(*_data->peek()));
 
     return {{*f, _data->_features}};
   }
@@ -312,7 +312,7 @@ namespace black::internal
     auto tok = peek();
     if(!tok || !tok->is<token::punctuation>() ||
         tok->data<token::punctuation>() != p) {
-      return error("Expected '" + std::string{to_string(p)} + "'");
+      return error("Expected '" + to_string(p) + "'");
     }
     if(tok) {
       set_features(*tok);
@@ -470,7 +470,7 @@ namespace black::internal
     if(!vartok)
       return {};
         
-    std::string varname{*vartok->data<std::string_view>()};
+    std::string varname{*vartok->data<std::string>()};
 
     std::optional<token> dot = consume();
     if(!dot || dot->data<token::punctuation>() != token::punctuation::dot)
@@ -639,7 +639,7 @@ namespace black::internal
     if(peek()->data<token::punctuation>() == token::punctuation::left_paren)
       return parse_term_parens();
 
-    return error("Expected term, found " + std::string{to_string(*peek())});
+    return error("Expected term, found " + to_string(*peek()));
   }
 
   std::optional<term> 
@@ -744,7 +744,7 @@ namespace black::internal
     black_assert(peek());
     black_assert(peek()->token_type() == token::type::identifier);
 
-    std::string id{*peek()->data<std::string_view>()};
+    std::string id{*peek()->data<std::string>()};
     consume();
 
     // if there is no open paren this is a simple variable

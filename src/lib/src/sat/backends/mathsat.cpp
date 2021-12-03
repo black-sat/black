@@ -156,7 +156,7 @@ namespace black::sat::backends
         
         // we know how to encode known relations
         if(auto k = a.rel().known_type(); k) {
-          black_assert(z3_terms.size() == 2);
+          black_assert(args.size() == 2);
           switch(*k) {
             case relation::equal:
               return msat_make_eq(env, args[0], args[1]);
@@ -179,11 +179,12 @@ namespace black::sat::backends
           }
         }
 
-        msat_decl rel = to_mathsat(a.sigma(), a.rel().name(), args.size(),true);
+        msat_decl rel = 
+          to_mathsat(a.sigma(), a.rel().name(), (int)args.size(), true);
 
         return msat_make_term(env, rel, args.data());
       },
-      [this](quantifier) -> msat_term {
+      [](quantifier) -> msat_term {
         black_unreachable(); // mathsat does not support quantifiers
       },
       [this](proposition p) {
@@ -239,7 +240,6 @@ namespace black::sat::backends
   msat_decl mathsat::_mathsat_t::to_mathsat(
     alphabet *sigma, std::string const&name, int arity, bool is_relation
   ) {
-    black_assert(!f.known_type());
     if(auto it = functions.find(name); it != functions.end())
       return it->second;
 
@@ -247,10 +247,10 @@ namespace black::sat::backends
     msat_type type = to_mathsat(*sigma->domain());
     msat_type bool_type = msat_get_bool_type(env);
 
-    std::vector<msat_type> types(arity, type);
+    std::vector<msat_type> types((size_t)arity, type);
 
     msat_type functype = msat_get_function_type(
-      env, types.data(), arity, is_relation ? bool_type : type
+      env, types.data(), (size_t)arity, is_relation ? bool_type : type
     );
     msat_decl d = msat_declare_function(env, name.c_str(), functype);
 
@@ -300,8 +300,8 @@ namespace black::sat::backends
       },
       [&](application a) {
         std::vector<msat_term> args;
-        for(term t : a.arguments())
-          args.push_back(to_mathsat(t));
+        for(term t2 : a.arguments())
+          args.push_back(to_mathsat(t2));
 
         black_assert(a.arguments().size() > 0);
 
@@ -335,7 +335,7 @@ namespace black::sat::backends
         }
 
         msat_decl func = to_mathsat(
-          a.arguments()[0].sigma(), a.func().name(), args.size(), false
+          a.arguments()[0].sigma(), a.func().name(), (int)args.size(), false
         );
         return msat_make_uf(env, func, args.data());
       },

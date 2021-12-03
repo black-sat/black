@@ -380,12 +380,12 @@ namespace black::sat::backends
     while(
       a + c <= std::numeric_limits<int>::max() &&
       b + d <= std::numeric_limits<int>::max() &&
-      ((double)num/denum != n)
+      ((double)num/(double)denum != n)
     ) {
       num = a + c;
       denum = b + d;
 
-      if((double)num/denum > n) {
+      if((double)num/(double)denum > n) {
         c = num;
         d = denum;
       } else {

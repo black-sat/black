@@ -100,7 +100,7 @@ namespace black::internal
     return (stream << to_string(f));
   }
 
-  constexpr std::optional<int> precedence(token const&tok)
+  inline std::optional<int> precedence(token const&tok)
   {
     // Attention: this must remain in sync with token::token_type
     constexpr std::optional<int> ops[] = {
@@ -122,7 +122,7 @@ namespace black::internal
     return {};
   }
 
-  constexpr std::optional<int> func_precedence(token const&tok)
+  inline std::optional<int> func_precedence(token const&tok)
   {
     constexpr std::optional<int> fops[] = {
       {},   // negation
