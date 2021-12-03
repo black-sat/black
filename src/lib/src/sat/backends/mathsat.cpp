@@ -76,7 +76,7 @@ namespace black::sat::backends
     msat_assert_formula(_data->env, _data->to_mathsat(f));
   }
 
-  bool mathsat::is_sat() { 
+  tribool mathsat::is_sat() { 
     msat_result res = msat_solve(_data->env);
 
     if(res == MSAT_SAT) {
@@ -87,10 +87,12 @@ namespace black::sat::backends
       black_assert(!MSAT_ERROR_MODEL(*_data->model));
     }
 
-    return (res == MSAT_SAT);
+    return res == MSAT_SAT ? tribool{true} :
+           res == MSAT_UNSAT ? tribool{false} :
+           tribool::undef;
   }
 
-  bool mathsat::is_sat_with(formula f) 
+  tribool mathsat::is_sat_with(formula f) 
   {
     msat_push_backtrack_point(_data->env);
   
@@ -106,7 +108,9 @@ namespace black::sat::backends
     }
   
     msat_pop_backtrack_point(_data->env);
-    return (res == MSAT_SAT);
+    return res == MSAT_SAT ? tribool{true} :
+           res == MSAT_UNSAT ? tribool{false} :
+           tribool::undef;
   }
 
   tribool mathsat::value(proposition a) const {

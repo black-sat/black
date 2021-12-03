@@ -80,7 +80,7 @@ namespace black::sat::dimacs::internal
   }
 
   // TODO: optimize corner cases (e.g. if assumption is already a literal)
-  bool solver::is_sat_with(formula assumption) 
+  tribool solver::is_sat_with(formula assumption) 
   { 
     proposition fresh = assumption.sigma()->prop(assumption);
 

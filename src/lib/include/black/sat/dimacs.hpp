@@ -89,7 +89,7 @@ namespace black::sat::dimacs::internal
 
     // sat::solver interface
     virtual void assert_formula(formula f) override;
-    virtual bool is_sat_with(formula assumption) override;
+    virtual tribool is_sat_with(formula assumption) override;
     virtual tribool value(proposition a) const override;
     
     // specialized DIMACS interface
@@ -104,10 +104,10 @@ namespace black::sat::dimacs::internal
     virtual void assert_clause(clause c) = 0;
 
     // solve the instance
-    virtual bool is_sat() override = 0;
+    virtual tribool is_sat() override = 0;
 
     // solve the instance assuming the given literals
-    virtual bool is_sat_with(std::vector<literal> const& assumptions) = 0;
+    virtual tribool is_sat_with(std::vector<literal> const& assumptions) = 0;
 
     // retrieve the value of a proposition after is_sat() or is_sat_with() 
     virtual tribool value(uint32_t var) const = 0;

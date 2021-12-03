@@ -63,25 +63,29 @@ namespace black::sat::backends
     _data->solver->add_clause(lits);
   }
 
-  bool cmsat::is_sat() {
+  tribool cmsat::is_sat() {
     CMSat::lbool ret = _data->solver->solve();
-    bool result = (ret == CMSat::l_True);
-    _data->model_available = result;
+    if(ret == CMSat::l_True)
+      _data->model_available = true;
 
-    return result;
+    return ret == CMSat::l_True ? tribool{true} :
+           ret == CMSat::l_False ? tribool{false} :
+           tribool::undef;
   }
 
-  bool cmsat::is_sat_with(std::vector<dimacs::literal> const& assumptions) {
+  tribool cmsat::is_sat_with(std::vector<dimacs::literal> const& assumptions) {
     std::vector<CMSat::Lit> lits;
     for(dimacs::literal lit : assumptions) {
       lits.push_back(CMSat::Lit{lit.var, !lit.sign});
     }
 
     CMSat::lbool ret = _data->solver->solve(&lits);
-    bool result = (ret == CMSat::l_True);
-    _data->model_available = result;
+    if(ret == CMSat::l_True)
+      _data->model_available = true;
 
-    return result;
+    return ret == CMSat::l_True ? tribool{true} :
+           ret == CMSat::l_False ? tribool{false} :
+           tribool::undef;
   }
 
   tribool cmsat::value(uint32_t v) const {

@@ -140,8 +140,8 @@ namespace black::internal
       // Generating the k-unraveling.
       // If it is UNSAT, then stop with UNSAT
       sat->assert_formula(encoder->k_unraveling(k));
-      if(!sat->is_sat())
-        return false;
+      if(tribool res = sat->is_sat(); !res)
+        return res;
 
       // else, continue to check EMPTY and LOOP.
       // If the k-unrav is SAT assuming EMPTY or LOOP, then stop with SAT
@@ -156,8 +156,8 @@ namespace black::internal
       // If the PRUNE is UNSAT, the formula is UNSAT
       if(!semi_decision) {
         sat->assert_formula(!encoder->prune(k));
-        if(!sat->is_sat())
-          return false;
+        if(tribool res = sat->is_sat(); !res)
+          return res;
       }
     } // end for
 

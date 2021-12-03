@@ -133,7 +133,7 @@ namespace black::sat::backends
     Z3_solver_assert(_data->context, _data->solver, ast);
   }
   
-  bool z3::is_sat_with(formula f) {
+  tribool z3::is_sat_with(formula f) {
     Z3_solver_push(_data->context, _data->solver);
     assert_formula(iff(fresh(f), f));
     Z3_ast term = _data->to_z3(fresh(f));
@@ -141,9 +141,7 @@ namespace black::sat::backends
     Z3_lbool res = 
       Z3_solver_check_assumptions(_data->context, _data->solver, 1, &term);
 
-    bool result = (res == Z3_L_TRUE);
-
-    if(result) {
+    if(res == Z3_L_TRUE) {
       if(_data->model)
         Z3_model_dec_ref(_data->context, *_data->model);
       
@@ -152,15 +150,15 @@ namespace black::sat::backends
 
     Z3_solver_pop(_data->context, _data->solver, 1);
 
-    return result;
+    return res == Z3_L_TRUE ? tribool{true} :
+           res == Z3_L_FALSE ? tribool{false} :
+           tribool::undef;
   }
 
-  bool z3::is_sat() {
+  tribool z3::is_sat() {
     Z3_lbool res = Z3_solver_check(_data->context, _data->solver);
 
-    bool result = (res == Z3_L_TRUE);
-
-    if(result) {
+    if(res == Z3_L_TRUE) {
       if(_data->model)
         Z3_model_dec_ref(_data->context, *_data->model);
       
@@ -168,7 +166,9 @@ namespace black::sat::backends
       Z3_model_inc_ref(_data->context, *_data->model);
     }
 
-    return result;
+    return res == Z3_L_TRUE ? tribool{true} :
+           res == Z3_L_FALSE ? tribool{false} :
+           tribool::undef;
   }
 
   tribool z3::value(proposition a) const {

@@ -65,11 +65,11 @@ namespace black::sat
     virtual void assert_formula(formula f) = 0;
 
     // tell if the current set of assertions is satisfiable
-    virtual bool is_sat() = 0;
+    virtual tribool is_sat() = 0;
     
     // tell if the current set of assertions is satisfiable, 
     // under the given assumption
-    virtual bool is_sat_with(formula assumption) = 0;
+    virtual tribool is_sat_with(formula assumption) = 0;
     
     // gets the value of a proposition from the solver.
     // The result is tribool::undef if the variable has not been decided
