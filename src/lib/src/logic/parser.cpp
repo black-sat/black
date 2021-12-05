@@ -245,6 +245,8 @@ namespace black::internal
 
     std::optional<formula> correct_term_to_formula(term t);
 
+    bool term_has_next(term);
+    bool literal_has_next(formula a);
     std::optional<term> register_term(term t);
     std::optional<term> parse_term();
     std::optional<term> parse_term_primary();
@@ -407,6 +409,15 @@ namespace black::internal
         rhs = parse_binary_rhs(prec + 1, *rhs, quantified);
         if(!rhs)
           return error("Expected right operand to binary operator");
+      }
+
+      if(quantified &&
+         ((lhs.is<atom>() && literal_has_next(lhs)) ||
+          (rhs->is<atom>() && literal_has_next(*rhs)))) {
+        return error(
+          "quantifiers can only be applied to simple atoms if next() or "
+          "wnext() terms are involved"
+        );
       }
 
       black_assert(op.is<binary::type>());
@@ -582,6 +593,39 @@ namespace black::internal
         return error("Expected formula, found 'wnext' expression");
       }
     );
+  }
+
+  bool parser::_parser_t::term_has_next(term t) {
+    return t.match(
+      [](constant) { return false; },
+      [](variable) { return false; },
+      [](next) { return true; },
+      [&](application a) {
+        bool has_next = false;
+        for(term arg : a.arguments())
+          has_next = has_next || term_has_next(arg);
+        return has_next;
+      },
+      [&](wnext n) {
+        return term_has_next(n.argument());
+      }
+    );
+  }
+
+  bool parser::_parser_t::literal_has_next(formula f) {
+    return f.match(
+      [&](atom a) {
+        for(term t : a.terms())
+          if(term_has_next(t))
+            return true;
+        return false;
+      },
+      [&](negation, formula arg) {
+        return literal_has_next(arg);
+      },
+      [](otherwise) -> bool { black_unreachable(); }
+    );
+    
   }
 
   std::optional<term> parser::_parser_t::register_term(term t) 

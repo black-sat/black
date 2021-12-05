@@ -81,7 +81,7 @@ namespace black::internal
       });
 
     formula nexts =
-      big_and(*_sigma, _atomic_requests, [&](atom a) -> formula {
+      big_and(*_sigma, _atomic_requests, [&](formula a) -> formula {
         return !to_ground_snf(a, k);
       });
     
@@ -542,6 +542,28 @@ namespace black::internal
       );
     };
 
+    std::function<bool(formula)> formula_has_next = [&](formula frm) {
+      return frm.match(
+        [](boolean) { return false; },
+        [](proposition) { return false; },
+        [&](quantifier q) {
+          return formula_has_next(q.matrix());
+        },
+        [&](atom a) {
+          bool has_next = false;
+          for(term arg : a.terms())
+            has_next = has_next || term_has_next(arg);
+          return has_next;
+        },
+        [&](unary, formula arg) {
+          return formula_has_next(arg);
+        },
+        [&](binary, formula left, formula right) {
+          return formula_has_next(left) || formula_has_next(right);
+        }
+      );
+    };
+
     f.match(
       [&](atom a) {
         bool has_next = false;
@@ -551,7 +573,8 @@ namespace black::internal
           _atomic_requests.push_back(a);
       },
       [&](quantifier q) {
-        _add_atomic_requests(q.matrix());
+        if(formula_has_next(q.matrix()))
+          _atomic_requests.push_back(q);
       },
       [&](unary, formula arg) {
         _add_atomic_requests(arg);
