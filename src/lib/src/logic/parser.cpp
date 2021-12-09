@@ -548,7 +548,7 @@ namespace black::internal
     if(peek()->data<token::punctuation>() == token::punctuation::left_paren)
        return parse_parens(quantified);
 
-    return error("Expected formula");
+    return error("Expected formula, found '" + to_string(*peek()) + "'");
   }
 
   std::optional<formula> parser::_parser_t::correct_term_to_formula(term t) {

@@ -37,7 +37,6 @@
 namespace black::internal
 {
   // Type representing tokens generated from the lexer.
-  // WARNING: tokens must not outlive their originating lexer object.
   struct token
   {
     enum class type : uint8_t {
