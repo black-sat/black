@@ -378,8 +378,8 @@ namespace black::sat::backends
     uint64_t num = 1;
     uint64_t denum = 1;
     while(
-      a + c <= std::numeric_limits<int>::max() &&
-      b + d <= std::numeric_limits<int>::max() &&
+      a + c <= (uint64_t)std::numeric_limits<int>::max() &&
+      b + d <= (uint64_t)std::numeric_limits<int>::max() &&
       ((double)num/(double)denum != n)
     ) {
       num = a + c;
