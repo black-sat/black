@@ -170,11 +170,11 @@ namespace black::internal
     bool has_disjunctions = false;
 
     check_result_t() = default;
-    check_result_t(bool b, bool has_next = false, bool has_disj = false) 
-      : error{b}, has_next{has_next}, has_disjunctions{has_disj} { }
+    check_result_t(bool b, bool _has_next = false, bool _has_disj = false) 
+      : error{b}, has_next{_has_next}, has_disjunctions{_has_disj} { }
   };
 
-  check_result_t operator||(check_result_t r1, check_result_t r2) {
+  static check_result_t operator||(check_result_t r1, check_result_t r2) {
     return {
       r1.error || r2.error,
       r1.has_next || r2.has_next, 
@@ -192,8 +192,8 @@ namespace black::internal
       [&](application a) {
         check_result_t res;
 
-        for(term t : a.arguments())
-          res = res || _check_syntax(t, err, scope);
+        for(term arg : a.arguments())
+          res = res || _check_syntax(arg, err, scope);
 
         return res;
       },

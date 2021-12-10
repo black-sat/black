@@ -334,7 +334,7 @@ namespace black::internal
   //
   void parser::_parser_t::set_features(token const& tok) 
   {
-    if(auto k = tok.data<token::keyword>(); k) { // next, exists, forall
+    if(auto k = tok.data<token::keyword>(); k) { // next, wnext, exists, forall
       _features |= feature::first_order;
       switch(*k){
         case token::keyword::next:
@@ -342,11 +342,9 @@ namespace black::internal
           _features |= feature::nextvar;
           break;
         case token::keyword::exists:
-          _features |= feature::quantifiers;
-          break;
         case token::keyword::forall:
           _features |= feature::quantifiers;
-          _features |= feature::forall;
+        break;
       }
     }
 
