@@ -25,6 +25,7 @@
 #define BLACK_TRIBOOL_HPP
 
 #include <cstdint>
+#include <ostream>
 
 namespace black::internal 
 {
@@ -67,6 +68,14 @@ namespace black::internal
     explicit operator bool() const { return _value == _true; }
     bool operator !() const { return _value != _true; }
 
+    friend std::ostream &operator<<(std::ostream &s, tribool b) {
+      if(b == true)
+        return s << "true";
+      if(b == false)
+        return s << "false";
+      
+      return s << "tribool::undef";
+    }
 
   private:
     tribool_t _value = _false;

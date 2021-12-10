@@ -255,10 +255,6 @@ namespace black::internal
         );
       },
       [&](proposition)  { return ground(f, k); },
-      [&](tomorrow)     { return ground(f, k); },
-      [&](w_tomorrow)   { return ground(f, k); },
-      [&](yesterday)    { return ground(f, k); },
-      [&](w_yesterday)  { return ground(f, k); },
       [&](negation n)   { return !to_ground_snf(n.operand(),k, scope); },
       [&](big_conjunction c) {
         return big_and(*f.sigma(), c.operands(), [&](formula op) {
@@ -276,40 +272,47 @@ namespace black::internal
       [&](iff) -> formula { // LCOV_EXCL_LINE 
         black_unreachable(); // LCOV_EXCL_LINE
       },
-      [&,this](until u, formula left, formula right) {
+      [&](tomorrow)     { return ground(f, k); },
+      [&](w_tomorrow)   { return ground(f, k); },
+      [&](yesterday)    { return ground(f, k); },
+      [&](w_yesterday)  { return ground(f, k); },
+      [&](until u, formula left, formula right) {
         return to_ground_snf(right,k, scope) ||
             (to_ground_snf(left,k, scope) && ground(X(u), k));
       },
-      [&,this](w_until w, formula left, formula right) {
+      [&](w_until w, formula left, formula right) {
         return to_ground_snf(right, k) ||
             (to_ground_snf(left,k, scope) && ground(wX(w), k));
       },
-      [&,this](eventually e, formula op) {
+      [&](eventually e, formula op) {
         return to_ground_snf(op,k, scope) || ground(X(e), k);
       },
-      [&,this](always a, formula op) {
+      [&](always a, formula op) {
         return to_ground_snf(op,k, scope) && ground(wX(a), k);
       },
-      [&,this](release r, formula left, formula right) {
-        return (to_ground_snf(left,k, scope) && to_ground_snf(right,k)) ||
+      [&](release r, formula left, formula right) {
+        return 
+          (to_ground_snf(left,k, scope) && to_ground_snf(right,k,scope)) ||
             (to_ground_snf(right,k, scope) && ground(wX(r), k));
       },
-      [&,this](s_release r, formula left, formula right) {
-        return (to_ground_snf(left,k, scope) && to_ground_snf(right,k)) ||
+      [&](s_release r, formula left, formula right) {
+        return 
+          (to_ground_snf(left,k, scope) && to_ground_snf(right,k,scope)) ||
             (to_ground_snf(right,k, scope) && ground(X(r), k));
       },
-      [&,this](since s, formula left, formula right) {
+      [&](since s, formula left, formula right) {
         return to_ground_snf(right,k, scope) ||
             (to_ground_snf(left,k, scope) && ground(Y(s), k));
       },
-      [&,this](triggered t, formula left, formula right) {
-        return (to_ground_snf(left,k, scope) && to_ground_snf(right,k, scope))
-          || (to_ground_snf(right,k, scope) && ground(Z(t), k));
+      [&](triggered t, formula left, formula right) {
+        return 
+          (to_ground_snf(left,k, scope) && to_ground_snf(right,k, scope))
+            || (to_ground_snf(right,k, scope) && ground(Z(t), k));
       },
-      [&,this](once o, formula op) {
+      [&](once o, formula op) {
         return to_ground_snf(op,k, scope) || ground(Y(o), k);
       },
-      [&,this](historically h, formula op) {
+      [&](historically h, formula op) {
         return to_ground_snf(op,k, scope) && ground(Z(h), k);
       }
     );
@@ -379,7 +382,7 @@ namespace black::internal
         
         return application(a.func(), terms);
       },
-      [&](next n) {
+      [&](next n) -> term {
         return stepped(n.argument(), k + 1, scope);
       },
       [&](wnext n) {

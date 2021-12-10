@@ -113,6 +113,7 @@ namespace black::internal {
     void _add_xyz_requests(formula f);
     void _add_atomic_requests(formula f);
     bool term_is_weak(term t);
+    void error(std::string const&msg);
 
     // Extract the x-eventuality from an x-request
     static std::optional<formula> _get_xev(unary xreq);

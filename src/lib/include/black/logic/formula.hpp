@@ -358,6 +358,9 @@ namespace black::internal
   conjunction operator &&(formula f1, formula f2);
   disjunction operator ||(formula f1, formula f2);
   implication implies(formula f1, formula f2);
+  
+  quantifier exists(variable var, formula matrix);
+  quantifier forall(variable var, formula matrix);
 
   tomorrow     X(formula f);
   w_tomorrow  wX(formula f);

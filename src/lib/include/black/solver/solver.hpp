@@ -44,6 +44,12 @@ namespace black::internal {
     public:
       friend class model;
 
+      // Checks if the formula `f` has a syntax supported by the solver
+      //
+      // Calls the callback function `err` with a description of the error
+      static bool 
+      check_syntax(formula f, std::function<void(std::string)> const& err);
+
       // Constructor and destructor
       solver();
       ~solver();
