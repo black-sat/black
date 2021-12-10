@@ -164,4 +164,148 @@ namespace black::internal
     return tribool::undef;
   }
 
+  struct check_result_t {
+    bool error = false;
+    bool has_next = false;
+    bool has_disjunctions = false;
+
+    check_result_t() = default;
+    check_result_t(bool b, bool has_next = false, bool has_disj = false) 
+      : error{b}, has_next{has_next}, has_disjunctions{has_disj} { }
+  };
+
+  check_result_t operator||(check_result_t r1, check_result_t r2) {
+    return {
+      r1.error || r2.error,
+      r1.has_next || r2.has_next, 
+      r1.has_disjunctions || r2.has_disjunctions
+    };
+  }
+
+  static check_result_t _check_syntax(
+    term t, std::function<void(std::string)> const& err,
+    std::vector<variable> const& scope
+  ) {
+    return t.match(
+      [](constant) -> check_result_t { return false; },
+      [](variable) -> check_result_t { return false; },
+      [&](application a) {
+        check_result_t res;
+
+        for(term t : a.arguments())
+          res = res || _check_syntax(t, err, scope);
+
+        return res;
+      },
+      [&](next n) -> check_result_t {
+        term arg = n.argument();
+        if(!arg.is<variable>()) {
+          err("next() terms can only be applied directly to variables");
+          return true;
+        }
+
+        for(variable v : scope) {
+          if(v.unique_id() == arg.unique_id()) {
+            err("next() terms cannot be applied to quantified variables");
+            return true;
+          }
+        }
+        
+        return {false, true, false};
+      },
+      [&](wnext n) -> check_result_t {
+        term arg = n.argument();
+        if(!arg.is<variable>()) {
+          err("wnext() terms can only be applied directly to variables");
+          return true;
+        }
+
+        for(variable v : scope) {
+          if(v.unique_id() == arg.unique_id()) {
+            err("wnext() terms cannot be applied to quantified variables");
+            return true;
+          }
+        }
+        
+        return {false, true, false};
+      }
+    );
+  }
+
+  static check_result_t _check_syntax(
+    formula f, std::function<void(std::string)> const& err, 
+    std::vector<variable> const& scope, bool positive
+  ) {
+    return f.match(
+      [](boolean) -> check_result_t { return true; },
+      [](proposition) -> check_result_t { return true; },
+      [&](atom a) {
+        check_result_t res;
+
+        for(term t : a.terms())
+          res = res || _check_syntax(t, err, scope);
+        
+        return res;  
+      },
+      [&](quantifier q) -> check_result_t {
+        std::vector<variable> s = scope;
+        s.push_back(q.var());
+        check_result_t res = _check_syntax(q.matrix(), err, s, positive);
+        if(res.has_next && res.has_disjunctions) {
+          err(
+            "next() terms and disjunctions cannot be mixed inside quantifiers"
+          );
+          return false;
+        }
+
+        return res;
+      },
+      [&](negation, formula arg) {
+        return _check_syntax(arg, err, scope, !positive);
+      },
+      [&](disjunction, formula left, formula right) {
+        check_result_t r{false, false, positive};
+        return r || _check_syntax(left, err, scope, positive) ||
+                    _check_syntax(right, err, scope, positive);
+      },
+      [&](conjunction, formula left, formula right) {
+        check_result_t r{false, false, !positive};
+        return r || _check_syntax(left, err, scope, positive) ||
+                    _check_syntax(right, err, scope, positive);
+      },
+      [&](implication, formula left, formula right) {
+        return _check_syntax(!left || right, err, scope, positive);
+      },
+      [&](iff, formula left, formula right) {
+        return _check_syntax(
+          implies(left, right) && implies(right, left), 
+          err, scope, positive
+        );
+      },
+      [&](temporal t) -> check_result_t {
+        if(!scope.empty()) {
+          err("Temporal operators cannot appear inside quantifiers");
+          return true;
+        }
+
+        return t.match(
+          [&](unary, formula arg) {
+            return _check_syntax(arg, err, scope, positive);
+          },
+          [&](binary, formula left, formula right) {
+            return _check_syntax(left, err, scope, positive) || 
+                   _check_syntax(right, err, scope, positive);
+          }
+        );
+      }
+    );
+  }
+
+  bool 
+  solver::check_syntax(formula f, std::function<void(std::string)> const&err) {
+    return _check_syntax(f, err, std::vector<variable>{}, true).error;
+  }
+
+  
+
 } // end namespace black::size_ternal

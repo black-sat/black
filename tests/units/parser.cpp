@@ -37,8 +37,6 @@ TEST_CASE("Syntax errors") {
     "F", "F(p U)", "p || q &&", "(p && q", "(", "F(p - q)", "F(p -)", 
     "F(p(x,))", "f(x) & f(x,y)", "f(x) = 2 & f(x)", "f(x) & f(x) = 2"
     "f(x) = 2 & f(x,y) = 2", "f(x) + 2 = 2 & f(x)", "f(x) & f(x) + 2 = 2"
-    "exists x . F(x = 2)", "forall x . F(x = 2)", "exists x . p U q", 
-    "forall x . p U q"
   };
 
   for(std::string s : tests) {
@@ -52,7 +50,7 @@ TEST_CASE("Syntax errors") {
 
 }
 
-TEST_CASE("Rountrip of parser and pretty-printer")
+TEST_CASE("Roundtrip of parser and pretty-printer")
 {
   alphabet sigma;
 

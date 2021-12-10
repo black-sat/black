@@ -388,6 +388,14 @@ namespace black::internal
   // Note: these are found by ADL, and are *not* exported by the `black`
   //       namespace. This means the worringly generic names do not risk to
   //       cause name clashes with user names
+  inline quantifier exists(variable var, formula matrix) {
+    return quantifier(quantifier::type::exists, var, matrix);
+  }
+
+  inline quantifier forall(variable var, formula matrix) {
+    return quantifier(quantifier::type::forall, var, matrix);
+  }
+
   inline tomorrow     X(formula f) { return tomorrow(f);     }
   inline w_tomorrow  wX(formula f) { return w_tomorrow(f);   }
   inline yesterday    Y(formula f) { return yesterday(f);    }

@@ -140,6 +140,11 @@ namespace black::frontend {
       );
     }
 
+    bool error = 
+      black::solver::check_syntax(f, formula_syntax_error_handler(path));
+    
+    black_assert(!error); // the error handler quits
+
     black::solver slv;
 
     slv.set_sat_backend(backend);
