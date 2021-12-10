@@ -237,8 +237,8 @@ namespace black::internal
     std::vector<variable> const& scope, bool positive
   ) {
     return f.match(
-      [](boolean) -> check_result_t { return true; },
-      [](proposition) -> check_result_t { return true; },
+      [](boolean) -> check_result_t { return false; },
+      [](proposition) -> check_result_t { return false; },
       [&](atom a) {
         check_result_t res;
 
