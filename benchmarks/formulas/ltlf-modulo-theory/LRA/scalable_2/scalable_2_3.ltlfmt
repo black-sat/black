@@ -1,1 +1,1 @@
-x=0 & next(next(next(next(x))))=200 & G(x<200)
+x1 > 1 & (next(x2)=x1+1) & X (next(x3)=x2+1) & G(wnext(x1)=x1 & wnext(x2)=x2 & wnext(x3)=x3) & G(1+x1+x2+x3 < ((3*(3+1)/2)))

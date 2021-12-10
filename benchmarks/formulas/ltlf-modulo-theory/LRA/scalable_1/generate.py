@@ -19,7 +19,7 @@ def main(argv):
         filename = DIRNAME+"_"+str(index)+'.ltlfmt'
         with open(filename, mode='w') as data_handle: 
             data_handle.write('x=0 & ')
-            data_handle.write('G(next(x)=x+1) & ')
+            data_handle.write('G(wnext(x)=x+1) & ')
             data_handle.write('F(x='+str(index)+')')
         with open(DIRNAME+'.index', mode='w') as data_handle:
             data_handle.write(filename+':SAT\n')

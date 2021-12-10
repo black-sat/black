@@ -1,0 +1,1 @@
+x1 > 1 & (next(x2)=x1+1) & G(wnext(x1)=x1 & wnext(x2)=x2) & F(x1+x2 = (2*2/2))

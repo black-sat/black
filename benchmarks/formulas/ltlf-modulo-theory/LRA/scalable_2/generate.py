@@ -18,14 +18,21 @@ def main(argv):
     for index in range(int(args.start),int(args.end)+1):
         filename = DIRNAME+"_"+str(index)+'.ltlfmt'
         with open(filename, mode='w') as data_handle: 
-            data_handle.write('x=0 & ')
-            acc = "next(x)"
-            for x in range(0,index):
-                acc = "next("+acc+")"
-            data_handle.write(acc+'='+str(args.end)+' & ')
-            data_handle.write('G(x<'+str(args.end)+')')
-        with open(DIRNAME+'.index', mode='w') as data_handle:
-            data_handle.write(filename+':UNSAT\n')
+            data_handle.write('x1 > 1 & ')
+            for i in range(2,index+1):
+                for j in range(1,i-1):
+                    data_handle.write('X ')
+                data_handle.write('(next(x'+str(i)+')=x'+str(i-1)+'+1) & ')
+            data_handle.write('G(');
+            for i in range(1,index+1):
+                data_handle.write('wnext(x'+str(i)+')=x'+str(i))
+                data_handle.write(' & ' if i < index else '')
+            data_handle.write(') & G(1+')
+            for i in range(1,index+1):
+                data_handle.write('x'+str(i))
+                data_handle.write('+' if i < index else '')
+            data_handle.write(' < (('+str(index)+'*('+str(index)+'+1)/2)')
+            data_handle.write('))')
 
 
 
