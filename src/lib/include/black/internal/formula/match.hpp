@@ -278,6 +278,33 @@ namespace black::internal
     using associative_matcher<disjunction>::associative_matcher;
   };
 
+  struct quantifier_block {
+    quantifier_block(quantifier q) 
+      : _type{q.quantifier_type()}, _matrix{parse(q)} { }
+
+    quantifier::type quantifier_type() const { return _type; }
+    std::vector<variable> const&vars() const { return _vars; }
+    formula matrix() const { return _matrix; }
+
+  private:
+    formula parse(quantifier q) {
+      _vars.push_back(q.var());
+      formula m = q.matrix();
+      return m.match(
+        [&](quantifier q2) {
+          if(q.quantifier_type() == q2.quantifier_type())
+            return parse(q2);
+          return m;
+        },
+        [&](otherwise) { return m; }
+      );
+    }
+
+    quantifier::type _type;
+    std::vector<variable> _vars;
+    formula _matrix;
+  };
+
   template<typename>
   struct fragment_matcher;
 

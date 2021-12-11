@@ -144,20 +144,16 @@ namespace black::internal
 
         return result;
       },
-      [](quantifier q) {
+      [](quantifier_block q) {
         std::string qs = q.quantifier_type() == quantifier::type::exists ?
-          "exists" : "forall";
+          "exists " : "forall ";
 
-        bool parens = 
-          !q.matrix().is<boolean>() && 
-          !q.matrix().is<proposition>() && 
-          !q.matrix().is<atom>() && 
-          !q.matrix().is<quantifier>();
+        bool parens = q.matrix().is<binary>();
 
-        return fmt::format("{} {}.{}",
-          qs, to_string(q.var()), 
-          parens_if_needed(q.matrix(), parens)
-        );
+        for(variable v : q.vars())
+          qs += to_string(v) + ' ';
+
+        return fmt::format("{}. {}", qs, parens_if_needed(q.matrix(), parens));
       },
       [](boolean b) {
         return b.value() ? "True" : "False";
