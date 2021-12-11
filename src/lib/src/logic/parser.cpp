@@ -666,7 +666,7 @@ namespace black::internal
     if(peek()->data<token::punctuation>() == token::punctuation::left_paren)
       return parse_term_parens();
 
-    return error("Expected term, found " + to_string(*peek()));
+    return error("Expected term, found '" + to_string(*peek()) + "'");
   }
 
   std::optional<term> 
