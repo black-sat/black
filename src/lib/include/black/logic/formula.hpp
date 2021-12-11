@@ -360,7 +360,9 @@ namespace black::internal
   implication implies(formula f1, formula f2);
   
   quantifier exists(variable var, formula matrix);
+  formula    exists(std::vector<variable> var, formula matrix);
   quantifier forall(variable var, formula matrix);
+  formula    forall(std::vector<variable> var, formula matrix);
 
   tomorrow     X(formula f);
   w_tomorrow  wX(formula f);

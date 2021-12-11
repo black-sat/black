@@ -56,6 +56,9 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
 
   proposition p = sigma.prop("p");
   proposition q = sigma.prop("q");
+  variable x = sigma.var("x");
+  variable y = sigma.var("y");
+  variable z = sigma.var("z");
 
   std::vector<formula> tests = {
     p, !p, X(p), F(p), G(p), O(p), H(p), XF(p), GF(p), XG(p),
@@ -63,7 +66,9 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
     p && (X(U(p,q)) || XF(!q)),
     p && implies(Y(S(p,q)), GF(!p)),
     U(p, !(GF(q))),
-    !(iff(p || q, !q && p))
+    !(iff(p || q, !q && p)),
+    exists({x,y,z}, x == y && y == z),
+    forall({x,y,z}, x == y && y == z)
   };
 
   for(formula f : tests) {

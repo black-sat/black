@@ -459,11 +459,14 @@ namespace black::internal
       consume()->data<token::keyword>() == token::keyword::exists ? 
       quantifier::type::exists : quantifier::type::forall;
 
-    std::optional<token> vartok = consume(token::type::identifier, "variable");
-    if(!vartok)
-      return {};
-        
-    std::string varname{*vartok->data<std::string>()};
+    std::vector<token> vartoks;
+    while(peek() && peek()->token_type() == token::type::identifier) {
+      vartoks.push_back(*peek());
+      consume();
+    }
+
+    if(vartoks.empty())
+      return error("Expected variable list after quantifier");
 
     std::optional<token> dot = consume();
     if(!dot || dot->data<token::punctuation>() != token::punctuation::dot)
@@ -473,9 +476,14 @@ namespace black::internal
     if(!matrix)
       return {};
 
-    variable var = _alphabet.var(varname);
+    std::vector<variable> vars;
+    for(token tok : vartoks)
+      vars.push_back(_alphabet.var(*tok.data<std::string>()));
 
-    return quantifier(q, var, *matrix);
+    if(q == quantifier::type::exists)
+      return exists(vars, *matrix);
+
+    return forall(vars, *matrix);
   }
 
   std::optional<formula> parser::_parser_t::parse_unary()

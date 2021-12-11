@@ -392,8 +392,24 @@ namespace black::internal
     return quantifier(quantifier::type::exists, var, matrix);
   }
 
+  inline formula exists(std::vector<variable> var, formula matrix) {
+    formula f = matrix;
+    for(auto it = var.rbegin(); it != var.rend(); it++)
+      f = exists(*it, f);
+
+    return f;
+  }
+
   inline quantifier forall(variable var, formula matrix) {
     return quantifier(quantifier::type::forall, var, matrix);
+  }
+
+  inline formula forall(std::vector<variable> var, formula matrix) {
+    formula f = matrix;
+    for(auto it = var.rbegin(); it != var.rend(); it++)
+      f = forall(*it, f);
+
+    return f;
   }
 
   inline tomorrow     X(formula f) { return tomorrow(f);     }
