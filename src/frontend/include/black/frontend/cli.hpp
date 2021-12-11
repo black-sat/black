@@ -108,6 +108,9 @@ namespace black::frontend
 
     // to print or not to print the model
     inline bool print_model = false;
+
+    // debug options
+    inline std::string debug;
   }
 
   // parse the command-line arguments, filling the variables declared above.

@@ -140,6 +140,11 @@ namespace black::frontend {
       );
     }
 
+    if(cli::debug == "print")
+      io::println(
+        "{}: debug: parsed formula: {}", cli::command_name, to_string(f)
+      );
+
     [[maybe_unused]]
     bool error = 
       black::solver::check_syntax(f, formula_syntax_error_handler(path));

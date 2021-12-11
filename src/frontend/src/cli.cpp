@@ -150,6 +150,7 @@ namespace black::frontend
           "Default: readable",
       (option("-f", "--formula") & value("formula", cli::formula))
         % "LTL formula to solve",
+      option("--debug") & value("debug", cli::debug),
       value("file", cli::filename).required(false)
           % "input formula file name.\n"
             "If '-', reads from standard input."
