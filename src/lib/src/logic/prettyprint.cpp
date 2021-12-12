@@ -38,6 +38,8 @@ namespace black::internal
       }
       if(arg.is<atom>() && arg.to<atom>()->rel().known_type().has_value())
         parens = true;
+      if(arg.is<quantifier>())
+        parens = true;
 
       return parens;
     }

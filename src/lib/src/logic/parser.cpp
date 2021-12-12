@@ -315,7 +315,7 @@ namespace black::internal
     if(!dot || dot->data<token::punctuation>() != token::punctuation::dot)
       return error("Expected dot after quantifier");
 
-    std::optional<formula> matrix = parse_formula();
+    std::optional<formula> matrix = parse_primary();
     if(!matrix)
       return {};
 
