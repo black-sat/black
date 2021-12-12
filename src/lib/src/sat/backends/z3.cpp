@@ -51,7 +51,7 @@ namespace black::sat::backends
     bool solver_upgraded = false;
 
     tsl::hopscotch_map<formula, Z3_ast> formulas;
-    tsl::hopscotch_map<term_id, Z3_ast> terms;
+    tsl::hopscotch_map<term, Z3_ast> terms;
 
     Z3_ast to_z3(formula);
     Z3_ast to_z3(term);
@@ -250,11 +250,11 @@ namespace black::sat::backends
   }
 
   Z3_ast z3::_z3_t::to_z3(term t) {
-    if(auto it = terms.find(t.unique_id()); it != terms.end()) 
+    if(auto it = terms.find(t); it != terms.end()) 
       return it->second;
 
     Z3_ast z3_t = to_z3_inner(t);
-    terms.insert({t.unique_id(), z3_t});
+    terms.insert({t, z3_t});
 
     return z3_t;
   }

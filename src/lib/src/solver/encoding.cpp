@@ -371,9 +371,9 @@ namespace black::internal
       [](constant c) { return c; },
       [&](variable x) { 
         for(variable v : scope)
-          if(x.unique_id() == v.unique_id())
+          if(x == v)
             return x;
-        return _sigma->var(std::pair(t.unique_id(), k)); 
+        return _sigma->var(std::pair(t, k)); 
       },
       [&](application a) {
         std::vector<term> terms;

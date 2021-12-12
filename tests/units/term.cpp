@@ -27,6 +27,8 @@
 #include <black/solver/solver.hpp>
 #include <black/logic/parser.hpp>
 
+#include <unordered_map>
+
 using namespace black;
 
 TEST_CASE("Terms manipulation") {
@@ -43,7 +45,7 @@ TEST_CASE("Terms manipulation") {
   term app1 = f(n1, n2);
   term app2 = n1 + n2;
 
-  REQUIRE(app1.unique_id() != app2.unique_id());
+  REQUIRE(app1 != app2);
 
   std::string s = app1.match(
     [](constant)    { return "c1"; },
@@ -71,6 +73,24 @@ TEST_CASE("Terms manipulation") {
 
   REQUIRE(a1 != a2);
 
+}
+
+TEST_CASE("Terms in hash tables") {
+  alphabet sigma;
+  sigma.set_domain(sort::Int);
+  
+  variable x = sigma.var("x");
+  variable y = sigma.var("y");
+
+  std::unordered_map<term, std::string> tests = {
+    {x, "x"},
+    {y, "y"},
+    {x + y, "x + y"}
+  };
+
+  REQUIRE(tests.find(x) != tests.end());
+  REQUIRE(tests.find(y) != tests.end());
+  REQUIRE(tests.find(x + y) != tests.end());
 }
 
 TEST_CASE("Test formulas") {

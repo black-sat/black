@@ -72,10 +72,9 @@ namespace black::internal
       [&](variable x) {
         if(auto name = x.label<std::string>(); name.has_value())
           return *name;
-        if(auto fname = x.label<std::pair<term_id,size_t>>(); fname.has_value()) {
-          term t2 = t.sigma()->from_id(fname->first);
+        if(auto fname = x.label<std::pair<term,size_t>>(); fname.has_value()) {
           return
-            fmt::format("<{},{}>", to_string(t2), fname->second);
+            fmt::format("<{},{}>", to_string(fname->first), fname->second);
         }
         return fmt::format("<{:x}>", to_underlying(term{x}.unique_id()));
       },

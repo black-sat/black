@@ -288,6 +288,23 @@ namespace std {
       return hash<uintptr_t>{}(static_cast<uintptr_t>(id));
     }
   };
+
+  #define declare_term_hash(Type)                              \
+    template<>                                                 \
+    struct hash<black::internal::Type> {                       \
+      size_t operator()(black::internal::Type const&t) const { \
+        return black::internal::term{t}.hash();                \
+      }                                                        \
+    };
+
+  declare_term_hash(term)
+  declare_term_hash(constant)
+  declare_term_hash(variable)
+  declare_term_hash(application)
+  declare_term_hash(next)
+  declare_term_hash(wnext)
+
+  #undef declare_term_hash
 }
 
 

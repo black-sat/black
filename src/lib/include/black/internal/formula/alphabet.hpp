@@ -250,8 +250,46 @@ namespace black::internal {
   // Operators from formula.hpp
   //
   // shorthands for known relations
-  inline atom operator==(term t1, term t2) {
-    return atom{relation::equal, {t1, t2}};
+  //
+  // The case for operator== and operator!= is complex, because we want these 
+  // operators to be used also in a Boolean context to compare the term objects 
+  // themselves.
+  //
+  struct term_cmp_t 
+  {
+    term_cmp_t(bool b, formula f)
+      : _b{b}, _f{f} { }
+
+    operator formula() const {
+      return _f;
+    }
+
+    operator bool() const {
+      return _b;
+    }
+
+    friend term_cmp_t operator!(term_cmp_t t1) {
+      return term_cmp_t{!t1._b, !t1._f};
+    }
+
+    friend term_cmp_t operator&&(term_cmp_t t1, term_cmp_t t2) {
+      return term_cmp_t{t1._b && t2._b, t1._f && t2._f};
+    }
+
+    friend term_cmp_t operator||(term_cmp_t t1, term_cmp_t t2) {
+      return term_cmp_t{t1._b || t2._b, t1._f || t2._f};
+    }
+    
+  private:
+    bool _b;
+    formula _f;
+  };
+
+  inline auto operator==(term t1, term t2) {
+    return term_cmp_t{
+      t1.unique_id() == t2.unique_id(), 
+      atom{relation::equal, {t1, t2}}
+    };
   }
   
   inline atom operator==(term t1, int v) {
@@ -264,8 +302,11 @@ namespace black::internal {
     return atom{relation::equal, {t1, t2}};
   }
 
-  inline atom operator!=(term t1, term t2) {
-    return atom{relation::not_equal, {t1, t2}};
+  inline auto operator!=(term t1, term t2) {
+    return term_cmp_t{
+      t1.unique_id() != t2.unique_id(), 
+      atom{relation::not_equal, {t1, t2}}
+    };
   }
   
   inline atom operator!=(term t1, int v) {

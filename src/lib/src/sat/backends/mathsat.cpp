@@ -42,9 +42,9 @@ namespace black::sat::backends
   struct mathsat::_mathsat_t {
     msat_env env;
     tsl::hopscotch_map<formula, msat_term> formulas;
-    tsl::hopscotch_map<term_id, msat_term> terms;
+    tsl::hopscotch_map<term, msat_term> terms;
     tsl::hopscotch_map<std::string, msat_decl> functions;
-    tsl::hopscotch_map<term_id, msat_decl> variables;
+    tsl::hopscotch_map<term, msat_decl> variables;
     std::optional<msat_model> model;
 
     msat_term to_mathsat(formula);
@@ -264,25 +264,25 @@ namespace black::sat::backends
   }
 
   msat_decl mathsat::_mathsat_t::to_mathsat(variable x) {
-    if(auto it = variables.find(x.unique_id()); it != variables.end())
+    if(auto it = variables.find(x); it != variables.end())
       return it->second;
 
     black_assert(x.sigma()->domain());
     msat_type t = to_mathsat(*x.sigma()->domain());
 
     msat_decl var = 
-      msat_declare_function(env, to_string(x.unique_id()).c_str(), t);
+      msat_declare_function(env, to_string(x).c_str(), t);
 
     return var;
   }
 
   msat_term mathsat::_mathsat_t::to_mathsat(term t) 
   {
-    if(auto it = terms.find(t.unique_id()); it != terms.end()) 
+    if(auto it = terms.find(t); it != terms.end()) 
       return it->second;
 
     msat_term term = to_mathsat_inner(t);
-    terms.insert({t.unique_id(), term});
+    terms.insert({t, term});
 
     return term;
   }

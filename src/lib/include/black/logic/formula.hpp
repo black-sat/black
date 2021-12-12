@@ -388,10 +388,10 @@ namespace black::internal
   yesterday  YH(formula f);
 
   // Shortcut for known relations
-  atom operator==(term t1, term t2);
+  auto operator==(term t1, term t2);
   atom operator==(term t1, int v);
   atom operator==(int v, term t2);
-  atom operator!=(term t1, term t2);
+  auto operator!=(term t1, term t2);
   atom operator!=(term t1, int v);
   atom operator!=(int v, term t2);
   atom  operator<(term t1, term t2);
@@ -463,6 +463,8 @@ namespace black {
   using internal::formula_id;
   using internal::otherwise;
 
+  using internal::exists;
+  using internal::forall;
   using internal::simplify;
   using internal::simplify_deep;
   using internal::has_constants;

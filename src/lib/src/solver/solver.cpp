@@ -205,7 +205,7 @@ namespace black::internal
         }
 
         for(variable v : scope) {
-          if(v.unique_id() == arg.unique_id()) {
+          if(v == arg) {
             err("next() terms cannot be applied to quantified variables");
             return true;
           }
@@ -221,7 +221,7 @@ namespace black::internal
         }
 
         for(variable v : scope) {
-          if(v.unique_id() == arg.unique_id()) {
+          if(v == arg) {
             err("wnext() terms cannot be applied to quantified variables");
             return true;
           }
