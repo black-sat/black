@@ -31,6 +31,7 @@
 
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/logic/past_remover.hpp>
 #include <black/solver/solver.hpp>
 #include <black/sat/solver.hpp>

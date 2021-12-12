@@ -28,6 +28,7 @@
 #include <black/logic/alphabet.hpp>
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/logic/past_remover.hpp>
 #include <black/support/tribool.hpp>
 

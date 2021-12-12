@@ -25,6 +25,7 @@
 
 #include <black/logic/alphabet.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <catch2/catch.hpp>
 

@@ -89,16 +89,6 @@ namespace black::internal
     return parse_formula(sigma, s, [](auto){});
   }
 
-  BLACK_EXPORT
-  std::string to_string(formula f);
-  
-  BLACK_EXPORT
-  std::string to_string(term t);
-
-  inline std::ostream &operator<<(std::ostream &stream, formula const&f) {
-    return (stream << to_string(f));
-  }
-
   inline std::optional<int> precedence(token const&tok)
   {
     // Attention: this must remain in sync with token::token_type

@@ -25,6 +25,7 @@
 
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/solver/solver.hpp>
 #include <black/logic/cnf.hpp>
 #include <black/internal/debug/random_formula.hpp>

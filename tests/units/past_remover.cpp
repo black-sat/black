@@ -24,6 +24,7 @@
 
 
 #include <black/logic/past_remover.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/solver/solver.hpp>
 
 #include <catch2/catch.hpp>
