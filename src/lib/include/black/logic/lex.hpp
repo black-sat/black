@@ -70,7 +70,7 @@ namespace black::internal
     };
 
     explicit token(bool b)               : _data{b} { }
-    explicit token(int c)                : _data{c} { }
+    explicit token(int64_t c)            : _data{c} { }
     explicit token(double d)             : _data{d} { }
              token(std::string s)        : _data{std::move(s)} { }
              token(keyword k)            : _data{k} { }
@@ -100,7 +100,7 @@ namespace black::internal
     // data related to recognized tokens
     std::variant<
       bool,           // booleans
-      int,            // integers
+      int64_t,        // integers
       double,         // reals
       std::string,    // identifiers
       keyword,        // keywords
@@ -204,7 +204,7 @@ namespace black::internal
 
     return std::visit( overloaded {
       [](bool b)               { return b ? "true"s : "false"s; },
-      [](int c)                { return std::to_string(c); },
+      [](int64_t c)            { return std::to_string(c); },
       [](double d)             { return std::to_string(d); },
       [](std::string s)        { return s; },
       [](token::keyword k)     { return to_string(k); },

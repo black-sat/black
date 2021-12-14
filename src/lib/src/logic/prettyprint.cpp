@@ -66,8 +66,8 @@ namespace black::internal
     using namespace std::literals;
     return t.match(
       [&](constant c) {
-        if(std::holds_alternative<int>(c.value()))
-          return fmt::format("{}", std::get<int>(c.value()));
+        if(std::holds_alternative<int64_t>(c.value()))
+          return fmt::format("{}", std::get<int64_t>(c.value()));
         else
           return fmt::format("{}", std::get<double>(c.value()));
       },

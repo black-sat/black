@@ -83,7 +83,7 @@ namespace black::internal {
     >;
     using application_key = std::tuple<function, std::vector<term_base *>>;
     using atom_key = std::tuple<relation, std::vector<term_base *>>;
-    using constant_key = std::variant<int, double>;
+    using constant_key = std::variant<int64_t, double>;
 
     tsl::hopscotch_map<identifier,     proposition_t*> _props_map;
     tsl::hopscotch_map<atom_key,       atom_t*>        _atoms_map;
@@ -217,7 +217,7 @@ namespace black::internal {
     return f;
   }
 
-  constant_t *alphabet::allocate_constant(int c)
+  constant_t *alphabet::allocate_constant(int64_t c)
   {
     auto it = _impl->_consts_map.find(c);
     if(it != _impl->_consts_map.end())

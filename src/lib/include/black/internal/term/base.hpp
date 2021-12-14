@@ -71,13 +71,13 @@ namespace black::internal
   {
     static constexpr auto accepts_type = is_constant_type;
 
-    constant_t(int c)
+    constant_t(int64_t c)
       : term_base{term_type::constant}, value{c} {}
     
     constant_t(double c)
       : term_base{term_type::constant}, value{c} {}
 
-    std::variant<int, double> value{};
+    std::variant<int64_t, double> value{};
   };
 
   struct variable_t : term_base

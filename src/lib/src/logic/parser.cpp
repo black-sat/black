@@ -385,8 +385,8 @@ namespace black::internal
     return t.match(
       [&](constant c) -> std::optional<formula> {
         std::string v;
-        if(std::holds_alternative<int>(c.value()))
-          v = std::to_string(std::get<int>(c.value()));
+        if(std::holds_alternative<int64_t>(c.value()))
+          v = std::to_string(std::get<int64_t>(c.value()));
         else
           v = std::to_string(std::get<double>(c.value()));
 
@@ -556,7 +556,7 @@ namespace black::internal
     consume();
 
     if(tok.token_type() == token::type::integer)
-      return _alphabet.constant(*tok.data<int>());
+      return _alphabet.constant(*tok.data<int64_t>());
     else
       return _alphabet.constant(*tok.data<double>());
   }

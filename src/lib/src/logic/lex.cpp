@@ -49,7 +49,7 @@ namespace black::internal
         data += '.';
         s.get();
       } else {
-        int val = 0;
+        int64_t val = 0;
         auto [ptr, err] = 
           std::from_chars(data.data(), data.data() + data.size(), val);
 
@@ -59,8 +59,8 @@ namespace black::internal
         error(
           "Integer constant '" + data + "' is too big. " +
           "Admitted range: [" + 
-          std::to_string(std::numeric_limits<int>::min()) + ", " +
-          std::to_string(std::numeric_limits<int>::max()) + "]"
+          std::to_string(std::numeric_limits<int64_t>::min()) + ", " +
+          std::to_string(std::numeric_limits<int64_t>::max()) + "]"
         );
         return std::nullopt;
       }

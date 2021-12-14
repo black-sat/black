@@ -389,23 +389,23 @@ namespace black::internal
 
   // Shortcut for known relations
   auto operator==(term t1, term t2);
-  atom operator==(term t1, int v);
-  atom operator==(int v, term t2);
+  atom operator==(term t1, int64_t v);
+  atom operator==(int64_t v, term t2);
   auto operator!=(term t1, term t2);
-  atom operator!=(term t1, int v);
-  atom operator!=(int v, term t2);
+  atom operator!=(term t1, int64_t v);
+  atom operator!=(int64_t v, term t2);
   atom  operator<(term t1, term t2);
-  atom  operator<(term t1, int v);
-  atom  operator<(int v, term t2);
+  atom  operator<(term t1, int64_t v);
+  atom  operator<(int64_t v, term t2);
   atom operator<=(term t1, term t2);
-  atom operator<=(term t1, int v);
-  atom operator<=(int v, term t2);
+  atom operator<=(term t1, int64_t v);
+  atom operator<=(int64_t v, term t2);
   atom  operator>(term t1, term t2);
-  atom  operator>(term t1, int v);
-  atom  operator>(int v, term t2);
+  atom  operator>(term t1, int64_t v);
+  atom  operator>(int64_t v, term t2);
   atom operator>=(term t1, term t2);
-  atom operator>=(term t1, int v);
-  atom operator>=(int v, term t2);
+  atom operator>=(term t1, int64_t v);
+  atom operator>=(int64_t v, term t2);
 
   //
   // Utility functions

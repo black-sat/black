@@ -55,7 +55,11 @@ namespace black::internal {
     }
   }
 
-  inline constant alphabet::constant(int c) {
+  inline constant alphabet::constant(int32_t c) {
+    return {this, allocate_constant(int64_t{c})};
+  }
+
+  inline constant alphabet::constant(int64_t c) {
     return {this, allocate_constant(c)};
   }
   inline constant alphabet::constant(double c) {
@@ -194,12 +198,12 @@ namespace black::internal {
     return application{function::subtraction, {t1, t2}};
   }
 
-  inline application operator-(term t1, int v) {
+  inline application operator-(term t1, int64_t v) {
     term t2 = t1.sigma()->constant(v);
     return application{function::subtraction, {t1, t2}};
   }
 
-  inline application operator-(int v, term t2) {
+  inline application operator-(int64_t v, term t2) {
     term t1 = t2.sigma()->constant(v);
     return application{function::subtraction, {t1, t2}};
   }
@@ -208,12 +212,12 @@ namespace black::internal {
     return application{function::addition, {t1, t2}};
   }
 
-  inline application operator+(term t1, int v) {
+  inline application operator+(term t1, int64_t v) {
     term t2 = t1.sigma()->constant(v);
     return application{function::addition, {t1, t2}};
   }
 
-  inline application operator+(int v, term t2) {
+  inline application operator+(int64_t v, term t2) {
     term t1 = t2.sigma()->constant(v);
     return application{function::addition, {t1, t2}};
   }
@@ -222,12 +226,12 @@ namespace black::internal {
     return application{function::multiplication, {t1, t2}};
   }
 
-  inline application operator*(term t1, int v) {
+  inline application operator*(term t1, int64_t v) {
     term t2 = t1.sigma()->constant(v);
     return application{function::multiplication, {t1, t2}};
   }
 
-  inline application operator*(int v, term t2) {
+  inline application operator*(int64_t v, term t2) {
     term t1 = t2.sigma()->constant(v);
     return application{function::multiplication, {t1, t2}};
   }
@@ -236,12 +240,12 @@ namespace black::internal {
     return application{function::division, {t1, t2}};
   }
 
-  inline application operator/(term t1, int v) {
+  inline application operator/(term t1, int64_t v) {
     term t2 = t1.sigma()->constant(v);
     return application{function::division, {t1, t2}};
   }
 
-  inline application operator/(int v, term t2) {
+  inline application operator/(int64_t v, term t2) {
     term t1 = t2.sigma()->constant(v);
     return application{function::division, {t1, t2}};
   }
@@ -292,12 +296,12 @@ namespace black::internal {
     };
   }
   
-  inline atom operator==(term t1, int v) {
+  inline atom operator==(term t1, int64_t v) {
     term t2 = t1.sigma()->constant(v);
     return atom{relation::equal, {t1, t2}};
   }
 
-  inline atom operator==(int v, term t2) {
+  inline atom operator==(int64_t v, term t2) {
     term t1 = t2.sigma()->constant(v);
     return atom{relation::equal, {t1, t2}};
   }
@@ -309,12 +313,12 @@ namespace black::internal {
     };
   }
   
-  inline atom operator!=(term t1, int v) {
+  inline atom operator!=(term t1, int64_t v) {
     term t2 = t1.sigma()->constant(v);
     return atom{relation::not_equal, {t1, t2}};
   }
 
-  inline atom operator!=(int v, term t2) {
+  inline atom operator!=(int64_t v, term t2) {
     term t1 = t2.sigma()->constant(v);
     return atom{relation::not_equal, {t1, t2}};
   }
@@ -323,12 +327,12 @@ namespace black::internal {
     return atom{relation::less_than, {t1, t2}};
   }
   
-  inline atom operator<(term t1, int v) {
+  inline atom operator<(term t1, int64_t v) {
     term t2 = t1.sigma()->constant(v);
     return atom{relation::less_than, {t1, t2}};
   }
 
-  inline atom operator<(int v, term t2) {
+  inline atom operator<(int64_t v, term t2) {
     term t1 = t2.sigma()->constant(v);
     return atom{relation::less_than, {t1, t2}};
   }
@@ -337,12 +341,12 @@ namespace black::internal {
     return atom{relation::less_than_equal, {t1, t2}};
   }
   
-  inline atom operator<=(term t1, int v) {
+  inline atom operator<=(term t1, int64_t v) {
     term t2 = t1.sigma()->constant(v);
     return atom{relation::less_than_equal, {t1, t2}};
   }
 
-  inline atom operator<=(int v, term t2) {
+  inline atom operator<=(int64_t v, term t2) {
     term t1 = t2.sigma()->constant(v);
     return atom{relation::less_than_equal, {t1, t2}};
   }
@@ -351,12 +355,12 @@ namespace black::internal {
     return atom{relation::greater_than, {t1, t2}};
   }
   
-  inline atom operator>(term t1, int v) {
+  inline atom operator>(term t1, int64_t v) {
     term t2 = t1.sigma()->constant(v);
     return atom{relation::greater_than, {t1, t2}};
   }
 
-  inline atom operator>(int v, term t2) {
+  inline atom operator>(int64_t v, term t2) {
     term t1 = t2.sigma()->constant(v);
     return atom{relation::greater_than, {t1, t2}};
   }
@@ -365,12 +369,12 @@ namespace black::internal {
     return atom{relation::greater_than_equal, {t1, t2}};
   }
   
-  inline atom operator>=(term t1, int v) {
+  inline atom operator>=(term t1, int64_t v) {
     term t2 = t1.sigma()->constant(v);
     return atom{relation::greater_than_equal, {t1, t2}};
   }
 
-  inline atom operator>=(int v, term t2) {
+  inline atom operator>=(int64_t v, term t2) {
     term t1 = t2.sigma()->constant(v);
     return atom{relation::greater_than_equal, {t1, t2}};
   }

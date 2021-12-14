@@ -131,7 +131,7 @@ namespace black::internal {
   {
     using term_handle_base<constant, constant_t>::term_handle_base;
 
-    std::variant<int,double> value() const { return _term->value; }
+    std::variant<int64_t,double> value() const { return _term->value; }
   };
 
   struct variable : term_handle_base<variable, variable_t>
@@ -176,17 +176,17 @@ namespace black::internal {
   // Syntactic sugar for known functions
   application operator-(term);
   application operator-(term, term);
-  application operator-(term, int);
-  application operator-(int, term);
+  application operator-(term, int64_t);
+  application operator-(int64_t, term);
   application operator+(term, term);
-  application operator+(term, int);
-  application operator+(int, term);
+  application operator+(term, int64_t);
+  application operator+(int64_t, term);
   application operator*(term, term);
-  application operator*(term, int);
-  application operator*(int, term);
+  application operator*(term, int64_t);
+  application operator*(int64_t, term);
   application operator/(term, term);
-  application operator/(term, int);
-  application operator/(int, term);
+  application operator/(term, int64_t);
+  application operator/(int64_t, term);
 }
 
 // Names exported from the `black` namespace

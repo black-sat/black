@@ -290,10 +290,10 @@ namespace black::sat::backends
   msat_term mathsat::_mathsat_t::to_mathsat_inner(term t) {
     return t.match(
       [&](constant c) {
-        if(std::holds_alternative<int>(c.value()))
+        if(std::holds_alternative<int64_t>(c.value()))
           return
             msat_make_number(env, 
-              std::to_string(std::get<int>(c.value())).c_str());
+              std::to_string(std::get<int64_t>(c.value())).c_str());
         else
           return
             msat_make_number(env,

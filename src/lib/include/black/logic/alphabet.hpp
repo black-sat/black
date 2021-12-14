@@ -91,7 +91,8 @@ namespace black::internal {
     // Enty point to obtain constants.
     // For now only integer constants are supported
     // TODO: Generalize constants
-    struct constant constant(int c);
+    struct constant constant(int32_t c);
+    struct constant constant(int64_t c);
     struct constant constant(double c);
 
     // Function to obtain a formula given its unique id
@@ -122,7 +123,7 @@ namespace black::internal {
     
     // terms allocation
     variable_t *allocate_variable(identifier _label);
-    constant_t *allocate_constant(int c);
+    constant_t *allocate_constant(int64_t c);
     constant_t *allocate_constant(double c);
     next_t *allocate_next(term_base *arg);
     wnext_t *allocate_wnext(term_base *arg);
