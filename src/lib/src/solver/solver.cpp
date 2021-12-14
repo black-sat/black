@@ -54,6 +54,11 @@ namespace black::internal
     // the name of the currently chosen sat backend
     std::string sat_backend = BLACK_DEFAULT_BACKEND; // sensible default
 
+    std::function<void(trace_t)> tracer = [](trace_t){};
+
+    void trace(int k);
+    void trace(trace_t::type_t type, formula);
+
     // Main algorithm
     tribool solve(size_t k_max, bool semi_decision);
   };
@@ -94,6 +99,10 @@ namespace black::internal
     return _data->sat_backend;
   }
 
+  void solver::set_tracer(std::function<void(trace_t)> const&tracer) {
+    _data->tracer = tracer;
+  }
+
   size_t model::size() const {
     return _solver._data->model_size;
   }
@@ -122,6 +131,15 @@ namespace black::internal
     return _solver._data->sat->value(u);
   }
 
+  void solver::_solver_t::trace(int k){
+    tracer({trace_t::stage, {k}});
+  }
+
+  void solver::_solver_t::trace(trace_t::type_t type, formula f){
+    black_assert(type != trace_t::stage);
+    tracer({type, {f}});
+  }
+
   /*
    * Main algorithm. Solve the formula with up to `k_max' iterations.
    * If semi_decision = true, we disable the PRUNE rule.
@@ -137,15 +155,22 @@ namespace black::internal
     last_bound = 0;
     for(size_t k = 0; k <= k_max; last_bound = k++)
     {
+      trace(k);
       // Generating the k-unraveling.
       // If it is UNSAT, then stop with UNSAT
-      sat->assert_formula(encoder->k_unraveling(k));
+      formula unrav = encoder->k_unraveling(k);
+      trace(trace_t::unrav, unrav);
+      sat->assert_formula(unrav);
       if(tribool res = sat->is_sat(); !res)
         return res;
 
       // else, continue to check EMPTY and LOOP.
       // If the k-unrav is SAT assuming EMPTY or LOOP, then stop with SAT
-      if(sat->is_sat_with(encoder->k_empty(k) || encoder->k_loop(k))) {
+      formula empty = encoder->k_empty(k);
+      formula loop = encoder->k_loop(k);
+      trace(trace_t::empty, empty);
+      trace(trace_t::loop, loop);
+      if(sat->is_sat_with(empty || loop)) {
         model_size = k + 1;
         model = true;
         
@@ -155,7 +180,9 @@ namespace black::internal
       // else, generate the PRUNE
       // If the PRUNE is UNSAT, the formula is UNSAT
       if(!semi_decision) {
-        sat->assert_formula(!encoder->prune(k));
+        formula prune = encoder->prune(k);
+        trace(trace_t::prune, prune);
+        sat->assert_formula(!prune);
         if(tribool res = sat->is_sat(); !res)
           return res;
       }

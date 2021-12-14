@@ -87,6 +87,23 @@ namespace black::internal {
       // Retrieve the current SAT backend
       std::string sat_backend() const;
 
+      // Data type sent to the debug trace routine
+      struct trace_t {
+        enum type_t {
+          stage,
+          unrav,
+          empty,
+          loop,
+          prune
+        };
+
+        type_t type;
+        std::variant<int, formula> data;
+      };
+
+      // set the debug trace callback
+      void set_tracer(std::function<void(trace_t)> const&tracer);
+
     private:
       struct _solver_t;
       std::unique_ptr<_solver_t> _data;

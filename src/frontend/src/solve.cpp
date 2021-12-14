@@ -45,6 +45,8 @@ namespace black::frontend {
   
   int solve(std::optional<std::string> const&path, std::istream &file);
 
+  void trace(black::solver::trace_t data);
+
   int solve() {
     if(!cli::filename && !cli::formula) {
       command_line_error("please specify a filename or the --formula option");
@@ -155,6 +157,9 @@ namespace black::frontend {
     black::solver slv;
 
     slv.set_sat_backend(backend);
+
+    if(cli::debug == "trace" || cli::debug == "trace-full")
+      slv.set_tracer(&trace);
 
     if (cli::remove_past)
       slv.set_formula(black::remove_past(f), cli::finite);
@@ -300,6 +305,35 @@ namespace black::frontend {
       return json(result, solver, f);
 
     return readable(result, solver, f);
+  }
+  
+  void trace(black::solver::trace_t data) {
+    auto [type, v] = data;
+    static int k = 0;
+    if(type == black::solver::trace_t::stage) {
+      k = std::get<int>(v);
+      io::errorln("- k: {}", k);
+    }
+
+    if(cli::debug != "trace-full")
+      return;
+
+    switch(type){
+      case black::solver::trace_t::stage:
+        break;
+      case black::solver::trace_t::unrav:
+        io::errorln("  - {}-unrav: {}", k, to_string(std::get<formula>(v)));
+        break;
+      case black::solver::trace_t::empty:
+        io::errorln("  - {}-empty: {}", k, to_string(std::get<formula>(v)));
+        break;
+      case black::solver::trace_t::loop:
+        io::errorln("  - {}-loop: {}", k, to_string(std::get<formula>(v)));
+        break;
+      case black::solver::trace_t::prune:
+        io::errorln("  - {}-prune: {}", k, to_string(std::get<formula>(v)));
+        break;
+    }
   }
 
 }
