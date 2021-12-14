@@ -36,9 +36,9 @@ namespace black::sat::backends
     virtual void new_vars(size_t n) override;
     virtual size_t nvars() const override;
     virtual void assert_clause(dimacs::clause f) override;
-    virtual bool is_sat() override;
-    virtual 
-    bool is_sat_with(std::vector<dimacs::literal> const& assumptions) override;
+    virtual tribool is_sat() override;
+    virtual tribool 
+      is_sat_with(std::vector<dimacs::literal> const& assumptions) override;
     virtual tribool value(uint32_t v) const override;
     virtual void clear() override;
     virtual std::optional<std::string> license() const override;
