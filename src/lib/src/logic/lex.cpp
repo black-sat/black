@@ -78,7 +78,7 @@ namespace black::internal
       } catch (std::out_of_range const&) {
         error(
           "Fractional constant '" + data + "' cannot be represented as a "
-          "floating-point value"
+          "64-bit floating-point value"
         );
         return std::nullopt;
       }
