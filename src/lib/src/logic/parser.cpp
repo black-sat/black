@@ -63,7 +63,7 @@ namespace black::internal
     tsl::hopscotch_map<std::string, int> _rel_arities;
 
     _parser_t(alphabet &sigma, std::istream &stream, error_handler error)
-      : _alphabet(sigma), _lex(stream), _features{0}, _error(std::move(error))
+      : _alphabet(sigma), _lex(stream, error), _features{0}, _error(error)
     {
       _lex.get();
     }
@@ -484,8 +484,11 @@ namespace black::internal
 
   std::optional<term> parser::_parser_t::parse_term() {
     std::optional<term> lhs = parse_term_primary();
-    if(!lhs)
-      return error("Expected term");
+    if(!lhs) {
+      if(peek())
+        return error("Expected term, found '" + to_string(*peek()) + "'");
+      return error("Expected term, found end of input");
+    }
     
     return parse_term_binary_rhs(0, *lhs);
   }

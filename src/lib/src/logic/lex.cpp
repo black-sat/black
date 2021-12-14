@@ -27,14 +27,13 @@
 #include <map>
 #include <algorithm>
 #include <istream>
-
-#include <iostream>
+#include <charconv>
 
 namespace black::internal
 {
   namespace {
 
-    std::optional<token> digits(std::istream &s)
+    std::optional<token> digits(std::istream &s, lexer::error_handler error)
     {
       std::string data;
 
@@ -49,8 +48,22 @@ namespace black::internal
       if(s.peek() == '.') {
         data += '.';
         s.get();
-      } else
-        return token{stoi(data)};
+      } else {
+        int val = 0;
+        auto [ptr, err] = 
+          std::from_chars(data.data(), data.data() + data.size(), val);
+
+        if(err == std::errc())
+          return token{val};
+
+        error(
+          "Integer constant '" + data + "' is too big. " +
+          "Admitted range: [" + 
+          std::to_string(std::numeric_limits<int>::min()) + ", " +
+          std::to_string(std::numeric_limits<int>::max()) + "]"
+        );
+        return std::nullopt;
+      }
 
       // fractional part
       while(isdigit(s.peek())) {
@@ -60,7 +73,15 @@ namespace black::internal
       if(data.empty())
         return {};
       
-      return token{stod(data)};
+      try {
+        return token{stod(data)};
+      } catch (std::out_of_range const&) {
+        error(
+          "Fractional constant '" + data + "' cannot be represented as a "
+          "floating-point value"
+        );
+        return std::nullopt;
+      }
     }
 
     std::optional<token> symbol(std::istream &s)
@@ -230,7 +251,7 @@ namespace black::internal
     if (!_stream.good())
       return std::nullopt;
 
-    if(std::optional<token> t = digits(_stream); t)
+    if(std::optional<token> t = digits(_stream, _error); t)
       return t;
 
     if(std::optional<token> t = symbol(_stream); t)

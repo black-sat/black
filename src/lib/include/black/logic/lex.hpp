@@ -69,16 +69,16 @@ namespace black::internal
       forall
     };
 
-    token(bool b)               : _data{b} { }
-    token(int c)                : _data{c} { }
-    token(double d)             : _data{d} { }
-    token(std::string s)        : _data{std::move(s)} { }
-    token(keyword k)            : _data{k} { }
-    token(relation::type t)     : _data{t} { }
-    token(function::type t)     : _data{t} { }
-    token(unary::type t)        : _data{t} { }
-    token(binary::type t)       : _data{t} { }
-    token(punctuation s) : _data{s} { }
+    explicit token(bool b)               : _data{b} { }
+    explicit token(int c)                : _data{c} { }
+    explicit token(double d)             : _data{d} { }
+             token(std::string s)        : _data{std::move(s)} { }
+             token(keyword k)            : _data{k} { }
+             token(relation::type t)     : _data{t} { }
+             token(function::type t)     : _data{t} { }
+             token(unary::type t)        : _data{t} { }
+             token(binary::type t)       : _data{t} { }
+             token(punctuation s) : _data{s} { }
 
     template<typename T>
     bool is() const {
@@ -204,8 +204,8 @@ namespace black::internal
 
     return std::visit( overloaded {
       [](bool b)               { return b ? "true"s : "false"s; },
-      [](int c)                { return to_string(c); },
-      [](double d)             { return to_string(d); },
+      [](int c)                { return std::to_string(c); },
+      [](double d)             { return std::to_string(d); },
       [](std::string s)        { return s; },
       [](token::keyword k)     { return to_string(k); },
       [](relation::type t)     { return to_string(t); },
@@ -219,7 +219,11 @@ namespace black::internal
   class BLACK_EXPORT lexer
   {
   public:
-    explicit lexer(std::istream &stream) : _stream(stream) {}
+    using error_handler = std::function<void(std::string)>;
+
+    explicit lexer(std::istream &stream, error_handler error) 
+      : _stream(stream), _error{error} {}  
+    
     std::optional<token> get() { return _token = _lex(); }
     std::optional<token> peek() const { return _token; }
 
@@ -231,6 +235,7 @@ namespace black::internal
 
     std::optional<token> _token = std::nullopt;
     std::istream &_stream;
+    error_handler _error;
   };
 
   std::ostream &operator<<(std::ostream &s, token const &t);
