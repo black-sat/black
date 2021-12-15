@@ -56,7 +56,7 @@ namespace black::internal
 
     std::function<void(trace_t)> tracer = [](trace_t){};
 
-    void trace(int k);
+    void trace(size_t k);
     void trace(trace_t::type_t type, formula);
 
     // Main algorithm
@@ -131,7 +131,7 @@ namespace black::internal
     return _solver._data->sat->value(u);
   }
 
-  void solver::_solver_t::trace(int k){
+  void solver::_solver_t::trace(size_t k){
     tracer({trace_t::stage, {k}});
   }
 

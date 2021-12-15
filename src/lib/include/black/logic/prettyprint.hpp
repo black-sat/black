@@ -42,3 +42,4 @@ namespace black::internal
 }
 
 #endif // BLACK_LOGIC_PRETTY_PRINT_HPP
+

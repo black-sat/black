@@ -309,9 +309,9 @@ namespace black::frontend {
   
   void trace(black::solver::trace_t data) {
     auto [type, v] = data;
-    static int k = 0;
+    static size_t k = 0;
     if(type == black::solver::trace_t::stage) {
-      k = std::get<int>(v);
+      k = std::get<size_t>(v);
       io::errorln("- k: {}", k);
     }
 

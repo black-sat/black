@@ -98,7 +98,7 @@ namespace black::internal {
         };
 
         type_t type;
-        std::variant<int, formula> data;
+        std::variant<size_t, formula> data;
       };
 
       // set the debug trace callback
