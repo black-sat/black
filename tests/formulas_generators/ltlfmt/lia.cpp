@@ -35,10 +35,16 @@
 
 using namespace black;
 
+enum categories {
+  CATEGORY1 = 1, 
+  CATEGORY2 = 2, 
+  CATEGORY3 = 3
+};
+
 void print_help(std::string const& command);
 [[ noreturn ]] void print_error_and_help(std::string const& command, std::string const& error_msg);
 void generate_category_1(alphabet &sigma, unsigned int n);
-void generate_category_2(alphabet &sigma, unsigned int n);
+void generate_category_2(alphabet &sigma, unsigned int n, categories category);
 
 // Prints the help message
 void print_help(std::string const& command){
@@ -65,7 +71,7 @@ void generate_category_1 (alphabet &sigma, unsigned int n) {
 }
 
 // Generate benchmarks for LIA theory and category 2
-void generate_category_2 (alphabet &sigma, unsigned int n) {
+void generate_category_2 (alphabet &sigma, unsigned int n, categories category) {
   // array of n variables
   std::vector<variable> variables;
   for (std::size_t i = 0; i < n; ++i) {
@@ -98,7 +104,8 @@ void generate_category_2 (alphabet &sigma, unsigned int n) {
   for(unsigned i=0; i<=n; i++){
     sum = sum + variables[i]; 
   }
-  body = body && F( sum == sigma.constant((int)(n*(n+1))/2) && wX(sigma.bottom()));
+  formula sum_formula = sum == sigma.constant((int)(n*(n+1))/2) && wX(sigma.bottom());
+  body = body && ((category == CATEGORY2) ? (formula) F(sum_formula) : (formula) G(sum_formula));
 
   std::cout << to_string(basecase && body) << std::endl;
 }
@@ -120,11 +127,14 @@ int main(int argc, char **argv) {
 
   static alphabet sigma;
   switch (category) {
-    case 1:
+    case CATEGORY1:
       generate_category_1(sigma, n);
       break;
-    case 2:
-      generate_category_2(sigma, n);
+    case CATEGORY2:
+      generate_category_2(sigma, n, CATEGORY2);
+      break;
+    case CATEGORY3:
+      generate_category_2(sigma, n, CATEGORY3);
       break;
     default:
       print_error_and_help(argv[0], fmt::format("unknown category {}", category));
