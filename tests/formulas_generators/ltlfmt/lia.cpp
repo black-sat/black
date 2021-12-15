@@ -72,9 +72,9 @@ void generate_category_1 (alphabet &sigma, unsigned int n) {
 
 // Generate benchmarks for LIA theory and category 2
 void generate_category_2 (alphabet &sigma, unsigned int n, categories category) {
-  // array of n variables
+  // vector of n variables
   std::vector<variable> variables;
-  for (std::size_t i = 0; i < n; ++i) {
+  for (std::size_t i = 0; i <= n; ++i) {
     variables.push_back(sigma.var("x"+std::to_string(i)));
   }
   
@@ -104,8 +104,14 @@ void generate_category_2 (alphabet &sigma, unsigned int n, categories category) 
   for(unsigned i=0; i<=n; i++){
     sum = sum + variables[i]; 
   }
-  formula sum_formula = sum == sigma.constant((int)(n*(n+1))/2) && wX(sigma.bottom());
-  body = body && ((category == CATEGORY2) ? (formula) F(sum_formula) : (formula) G(sum_formula));
+  
+  formula sum_formula = ( ((category == CATEGORY2)
+      ? (term) sigma.constant((int)((n+1)*(n+2))/2)
+      : (term) sigma.constant((int)((n+1)*(n+2))/2 - 1))
+      == sum);
+  body = body && ( (category == CATEGORY2) 
+      ? (formula) F(sum_formula && wX(sigma.bottom())) 
+      : (formula) G(sum_formula));
 
   std::cout << to_string(basecase && body) << std::endl;
 }
