@@ -79,12 +79,12 @@ namespace black::frontend {
     if(cli::domain)
       sigma.set_domain(cli::domain == "integers" ? sort::Int : sort::Real);
 
-    std::optional<black::parser::result> result =
+    std::optional<formula> f =
       black::parse_formula(sigma, file, formula_syntax_error_handler(path));
 
-    black_assert(result.has_value());
+    black_assert(f.has_value());
 
-    auto [f, features] = *result;
+    uint8_t features = formula_features(*f);
 
     std::string backend = BLACK_DEFAULT_BACKEND;
 
@@ -93,10 +93,10 @@ namespace black::frontend {
 
     black_assert(black::sat::solver::backend_exists(backend));
 
-    if(features & black::parser::feature::first_order)
+    if(features & feature_t::first_order)
       cli::finite = true;
 
-    if((features & black::parser::feature::first_order) && 
+    if((features & feature_t::first_order) && 
        !black::sat::solver::backend_has_feature(backend, 
           black::sat::feature::smt))
     {
@@ -107,7 +107,7 @@ namespace black::frontend {
       quit(status_code::failure);
     }
 
-    if((features & black::parser::feature::quantifiers) && 
+    if((features & feature_t::quantifiers) && 
        !black::sat::solver::backend_has_feature(backend, 
           black::sat::feature::quantifiers))
     {
@@ -119,21 +119,21 @@ namespace black::frontend {
       quit(status_code::failure);
     }
 
-    if(!cli::domain && (features & parser::feature::first_order)) {
+    if(!cli::domain && (features & feature_t::first_order)) {
       command_line_error(
         "the --domain option is required for first-order formulas."
       );
       quit(status_code::command_line_error);
     }
 
-    if(cli::print_model && (features & parser::feature::first_order)) {
+    if(cli::print_model && (features & feature_t::first_order)) {
       command_line_error(
         "model extraction is not supported (yet) for first-order formulas."
       );
       quit(status_code::command_line_error);
     }
 
-    if(!cli::semi_decision && (features & parser::feature::nextvar)) {
+    if(!cli::semi_decision && (features & feature_t::nextvar)) {
       cli::semi_decision = true;
       io::errorln(
       "{0}: warning: use of `next` terms implies the --semi-decision option.\n"
@@ -145,12 +145,12 @@ namespace black::frontend {
 
     if(cli::debug == "print")
       io::println(
-        "{}: debug: parsed formula: {}", cli::command_name, to_string(f)
+        "{}: debug: parsed formula: {}", cli::command_name, to_string(*f)
       );
 
     [[maybe_unused]]
     bool error = 
-      black::solver::check_syntax(f, formula_syntax_error_handler(path));
+      black::solver::check_syntax(*f, formula_syntax_error_handler(path));
     
     black_assert(!error); // the error handler quits
 
@@ -162,15 +162,15 @@ namespace black::frontend {
       slv.set_tracer(&trace);
 
     if (cli::remove_past)
-      slv.set_formula(black::remove_past(f), cli::finite);
+      slv.set_formula(black::remove_past(*f), cli::finite);
     else
-      slv.set_formula(f, cli::finite);
+      slv.set_formula(*f, cli::finite);
 
     size_t bound = 
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
     black::tribool res = slv.solve(bound, cli::semi_decision);
 
-    output(res, slv, f);
+    output(res, slv, *f);
 
     return 0;
   }

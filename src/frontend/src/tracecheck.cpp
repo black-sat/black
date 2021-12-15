@@ -376,14 +376,14 @@ namespace black::frontend
   ) {
     black::alphabet sigma;
 
-    std::optional<black::parser::result> result = 
+    std::optional<formula> f = 
       black::parse_formula(sigma, file, formula_syntax_error_handler(path));
 
-    black_assert(result.has_value());
+    black_assert(f.has_value());
 
-    auto [f, features] = *result;
+    uint8_t features = formula_features(*f);
     
-    if(features & parser::feature::first_order) {
+    if(features & feature_t::first_order) {
       io::errorln(
         "{}: trace checking is not supported (yet) for first-order formulas.",
         cli::command_name
@@ -405,7 +405,7 @@ namespace black::frontend
       quit(status_code::success);
     }
 
-    return check(trace, f);
+    return check(trace, *f);
   }
 
   int trace_check() {

@@ -77,7 +77,7 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
       auto result = parse_formula(sigma, to_string(f));
 
       REQUIRE(result.has_value());
-      CHECK(result->result == f);
+      CHECK(*result == f);
     }
   }
 }

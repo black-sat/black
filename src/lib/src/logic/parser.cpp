@@ -35,7 +35,7 @@
 namespace black::internal
 {
   // Easy entry-point for parsing formulas
-  std::optional<parser::result>
+  std::optional<formula>
   parse_formula(alphabet &sigma, std::string const&s,
                 parser::error_handler error)
   {
@@ -46,7 +46,7 @@ namespace black::internal
   }
 
   // Easy entry-point for parsing formulas
-  std::optional<parser::result>
+  std::optional<formula>
   parse_formula(alphabet &sigma, std::istream &stream,
                 parser::error_handler error)
   {
@@ -58,7 +58,6 @@ namespace black::internal
   struct parser::_parser_t {
     alphabet &_alphabet;
     lexer _lex;
-    uint8_t _features = 0;
     bool _trying = false;
     std::function<void(std::string)> _error;
     std::vector<token> _tokens;
@@ -75,8 +74,6 @@ namespace black::internal
     std::optional<token> consume(token::punctuation p);
 
     std::nullopt_t error(std::string const&s);
-
-    void set_features(token const &tok);
 
     std::optional<formula> parse_formula();
     std::optional<formula> parse_binary_rhs(int, formula);
@@ -104,7 +101,7 @@ namespace black::internal
 
   parser::~parser() = default;
 
-  std::optional<parser::result> parser::parse() {
+  std::optional<formula> parser::parse() {
     std::optional<formula> f = _data->parse_formula();
     if(!f)
       return {};
@@ -114,13 +111,12 @@ namespace black::internal
         _data->error("Expected end of formula, found '" + 
           to_string(*_data->peek()) + "'");
 
-    return {{*f, _data->_features}};
+    return *f;
   }
 
   parser::_parser_t::_parser_t(
     alphabet &sigma, std::istream &stream, error_handler error
-  )
-    : _alphabet(sigma), _lex(stream, error), _features{0}, _error(error)
+  ) : _alphabet(sigma), _lex(stream, error), _error(error)
   {
     std::optional<token> tok = _lex.get();
     if(tok)    
@@ -160,10 +156,8 @@ namespace black::internal
 
   std::optional<token> parser::_parser_t::consume() {
     auto tok = peek();
-    if(tok) {
-      set_features(*tok);
+    if(tok)
       get();
-    }
     return tok;
   }
 
@@ -189,54 +183,6 @@ namespace black::internal
     if(!_trying)
       _error(s);
     return std::nullopt;
-  }
-  
-  //
-  // This function sets the detected feature of the formula based on the
-  // scanned tokens.
-  //
-  void parser::_parser_t::set_features(token const& tok) 
-  {
-    if(auto k = tok.data<token::keyword>(); k) { // next, wnext, exists, forall
-      _features |= feature::first_order;
-      switch(*k){
-        case token::keyword::next:
-        case token::keyword::wnext:
-          _features |= feature::nextvar;
-          break;
-        case token::keyword::exists:
-        case token::keyword::forall:
-          _features |= feature::quantifiers;
-        break;
-      }
-    }
-
-    if(auto type = tok.data<binary::type>(); type) {
-      if(to_underlying(*type) >= to_underlying(binary::type::until))
-        _features |= feature::temporal;
-      if(to_underlying(*type) >= to_underlying(binary::type::since))
-        _features |= feature::past;
-    }
-    
-    if(auto type = tok.data<unary::type>(); type) {
-      switch(*type) {
-        case unary::type::negation:
-          break;
-        case unary::type::yesterday:
-        case unary::type::w_yesterday:
-        case unary::type::once:
-        case unary::type::historically: 
-          _features |= feature::past;
-          _features |= feature::temporal;
-          break;
-        case unary::type::tomorrow:
-        case unary::type::w_tomorrow:
-        case unary::type::always:
-        case unary::type::eventually:
-          _features |= feature::temporal;
-          break;  
-      }
-    }
   }
 
   std::optional<formula> parser::_parser_t::parse_formula() {

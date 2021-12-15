@@ -41,25 +41,12 @@ namespace black::internal
   class BLACK_EXPORT parser
   {
   public:
-    enum feature : uint8_t {
-      temporal = 1,
-      past = 2,
-      first_order = 4,
-      quantifiers = 8,
-      nextvar = 16
-    };
-
-    struct result {
-      formula result;
-      uint8_t features;
-    };
-
     using error_handler = std::function<void(std::string)>;
 
     parser(alphabet &sigma, std::istream &stream, error_handler error);
     ~parser();
 
-    std::optional<result> parse();
+    std::optional<formula> parse();
 
   private:
     struct _parser_t;
@@ -68,23 +55,23 @@ namespace black::internal
 
   // Easy entry-point for parsing formulas
   BLACK_EXPORT
-  std::optional<parser::result>
+  std::optional<formula>
   parse_formula(alphabet &sigma, std::string const&s,
                 parser::error_handler error);
 
   BLACK_EXPORT
-  std::optional<parser::result>
+  std::optional<formula>
   parse_formula(alphabet &sigma, std::istream &s,
                 parser::error_handler error);
 
   BLACK_EXPORT
-  inline std::optional<parser::result>
+  inline std::optional<formula>
   parse_formula(alphabet &sigma, std::string const&s) {
     return parse_formula(sigma, s, [](auto){});
   }
 
   BLACK_EXPORT
-  inline std::optional<parser::result>
+  inline std::optional<formula>
   parse_formula(alphabet &sigma, std::istream &s) {
     return parse_formula(sigma, s, [](auto){});
   }

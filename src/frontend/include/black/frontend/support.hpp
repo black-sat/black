@@ -24,6 +24,8 @@
 #ifndef BLACK_FRONTEND_SUPPORT_HPP
 #define BLACK_FRONTEND_SUPPORT_HPP
 
+#include <black/logic/formula.hpp>
+
 #include <fstream>
 #include <string>
 #include <type_traits>
@@ -95,6 +97,60 @@ namespace black::frontend
       return readable_syntax_error;
     
     return json_syntax_error;
+  }
+
+  enum class feature_t : uint8_t {
+    temporal = 1,
+    past = 2,
+    first_order = 4,
+    quantifiers = 8,
+    nextvar = 16
+  };
+
+  inline uint8_t operator&(uint8_t f1, feature_t f2) {
+    return f1 & (uint8_t)f2;
+  }
+
+  inline bool has_next(term t) {
+    return t.match(
+      [](constant) { return false; },
+      [](variable) { return false; },
+      [](application a) {
+        for(term t : a.arguments())
+          if(has_next(t))
+            return true;
+        return false;
+      },
+      [](next) { return true; },
+      [](wnext) { return true; }
+    );
+  }
+
+  inline uint8_t formula_features(formula f) {
+    return f.match(
+      [](boolean) -> uint8_t { return 0; },
+      [](proposition) -> uint8_t { return 0; },
+      [](atom a) {
+        uint8_t nextvar = 0;
+        for(term t : a.terms())
+          if(has_next(t))
+            nextvar = (uint8_t)feature_t::nextvar;
+        return nextvar | (uint8_t)feature_t::first_order;
+      },
+      [](quantifier) -> uint8_t {
+        return (uint8_t)feature_t::first_order |
+               (uint8_t)feature_t::quantifiers;
+      },
+      [](temporal t) {
+        return (uint8_t)feature_t::temporal |
+          t.match(
+            [](past) {
+              return (uint8_t)feature_t::past;
+            },[](otherwise) -> uint8_t { return 0; }
+          );
+      },
+      [](otherwise) -> uint8_t { return 0; }
+    );
   }
 }
 
