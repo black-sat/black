@@ -84,12 +84,11 @@ namespace black::frontend
     };
 
     auto json_syntax_error = [](auto error) {
-      io::error(
+      io::fatal(status_code::syntax_error,
         "{{\n"
         "    \"result\": \"ERROR\",\n"
         "    \"error\": \"{}\"\n"
         "}}", error);
-      quit(status_code::syntax_error);
     };
 
     if(!cli::output_format || cli::output_format == "readable")

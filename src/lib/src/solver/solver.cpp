@@ -211,17 +211,32 @@ namespace black::internal
 
   static check_result_t _check_syntax(
     term t, std::function<void(std::string)> const& err,
-    std::vector<variable> const& scope
+    std::vector<variable> const& scope,
+    tsl::hopscotch_map<std::string, size_t> &rels,
+    tsl::hopscotch_map<std::string, size_t> &funcs
   ) {
     return t.match(
       [](constant) -> check_result_t { return false; },
       [](variable) -> check_result_t { return false; },
-      [&](application a) {
+      [&](application a) -> check_result_t {
+        std::string id = a.func().name();
+        size_t size = a.arguments().size();
+        
+        if(auto it = funcs.find(id); it != funcs.end() && it->second != size) {
+           err("Function '" + id + "' used twice with different arities");
+           return true;
+        }
+
+        if(rels.find(id) != rels.end()) {
+          err("Function symbol '" + id + "' already used as a relation symbol");
+          return true;
+        }
+
         check_result_t res;
-
         for(term arg : a.arguments())
-          res = res || _check_syntax(arg, err, scope);
+          res = res || _check_syntax(arg, err, scope, rels, funcs);
 
+        funcs.insert({id, size});
         return res;
       },
       [&](next n) -> check_result_t {
@@ -261,52 +276,67 @@ namespace black::internal
 
   static check_result_t _check_syntax(
     formula f, std::function<void(std::string)> const& err, 
-    std::vector<variable> const& scope, bool positive
+    std::vector<variable> const& scope, bool positive, 
+    tsl::hopscotch_map<std::string, size_t> &rels,
+    tsl::hopscotch_map<std::string, size_t> &funcs
   ) {
     return f.match(
       [](boolean) -> check_result_t { return false; },
       [](proposition) -> check_result_t { return false; },
-      [&](atom a) {
-        check_result_t res;
+      [&](atom a) -> check_result_t {  
+        std::string id = a.rel().name();
+        size_t size = a.terms().size();
+        if(auto it = rels.find(id); it != rels.end() && it->second != size) {
+           err("Relation '" + id + "' used twice with different arities");
+           return true;
+        }
 
+        if(funcs.find(id) != funcs.end()) {
+          err("Relation symbol '" + id + "' already used as a function symbol");
+          return true;
+        }
+
+        check_result_t res;
         for(term t : a.terms())
-          res = res || _check_syntax(t, err, scope);
+          res = res || _check_syntax(t, err, scope, rels, funcs);
         
+        rels.insert({id, size});
         return res;  
       },
       [&](quantifier q) -> check_result_t {
         std::vector<variable> s = scope;
         s.push_back(q.var());
-        check_result_t res = _check_syntax(q.matrix(), err, s, positive);
+        check_result_t res =
+          _check_syntax(q.matrix(), err, s, positive, rels, funcs);
         if(res.has_next && res.has_disjunctions) {
           err(
             "next() terms and disjunctions cannot be mixed inside quantifiers"
           );
-          return false;
+          return true;
         }
 
         return res;
       },
       [&](negation, formula arg) {
-        return _check_syntax(arg, err, scope, !positive);
+        return _check_syntax(arg, err, scope, !positive, rels, funcs);
       },
       [&](disjunction, formula left, formula right) {
         check_result_t r{false, false, positive};
-        return r || _check_syntax(left, err, scope, positive) ||
-                    _check_syntax(right, err, scope, positive);
+        return r || _check_syntax(left, err, scope, positive, rels, funcs) ||
+                    _check_syntax(right, err, scope, positive, rels, funcs);
       },
       [&](conjunction, formula left, formula right) {
         check_result_t r{false, false, !positive};
-        return r || _check_syntax(left, err, scope, positive) ||
-                    _check_syntax(right, err, scope, positive);
+        return r || _check_syntax(left, err, scope, positive, rels, funcs) ||
+                    _check_syntax(right, err, scope, positive, rels, funcs);
       },
       [&](implication, formula left, formula right) {
-        return _check_syntax(!left || right, err, scope, positive);
+        return _check_syntax(!left || right, err, scope, positive, rels, funcs);
       },
       [&](iff, formula left, formula right) {
         return _check_syntax(
           implies(left, right) && implies(right, left), 
-          err, scope, positive
+          err, scope, positive, rels, funcs
         );
       },
       [&](temporal t) -> check_result_t {
@@ -317,11 +347,11 @@ namespace black::internal
 
         return t.match(
           [&](unary, formula arg) {
-            return _check_syntax(arg, err, scope, positive);
+            return _check_syntax(arg, err, scope, positive, rels, funcs);
           },
           [&](binary, formula left, formula right) {
-            return _check_syntax(left, err, scope, positive) || 
-                   _check_syntax(right, err, scope, positive);
+            return _check_syntax(left, err, scope, positive, rels, funcs) || 
+                   _check_syntax(right, err, scope, positive, rels, funcs);
           }
         );
       }
@@ -330,7 +360,10 @@ namespace black::internal
 
   bool 
   solver::check_syntax(formula f, std::function<void(std::string)> const&err) {
-    return _check_syntax(f, err, std::vector<variable>{}, true).error;
+    tsl::hopscotch_map<std::string, size_t> rels;
+    tsl::hopscotch_map<std::string, size_t> funcs;
+    return 
+      _check_syntax(f, err, std::vector<variable>{}, true, rels, funcs).error;
   }
 
   
