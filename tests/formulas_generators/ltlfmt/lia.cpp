@@ -26,21 +26,68 @@
 #include <black/logic/parser.hpp>
 #include <black/logic/prettyprint.hpp>
 
+#include <fmt/format.h>
+
 #include <iostream>
 #include <cmath>
 
+
 using namespace black;
 
+static alphabet sigma;
+static void print_help();
+[[ noreturn ]] static void print_error_and_help(const std::string error_msg);
+static void generate_category_1(const int n);
 
-int main(int , char **) {
-  alphabet sigma;
+const std::string COMMANDNAME="lia";
 
+// Prints the help message
+static void print_help(){
+  std::cout << fmt::format("HELP: {} <category> <N> ", COMMANDNAME) << std::endl;
+  std::cout << "\tcategory : integer for the number category" << std::endl;
+  std::cout << "\tN        : integer for the dimension of the benchmark" << std::endl;
+}
+
+// Prints the error message and then prints the help message
+[[ noreturn ]] static void print_error_and_help(const std::string error_msg)  {
+  std::cerr << fmt::format("ERROR: {}.", error_msg) << std::endl;
+  print_help();
+  exit(1);
+}
+
+// Generate benchmarks for LIA theory and category 1
+static void generate_category_1 (const int n) {
   variable x = sigma.var("x");
-  variable y = sigma.var("y");
+  constant N = sigma.constant(n);
 
-  formula f = x == 0 && G(y > 3);
+  formula f = x == 0 && G(wnext(x) == x + 1) && F(x == N);
 
   std::cout << to_string(f) << "\n"; 
+}
+
+int main(int argc, char **argv) {
+
+  int category, n;
+
+  if (argc != 3){
+    print_error_and_help("wrong number of parameters");
+  }
+
+  try{
+    category  = std::stoi(argv[1]);
+    n         = std::stoi(argv[2]);
+  } catch (const std::invalid_argument& ) {
+    print_error_and_help("both parameters must be integers");
+  }
+
+  switch (category) {
+    case 1:
+      generate_category_1(n);
+      break;
+    default:
+      print_error_and_help(fmt::format("unknown category {}", category));
+  }
+
 
   return 0;
 }
