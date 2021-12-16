@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
     print_error_and_help(argv[0], "both parameters must be integers");
   }
 
-  static alphabet sigma;
+  alphabet sigma;
   switch (category) {
     case CATEGORY1:
       generate_category_1(sigma, n);
