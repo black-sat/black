@@ -30,10 +30,10 @@ namespace black::internal
 {
   
   BLACK_EXPORT
-  std::string to_string(formula f, size_t float_precision = 20);
+  std::string to_string(formula f);
   
   BLACK_EXPORT
-  std::string to_string(term t, size_t float_precision = 20);
+  std::string to_string(term t);
 
   inline std::ostream &operator<<(std::ostream &stream, formula const&f) {
     return (stream << to_string(f));
