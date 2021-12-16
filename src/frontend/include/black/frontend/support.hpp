@@ -116,8 +116,8 @@ namespace black::frontend
       [](constant) { return false; },
       [](variable) { return false; },
       [](application a) {
-        for(term t : a.arguments())
-          if(has_next(t))
+        for(term t2 : a.arguments())
+          if(has_next(t2))
             return true;
         return false;
       },
@@ -130,7 +130,7 @@ namespace black::frontend
     return f.match(
       [](boolean) -> uint8_t { return 0; },
       [](proposition) -> uint8_t { return 0; },
-      [](atom a) {
+      [](atom a) -> uint8_t {
         uint8_t nextvar = 0;
         for(term t : a.terms())
           if(has_next(t))
@@ -141,7 +141,7 @@ namespace black::frontend
         return (uint8_t)feature_t::first_order |
                (uint8_t)feature_t::quantifiers;
       },
-      [](temporal t) {
+      [](temporal t) -> uint8_t {
         return (uint8_t)feature_t::temporal |
           t.match(
             [](past) {
