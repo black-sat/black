@@ -99,7 +99,10 @@ void generate_category_2 (alphabet &sigma, unsigned int n, categories category) 
   }
   body = body && G(stability);
 
-  // F(sum(x0 ... x_{n-1}) = n*(n+1)/2 & wX false)
+  // Category 2:
+  //    F(sum(x0 ... x_{n-1}) = n*(n+1)/2 & wX false)
+  // Category 3:
+  //    G(sum(x0 ... x_{n-1}) = n*(n+1)/2 - 1)
   term sum = sigma.constant(0);
   for(unsigned i=0; i<=n; i++){
     sum = sum + variables[i]; 
@@ -131,7 +134,7 @@ int main(int argc, char **argv) {
     print_error_and_help(argv[0], "both parameters must be integers");
   }
 
-  static alphabet sigma;
+  alphabet sigma;
   switch (category) {
     case CATEGORY1:
       generate_category_1(sigma, n);

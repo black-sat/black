@@ -1,0 +1,1 @@
+(x0 > 0) & True & (next(x1) > x0) & X(next(x2) > x1) & X X(next(x3) > x2) & G(True & (wnext(x0) = x0) & (wnext(x1) = x1) & (wnext(x2) = x2) & (wnext(x3) = x3)) & G(9 = (((0 + x0) + x1) + x2) + x3)
