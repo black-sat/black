@@ -313,7 +313,17 @@ namespace black::internal
     template<typename T, REQUIRES((std::is_same_v<T, Operators> || ...))>
     fragment_matcher(T t) : _f{t} { }
 
-    class formula formula() const { return _f; }
+    operator formula() const { return _f; }
+
+    template<typename Handler>
+    bool is() const {
+      return _f.is<Handler>();
+    }
+
+    template<typename Handler>
+    Handler to() const {
+      return _f.to<Handler>();
+    }
 
     template<typename ...Handlers>
     auto match(Handlers&& ...handlers) const {
@@ -321,7 +331,7 @@ namespace black::internal
     }
 
   private:
-    class formula _f;
+    formula _f;
   };
 
   using past_ltl_ops = syntax<

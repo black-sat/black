@@ -144,9 +144,15 @@ namespace black::frontend
       [](temporal t) -> uint8_t {
         return (uint8_t)feature_t::temporal |
           t.match(
-            [](past) {
-              return (uint8_t)feature_t::past;
-            },[](otherwise) -> uint8_t { return 0; }
+            [](past) -> uint8_t { return (int8_t)feature_t::past; },
+            [](otherwise) -> uint8_t { return 0; }
+          ) | t.match(
+            [](unary, formula arg) -> uint8_t {
+              return formula_features(arg);
+            },
+            [](binary, formula left, formula right) -> uint8_t {
+              return formula_features(left) | formula_features(right);
+            }
           );
       },
       [](unary, formula arg) -> uint8_t { 
