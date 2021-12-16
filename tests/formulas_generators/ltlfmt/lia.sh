@@ -50,7 +50,7 @@ fi
 
 for (( i=$START; i<=$END; i=i+1 ))
 do
-  $BIN $CATEGORY $i > "$OUTDIR/scalable_$CATEGORY_$i.ltlfmt"
+  $BIN $CATEGORY $i > "$OUTDIR/scalable-$CATEGORY-$i.ltlfmt"
   echo "Created benchmark #$i for Category $CATEGORY and Theory LIA"
 done
 
