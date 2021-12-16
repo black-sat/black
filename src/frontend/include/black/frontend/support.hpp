@@ -149,7 +149,12 @@ namespace black::frontend
             },[](otherwise) -> uint8_t { return 0; }
           );
       },
-      [](otherwise) -> uint8_t { return 0; }
+      [](unary, formula arg) -> uint8_t { 
+        return formula_features(arg);
+      },
+      [](binary, formula left, formula right) -> uint8_t {
+        return formula_features(left) | formula_features(right);
+      }
     );
   }
 }
