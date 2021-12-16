@@ -36,8 +36,7 @@ TEST_CASE("Syntax errors") {
   alphabet sigma;
   std::vector<std::string> tests = {
     "F", "F(p U)", "p || q &&", "(p && q", "(", "F(p - q)", "F(p -)", 
-    "F(p(x,))", "f(x) & f(x,y)", "f(x) = 2 & f(x)", "f(x) & f(x) = 2"
-    "f(x) = 2 & f(x,y) = 2", "f(x) + 2 = 2 & f(x)", "f(x) & f(x) + 2 = 2"
+    "F(p(x,))"
   };
 
   for(std::string s : tests) {

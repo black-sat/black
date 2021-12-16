@@ -25,7 +25,10 @@
 
 #include <black/support/config.hpp>
 #include <black/logic/formula.hpp>
+#include <black/logic/parser.hpp>
 #include <black/solver/solver.hpp>
+
+#include <iostream>
 
 using namespace black;
 
@@ -53,4 +56,29 @@ TEST_CASE("Testing solver")
     slv.set_formula(f2);
     REQUIRE(!slv.model().has_value());
   }
+}
+
+TEST_CASE("Solver syntax errors") {
+
+  alphabet sigma;
+  std::vector<std::string> tests = {
+    "f(x) & f(x,y)", "f(x) = 2 & f(x)", "f(x) & f(x) = 2",
+    "f(x) = 2 & f(x,y) = 2", "f(x) + 2 = 2 & f(x)", "f(x) & f(x) + 2 = 2"
+  };
+
+  for(std::string s : tests) {
+    DYNAMIC_SECTION("Test formula: " << s) 
+    {
+      auto result = parse_formula(sigma, s);
+
+      REQUIRE(result.has_value());
+
+      bool error = false;
+      REQUIRE(!solver::check_syntax(*result, [&](std::string){ 
+        error = true;
+      }));
+      REQUIRE(error);
+    }
+  }
+
 }

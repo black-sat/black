@@ -149,10 +149,10 @@ namespace black::frontend {
       );
 
     [[maybe_unused]]
-    bool error = 
+    bool ok = 
       black::solver::check_syntax(*f, formula_syntax_error_handler(path));
     
-    black_assert(!error); // the error handler quits
+    black_assert(ok); // the error handler quits
 
     black::solver slv;
 

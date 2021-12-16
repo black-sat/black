@@ -363,7 +363,7 @@ namespace black::internal
     tsl::hopscotch_map<std::string, size_t> rels;
     tsl::hopscotch_map<std::string, size_t> funcs;
     return 
-      _check_syntax(f, err, std::vector<variable>{}, true, rels, funcs).error;
+      !_check_syntax(f, err, std::vector<variable>{}, true, rels, funcs).error;
   }
 
   

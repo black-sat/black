@@ -65,8 +65,8 @@ namespace black::internal
 
     _parser_t(alphabet &sigma, std::istream &stream, error_handler error);
 
-    template<typename F, typename R = std::invoke_result_t<F>>
-    R try_parse(F f);
+    template<typename F>
+    auto try_parse(F f);
 
     std::optional<token> peek();
     std::optional<token> get();
@@ -123,12 +123,12 @@ namespace black::internal
       _tokens.push_back(*tok);
   }
 
-  template<typename F, typename R>
-  R parser::_parser_t::try_parse(F f) {
+  template<typename F>
+  auto parser::_parser_t::try_parse(F f) {
     size_t pos = _pos;
     bool t = _trying;
     _trying = true;
-    R r = f();
+    auto r = f();
     if(!r)
       _pos = pos;
     _trying = t;
