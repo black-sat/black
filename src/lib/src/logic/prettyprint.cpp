@@ -61,7 +61,7 @@ namespace black::internal
     }
   }
 
-  std::string to_string(term t)
+  std::string to_string(term t, size_t float_precision)
   {
     using namespace std::literals;
     return t.match(
@@ -69,7 +69,8 @@ namespace black::internal
         if(std::holds_alternative<int64_t>(c.value()))
           return fmt::format("{}", std::get<int64_t>(c.value()));
         else
-          return fmt::format("{}", std::get<double>(c.value()));
+          return 
+          fmt::format("{:.{}f}", std::get<double>(c.value()), float_precision);
       },
       [&](variable x) {
         if(auto name = x.label<std::string>(); name.has_value())
@@ -112,7 +113,7 @@ namespace black::internal
     );
   }
 
-  std::string to_string(formula f)
+  std::string to_string(formula f, size_t float_precision)
   {
     using namespace std::literals;
     return f.match(
@@ -127,19 +128,19 @@ namespace black::internal
         else
           return fmt::format("<{:x}>", to_underlying(formula{p}.unique_id()));
       },
-      [](atom a) {
+      [&](atom a) {
         if(auto t = a.rel().known_type(); t)
           return fmt::format(
             "{} {} {}", 
-            to_string(a.terms()[0]),
+            to_string(a.terms()[0], float_precision),
             a.rel().name(), 
-            to_string(a.terms()[1])
+            to_string(a.terms()[1], float_precision)
           );
         
         std::string result = 
           a.rel().name() + "(" + to_string(a.terms()[0]);
         for(size_t i = 1; i < a.terms().size(); ++i) {
-          result += ", " + to_string(a.terms()[i]);
+          result += ", " + to_string(a.terms()[i], float_precision);
         }
         result += ")";
 
