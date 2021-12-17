@@ -138,15 +138,15 @@ if(ENABLE_FORMULAS_TESTS)
     
     set(SMT_OPTS "")
     set(MODEL_OPT "")
-    string(FIND "${FILE}" "ltlfmt" FOUND)
-    if(FOUND GREATER_EQUAL 0)
+    string(FIND "${FILE}" "ltlfmt" SMT_FOUND)
+    if(SMT_FOUND GREATER_EQUAL 0)
       set(SMT_OPTS "-s")
     else()
       set(MODEL_OPT "-m")
     endif()
 
-    string(FIND "${FILE}" "LRA" FOUND)
-    if(FOUND GREATER_EQUAL 0)
+    string(FIND "${FILE}" "LRA" LRA_FOUND)
+    if((SMT_FOUND GREATER_EQUAL 0) AND (LRA_FOUND GREATER_EQUAL 0))
       set(SMT_OPTS "${SMT_OPTS} -d reals")
     else()
       set(SMT_OPTS "${SMT_OPTS} -d integers")
@@ -157,22 +157,28 @@ if(ENABLE_FORMULAS_TESTS)
       set(SHELL_CMD powershell -Command)
     endif()
 
-    add_test(
-      NAME "${TEST_NAME}"
-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
-      COMMAND
-        ${SHELL_CMD}
-        "$<TARGET_FILE:frontend> solve \
-        ${MODEL_OPT} -o json ${FINITE_OPT} ${SMT_OPTS} \
-          -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
-        $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} \
-          -e ${RESULT} '${FILE}'"
-    )
+    if(NOT (SMT_FOUND GREATER_EQUAL 0) OR 
+      (${BLACK_TESTS_SAT_BACKEND} STREQUAL "mathsat") OR
+      (${BLACK_TESTS_SAT_BACKEND} STREQUAL "z3"))
 
-    if(BLACK_TEST_TIMEOUT)
-      set_tests_properties(
-        "${TEST_NAME}" PROPERTIES TIMEOUT ${BLACK_TEST_TIMEOUT}
+      add_test(
+        NAME "${TEST_NAME}"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
+        COMMAND
+          ${SHELL_CMD}
+          "$<TARGET_FILE:frontend> solve \
+          ${MODEL_OPT} -o json ${FINITE_OPT} ${SMT_OPTS} \
+            -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
+          $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} \
+            -e ${RESULT} '${FILE}'"
       )
+  
+      if(BLACK_TEST_TIMEOUT)
+        set_tests_properties(
+          "${TEST_NAME}" PROPERTIES TIMEOUT ${BLACK_TEST_TIMEOUT}
+        )
+      endif()
+
     endif()
 
   endforeach()
