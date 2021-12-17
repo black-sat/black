@@ -90,7 +90,7 @@ void generate_category_2 (alphabet &sigma, int64_t n) {
   if (powvar > std::numeric_limits<int64_t>::max()){
     print_error_and_help("", "too big parameter N");
   }
-  term constval = const2 - (const1 / sigma.constant(powvar));
+  term constval = const2 - (const1 / sigma.constant((int64_t) powvar));
   body = body && F(x > constval);
 
   std::cout << to_string(basecase && body) << "\n"; 
