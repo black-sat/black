@@ -40,7 +40,8 @@ namespace black::internal
   struct token
   {
     enum class type : uint8_t {
-      boolean = 0,
+      invalid = 0,
+      boolean,
       integer,
       real,
       identifier,
@@ -69,6 +70,7 @@ namespace black::internal
       forall
     };
 
+             token()                     : _data{std::monostate{}} { }
     explicit token(bool b)               : _data{b} { }
     explicit token(int64_t c)            : _data{c} { }
     explicit token(double d)             : _data{d} { }
@@ -99,6 +101,7 @@ namespace black::internal
   private:
     // data related to recognized tokens
     std::variant<
+      std::monostate, // invalid tokens
       bool,           // booleans
       int64_t,        // integers
       double,         // reals
@@ -203,6 +206,7 @@ namespace black::internal
     using namespace std::literals;
 
     return std::visit( overloaded {
+      [](std::monostate)       { return "<invalid>"s; },
       [](bool b)               { return b ? "true"s : "false"s; },
       [](int64_t c)            { return std::to_string(c); },
       [](double d)             { return std::to_string(d); },

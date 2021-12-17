@@ -193,6 +193,9 @@ TEST_CASE("Boolean constants simplification")
   alphabet sigma;
 
   proposition p = sigma.prop("p");
+  variable x = sigma.var("x");
+
+  REQUIRE(has_constants(p && !p && x > x && exists(x, x > x) && sigma.top()));
 
   REQUIRE(simplify_deep(!sigma.top()) == sigma.bottom());
   REQUIRE(simplify_deep(!sigma.bottom()) == sigma.top());
@@ -229,9 +232,11 @@ TEST_CASE("Boolean constants simplification")
   REQUIRE(simplify_deep(U(p, sigma.top())) == sigma.top());
   REQUIRE(simplify_deep(W(p,p)) == W(p,p));
   REQUIRE(simplify_deep(W(sigma.top(), p)) == sigma.top());
+  REQUIRE(simplify_deep(W(sigma.bottom(), p)) == p);
   REQUIRE(simplify_deep(W(p, sigma.top())) == sigma.top());
   REQUIRE(simplify_deep(W(p, sigma.bottom())) == G(p));
   REQUIRE(simplify_deep(W(sigma.top(), sigma.top())) == sigma.top());
+  REQUIRE(simplify_deep(W(sigma.bottom(), sigma.bottom())) == sigma.bottom());
 
   REQUIRE(simplify_deep(R(p, !p)) == R(p, !p));
   REQUIRE(simplify_deep(R(sigma.top(), p)) == p);
@@ -243,5 +248,9 @@ TEST_CASE("Boolean constants simplification")
   REQUIRE(simplify_deep(M(p, sigma.top())) == F(p));
   REQUIRE(simplify_deep(M(p, sigma.bottom())) == sigma.bottom());
   REQUIRE(simplify_deep(M(sigma.top(), sigma.top())) == sigma.top());
+  REQUIRE(simplify_deep(M(sigma.bottom(), sigma.bottom())) == sigma.bottom());
+
+  REQUIRE(simplify_deep(x >= x) == (x >= x));
+  REQUIRE(simplify_deep(exists(x, x > x)) == exists(x, x > x));
   
 }

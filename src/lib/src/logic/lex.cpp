@@ -35,52 +35,55 @@ namespace black::internal
 
     std::optional<token> digits(std::istream &s, lexer::error_handler error)
     {
-      std::string data;
+      std::string integer;
 
       // integer part
       while(isdigit(s.peek())) {
-        data += char(s.peek());
+        integer += char(s.peek());
         s.get();
       }
-      if(data.empty())
+      if(integer.empty())
         return {};
 
-      if(s.peek() == '.') {
-        data += '.';
-        s.get();
-      } else {
+      if(s.peek() != '.') {
         int64_t val = 0;
         auto [ptr, err] = 
-          std::from_chars(data.data(), data.data() + data.size(), val);
+          std::from_chars(integer.data(), integer.data() + integer.size(), val);
 
         if(err == std::errc())
           return token{val};
 
         error(
-          "Integer constant '" + data + "' is too big. " +
+          "Integer constant '" + integer + "' is too big. " +
           "Admitted range: [" + 
           std::to_string(std::numeric_limits<int64_t>::min()) + ", " +
           std::to_string(std::numeric_limits<int64_t>::max()) + "]"
         );
-        return std::nullopt;
+        return token{};
       }
 
       // fractional part
-      while(isdigit(s.peek())) {
-        data += char(s.peek());
+      std::string fractional;
+      
+      s.get(); // consume the dot
+      while(s.good() && isdigit(s.peek())) {
+        fractional += char(s.peek());
         s.get();
       }
-      if(data.empty())
-        return {};
+      if(fractional.empty()) {
+        error("Incomplete fractional constant: '" + integer + ".'");
+        return token{};
+      }
       
+      std::string number = integer + '.' + fractional;
       try {
-        return token{stod(data)};
+        return token{stod(number)};
       } catch (std::out_of_range const&) {
         error(
-          "Fractional constant '" + data + "' cannot be represented as a "
+          "Fractional constant '" + number + "' cannot be represented as a "
           "64-bit floating-point value"
         );
-        return std::nullopt;
+        return token{};
       }
     }
 
@@ -218,8 +221,13 @@ namespace black::internal
       {"T",      token{binary::type::triggered}}
     };
 
-    if (!_stream.good() || !_is_initial_identifier_char(_stream.peek()))
-      return std::nullopt;
+    if (!_stream.good() || !_is_initial_identifier_char(_stream.peek())) {
+      _error(
+        std::string{"Unrecognized input character: '"} + 
+        (char)_stream.peek() + "'"
+      );
+      return token{};
+    }
 
     std::string id;
     while (_stream.good() && _is_identifier_char(_stream.peek())) 

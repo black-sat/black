@@ -46,11 +46,11 @@ namespace black::internal {
     return f.match(
       [](boolean b) { return simplify(b); },
       [](proposition p) { return simplify(p); },
-      [](atom a) { return a; },
+      [](atom a) { return simplify(a); },
       [](quantifier q) { 
-        return quantifier(
+        return simplify(quantifier(
           q.quantifier_type(), q.var(), simplify_deep(q.matrix())
-        );
+        ));
       },
       [](unary u, formula op) { 
         return simplify(unary(u.formula_type(), simplify_deep(op)));

@@ -35,12 +35,9 @@ namespace std {
     ) const {
       using namespace ::black::internal;
 
-      if(v.empty())
-        return 0;
-      
       hash<term_base *> h;
-      size_t result = h(v[0]);
-      for(size_t i = 1; i < v.size(); ++i)
+      size_t result = 0;
+      for(size_t i = 0; i < v.size(); ++i)
         result = hash_combine(result, h(v[i]));
 
       return result;
