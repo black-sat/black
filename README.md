@@ -87,11 +87,11 @@ OPTIONS
 The algorithm and encoding employed by BLACK is described in detail in this paper:
 
 [Luca Geatti][Geatti], [Nicola Gigante][Gigante], [Angelo Montanari][Montanari]  
-A SAT-based encoding of the one-pass and tree-shaped tableau system for LTL. 
+A SAT-based encoding of the one-pass and tree-shaped tableau system for LTL.  
 In: *Proceedings of the 28th International Conference on Automated Reasoning with 
 Analytic Tableaux and Related Methods*, [TABLEAUX 2019][Tableaux], pages 3‑20  
 DOI: 10.1007/978-3-030-29026-9_1  
-[Full Text][Paper], [DBLP][DBLP]
+[Full Text][TableauxPaper], [DBLP][TableauxDBLP]
 
 You can cite the above paper with the following BibTeX entry:
 
@@ -114,6 +114,36 @@ You can cite the above paper with the following BibTeX entry:
 }
 ```
 
+The handling of *past operators* has been described in the following paper:
+
+[Luca Geatti][Geatti], [Nicola Gigante][Gigante], [Angelo Montanari][Montanari], [Gabriele Venturato][Venturato]  
+Past Matters: Supporting LTL+Past in the BLACK Satisfiability Checker.   
+In: *Proceedings of the 28th International Symposium on Temporal Representation and Reasoning*,
+[TIME 2021][TIME], pages 8:1-8:17,  
+DOI: 10.4230/LIPIcs.TIME.2021.8  
+[Full Text][TIMEPaper], [DBLP][TIMEDBLP]
+
+```
+@inproceedings{DBLP:conf/time/GeattiGMV21,
+  author    = {Luca Geatti and
+               Nicola Gigante and
+               Angelo Montanari and
+               Gabriele Venturato},
+  editor    = {Carlo Combi and
+               Johann Eder and
+               Mark Reynolds},
+  title     = {Past Matters: Supporting LTL+Past in the {BLACK} Satisfiability Checker},
+  booktitle = {Proceedings of th e28th International Symposium on Temporal Representation 
+               and Reasoning},
+  series    = {LIPIcs},
+  volume    = {206},
+  pages     = {8:1--8:17},
+  publisher = {Schloss Dagstuhl - Leibniz-Zentrum f{\"{u}}r Informatik},
+  year      = {2021},
+  doi       = {10.4230/LIPIcs.TIME.2021.8}
+}
+```
+
 [Reynolds]: https://arxiv.org/abs/1609.04102
 [CMake]: https://cmake.org
 [zlib]: https://zlib.net/
@@ -126,9 +156,13 @@ You can cite the above paper with the following BibTeX entry:
 [Geatti]: https://users.dimi.uniud.it/~luca.geatti
 [Gigante]: https://users.dimi.uniud.it/~nicola.gigante
 [Montanari]: https://users.dimi.uniud.it/~angelo.montanari
+[Venturato]: https://gabventurato.github.io/
 [Tableaux]: https://tableaux2019.org/
-[Paper]: https://users.dimi.uniud.it/~nicola.gigante/papers/GeattiGM19.pdf
-[DBLP]: https://dblp.org/rec/conf/tableaux/GeattiGM19.html
+[TIME]: https://conference2.aau.at/event/61/
+[TableauxPaper]: https://users.dimi.uniud.it/~nicola.gigante/papers/GeattiGM19.pdf
+[TableauxDBLP]: https://dblp.org/rec/conf/tableaux/GeattiGM19.html
+[TIMEPaper]: https://drops.dagstuhl.de/opus/volltexte/2021/14784/
+[TIMEDBLP]: https://dblp.org/rec/conf/time/GeattiGMV21.html
 [Home]: https://github.com/black-sat/black/wiki/Home 
 [Installation]: https://github.com/black-sat/black/wiki/Installation 
 [Usage]: https://github.com/black-sat/black/wiki/Usage 
