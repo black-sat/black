@@ -1,1 +1,0 @@
-x1 > 1 & (next(x2)=x1+1) & X (next(x3)=x2+1) & X X (next(x4)=x3+1) & X X X (next(x5)=x4+1) & X X X X (next(x6)=x5+1) & X X X X X (next(x7)=x6+1) & G(wnext(x1)=x1 & wnext(x2)=x2 & wnext(x3)=x3 & wnext(x4)=x4 & wnext(x5)=x5 & wnext(x6)=x6 & wnext(x7)=x7) & G(1+x1+x2+x3+x4+x5+x6+x7 < ((7*(7+1)/2)))

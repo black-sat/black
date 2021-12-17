@@ -43,8 +43,8 @@ enum categories {
 
 void print_help(std::string const& command);
 [[ noreturn ]] void print_error_and_help(std::string const& command, std::string const& error_msg);
-void generate_category_1(alphabet &sigma, unsigned int n);
-void generate_category_2(alphabet &sigma, unsigned int n, categories category);
+void generate_category_1(alphabet &sigma, int64_t n);
+void generate_category_2(alphabet &sigma, int64_t n);
 
 // Prints the help message
 void print_help(std::string const& command){
@@ -61,77 +61,52 @@ void print_help(std::string const& command){
 }
 
 // Generate benchmarks for LRA theory and category 1
-void generate_category_1 (alphabet &sigma, unsigned int n) {
+void generate_category_1 (alphabet &sigma, int64_t n) {
   variable x = sigma.var("x");
-  constant N = sigma.constant((int) n);
+  constant N = sigma.constant(pow(10,n));
 
-  formula f = x == 0 && G(wnext(x) == x + 1) && F(x == N);
+  formula f = x == N && G(wnext(x) == x / 10) && F(x == 1);
 
   std::cout << to_string(f) << "\n"; 
 }
 
 // Generate benchmarks for LRA theory and category 2
-void generate_category_2 (alphabet &sigma, unsigned int n, categories category) {
-  // vector of n variables
-  std::vector<variable> variables;
-  for (std::size_t i = 0; i <= n; ++i) {
-    variables.push_back(sigma.var("x"+std::to_string(i)));
-  }
-  
-  // x0 > 0
-  constant zero = sigma.constant(0);
-  formula basecase = variables[0] > zero;
+void generate_category_2 (alphabet &sigma, int64_t n) {
+  // variables and constants
+  variable x      = sigma.var("x");
+  variable e      = sigma.var("e");
+  constant const0 = sigma.constant(0);
+  constant const1 = sigma.constant(1);
+  constant const2 = sigma.constant(2);
 
-  // /\_{i=0}^{n-1} X^i ( next(x_{i+1}) > x_i )
-  formula body = sigma.top();
-  for(unsigned i=0; i<n; i++){
-    formula next_inner = next(variables[i+1]) > variables[i];
-    for(unsigned j=0; j<i; j++){
-      next_inner = X(next_inner);
-    }
-    body = body && next_inner;
-  }
+  // base case
+  formula basecase = x == 0 && e == 1;
 
-  // G( /\_{i=0}^{n} wnext(x_i) = x_i )
-  formula stability = sigma.top();
-  for(unsigned i=0; i<=n; i++){
-    stability = stability && (wnext(variables[i]) == variables[i]);
-  }
-  body = body && G(stability);
+  // G(wnext(e) < e)
+  formula body = G((wnext(e) == e / 2) && (wnext(x) == x + e) && ((const0 <= x) && (x < const2)));
 
-  // Category 2:
-  //    F(sum(x0 ... x_{n-1}) = n*(n+1)/2 & wX false)
-  // Category 3:
-  //    G(sum(x0 ... x_{n-1}) = n*(n+1)/2 - 1)
-  term sum = sigma.constant(0);
-  for(unsigned i=0; i<=n; i++){
-    sum = sum + variables[i]; 
-  }
-  
-  formula sum_formula = ( ((category == CATEGORY2)
-      ? (term) sigma.constant((int)((n+1)*(n+2))/2)
-      : (term) sigma.constant((int)((n+1)*(n+2))/2 - 1))
-      == sum);
-  body = body && ( (category == CATEGORY2) 
-      ? (formula) F(sum_formula && wX(sigma.bottom())) 
-      : (formula) G(sum_formula));
+  // F(x > 1.(9)^n)
+  term constval = const2 - (const1 / sigma.constant(pow(10,n)));
+  body = body && F(x > constval);
 
-  std::cout << to_string(basecase && body) << std::endl;
+  std::cout << to_string(basecase && body) << "\n"; 
 }
 
 int main(int argc, char **argv) {
 
-  unsigned int category, n;
+  int64_t category, n;
 
   if (argc != 3){
     print_error_and_help(argv[0], "wrong number of parameters");
   }
 
   try{
-    category  = (unsigned) std::stoi(argv[1]);
-    n         = (unsigned) std::stoi(argv[2]);
+    category  = std::stoll(argv[1]);
+    n         = std::stoll(argv[2]);
   } catch (const std::invalid_argument& ) {
     print_error_and_help(argv[0], "both parameters must be integers");
+  } catch (const std::out_of_range& ){
+    print_error_and_help(argv[0], "parameter too big");
   }
 
   alphabet sigma;
@@ -140,10 +115,7 @@ int main(int argc, char **argv) {
       generate_category_1(sigma, n);
       break;
     case CATEGORY2:
-      generate_category_2(sigma, n, CATEGORY2);
-      break;
-    case CATEGORY3:
-      generate_category_2(sigma, n, CATEGORY3);
+      generate_category_2(sigma, n);
       break;
     default:
       print_error_and_help(argv[0], fmt::format("unknown category {}", category));
