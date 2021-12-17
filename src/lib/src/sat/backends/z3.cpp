@@ -400,11 +400,17 @@ namespace black::sat::backends
   Z3_ast z3::_z3_t::to_z3_inner(term t) {
     return t.match(
       [&](constant c) {
-        if(std::holds_alternative<int64_t>(c.value()))
-          return Z3_mk_int64(
+        if(std::holds_alternative<int64_t>(c.value())) {
+          black_assert(c.sigma()->domain().has_value());
+
+          Z3_ast number = Z3_mk_int64(
             context, std::get<int64_t>(c.value()), Z3_mk_int_sort(context)
           );
-        else {
+
+          if(c.sigma()->domain() == sort::Int)
+            return number;
+          return Z3_mk_int2real(context, number);
+        } else {
           auto [num,denum] = double_to_fraction(std::get<double>(c.value()));
           return Z3_mk_real(context, num, denum);
         }
