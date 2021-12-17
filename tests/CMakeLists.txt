@@ -129,10 +129,27 @@ if(ENABLE_FORMULAS_TESTS)
     list(GET TEST 1 RESULT)
 
     set(TEST_NAME "black:${FILE}:${RESULT}")
+    
     set(FINITE_OPT "")
     string(FIND "${FILE}" "finite_models" FOUND)
     if(FOUND GREATER_EQUAL 0)
       set(FINITE_OPT "--finite")
+    endif()
+    
+    set(SMT_OPTS "")
+    set(MODEL_OPT "")
+    string(FIND "${FILE}" "ltlfmt" FOUND)
+    if(FOUND GREATER_EQUAL 0)
+      set(SMT_OPTS "-s")
+    else()
+      set(MODEL_OPT "-m")
+    endif()
+
+    string(FIND "${FILE}" "LRA" FOUND)
+    if(FOUND GREATER_EQUAL 0)
+      set(SMT_OPTS "${SMT_OPTS} -d reals")
+    else()
+      set(SMT_OPTS "${SMT_OPTS} -d integers")
     endif()
     
     set(SHELL_CMD /bin/sh -c)
@@ -146,8 +163,10 @@ if(ENABLE_FORMULAS_TESTS)
       COMMAND
         ${SHELL_CMD}
         "$<TARGET_FILE:frontend> solve \
-        -m -o json ${FINITE_OPT} -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
-        $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} -e ${RESULT} '${FILE}'"
+        ${MODEL_OPT} -o json ${FINITE_OPT} ${SMT_OPTS} \
+          -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
+        $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} \
+          -e ${RESULT} '${FILE}'"
     )
 
     if(BLACK_TEST_TIMEOUT)

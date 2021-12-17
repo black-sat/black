@@ -382,10 +382,10 @@ namespace black::frontend
     black_assert(f.has_value());
 
     uint8_t features = formula_features(*f);
-    
-    if(features & feature_t::first_order) {
+    if((features & feature_t::first_order) && !cli::expected_result) {
       io::errorln(
-        "{}: trace checking is not supported (yet) for first-order formulas.",
+        "{0}: trace checking is not supported (yet) for first-order formulas.\n"
+        "{0}: please specify the -e option.",
         cli::command_name
       );
       quit(status_code::command_line_error);
@@ -398,12 +398,15 @@ namespace black::frontend
         io::println("MISMATCH");
         quit(status_code::failed_check);
       }
+
+      if(trace.result == *cli::expected_result) {
+        io::println("MATCH");
+        if(trace.states.size() == 0)
+          quit(status_code::success);
+      }
     }
 
-    if((!trace.result || trace.result != "SAT") && trace.states.size() == 0) {
-      io::println("MATCH");
-      quit(status_code::success);
-    }
+    black_assert(!(features & feature_t::first_order));
 
     return check(trace, *f);
   }
