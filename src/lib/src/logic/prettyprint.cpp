@@ -70,7 +70,7 @@ namespace black::internal
           return fmt::format("{}", std::get<int64_t>(c.value()));
         else
           return 
-          fmt::format("{:.{}f}", std::get<double>(c.value()));
+          fmt::format("{}", std::get<double>(c.value()));
       },
       [&](variable x) {
         if(auto name = x.label<std::string>(); name.has_value())
