@@ -86,7 +86,11 @@ void generate_category_2 (alphabet &sigma, int64_t n) {
   formula body = G((wnext(e) == e / 2) && (wnext(x) == x + e) && ((const0 <= x) && (x < const2)));
 
   // F(x > 1.(9)^n)
-  term constval = const2 - (const1 / sigma.constant(pow(10,n)));
+  double powvar = pow(10,n);
+  if (powvar > std::numeric_limits<int64_t>::max()){
+    print_error_and_help("", "too big parameter N");
+  }
+  term constval = const2 - (const1 / sigma.constant(powvar));
   body = body && F(x > constval);
 
   std::cout << to_string(basecase && body) << "\n"; 
