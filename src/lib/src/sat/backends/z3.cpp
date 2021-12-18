@@ -234,7 +234,7 @@ namespace black::sat::backends
       case sort::Real:
         return Z3_mk_real_sort(context);
     }
-    black_unreachable();
+    black_unreachable(); // LCOV_EXCL_LINE
   }
 
   // TODO: Factor out common logic with mathsat.cpp
@@ -451,7 +451,7 @@ namespace black::sat::backends
               black_assert(z3_terms.size() == 2);
               return Z3_mk_mod(context, z3_terms[0], z3_terms[1]);
           }
-          black_unreachable();
+          black_unreachable(); // LCOV_EXCL_LINE
         }
 
         // Otherwise we go for uninterpreted functions
@@ -463,8 +463,8 @@ namespace black::sat::backends
           Z3_mk_app(context, func, unsigned(z3_terms.size()), z3_terms.data());
       },
       // We should not have any next(var) term at this point
-      [&](next) -> Z3_ast { black_unreachable(); },
-      [&](wnext) -> Z3_ast { black_unreachable(); }
+      [&](next) -> Z3_ast { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](wnext) -> Z3_ast { black_unreachable(); } // LCOV_EXCL_LINE 
     );
   }
 

@@ -25,7 +25,63 @@
 
 namespace black::frontend 
 {
-  bool has_next(term t) {
+  std::string system_error_string(int errnum)
+  {
+    char buf[255];
+    const int buflen = sizeof(buf);
+
+    // strerror has different signatures on different systems
+    #ifdef _GNU_SOURCE
+        // GNU-specific version
+        return strerror_r(errnum, buf, buflen);
+    #elif defined(_MSC_VER)
+        // Microsoft-specific version
+        strerror_s(buf, buflen, errnum);
+        return buf;
+    #else
+        // XSI-compliant systems, including MacOS and FreeBSD
+        strerror_r(errnum, buf, buflen);
+        return buf;
+    #endif
+  }
+
+  std::ifstream open_file(std::string const&path) {
+    std::ifstream file{path, std::ios::in};
+
+    if(!file)
+      io::fatal(status_code::filesystem_error,
+        "Unable to open file `{}`: {}",
+        path, system_error_string(errno)
+      );
+
+    return file;
+  }
+
+  std::function<void(std::string)> 
+  formula_syntax_error_handler(std::optional<std::string> const&path)
+  {
+    auto readable_syntax_error = [path](auto error) {
+      io::fatal(status_code::syntax_error, 
+                "syntax error: {}: {}\n", 
+                path ? *path : "<stdin>", error);
+    };
+
+    auto json_syntax_error = [](auto error) {
+      io::fatal(status_code::syntax_error,
+        "{{\n"
+        "    \"result\": \"ERROR\",\n"
+        "    \"error\": \"{}\"\n"
+        "}}", error);
+    };
+
+    if(!cli::output_format || cli::output_format == "readable")
+      return readable_syntax_error;
+    
+    return json_syntax_error;
+  }
+
+
+  static bool has_next(term t) {
     return t.match(
       [](constant) { return false; },
       [](variable) { return false; },

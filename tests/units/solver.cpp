@@ -58,6 +58,21 @@ TEST_CASE("Testing solver")
   }
 }
 
+TEST_CASE("Z3 on universally quantified formulas") {
+  alphabet sigma;
+  sigma.set_domain(sort::Int);
+
+  variable x = sigma.var("x");
+  variable y = sigma.var("y");
+  
+  formula f = x == 2 && X(forall(y, x != y + y)) && X(X(forall(y, x != y + y)));
+
+  solver slv;
+  slv.set_formula(f);
+
+  REQUIRE(slv.solve());
+}
+
 TEST_CASE("Solver syntax errors") {
 
   alphabet sigma;
