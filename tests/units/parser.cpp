@@ -37,7 +37,8 @@ TEST_CASE("Syntax errors") {
   std::vector<std::string> tests = {
     "F", "F(p U)", "p || q &&", "(p && q", "(", "F(p - q)", "F(p -)", 
     "F(p(x,))", "x = 1000000000000000000000", "x = 1.", "x x", "x % 1",
-    "exists . p", "exists x y z +", "exists x . (x =)"
+    "exists . p", "exists x y z +", "exists x . (x =)", "p(x",
+    "x + y * = x", "F(-)"
   };
 
   for(std::string s : tests) {
@@ -76,7 +77,8 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
     U(p, !(GF(q))),
     !(iff(p || q, !q && p)),
     exists({x,y,z}, g(x + 2, y) + 2 >= (y * sigma.constant(1.5)) && y == z),
-    forall({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) && r(x,y)
+    forall({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) && r(x,y),
+    (x + y) * z > 0
   };
 
   for(formula f : tests) {
