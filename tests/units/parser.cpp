@@ -75,8 +75,8 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
     p && implies(Y(S(p,q)), GF(!p)),
     U(p, !(GF(q))),
     !(iff(p || q, !q && p)),
-    exists({x,y,z}, g(x + 2, y) + 2 == (y + sigma.constant(1.5)) && y == z),
-    forall({x,y,z}, r(x,-y) && next(x) == wnext(y) && y == z) && r(x,y)
+    exists({x,y,z}, g(x + 2, y) + 2 >= (y * sigma.constant(1.5)) && y == z),
+    forall({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) && r(x,y)
   };
 
   for(formula f : tests) {
