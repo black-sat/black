@@ -29,8 +29,6 @@
 
 #include <catch2/catch.hpp>
 
-#include <iostream>
-
 using namespace black;
 
 TEST_CASE("Syntax errors") {
@@ -51,8 +49,6 @@ TEST_CASE("Syntax errors") {
       });
 
       REQUIRE(error);
-      if(result)
-        std::cout << *result << "\n";
       REQUIRE(!result.has_value());
     }
   }
@@ -69,7 +65,7 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
   variable y = sigma.var("y");
   variable z = sigma.var("z");
 
-  function f{"f"};
+  function g{"g"};
   relation r{"r"};
 
   std::vector<formula> tests = {
@@ -79,7 +75,7 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
     p && implies(Y(S(p,q)), GF(!p)),
     U(p, !(GF(q))),
     !(iff(p || q, !q && p)),
-    exists({x,y,z}, f(x + 2, y) + 2 == (y + sigma.constant(1.5)) && y == z),
+    exists({x,y,z}, g(x + 2, y) + 2 == (y + sigma.constant(1.5)) && y == z),
     forall({x,y,z}, r(x,-y) && next(x) == wnext(y) && y == z) && r(x,y)
   };
 
