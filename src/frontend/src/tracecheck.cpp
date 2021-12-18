@@ -123,8 +123,8 @@ namespace black::frontend
     return f.match(
       [](boolean) -> size_t { return 1; },
       [](proposition) -> size_t { return 1; },
-      [](atom) -> size_t { return 1; },
-      [](quantifier) -> size_t { return 1; },
+      [](atom) -> size_t { black_unreachable(); }, // LCOV_EXCL_LINE
+      [](quantifier) -> size_t { black_unreachable(); }, // LCOV_EXCL_LINE
       [](yesterday, formula op) { return 1 + depth(op); },
       [](w_yesterday, formula op) { return 1 + depth(op); },
       [](once, formula op) { return 1 + depth(op); },
@@ -199,12 +199,8 @@ namespace black::frontend
       [&](proposition a) {
         return check_proposition(trace, a, t);
       },
-      [&](atom) -> bool {
-        black_unreachable();
-      },
-      [&](quantifier) -> bool {
-        black_unreachable();
-      },
+      [&](atom) -> bool { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](quantifier) -> bool { black_unreachable(); }, // LCOV_EXCL_LINE
       [&](tomorrow, formula op) {
         return state_exists(trace, t + 1) && check(trace, op, t + 1);
       },

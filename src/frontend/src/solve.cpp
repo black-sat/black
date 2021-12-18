@@ -181,10 +181,8 @@ namespace black::frontend {
     using namespace black;
     f.match(
       [&](boolean) {},
-      [&](atom) {},
-      [&](quantifier q) {
-        relevant_props(q.matrix(), props);
-      },
+      [&](atom) { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](quantifier) { black_unreachable(); }, // LCOV_EXCL_LINE
       [&](proposition p) {
         props.insert(p);
       },
@@ -308,7 +306,7 @@ namespace black::frontend {
   }
   
   void trace(black::solver::trace_t data) {
-    auto [type, v] = data;
+    auto [type, v] = data; // LCOV_EXCL_LINE
     static size_t k = 0;
     if(type == black::solver::trace_t::stage) {
       k = std::get<size_t>(v);

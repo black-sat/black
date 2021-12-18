@@ -26,6 +26,9 @@
 
 #include <black/logic/formula.hpp>
 
+#include <black/frontend/cli.hpp>
+#include <black/frontend/io.hpp>
+
 #include <fstream>
 #include <string>
 #include <type_traits>
@@ -111,58 +114,9 @@ namespace black::frontend
     return f1 & (uint8_t)f2;
   }
 
-  inline bool has_next(term t) {
-    return t.match(
-      [](constant) { return false; },
-      [](variable) { return false; },
-      [](application a) {
-        for(term t2 : a.arguments())
-          if(has_next(t2))
-            return true;
-        return false;
-      },
-      [](next) { return true; },
-      [](wnext) { return true; }
-    );
-  }
+  bool has_next(term t);
 
-  inline uint8_t formula_features(formula f) {
-    return f.match(
-      [](boolean) -> uint8_t { return 0; },
-      [](proposition) -> uint8_t { return 0; },
-      [](atom a) -> uint8_t {
-        uint8_t nextvar = 0;
-        for(term t : a.terms())
-          if(has_next(t))
-            nextvar = (uint8_t)feature_t::nextvar;
-        return nextvar | (uint8_t)feature_t::first_order;
-      },
-      [](quantifier) -> uint8_t {
-        return (uint8_t)feature_t::first_order |
-               (uint8_t)feature_t::quantifiers;
-      },
-      [](temporal t) -> uint8_t {
-        return (uint8_t)feature_t::temporal |
-          t.match(
-            [](past) -> uint8_t { return (int8_t)feature_t::past; },
-            [](otherwise) -> uint8_t { return 0; }
-          ) | t.match(
-            [](unary, formula arg) -> uint8_t {
-              return formula_features(arg);
-            },
-            [](binary, formula left, formula right) -> uint8_t {
-              return formula_features(left) | formula_features(right);
-            }
-          );
-      },
-      [](unary, formula arg) -> uint8_t { 
-        return formula_features(arg);
-      },
-      [](binary, formula left, formula right) -> uint8_t {
-        return formula_features(left) | formula_features(right);
-      }
-    );
-  }
+  uint8_t formula_features(formula f);
 }
 
 #endif // BLACK_FRONTEND_SUPPORT_HPP

@@ -32,6 +32,7 @@
 #include <unordered_map>
 #include <vector>
 #include <cstring>
+#include <sstream>
 
 TEST_CASE("Testing black::tribool")
 {
@@ -39,6 +40,21 @@ TEST_CASE("Testing black::tribool")
   black::tribool tb2 = true;
   black::tribool tb3 = false;
   
+  SECTION("Output stream") {
+    std::vector<std::pair<black::tribool, std::string>> tests = {
+      {tb1, "tribool::undef"},
+      {tb2, "true"},
+      {tb3, "false"}
+    };
+    
+    for(auto [b, res] : tests) {
+      std::stringstream s;
+      s << b;
+
+      REQUIRE(s.str() == res);
+    }
+  }
+
   SECTION("Equalities") {
     REQUIRE(tb1 == tb1);
     REQUIRE(tb1 != tb2);

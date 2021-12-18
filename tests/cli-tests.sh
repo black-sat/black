@@ -27,11 +27,22 @@ should_fail ./black solve -o
 
 should_fail ./black solve -s -d reals -f 'x = 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001'
 
+should_fail ./black solve -B cmsat -s -d integers -f 'x = 0'
+should_fail ./black solve -B mathsat -s -d integers -f 'exists x . x = 0'
+should_fail ./black solve -s -f 'x = 0'
+
+./black solve -d integers -f 'next(x) = 0' 2>&1 | grep -- '--semi-decision'
+
+./black solve -f 'p & q' --debug print
+./black solve -f 'X p & X X q & F(q)' --debug trace
+./black solve -f 'X p & X X q & F(q)' --debug trace-full
+
 should_fail ./black check -t ../tests/test-trace.json
 should_fail ./black check -t - -f 'p' file.pltl
 should_fail ./black check -t - -
 should_fail ./black check -t 
 should_fail ./black check -t ../tests/test-trace.json -f !p
+should_fail ./black check --trace - -f 'x = 0'
 
 ./black check -t ../tests/test-trace.json <(echo p)
 ./black check -t ../tests/test-trace.json --verbose -i 0 -e SAT -f p
