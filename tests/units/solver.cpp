@@ -27,8 +27,7 @@
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
 #include <black/solver/solver.hpp>
-
-#include <iostream>
+#include <black/sat/solver.hpp>
 
 using namespace black;
 
@@ -58,14 +57,20 @@ TEST_CASE("Testing solver")
   }
 }
 
-TEST_CASE("Z3 on universally quantified formulas") {
+TEST_CASE("Universally quantified formulas") {
   alphabet sigma;
   sigma.set_domain(sort::Int);
 
   variable x = sigma.var("x");
   variable y = sigma.var("y");
   
-  formula f = x == 2 && X(forall(y, x != y + y)) && X(X(forall(y, x != y + y)));
+  formula f = x == 2 && X(forall(y, x != y + y)) && X(X(forall(y, x != y * y)));
+
+  if(
+    !sat::solver::backend_has_feature(
+      BLACK_DEFAULT_BACKEND, sat::feature::quantifiers
+    )
+  ) return;
 
   solver slv;
   slv.set_formula(f);
@@ -89,9 +94,11 @@ TEST_CASE("Solver syntax errors") {
       REQUIRE(result.has_value());
 
       bool error = false;
-      REQUIRE(!solver::check_syntax(*result, [&](std::string){ 
+      bool ok = solver::check_syntax(*result, [&](std::string){ 
         error = true;
-      }));
+      });
+
+      REQUIRE(!ok);
       REQUIRE(error);
     }
   }

@@ -201,8 +201,9 @@ namespace black::sat::backends
   }
 
   void z3::_z3_t::upgrade_solver() {
+    // gcov false negative
     if(solver_upgraded)
-      return;
+      return; // LCOV_EXCL_LINE
 
     Z3_tactic qe = Z3_mk_tactic(context, "qe");
     Z3_tactic_inc_ref(context, qe);
