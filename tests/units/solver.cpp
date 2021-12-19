@@ -70,11 +70,15 @@ TEST_CASE("Quantified formulas") {
 
   variable x = sigma.var("x");
   variable y = sigma.var("y");
+  variable z = sigma.var("z");
   proposition p = sigma.prop("p");
   
   std::vector<formula> tests = {
     x == 2 && X(forall(y, x != y + y)) && X(X(forall(y, x != y * y))),
-    exists({x,y}, sigma.top() && !p && next(x) != y)
+    exists({x,y}, next(z) + 2 != y),
+    exists({x,y}, sigma.top()),
+    exists({x,y}, !p),
+    !forall({x,y}, x == y)
   };
 
   for(formula f : tests) {
