@@ -485,10 +485,7 @@ namespace black::internal
    * - if f is T or H, then Z(f) is in _zrequests
    */
   void encoder::_add_xyz_requests(formula f)
-  {
-    if(f == _frm)
-      _xrequests.push_back(wX(_sigma->bottom()));
-    
+  {    
     f.match(
       [&](tomorrow t)     { _xrequests.push_back(t);     },
       [&](w_tomorrow w)   { _xrequests.push_back(w);     },
@@ -508,6 +505,14 @@ namespace black::internal
     );
 
     f.match(
+      [](boolean) { },
+      [](proposition) { },
+      [](quantifier) { },
+      [&](atom a) {
+        for(term t : a.terms())
+          if(term_is_weak(t))
+            _xrequests.push_back(wX(_sigma->bottom()));
+      },
       [&](unary, formula op) {
         _add_xyz_requests(op);
       },
@@ -522,8 +527,7 @@ namespace black::internal
       [&](binary, formula left, formula right) {
         _add_xyz_requests(left);
         _add_xyz_requests(right);
-      },
-      [](otherwise) { }
+      }
     );
   }
 

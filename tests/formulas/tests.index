@@ -3303,6 +3303,7 @@ regressions/iff.pltl;UNSAT
 regressions/iff2.pltl;UNSAT
 regressions/yrequests.pltl;SAT
 regressions/s_release-w_until.pltl;SAT
+regressions/prune.pltl;UNSAT
 finite_models/random/random_formulas_dim10_1.pltl;UNSAT
 finite_models/random/random_formulas_dim10_10.pltl;SAT
 finite_models/random/random_formulas_dim10_2.pltl;UNSAT

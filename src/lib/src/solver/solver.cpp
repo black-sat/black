@@ -29,6 +29,8 @@
 #include <black/solver/encoding.hpp>
 #include <black/sat/solver.hpp>
 
+#include <iostream>
+
 namespace black::internal
 {
   /*

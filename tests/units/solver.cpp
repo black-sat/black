@@ -83,7 +83,10 @@ TEST_CASE("Solver syntax errors") {
   alphabet sigma;
   std::vector<std::string> tests = {
     "f(x) & f(x,y)", "f(x) = 2 & f(x)", "f(x) & f(x) = 2",
-    "f(x) = 2 & f(x,y) = 2", "f(x) + 2 = 2 & f(x)", "f(x) & f(x) + 2 = 2"
+    "f(x) = 2 & f(x,y) = 2", "f(x) + 2 = 2 & f(x)", "f(x) & f(x) + 2 = 2",
+    "next(x + y) = 2", "exists x . next(x) = x", 
+    "wnext(x + y) = 2", "exists x . wnext(x) = x",
+    "exists x . (wnext(x) = x || x = 0)", "exists x . F(x = 0)"
   };
 
   for(std::string s : tests) {
