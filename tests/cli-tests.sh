@@ -29,8 +29,6 @@ should_fail ./black solve -o
 should_fail ./black solve --remove-past -s -d integers -f 'F H(x = 0)'
 should_fail ./black solve -m -d integers -f 'x = 0'
 
-should_fail ./black solve -s -d reals -f 'x = 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001'
-
 should_fail ./black solve -B cmsat -s -d integers -f 'x = 0'
 should_fail ./black solve -B mathsat -s -d integers -f 'exists x . x = 0'
 should_fail ./black solve -s -f 'x = 0'
@@ -139,6 +137,8 @@ END
 
 ./black dimacs ../tests/test-dimacs-sat.cnf | grep -w SATISFIABLE 
 ./black dimacs ../tests/test-dimacs-unsat.cnf | grep -w UNSATISFIABLE 
+
+cat /dev/null | should_fail ./black dimacs -
 
 if ./black --sat-backends | grep mathsat; then
   ./black dimacs -B mathsat ../tests/test-dimacs-sat.cnf | grep -w SATISFIABLE 

@@ -61,8 +61,10 @@ namespace black::sat::dimacs::internal
   }
 
   bool _parser_t::parse_header() {
-    if(!in.good())
+    if(!in.good()) {
+      handler("expected problem header");
       return false;
+    }
 
     std::string h;
     for(int i = 0; i < 5; ++i)
