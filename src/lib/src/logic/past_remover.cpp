@@ -46,8 +46,8 @@ namespace black::internal {
         [](historically, formula op) { return sub_past(!O(!op)); },
         [](boolean b) { return b; },
         [](proposition p) { return p; },
-        [](atom a) { black_unreachable(); }, // LCOV_EXCL_LINE
-        [](quantifier q) { black_unreachable(); }, // LCOV_EXCL_LINE
+        [](atom) -> formula { black_unreachable(); }, // LCOV_EXCL_LINE
+        [](quantifier) -> formula { black_unreachable(); }, // LCOV_EXCL_LINE
         [](unary u, formula op) {
           return unary(u.formula_type(), sub_past(op));
         },
