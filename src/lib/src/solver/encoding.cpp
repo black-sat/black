@@ -32,10 +32,6 @@ using namespace std::literals;
 
 namespace black::internal 
 {
-  formula encoder::get_formula() const {
-    return _frm;
-  }
-
   // Generates the PRUNE encoding
   formula encoder::prune(size_t k)
   {
@@ -531,46 +527,46 @@ namespace black::internal
     );
   }
 
+  static bool term_has_next(term t) {
+    return t.match(
+      [](constant) { return false; },
+      [](variable) { return false; },
+      [](next) { return true; },
+      [&](application a) {
+        for(term arg : a.arguments())
+          if(term_has_next(arg))
+            return true;
+        return false;
+      },
+      [&](wnext n) {
+        return term_has_next(n.argument());
+      }
+    );
+  }
+
+  static bool formula_has_next(formula frm) {
+    return frm.match(
+      [](boolean) { return false; },
+      [](proposition) { return false; },
+      [](quantifier q) {
+        return formula_has_next(q.matrix());
+      },
+      [](atom a) {
+        for(term arg : a.terms())
+          if(term_has_next(arg))
+            return true;
+        return false;
+      },
+      [](unary, formula arg) {
+        return formula_has_next(arg);
+      },
+      [](binary, formula left, formula right) {
+        return formula_has_next(left) || formula_has_next(right);
+      }
+    );
+  }
+
   void encoder::_add_atomic_requests(formula f) {
-    std::function<bool(term)> term_has_next = [&](term t) {
-      return t.match(
-        [](constant) { return false; },
-        [](variable) { return false; },
-        [](next) { return true; },
-        [&](application a) {
-          bool has_next = false;
-          for(term arg : a.arguments())
-            has_next = has_next || term_has_next(arg);
-          return has_next;
-        },
-        [&](wnext n) {
-          return term_has_next(n.argument());
-        }
-      );
-    };
-
-    std::function<bool(formula)> formula_has_next = [&](formula frm) {
-      return frm.match(
-        [](boolean) { return false; },
-        [](proposition) { return false; },
-        [&](quantifier q) {
-          return formula_has_next(q.matrix());
-        },
-        [&](atom a) {
-          bool has_next = false;
-          for(term arg : a.terms())
-            has_next = has_next || term_has_next(arg);
-          return has_next;
-        },
-        [&](unary, formula arg) {
-          return formula_has_next(arg);
-        },
-        [&](binary, formula left, formula right) {
-          return formula_has_next(left) || formula_has_next(right);
-        }
-      );
-    };
-
     f.match(
       [&](atom a) {
         bool has_next = false;

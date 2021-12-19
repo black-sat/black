@@ -26,6 +26,7 @@
 #include <black/support/config.hpp>
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/solver/solver.hpp>
 #include <black/sat/solver.hpp>
 
@@ -57,25 +58,33 @@ TEST_CASE("Testing solver")
   }
 }
 
-TEST_CASE("Universally quantified formulas") {
-  alphabet sigma;
-  sigma.set_domain(sort::Int);
-
-  variable x = sigma.var("x");
-  variable y = sigma.var("y");
-  
-  formula f = x == 2 && X(forall(y, x != y + y)) && X(X(forall(y, x != y * y)));
-
+TEST_CASE("Quantified formulas") {
   if(
     !sat::solver::backend_has_feature(
       BLACK_DEFAULT_BACKEND, sat::feature::quantifiers
     )
   ) return;
+  
+  alphabet sigma;
+  sigma.set_domain(sort::Int);
 
-  solver slv;
-  slv.set_formula(f);
+  variable x = sigma.var("x");
+  variable y = sigma.var("y");
+  proposition p = sigma.prop("p");
+  
+  std::vector<formula> tests = {
+    x == 2 && X(forall(y, x != y + y)) && X(X(forall(y, x != y * y))),
+    exists({x,y}, sigma.top() && !p && next(x) != y)
+  };
 
-  REQUIRE(slv.solve());
+  for(formula f : tests) {
+    DYNAMIC_SECTION("Test formula: " << f) {
+      solver slv;
+      slv.set_formula(f);
+
+      REQUIRE(slv.solve());
+    }
+  }
 }
 
 TEST_CASE("Solver syntax errors") {

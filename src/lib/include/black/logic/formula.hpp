@@ -448,6 +448,7 @@ namespace black::internal
   struct temporal;
   struct future;
   struct past;
+  struct quantifier_block;
 }
 
 // Names exported from the `black` namespace
@@ -478,6 +479,7 @@ namespace black {
   using internal::temporal;
   using internal::future;
   using internal::past;
+  using internal::quantifier_block;
 }
 
 #include <black/internal/formula/impl.hpp>
