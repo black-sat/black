@@ -143,6 +143,13 @@ namespace black::frontend {
       );
     }
 
+    if(cli::remove_past && (features & feature_t::first_order)) {
+      command_line_error(
+        "the --remove-past option is not supported for first-order formulas"
+      );
+      quit(status_code::command_line_error);
+    }
+
     if(cli::debug == "print")
       io::println(
         "{}: debug: parsed formula: {}", cli::command_name, to_string(*f)

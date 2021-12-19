@@ -38,7 +38,8 @@ TEST_CASE("Syntax errors") {
     "F", "F(p U)", "p || q &&", "(p && q", "(", "F(p - q)", "F(p -)", 
     "F(p(x,))", "x = 1000000000000000000000", "x = 1.", "x x", "x % 1",
     "exists . p", "exists x y z +", "exists x . (x =)", "p(x",
-    "x + y * = x", "F(-)"
+    "x + y * = x", "F(-)", "next x", "next(x x", "wnext x", "wnext(x x",
+    "next(next(x +)) = x", "wnext(next(x +)) = x"
   };
 
   for(std::string s : tests) {

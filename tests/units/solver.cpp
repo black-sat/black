@@ -78,7 +78,7 @@ TEST_CASE("Quantified formulas") {
     exists({x,y}, next(z) + 2 != y),
     exists({x,y}, sigma.top()),
     exists({x,y}, !p),
-    !forall({x,y}, x == y)
+    !forall({x,y}, x == y && z = z)
   };
 
   for(formula f : tests) {

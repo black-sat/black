@@ -46,8 +46,8 @@ namespace black::internal {
         [](historically, formula op) { return sub_past(!O(!op)); },
         [](boolean b) { return b; },
         [](proposition p) { return p; },
-        [](atom a) { return a; },
-        [](quantifier q) { return q; },
+        [](atom a) { black_unreachable(); }, // LCOV_EXCL_LINE
+        [](quantifier q) { black_unreachable(); }, // LCOV_EXCL_LINE
         [](unary u, formula op) {
           return unary(u.formula_type(), sub_past(op));
         },
@@ -60,8 +60,8 @@ namespace black::internal {
   void gen_semantics(formula f, std::vector<formula> &sem) {
     return f.match(
         [](boolean) {},
-        [](atom) {},
-        [](quantifier) {},
+        [](atom) { black_unreachable(); }, // LCOV_EXCL_LINE
+        [](quantifier) { black_unreachable(); }, // LCOV_EXCL_LINE
         [&](proposition a) {
           std::optional<past_label> label = a.label<past_label>();
 
