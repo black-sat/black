@@ -1,1 +1,1 @@
-G(p(x,y) -> x = y + y) & x != y + y & p(x,y)
+G(f(x,y) = x + y & p(x,y) -> x = f(x, y)) & x != x + y & p(x,y) & p(-x,-y)

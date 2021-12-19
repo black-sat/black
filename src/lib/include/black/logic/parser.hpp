@@ -105,8 +105,7 @@ namespace black::internal
       {20}, // subtraction
       {20}, // addition
       {30}, // multiplication
-      {30}, // division
-      {30}  // modulo
+      {30}  // division
     };
 
     if(auto t = tok.data<function::type>(); t)

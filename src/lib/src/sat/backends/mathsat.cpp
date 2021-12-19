@@ -331,8 +331,6 @@ namespace black::sat::backends
             case function::division:
               black_assert(args.size() == 2);
               return msat_make_divide(env, args[0], args[1]);
-            case function::modulo:
-              black_unreachable(); // LCOV_EXCL_LINE
           }
           black_unreachable(); // LCOV_EXCL_LINE
         }

@@ -448,9 +448,6 @@ namespace black::sat::backends
             case function::division:
               black_assert(z3_terms.size() == 2);
               return Z3_mk_div(context, z3_terms[0], z3_terms[1]);
-            case function::modulo:
-              black_assert(z3_terms.size() == 2);
-              return Z3_mk_mod(context, z3_terms[0], z3_terms[1]);
           }
           black_unreachable(); // LCOV_EXCL_LINE
         }

@@ -184,7 +184,6 @@ namespace black::internal
       "+",   // addition
       "*",   // multiplication
       "/",   // division
-      "mod", // modulo
     };
 
     return std::string{toks[to_underlying(t)]};
