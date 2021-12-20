@@ -63,9 +63,15 @@ void print_help(std::string const& command){
 // Generate benchmarks for LRA theory and category 1
 void generate_category_1 (alphabet &sigma, int64_t n) {
   variable x = sigma.var("x");
-  constant N = sigma.constant(pow(10,n));
+  variable c = sigma.var("c");
+  
+  formula counter = c == 1 && G(wnext(c) == 10*c);
+  formula body = x == c && G(wnext(x) == x / 10) && F(x == 1);
 
-  formula f = x == N && G(wnext(x) == x / 10) && F(x == 1);
+  for(int64_t i = 0; i < n; i++)
+    body = X(body);
+
+  formula f = counter && body;
 
   std::cout << to_string(f) << "\n"; 
 }
@@ -73,27 +79,30 @@ void generate_category_1 (alphabet &sigma, int64_t n) {
 // Generate benchmarks for LRA theory and category 2
 void generate_category_2 (alphabet &sigma, int64_t n) {
   // variables and constants
+  variable c      = sigma.var("c");
   variable x      = sigma.var("x");
   variable e      = sigma.var("e");
+  variable g      = sigma.var("g");
   constant const0 = sigma.constant(0);
   constant const1 = sigma.constant(1);
   constant const2 = sigma.constant(2);
 
   // base case
   formula basecase = x == 0 && e == 1;
+  formula counter = c == 1 && G(wnext(c) == 10 * c);
 
   // G(wnext(e) < e)
-  formula body = G((wnext(e) == e / 2) && (wnext(x) == x + e) && ((const0 <= x) && (x < const2)));
+  formula body = g == c && G((wnext(e) == e / 2) && (wnext(x) == x + e) && ((const0 <= x) && (x < const2)));
 
   // F(x > 1.(9)^n)
-  double powvar = pow(10,n);
-  if (powvar > std::numeric_limits<int64_t>::max()){
-    print_error_and_help("", "too big parameter N");
-  }
-  term constval = const2 - (const1 / sigma.constant((int64_t) powvar));
-  body = body && F(x > constval);
+  body = body && F(x > const2 - (const1 / c));
 
-  std::cout << to_string(basecase && body) << "\n"; 
+  for(int64_t i = 0; i < n; ++i)
+    body = X(body);
+
+  formula f = basecase && counter && body;
+
+  std::cout << to_string(f) << "\n";
 }
 
 int main(int argc, char **argv) {

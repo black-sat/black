@@ -1,1 +1,1 @@
-(x = 0) & (e = 1) & G((wnext(e) = e / 2) & (wnext(x) = x + e) & (0 <= x) & (x < 2)) & F(x > 2 - (1 / 1000000000000000))
+(x = 0) & (e = 1) & (c = 1) & G(wnext(c) = 10 * c) & X X X X X X X X X X X X X X X((g = c) & G((wnext(e) = e / 2) & (wnext(x) = x + e) & (0 <= x) & (x < 2)) & F(x > 2 - (1 / c)))
