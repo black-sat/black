@@ -95,18 +95,29 @@ void generate_category_2 (alphabet &sigma, int64_t l) {
   variable i    = sigma.var("i");
   variable m    = sigma.var("m");
   variable n    = sigma.var("n");
+  variable s    = sigma.var("s");
   constant zero = sigma.constant(0);
   constant one  = sigma.constant(1);
   function f("f");
 
   // i = n = m = 0
-  formula basecase =  ( i==zero && m == zero && n == zero);
+  formula basecase = (s == one && i==zero && m == zero && n == zero);
 
-  // n > 0 -> ( wnext(i) = i & wnext(n) = n-1 & wnext(m) = m+1)
-  formula enumeration = implies(n>zero, wnext(i) == i && wnext(n) == n-one && wnext(m) == m+one );
-  // n = 0 -> ( wnext(i) = i+1 & wnext(n) = i+1 & wnext(m) = 0)
-  enumeration = enumeration && implies(n==zero, wnext(i)==i+one && wnext(n)==i+one && wnext(m) == zero);
-  // G(enumeration)
+  formula enumeration = (
+    implies(
+      s > 0 && n < i, 
+      wnext(i) == i && wnext(n) == n + 1 && wnext(m) == m - 1 && wnext(s) == s
+    ) && implies(
+      s > 0 && n == i,
+      wnext(i) == i + 1 && wnext(n) == i + 1 && wnext(m) == 0 && wnext(s) == 0-s
+    ) && implies(
+      s < 0 && m < i,
+      wnext(i) == i && wnext(m) == m + 1 && wnext(n) == n - 1 && wnext(s) == s
+    ) && implies(
+      s < 0 && m == i,
+      wnext(i) == i + 1 && wnext(m) == i + 1 && wnext(n) == 0 && wnext(s) == 0-s
+    )
+  );
   enumeration = G(enumeration);
 
   // f(0,n)=n+1 & f(m+1,0)=f(m,1) & f(m+1,n+1)=f(m,f(m+1,n))
@@ -115,6 +126,7 @@ void generate_category_2 (alphabet &sigma, int64_t l) {
     f(m+one,zero) == f(m,one) &&
     f(m+one,n+one)  == f(m,f(m+one,n))
   );
+
   ackermann = G(ackermann);
 
   // X^n( f(m,n) == 42 )
