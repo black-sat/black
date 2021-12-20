@@ -236,7 +236,8 @@ namespace black::internal
         for(term arg : a.arguments())
           res = res || _check_syntax(arg, err, scope, rels, funcs);
 
-        funcs.insert({id, size});
+        if(!a.func().known_type())
+          funcs.insert({id, size});
         return res;
       },
       [&](next n) -> check_result_t {
