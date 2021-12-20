@@ -62,20 +62,22 @@ void print_help(std::string const& command){
 
 // Generate benchmarks for EUF-LIA theory and category 1
 void generate_category_1 (alphabet &sigma, int64_t l) {
-  variable n = sigma.var("n");
-  variable c = sigma.var("c");
+  variable n    = sigma.var("n");
+  variable c    = sigma.var("c");
+  constant zero = sigma.constant(0);
   function f("f");
 
-  // n = c
-  formula basecase = n == c;
+  // n = 0 & c >= 0
+  formula basecase = n == zero;
+  basecase = basecase && (c >= zero);
 
-  // G(wnext(c) = c)
-  formula constantness = G( n >= sigma.constant(0) &&  wnext(c) == c);
+  // G(wnext(c) = c & wnext(n) = n+1)
+  formula constantness = G( wnext(c) == c && wnext(n) == n+1);
 
-  // wnext(n) > 1 -> f(wnext(n)) = 2 f(n-1) + c
-  formula body = implies(wnext(n) > 1 , f(wnext(n)) == 2 * f(n-1) + c);
-  // wnext(n) = 1 -> f(wnext(n)) = c
-  body = body && implies(wnext(n) == 1 , f(wnext(n)) == c);
+  // n > 1 -> f(n) = 2 f(n-1) + c
+  formula body = implies(n > 1 , f(n) == 2 * f(n-1) + c);
+  // n = 1 -> f(n) = c
+  body = body && implies(n == 1 , f(n) == c);
   // G(body)
   body = G(body);
 
