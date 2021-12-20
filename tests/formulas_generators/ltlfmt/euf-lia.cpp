@@ -69,6 +69,9 @@ void generate_category_1 (alphabet &sigma, int64_t l) {
   // n = c
   formula basecase = n == c;
 
+  // n >= 0
+  basecase = basecase && n >= sigma.constant(0);
+
   // G(wnext(c) = c)
   formula constantness = G(wnext(c) == c);
 
