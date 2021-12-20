@@ -83,7 +83,7 @@ void generate_category_1 (alphabet &sigma, int64_t l) {
 
   // X^N(wX false) 
   formula length = wX(sigma.bottom());
-  for(auto i=0; i<l; i++){
+  for(int64_t i=0; i<l; i++){
     length = X(length);
   }
 
@@ -91,29 +91,39 @@ void generate_category_1 (alphabet &sigma, int64_t l) {
 }
 
 // Generate benchmarks for EUF-LIA theory and category 2
-void generate_category_2 (alphabet &sigma, int64_t n) {
-  // variables and constants
-  variable x      = sigma.var("x");
-  variable e      = sigma.var("e");
-  constant const0 = sigma.constant(0);
-  constant const1 = sigma.constant(1);
-  constant const2 = sigma.constant(2);
+void generate_category_2 (alphabet &sigma, int64_t l) {
+  variable i    = sigma.var("i");
+  variable m    = sigma.var("m");
+  variable n    = sigma.var("n");
+  constant zero = sigma.constant(0);
+  constant one  = sigma.constant(1);
+  function f("f");
 
-  // base case
-  formula basecase = x == 0 && e == 1;
+  // i = n = m = 0
+  formula basecase =  ( i==zero && m == zero && n == zero);
 
-  // G(wnext(e) < e)
-  formula body = G((wnext(e) == e / 2) && (wnext(x) == x + e) && ((const0 <= x) && (x < const2)));
+  // n > 0 -> ( wnext(i) = i & wnext(n) = n-1 & wnext(m) = m+1)
+  formula enumeration = implies(n>zero, wnext(i) == i && wnext(n) == n-one && wnext(m) == m+one );
+  // n = 0 -> ( wnext(i) = i+1 & wnext(n) = i+1 & wnext(m) = 0)
+  enumeration = enumeration && implies(n==zero, wnext(i)==i+one && wnext(n)==i+one && wnext(m) == zero);
+  // G(enumeration)
+  enumeration = G(enumeration);
 
-  // F(x > 1.(9)^n)
-  double powvar = pow(10,n);
-  if (powvar > std::numeric_limits<int64_t>::max()){
-    print_error_and_help("", "too big parameter N");
-  }
-  term constval = const2 - (const1 / sigma.constant((int64_t) powvar));
-  body = body && F(x > constval);
+  // f(0,n)=n+1 & f(m+1,0)=f(m,1) & f(m+1,n+1)=f(m,f(m+1,n))
+  formula ackermann = (
+    f(zero,n)   == n+one &&
+    f(m+one,zero) == f(m,one) &&
+    f(m+one,n+one)  == f(m,f(m+one,n))
+  );
+  ackermann = G(ackermann);
 
-  std::cout << to_string(basecase && body) << "\n"; 
+  // X^n( f(m,n) == 42 )
+  formula length = f(m,n) == sigma.constant(42);
+  for(int64_t c=0; c<l; c++){
+    length = X(length);
+  };
+
+  std::cout << to_string(basecase && enumeration && ackermann && length) << "\n"; 
 }
 
 int main(int argc, char **argv) {

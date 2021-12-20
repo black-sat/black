@@ -47,3 +47,11 @@ if [[ $CATEGORY == "1" ]] ; then
     echo "Created benchmark #$i for Category $CATEGORY and Theory EUFLIA"
   done
 fi
+
+if [[ $CATEGORY == "2" ]] ; then
+  for (( i=1; i<=20; i=i+1 ))
+  do
+    $BIN $CATEGORY $i > "$OUTDIR/scalable-$CATEGORY-$i.ltlfmt"
+    echo "Created benchmark #$i for Category $CATEGORY and Theory EUFLIA"
+  done
+fi
