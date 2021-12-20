@@ -69,11 +69,8 @@ void generate_category_1 (alphabet &sigma, int64_t l) {
   // n = c
   formula basecase = n == c;
 
-  // n >= 0
-  basecase = basecase && n >= sigma.constant(0);
-
   // G(wnext(c) = c)
-  formula constantness = G(wnext(c) == c);
+  formula constantness = G( n >= sigma.constant(0) &&  wnext(c) == c);
 
   // wnext(n) > 1 -> f(wnext(n)) = 2 f(n-1) + c
   formula body = implies(wnext(n) > 1 , f(wnext(n)) == 2 * f(n-1) + c);
