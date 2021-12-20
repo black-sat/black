@@ -49,8 +49,7 @@ namespace black::internal {
       subtraction,
       addition,
       multiplication,
-      division,
-      modulo
+      division
     };
 
     function() = delete;

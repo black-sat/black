@@ -143,6 +143,13 @@ namespace black::frontend {
       );
     }
 
+    if(cli::remove_past && (features & feature_t::first_order)) {
+      command_line_error(
+        "the --remove-past option is not supported for first-order formulas"
+      );
+      quit(status_code::command_line_error);
+    }
+
     if(cli::debug == "print")
       io::println(
         "{}: debug: parsed formula: {}", cli::command_name, to_string(*f)
@@ -181,10 +188,8 @@ namespace black::frontend {
     using namespace black;
     f.match(
       [&](boolean) {},
-      [&](atom) {},
-      [&](quantifier q) {
-        relevant_props(q.matrix(), props);
-      },
+      [&](atom) { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](quantifier) { black_unreachable(); }, // LCOV_EXCL_LINE
       [&](proposition p) {
         props.insert(p);
       },
@@ -308,7 +313,7 @@ namespace black::frontend {
   }
   
   void trace(black::solver::trace_t data) {
-    auto [type, v] = data;
+    auto [type, v] = data; // LCOV_EXCL_LINE
     static size_t k = 0;
     if(type == black::solver::trace_t::stage) {
       k = std::get<size_t>(v);

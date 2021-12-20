@@ -26,9 +26,9 @@
 #include <black/support/config.hpp>
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/solver/solver.hpp>
-
-#include <iostream>
+#include <black/sat/solver.hpp>
 
 using namespace black;
 
@@ -58,12 +58,48 @@ TEST_CASE("Testing solver")
   }
 }
 
+TEST_CASE("Quantified formulas") {
+  if(
+    !sat::solver::backend_has_feature(
+      BLACK_DEFAULT_BACKEND, sat::feature::quantifiers
+    )
+  ) return;
+  
+  alphabet sigma;
+  sigma.set_domain(sort::Int);
+
+  variable x = sigma.var("x");
+  variable y = sigma.var("y");
+  variable z = sigma.var("z");
+  proposition p = sigma.prop("p");
+  
+  std::vector<formula> tests = {
+    x == 2 && X(forall(y, x != y + y)) && X(X(forall(y, x != y * y))),
+    exists({x,y}, next(z) + 2 != y),
+    exists({x,y}, sigma.top()),
+    exists({x,y}, !p),
+    !forall({x,y}, x == y && z == z)
+  };
+
+  for(formula f : tests) {
+    DYNAMIC_SECTION("Test formula: " << f) {
+      solver slv;
+      slv.set_formula(f);
+
+      REQUIRE(slv.solve());
+    }
+  }
+}
+
 TEST_CASE("Solver syntax errors") {
 
   alphabet sigma;
   std::vector<std::string> tests = {
     "f(x) & f(x,y)", "f(x) = 2 & f(x)", "f(x) & f(x) = 2",
-    "f(x) = 2 & f(x,y) = 2", "f(x) + 2 = 2 & f(x)", "f(x) & f(x) + 2 = 2"
+    "f(x) = 2 & f(x,y) = 2", "f(x) + 2 = 2 & f(x)", "f(x) & f(x) + 2 = 2",
+    "next(x + y) = 2", "exists x . next(x) = x", 
+    "wnext(x + y) = 2", "exists x . wnext(x) = x",
+    "exists x . (wnext(x) = x || x = 0)", "exists x . F(x = 0)"
   };
 
   for(std::string s : tests) {
@@ -74,9 +110,11 @@ TEST_CASE("Solver syntax errors") {
       REQUIRE(result.has_value());
 
       bool error = false;
-      REQUIRE(!solver::check_syntax(*result, [&](std::string){ 
+      bool ok = solver::check_syntax(*result, [&](std::string){ 
         error = true;
-      }));
+      });
+
+      REQUIRE(!ok);
       REQUIRE(error);
     }
   }

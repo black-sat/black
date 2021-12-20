@@ -196,7 +196,7 @@ namespace black::internal
       case greater_than_equal:
         return ">=";
     }
-    black_unreachable();
+    black_unreachable(); // LCOV_EXCL_LINE
   }
 
   // struct quantifier

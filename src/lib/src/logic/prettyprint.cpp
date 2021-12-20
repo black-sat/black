@@ -78,7 +78,7 @@ namespace black::internal
           return
             fmt::format("<{},{}>", to_string(fname->first), fname->second);
         }
-        return fmt::format("<{:x}>", to_underlying(term{x}.unique_id()));
+        return fmt::format("<{:x}>", to_underlying(term{x}.unique_id())); // LCOV_EXCL_LINE
       },
       [&](application a) {
         if(auto t2 = a.func().known_type(); t2) {

@@ -46,11 +46,11 @@ namespace black::internal {
     return f.match(
       [](boolean b) { return simplify(b); },
       [](proposition p) { return simplify(p); },
-      [](atom a) { return a; },
+      [](atom a) { return simplify(a); },
       [](quantifier q) { 
-        return quantifier(
+        return simplify(quantifier(
           q.quantifier_type(), q.var(), simplify_deep(q.matrix())
-        );
+        ));
       },
       [](unary u, formula op) { 
         return simplify(unary(u.formula_type(), simplify_deep(op)));
@@ -73,7 +73,7 @@ namespace black::internal {
     
     // !!p -> p
     if(auto nop = op.to<negation>(); nop)
-      return simplify(nop->operand());
+      return nop->operand();
 
     return n;
   }
@@ -125,7 +125,7 @@ namespace black::internal {
       return bl->value() ? r : sigma.top();
     
     if(!bl && br)
-      return br->value() ? formula{sigma.top()} : formula{!l};
+      return br->value() ? formula{sigma.top()} : simplify(!l);
 
     return sigma.boolean(!bl->value() || br->value());
   }
@@ -139,10 +139,10 @@ namespace black::internal {
       return f;
 
     if(bl && !br)
-      return bl->value() ? r : !r;
+      return bl->value() ? r : simplify(!r);
     
     if(!bl && br)
-      return br->value() ? l : !l;
+      return br->value() ? l : simplify(!l);
 
     return sigma.boolean(bl->value() == br->value());
   }
@@ -191,7 +191,7 @@ namespace black::internal {
       return u;
 
     if(bl && !br)
-      return bl->value() ? F(r) : r;
+      return bl->value() ? simplify(F(r)) : r;
     
     return *br;
   }
@@ -208,7 +208,7 @@ namespace black::internal {
       return bl->value() ? sigma.top() : r;
 
     if(!bl && br)
-      return br->value() ? formula{sigma.top()} : G(l);
+      return br->value() ? formula{sigma.top()} : simplify(G(l));
 
     return sigma.boolean(bl->value() || br->value());
   }
@@ -221,7 +221,7 @@ namespace black::internal {
       return s;
 
     if(bl && !br)
-      return bl->value() ? r : G(r);
+      return bl->value() ? r : simplify(G(r));
 
     return *br;
   }
@@ -238,7 +238,7 @@ namespace black::internal {
       return bl->value() ? r : sigma.bottom();
 
     if(!bl && br)
-      return br->value() ? F(l) : formula{sigma.bottom()};
+      return br->value() ? simplify(F(l)) : formula{sigma.bottom()};
 
     return sigma.boolean(bl->value() && br->value());
   }

@@ -32,6 +32,8 @@
 #include <vector>
 #include <sstream>
 
+#include <iostream>
+
 namespace black::internal
 {
   // Easy entry-point for parsing formulas
@@ -256,6 +258,9 @@ namespace black::internal
       try_parse([&](){ return parse_relational_atom(); });
     if(a)
       return a;
+
+    if(peek()->token_type() != token::type::identifier)
+      return error("Expected identifier, found '" + to_string(*peek()) + "'");
 
     std::string id{*peek()->data<std::string>()};
     consume();

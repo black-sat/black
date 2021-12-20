@@ -524,4 +524,25 @@ TEST_CASE("Non-formula matchers")
     REQUIRE(i == 3);
   }  
 
+  SECTION("quantifier_block matcher") {
+    variable x = sigma.var("x");
+    variable y = sigma.var("y");
+    variable z = sigma.var("z");
+
+    formula m = forall(x, x == y && y == z);
+
+    formula f = exists({y,z}, m);
+
+    bool executed = false;
+    f.match(
+      [&](quantifier_block b) {
+        executed = true;
+        REQUIRE(b.matrix() == m);
+      },
+      [](otherwise) {}
+    );
+
+    REQUIRE(executed);
+  }
+
 }

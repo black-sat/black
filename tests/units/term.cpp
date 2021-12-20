@@ -45,6 +45,8 @@ TEST_CASE("Terms manipulation") {
   term app1 = f(n1, n2);
   term app2 = n1 + n2;
 
+  REQUIRE(sigma.from_id(app1.unique_id()) == app1);
+
   REQUIRE(app1 != app2);
 
   std::string s = app1.match(

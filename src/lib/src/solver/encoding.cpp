@@ -32,10 +32,6 @@ using namespace std::literals;
 
 namespace black::internal 
 {
-  formula encoder::get_formula() const {
-    return _frm;
-  }
-
   // Generates the PRUNE encoding
   formula encoder::prune(size_t k)
   {
@@ -485,10 +481,7 @@ namespace black::internal
    * - if f is T or H, then Z(f) is in _zrequests
    */
   void encoder::_add_xyz_requests(formula f)
-  {
-    if(f == _frm)
-      _xrequests.push_back(wX(_sigma->bottom()));
-    
+  {    
     f.match(
       [&](tomorrow t)     { _xrequests.push_back(t);     },
       [&](w_tomorrow w)   { _xrequests.push_back(w);     },
@@ -508,6 +501,14 @@ namespace black::internal
     );
 
     f.match(
+      [](boolean) { },
+      [](proposition) { },
+      [](quantifier) { },
+      [&](atom a) {
+        for(term t : a.terms())
+          if(term_is_weak(t))
+            _xrequests.push_back(wX(_sigma->bottom()));
+      },
       [&](unary, formula op) {
         _add_xyz_requests(op);
       },
@@ -522,51 +523,50 @@ namespace black::internal
       [&](binary, formula left, formula right) {
         _add_xyz_requests(left);
         _add_xyz_requests(right);
+      }
+    );
+  }
+
+  static bool term_has_next(term t) {
+    return t.match(
+      [](constant) { return false; },
+      [](variable) { return false; },
+      [](next) { return true; },
+      [&](application a) {
+        for(term arg : a.arguments())
+          if(term_has_next(arg))
+            return true;
+        return false;
       },
-      [](otherwise) { }
+      [&](wnext n) {
+        return term_has_next(n.argument());
+      }
+    );
+  }
+
+  static bool formula_has_next(formula frm) {
+    return frm.match(
+      [](boolean) { return false; },
+      [](proposition) { return false; },
+      [](quantifier q) {
+        return formula_has_next(q.matrix());
+      },
+      [](atom a) {
+        for(term arg : a.terms())
+          if(term_has_next(arg))
+            return true;
+        return false;
+      },
+      [](unary, formula arg) {
+        return formula_has_next(arg);
+      },
+      [](binary, formula left, formula right) {
+        return formula_has_next(left) || formula_has_next(right);
+      }
     );
   }
 
   void encoder::_add_atomic_requests(formula f) {
-    std::function<bool(term)> term_has_next = [&](term t) {
-      return t.match(
-        [](constant) { return false; },
-        [](variable) { return false; },
-        [](next) { return true; },
-        [&](application a) {
-          bool has_next = false;
-          for(term arg : a.arguments())
-            has_next = has_next || term_has_next(arg);
-          return has_next;
-        },
-        [&](wnext n) {
-          return term_has_next(n.argument());
-        }
-      );
-    };
-
-    std::function<bool(formula)> formula_has_next = [&](formula frm) {
-      return frm.match(
-        [](boolean) { return false; },
-        [](proposition) { return false; },
-        [&](quantifier q) {
-          return formula_has_next(q.matrix());
-        },
-        [&](atom a) {
-          bool has_next = false;
-          for(term arg : a.terms())
-            has_next = has_next || term_has_next(arg);
-          return has_next;
-        },
-        [&](unary, formula arg) {
-          return formula_has_next(arg);
-        },
-        [&](binary, formula left, formula right) {
-          return formula_has_next(left) || formula_has_next(right);
-        }
-      );
-    };
-
     f.match(
       [&](atom a) {
         bool has_next = false;

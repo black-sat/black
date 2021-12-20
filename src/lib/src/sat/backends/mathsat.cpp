@@ -188,9 +188,8 @@ namespace black::sat::backends
 
         return msat_make_term(env, rel, args.data());
       },
-      [](quantifier) -> msat_term {
-        black_unreachable(); // mathsat does not support quantifiers
-      },
+      // mathsat does not support quantifiers
+      [](quantifier) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
       [this](proposition p) {
         msat_decl msat_prop =
           msat_declare_function(env, to_string(p.unique_id()).c_str(),
@@ -332,10 +331,8 @@ namespace black::sat::backends
             case function::division:
               black_assert(args.size() == 2);
               return msat_make_divide(env, args[0], args[1]);
-            case function::modulo:
-              black_unreachable();
           }
-          black_unreachable();
+          black_unreachable(); // LCOV_EXCL_LINE
         }
 
         msat_decl func = to_mathsat(
@@ -343,8 +340,8 @@ namespace black::sat::backends
         );
         return msat_make_uf(env, func, args.data());
       },
-      [&](next) -> msat_term { black_unreachable(); },
-      [&](wnext) -> msat_term { black_unreachable(); }
+      [&](next) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](wnext) -> msat_term { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 

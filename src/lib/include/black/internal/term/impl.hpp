@@ -221,10 +221,8 @@ namespace black::internal {
         return "*";
       case type::division:
         return "/";
-      case type::modulo:
-        return "mod";
     }
-    black_unreachable();
+    black_unreachable(); // LCOV_EXCL_LINE
   }
 
   // struct application
