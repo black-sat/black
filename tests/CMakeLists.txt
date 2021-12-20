@@ -37,7 +37,7 @@ add_executable(random_formulas_generator
 target_link_libraries(random_formulas_generator PRIVATE black)
 
 add_custom_target(ltlfmt
-  DEPENDS lia lra)
+  DEPENDS lia lra euf)
 
 add_executable(lia
         formulas_generators/ltlfmt/lia.cpp)
@@ -47,8 +47,12 @@ add_executable(lra
         formulas_generators/ltlfmt/lra.cpp)
 target_link_libraries(lra PRIVATE black fmt::fmt)
 
+add_executable(euf
+        formulas_generators/ltlfmt/euf.cpp)
+target_link_libraries(euf PRIVATE black fmt::fmt)
+
 set_target_properties(
-  crscounter_generator random_formulas_generator ltlfmt lia lra
+  crscounter_generator random_formulas_generator ltlfmt lia lra euf
   PROPERTIES 
   EXCLUDE_FROM_ALL TRUE
 )

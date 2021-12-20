@@ -1,0 +1,1 @@
+(x = c) & G(wnext(c) = c) & G((f(wnext(x)) = x) & (wnext(x) = g(x))) & X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X(f(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(c)))))))))))))))))))))))))))))))) != g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(g(c)))))))))))))))))))))))))))))))
