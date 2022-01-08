@@ -48,7 +48,7 @@ if ! [[ $END =~ $re ]] ; then
    echo "ERROR: the <endindex> parameter must be a number" >&2; exit 1
 fi
 
-for (( i=$START; i<=$END; i=i+1 ))
+for (( i=$START; i<=$END; i=i+10 ))
 do
   $BIN $CATEGORY $i > "$OUTDIR/scalable-$CATEGORY-$i.ltlfmt"
   echo "Created benchmark #$i for Category $CATEGORY and Theory LIA"

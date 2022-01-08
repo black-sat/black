@@ -41,7 +41,7 @@ if ! [[ $CATEGORY =~ $re ]] ; then
 fi
 
 if [[ $CATEGORY == "1" ]] ; then
-  for (( i=1; i<=350; i=i+1 ))
+  for (( i=1; i<=400; i=i+1 ))
   do
     $BIN $CATEGORY $i > "$OUTDIR/scalable-$CATEGORY-$i.ltlfmt"
     echo "Created benchmark #$i for Category $CATEGORY and Theory EUFLIA"

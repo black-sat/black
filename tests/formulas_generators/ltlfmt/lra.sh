@@ -42,7 +42,7 @@ if ! [[ $CATEGORY =~ $re ]] ; then
 fi
 
 if [[ $CATEGORY == "1" ]] ; then
-  for (( i=1; i<=200; i=i+1 ))
+  for (( i=1; i<=300; i=i+1 ))
   do
     $BIN $CATEGORY $i > "$OUTDIR/scalable-$CATEGORY-$i.ltlfmt"
     echo "Created benchmark #$i for Category $CATEGORY and Theory LRA"
@@ -50,7 +50,7 @@ if [[ $CATEGORY == "1" ]] ; then
 fi
 
 if [[ $CATEGORY == "2" ]] ; then
-  for (( i=2; i<=200; i=i+1 ))
+  for (( i=2; i<=150; i=i+1 ))
   do
     $BIN $CATEGORY $i > "$OUTDIR/scalable-$CATEGORY-$i.ltlfmt"
     echo "Created benchmark #$i for Category $CATEGORY and Theory LRA"
