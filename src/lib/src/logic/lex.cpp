@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <istream>
 #include <charconv>
+#include <limits>
 
 namespace black::internal
 {
