@@ -103,11 +103,11 @@ namespace black::frontend
   }
 
   static bool is_output_format(std::string const &format) {
-    return format == "readable" || format == "json";
+    return format == "readable" || format == "json"; // LCOV_EXCL_LINE
   }
 
   static bool is_sort(std::string const& s) {
-    return s == "integers" || s == "reals";
+    return s == "integers" || s == "reals"; // LCOV_EXCL_LINE
   }
 
   //

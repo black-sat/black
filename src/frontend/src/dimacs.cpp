@@ -61,7 +61,7 @@ namespace black::frontend {
 
   int dimacs() {
     if(*cli::filename == "-")
-      return dimacs(std::nullopt, std::cin);
+      return dimacs(std::nullopt, std::cin); // LCOV_EXCL_LINE
 
     std::ifstream file = open_file(*cli::filename);
     return dimacs(cli::filename, file);

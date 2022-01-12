@@ -258,7 +258,7 @@ namespace black::frontend {
     io::println("{{");
     
     io::println("    \"result\": \"{}\",", 
-      result == tribool::undef ? "UNKNOWN" :
+      result == tribool::undef ? "UNKNOWN" : // LCOV_EXCL_LINE
       result == true  ? "SAT" : "UNSAT"
     );
 

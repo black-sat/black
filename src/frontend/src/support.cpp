@@ -63,7 +63,7 @@ namespace black::frontend
     auto readable_syntax_error = [path](auto error) {
       io::fatal(status_code::syntax_error, 
                 "syntax error: {}: {}\n", 
-                path ? *path : "<stdin>", error);
+                path ? *path : "<stdin>", error); // LCOV_EXCL_LINE
     };
 
     auto json_syntax_error = [](auto error) {
@@ -88,7 +88,7 @@ namespace black::frontend
       [](application a) {
         for(term t2 : a.arguments())
           if(has_next(t2))
-            return true;
+            return true; // LCOV_EXCL_LINE
         return false;
       },
       [](next) { return true; },
