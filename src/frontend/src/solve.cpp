@@ -23,15 +23,20 @@
 
 #include <black/frontend/solve.hpp>
 
+#include <black/support/config.hpp>
+
 #include <black/frontend/io.hpp>
 #include <black/frontend/cli.hpp>
 #include <black/frontend/support.hpp>
 
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/logic/past_remover.hpp>
 #include <black/solver/solver.hpp>
+#include <black/sat/solver.hpp>
 
+#include <iostream>
 #include <sstream>
 
 namespace black::frontend {
@@ -39,6 +44,8 @@ namespace black::frontend {
   void output(tribool result, solver &solver, formula f);
   
   int solve(std::optional<std::string> const&path, std::istream &file);
+
+  void trace(black::solver::trace_t data);
 
   int solve() {
     if(!cli::filename && !cli::formula) {
@@ -69,15 +76,97 @@ namespace black::frontend {
   {
     black::alphabet sigma;
 
-    std::optional<black::formula> f =
+    if(cli::domain)
+      sigma.set_domain(cli::domain == "integers" ? sort::Int : sort::Real);
+
+    std::optional<formula> f =
       black::parse_formula(sigma, file, formula_syntax_error_handler(path));
 
     black_assert(f.has_value());
 
-    black::solver slv;
+    uint8_t features = formula_features(*f);
+
+    std::string backend = BLACK_DEFAULT_BACKEND;
 
     if (cli::sat_backend)
-      slv.set_sat_backend(*cli::sat_backend);
+      backend = *cli::sat_backend;
+
+    black_assert(black::sat::solver::backend_exists(backend));
+
+    if(features & feature_t::first_order)
+      cli::finite = true;
+
+    if((features & feature_t::first_order) && 
+       !black::sat::solver::backend_has_feature(backend, 
+          black::sat::feature::smt))
+    {
+      io::errorln(
+        "{}: the `{}` backend does not support first-order formulas.",
+        cli::command_name, backend
+      );
+      quit(status_code::failure);
+    }
+
+    if((features & feature_t::quantifiers) && 
+       !black::sat::solver::backend_has_feature(backend, 
+          black::sat::feature::quantifiers))
+    {
+      io::errorln(
+        "{}: the `{}` backend does not support "
+        "quantified first-order formulas.",
+        cli::command_name, backend
+      );
+      quit(status_code::failure);
+    }
+
+    if(!cli::domain && (features & feature_t::first_order)) {
+      command_line_error(
+        "the --domain option is required for first-order formulas."
+      );
+      quit(status_code::command_line_error);
+    }
+
+    if(cli::print_model && (features & feature_t::first_order)) {
+      command_line_error(
+        "model extraction is not supported (yet) for first-order formulas."
+      );
+      quit(status_code::command_line_error);
+    }
+
+    if(!cli::semi_decision && (features & feature_t::nextvar)) {
+      cli::semi_decision = true;
+      io::errorln(
+      "{0}: warning: use of `next` terms implies the --semi-decision option.\n"
+      "{0}: warning: execution may not terminate.\n"
+      "{0}: warning: pass the --semi-decision option explicitly to silence "
+      "this warning.", cli::command_name
+      );
+    }
+
+    if(cli::remove_past && (features & feature_t::first_order)) {
+      command_line_error(
+        "the --remove-past option is not supported for first-order formulas"
+      );
+      quit(status_code::command_line_error);
+    }
+
+    if(cli::debug == "print")
+      io::println(
+        "{}: debug: parsed formula: {}", cli::command_name, to_string(*f)
+      );
+
+    [[maybe_unused]]
+    bool ok = 
+      black::solver::check_syntax(*f, formula_syntax_error_handler(path));
+    
+    black_assert(ok); // the error handler quits
+
+    black::solver slv;
+
+    slv.set_sat_backend(backend);
+
+    if(cli::debug == "trace" || cli::debug == "trace-full")
+      slv.set_tracer(&trace);
 
     if (cli::remove_past)
       slv.set_formula(black::remove_past(*f), cli::finite);
@@ -86,7 +175,7 @@ namespace black::frontend {
 
     size_t bound = 
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
-    black::tribool res = slv.solve(bound);
+    black::tribool res = slv.solve(bound, cli::semi_decision);
 
     output(res, slv, *f);
 
@@ -94,20 +183,22 @@ namespace black::frontend {
   }
 
   static 
-  void relevant_atoms(formula f, std::unordered_set<atom> &atoms) 
+  void relevant_props(formula f, std::unordered_set<proposition> &props) 
   {
     using namespace black;
     f.match(
       [&](boolean) {},
-      [&](atom a) {
-        atoms.insert(a);
+      [&](atom) { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](quantifier) { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](proposition p) {
+        props.insert(p);
       },
       [&](unary, formula f1) {
-        relevant_atoms(f1, atoms);
+        relevant_props(f1, props);
       },
       [&](binary, formula f1, formula f2) {
-        relevant_atoms(f1, atoms);
-        relevant_atoms(f2, atoms);
+        relevant_props(f1, props);
+        relevant_props(f2, props);
       }
     );
   }
@@ -136,15 +227,15 @@ namespace black::frontend {
     else
       io::println("Model:");
 
-    std::unordered_set<atom> atoms;
-    relevant_atoms(f, atoms);
+    std::unordered_set<proposition> props;
+    relevant_props(f, props);
     
     size_t size = solver.model()->size();
     size_t width = static_cast<size_t>(log10((double)size)) + 1;
     for(size_t t = 0; t < size; ++t) {
       io::print("- t = {:>{}}: {{", t, width);
       bool first = true;
-      for(atom a : atoms) {
+      for(proposition a : props) {
         tribool v = solver.model()->value(a, t);
         const char *comma = first ? "" : ", ";
         if(v == true) {
@@ -167,7 +258,7 @@ namespace black::frontend {
     io::println("{{");
     
     io::println("    \"result\": \"{}\",", 
-      result == tribool::undef ? "UNKNOWN" :
+      result == tribool::undef ? "UNKNOWN" : // LCOV_EXCL_LINE
       result == true  ? "SAT" : "UNSAT"
     );
 
@@ -178,8 +269,8 @@ namespace black::frontend {
 
     if(result == true && cli::print_model) {
       auto model = solver.model();
-      std::unordered_set<atom> atoms;
-      relevant_atoms(f, atoms);
+      std::unordered_set<proposition> props;
+      relevant_props(f, props);
 
       io::println("    \"model\": {{");
       io::println("        \"size\": {},", model->size());
@@ -192,13 +283,13 @@ namespace black::frontend {
         io::println("            {{");
 
         size_t i = 0;
-        for(atom a : atoms) {
+        for(proposition a : props) {
           tribool v = model->value(a, t);
           io::println("                \"{}\": \"{}\"{}",
             to_string(a),
             v == tribool::undef ? "undef" :
             v == true           ? "true" : "false",
-            i < atoms.size() - 1 ? "," : ""
+            i < props.size() - 1 ? "," : ""
           );
           ++i;
         }
@@ -219,6 +310,35 @@ namespace black::frontend {
       return json(result, solver, f);
 
     return readable(result, solver, f);
+  }
+  
+  void trace(black::solver::trace_t data) {
+    auto [type, v] = data; // LCOV_EXCL_LINE
+    static size_t k = 0;
+    if(type == black::solver::trace_t::stage) {
+      k = std::get<size_t>(v);
+      io::errorln("- k: {}", k);
+    }
+
+    if(cli::debug != "trace-full")
+      return;
+
+    switch(type){
+      case black::solver::trace_t::stage:
+        break;
+      case black::solver::trace_t::unrav:
+        io::errorln("  - {}-unrav: {}", k, to_string(std::get<formula>(v)));
+        break;
+      case black::solver::trace_t::empty:
+        io::errorln("  - {}-empty: {}", k, to_string(std::get<formula>(v)));
+        break;
+      case black::solver::trace_t::loop:
+        io::errorln("  - {}-loop: {}", k, to_string(std::get<formula>(v)));
+        break;
+      case black::solver::trace_t::prune:
+        io::errorln("  - {}-prune: {}", k, to_string(std::get<formula>(v)));
+        break;
+    }
   }
 
 }

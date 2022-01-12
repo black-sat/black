@@ -43,12 +43,12 @@ TEST_CASE("Formula manipulation")
   boolean top = sigma.top();
   boolean bottom = sigma.bottom();
 
-  // requesting atoms with different types
-  atom p = sigma.var("p");
-  atom q = sigma.var("q"sv);
-  atom ftwo = sigma.var(42);
+  // requesting propositions with different types
+  proposition p = sigma.prop("p");
+  proposition q = sigma.prop("q"sv);
+  proposition ftwo = sigma.prop(42);
 
-  SECTION("Basic booleans and atoms allocation") {
+  SECTION("Basic booleans and propositions allocation") {
     REQUIRE(top.value());
     REQUIRE(!bottom.value());
     REQUIRE(p.label<std::string>().value() == "p");
@@ -57,7 +57,7 @@ TEST_CASE("Formula manipulation")
     REQUIRE(p == p);
     REQUIRE(p != q);
 
-    atom another = sigma.var("p"sv);
+    proposition another = sigma.prop("p"sv);
 
     REQUIRE(another == p);
   }
@@ -79,11 +79,11 @@ TEST_CASE("Formula manipulation")
     REQUIRE(ftop.formula_type() == formula::type::boolean);
     REQUIRE(ftop.is<boolean>());
     REQUIRE(fbottom.is<boolean>());
-    REQUIRE(fp.is<atom>());
-    REQUIRE(fq.is<atom>());
+    REQUIRE(fp.is<proposition>());
+    REQUIRE(fq.is<proposition>());
 
     std::optional<boolean> otop = ftop.to<boolean>();
-    std::optional<atom> op = fp.to<atom>();
+    std::optional<proposition> op = fp.to<proposition>();
     std::optional<boolean> opwrong = fp.to<boolean>();
 
     REQUIRE(otop.has_value());
@@ -91,7 +91,7 @@ TEST_CASE("Formula manipulation")
     REQUIRE(!opwrong.has_value());
 
     boolean top2 = *otop;
-    atom p2 = *op;
+    proposition p2 = *op;
 
     REQUIRE(top2.value());
     REQUIRE(top2 == top);
@@ -192,12 +192,16 @@ TEST_CASE("Boolean constants simplification")
 {
   alphabet sigma;
 
-  atom p = sigma.var("p");
+  proposition p = sigma.prop("p");
+  variable x = sigma.var("x");
+
+  REQUIRE(has_constants(p && !p && x > x && exists(x, x > x) && sigma.top()));
 
   REQUIRE(simplify_deep(!sigma.top()) == sigma.bottom());
   REQUIRE(simplify_deep(!sigma.bottom()) == sigma.top());
   REQUIRE(simplify_deep(!!sigma.top()) == sigma.top());
   REQUIRE(simplify_deep(!!sigma.bottom()) == sigma.bottom());
+  REQUIRE(simplify_deep(!!p) == p);
 
   REQUIRE(simplify_deep(sigma.top() && p) == p);
   REQUIRE(simplify_deep(sigma.bottom() && p) == sigma.bottom());
@@ -229,9 +233,11 @@ TEST_CASE("Boolean constants simplification")
   REQUIRE(simplify_deep(U(p, sigma.top())) == sigma.top());
   REQUIRE(simplify_deep(W(p,p)) == W(p,p));
   REQUIRE(simplify_deep(W(sigma.top(), p)) == sigma.top());
+  REQUIRE(simplify_deep(W(sigma.bottom(), p)) == p);
   REQUIRE(simplify_deep(W(p, sigma.top())) == sigma.top());
   REQUIRE(simplify_deep(W(p, sigma.bottom())) == G(p));
   REQUIRE(simplify_deep(W(sigma.top(), sigma.top())) == sigma.top());
+  REQUIRE(simplify_deep(W(sigma.bottom(), sigma.bottom())) == sigma.bottom());
 
   REQUIRE(simplify_deep(R(p, !p)) == R(p, !p));
   REQUIRE(simplify_deep(R(sigma.top(), p)) == p);
@@ -243,5 +249,9 @@ TEST_CASE("Boolean constants simplification")
   REQUIRE(simplify_deep(M(p, sigma.top())) == F(p));
   REQUIRE(simplify_deep(M(p, sigma.bottom())) == sigma.bottom());
   REQUIRE(simplify_deep(M(sigma.top(), sigma.top())) == sigma.top());
+  REQUIRE(simplify_deep(M(sigma.bottom(), sigma.bottom())) == sigma.bottom());
+
+  REQUIRE(simplify_deep(x >= x) == (x >= x));
+  REQUIRE(simplify_deep(exists(x, x > x)) == exists(x, x > x));
   
 }

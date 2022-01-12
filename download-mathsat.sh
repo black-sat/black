@@ -1,6 +1,7 @@
 #!/bin/bash
 
-MATHSAT_VERSION=5.5.4
+# MATHSAT_VERSION=5.5.4
+MATHSAT_VERSION=5.6.6
 
 die() {
   echo $1 >&2

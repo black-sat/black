@@ -1,0 +1,1 @@
+(c = 1) & G(wnext(c) = 10 * c) & X X((x = c) & G(wnext(x) = x / 10) & F(x = 1))

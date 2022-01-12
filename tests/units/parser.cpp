@@ -25,6 +25,7 @@
 
 #include <black/logic/alphabet.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -34,27 +35,45 @@ TEST_CASE("Syntax errors") {
 
   alphabet sigma;
   std::vector<std::string> tests = {
-    "F", "F(p U)", "p || q &&", "(p && q", "(", 
-    "F(p = q)", "F(p - q)", "F(p < q)"
+    "F", "F(p U)", "p || q &&", "(p && q", "(", "F(p - q)", "F(p -)", 
+    "F(p(x,))", "x = 1000000000000000000000", "x = 1.", "x x", "x % 1",
+    "exists . p", "exists x y z +", "exists x . (x =)", "p(x",
+    "x + y * = x", "F(-)", "next x", "next(x x", "wnext x", "wnext(x x",
+    "next(next(x +)) = x", "wnext(next(x +)) = x", "p 42", "p 0.1",
+    "x = 0.0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000001"
   };
 
   for(std::string s : tests) {
     DYNAMIC_SECTION("Test formula: " << s) 
     {
-      auto result = parse_formula(sigma, s);
+      bool error = false;
+      auto result = parse_formula(sigma, s, [&](std::string) {
+        error = true;
+      });
 
+      REQUIRE(error);
       REQUIRE(!result.has_value());
     }
   }
 
 }
 
-TEST_CASE("Rountrip of parser and pretty-printer")
+TEST_CASE("Roundtrip of parser and pretty-printer")
 {
   alphabet sigma;
 
-  atom p = sigma.var("p");
-  atom q = sigma.var("q");
+  proposition p = sigma.prop("p");
+  proposition q = sigma.prop("q");
+  variable x = sigma.var("x");
+  variable y = sigma.var("y");
+  variable z = sigma.var("z");
+
+  function g{"g"};
+  relation r{"r"};
 
   std::vector<formula> tests = {
     p, !p, X(p), F(p), G(p), O(p), H(p), XF(p), GF(p), XG(p),
@@ -62,7 +81,10 @@ TEST_CASE("Rountrip of parser and pretty-printer")
     p && (X(U(p,q)) || XF(!q)),
     p && implies(Y(S(p,q)), GF(!p)),
     U(p, !(GF(q))),
-    !(iff(p || q, !q && p))
+    !(iff(p || q, !q && p)),
+    exists({x,y,z}, g(x + 2, y) + 2 >= (y * sigma.constant(1.5)) && y == z),
+    forall({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) && r(x,y),
+    (x + y) * z > 0
   };
 
   for(formula f : tests) {

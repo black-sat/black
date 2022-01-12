@@ -44,17 +44,34 @@ namespace black::internal {
     public:
       friend class model;
 
+      // Checks if the formula `f` has a syntax supported by the solver
+      //
+      // Calls the callback function `err` with a description of the error
+      static bool 
+      check_syntax(formula f, std::function<void(std::string)> const& err);
+
       // Constructor and destructor
       solver();
       ~solver();
 
       // Sets the formula to solve.
       // If `finite` is true, it is interpreted over finite models
+      // If the alphabet of the formula is set to any SMT logic,
+      // the `finite` argument is ignored and always treated as `true`.
       void set_formula(formula f, bool finite = false);
 
       // Solve the formula with up to `k_max' iterations
       // returns tribool::undef if `k_max` is reached
-      tribool solve(size_t k_max = std::numeric_limits<size_t>::max());
+      //
+      // If `semi_decision` is true, the termination rules for unsatisfiable 
+      // formulas are disabled, speeding up solving of satisfiable ones.
+      //
+      // WARNING: `semi_decision = false` with first-order formulas using 
+      //          next(x) terms results in an *incomplete* algorithm.
+      tribool solve(
+        size_t k_max = std::numeric_limits<size_t>::max(),
+        bool semi_decision = false
+      );
 
       // Returns the model of the formula, if the last call to solve() 
       // returned true
@@ -70,6 +87,23 @@ namespace black::internal {
       // Retrieve the current SAT backend
       std::string sat_backend() const;
 
+      // Data type sent to the debug trace routine
+      struct trace_t {
+        enum type_t {
+          stage,
+          unrav,
+          empty,
+          loop,
+          prune
+        };
+
+        type_t type;
+        std::variant<size_t, formula> data;
+      };
+
+      // set the debug trace callback
+      void set_tracer(std::function<void(trace_t)> const&tracer);
+
     private:
       struct _solver_t;
       std::unique_ptr<_solver_t> _data;
@@ -81,7 +115,7 @@ namespace black::internal {
     public:
       size_t size() const;
       size_t loop() const;
-      tribool value(atom a, size_t t) const;
+      tribool value(proposition a, size_t t) const;
     private:
       friend class solver;
       model(solver const&s) : _solver{s} { }

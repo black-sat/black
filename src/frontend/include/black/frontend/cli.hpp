@@ -38,7 +38,7 @@ namespace black::frontend
   enum class status_code : uint8_t {
     success = 0,            // success status code
     failure = 1,            // generic failure
-    command_line_error = 2, // command line parsing errors
+    command_line_error = 2, // command line errors
     filesystem_error = 3,   // errors related to file operations
     syntax_error = 4,       // syntax errors at logic level (formulas, etc.)
     failed_check = 5,       // failed trace checking
@@ -73,6 +73,12 @@ namespace black::frontend
     // name of the selected SAT backend (nullopt for default)
     inline std::optional<std::string> sat_backend;
 
+    // domain for first-order variables
+    inline std::optional<std::string> domain;
+
+    // disable the PRUNE rule
+    inline bool semi_decision = false;
+
     // past removing before executing the SAT-encoding (disabled by default)
     inline bool remove_past = false;
 
@@ -102,6 +108,9 @@ namespace black::frontend
 
     // to print or not to print the model
     inline bool print_model = false;
+
+    // debug options
+    inline std::string debug;
   }
 
   // parse the command-line arguments, filling the variables declared above.

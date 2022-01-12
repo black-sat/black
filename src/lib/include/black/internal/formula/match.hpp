@@ -21,8 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_MATCH_HPP_
-#define BLACK_LOGIC_MATCH_HPP_
+#ifndef BLACK_LOGIC_FORMULA_MATCH_HPP_
+#define BLACK_LOGIC_FORMULA_MATCH_HPP_
 
 #include <vector>
 #include <functional>
@@ -63,7 +63,9 @@ namespace std {
     };
 
     declare_destructuring_arity(boolean,      0)
+    declare_destructuring_arity(proposition,  0)
     declare_destructuring_arity(atom,         0)
+    declare_destructuring_arity(quantifier,   0)
     declare_destructuring_arity(negation,     1)
     declare_destructuring_arity(tomorrow,     1)
     declare_destructuring_arity(w_tomorrow,   1)
@@ -90,103 +92,12 @@ namespace std {
 
 namespace black::internal
 {
-  // this is just like std::apply but applies the formula f before the args
-  template<typename Handler, typename Formula, size_t ...I>
-  auto unpack_(
-    Handler&& handler, Formula f, std::index_sequence<I...>
-  ) -> RETURNS_DECLTYPE(FWD(handler)(f, get<I>(f)...))
-
-  template<typename Handler, typename Formula>
-  auto unpack(Handler&& handler, Formula f)
-  -> RETURNS_DECLTYPE(
-    unpack_(
-      FWD(handler), f, std::make_index_sequence<std::tuple_size_v<Formula>>{}
-    )
-  )
-
-  template<typename Handler, typename Formula, typename = void>
-  struct can_be_unpacked : std::false_type { };
-
-  template<typename Handler, typename Formula>
-  struct can_be_unpacked<
-    Handler, Formula, 
-    std::void_t<
-      decltype(
-        unpack(std::declval<Handler>(), std::declval<Formula>())
-      )
-    >
-  > : std::true_type { };
-  
-  //
-  // The dispatch() function is what does the hard job
-  //
-  template<
-    typename Formula, typename Handler, typename ... Handlers,
-    REQUIRES(std::is_invocable_v<Handler, Formula>)
-  >
-  auto dispatch(Formula f, Handler&& handler, Handlers&& ...) {
-    return std::invoke(FWD(handler), f);
-  }
-
-  template<
-    typename Formula, typename Handler, typename ...Handlers,
-    REQUIRES(!std::is_invocable_v<Handler, Formula>),
-    REQUIRES(can_be_unpacked<Handler, Formula>::value)
-  >
-  auto dispatch(Formula f, Handler&& handler, Handlers&& ...) {
-    return unpack(FWD(handler), f);
-  }
-
-  template<
-    typename Formula, typename H1, typename H2, typename ...Handlers,
-    REQUIRES(!std::is_invocable_v<H1, Formula>),
-    REQUIRES(!can_be_unpacked<H1, Formula>::value)
-  >
-  auto dispatch(Formula f, H1&&, H2&& h2, Handlers&& ...handlers) 
-    -> decltype(dispatch(f, FWD(h2), FWD(handlers)...)) 
-  {
-    return dispatch(f, FWD(h2), FWD(handlers)...);
-  }
-
-  template<typename ...Operators>
-  struct syntax { };
-
-  template<typename ...Cases>
-  struct matcher;
-
-  template<typename Case>
-  struct matcher<syntax<Case>> {
-    template<typename ...Handlers>
-    static auto match(formula f, Handlers&& ...handlers)
-      -> decltype(dispatch(*f.to<Case>(), FWD(handlers)...))
-    {
-      if(f.is<Case>())
-        return dispatch(*f.to<Case>(), FWD(handlers)...);
-      
-      black_unreachable(); // LCOV_EXCL_LINE
-    }
-  };
-
-  template<typename Case, typename ...Cases>
-  struct matcher<syntax<Case, Cases...>>
-  {
-    template<typename ...Handlers>
-    static auto match(formula f, Handlers&& ...handlers) 
-      -> std::common_type_t<
-        decltype(dispatch(*f.to<Case>(), FWD(handlers)...)),
-        decltype(matcher<syntax<Cases...>>::match(f, FWD(handlers)...))
-      >
-    {
-      if(f.is<Case>())
-        return dispatch(*f.to<Case>(), FWD(handlers)...);
-      else
-        return matcher<syntax<Cases...>>::match(f, FWD(handlers)...);
-    }
-  };
 
   using ltl = syntax<
     boolean,
+    proposition,
     atom,
+    quantifier,
     negation,
     tomorrow,
     w_tomorrow,
@@ -235,17 +146,17 @@ namespace black::internal
 
   template<typename ...Handlers>
   auto formula::match(Handlers&& ...handlers) const {
-    return matcher<ltl>::match(*this, FWD(handlers)...);
+    return matcher<formula, ltl>::match(*this, FWD(handlers)...);
   }
 
   template<typename ...Handlers>
   auto unary::match(Handlers&& ...handlers) const {
-    return matcher<unary_ltl_ops>::match(*this, FWD(handlers)...);
+    return matcher<formula, unary_ltl_ops>::match(*this, FWD(handlers)...);
   }
 
   template<typename ...Handlers>
   auto binary::match(Handlers&& ...handlers) const {
-    return matcher<binary_ltl_ops>::match(*this, FWD(handlers)...);
+    return matcher<formula, binary_ltl_ops>::match(*this, FWD(handlers)...);
   }
 }
 
@@ -275,20 +186,27 @@ namespace std {
       using type = black::formula;                                           \
     };
 
-  #define declare_formula_ct(Type)           \
-    template<typename T>                     \
-    struct common_type<                      \
-      enable_if_t<                           \
-        is_convertible_v<T, black::formula>, \
-        black::Type                          \
-      >, T                                   \
-    > {                                      \
-      using type = black::formula;           \
+  #define declare_formula_ct(Type)                   \
+    template<>                                       \
+    struct common_type<black::Type, black::Type> {   \
+      using type = black::Type;                      \
+    };                                               \
+                                                     \
+    template<typename T>                             \
+    struct common_type<                              \
+      enable_if_t<                                   \
+        is_convertible_v<T, black::formula>,         \
+        black::Type                                  \
+      >, T                                           \
+    > {                                              \
+      using type = black::formula;                   \
     };
 
   declare_formula_ct(formula)
   declare_formula_ct(boolean)
+  declare_formula_ct(proposition)
   declare_formula_ct(atom)
+  declare_formula_ct(quantifier)
   declare_formula_ct(unary)
   declare_formula_ct(binary)
   declare_common_type(negation,     unary)
@@ -360,6 +278,34 @@ namespace black::internal
     using associative_matcher<disjunction>::associative_matcher;
   };
 
+  struct quantifier_block {
+    quantifier_block(quantifier q) 
+      : _type{q.quantifier_type()}, _matrix{parse(q)} { }
+
+    quantifier::type quantifier_type() const { return _type; }
+    std::vector<variable> const&vars() const { return _vars; }
+    formula matrix() const { return _matrix; }
+
+  private:
+    // GCOV false negatives
+    formula parse(quantifier q) {                         // LCOV_EXCL_LINE
+      _vars.push_back(q.var());                           // LCOV_EXCL_LINE
+      formula m = q.matrix();                             // LCOV_EXCL_LINE
+      return m.match(                                     // LCOV_EXCL_LINE
+        [&](quantifier q2) {                              // LCOV_EXCL_LINE
+          if(q.quantifier_type() == q2.quantifier_type()) // LCOV_EXCL_LINE
+            return parse(q2);                             // LCOV_EXCL_LINE
+          return m;                                       // LCOV_EXCL_LINE
+        },                                                // LCOV_EXCL_LINE
+        [&](otherwise) { return m; }                      // LCOV_EXCL_LINE
+      );                                                  // LCOV_EXCL_LINE
+    }
+
+    quantifier::type _type;
+    std::vector<variable> _vars;
+    formula _matrix;
+  };
+
   template<typename>
   struct fragment_matcher;
 
@@ -368,15 +314,25 @@ namespace black::internal
     template<typename T, REQUIRES((std::is_same_v<T, Operators> || ...))>
     fragment_matcher(T t) : _f{t} { }
 
-    class formula formula() const { return _f; }
+    operator formula() const { return _f; }
+
+    template<typename Handler>
+    bool is() const {
+      return _f.is<Handler>();
+    }
+
+    template<typename Handler>
+    Handler to() const {
+      return _f.to<Handler>();
+    }
 
     template<typename ...Handlers>
     auto match(Handlers&& ...handlers) const {
-      return matcher<syntax<Operators...>>::match(_f, FWD(handlers)...);
+      return matcher<class formula, syntax<Operators...>>::match(_f, FWD(handlers)...);
     }
 
   private:
-    class formula _f;
+    formula _f;
   };
 
   using past_ltl_ops = syntax<
@@ -418,7 +374,7 @@ namespace black::internal
   
   using propositional_ops = syntax<
     boolean,
-    atom,
+    proposition,
     negation,
     conjunction,
     disjunction,
@@ -441,9 +397,7 @@ namespace black::internal
   struct past : fragment_matcher<past_ltl_ops> { 
     using fragment_matcher<past_ltl_ops>::fragment_matcher;
   };
-  
-
 
 }
 
-#endif // BLACK_LOGIC_MATCH_HPP_
+#endif // BLACK_LOGIC_FORMULA_MATCH_HPP_

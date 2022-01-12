@@ -27,7 +27,7 @@
 #include <minisat/simp/SimpSolver.h>
 #include <tsl/hopscotch_map.h>
 
-BLACK_REGISTER_SAT_BACKEND(minisat)
+BLACK_REGISTER_SAT_BACKEND(minisat, {})
 
 namespace black::sat::backends
 {
@@ -69,14 +69,15 @@ namespace black::sat::backends
     _data->solver->addClause(lits);
   }
   
-  bool minisat::is_sat() {
+  tribool minisat::is_sat() {
     bool result = _data->solver->solve();
     _data->model_available = result;
 
     return result;
   }
 
-  bool minisat::is_sat_with(std::vector<dimacs::literal> const& assumptions) {
+  tribool 
+  minisat::is_sat_with(std::vector<dimacs::literal> const& assumptions) {
     Minisat::vec<Minisat::Lit> lits;
     for(dimacs::literal lit : assumptions) {
       lits.push(Minisat::mkLit(lit.var, !lit.sign));

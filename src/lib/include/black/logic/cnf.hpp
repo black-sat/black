@@ -35,10 +35,10 @@
 namespace black::internal
 {
 
-  // TODO: Compress the boolean into the pointer to the atom
+  // TODO: Compress the boolean into the pointer to the proposition
   struct literal {
     bool sign;
-    struct atom atom;
+    struct proposition proposition;
   };
 
   struct clause {

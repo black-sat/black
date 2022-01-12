@@ -1,0 +1,1 @@
+(x0 > 0) & True & (next(x1) > x0) & X(next(x2) > x1) & G(True & (wnext(x0) = x0) & (wnext(x1) = x1) & (wnext(x2) = x2)) & F((6 = ((0 + x0) + x1) + x2) & wX False)

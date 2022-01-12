@@ -28,6 +28,7 @@
 #include <black/logic/alphabet.hpp>
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/logic/past_remover.hpp>
 #include <black/support/tribool.hpp>
 
@@ -66,7 +67,7 @@ namespace black::frontend
   }
 
   static
-  bool check_atom(trace_t trace, atom a, size_t t) {
+  bool check_proposition(trace_t trace, proposition a, size_t t) {
     black_assert(a.label<std::string>().has_value());
     std::string p = *a.label<std::string>();
 
@@ -121,7 +122,9 @@ namespace black::frontend
   size_t depth(formula f) {
     return f.match(
       [](boolean) -> size_t { return 1; },
-      [](atom) -> size_t { return 1; },
+      [](proposition) -> size_t { return 1; },
+      [](atom) -> size_t { black_unreachable(); }, // LCOV_EXCL_LINE
+      [](quantifier) -> size_t { black_unreachable(); }, // LCOV_EXCL_LINE
       [](yesterday, formula op) { return 1 + depth(op); },
       [](w_yesterday, formula op) { return 1 + depth(op); },
       [](once, formula op) { return 1 + depth(op); },
@@ -193,9 +196,11 @@ namespace black::frontend
       [](boolean b) {
         return b.value();
       },
-      [&](atom a) {
-        return check_atom(trace, a, t);
+      [&](proposition a) {
+        return check_proposition(trace, a, t);
       },
+      [&](atom) -> bool { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](quantifier) -> bool { black_unreachable(); }, // LCOV_EXCL_LINE
       [&](tomorrow, formula op) {
         return state_exists(trace, t + 1) && check(trace, op, t + 1);
       },
@@ -367,8 +372,20 @@ namespace black::frontend
   ) {
     black::alphabet sigma;
 
-    black::formula f = 
-      *black::parse_formula(sigma, file, formula_syntax_error_handler(path));
+    std::optional<formula> f = 
+      black::parse_formula(sigma, file, formula_syntax_error_handler(path));
+
+    black_assert(f.has_value());
+
+    uint8_t features = formula_features(*f);
+    if((features & feature_t::first_order) && !cli::expected_result) {
+      io::errorln(
+        "{0}: trace checking is not supported (yet) for first-order formulas.\n"
+        "{0}: please specify the -e option.",
+        cli::command_name
+      );
+      quit(status_code::command_line_error);
+    }
 
     trace_t trace = parse_trace(tracepath, tracefile);
 
@@ -377,14 +394,17 @@ namespace black::frontend
         io::println("MISMATCH");
         quit(status_code::failed_check);
       }
+
+      if(trace.result == *cli::expected_result) {
+        io::println("MATCH");
+        if(trace.states.size() == 0)
+          quit(status_code::success);
+      }
     }
 
-    if((!trace.result || trace.result != "SAT") && trace.states.size() == 0) {
-      io::println("MATCH");
-      quit(status_code::success);
-    }
+    black_assert(!(features & feature_t::first_order));
 
-    return check(trace, f);
+    return check(trace, *f);
   }
 
   int trace_check() {

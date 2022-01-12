@@ -25,6 +25,7 @@
 #define BLACK_LOGIC_FORMULA_HPP_
 
 #include <black/support/common.hpp>
+#include <black/logic/term.hpp>
 
 #include <optional>
 #include <cstdint>
@@ -36,8 +37,10 @@ namespace black::internal {
   // Instead, refer to it as formula::type, as declared below.
   //
   enum class formula_type : uint8_t {
-    boolean = 1,
-    atom,
+    boolean = 1, // true and false
+    proposition, // p, q, r, ...
+    atom,        // R(t1, ..., tn)
+    quantifier,  // exists/forall
     // unary formulas
     negation,
     tomorrow,
@@ -59,6 +62,47 @@ namespace black::internal {
     s_release,
     since,
     triggered
+  };
+
+  enum class quantifier_type : uint8_t {
+    exists,
+    forall
+  };
+
+  struct atom;
+
+  struct relation 
+  {
+    enum type : uint8_t {
+      equal,
+      not_equal,
+      less_than,
+      less_than_equal,
+      greater_than,
+      greater_than_equal
+    };
+
+    relation() = delete;
+    relation(type);
+    relation(std::string const&name);
+
+    relation(relation const&) = default;
+    relation(relation &&) = default;
+
+    friend bool operator==(relation const&r1, relation const&r2);
+    friend bool operator!=(relation const&r1, relation const&r2);
+
+    relation &operator=(relation const&) = default;
+    relation &operator=(relation &&) = default;
+
+    template<typename... T>
+    atom operator()(T ...args);
+
+    std::optional<type> known_type() const;
+    std::string name() const;
+
+  private:
+    std::variant<type, std::string> _data;
   };
 }
 
@@ -156,18 +200,43 @@ namespace black::internal
     bool value() const { return _formula->value; }
   };
 
+  struct proposition : handle_base<proposition, proposition_t>
+  {
+    // inheriting base class constructors (for internal use)
+    using handle_base<proposition, proposition_t>::handle_base;
+
+    // The generic label of the proposition
+    identifier label() const;
+
+    // The label of the proposition, as a specific type
+    // The result is empty if the type is wrong.
+    template<typename T>
+    std::optional<T> label() const;
+  };
+
   struct atom : handle_base<atom, atom_t>
   {
     // inheriting base class constructors (for internal use)
     using handle_base<atom, atom_t>::handle_base;
 
-    // The generic label of the atom
-    std::any label() const;
+    atom(relation const&r, std::vector<term> const& terms);
 
-    // The label of the atom, as a specific type
-    // The result is empty if the type is wrong.
-    template<typename T>
-    std::optional<T> label() const;
+    relation rel() const;
+    std::vector<term> terms() const;
+  };
+
+  struct quantifier : handle_base<quantifier, quantifier_t>
+  {
+    using type = ::black::internal::quantifier_type;
+
+    // inheriting base class constructors (for internal use)
+    using handle_base<quantifier, quantifier_t>::handle_base;
+
+    quantifier(type t, variable var, formula matrix);
+
+    type quantifier_type() const;
+    variable var() const;
+    formula matrix() const;
   };
 
   struct unary : handle_base<unary, unary_t>
@@ -289,6 +358,11 @@ namespace black::internal
   conjunction operator &&(formula f1, formula f2);
   disjunction operator ||(formula f1, formula f2);
   implication implies(formula f1, formula f2);
+  
+  quantifier exists(variable var, formula matrix);
+  formula    exists(std::vector<variable> var, formula matrix);
+  quantifier forall(variable var, formula matrix);
+  formula    forall(std::vector<variable> var, formula matrix);
 
   tomorrow     X(formula f);
   w_tomorrow  wX(formula f);
@@ -312,6 +386,26 @@ namespace black::internal
   always     GF(formula f);
   yesterday  YP(formula f);
   yesterday  YH(formula f);
+
+  // Shortcut for known relations
+  auto operator==(term t1, term t2);
+  atom operator==(term t1, int64_t v);
+  atom operator==(int64_t v, term t2);
+  auto operator!=(term t1, term t2);
+  atom operator!=(term t1, int64_t v);
+  atom operator!=(int64_t v, term t2);
+  atom  operator<(term t1, term t2);
+  atom  operator<(term t1, int64_t v);
+  atom  operator<(int64_t v, term t2);
+  atom operator<=(term t1, term t2);
+  atom operator<=(term t1, int64_t v);
+  atom operator<=(int64_t v, term t2);
+  atom  operator>(term t1, term t2);
+  atom  operator>(term t1, int64_t v);
+  atom  operator>(int64_t v, term t2);
+  atom operator>=(term t1, term t2);
+  atom operator>=(term t1, int64_t v);
+  atom operator>=(int64_t v, term t2);
 
   //
   // Utility functions
@@ -354,18 +448,24 @@ namespace black::internal
   struct temporal;
   struct future;
   struct past;
+  struct quantifier_block;
 }
 
 // Names exported from the `black` namespace
 namespace black {
   using internal::boolean;
+  using internal::proposition;
+  using internal::relation;
   using internal::atom;
+  using internal::quantifier;
   using internal::unary;
   using internal::binary;
   using internal::formula;
   using internal::formula_id;
   using internal::otherwise;
 
+  using internal::exists;
+  using internal::forall;
   using internal::simplify;
   using internal::simplify_deep;
   using internal::has_constants;
@@ -379,9 +479,9 @@ namespace black {
   using internal::temporal;
   using internal::future;
   using internal::past;
+  using internal::quantifier_block;
 }
 
 #include <black/internal/formula/impl.hpp>
-#include <black/logic/alphabet.hpp>
 
 #endif // BLACK_LOGIC_FORMULA_HPP_

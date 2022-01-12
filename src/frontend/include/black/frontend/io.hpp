@@ -93,15 +93,17 @@ namespace black::frontend::io
   // fatal() is different, as it also quits the program,
   // and asks for the status code to return to the system
   //
+  // Executed in the tests a lot of times but gcov doesn't get it
+  //
   template<typename... Args>
   [[ noreturn ]]
-  auto fatal(status_code v, Args&&... args)
+  auto fatal(status_code v, Args&&... args) // LCOV_EXCL_LINE
     -> decltype(print(std::forward<Args>(args)...))
   {
-    error("{}: ", cli::command_name);
-    errorln(std::forward<Args>(args)...);
+    error("{}: ", cli::command_name); // LCOV_EXCL_LINE
+    errorln(std::forward<Args>(args)...); // LCOV_EXCL_LINE
 
-    quit(v);
+    quit(v); // LCOV_EXCL_LINE
   }
 }
 

@@ -34,11 +34,11 @@ namespace black::internal
     tsl::hopscotch_set<formula> &memo
   );
 
-  // TODO: disambiguate fresh variables
-  inline atom fresh(formula f) {
-    if(f.is<atom>())
-      return *f.to<atom>();
-    atom a = f.sigma()->var(f);
+  // TODO: disambiguate fresh propositions
+  inline proposition fresh(formula f) {
+    if(f.is<proposition>())
+      return *f.to<proposition>();
+    proposition a = f.sigma()->prop(f);
     return a;
   }
 
@@ -47,7 +47,7 @@ namespace black::internal
     tsl::hopscotch_set<formula> memo;
     
     formula simple = simplify_deep(f);
-    black_assert(simple.is<boolean>() || !has_constants(simple));
+    black_assert(simple.is<boolean>() || !has_constants(simple)); // LCOV_EXCL_LINE
 
     tseitin(simple, result, memo);
     if(auto b = simple.to<boolean>(); b) {
@@ -74,8 +74,10 @@ namespace black::internal
 
     memo.insert(f);
     f.match(
-      [](boolean) { },
-      [](atom)  {  },
+      [](boolean)     { }, // LCOV_EXCL_LINE
+      [](proposition) { },
+      [](atom)        { black_unreachable(); }, // LCOV_EXCL_LINE
+      [](quantifier)  { black_unreachable(); }, // LCOV_EXCL_LINE
       [&](conjunction, formula l, formula r) 
       {
         tseitin(l, clauses, memo);
@@ -131,9 +133,11 @@ namespace black::internal
         });
       },
       [&](negation, formula arg) {
-        return arg.match(
-          [&](boolean) { },
-          [&](atom a) {
+        return arg.match(  // LCOV_EXCL_LINE
+          [](boolean)    { black_unreachable(); }, // LCOV_EXCL_LINE
+          [](atom)       { black_unreachable(); }, // LCOV_EXCL_LINE
+          [](quantifier) { black_unreachable(); }, // LCOV_EXCL_LINE
+          [&](proposition a) {
             // clausal form for negations:
             // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
             clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
@@ -141,17 +145,10 @@ namespace black::internal
               {{true,  fresh(f)}, {true,  fresh(a)}}
             });
           },
-          [&](negation, formula op) {
-            tseitin(op, clauses, memo);
-
-            // NOTE: normally, this case should never be invoked because 
+          [&](negation) { // LCOV_EXCL_LINE
+            // NOTE: this case should never be invoked because 
             //       simplify_deep() removes double negations
-            // clausal form for identity:
-            // f <-> p == (!f ∨ p) ∧ (f ∨ !p)
-            clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
-              {{false, fresh(f)}, {true, fresh(op)}},
-              {{true,  fresh(f)}, {false,  fresh(op)}}
-            });
+            black_unreachable(); // LCOV_EXCL_LINE
           },
           [&](conjunction, formula l, formula r) {
             tseitin(l, clauses, memo);
@@ -207,12 +204,13 @@ namespace black::internal
           [](temporal) { black_unreachable(); } // LCOV_EXCL_LINE
         );
       },
+      [](atom)     { black_unreachable(); }, // LCOV_EXCL_LINE
       [](temporal) { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 
   formula to_formula(literal lit) {
-    return lit.sign ? formula{lit.atom} : formula{!lit.atom};
+    return lit.sign ? formula{lit.proposition} : formula{!lit.proposition};
   }
 
   formula to_formula(alphabet &sigma, clause c) {

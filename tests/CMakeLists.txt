@@ -36,8 +36,27 @@ add_executable(random_formulas_generator
         formulas_generators/random_formulas/random_formulas_generator.cpp)
 target_link_libraries(random_formulas_generator PRIVATE black)
 
+add_custom_target(ltlfmt
+  DEPENDS lia lra euf euflia)
+
+add_executable(lia
+        formulas_generators/ltlfmt/lia.cpp)
+target_link_libraries(lia PRIVATE black fmt::fmt)
+
+add_executable(lra
+        formulas_generators/ltlfmt/lra.cpp)
+target_link_libraries(lra PRIVATE black fmt::fmt)
+
+add_executable(euf
+        formulas_generators/ltlfmt/euf.cpp)
+target_link_libraries(euf PRIVATE black fmt::fmt)
+
+add_executable(euflia
+        formulas_generators/ltlfmt/euf-lia.cpp)
+target_link_libraries(euflia PRIVATE black fmt::fmt)
+
 set_target_properties(
-  crscounter_generator random_formulas_generator 
+  crscounter_generator random_formulas_generator ltlfmt lia lra euf euflia
   PROPERTIES 
   EXCLUDE_FROM_ALL TRUE
 )
@@ -52,6 +71,7 @@ if(Catch2_FOUND)
     UNIT_TESTS
     units/cnf.cpp
     units/formula.cpp
+    units/term.cpp
     units/main.cpp
     units/match.cpp
     units/parser.cpp
@@ -117,10 +137,27 @@ if(ENABLE_FORMULAS_TESTS)
     list(GET TEST 1 RESULT)
 
     set(TEST_NAME "black:${FILE}:${RESULT}")
+    
     set(FINITE_OPT "")
     string(FIND "${FILE}" "finite_models" FOUND)
     if(FOUND GREATER_EQUAL 0)
       set(FINITE_OPT "--finite")
+    endif()
+    
+    set(SMT_OPTS "")
+    set(MODEL_OPT "")
+    string(FIND "${FILE}" "ltlfmt" SMT_FOUND)
+    if(SMT_FOUND GREATER_EQUAL 0)
+      set(SMT_OPTS "-s")
+    else()
+      set(MODEL_OPT "-m")
+    endif()
+
+    string(FIND "${FILE}" "LRA" LRA_FOUND)
+    if((SMT_FOUND GREATER_EQUAL 0) AND (LRA_FOUND GREATER_EQUAL 0))
+      set(SMT_OPTS "${SMT_OPTS} -d reals")
+    else()
+      set(SMT_OPTS "${SMT_OPTS} -d integers")
     endif()
     
     set(SHELL_CMD /bin/sh -c)
@@ -128,20 +165,28 @@ if(ENABLE_FORMULAS_TESTS)
       set(SHELL_CMD powershell -Command)
     endif()
 
-    add_test(
-      NAME "${TEST_NAME}"
-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
-      COMMAND
-        ${SHELL_CMD}
-        "$<TARGET_FILE:frontend> solve \
-        -m -o json ${FINITE_OPT} -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
-        $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} -e ${RESULT} '${FILE}'"
-    )
+    if(NOT (SMT_FOUND GREATER_EQUAL 0) OR 
+      (${BLACK_TESTS_SAT_BACKEND} STREQUAL "mathsat") OR
+      (${BLACK_TESTS_SAT_BACKEND} STREQUAL "z3"))
 
-    if(BLACK_TEST_TIMEOUT)
-      set_tests_properties(
-        "${TEST_NAME}" PROPERTIES TIMEOUT ${BLACK_TEST_TIMEOUT}
+      add_test(
+        NAME "${TEST_NAME}"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
+        COMMAND
+          ${SHELL_CMD}
+          "$<TARGET_FILE:frontend> solve \
+          ${MODEL_OPT} -o json ${FINITE_OPT} ${SMT_OPTS} \
+            -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
+          $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} \
+            -e ${RESULT} '${FILE}'"
       )
+  
+      if(BLACK_TEST_TIMEOUT)
+        set_tests_properties(
+          "${TEST_NAME}" PROPERTIES TIMEOUT ${BLACK_TEST_TIMEOUT}
+        )
+      endif()
+
     endif()
 
   endforeach()

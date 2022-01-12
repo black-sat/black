@@ -47,17 +47,17 @@ namespace black::internal {
   void gen_semantics(formula, std::vector<formula>&);
 
   // Obtain semantics for yesterday propositional letter
-  inline formula yesterday_semantics(atom a, yesterday y) {
+  inline formula yesterday_semantics(proposition a, yesterday y) {
     return !a && G(iff(X(a), y.operand()));
   }
 
   // Obtain semantics for weak-yesterday propositional letter
-  inline formula w_yesterday_semantics(atom a, w_yesterday y) {
+  inline formula w_yesterday_semantics(proposition a, w_yesterday y) {
     return a && G(iff(X(a), y.operand()));
   }
 
   // Obtain semantics for since propositional letter
-  inline formula since_semantics(atom a, since s, atom y) {
+  inline formula since_semantics(proposition a, since s, proposition y) {
     return G(iff(a, s.right() || (s.left() && y)));
   }
 

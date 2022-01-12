@@ -25,7 +25,7 @@
 #define BLACK_SAT_SOLVER_HPP
 
 #include <black/support/common.hpp>
-#include <black/logic/formula.hpp>
+#include <black/logic/alphabet.hpp>
 #include <black/support/tribool.hpp>
 
 #include <memory>
@@ -34,7 +34,11 @@
 #include <vector>
 
 namespace black::sat 
-{  
+{
+  enum class feature {
+    smt,
+    quantifiers
+  };
 
   //
   // Generic interface to backend SAT solvers
@@ -42,12 +46,14 @@ namespace black::sat
   class BLACK_EXPORT solver 
   {
   public:
+
     // default constructor
     solver() = default;
 
     static std::vector<std::string_view> backends();
     static bool backend_exists(std::string_view name);
     static std::unique_ptr<solver> get_solver(std::string_view name);
+    static bool backend_has_feature(std::string_view name, feature f);
 
     // solver is a polymorphic, non-copyable type
     solver(const solver &) = delete;
@@ -59,16 +65,16 @@ namespace black::sat
     virtual void assert_formula(formula f) = 0;
 
     // tell if the current set of assertions is satisfiable
-    virtual bool is_sat() = 0;
+    virtual tribool is_sat() = 0;
     
     // tell if the current set of assertions is satisfiable, 
     // under the given assumption
-    virtual bool is_sat_with(formula assumption) = 0;
+    virtual tribool is_sat_with(formula assumption) = 0;
     
     // gets the value of a proposition from the solver.
     // The result is tribool::undef if the variable has not been decided
     // e.g. before the first call to is_sat()
-    virtual tribool value(atom a) const = 0;
+    virtual tribool value(proposition a) const = 0;
 
     // clear the current context completely
     virtual void clear() = 0;
@@ -80,16 +86,19 @@ namespace black::sat
   namespace internal {
     struct backend_init_hook {
       using backend_ctor = std::unique_ptr<solver> (*)();
-      backend_init_hook(std::string_view, backend_ctor);
+      backend_init_hook(
+        std::string_view, backend_ctor, std::vector<black::sat::feature>
+      );
     };
 
-    #define BLACK_REGISTER_SAT_BACKEND(Backend) \
+    #define BLACK_REGISTER_SAT_BACKEND(Backend, ...) \
       static const black::sat::internal::backend_init_hook \
         Backend##_init_hook_{ \
           #Backend, \
           []() -> std::unique_ptr<::black::sat::solver> { \
             return std::make_unique<::black::sat::backends::Backend>(); \
-          } \
+          }, \
+          __VA_ARGS__ \
         };
   }
 }

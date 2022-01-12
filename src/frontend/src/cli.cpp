@@ -103,7 +103,11 @@ namespace black::frontend
   }
 
   static bool is_output_format(std::string const &format) {
-    return format == "readable" || format == "json";
+    return format == "readable" || format == "json"; // LCOV_EXCL_LINE
+  }
+
+  static bool is_sort(std::string const& s) {
+    return s == "integers" || s == "reals"; // LCOV_EXCL_LINE
   }
 
   //
@@ -130,6 +134,15 @@ namespace black::frontend
         % "treat formulas as LTLf and look for finite models",
       option("-m", "--model").set(cli::print_model)
         % "print the model of the formula, if any",
+      (option("-d", "--domain")
+        & value(is_sort, "sort", cli::domain))
+        % "select the domain for first-order variables.\n"
+          "Mandatory for first-order formulas.\n"
+          "Accepted domains: integers, reals",
+      option("-s", "--semi-decision").set(cli::semi_decision)
+        % "disable termination checks for unsatisfiable formulas, speeding up "
+          "the execution for satisfiable ones.\n"
+          "Note: the use of `next(x)` terms in formulas implies this option.",
       (option("-o", "--output-format") 
         & value(is_output_format, "fmt", cli::output_format))
         % "Output format.\n"
@@ -137,6 +150,7 @@ namespace black::frontend
           "Default: readable",
       (option("-f", "--formula") & value("formula", cli::formula))
         % "LTL formula to solve",
+      option("--debug") & value("debug", cli::debug),
       value("file", cli::filename).required(false)
           % "input formula file name.\n"
             "If '-', reads from standard input."

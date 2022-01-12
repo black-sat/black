@@ -25,7 +25,6 @@
 #define BLACK_ALPHABET_IMPL_HPP
 
 #include <black/support/meta.hpp>
-#include <black/logic/formula.hpp>
 
 namespace black::internal {
 
@@ -33,17 +32,74 @@ namespace black::internal {
   // Out-of-line definitions of methods of class `alphabet`
   //
   template<typename T, REQUIRES_OUT_OF_LINE(internal::is_hashable<T>)>
-  inline atom alphabet::var(T&& label) {
+  inline proposition alphabet::prop(T&& label) {
     if constexpr(std::is_constructible_v<std::string,T>) {
       return
-        atom{this, allocate_atom(std::string{FWD(label)})};
+        proposition{this, 
+          allocate_proposition(identifier{std::string{FWD(label)}})
+        };
     } else {
-      return atom{this, allocate_atom(FWD(label))};
+      return proposition{this, allocate_proposition(identifier{FWD(label)})};
     }
   }
 
+  template<typename T, REQUIRES_OUT_OF_LINE(internal::is_hashable<T>)>
+  inline variable alphabet::var(T&& label) { 
+    if constexpr(std::is_constructible_v<std::string,T>) {
+      return
+        variable{this, 
+          allocate_variable(identifier{std::string{FWD(label)}})
+        };
+    } else {
+      return variable{this, allocate_variable(identifier{FWD(label)})};
+    }
+  }
+
+  inline constant alphabet::constant(int32_t c) {
+    return {this, allocate_constant(int64_t{c})};
+  }
+
+  inline constant alphabet::constant(int64_t c) {
+    return {this, allocate_constant(c)};
+  }
+  inline constant alphabet::constant(double c) {
+    return {this, allocate_constant(c)};
+  }
+
   // Out-of-line implementations from the handle_base class in formula.hpp,
+  // and from the term_handle_base class in term.hpp,
   // placed here to have a complete alphabet type
+  template<typename H, typename F>
+  std::pair<class alphabet *, atom_t *>
+  handle_base<H, F>::allocate_atom(
+    relation const&r, std::vector<term> const& terms
+  ) {
+    black_assert(!terms.empty());
+    class alphabet *sigma = terms[0]._alphabet;
+
+    std::vector<term_base *> _terms;
+    for(term t : terms)
+      _terms.push_back(t._term);
+
+    atom_t *object = sigma->allocate_atom(r, _terms);
+
+    return {sigma, object};
+  }
+
+  template<typename H, typename F>
+  std::pair<class alphabet *, quantifier_t *>
+  handle_base<H,F>::allocate_quantifier(
+    quantifier_type t, variable var, formula matrix
+  )
+  {
+    class alphabet *sigma = matrix.sigma();
+
+    quantifier_t *object = 
+      sigma->allocate_quantifier(t, var._term, matrix._formula);
+    
+    return {sigma, object};
+  }
+
   template<typename H, typename F>
   template<typename FType, typename Arg>
   std::pair<alphabet *, unary_t *>
@@ -83,14 +139,247 @@ namespace black::internal {
 
     return {sigma, object};
   }
+
+  template<typename H, typename T>
+  std::pair<alphabet *, application_t *>
+  term_handle_base<H, T>::allocate_application(
+    function const&func, std::vector<term> const&args
+  ) {
+    black_assert(!args.empty());
+
+    class alphabet *sigma = args[0]._alphabet;
+
+    std::vector<term_base *> ts;
+    for(term t : args)
+      ts.push_back(t._term);
+
+    application_t *object = sigma->allocate_application(func, ts);
+
+    return {sigma, object};
+  }
+
+  template<typename H, typename T>
+  template<typename Arg>
+  std::pair<alphabet *, next_t *>
+  term_handle_base<H, T>::allocate_next(Arg arg) {
+    class alphabet *sigma = arg._alphabet;
+
+    next_t *object = sigma->allocate_next(arg._term);
+
+    return {sigma, object};
+  }
+  
+  template<typename H, typename T>
+  template<typename Arg>
+  std::pair<alphabet *, wnext_t *>
+  term_handle_base<H, T>::allocate_wnext(Arg arg) {
+    class alphabet *sigma = arg._alphabet;
+
+    wnext_t *object = sigma->allocate_wnext(arg._term);
+
+    return {sigma, object};
+  }
   
 } // namespace black::internal
 
 /*
- * Functions from formula.hpp that need the alphabet class
+ * Functions from formula.hpp and term.hpp that need the alphabet class
  */
 namespace black::internal {
    
+  //
+  // Operators from term.hpp
+  //
+  inline application operator-(term t) {
+    return application(function::negation, {t});
+  }
+
+  inline application operator-(term t1, term t2) {
+    return application{function::subtraction, {t1, t2}};
+  }
+
+  inline application operator-(term t1, int64_t v) {
+    term t2 = t1.sigma()->constant(v);
+    return application{function::subtraction, {t1, t2}};
+  }
+
+  inline application operator-(int64_t v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return application{function::subtraction, {t1, t2}};
+  }
+  
+  inline application operator+(term t1, term t2) {
+    return application{function::addition, {t1, t2}};
+  }
+
+  inline application operator+(term t1, int64_t v) {
+    term t2 = t1.sigma()->constant(v);
+    return application{function::addition, {t1, t2}};
+  }
+
+  inline application operator+(int64_t v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return application{function::addition, {t1, t2}};
+  }
+  
+  inline application operator*(term t1, term t2) {
+    return application{function::multiplication, {t1, t2}};
+  }
+
+  inline application operator*(term t1, int64_t v) {
+    term t2 = t1.sigma()->constant(v);
+    return application{function::multiplication, {t1, t2}};
+  }
+
+  inline application operator*(int64_t v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return application{function::multiplication, {t1, t2}};
+  }
+  
+  inline application operator/(term t1, term t2) {
+    return application{function::division, {t1, t2}};
+  }
+
+  inline application operator/(term t1, int64_t v) {
+    term t2 = t1.sigma()->constant(v);
+    return application{function::division, {t1, t2}};
+  }
+
+  inline application operator/(int64_t v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return application{function::division, {t1, t2}};
+  }
+
+  //
+  // Operators from formula.hpp
+  //
+  // shorthands for known relations
+  //
+  // The case for operator== and operator!= is complex, because we want these 
+  // operators to be used also in a Boolean context to compare the term objects 
+  // themselves.
+  //
+  struct term_cmp_t 
+  {
+    term_cmp_t(bool b, formula f)
+      : _b{b}, _f{f} { }
+
+    operator formula() const {
+      return _f;
+    }
+
+    operator bool() const {
+      return _b;
+    }
+
+    friend term_cmp_t operator!(term_cmp_t t1) {
+      return term_cmp_t{!t1._b, !t1._f};
+    }
+
+    friend term_cmp_t operator&&(term_cmp_t t1, term_cmp_t t2) {
+      return term_cmp_t{t1._b && t2._b, t1._f && t2._f};
+    }
+
+    friend term_cmp_t operator||(term_cmp_t t1, term_cmp_t t2) {
+      return term_cmp_t{t1._b || t2._b, t1._f || t2._f};
+    }
+    
+  private:
+    bool _b;
+    formula _f;
+  };
+
+  inline auto operator==(term t1, term t2) {
+    return term_cmp_t{
+      t1.unique_id() == t2.unique_id(), 
+      atom{relation::equal, {t1, t2}}
+    };
+  }
+  
+  inline atom operator==(term t1, int64_t v) {
+    term t2 = t1.sigma()->constant(v);
+    return atom{relation::equal, {t1, t2}};
+  }
+
+  inline atom operator==(int64_t v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return atom{relation::equal, {t1, t2}};
+  }
+
+  inline auto operator!=(term t1, term t2) {
+    return term_cmp_t{
+      t1.unique_id() != t2.unique_id(), 
+      atom{relation::not_equal, {t1, t2}}
+    };
+  }
+  
+  inline atom operator!=(term t1, int64_t v) {
+    term t2 = t1.sigma()->constant(v);
+    return atom{relation::not_equal, {t1, t2}};
+  }
+
+  inline atom operator!=(int64_t v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return atom{relation::not_equal, {t1, t2}};
+  }
+
+  inline atom operator<(term t1, term t2) {
+    return atom{relation::less_than, {t1, t2}};
+  }
+  
+  inline atom operator<(term t1, int64_t v) {
+    term t2 = t1.sigma()->constant(v);
+    return atom{relation::less_than, {t1, t2}};
+  }
+
+  inline atom operator<(int64_t v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return atom{relation::less_than, {t1, t2}};
+  }
+
+  inline atom operator<=(term t1, term t2) {
+    return atom{relation::less_than_equal, {t1, t2}};
+  }
+  
+  inline atom operator<=(term t1, int64_t v) {
+    term t2 = t1.sigma()->constant(v);
+    return atom{relation::less_than_equal, {t1, t2}};
+  }
+
+  inline atom operator<=(int64_t v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return atom{relation::less_than_equal, {t1, t2}};
+  }
+
+  inline atom operator>(term t1, term t2) {
+    return atom{relation::greater_than, {t1, t2}};
+  }
+  
+  inline atom operator>(term t1, int64_t v) {
+    term t2 = t1.sigma()->constant(v);
+    return atom{relation::greater_than, {t1, t2}};
+  }
+
+  inline atom operator>(int64_t v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return atom{relation::greater_than, {t1, t2}};
+  }
+
+  inline atom operator>=(term t1, term t2) {
+    return atom{relation::greater_than_equal, {t1, t2}};
+  }
+  
+  inline atom operator>=(term t1, int64_t v) {
+    term t2 = t1.sigma()->constant(v);
+    return atom{relation::greater_than_equal, {t1, t2}};
+  }
+
+  inline atom operator>=(int64_t v, term t2) {
+    term t1 = t2.sigma()->constant(v);
+    return atom{relation::greater_than_equal, {t1, t2}};
+  }
+
+  
   // Conjunct multiple formulas generated from a range,
   // avoiding useless true formulas at the beginning of the fold
   template<typename Iterator, typename EndIterator, typename F>

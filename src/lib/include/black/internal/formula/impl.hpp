@@ -26,7 +26,7 @@
 
 #ifndef BLACK_LOGIC_FORMULA_HPP_
   #error "This header file cannot be included alone, "\
-         "please include <black/logic/formula.hpp> instead"
+         "please include <black/logic/formula.hpp> instead."
 #endif
 
 #include <charconv>
@@ -74,7 +74,6 @@ namespace black::internal
     return std::hash<formula_base*>{}(_formula);
   }
 
-  // Implementation of formula::to_sat() under alphabet's in alphabet_impl.hpp
   // Implementation of formula::match() in match.hpp, included below
 
   /*
@@ -124,14 +123,100 @@ namespace black::internal
     return formula{*this}.unique_id();
   }
 
-  // struct atom
-  inline std::any atom::label() const {
-    return _formula->label.any();
+  // struct proposition
+  inline identifier proposition::label() const {
+    return _formula->label;
   }
 
   template<typename T>
-  std::optional<T> atom::label() const {
+  std::optional<T> proposition::label() const {
     return _formula->label.to<T>();
+  }
+
+  // struct atom
+  inline atom::atom(relation const&r, std::vector<term> const&terms)
+    : handle_base<atom, atom_t>{allocate_atom(r, terms)} { }
+
+  inline relation atom::rel() const {
+    return _formula->r;
+  }
+
+  inline std::vector<term> atom::terms() const {
+    std::vector<term> result;
+    for(term_base *t : _formula->terms)
+      result.push_back(term{_alphabet, t});
+    
+    return result;
+  }
+
+  // struct relation
+  inline relation::relation(type r) : _data{r} { }
+  inline relation::relation(std::string const& name) : _data{name}{ }
+
+  inline bool operator==(relation const&r1, relation const&r2) {
+    return r1._data == r2._data;
+  }
+
+  inline bool operator!=(relation const&r1, relation const&r2) {
+    return r1._data != r2._data;
+  }
+
+  template<typename... T>
+  inline atom relation::operator()(T ...args) {
+    std::array<term, sizeof...(args)> _args = {args...};
+    std::vector<term> argsv;
+    std::copy(_args.begin(), _args.end(), std::back_inserter(argsv));
+
+    return atom(*this, argsv);
+  }
+
+  inline std::optional<relation::type> relation::known_type() const {
+    if(std::holds_alternative<type>(_data))
+      return {std::get<type>(_data)};
+    return std::nullopt;
+  }
+
+  inline std::string relation::name() const {
+    if(std::holds_alternative<std::string>(_data))
+      return std::get<std::string>(_data);
+
+    black_assert(std::holds_alternative<type>(_data));
+    type r = std::get<type>(_data);
+    switch(r) {
+      case equal:
+        return "=";
+      case not_equal:
+        return "!=";
+      case less_than:
+        return "<";
+      case less_than_equal:
+        return "<=";
+      case greater_than:
+        return ">";
+      case greater_than_equal:
+        return ">=";
+    }
+    black_unreachable(); // LCOV_EXCL_LINE
+  }
+
+  // struct quantifier
+  inline quantifier::quantifier(
+    enum quantifier_type t, variable var, formula matrix
+  )
+    : handle_base<quantifier, quantifier_t>{
+      allocate_quantifier(t, var, matrix)
+    } {}
+  
+  inline quantifier::type quantifier::quantifier_type() const {
+    return _formula->qtype;
+  }
+
+  inline variable quantifier::var() const {
+    return variable{_alphabet, _formula->var};
+  }
+
+  inline formula quantifier::matrix() const {
+    return formula{_alphabet, _formula->matrix};
   }
 
   // struct unary
@@ -274,7 +359,7 @@ namespace black::internal
 
   declare_formula_hash(formula)
   declare_formula_hash(boolean)
-  declare_formula_hash(atom)
+  declare_formula_hash(proposition)
   declare_formula_hash(unary)
   declare_formula_hash(binary)
 
@@ -303,6 +388,30 @@ namespace black::internal
   // Note: these are found by ADL, and are *not* exported by the `black`
   //       namespace. This means the worringly generic names do not risk to
   //       cause name clashes with user names
+  inline quantifier exists(variable var, formula matrix) {
+    return quantifier(quantifier::type::exists, var, matrix);
+  }
+
+  inline formula exists(std::vector<variable> var, formula matrix) {
+    formula f = matrix;
+    for(auto it = var.rbegin(); it != var.rend(); it++)
+      f = exists(*it, f);
+
+    return f;
+  }
+
+  inline quantifier forall(variable var, formula matrix) {
+    return quantifier(quantifier::type::forall, var, matrix);
+  }
+
+  inline formula forall(std::vector<variable> var, formula matrix) {
+    formula f = matrix;
+    for(auto it = var.rbegin(); it != var.rend(); it++)
+      f = forall(*it, f);
+
+    return f;
+  }
+
   inline tomorrow     X(formula f) { return tomorrow(f);     }
   inline w_tomorrow  wX(formula f) { return w_tomorrow(f);   }
   inline yesterday    Y(formula f) { return yesterday(f);    }
@@ -325,7 +434,18 @@ namespace black::internal
   inline always     GF(formula f) { return G(F(f)); }
   inline yesterday  YO(formula f) { return Y(O(f)); }
   inline yesterday  YH(formula f) { return Y(H(f)); }
+}
 
+namespace std {
+  template<>
+  struct hash<::black::internal::relation> {
+    size_t operator()(black::internal::relation const&r) const {
+      if(auto k = r.known_type(); k)
+        return hash<uint8_t>{}(static_cast<uint8_t>(*k));
+
+      return hash<std::string>{}(r.name());
+    }
+  };
 }
 
 #include <black/internal/formula/match.hpp>

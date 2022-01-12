@@ -33,6 +33,7 @@ set(
   src/solve.cpp
   src/dimacs.cpp
   src/tracecheck.cpp
+  src/support.cpp
 )
 
 set(

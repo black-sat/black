@@ -24,6 +24,11 @@
 #ifndef BLACK_FRONTEND_SUPPORT_HPP
 #define BLACK_FRONTEND_SUPPORT_HPP
 
+#include <black/logic/formula.hpp>
+
+#include <black/frontend/cli.hpp>
+#include <black/frontend/io.hpp>
+
 #include <fstream>
 #include <string>
 #include <type_traits>
@@ -38,65 +43,32 @@
 
 namespace black::frontend
 {
-  //
   // Returns the string representation of a system error in a portable way
-  //
-  inline std::string system_error_string(int errnum)
-  {
-    char buf[255];
-    const int buflen = sizeof(buf);
+  std::string system_error_string(int errnum);
 
-    // strerror has different signatures on different systems
-    #ifdef _GNU_SOURCE
-        // GNU-specific version
-        return strerror_r(errnum, buf, buflen);
-    #elif defined(_MSC_VER)
-        // Microsoft-specific version
-        strerror_s(buf, buflen, errnum);
-        return buf;
-    #else
-        // XSI-compliant systems, including MacOS and FreeBSD
-        strerror_r(errnum, buf, buflen);
-        return buf;
-    #endif
-  }
+  // Opens a file and quits with an error if the file cannot be open
+  std::ifstream open_file(std::string const&path);
 
-  inline std::ifstream open_file(std::string const&path) {
-    std::ifstream file{path, std::ios::in};
-
-    if(!file)
-      io::fatal(status_code::filesystem_error,
-        "Unable to open file `{}`: {}",
-        path, system_error_string(errno)
-      );
-
-    return file;
-  }
-
-  inline
+  // common handler for syntax errors in the whole frontend
   std::function<void(std::string)> 
-  formula_syntax_error_handler(std::optional<std::string> const&path)
-  {
-    auto readable_syntax_error = [path](auto error) {
-      io::fatal(status_code::syntax_error, 
-                "syntax error: {}: {}\n", 
-                path ? *path : "<stdin>", error);
-    };
+  formula_syntax_error_handler(std::optional<std::string> const&path);
 
-    auto json_syntax_error = [](auto error) {
-      io::error(
-        "{{\n"
-        "    \"result\": \"ERROR\",\n"
-        "    \"error\": \"{}\"\n"
-        "}}", error);
-      quit(status_code::syntax_error);
-    };
+  // enum with features of formulas interesting for the frontend
+  enum class feature_t : uint8_t {
+    temporal = 1,
+    past = 2,
+    first_order = 4,
+    quantifiers = 8,
+    nextvar = 16
+  };
 
-    if(!cli::output_format || cli::output_format == "readable")
-      return readable_syntax_error;
-    
-    return json_syntax_error;
+  // this function is executed multiple times but gcov doesn't get it
+  inline uint8_t operator&(uint8_t f1, feature_t f2) { // LCOV_EXCL_LINE
+    return f1 & (uint8_t)f2; // LCOV_EXCL_LINE
   }
+
+  // tells which features are present in a formula
+  uint8_t formula_features(formula f);
 }
 
 #endif // BLACK_FRONTEND_SUPPORT_HPP

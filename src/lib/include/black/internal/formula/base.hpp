@@ -26,12 +26,13 @@
 
 #ifndef BLACK_LOGIC_FORMULA_HPP_
   #error "This header file cannot be included alone, "\
-         "please include <black/logic/formula.hpp> instead"
+         "please include <black/logic/formula.hpp> instead."
 #endif
 
 #include <black/support/meta.hpp>
 #include <black/support/assert.hpp>
 #include <black/support/hash.hpp>
+#include <black/internal/match.hpp>
 
 #include <type_traits>
 #include <array>
@@ -48,8 +49,16 @@ namespace black::internal
     return type == formula_type::boolean;
   }
 
+  constexpr bool is_proposition_type(formula_type type) {
+    return type == formula_type::proposition;
+  }
+
   constexpr bool is_atom_type(formula_type type) {
     return type == formula_type::atom;
+  }
+
+  constexpr bool is_quantifier_type(formula_type type) {
+    return type == formula_type::quantifier;
   }
 
   constexpr bool is_unary_type(formula_type type) {
@@ -79,14 +88,38 @@ namespace black::internal
     bool value{};
   };
 
+  struct proposition_t : formula_base
+  {
+    static constexpr auto accepts_type = is_proposition_type;
+
+    proposition_t(identifier const& _label)
+      : formula_base{formula_type::proposition}, label{_label} {}
+
+    identifier label;
+  };
+
   struct atom_t : formula_base
   {
     static constexpr auto accepts_type = is_atom_type;
 
-    atom_t(any_hashable const& _label)
-      : formula_base{formula_type::atom}, label{_label} {}
+    atom_t(relation const&_r, std::vector<term_base *>_terms)
+      : formula_base{formula_type::atom}, r{_r}, terms{_terms} { }
 
-    any_hashable label;
+    relation r;
+    std::vector<term_base *> terms;
+  };
+
+  struct quantifier_t : formula_base 
+  {
+    static constexpr auto accepts_type = is_quantifier_type;
+
+    quantifier_t(quantifier_type _t, variable_t *_var, formula_base *_matrix) 
+      : formula_base{formula_type::quantifier}, 
+        qtype{_t}, var{_var}, matrix{_matrix} { }
+
+    quantifier_type qtype;
+    variable_t *var;
+    formula_base *matrix;
   };
 
   struct unary_t : formula_base
@@ -129,11 +162,6 @@ namespace black::internal
   }
 
   /*
-   * Dummy type for default case in formula matchers
-   */
-  struct otherwise {};
-
-  /*
    * Unique opaque id for formulas
    */
   enum class formula_id : uintptr_t;
@@ -165,13 +193,20 @@ namespace black::internal
   protected:
     using handled_formula_t = F;
 
-    static std::optional<H> cast(class alphabet *sigma, formula_base *f) {
-      if(auto ptr = formula_cast<typename H::handled_formula_t *>(f); ptr)
-        return std::optional<H>{H{sigma, ptr}};
-      return std::nullopt;
+    // GCOV false negatives
+    static std::optional<H> cast(class alphabet *sigma, formula_base *f) { // LCOV_EXCL_LINE
+      if(auto ptr = formula_cast<typename H::handled_formula_t *>(f); ptr) // LCOV_EXCL_LINE
+        return std::optional<H>{H{sigma, ptr}}; // LCOV_EXCL_LINE
+      return std::nullopt; // LCOV_EXCL_LINE
     }
 
     // Implemented after alphabet class
+    static std::pair<class alphabet *, atom_t *>
+    allocate_atom(relation const&r, std::vector<term> const& terms);
+    
+    static std::pair<class alphabet *, quantifier_t *>
+    allocate_quantifier(quantifier_type t, variable var, formula matrix);
+
     template<typename FType, typename Arg>
     static std::pair<class alphabet *, unary_t *>
     allocate_unary(FType type, Arg const&arg);

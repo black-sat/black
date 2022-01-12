@@ -31,6 +31,7 @@
 #include <istream>
 #include <ostream>
 #include <functional>
+#include <memory>
 
 namespace black::internal
 {
@@ -42,32 +43,14 @@ namespace black::internal
   public:
     using error_handler = std::function<void(std::string)>;
 
-    parser(alphabet &sigma, std::istream &stream, error_handler error)
-      : _alphabet(sigma), _lex(stream), _error(std::move(error))
-    {
-      _lex.get();
-    }
+    parser(alphabet &sigma, std::istream &stream, error_handler error);
+    ~parser();
 
     std::optional<formula> parse();
 
   private:
-    std::optional<token> peek();
-    std::optional<token> consume();
-    std::optional<token> peek(token::type, std::string const&err);
-    std::optional<token> consume(token::type, std::string const&err);
-    std::nullopt_t error(std::string const&s);
-
-    std::optional<formula> parse_binary_rhs(int precedence, formula lhs);
-    std::optional<formula> parse_boolean();
-    std::optional<formula> parse_atom();
-    std::optional<formula> parse_unary();
-    std::optional<formula> parse_parens();
-    std::optional<formula> parse_primary();
-
-  private:
-    alphabet &_alphabet;
-    lexer _lex;
-    std::function<void(std::string)> _error;
+    struct _parser_t;
+    std::unique_ptr<_parser_t> _data;
   };
 
   // Easy entry-point for parsing formulas
@@ -93,14 +76,7 @@ namespace black::internal
     return parse_formula(sigma, s, [](auto){});
   }
 
-  BLACK_EXPORT
-  std::string to_string(formula f);
-
-  inline std::ostream &operator<<(std::ostream &stream, formula const&f) {
-    return (stream << to_string(f));
-  }
-
-  constexpr std::optional<int> precedence(token const&tok)
+  inline std::optional<int> precedence(token const&tok)
   {
     // Attention: this must remain in sync with token::token_type
     constexpr std::optional<int> ops[] = {
@@ -119,7 +95,23 @@ namespace black::internal
     if(auto t = tok.data<binary::type>(); t)
       return ops[to_underlying(*t) - to_underlying(binary::type::conjunction)];
 
-    return std::nullopt;
+    return {};
+  }
+
+  inline std::optional<int> func_precedence(token const&tok)
+  {
+    constexpr std::optional<int> fops[] = {
+      {},   // negation
+      {20}, // subtraction
+      {20}, // addition
+      {30}, // multiplication
+      {30}  // division
+    };
+
+    if(auto t = tok.data<function::type>(); t)
+      return fops[to_underlying(*t)];
+
+    return {};
   }
 
 } // namespace black::internal

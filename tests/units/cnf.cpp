@@ -25,6 +25,7 @@
 
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/solver/solver.hpp>
 #include <black/logic/cnf.hpp>
 #include <black/internal/debug/random_formula.hpp>
@@ -64,11 +65,12 @@ TEST_CASE("CNF Translation")
   SECTION("CNF of random formulas") {
     for(formula f : tests) 
     { 
+      INFO("Formula: " << f)
+      INFO("Simplification: " << simplify_deep(f))
+
       formula fc = to_formula(sigma, to_cnf(f));
       s.set_formula(!implies(fc,f));
 
-      INFO("Formula: " << f)
-      INFO("Simplification: " << simplify_deep(f))
       INFO("CNF: " << fc)
       REQUIRE(!s.solve());
     }

@@ -51,14 +51,16 @@ namespace black::internal
         return _sigma->top();
 
       // Creating the encoding
-      formula inner_impl = big_or(*_sigma, range(j + 1, k + 1), [&](size_t i) {
-        return to_ground_snf(*req, i);
-      });
-      
+      formula inner_impl = 
+        big_or(*_sigma, range(j + 1, k + 1), [&](size_t i) {
+          return to_ground_snf(*req, i);
+        });
+
       formula first_conj = ground(xreq, k) && inner_impl;
-      formula second_conj = big_or(*_sigma, range(l + 1, j + 1), [&](size_t i) {
-        return to_ground_snf(*req, i);
-      });
+      formula second_conj = 
+        big_or(*_sigma, range(l + 1, j + 1), [&](size_t i) {
+          return to_ground_snf(*req, i);
+        });
 
       return implies(first_conj, second_conj);
     });
@@ -67,16 +69,24 @@ namespace black::internal
 
   // Generates the encoding for EMPTY_k
   formula encoder::k_empty(size_t k) {
-    return big_and(*_sigma, _xrequests, [&,this](unary req) -> formula {
-      if(!_finite || req.formula_type() == unary::type::tomorrow)
-        return !ground(req, k);
-      return _sigma->top();
-    });
+    formula tomorrows = 
+      big_and(*_sigma, _xrequests, [&,this](unary req) -> formula {
+        if(!_finite || req.formula_type() == unary::type::tomorrow)
+          return !ground(req, k);
+        return _sigma->top();
+      });
+
+    formula nexts =
+      big_and(*_sigma, _atomic_requests, [&](formula a) -> formula {
+        return !to_ground_snf(a, k);
+      });
+    
+    return tomorrows && nexts;
   }
 
   // extract the requested formula from an X-eventuality
   std::optional<formula> encoder::_get_xev(unary xreq) {
-    black_assert(
+    black_assert( // LCOV_EXCL_LINE
       xreq.formula_type() == unary::type::tomorrow ||
       xreq.formula_type() == unary::type::w_tomorrow
     );
@@ -88,8 +98,8 @@ namespace black::internal
     );
   }
 
-  atom encoder::loop_var(size_t l, size_t k) {
-    return _sigma->var(std::tuple{"_loop_var"sv, l, k});
+  proposition encoder::loop_prop(size_t l, size_t k) {
+    return _sigma->prop(std::tuple{"_loop_prop"sv, l, k});
   }
 
   // Generates the encoding for LOOP_k
@@ -100,13 +110,13 @@ namespace black::internal
       return _sigma->bottom();
 
     formula axioms = big_and(*_sigma, range(0,k), [&](size_t l) {
-      atom loop_var = this->loop_var(l, k);
-      return iff(loop_var, l_to_k_loop(l, k) && l_to_k_period(l, k));
+      proposition loop_prop = this->loop_prop(l, k);
+      return iff(loop_prop, l_to_k_loop(l, k) && l_to_k_period(l, k));
     });
     
 
     return axioms && big_or(*_sigma, range(0, k), [&](size_t l) {
-      return loop_var(l, k);
+      return loop_prop(l, k);
     });
   }
 
@@ -118,12 +128,13 @@ namespace black::internal
         return _sigma->top();
       
       // Creating the encoding
-      formula atom_phi_k = ground(xreq, k);
-      formula body_impl = big_or(*_sigma, range(l + 1, k + 1), [&](size_t i) {
-        return to_ground_snf(*req, i);
-      });
+      formula proposition_phi_k = ground(xreq, k);
+      formula body_impl = 
+        big_or(*_sigma, range(l + 1, k + 1), [&](size_t i) {
+          return to_ground_snf(*req, i);
+        });
 
-      return implies(atom_phi_k, body_impl);
+      return implies(proposition_phi_k, body_impl);
     });
   }
 
@@ -182,26 +193,73 @@ namespace black::internal
     return step && y && z;
   }
 
+  bool encoder::term_is_weak(term t) {
+    bool has_next = false;
+    bool has_wnext = false;
+
+    std::function<void(term)> check = [&](term t2) {
+      t2.match( // LCOV_EXCL_LINE
+        [](constant) { },
+        [](variable) { },
+        [&](application a) {
+          for(term t3 : a.arguments())
+            check(t3);
+        },
+        [&](next) {
+          has_next = true;
+        },
+        [&](wnext) {
+          has_wnext = true;
+        }
+      );
+    };
+
+    check(t);
+
+    return !has_next && has_wnext;
+  }
 
   // Turns the current formula into Stepped Normal Form
   // Note: this has to be run *after* the transformation to NNF (to_nnf() below)
   formula encoder::to_ground_snf(formula f, size_t k) {
-    return f.match(
+    return to_ground_snf(f, k, {});
+  }
+
+  formula encoder::to_ground_snf(
+    formula f, size_t k, std::vector<variable> const&scope
+  ) {
+    return f.match( // LCOV_EXCL_LINE
       [&](boolean)      { return f; },
-      [&](atom)         { return ground(f, k); },
-      [&](tomorrow)     { return ground(f, k); },
-      [&](w_tomorrow)   { return ground(f, k); },
-      [&](yesterday)    { return ground(f, k); },
-      [&](w_yesterday)  { return ground(f, k); },
-      [&](negation n)   { return !to_ground_snf(n.operand(),k); },
+      [&](atom a) -> formula { 
+        std::vector<term> terms;
+        bool weak = false;
+        for(term t : a.terms()) {
+          weak = weak || term_is_weak(t);
+          terms.push_back(stepped(t, k, scope));
+        }
+
+        if(weak)
+          return ground(wX(f.sigma()->bottom()), k) || atom(a.rel(), terms);
+
+        return atom(a.rel(), terms);
+      }, // LCOV_EXCL_LINE
+      [&](quantifier q) {
+        std::vector<variable> new_scope = scope;
+        new_scope.push_back(q.var());
+        return quantifier(
+          q.quantifier_type(), q.var(), to_ground_snf(q.matrix(), k, new_scope)
+        );
+      }, // LCOV_EXCL_LINE
+      [&](proposition)  { return ground(f, k); },
+      [&](negation n)   { return !to_ground_snf(n.operand(),k, scope); },
       [&](big_conjunction c) {
         return big_and(*f.sigma(), c.operands(), [&](formula op) {
-          return to_ground_snf(op, k);
+          return to_ground_snf(op, k, scope);
         });
       },
       [&](big_disjunction c) {
         return big_or(*f.sigma(), c.operands(), [&](formula op) {
-          return to_ground_snf(op, k);
+          return to_ground_snf(op, k, scope);
         });
       },
       [&](implication) -> formula { // LCOV_EXCL_LINE 
@@ -210,41 +268,48 @@ namespace black::internal
       [&](iff) -> formula { // LCOV_EXCL_LINE 
         black_unreachable(); // LCOV_EXCL_LINE
       },
-      [&,this](until u, formula left, formula right) {
-        return to_ground_snf(right,k) ||
-            (to_ground_snf(left,k) && ground(X(u), k));
+      [&](tomorrow)     { return ground(f, k); },
+      [&](w_tomorrow)   { return ground(f, k); },
+      [&](yesterday)    { return ground(f, k); },
+      [&](w_yesterday)  { return ground(f, k); },
+      [&](until u, formula left, formula right) {
+        return to_ground_snf(right,k, scope) ||
+            (to_ground_snf(left,k, scope) && ground(X(u), k));
       },
-      [&,this](w_until w, formula left, formula right) {
+      [&](w_until w, formula left, formula right) {
         return to_ground_snf(right, k) ||
-            (to_ground_snf(left,k) && ground(wX(w), k));
+            (to_ground_snf(left,k, scope) && ground(wX(w), k));
       },
-      [&,this](eventually e, formula op) {
-        return to_ground_snf(op,k) || ground(X(e), k);
+      [&](eventually e, formula op) {
+        return to_ground_snf(op,k, scope) || ground(X(e), k);
       },
-      [&,this](always a, formula op) {
-        return to_ground_snf(op,k) && ground(wX(a), k);
+      [&](always a, formula op) {
+        return to_ground_snf(op,k, scope) && ground(wX(a), k);
       },
-      [&,this](release r, formula left, formula right) {
-        return (to_ground_snf(left,k) && to_ground_snf(right,k)) ||
-            (to_ground_snf(right,k) && ground(wX(r), k));
+      [&](release r, formula left, formula right) {
+        return 
+          (to_ground_snf(left,k, scope) && to_ground_snf(right,k,scope)) ||
+            (to_ground_snf(right,k, scope) && ground(wX(r), k));
       },
-      [&,this](s_release r, formula left, formula right) {
-        return (to_ground_snf(left,k) && to_ground_snf(right,k)) ||
-            (to_ground_snf(right,k) && ground(X(r), k));
+      [&](s_release r, formula left, formula right) {
+        return 
+          (to_ground_snf(left,k, scope) && to_ground_snf(right,k,scope)) ||
+            (to_ground_snf(right,k, scope) && ground(X(r), k));
       },
-      [&,this](since s, formula left, formula right) {
-        return to_ground_snf(right,k) ||
-            (to_ground_snf(left,k) && ground(Y(s), k));
+      [&](since s, formula left, formula right) {
+        return to_ground_snf(right,k, scope) ||
+            (to_ground_snf(left,k, scope) && ground(Y(s), k));
       },
-      [&,this](triggered t, formula left, formula right) {
-        return (to_ground_snf(left,k) && to_ground_snf(right,k) ) ||
-            (to_ground_snf(right,k) && ground(Z(t), k));
+      [&](triggered t, formula left, formula right) {
+        return 
+          (to_ground_snf(left,k, scope) && to_ground_snf(right,k, scope))
+            || (to_ground_snf(right,k, scope) && ground(Z(t), k));
       },
-      [&,this](once o, formula op) {
-        return to_ground_snf(op,k) || ground(Y(o), k);
+      [&](once o, formula op) {
+        return to_ground_snf(op,k, scope) || ground(Y(o), k);
       },
-      [&,this](historically h, formula op) {
-        return to_ground_snf(op,k) && ground(Z(h), k);
+      [&](historically h, formula op) {
+        return to_ground_snf(op,k, scope) && ground(Z(h), k);
       }
     );
   }
@@ -297,23 +362,60 @@ namespace black::internal
     black_unreachable(); // LCOV_EXCL_LINE
   }
 
-  atom encoder::ground(formula f, size_t k) {
-    return _sigma->var(std::pair(f,k));
+  term encoder::stepped(term t, size_t k, std::vector<variable> const&scope) {
+    return t.match( // LCOV_EXCL_LINE
+      [](constant c) { return c; },
+      [&](variable x) { 
+        for(variable v : scope)
+          if(x == v)
+            return x;
+        return _sigma->var(std::pair(t, k)); 
+      },
+      [&](application a) {
+        std::vector<term> terms;
+        for(term ti : a.arguments())
+          terms.push_back(stepped(ti, k, scope));
+        
+        return application(a.func(), terms);
+      }, // LCOV_EXCL_LINE
+      [&](next n) -> term {
+        return stepped(n.argument(), k + 1, scope);
+      },
+      [&](wnext n) {
+        return stepped(n.argument(), k + 1, scope);
+      }
+    );
+  }
+
+  proposition encoder::ground(formula f, size_t k) {
+    return _sigma->prop(std::pair(f,k));
   }
 
   // Transformation in NNF
   formula encoder::to_nnf(formula f) {
     if(auto it = _nnf_cache.find(f); it != _nnf_cache.end())
-      return it->second;
+      return it->second;     
 
-    formula nnf = f.match(
+    formula nnf = f.match( // LCOV_EXCL_LINE
       [](boolean b) { return b; },
-      [](atom a)    { return a; },
+      [](proposition p) { return p; },
+      [](atom a) { return a; },
+      [&](quantifier q) {
+        return quantifier(q.quantifier_type(), q.var(), to_nnf(q.matrix()));
+      },
       // Push the negation down to literals
       [&](negation n) {
         return n.operand().match(
-          [](boolean b) { return !b; },
-          [](atom a)    { return !a; },
+          [](boolean b)     { return !b; },
+          [](proposition p) { return !p; },
+          [](atom a)        { return !a; },
+          [&](quantifier q) {
+            quantifier::type dual = 
+              q.quantifier_type() == quantifier::type::exists ? // LCOV_EXCL_LINE
+              quantifier::type::forall : quantifier::type::exists;
+
+            return quantifier(dual, q.var(), to_nnf(!q.matrix()));
+          },
           [&](negation, formula op) { // special case for double negation
             return to_nnf(op);
           },
@@ -379,7 +481,7 @@ namespace black::internal
    * - if f is T or H, then Z(f) is in _zrequests
    */
   void encoder::_add_xyz_requests(formula f)
-  {
+  {    
     f.match(
       [&](tomorrow t)     { _xrequests.push_back(t);     },
       [&](w_tomorrow w)   { _xrequests.push_back(w);     },
@@ -399,6 +501,14 @@ namespace black::internal
     );
 
     f.match(
+      [](boolean) { },
+      [](proposition) { },
+      [](quantifier) { },
+      [&](atom a) {
+        for(term t : a.terms())
+          if(term_is_weak(t))
+            _xrequests.push_back(wX(_sigma->bottom()));
+      },
       [&](unary, formula op) {
         _add_xyz_requests(op);
       },
@@ -413,6 +523,68 @@ namespace black::internal
       [&](binary, formula left, formula right) {
         _add_xyz_requests(left);
         _add_xyz_requests(right);
+      }
+    );
+  }
+
+  static bool term_has_next(term t) {
+    return t.match(
+      [](constant) { return false; },
+      [](variable) { return false; },
+      [](next) { return true; },
+      [&](application a) {
+        for(term arg : a.arguments())
+          if(term_has_next(arg))
+            return true;
+        return false;
+      },
+      [&](wnext n) {
+        return term_has_next(n.argument());
+      }
+    );
+  }
+
+  static bool formula_has_next(formula frm) {
+    return frm.match(
+      [](boolean) { return false; },
+      [](proposition) { return false; },
+      [](quantifier q) {
+        return formula_has_next(q.matrix());
+      },
+      [](atom a) {
+        for(term arg : a.terms())
+          if(term_has_next(arg))
+            return true;
+        return false;
+      },
+      [](unary, formula arg) {
+        return formula_has_next(arg);
+      },
+      [](binary, formula left, formula right) {
+        return formula_has_next(left) || formula_has_next(right); // LCOV_EXCL_LINE
+      }
+    );
+  }
+
+  void encoder::_add_atomic_requests(formula f) {
+    f.match(
+      [&](atom a) {
+        bool has_next = false;
+        for(term t : a.terms()) 
+          has_next = has_next || term_has_next(t);
+        if(has_next)
+          _atomic_requests.push_back(a);
+      },
+      [&](quantifier q) {
+        if(formula_has_next(q.matrix()))
+          _atomic_requests.push_back(q);
+      },
+      [&](unary, formula arg) {
+        _add_atomic_requests(arg);
+      },
+      [&](binary, formula left, formula right) {
+        _add_atomic_requests(left);
+        _add_atomic_requests(right);
       },
       [](otherwise) { }
     );

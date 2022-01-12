@@ -32,7 +32,9 @@ namespace black::internal {
   {
     return f.match(
       [](boolean) { return true; },
+      [](proposition) { return false; },
       [](atom) { return false; },
+      [](quantifier) { return false; },
       [](unary, formula op) { return has_constants(op); },
       [](binary, formula l, formula r) { 
         return has_constants(l) || has_constants(r);
@@ -41,15 +43,21 @@ namespace black::internal {
   }
 
   formula simplify_deep(formula f) {
-    return f.match(
+    return f.match( // LCOV_EXCL_LINE
       [](boolean b) { return simplify(b); },
+      [](proposition p) { return simplify(p); },
       [](atom a) { return simplify(a); },
+      [](quantifier q) { 
+        return simplify(quantifier(
+          q.quantifier_type(), q.var(), simplify_deep(q.matrix())
+        ));
+      },
       [](unary u, formula op) { 
         return simplify(unary(u.formula_type(), simplify_deep(op)));
       },
       [](binary b, formula l, formula r) { 
         return 
-          simplify(
+          simplify( // LCOV_EXCL_LINE
             binary(b.formula_type(), simplify_deep(l), simplify_deep(r))
           );
       }
@@ -65,7 +73,7 @@ namespace black::internal {
     
     // !!p -> p
     if(auto nop = op.to<negation>(); nop)
-      return simplify(nop->operand());
+      return nop->operand();
 
     return n;
   }
@@ -117,7 +125,7 @@ namespace black::internal {
       return bl->value() ? r : sigma.top();
     
     if(!bl && br)
-      return br->value() ? formula{sigma.top()} : formula{!l};
+      return br->value() ? formula{sigma.top()} : simplify(!l);
 
     return sigma.boolean(!bl->value() || br->value());
   }
@@ -131,10 +139,10 @@ namespace black::internal {
       return f;
 
     if(bl && !br)
-      return bl->value() ? r : !r;
+      return bl->value() ? r : simplify(!r);
     
     if(!bl && br)
-      return br->value() ? l : !l;
+      return br->value() ? l : simplify(!l);
 
     return sigma.boolean(bl->value() == br->value());
   }
@@ -149,7 +157,7 @@ namespace black::internal {
 
   static
   formula simplify_w_tomorrow(w_tomorrow x, formula op) {
-    return op.match(
+    return op.match( // LCOV_EXCL_LINE
       [&](boolean b) -> formula {
         if(b.value())
           return b;
@@ -183,7 +191,7 @@ namespace black::internal {
       return u;
 
     if(bl && !br)
-      return bl->value() ? F(r) : r;
+      return bl->value() ? simplify(F(r)) : r;
     
     return *br;
   }
@@ -200,7 +208,7 @@ namespace black::internal {
       return bl->value() ? sigma.top() : r;
 
     if(!bl && br)
-      return br->value() ? formula{sigma.top()} : G(l);
+      return br->value() ? formula{sigma.top()} : simplify(G(l));
 
     return sigma.boolean(bl->value() || br->value());
   }
@@ -213,7 +221,7 @@ namespace black::internal {
       return s;
 
     if(bl && !br)
-      return bl->value() ? r : G(r);
+      return bl->value() ? r : simplify(G(r));
 
     return *br;
   }
@@ -230,15 +238,17 @@ namespace black::internal {
       return bl->value() ? r : sigma.bottom();
 
     if(!bl && br)
-      return br->value() ? F(l) : formula{sigma.bottom()};
+      return br->value() ? simplify(F(l)) : formula{sigma.bottom()};
 
     return sigma.boolean(bl->value() && br->value());
   }
 
   formula simplify(formula f) {
-    return f.match(
+    return f.match( // LCOV_EXCL_LINE
       [ ](boolean b) -> formula { return b; },
+      [ ](proposition p) -> formula { return p; },
       [ ](atom a) -> formula { return a; },
+      [ ](quantifier q) -> formula { return q; },
       simplify_negation,
       simplify_and,
       simplify_or,

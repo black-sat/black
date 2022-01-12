@@ -27,19 +27,28 @@
 #include <black/support/common.hpp>
 #include <black/support/meta.hpp>
 #include <black/logic/formula.hpp>
+#include <black/logic/term.hpp>
 
 #include <string>
 #include <unordered_map>
 #include <deque>
 #include <memory>
+#include <optional>
 
 namespace black::internal {
+
+  // The only built-in sorts supported (yet)
+  enum class sort {
+    Int,
+    Real
+  };
 
   //
   // The alphabet class is the only entry point to create formulas.
   //
-  // The only way to build formulas is to request some atom from the alphabet,
-  // and then combine them using the logical operators defined in <formula.hpp>
+  // The only way to build formulas is to request some proposition from the 
+  // alphabet, and then combine them using the logical operators defined in 
+  // <formula.hpp>
   //
   // The alphabet handles memory management for formulas: memory allocated for
   // formulas is alive as long as the corresponding alphabet object is alive.
@@ -55,6 +64,11 @@ namespace black::internal {
     alphabet &operator=(alphabet const&) = delete; // non-copy-assignable
     alphabet &operator=(alphabet &&); // but move-assignable
 
+    // set and get the default domain for variables
+    // The default is no domain set, i.e. variables not allowed
+    void set_domain(sort s);
+    std::optional<sort> domain() const;
+
     // Entry point to obtain a trivially true or trivially false boolean formula
     struct boolean boolean(bool value);
 
@@ -62,14 +76,30 @@ namespace black::internal {
     struct boolean top();
     struct boolean bottom();
 
-    // Entry point to obtain an atomic formula, i.e., a proposition variable
-    // Atoms can be labelled by a piece of data of any type T, as long as
+    // Entry point to obtain a proposition.
+    // Propositions can be labelled by a piece of data of any type T, as long as
     // T is Hashable (see the std::unordered_map documentation for reference)
     template<typename T, REQUIRES(internal::is_hashable<T>)>
-    atom var(T&& label);
+    proposition prop(T&& label);
+
+    // Enty point to obtain variables.
+    // Propositions can be labelled by a piece of data of any type T, as long as
+    // T is Hashable (see the std::unordered_map documentation for reference)
+    template<typename T, REQUIRES(internal::is_hashable<T>)>
+    variable var(T&& label);
+
+    // Enty point to obtain constants.
+    // For now only integer constants are supported
+    // TODO: Generalize constants
+    struct constant constant(int32_t c);
+    struct constant constant(int64_t c);
+    struct constant constant(double c);
 
     // Function to obtain a formula given its unique id
     formula from_id(formula_id);
+
+    // Function to obtain a term given its unique id
+    term from_id(term_id);
 
   private:
     struct alphabet_impl;
@@ -78,21 +108,35 @@ namespace black::internal {
     template<typename, typename>
     friend struct handle_base;
 
-    atom_t *allocate_atom(any_hashable _label);
+    template<typename, typename>
+    friend struct term_handle_base;
+
+    // formulas allocation
+    proposition_t *allocate_proposition(identifier _label);
+    atom_t *allocate_atom(relation const&, std::vector<term_base *> const&);
+    quantifier_t *allocate_quantifier(
+      quantifier_type type, variable_t *var, formula_base *matrix
+    );
     unary_t *allocate_unary(unary::type type, formula_base* arg);
     binary_t *
     allocate_binary(binary::type type, formula_base* arg1, formula_base* arg2);
     
-    template<typename T, REQUIRES(is_hashable<T>)>
-    atom_t *allocate_atom(T&& _label) {
-      return allocate_atom(any_hashable{FWD(_label)});
-    }
+    // terms allocation
+    variable_t *allocate_variable(identifier _label);
+    constant_t *allocate_constant(int64_t c);
+    constant_t *allocate_constant(double c);
+    next_t *allocate_next(term_base *arg);
+    wnext_t *allocate_wnext(term_base *arg);
+    application_t*allocate_application(
+      function const&func, std::vector<term_base *> const&args
+    );
   };
 
 } // namespace black::internal
 
 namespace black {
-  using alphabet = internal::alphabet;
+  using internal::sort;
+  using internal::alphabet;
 }
 
 #include <black/internal/formula/alphabet.hpp>

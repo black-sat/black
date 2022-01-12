@@ -46,19 +46,26 @@ namespace black::internal {
     {
       _frm = to_nnf(_frm);
       _add_xyz_requests(_frm);
+      _add_atomic_requests(_frm);
     }
 
     // Return the loop var for the loop from l to k
-    atom loop_var(size_t l, size_t k);
+    proposition loop_prop(size_t l, size_t k);
 
     // Make the stepped ground version of a formula, f_G^k
-    atom ground(formula f, size_t k);
+    proposition ground(formula f, size_t k);
+
+    // Make the stepped version of a term, t_G^k
+    term stepped(term t, size_t k, std::vector<variable> const& scope);
 
     // Put a formula in negated normal form
     formula to_nnf(formula f);
 
     // Put a formula in Stepped Normal Form
     formula to_ground_snf(formula f, size_t k);
+    formula to_ground_snf(
+      formula f, size_t k, std::vector<variable> const&scope
+    );
 
     // Generates the PRUNE encoding
     formula prune(size_t k);
@@ -95,12 +102,16 @@ namespace black::internal {
     std::vector<unary> _xrequests;
     std::vector<yesterday> _yrequests;
     std::vector<w_yesterday> _zrequests;
+    std::vector<formula> _atomic_requests;
 
     // cache to memoize to_nnf() calls
     tsl::hopscotch_map<formula, formula> _nnf_cache;
 
     // collect X/Y/Z-requests
     void _add_xyz_requests(formula f);
+    void _add_atomic_requests(formula f);
+    bool term_is_weak(term t);
+    void error(std::string const&msg);
 
     // Extract the x-eventuality from an x-request
     static std::optional<formula> _get_xev(unary xreq);
