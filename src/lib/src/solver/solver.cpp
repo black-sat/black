@@ -146,8 +146,7 @@ namespace black::internal
    */
   tribool solver::_solver_t::solve(size_t k_max, bool semi_decision)
   {
-    if(!encoder)
-      return tribool::undef;
+    black_assert(encoder); // LCOV_EXCL_LINE
     
     sat = sat::solver::get_solver(sat_backend);
 
