@@ -68,13 +68,15 @@ namespace black::internal
     explicit operator bool() const { return _value == _true; }
     bool operator !() const { return _value != _true; }
 
-    friend std::ostream &operator<<(std::ostream &s, tribool b) {
-      if(b == true)
-        return s << "true";
-      if(b == false)
-        return s << "false";
+    // GCOV false negatives
+    friend std::ostream &
+    operator<<(std::ostream &s, tribool b) { // LCOV_EXCL_LINE
+      if(b == true) // LCOV_EXCL_LINE
+        return s << "true"; // LCOV_EXCL_LINE
+      if(b == false) // LCOV_EXCL_LINE
+        return s << "false"; // LCOV_EXCL_LINE
       
-      return s << "tribool::undef";
+      return s << "tribool::undef"; // LCOV_EXCL_LINE
     }
 
   private:

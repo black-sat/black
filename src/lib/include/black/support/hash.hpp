@@ -202,25 +202,27 @@ namespace black::internal
     hasher_t _hash;
     comparator_t _cmp;
 
+    //
+    // note: these two function templates cause gcov false negatives
     template<typename T>
-    hasher_t make_hasher(T const&) {
-      return [](std::any const&me) -> size_t {
-        T const *v = std::any_cast<T>(&me);
-        black_assert(v != nullptr);
+    hasher_t make_hasher(T const&) { // LCOV_EXCL_LINE
+      return [](std::any const&me) -> size_t { // LCOV_EXCL_LINE
+        T const *v = std::any_cast<T>(&me); // LCOV_EXCL_LINE
+        black_assert(v != nullptr); // LCOV_EXCL_LINE
 
-        return std::hash<T>{}(*v);
+        return std::hash<T>{}(*v); // LCOV_EXCL_LINE
       };
     }
 
     template<typename T>
-    comparator_t make_cmp(T const&) {
-      return [](std::any const&me, identifier const&other) -> bool {
-        T const* v = std::any_cast<T>(&me);
-        T const* otherv = other.get<T>();
+    comparator_t make_cmp(T const&) { // LCOV_EXCL_LINE
+      return [](std::any const&me, identifier const&other) -> bool { // LCOV_EXCL_LINE
+        T const* v = std::any_cast<T>(&me); // LCOV_EXCL_LINE
+        T const* otherv = other.get<T>(); // LCOV_EXCL_LINE
 
-        black_assert(v != nullptr);
+        black_assert(v != nullptr); // LCOV_EXCL_LINE
 
-        return otherv != nullptr && *v == *otherv;
+        return otherv != nullptr && *v == *otherv; // LCOV_EXCL_LINE
       };
     }
   };

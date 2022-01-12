@@ -193,10 +193,11 @@ namespace black::internal
   protected:
     using handled_formula_t = F;
 
-    static std::optional<H> cast(class alphabet *sigma, formula_base *f) {
-      if(auto ptr = formula_cast<typename H::handled_formula_t *>(f); ptr)
-        return std::optional<H>{H{sigma, ptr}};
-      return std::nullopt;
+    // GCOV false negatives
+    static std::optional<H> cast(class alphabet *sigma, formula_base *f) { // LCOV_EXCL_LINE
+      if(auto ptr = formula_cast<typename H::handled_formula_t *>(f); ptr) // LCOV_EXCL_LINE
+        return std::optional<H>{H{sigma, ptr}}; // LCOV_EXCL_LINE
+      return std::nullopt; // LCOV_EXCL_LINE
     }
 
     // Implemented after alphabet class

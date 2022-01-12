@@ -92,10 +92,12 @@ namespace black::internal {
   //
   // Useful utilities to work with strongly-typed enums
   //
+
+  // GCOV false negatives
   template <typename E, REQUIRES(std::is_enum_v<E>)>
-  constexpr auto to_underlying(E e) noexcept
+  constexpr auto to_underlying(E e) noexcept // LCOV_EXCL_LINE
   {
-      return static_cast<std::underlying_type_t<E>>(e);
+      return static_cast<std::underlying_type_t<E>>(e); // LCOV_EXCL_LINE
   }
 
   template <typename E, REQUIRES(std::is_integral_v<E>)>

@@ -159,10 +159,11 @@ namespace black::internal
     template<typename,typename>
     friend struct handle_base;
 
-    static std::optional<H> cast(class alphabet *sigma, term_base *t) {
-      if(auto ptr = term_cast<typename H::handled_term_t *>(t); ptr)
-        return std::optional<H>{H{sigma, ptr}};
-      return std::nullopt;
+    // GCOV false negative
+    static std::optional<H> cast(class alphabet *sigma, term_base *t) { // LCOV_EXCL_LINE
+      if(auto ptr = term_cast<typename H::handled_term_t *>(t); ptr) // LCOV_EXCL_LINE
+        return std::optional<H>{H{sigma, ptr}}; // LCOV_EXCL_LINE
+      return std::nullopt; // LCOV_EXCL_LINE
     }
 
     static std::pair<class alphabet *, application_t *>

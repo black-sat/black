@@ -287,17 +287,18 @@ namespace black::internal
     formula matrix() const { return _matrix; }
 
   private:
-    formula parse(quantifier q) {
-      _vars.push_back(q.var());
-      formula m = q.matrix();
-      return m.match(
-        [&](quantifier q2) {
-          if(q.quantifier_type() == q2.quantifier_type())
-            return parse(q2);
-          return m;
-        },
-        [&](otherwise) { return m; }
-      );
+    // GCOV false negatives
+    formula parse(quantifier q) {                         // LCOV_EXCL_LINE
+      _vars.push_back(q.var());                           // LCOV_EXCL_LINE
+      formula m = q.matrix();                             // LCOV_EXCL_LINE
+      return m.match(                                     // LCOV_EXCL_LINE
+        [&](quantifier q2) {                              // LCOV_EXCL_LINE
+          if(q.quantifier_type() == q2.quantifier_type()) // LCOV_EXCL_LINE
+            return parse(q2);                             // LCOV_EXCL_LINE
+          return m;                                       // LCOV_EXCL_LINE
+        },                                                // LCOV_EXCL_LINE
+        [&](otherwise) { return m; }                      // LCOV_EXCL_LINE
+      );                                                  // LCOV_EXCL_LINE
     }
 
     quantifier::type _type;

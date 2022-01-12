@@ -209,13 +209,14 @@ namespace black::internal
     };
   }
 
+  // function full of GCOV false negatives
   static check_result_t _check_syntax(
     term t, std::function<void(std::string)> const& err,
     std::vector<variable> const& scope,
     tsl::hopscotch_map<std::string, size_t> &rels,
     tsl::hopscotch_map<std::string, size_t> &funcs
   ) {
-    return t.match(
+    return t.match( // LCOV_EXCL_LINE
       [](constant) -> check_result_t { return false; },
       [](variable) -> check_result_t { return false; },
       [&](application a) -> check_result_t {
@@ -239,7 +240,7 @@ namespace black::internal
         if(!a.func().known_type())
           funcs.insert({id, size});
         return res;
-      },
+      }, // LCOV_EXCL_LINE
       [&](next n) -> check_result_t {
         term arg = n.argument();
         if(!arg.is<variable>()) {
@@ -247,7 +248,7 @@ namespace black::internal
           return true;
         }
 
-        for(variable v : scope) {
+        for(variable v : scope) { // LCOV_EXCL_LINE
           if(v == arg) {
             err("next() terms cannot be applied to quantified variables");
             return true;
@@ -263,7 +264,7 @@ namespace black::internal
           return true;
         }
 
-        for(variable v : scope) {
+        for(variable v : scope) { // LCOV_EXCL_LINE
           if(v == arg) {
             err("wnext() terms cannot be applied to quantified variables");
             return true;
@@ -275,13 +276,14 @@ namespace black::internal
     );
   }
 
+  // function full of GCOV false negatives
   static check_result_t _check_syntax(
     formula f, std::function<void(std::string)> const& err, 
     std::vector<variable> const& scope, bool positive, 
     tsl::hopscotch_map<std::string, size_t> &rels,
     tsl::hopscotch_map<std::string, size_t> &funcs
   ) {
-    return f.match(
+    return f.match( // LCOV_EXCL_LINE
       [](boolean) -> check_result_t { return false; },
       [](proposition) -> check_result_t { return false; },
       [&](atom a) -> check_result_t {  
@@ -303,21 +305,21 @@ namespace black::internal
         
         rels.insert({id, size});
         return res;  
-      },
+      }, // LCOV_EXCL_LINE
       [&](quantifier q) -> check_result_t {
         std::vector<variable> s = scope;
         s.push_back(q.var());
         check_result_t res =
-          _check_syntax(q.matrix(), err, s, positive, rels, funcs);
-        if(res.has_next && res.has_disjunctions) {
-          err(
+          _check_syntax(q.matrix(), err, s, positive, rels, funcs); // LCOV_EXCL_LINE
+        if(res.has_next && res.has_disjunctions) { // LCOV_EXCL_LINE
+          err( // LCOV_EXCL_LINE
             "next() terms and disjunctions cannot be mixed inside quantifiers"
           );
-          return true;
+          return true; // LCOV_EXCL_LINE
         }
 
         return res;
-      },
+      }, // LCOV_EXCL_LINE
       [&](negation, formula arg) {
         return _check_syntax(arg, err, scope, !positive, rels, funcs);
       },
@@ -335,7 +337,7 @@ namespace black::internal
         return _check_syntax(!left || right, err, scope, positive, rels, funcs);
       },
       [&](iff, formula left, formula right) {
-        return _check_syntax(
+        return _check_syntax( // LCOV_EXCL_LINE
           implies(left, right) && implies(right, left), 
           err, scope, positive, rels, funcs
         );
@@ -346,7 +348,7 @@ namespace black::internal
           return true;
         }
 
-        return t.match(
+        return t.match( // LCOV_EXCL_LINE
           [&](unary, formula arg) {
             return _check_syntax(arg, err, scope, positive, rels, funcs);
           },
