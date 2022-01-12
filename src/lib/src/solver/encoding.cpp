@@ -86,7 +86,7 @@ namespace black::internal
 
   // extract the requested formula from an X-eventuality
   std::optional<formula> encoder::_get_xev(unary xreq) {
-    black_assert(
+    black_assert( // LCOV_EXCL_LINE
       xreq.formula_type() == unary::type::tomorrow ||
       xreq.formula_type() == unary::type::w_tomorrow
     );
@@ -198,7 +198,7 @@ namespace black::internal
     bool has_wnext = false;
 
     std::function<void(term)> check = [&](term t2) {
-      t2.match(
+      t2.match( // LCOV_EXCL_LINE
         [](constant) { },
         [](variable) { },
         [&](application a) {
@@ -228,7 +228,7 @@ namespace black::internal
   formula encoder::to_ground_snf(
     formula f, size_t k, std::vector<variable> const&scope
   ) {
-    return f.match(
+    return f.match( // LCOV_EXCL_LINE
       [&](boolean)      { return f; },
       [&](atom a) -> formula { 
         std::vector<term> terms;
@@ -242,14 +242,14 @@ namespace black::internal
           return ground(wX(f.sigma()->bottom()), k) || atom(a.rel(), terms);
 
         return atom(a.rel(), terms);
-      },
+      }, // LCOV_EXCL_LINE
       [&](quantifier q) {
         std::vector<variable> new_scope = scope;
         new_scope.push_back(q.var());
         return quantifier(
           q.quantifier_type(), q.var(), to_ground_snf(q.matrix(), k, new_scope)
         );
-      },
+      }, // LCOV_EXCL_LINE
       [&](proposition)  { return ground(f, k); },
       [&](negation n)   { return !to_ground_snf(n.operand(),k, scope); },
       [&](big_conjunction c) {
@@ -363,7 +363,7 @@ namespace black::internal
   }
 
   term encoder::stepped(term t, size_t k, std::vector<variable> const&scope) {
-    return t.match(
+    return t.match( // LCOV_EXCL_LINE
       [](constant c) { return c; },
       [&](variable x) { 
         for(variable v : scope)
@@ -377,7 +377,7 @@ namespace black::internal
           terms.push_back(stepped(ti, k, scope));
         
         return application(a.func(), terms);
-      },
+      }, // LCOV_EXCL_LINE
       [&](next n) -> term {
         return stepped(n.argument(), k + 1, scope);
       },
@@ -396,7 +396,7 @@ namespace black::internal
     if(auto it = _nnf_cache.find(f); it != _nnf_cache.end())
       return it->second;     
 
-    formula nnf = f.match(
+    formula nnf = f.match( // LCOV_EXCL_LINE
       [](boolean b) { return b; },
       [](proposition p) { return p; },
       [](atom a) { return a; },
@@ -411,7 +411,7 @@ namespace black::internal
           [](atom a)        { return !a; },
           [&](quantifier q) {
             quantifier::type dual = 
-              q.quantifier_type() == quantifier::type::exists ? 
+              q.quantifier_type() == quantifier::type::exists ? // LCOV_EXCL_LINE
               quantifier::type::forall : quantifier::type::exists;
 
             return quantifier(dual, q.var(), to_nnf(!q.matrix()));
@@ -561,7 +561,7 @@ namespace black::internal
         return formula_has_next(arg);
       },
       [](binary, formula left, formula right) {
-        return formula_has_next(left) || formula_has_next(right);
+        return formula_has_next(left) || formula_has_next(right); // LCOV_EXCL_LINE
       }
     );
   }

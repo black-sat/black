@@ -43,7 +43,7 @@ namespace black::internal {
   }
 
   formula simplify_deep(formula f) {
-    return f.match(
+    return f.match( // LCOV_EXCL_LINE
       [](boolean b) { return simplify(b); },
       [](proposition p) { return simplify(p); },
       [](atom a) { return simplify(a); },
@@ -57,7 +57,7 @@ namespace black::internal {
       },
       [](binary b, formula l, formula r) { 
         return 
-          simplify(
+          simplify( // LCOV_EXCL_LINE
             binary(b.formula_type(), simplify_deep(l), simplify_deep(r))
           );
       }
@@ -157,7 +157,7 @@ namespace black::internal {
 
   static
   formula simplify_w_tomorrow(w_tomorrow x, formula op) {
-    return op.match(
+    return op.match( // LCOV_EXCL_LINE
       [&](boolean b) -> formula {
         if(b.value())
           return b;
@@ -244,7 +244,7 @@ namespace black::internal {
   }
 
   formula simplify(formula f) {
-    return f.match(
+    return f.match( // LCOV_EXCL_LINE
       [ ](boolean b) -> formula { return b; },
       [ ](proposition p) -> formula { return p; },
       [ ](atom a) -> formula { return a; },

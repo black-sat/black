@@ -29,7 +29,7 @@ namespace black::internal {
   formula sub_past(formula f) {
     alphabet *alpha = f.sigma();
 
-    return f.match(
+    return f.match( // LCOV_EXCL_LINE
         [&](yesterday, formula op) {
           return alpha->prop(past_label{Y(sub_past(op))});
         },
@@ -113,7 +113,8 @@ namespace black::internal {
     gen_semantics(ltl, semantics);
 
     // Conjoin the ltl formula with its semantics formulas
-    return std::accumulate(semantics.begin(), semantics.end(), ltl,
+    return // LCOV_EXCL_LINE
+      std::accumulate(semantics.begin(), semantics.end(), ltl, // LCOV_EXCL_LINE
         [](formula f1, formula f2) { return f1 && f2; }
     );
   }

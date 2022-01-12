@@ -316,7 +316,7 @@ namespace black::sat::backends
         
         return 
           Z3_mk_app(context, rel, unsigned(z3_terms.size()), z3_terms.data());
-      },
+      }, // LCOV_EXCL_LINE
       [this](quantifier q) {
         Z3_app var = Z3_to_app(context, to_z3(q.var()));
         bool forall = q.quantifier_type() == quantifier::type::forall;
@@ -346,7 +346,7 @@ namespace black::sat::backends
 
         return Z3_mk_and(context, 
           static_cast<unsigned int>(args.size()), args.data());
-      },
+      }, // LCOV_EXCL_LINE
       [this](big_disjunction c) {
         std::vector<Z3_ast> args;
         for(formula op : c.operands())
@@ -356,7 +356,7 @@ namespace black::sat::backends
 
         return Z3_mk_or(context, 
           static_cast<unsigned int>(args.size()), args.data());
-      },
+      }, // LCOV_EXCL_LINE
       [this](implication, formula left, formula right) {
         return Z3_mk_implies(context, to_z3(left), to_z3(right));
       },
@@ -459,7 +459,7 @@ namespace black::sat::backends
         
         return 
           Z3_mk_app(context, func, unsigned(z3_terms.size()), z3_terms.data());
-      },
+      }, // LCOV_EXCL_LINE
       // We should not have any next(var) term at this point
       [&](next) -> Z3_ast { black_unreachable(); }, // LCOV_EXCL_LINE
       [&](wnext) -> Z3_ast { black_unreachable(); } // LCOV_EXCL_LINE 

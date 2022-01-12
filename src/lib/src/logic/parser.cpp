@@ -169,11 +169,11 @@ namespace black::internal
     if(!tok || !tok->is<token::punctuation>() ||
         tok->data<token::punctuation>() != p) {
       if(tok)
-        return error(
+        return error( // LCOV_EXCL_LINE
           "Expected '" + to_string(p) + "', found '" + to_string(*tok) + "'"
         );
       else
-        return error(
+        return error( // LCOV_EXCL_LINE
           "Expected '" + to_string(p) + "', found end of input"
         );
     }
@@ -220,7 +220,7 @@ namespace black::internal
 
   std::optional<formula> parser::_parser_t::parse_boolean()
   {
-    black_assert(peek() && peek()->token_type() == token::type::boolean);
+    black_assert(peek() && peek()->token_type() == token::type::boolean);  // LCOV_EXCL_LINE
 
     std::optional<token> tok = consume();
 
@@ -291,7 +291,7 @@ namespace black::internal
 
   std::optional<formula> parser::_parser_t::parse_quantifier() {
     black_assert(peek());
-    black_assert(
+    black_assert(  // LCOV_EXCL_LINE
       peek()->data<token::keyword>() == token::keyword::exists ||
       peek()->data<token::keyword>() == token::keyword::forall
     );
@@ -330,7 +330,7 @@ namespace black::internal
   std::optional<formula> parser::_parser_t::parse_unary()
   {
     std::optional<token> op = consume(); // consume unary op
-    black_assert(op && op->is<unary::type>());
+    black_assert(op && op->is<unary::type>());  // LCOV_EXCL_LINE
 
     std::optional<formula> formula = parse_primary();
     if(!formula)
@@ -446,7 +446,7 @@ namespace black::internal
 
   std::optional<term> parser::_parser_t::parse_term_constant() {
     black_assert(peek());
-    black_assert(
+    black_assert( // LCOV_EXCL_LINE
       peek()->token_type() == token::type::integer ||
       peek()->token_type() == token::type::real
     );

@@ -102,7 +102,7 @@ namespace black::internal
         result += ")";
 
         return result;
-      },
+      }, // LCOV_EXCL_LINE
       [&](next n) {
         return fmt::format("next({})", to_string(n.argument()));
       },
@@ -144,7 +144,7 @@ namespace black::internal
         result += ")";
 
         return result;
-      },
+      }, // LCOV_EXCL_LINE
       [](quantifier_block q) {
         std::string qs = q.quantifier_type() == quantifier::type::exists ?
           "exists " : "forall ";
@@ -155,7 +155,7 @@ namespace black::internal
           qs += to_string(v) + ' ';
 
         return fmt::format("{}. {}", qs, parens_if_needed(q.matrix(), parens));
-      },
+      }, // LCOV_EXCL_LINE
       [](boolean b) {
         return b.value() ? "True" : "False";
       },

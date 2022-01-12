@@ -47,7 +47,7 @@ namespace black::internal
     tsl::hopscotch_set<formula> memo;
     
     formula simple = simplify_deep(f);
-    black_assert(simple.is<boolean>() || !has_constants(simple));
+    black_assert(simple.is<boolean>() || !has_constants(simple)); // LCOV_EXCL_LINE
 
     tseitin(simple, result, memo);
     if(auto b = simple.to<boolean>(); b) {
