@@ -19,8 +19,9 @@ See the [Documentation][Home] on how to use BLACK. In particular:
 
 1. [Downloads and Installation][Installation]
 2. [Usage][Usage]
-3. [Publications][Publications]
-3. (coming soon...) BLACK C++ Library API
+3. [Input Syntax][Syntax]
+4. [Publications][Publications]
+5. (coming soon...) BLACK C++ Library API
 
 [Reynolds]: https://arxiv.org/abs/1609.04102
 [CMake]: https://cmake.org
@@ -33,4 +34,6 @@ See the [Documentation][Home] on how to use BLACK. In particular:
 [Homebrew]: https://brew.sh
 [Home]: https://github.com/black-sat/black/wiki/Home 
 [Installation]: https://github.com/black-sat/black/wiki/Installation 
+[Publications]: https://github.com/black-sat/black/wiki/Publications 
+[Syntax]: https://github.com/black-sat/black/wiki/Syntax 
 [Usage]: https://github.com/black-sat/black/wiki/Usage 
