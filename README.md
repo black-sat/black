@@ -1,4 +1,4 @@
-# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black) ![appveyor](https://ci.appveyor.com/api/projects/status/github/black-sat/black?branch=master&svg=true) ![MIT](https://img.shields.io/badge/license-MIT-brightgreen) [![Latest release](https://badgen.net/github/release/black-sat/black)](https://github.com/black-sat/black/releases/tag/v0.6.3) [![codecov](https://codecov.io/gh/black-sat/black/branch/master/graph/badge.svg?token=ZETQF5NZ6X)](https://codecov.io/gh/black-sat/black)
+# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black) ![appveyor](https://ci.appveyor.com/api/projects/status/github/black-sat/black?branch=master&svg=true) ![MIT](https://img.shields.io/badge/license-MIT-brightgreen) [![Latest release](https://badgen.net/github/release/black-sat/black)](https://github.com/black-sat/black/releases/tag/v0.7.0) [![codecov](https://codecov.io/gh/black-sat/black/branch/master/graph/badge.svg?token=ZETQF5NZ6X)](https://codecov.io/gh/black-sat/black)
 
 BLACK (short for Bounded Lᴛʟ sAtisfiability ChecKer) is a tool for testing the
 satisfiability of LTL and LTLf formulas based on the SAT encoding of the tableau
@@ -26,12 +26,13 @@ Quick usage help:
 $ black --help
 
 BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
-        version 0.6.3
+        version 0.7.0
 
 
 SYNOPSIS
    ./black solve [-k <bound>] [-B <backend>] [--remove-past] [--finite] [-m]
-           [-o <fmt>] [-f <formula>] [<file>]
+           [-d <sort>] [-s] [-o <fmt>] [-f <formula>] [--debug <debug>]
+           [<file>]
 
    ./black check -t <trace> [-e <result>] [-i <state>] [--finite] [--verbose]
            [-f <formula>] [<file>]
@@ -52,6 +53,15 @@ OPTIONS
                                    models
 
        -m, --model                 print the model of the formula, if any
+       -d, --domain <sort>         select the domain for first-order variables.
+                                   Mandatory for first-order formulas.
+                                   Accepted domains: integers, reals
+       -s, --semi-decision         disable termination checks for unsatisfiable
+                                   formulas, speeding up the execution for
+                                   satisfiable ones.
+                                   Note: the use of `next(x)` terms in formulas
+                                   implies this option.
+
        -o, --output-format <fmt>   Output format.
                                    Accepted formats: readable, json
                                    Default: readable
