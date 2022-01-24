@@ -37,7 +37,8 @@ namespace black::internal
   {
     return big_or(*_sigma, range(0, k), [&](size_t l) {
       return big_or(*_sigma, range(l + 1, k), [&](size_t j) {
-        return l_to_k_loop(l,j) && l_to_k_loop(j,k) && l_j_k_prune(l,j,k);
+        return l_to_k_loop(l,j,false) && l_to_k_loop(j,k, false) && 
+               l_j_k_prune(l,j,k);
       });
     });
   }
@@ -111,7 +112,7 @@ namespace black::internal
 
     formula axioms = big_and(*_sigma, range(0,k), [&](size_t l) {
       proposition loop_prop = this->loop_prop(l, k);
-      return iff(loop_prop, l_to_k_loop(l, k) && l_to_k_period(l, k));
+      return iff(loop_prop, l_to_k_loop(l, k, true) && l_to_k_period(l, k));
     });
     
 
@@ -140,7 +141,7 @@ namespace black::internal
 
 
   // Generates the encoding for _lR_k
-  formula encoder::l_to_k_loop(size_t l, size_t k) {
+  formula encoder::l_to_k_loop(size_t l, size_t k, bool close_yesterdays) {
     auto make_loop = [&](auto xyz_req) {
       return iff( ground(xyz_req, l), ground(xyz_req, k) );
     };
@@ -154,10 +155,14 @@ namespace black::internal
     formula y = big_and(*_sigma, _yrequests, make_loop);
     formula z = big_and(*_sigma, _zrequests, make_loop);
 
-    formula yy = big_and(*_sigma, _yrequests, close_loop);
-    formula zz = big_and(*_sigma, _zrequests, close_loop);
+    if(close_yesterdays) {
+      formula yy = big_and(*_sigma, _yrequests, close_loop) ;
+      formula zz = big_and(*_sigma, _zrequests, close_loop);
 
-    return x && y && z && yy && zz;
+      return x && y && z && yy && zz;
+    }
+    
+    return x && y && z;
   }
 
 

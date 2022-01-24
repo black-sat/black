@@ -148,6 +148,8 @@ namespace black::internal
   {
     black_assert(encoder); // LCOV_EXCL_LINE
     
+    trace(trace_t::nnf, encoder->get_formula());
+
     sat = sat::solver::get_solver(sat_backend);
 
     model = false;
