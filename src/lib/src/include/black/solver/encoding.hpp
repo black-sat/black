@@ -85,7 +85,7 @@ namespace black::internal {
     formula l_to_k_period(size_t l, size_t k);
 
     // Generates the encoding for _lL_k
-    formula l_to_k_loop(size_t l, size_t k);
+    formula l_to_k_loop(size_t l, size_t k, bool close_yesterdays);
 
     // Generates the k-unraveling for the given k
     formula k_unraveling(size_t k);
