@@ -91,6 +91,7 @@ namespace black::internal {
       struct trace_t {
         enum type_t {
           stage,
+          nnf,
           unrav,
           empty,
           loop,

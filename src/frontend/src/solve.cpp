@@ -165,7 +165,7 @@ namespace black::frontend {
 
     slv.set_sat_backend(backend);
 
-    if(cli::debug == "trace" || cli::debug == "trace-full")
+    if(!cli::debug.empty())
       slv.set_tracer(&trace);
 
     if (cli::remove_past)
@@ -314,8 +314,18 @@ namespace black::frontend {
   
   void trace(black::solver::trace_t data) {
     auto [type, v] = data; // LCOV_EXCL_LINE
+
+    if(type == black::solver::trace_t::nnf && cli::debug == "print") {
+      io::println(
+        "{}: debug: parsed formula in NNF: {}",
+        cli::command_name, to_string(std::get<formula>(v))
+      );
+    }
+
     static size_t k = 0;
-    if(type == black::solver::trace_t::stage) {
+    if(type == black::solver::trace_t::stage && 
+       (cli::debug == "trace" || cli::debug == "trace-full")
+    ) {
       k = std::get<size_t>(v);
       io::errorln("- k: {}", k);
     }
@@ -325,6 +335,7 @@ namespace black::frontend {
 
     switch(type){
       case black::solver::trace_t::stage:
+      case black::solver::trace_t::nnf:
         break;
       case black::solver::trace_t::unrav:
         io::errorln("  - {}-unrav: {}", k, to_string(std::get<formula>(v)));
