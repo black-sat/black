@@ -6048,7 +6048,7 @@ finite_models/LiEtAl2020/declare/pm7.5k.MXML_Run_1_Alpha_0_Apriori_100-LTL.pltl 
 finite_models/LiEtAl2020/declare/IRO10k.MXML_Run_1_Alpha_0_Apriori_100-LTL.pltl finite_models LiEtAl2020 timeout err 14.781 SAT 0.858 UNSAT
 finite_models/LiEtAl2020/declare/lp7.5k.mxml_Run_1_Alpha_0_Apriori_100-LTL.pltl finite_models LiEtAl2020 timeout err 12.932 SAT 0.849 UNSAT
 finite_models/LiEtAl2020/declare/groupedFollowsherbstFig6p30.xml_Run_1_Alpha_0_Apriori_100-LTL.pltl finite_models LiEtAl2020 112.188 SAT 31.994 SAT 0.745 UNSAT
-finite_models/LiEtAl2020/declare/Artificial_structured_control-flow_event_log_of_30 finite_models LiEtAl2020finite_models/LiEtAl2020/declare/groupedFollowschoice.xml_Run_1_Alpha_0_Apriori_100-LTL.pltl finite_models LiEtAl2020 0.509 SAT 0.312 SAT 0.731 UNSAT
+finite_models/LiEtAl2020/declare/groupedFollowschoice.xml_Run_1_Alpha_0_Apriori_100-LTL.pltl finite_models LiEtAl2020 0.509 SAT 0.312 SAT 0.731 UNSAT
 finite_models/LiEtAl2020/declare/cp10k.mxml_Run_1_Alpha_0_Apriori_100-LTL.pltl finite_models LiEtAl2020 timeout err 10.080 SAT 0.787 UNSAT
 finite_models/LiEtAl2020/declare/sw5k.mxml_Run_1_Alpha_0_Apriori_100-LTL.pltl finite_models LiEtAl2020 timeout err 11.338 SAT 0.866 UNSAT
 finite_models/LiEtAl2020/declare/pl5k.mxml_Run_1_Alpha_0_Apriori_100-LTL.pltl finite_models LiEtAl2020 timeout err 15.027 SAT 0.795 UNSAT
