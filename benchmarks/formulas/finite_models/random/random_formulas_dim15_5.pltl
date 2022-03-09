@@ -1,1 +1,1 @@
-((True W F False) U G (p1)) | wX((True U False) | !(p2))
+F((False U (p1)) | (p2)) U wX X((p1) & wX True & (p1))

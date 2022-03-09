@@ -1,1 +1,1 @@
-!((wX wX F((p5) U wX (p5)) W ((((p1) R G (p2)) <-> F((p3) -> X (p1))) R G (p5))) | (p1)) -> (((wX (p1) W F G False) M F(((wX (p3) R G (p2)) R wX((p1) | (p4))) -> wX (p3))) -> (False & (p5)))
+G F G !((!(p3) <-> X (p2)) | F !(False & F (p2)) | (X F !wX((F (p2) | X((p5) -> (p1))) R (wX (p4) R (p2))) -> X(F (p3) R wX G F(F wX (p4) R !((p2) U G (p5))))))

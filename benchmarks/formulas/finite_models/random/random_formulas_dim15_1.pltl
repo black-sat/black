@@ -1,1 +1,1 @@
-!!((p1) | False) M (!G (p2) -> (F (p2) M G (p3)))
+F X(!G (p3) <-> False) | (((p3) & True) <-> (False U False))

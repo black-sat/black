@@ -1,1 +1,1 @@
-!(False & X X wX X !((False <-> (False -> (p1))) | True))
+wX G(((wX False & (True R G False)) U !(p3)) & F True)

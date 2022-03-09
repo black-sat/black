@@ -1,1 +1,1 @@
-wX F((False & F True) W (F (p2) R (G X (p2) -> False)))
+wX True R ((G True R !True) & X wX X X X (p2))

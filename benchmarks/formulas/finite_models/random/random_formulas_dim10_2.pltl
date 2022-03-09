@@ -1,1 +1,1 @@
-!((p3) M F((G (p1) -> False) -> (p3)))
+!X X(wX G wX F True & (p1))

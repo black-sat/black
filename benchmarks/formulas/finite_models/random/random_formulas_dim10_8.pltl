@@ -1,1 +1,1 @@
-X(!((p2) & (p1)) M (False R X False))
+X(G (p3) | F(G (p3) R G (p3)))

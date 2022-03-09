@@ -1,1 +1,1 @@
-(F X(X (p2) <-> False) W !(p4)) R !(X(!F (p1) R False) & !(p3))
+X wX((True -> False) U (F(False & (F (p2) -> False)) U (wX !(p4) <-> !False)))

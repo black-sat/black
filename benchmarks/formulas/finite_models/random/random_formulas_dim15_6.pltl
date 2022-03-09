@@ -1,1 +1,1 @@
-(((p1) W (p1)) & (p2)) | !!F((F (p3) & (p2)) <-> (p2))
+G wX X wX(wX((p2) R ((True & False) <-> True)) R X (p2))

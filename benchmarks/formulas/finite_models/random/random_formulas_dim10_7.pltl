@@ -1,1 +1,1 @@
-F((p2) R ((G (p1) | F True) -> True))
+((p1) U G !X G True) <-> X (p2)

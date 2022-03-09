@@ -1,1 +1,1 @@
-(F !(p2) -> G(True R wX (p2))) -> X wX wX X (p2)
+F(X(F (p3) U (X (p3) & X wX True)) <-> !F False)

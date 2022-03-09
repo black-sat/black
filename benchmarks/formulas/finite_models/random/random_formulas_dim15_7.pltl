@@ -1,1 +1,1 @@
-!X(X((p2) <-> wX !((p2) M ((p2) & True))) M G True)
+wX((True | (p3) | F G (p1)) <-> X (p1)) | ((p3) <-> (p2))
