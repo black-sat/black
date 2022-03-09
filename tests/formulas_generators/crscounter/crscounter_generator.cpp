@@ -24,6 +24,7 @@
 #include <black/logic/alphabet.hpp>
 #include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <iostream>
 #include <cmath>
@@ -106,9 +107,9 @@ int main(int argc, char **argv) {
  */
 formula once_chain(int N, int i) {
   int d = ilog2(N);
-  formula f = P( equals_d(N/2+i, d) );
+  formula f = O( equals_d(N/2+i, d) );
 
-  for (int j=i-1; j>=0; j--) f = P( equals_d(N/2+j, d) && f );
+  for (int j=i-1; j>=0; j--) f = O( equals_d(N/2+j, d) && f );
 
   return f;
 }
@@ -181,7 +182,7 @@ formula equals_d(int num, int d) {
 
 // Produces the i-th binary digit
 formula digit(int i, int num) {
-  formula c = sigma.var("(c" + std::to_string(i) + ")");
+  formula c = sigma.prop("(c" + std::to_string(i) + ")");
   return (num % 2) ? c : negation(c);
 }
 
