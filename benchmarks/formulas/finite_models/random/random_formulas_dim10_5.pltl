@@ -1,1 +1,1 @@
-wX(O !F False & (!(p2) U (p2)))
+wX((((p2) -> (p2)) <-> (p3)) M wX G True)

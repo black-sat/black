@@ -1,1 +1,1 @@
-X(O(True S wX (p3)) <-> !(H(F True | (p3)) U (p2)))
+wX !F G(X False M ((p3) -> True)) R (!(p2) R True)

@@ -1,1 +1,1 @@
-Z Z H(G G (p1) -> ((True S H (p2)) <-> (True -> False)))
+(((p1) W (p1)) & (p2)) | !!F((F (p3) & (p2)) <-> (p2))

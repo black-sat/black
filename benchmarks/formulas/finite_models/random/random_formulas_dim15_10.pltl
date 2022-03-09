@@ -1,1 +1,1 @@
-!G(((p2) U (p1)) R (H (p2) S wX wX(O False R (p1))))
+(F !(p2) -> G(True R wX (p2))) -> X wX wX X (p2)

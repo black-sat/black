@@ -1,1 +1,1 @@
-X X(((X True & False) R Y(True & (p1))) & (X (p3) | (p2)) & X wX wX((Y False & (p4)) -> ((p2) S Z H (p1))))
+((p4) U (((p2) W ((p2) M ((p4) U (p3)))) & !False)) M (wX((p2) | (X True W (((p4) U (p1)) -> G(True -> (p2))))) <-> !(p2))

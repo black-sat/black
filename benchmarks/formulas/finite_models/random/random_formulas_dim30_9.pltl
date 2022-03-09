@@ -1,1 +1,1 @@
-Z((X (p4) <-> X (p4)) U Z True) U (!(!G X Z (p1) R ((X (p3) -> ((p3) -> F (p3))) & X (p2))) | F False)
+F G((!(G (p3) W wX !(p2)) -> ((True M (p1)) R (p2))) R X (p2)) -> !(((p4) U X (p1)) -> wX X((p4) W False))

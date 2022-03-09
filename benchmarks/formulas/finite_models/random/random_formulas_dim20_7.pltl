@@ -1,1 +1,1 @@
-!((True | H G True) -> H((wX((p4) | X G (p4)) | False) <-> O !(p2)))
+(wX(False M (p4)) -> ((False | (p4)) <-> (G (p4) -> wX F !(p2)))) -> F !(p4)

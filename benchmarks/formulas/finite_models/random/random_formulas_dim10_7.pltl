@@ -1,1 +1,1 @@
-wX((False S False) | (p3) | Y wX (p2))
+F((p2) R ((G (p1) | F True) -> True))

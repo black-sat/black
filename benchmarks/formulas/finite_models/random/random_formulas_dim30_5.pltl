@@ -1,1 +1,1 @@
-G O !!(wX (p2) & H (p1) & True) & X Y !O O((!False S (F False U False)) T (True S X wX (p3)))
+F((G True <-> False) & (wX (p3) R (G((p4) R X (p2)) R (F (p3) & (G (p2) R False))))) <-> (F G False R X X (p4))

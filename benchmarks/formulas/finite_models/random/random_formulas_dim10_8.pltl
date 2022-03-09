@@ -1,1 +1,1 @@
-X !G((p2) T (p1)) <-> ((p3) -> False)
+X(!((p2) & (p1)) M (False R X False))
