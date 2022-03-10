@@ -1,1 +1,1 @@
-wX((False S False) | (p3) | Y wX (p2))
+((p1) U G !X G True) <-> X (p2)

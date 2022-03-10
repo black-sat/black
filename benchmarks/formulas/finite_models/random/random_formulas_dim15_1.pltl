@@ -1,1 +1,1 @@
-((p3) T H O True) T Y((False T F G False) <-> G False)
+F X(!G (p3) <-> False) | (((p3) & True) <-> (False U False))

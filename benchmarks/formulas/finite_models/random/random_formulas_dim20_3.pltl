@@ -1,1 +1,1 @@
-H O(!((p1) -> (p2)) T ((G Y (p3) S Z Y(H False S (p3))) | !True))
+X wX((True -> False) U (F(False & (F (p2) -> False)) U (wX !(p4) <-> !False)))

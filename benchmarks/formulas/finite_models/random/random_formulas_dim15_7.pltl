@@ -1,1 +1,1 @@
-((Z (p1) & (p2)) S H (p1)) S G(wX O (p2) R H (p1))
+wX((True | (p3) | F G (p1)) <-> X (p1)) | ((p3) <-> (p2))

@@ -1,1 +1,1 @@
-H G X Z Y((False & (p1)) <-> True)
+wX X(G (p2) <-> (F !(p2) & (p1)))

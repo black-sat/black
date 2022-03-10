@@ -1,1 +1,1 @@
-O F O wX wX(True <-> F(F (p3) -> O (p3))) R (H (p3) T H F True)
+((p1) <-> wX wX (p3)) | F X(((p2) <-> wX True) | G(F G (p3) -> X True))

@@ -1,1 +1,1 @@
-wX(Y (p1) R !!(Y Z((p3) -> Y H wX O F (p2)) & X wX False))
+(((p4) <-> wX wX (p1)) R True) <-> (F False & (!(G (p2) -> G (p4)) <-> G (p3)))

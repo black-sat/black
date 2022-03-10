@@ -1,1 +1,1 @@
-Z G G H Z F((True | (p2)) -> Y wX X(O((True <-> (p1)) U (p2)) S Z(wX Z False U Z(False T G (p2)))))
+(X F G True -> (False -> (p4))) <-> (X((p2) R X(G(True & True) | ((p1) R (p2)) | wX((p3) & (p2) & (p2)))) <-> (p4))

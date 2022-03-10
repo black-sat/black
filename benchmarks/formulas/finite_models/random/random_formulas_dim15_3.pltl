@@ -1,1 +1,1 @@
-H(!False U (True S Z(((p3) R (p1)) U O((p2) S True))))
+F F((((p2) U (p1)) <-> False) -> !(X (p3) & ((p1) | (p2))))

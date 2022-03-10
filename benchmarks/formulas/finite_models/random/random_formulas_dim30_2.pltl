@@ -1,0 +1,1 @@
+X((!(p1) <-> ((True -> wX (p4)) R !False)) | F wX F G True) U wX((p4) & wX (p3) & (G (p3) | ((p3) U (p1))))

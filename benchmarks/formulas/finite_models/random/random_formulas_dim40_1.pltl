@@ -1,1 +1,1 @@
-((p4) -> True) T ((((p4) | Y((p1) -> F X !((p1) T True))) -> F X F Y(Z Z(Z True <-> (p1)) -> ((p4) T (p1)))) | Z((p3) T Y !((p2) & H (p3))))
+(True <-> (p2)) | ((((p4) -> True) R !False) <-> (F(G (p2) & True & (wX (p1) <-> !G (p5))) <-> (G G G X(((False -> False) -> G True) -> wX (p1)) | F (p1))))
