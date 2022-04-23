@@ -183,7 +183,7 @@ namespace black::sat::backends
     Z3_ast res;
     
     [[maybe_unused]] 
-    Z3_bool_opt ok = 
+    auto ok = 
       Z3_model_eval(_data->context, *_data->model, term, false, &res);
     black_assert(ok);
 
