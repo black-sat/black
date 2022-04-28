@@ -46,7 +46,6 @@ namespace black::internal {
     {
       _frm = to_nnf(_frm);
       _add_xyz_requests(_frm);
-      _add_atomic_requests(_frm);
     }
 
     formula get_formula() const { return _frm; }
@@ -111,8 +110,11 @@ namespace black::internal {
 
     // collect X/Y/Z-requests
     void _add_xyz_requests(formula f);
-    void _add_atomic_requests(formula f);
+    bool atom_is_strong(atom a);
+    bool atom_is_weak(atom a);
+    bool term_is_strong(term t);
     bool term_is_weak(term t);
+    formula end_of_trace_prop(size_t i);
     void error(std::string const&msg);
 
     // Extract the x-eventuality from an x-request

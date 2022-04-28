@@ -70,19 +70,11 @@ namespace black::internal
 
   // Generates the encoding for EMPTY_k
   formula encoder::k_empty(size_t k) {
-    formula tomorrows = 
-      big_and(*_sigma, _xrequests, [&,this](unary req) -> formula {
-        if(!_finite || req.formula_type() == unary::type::tomorrow)
-          return !ground(req, k);
-        return _sigma->top();
-      });
-
-    formula nexts =
-      big_and(*_sigma, _atomic_requests, [&](formula a) -> formula {
-        return !to_ground_snf(a, k);
-      });
-    
-    return tomorrows && nexts;
+    return big_and(*_sigma, _xrequests, [&,this](unary req) -> formula {
+      if(!_finite || req.formula_type() == unary::type::tomorrow)
+        return !ground(req, k);
+      return _sigma->top();
+    });
   }
 
   // extract the requested formula from an X-eventuality
@@ -180,6 +172,9 @@ namespace black::internal
       return to_ground_snf(_frm, k) && y && z;
     }
 
+    // \ell_k
+    formula ell = end_of_trace_prop(k - 1);
+
     // STEP
     // X(\alpha)_G^{k} <-> snf(\alpha)_G^{k+1}
     formula step = big_and(*_sigma, _xrequests, [&](unary xreq) {
@@ -195,7 +190,43 @@ namespace black::internal
     formula y = big_and(*_sigma, _yrequests, make_yz);
     formula z = big_and(*_sigma, _zrequests, make_yz);
     
-    return step && y && z;
+    return ell && step && y && z;
+  }
+
+  bool encoder::atom_is_strong(atom a) {
+    for(term t : a.terms())
+      if(term_is_strong(t))
+        return true;
+    return false;
+  }
+
+  bool encoder::atom_is_weak(atom a) {
+    bool has_strong_terms = false;
+    bool has_weak_terms = false;
+
+    for(term t : a.terms()) {
+      if(term_is_strong(t))
+        has_strong_terms = true;
+      if(term_is_weak(t))
+        has_weak_terms = true;
+    }
+
+    return !has_strong_terms && has_weak_terms;
+  }
+
+  bool encoder::term_is_strong(term t) {
+    return t.match(
+      [](constant) { return false; },
+      [](variable) { return false; },
+      [&](application a) {
+        for(term t2 : a.arguments())
+          if(term_is_strong(t2))
+            return true;
+        return false;
+      },
+      [](next) { return true; },
+      [](wnext) { return false; }
+    );
   }
 
   bool encoder::term_is_weak(term t) {
@@ -224,6 +255,10 @@ namespace black::internal
     return !has_next && has_wnext;
   }
 
+  formula encoder::end_of_trace_prop(size_t i) {
+    return _sigma->prop(std::tuple{"_end_of_trace_prop"sv, i});
+  }
+
   // Turns the current formula into Stepped Normal Form
   // Note: this has to be run *after* the transformation to NNF (to_nnf() below)
   formula encoder::to_ground_snf(formula f, size_t k) {
@@ -237,14 +272,14 @@ namespace black::internal
       [&](boolean)      { return f; },
       [&](atom a) -> formula { 
         std::vector<term> terms;
-        bool weak = false;
-        for(term t : a.terms()) {
-          weak = weak || term_is_weak(t);
+        for(term t : a.terms())
           terms.push_back(stepped(t, k, scope));
-        }
 
-        if(weak)
-          return ground(wX(f.sigma()->bottom()), k) || atom(a.rel(), terms);
+        black_assert(!(atom_is_strong(a) && atom_is_weak()));
+        if(atom_is_weak(a))
+          return !end_of_trace_prop(k) || atom(a.rel(), terms);
+        if(atom_is_strong(a))
+          return end_of_trace_prop(k) && atom(a.rel(), terms);
 
         return atom(a.rel(), terms);
       }, // LCOV_EXCL_LINE
@@ -509,11 +544,7 @@ namespace black::internal
       [](boolean) { },
       [](proposition) { },
       [](quantifier) { },
-      [&](atom a) {
-        for(term t : a.terms())
-          if(term_is_weak(t))
-            _xrequests.push_back(wX(_sigma->bottom()));
-      },
+      [](atom) { },
       [&](unary, formula op) {
         _add_xyz_requests(op);
       },
@@ -568,30 +599,6 @@ namespace black::internal
       [](binary, formula left, formula right) {
         return formula_has_next(left) || formula_has_next(right); // LCOV_EXCL_LINE
       }
-    );
-  }
-
-  void encoder::_add_atomic_requests(formula f) {
-    f.match(
-      [&](atom a) {
-        bool has_next = false;
-        for(term t : a.terms()) 
-          has_next = has_next || term_has_next(t);
-        if(has_next)
-          _atomic_requests.push_back(a);
-      },
-      [&](quantifier q) {
-        if(formula_has_next(q.matrix()))
-          _atomic_requests.push_back(q);
-      },
-      [&](unary, formula arg) {
-        _add_atomic_requests(arg);
-      },
-      [&](binary, formula left, formula right) {
-        _add_atomic_requests(left);
-        _add_atomic_requests(right);
-      },
-      [](otherwise) { }
     );
   }
 }
