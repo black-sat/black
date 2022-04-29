@@ -74,7 +74,7 @@ namespace black::internal
       if(!_finite || req.formula_type() == unary::type::tomorrow)
         return !ground(req, k);
       return _sigma->top();
-    });
+    }) && !end_of_trace_prop(k);
   }
 
   // extract the requested formula from an X-eventuality
