@@ -275,7 +275,7 @@ namespace black::internal
         for(term t : a.terms())
           terms.push_back(stepped(t, k, scope));
 
-        black_assert(!(atom_is_strong(a) && atom_is_weak()));
+        black_assert(!(atom_is_strong(a) && atom_is_weak(a)));
         if(atom_is_weak(a))
           return !end_of_trace_prop(k) || atom(a.rel(), terms);
         if(atom_is_strong(a))
