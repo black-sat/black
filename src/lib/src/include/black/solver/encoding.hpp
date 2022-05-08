@@ -103,7 +103,6 @@ namespace black::internal {
     std::vector<unary> _xrequests;
     std::vector<yesterday> _yrequests;
     std::vector<w_yesterday> _zrequests;
-    std::vector<formula> _atomic_requests;
 
     // cache to memoize to_nnf() calls
     tsl::hopscotch_map<formula, formula> _nnf_cache;
