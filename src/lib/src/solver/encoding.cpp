@@ -275,7 +275,7 @@ namespace black::internal
         for(term t : a.terms())
           terms.push_back(stepped(t, k, scope));
 
-        black_assert(!(atom_is_strong(a) && atom_is_weak(a)));
+        black_assert(!(atom_is_strong(a) && atom_is_weak(a))); // LCOV_EXCL_LINE
         if(atom_is_weak(a))
           return !end_of_trace_prop(k) || atom(a.rel(), terms);
         if(atom_is_strong(a))
@@ -559,45 +559,6 @@ namespace black::internal
       [&](binary, formula left, formula right) {
         _add_xyz_requests(left);
         _add_xyz_requests(right);
-      }
-    );
-  }
-
-  static bool term_has_next(term t) {
-    return t.match(
-      [](constant) { return false; },
-      [](variable) { return false; },
-      [](next) { return true; },
-      [&](application a) {
-        for(term arg : a.arguments())
-          if(term_has_next(arg))
-            return true;
-        return false;
-      },
-      [&](wnext n) {
-        return term_has_next(n.argument());
-      }
-    );
-  }
-
-  static bool formula_has_next(formula frm) {
-    return frm.match(
-      [](boolean) { return false; },
-      [](proposition) { return false; },
-      [](quantifier q) {
-        return formula_has_next(q.matrix());
-      },
-      [](atom a) {
-        for(term arg : a.terms())
-          if(term_has_next(arg))
-            return true;
-        return false;
-      },
-      [](unary, formula arg) {
-        return formula_has_next(arg);
-      },
-      [](binary, formula left, formula right) {
-        return formula_has_next(left) || formula_has_next(right); // LCOV_EXCL_LINE
       }
     );
   }
