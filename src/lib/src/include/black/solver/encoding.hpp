@@ -46,7 +46,6 @@ namespace black::internal {
     {
       _frm = to_nnf(_frm);
       _add_xyz_requests(_frm);
-      _add_atomic_requests(_frm);
     }
 
     formula get_formula() const { return _frm; }
@@ -104,15 +103,17 @@ namespace black::internal {
     std::vector<unary> _xrequests;
     std::vector<yesterday> _yrequests;
     std::vector<w_yesterday> _zrequests;
-    std::vector<formula> _atomic_requests;
 
     // cache to memoize to_nnf() calls
     tsl::hopscotch_map<formula, formula> _nnf_cache;
 
     // collect X/Y/Z-requests
     void _add_xyz_requests(formula f);
-    void _add_atomic_requests(formula f);
+    bool atom_is_strong(atom a);
+    bool atom_is_weak(atom a);
+    bool term_is_strong(term t);
     bool term_is_weak(term t);
+    formula end_of_trace_prop(size_t i);
     void error(std::string const&msg);
 
     // Extract the x-eventuality from an x-request
