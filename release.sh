@@ -3,21 +3,18 @@
 set -eu -o pipefail
 shopt -s failglob
 
-if [ $# -ne 1 ]; then
-  echo Please provide the version number, e.g.
-  echo \$ $0 0.4.0
-  exit 1
-fi
-
-VERSION=$1
-SRC_DIR=$(pwd)
-
 die() {
   exit 1
 }
 
-prepare() {
+setup() {
+  SRC_DIR=$(git rev-parse --show-toplevel)
+  VERSION=$(cat CMakeLists.txt | grep -E '^\s+VERSION' | awk '{print $2}')
+
   cd "$SRC_DIR"
+}
+
+images() {
   docker build docker \
     -f docker/Dockerfile.ubuntu -t black:ubuntu --build-arg GCC_VERSION=10
   docker build docker \
@@ -52,12 +49,25 @@ build() {
   rm -rf "$SRC_DIR/build"
   mkdir build
   $env cmake -DENABLE_CMSAT=NO .. || die
-  $env make -j 3 || die
+  $env make -j || die
   $env cpack -G $gen || die
 
   mkdir -p "$SRC_DIR/packages"
   mv "$SRC_DIR/build/black-sat-$VERSION-Linux.$ext" \
      "$SRC_DIR/packages/black-sat-$VERSION-1.$(uname -m).$ext" 
+}
+
+release() {
+  cat gh.token | gh auth login -p ssh --with-token
+  temp=$(mktemp)
+  vim $temp
+  if [ -z "$(cat $temp)" ]; then 
+    echo "Empty release notes. Quitting..."
+    exit 0
+  fi
+  gh release create --notes-file $temp -p -t v$VERSION --target master v$VERSION
+  gh release upload v$VERSION packages/black-sat-$VERSION-1.x86_64.deb
+  gh release upload v$VERSION packages/black-sat-$VERSION-1.x86_64.rpm
 }
 
 homebrew() {
@@ -95,10 +105,12 @@ END
 }
 
 main () {
-  prepare
+  setup
+  images
   build ubuntu 
   build fedora
-  homebrew
+  release
+  # homebrew
 }
 
 main "$@"

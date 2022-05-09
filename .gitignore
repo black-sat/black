@@ -227,3 +227,6 @@ packages
 # Visual Studio settings
 .vs
 CMakeSettings.json
+
+# GitHub API token
+gh.token
