@@ -17,9 +17,9 @@ dependencies() {
 
 setup() {
   SRC_DIR=$(git rev-parse --show-toplevel)
-  VERSION=$(cat CMakeLists.txt | grep -E '^\s+VERSION' | awk '{print $2}')
-
   cd "$SRC_DIR"
+  
+  VERSION=$(cat CMakeLists.txt | grep -E '^\s+VERSION' | awk '{print $2}')
 }
 
 images() {
