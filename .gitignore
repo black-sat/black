@@ -228,5 +228,6 @@ packages
 .vs
 CMakeSettings.json
 
-# GitHub API token
+# GitHub and Appveyor API tokens
 gh.token
+appveyor.token
