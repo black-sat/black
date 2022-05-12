@@ -7,11 +7,6 @@ task:
         dockerfile: docker/Dockerfile.fedora
         docker_arguments:
           VERSION: 29
-    # - name: Fedora 31 (g++ 9)
-    #   container:
-    #     dockerfile: docker/Dockerfile.fedora
-    #     docker_arguments:
-    #       VERSION: 31
     - name: Fedora 36 (g++ 12)
       container:
         dockerfile: docker/Dockerfile.fedora
@@ -97,16 +92,16 @@ task:
 
 task:
   matrix:
-    - name: Fedora 32 (with CryptoMiniSAT backend)
+    - name: Fedora 36 (with CryptoMiniSAT backend)
       environment:
         BACKEND: cmsat
-    - name: Fedora 32 (with MathSAT backend)
+    - name: Fedora 36 (with MathSAT backend)
       environment:
         BACKEND: mathsat
   container:
     dockerfile: docker/Dockerfile.fedora
     docker_arguments:
-      VERSION: 32
+      VERSION: 36
   environment:
     CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
   download_mathsat_script:
