@@ -18,12 +18,12 @@ task:
     #     docker_arguments:
     #       VERSION: 20.04
     #       GCC_VERSION: 9
-    - name: Ubuntu 22.04 (g++ 10)
-      container:
-        dockerfile: docker/Dockerfile.ubuntu
-        docker_arguments:
-          VERSION: 20.04
-          GCC_VERSION: 10
+    # - name: Ubuntu 22.04 (g++ 10)
+    #   container:
+    #     dockerfile: docker/Dockerfile.ubuntu
+    #     docker_arguments:
+    #       VERSION: 20.04
+    #       GCC_VERSION: 10
     - name: Ubuntu 22.04 (g++ 11)
       container:
         dockerfile: docker/Dockerfile.ubuntu
