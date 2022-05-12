@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y make cmake gdb
 RUN apt-get update && \
     apt-get install -y libz-dev libtsl-hopscotch-map-dev libfmt-dev libz3-dev 
-RUN apt-get update && apt-get install -y git wget python curl
+RUN apt-get update && apt-get install -y git wget python3 python-is-python3 curl
 
 ARG GCC_VERSION=8
 ENV GCC_VERSION $GCC_VERSION
