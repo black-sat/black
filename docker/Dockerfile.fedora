@@ -1,4 +1,4 @@
-ARG VERSION=32
+ARG VERSION=36
 FROM fedora:$VERSION
 RUN echo 'fastestmirror=1' >> /etc/dnf/dnf.conf
 RUN yum update -y
