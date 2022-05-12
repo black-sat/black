@@ -149,11 +149,11 @@ namespace black::sat::backends
   msat_term mathsat::_mathsat_t::to_mathsat_inner(formula f) 
   {
     return f.match(
-      [this](boolean b) {
+      [this](boolean b) { // LCOV_EXCL_LINE
         return b.value() ? 
           msat_make_true(env) : msat_make_false(env);
       },
-      [this](atom a) {
+      [this](atom a) { // LCOV_EXCL_LINE
         std::vector<msat_term> args;
         for(term t : a.terms())
           args.push_back(to_mathsat(t));
@@ -190,17 +190,17 @@ namespace black::sat::backends
       },
       // mathsat does not support quantifiers
       [](quantifier) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
-      [this](proposition p) {
+      [this](proposition p) { // LCOV_EXCL_LINE
         msat_decl msat_prop =
           msat_declare_function(env, to_string(p.unique_id()).c_str(),
           msat_get_bool_type(env));
 
         return msat_make_constant(env, msat_prop);
       },
-      [this](negation n) {
+      [this](negation n) { // LCOV_EXCL_LINE
         return msat_make_not(env, to_mathsat(n.operand()));
       },
-      [this](big_conjunction c) {
+      [this](big_conjunction c) { // LCOV_EXCL_LINE
         msat_term acc = msat_make_true(env);
 
         for(formula op : c.operands())
@@ -208,7 +208,7 @@ namespace black::sat::backends
 
         return acc;
       },
-      [this](big_disjunction c) {
+      [this](big_disjunction c) { // LCOV_EXCL_LINE
         msat_term acc = msat_make_false(env);
 
         for(formula op : c.operands())
@@ -216,7 +216,7 @@ namespace black::sat::backends
 
         return acc;
       },
-      [this](implication t) {
+      [this](implication t) { // LCOV_EXCL_LINE
         return
           msat_make_or(env,
             msat_make_not(env, 
@@ -288,7 +288,7 @@ namespace black::sat::backends
   
   msat_term mathsat::_mathsat_t::to_mathsat_inner(term t) {
     return t.match(
-      [&](constant c) {
+      [&](constant c) { // LCOV_EXCL_LINE
         if(std::holds_alternative<int64_t>(c.value()))
           return
             msat_make_number(env, 
@@ -298,7 +298,7 @@ namespace black::sat::backends
             msat_make_number(env,
               std::to_string(std::get<double>(c.value())).c_str());
       },
-      [&](variable x) {
+      [&](variable x) { // LCOV_EXCL_LINE
         return msat_make_constant(env, to_mathsat(x));
       },
       [&](application a) {
