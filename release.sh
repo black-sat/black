@@ -24,9 +24,9 @@ setup() {
 
 images() {
   docker build docker \
-    -f docker/Dockerfile.ubuntu -t black:ubuntu --build-arg GCC_VERSION=10
+    -f docker/Dockerfile.ubuntu -t black:ubuntu
   docker build docker \
-    -f docker/Dockerfile.fedora -t black:fedora --build-arg VERSION=34
+    -f docker/Dockerfile.fedora -t black:fedora
 }
 
 launch() {
