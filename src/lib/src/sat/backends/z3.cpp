@@ -26,6 +26,8 @@
 #include <black/logic/alphabet.hpp>
 #include <black/logic/parser.hpp>
 
+#include <black/sat/backends/fractionals.hpp>
+
 #include <z3.h>
 #include <tsl/hopscotch_map.h>
 
@@ -369,35 +371,6 @@ namespace black::sat::backends
     );
   }
 
-  //
-  // Thanks to Leonardo Taglialegne
-  //
-  static std::pair<int, int> double_to_fraction(double n) {
-    uint64_t a = (uint64_t)floor(n), b = 1;
-    uint64_t c = (uint64_t)ceil(n), d = 1;
-
-    uint64_t num = 1;
-    uint64_t denum = 1;
-    while(
-      a + c <= (uint64_t)std::numeric_limits<int>::max() &&
-      b + d <= (uint64_t)std::numeric_limits<int>::max() &&
-      ((double)num/(double)denum != n)
-    ) {
-      num = a + c;
-      denum = b + d;
-
-      if((double)num/(double)denum > n) {
-        c = num;
-        d = denum;
-      } else {
-        a = num;
-        b = denum;
-      }
-    }
-
-    return {static_cast<int>(num), static_cast<int>(denum)};
-  }
-
   Z3_ast z3::_z3_t::to_z3_inner(term t) {
     return t.match(
       [&](constant c) {
@@ -412,7 +385,8 @@ namespace black::sat::backends
             return number;
           return Z3_mk_int2real(context, number);
         } else {
-          auto [num,denum] = double_to_fraction(std::get<double>(c.value()));
+          auto [num,denum] = 
+            black::internal::double_to_fraction(std::get<double>(c.value()));
           return Z3_mk_real(context, num, denum);
         }
       },
