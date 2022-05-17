@@ -68,6 +68,7 @@ namespace black::sat::backends
   {
     _data->solver.setLogic("ALL");
     _data->solver.setOption("produce-models", "true");
+    _data->solver.setOption("finite-model-find", "true");
   }
 
   cvc5::~cvc5() = default;
