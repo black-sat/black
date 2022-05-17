@@ -40,24 +40,19 @@ namespace black::sat::backends
   }
 
   namespace cvc = ::cvc5;
+
   struct cvc5::_cvc5_t {
     cvc::Solver solver;
 
     tsl::hopscotch_map<formula, cvc::Term> formulas; 
     tsl::hopscotch_map<term, cvc::Term> terms;
 
-    cvc::Term to_cvc5(
-      formula, tsl::hopscotch_map<variable, cvc::Term> const&env
-    );
-    cvc::Term to_cvc5(
-      term, tsl::hopscotch_map<variable, cvc::Term> const&env
-    );
+    cvc::Term to_cvc5(formula);
+    cvc::Term to_cvc5(term);
     cvc::Sort to_cvc5(sort);
 
-    cvc::Term to_cvc5_inner(formula, 
-      tsl::hopscotch_map<variable, cvc::Term> const&env);
-    cvc::Term to_cvc5_inner(term,
-      tsl::hopscotch_map<variable, cvc::Term> const&env);
+    cvc::Term to_cvc5_inner(formula);
+    cvc::Term to_cvc5_inner(term);
 
     cvc::Term to_cvc5_func_decl(
       alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
@@ -74,13 +69,13 @@ namespace black::sat::backends
   cvc5::~cvc5() = default;
 
   void cvc5::assert_formula(formula f) {
-    cvc::Term term = _data->to_cvc5(f, {});
+    cvc::Term term = _data->to_cvc5(f);
     _data->solver.assertFormula(term);
   }
 
   tribool cvc5::is_sat_with(formula f) 
   {
-    cvc::Term term = _data->to_cvc5(f, {});
+    cvc::Term term = _data->to_cvc5(f);
 
     cvc::Result res = _data->solver.checkSatAssuming(term);
 
@@ -117,27 +112,22 @@ namespace black::sat::backends
     _data->solver.resetAssertions();
   }
 
-  cvc::Term cvc5::_cvc5_t::to_cvc5(
-    formula f, tsl::hopscotch_map<variable, cvc::Term> const&env
-  ) {
+  cvc::Term cvc5::_cvc5_t::to_cvc5(formula f) {
     if(auto it = formulas.find(f); it != formulas.end()) 
       return it->second;
 
-    cvc::Term cvc5_t = to_cvc5_inner(f, env);
+    cvc::Term cvc5_t = to_cvc5_inner(f);
     formulas.insert({f, cvc5_t});
 
     return cvc5_t;
   }
 
-  cvc::Term cvc5::_cvc5_t::to_cvc5(
-    term t, tsl::hopscotch_map<variable, cvc::Term> const&env
-  ) {
+  cvc::Term cvc5::_cvc5_t::to_cvc5(term t) {
     if(auto it = terms.find(t); it != terms.end()) 
       return it->second;
 
-    cvc::Term cvc5_t = to_cvc5_inner(t, env);
-    if(!t.is<variable>() || env.find(*t.to<variable>()) == env.end())
-      terms.insert({t, cvc5_t});
+    cvc::Term cvc5_t = to_cvc5_inner(t);
+    terms.insert({t, cvc5_t});
 
     return cvc5_t;
   }
@@ -152,9 +142,7 @@ namespace black::sat::backends
     black_unreachable(); // LCOV_EXCL_LINE
   }
 
-  cvc::Term cvc5::_cvc5_t::to_cvc5_inner(
-    formula f, tsl::hopscotch_map<variable, cvc::Term> const&env
-  ) {
+  cvc::Term cvc5::_cvc5_t::to_cvc5_inner(formula f) {
     return f.match(
       [&](boolean b) {
         return b.value() ? solver.mkTrue() : solver.mkFalse();
@@ -162,7 +150,7 @@ namespace black::sat::backends
       [&](atom a) -> cvc::Term {
         std::vector<cvc::Term> cvc_terms;
         for(term t : a.terms())
-          cvc_terms.push_back(to_cvc5(t, env));
+          cvc_terms.push_back(to_cvc5(t));
 
         // we know how to encode known relations
         if(auto k = a.rel().known_type(); k) {
@@ -199,46 +187,45 @@ namespace black::sat::backends
           solver.mkVar(
               to_cvc5(*q.sigma()->domain()), to_string(q.var().unique_id()));
         
-        cvc::Term varlist = solver.mkTerm(cvc::VARIABLE_LIST, {var});
+        terms.insert({q.var(), var});
 
-        tsl::hopscotch_map<variable, cvc::Term> new_env = env;
-        new_env.insert({q.var(), var});
+        cvc::Term varlist = solver.mkTerm(cvc::VARIABLE_LIST, {var});
 
         if(q.quantifier_type() == quantifier::type::forall)
           return 
-            solver.mkTerm(cvc::FORALL, {varlist, to_cvc5(q.matrix(), new_env)});
+            solver.mkTerm(cvc::FORALL, {varlist, to_cvc5(q.matrix())});
         else
           return 
-            solver.mkTerm(cvc::EXISTS, {varlist, to_cvc5(q.matrix(), new_env)});
+            solver.mkTerm(cvc::EXISTS, {varlist, to_cvc5(q.matrix())});
       },
       [&](proposition p) {
         return 
           solver.mkConst(solver.getBooleanSort(), to_string(p.unique_id()));
       },
       [&](negation, formula n) {
-        return solver.mkTerm(cvc::NOT, {to_cvc5(n, env)});
+        return solver.mkTerm(cvc::NOT, {to_cvc5(n)});
       },
       [&](big_conjunction c) {
         std::vector<cvc::Term> args;
         for(formula op : c.operands())
-          args.push_back(to_cvc5(op, env));
+          args.push_back(to_cvc5(op));
 
         return solver.mkTerm(cvc::AND, args);
       },
       [&](big_disjunction c) {
         std::vector<cvc::Term> args;
         for(formula op : c.operands())
-          args.push_back(to_cvc5(op, env));
+          args.push_back(to_cvc5(op));
 
         return solver.mkTerm(cvc::OR, args);
       },
       [&](implication, formula left, formula right) {
         return 
-          solver.mkTerm(cvc::IMPLIES,{to_cvc5(left, env), to_cvc5(right, env)});
+          solver.mkTerm(cvc::IMPLIES,{to_cvc5(left), to_cvc5(right)});
       },
       [&](iff, formula left, formula right) {
         return 
-          solver.mkTerm(cvc::EQUAL, {to_cvc5(left, env), to_cvc5(right, env)});
+          solver.mkTerm(cvc::EQUAL, {to_cvc5(left), to_cvc5(right)});
       },
       [](temporal) -> cvc::Term { // LCOV_EXCL_LINE
         black_unreachable(); // LCOV_EXCL_LINE
@@ -262,9 +249,7 @@ namespace black::sat::backends
     return solver.mkConst(funcSort, name);
   }
 
-  cvc::Term cvc5::_cvc5_t::to_cvc5_inner(
-    term t, tsl::hopscotch_map<variable, cvc::Term> const&env
-  ) {
+  cvc::Term cvc5::_cvc5_t::to_cvc5_inner(term t) {
     return t.match(
       [&](constant c) {
         if(std::holds_alternative<int64_t>(c.value())) {
@@ -280,9 +265,6 @@ namespace black::sat::backends
         }
       },
       [&](variable v) {
-        if(auto it = env.find(v); it != env.end())
-          return it->second;
-
         std::optional<sort> s = t.sigma()->domain();
         black_assert(s.has_value());
         return solver.mkConst(to_cvc5(*s), to_string(v.unique_id()));
@@ -292,7 +274,7 @@ namespace black::sat::backends
 
         std::vector<cvc::Term> cvc_terms;
         for(term t2 : a.arguments())
-          cvc_terms.push_back(to_cvc5(t2, env));
+          cvc_terms.push_back(to_cvc5(t2));
 
         // We know how to encode known functions
         if(auto k = a.func().known_type(); k) {

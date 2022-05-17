@@ -89,7 +89,6 @@ namespace black::internal {
     tsl::hopscotch_map<binary_key,     binary_t*>      _binaries_map;
 
     tsl::hopscotch_map<constant_key,    constant_t*>    _consts_map;
-    tsl::hopscotch_map<identifier,      variable_t*>    _vars_map;
     tsl::hopscotch_map<term_base *,     next_t*>        _nexts_map;
     tsl::hopscotch_map<term_base *,     wnext_t*>       _wnexts_map;
     tsl::hopscotch_map<application_key, application_t*> _apps_map;
@@ -175,14 +174,7 @@ namespace black::internal {
   variable_t *alphabet::allocate_variable(identifier _label)
   {
     identifier label{FWD(_label)};
-
-    if(auto it = _impl->_vars_map.find(label); it != _impl->_vars_map.end())
-      return it->second;
-
-    variable_t *a = &_impl->_vars.emplace_back(label);
-    _impl->_vars_map.insert({label, a});
-
-    return a;
+    return &_impl->_vars.emplace_back(label);
   }
 
   unary_t *alphabet::allocate_unary(unary::type type, formula_base* arg)

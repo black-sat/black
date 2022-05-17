@@ -99,6 +99,9 @@ namespace black::internal {
     // encode for finite models
     bool _finite = false;
 
+    // store of stepped variables
+    tsl::hopscotch_map<std::pair<term, size_t>, variable> _stepped_vars;
+
     // X/Y/Z-requests from the formula's closure
     std::vector<unary> _xrequests;
     std::vector<yesterday> _yrequests;
@@ -109,6 +112,8 @@ namespace black::internal {
 
     // collect X/Y/Z-requests
     void _add_xyz_requests(formula f);
+
+    variable stepped_var(term t, size_t k);
     bool atom_is_strong(atom a);
     bool atom_is_weak(atom a);
     bool term_is_strong(term t);
