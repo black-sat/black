@@ -98,6 +98,9 @@ task:
     - name: Fedora 36 (with MathSAT backend)
       environment:
         BACKEND: mathsat
+    - name: Fedora 36 (with CVC5 backend)
+      environment:
+        BACKEND: cvc5
   container:
     dockerfile: docker/Dockerfile.fedora
     docker_arguments:

@@ -2,9 +2,20 @@ ARG VERSION=36
 FROM fedora:$VERSION
 RUN echo 'fastestmirror=1' >> /etc/dnf/dnf.conf
 RUN yum update -y
-RUN yum install -y make cmake gcc gcc-c++
+RUN yum install -y make cmake gcc gcc-c++ python3-pip java 
 RUN yum install -y zlib-devel fmt-devel catch-devel z3-devel gmp-devel gmp-c++
-RUN yum install -y git wget rpm-build
+RUN yum install -y git wget rpm-build m4
+
+RUN pip install toml
+
+RUN git clone https://github.com/cvc5/cvc5.git /cvc5
+WORKDIR /cvc5
+RUN git checkout cvc5-1.0.0
+RUN ./configure.sh production --no-python-bindings --no-java-bindings --auto-download
+
+WORKDIR /cvc5/build
+RUN make -j $(cat /proc/cpuinfo | grep processor | wc -l)
+RUN make install
 
 RUN git clone https://github.com/msoos/cryptominisat.git /cmsat
 WORKDIR /cmsat
@@ -12,7 +23,7 @@ RUN git checkout 5.8.0
 
 WORKDIR /cmsat/build
 RUN cmake -DONLY_SIMPLE=ON -DNOZLIB=ON -DNOM4RI=ON -DSTATS=OFF -DNOVALGRIND=ON -DENABLE_TESTING=OFF ..
-RUN make
+RUN make -j $(cat /proc/cpuinfo | grep processor | wc -l)
 RUN make install
 
 RUN git clone https://github.com/Tessil/hopscotch-map.git /tsl
