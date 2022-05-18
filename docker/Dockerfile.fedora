@@ -6,7 +6,7 @@ RUN yum install -y make cmake gcc gcc-c++ python3-pip java
 RUN yum install -y zlib-devel fmt-devel catch-devel z3-devel gmp-devel gmp-c++
 RUN yum install -y git wget rpm-build m4
 
-RUN pip install toml
+RUN pip3 install toml
 
 RUN git clone https://github.com/cvc5/cvc5.git /cvc5
 WORKDIR /cvc5
