@@ -402,16 +402,6 @@ namespace black::internal
     black_unreachable(); // LCOV_EXCL_LINE
   }
 
-  variable encoder::stepped_var(term t, size_t k) {
-    if(auto it = _stepped_vars.find({t,k}); it != _stepped_vars.end())
-      return it->second;
-
-    variable v = _sigma->var(std::pair{t,k});
-    _stepped_vars.insert({{t,k}, v});
-
-    return v;
-  }
-
   term encoder::stepped(term t, size_t k, std::vector<variable> const&scope) {
     return t.match( // LCOV_EXCL_LINE
       [](constant c) { return c; },
@@ -419,7 +409,7 @@ namespace black::internal
         for(variable v : scope)
           if(x == v)
             return x;
-        return stepped_var(t, k);
+        return _sigma->var(std::pair(t, k)); 
       },
       [&](application a) {
         std::vector<term> terms;

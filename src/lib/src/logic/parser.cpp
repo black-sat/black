@@ -63,7 +63,6 @@ namespace black::internal
     bool _trying = false;
     std::function<void(std::string)> _error;
     std::vector<token> _tokens;
-    std::vector<tsl::hopscotch_map<std::string, variable>> env = {{}};
     size_t _pos = 0;
 
     _parser_t(alphabet &sigma, std::istream &stream, error_handler error);
@@ -77,8 +76,6 @@ namespace black::internal
     std::optional<token> consume(token::punctuation p);
 
     std::nullopt_t error(std::string const&s);
-
-    variable var(std::string const&);
 
     std::optional<formula> parse_formula();
     std::optional<formula> parse_binary_rhs(int, formula);
@@ -316,21 +313,13 @@ namespace black::internal
     if(!dot || dot->data<token::punctuation>() != token::punctuation::dot)
       return error("Expected dot after quantifier");
 
-    std::vector<variable> vars;
-    tsl::hopscotch_map<std::string, variable> frame;
-    for(token tok : vartoks) {
-      std::string name = *tok.data<std::string>();
-      variable var = _alphabet.var(name);
-      vars.push_back(var);
-      frame.insert({name, var});
-    }
-
-    env.push_back(frame);
     std::optional<formula> matrix = parse_primary();
-    env.pop_back();
-
     if(!matrix)
       return {};
+
+    std::vector<variable> vars;
+    for(token tok : vartoks)
+      vars.push_back(_alphabet.var(*tok.data<std::string>()));
 
     if(q == quantifier::type::exists)
       return exists(vars, *matrix);
@@ -518,17 +507,6 @@ namespace black::internal
     return wnext(*t);
   }
 
-  variable parser::_parser_t::var(std::string const&name) {
-    for(auto it = env.rbegin(); it != env.rend(); it++)
-      if(auto it2 = it->find(name); it2 != it->end())
-        return it2->second;
-    
-    variable v = _alphabet.var(name);
-    env[0].insert({name, v});
-
-    return v;
-  }
-
   std::optional<term> 
   parser::_parser_t::parse_term_var_or_func() {
     black_assert(peek());
@@ -540,7 +518,7 @@ namespace black::internal
     // if there is no open paren this is a simple variable
     if(!peek() || 
         peek()->data<token::punctuation>() != token::punctuation::left_paren)
-      return var(id);
+      return _alphabet.var(id);
 
     // otherwise it is a function application
     std::vector<term> terms;
