@@ -42,6 +42,7 @@ namespace black::sat::backends
   namespace cvc = ::cvc5;
   struct cvc5::_cvc5_t {
     cvc::Solver solver;
+    bool sat_response = false;
 
     tsl::hopscotch_map<variable, cvc::Term> vars;
     tsl::hopscotch_map<proposition, cvc::Term> props;
@@ -82,6 +83,7 @@ namespace black::sat::backends
     cvc::Term term = _data->to_cvc5(f, {});
 
     cvc::Result res = _data->solver.checkSatAssuming(term);
+    _data->sat_response = res.isSat();
 
     return res.isSat() ? tribool{true} :
            res.isUnsat() ? tribool{false} :
@@ -91,6 +93,7 @@ namespace black::sat::backends
   tribool cvc5::is_sat() 
   {
     cvc::Result res = _data->solver.checkSat();
+    _data->sat_response = res.isSat();
 
     return res.isSat() ? tribool{true} :
            res.isUnsat() ? tribool{false} :
@@ -99,6 +102,9 @@ namespace black::sat::backends
 
   tribool cvc5::value(proposition p) const 
   {
+    if(!_data->sat_response)
+      return tribool::undef;
+
     auto it = _data->props.find(p);
     if(it == _data->props.end())
       return tribool::undef;
