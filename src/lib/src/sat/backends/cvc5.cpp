@@ -43,8 +43,12 @@ namespace black::sat::backends
   struct cvc5::_cvc5_t {
     cvc::Solver solver;
 
-    tsl::hopscotch_map<formula, cvc::Term> formulas; 
-    tsl::hopscotch_map<term, cvc::Term> terms;
+    tsl::hopscotch_map<variable, cvc::Term> vars;
+    tsl::hopscotch_map<proposition, cvc::Term> props;
+    tsl::hopscotch_map<
+      std::tuple<std::string, unsigned, bool>, 
+      cvc::Term
+    > decls;
 
     cvc::Term to_cvc5(
       formula, tsl::hopscotch_map<variable, cvc::Term> const&env
@@ -53,11 +57,6 @@ namespace black::sat::backends
       term, tsl::hopscotch_map<variable, cvc::Term> const&env
     );
     cvc::Sort to_cvc5(sort);
-
-    cvc::Term to_cvc5_inner(formula, 
-      tsl::hopscotch_map<variable, cvc::Term> const&env);
-    cvc::Term to_cvc5_inner(term,
-      tsl::hopscotch_map<variable, cvc::Term> const&env);
 
     cvc::Term to_cvc5_func_decl(
       alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
@@ -100,8 +99,8 @@ namespace black::sat::backends
 
   tribool cvc5::value(proposition p) const 
   {
-    auto it = _data->formulas.find(p);
-    if(it == _data->formulas.end())
+    auto it = _data->props.find(p);
+    if(it == _data->props.end())
       return tribool::undef;
     
     cvc::Term term = it->second;
@@ -117,31 +116,6 @@ namespace black::sat::backends
     _data->solver.resetAssertions();
   }
 
-  cvc::Term cvc5::_cvc5_t::to_cvc5(
-    formula f, tsl::hopscotch_map<variable, cvc::Term> const&env
-  ) {
-    if(auto it = formulas.find(f); it != formulas.end()) 
-      return it->second;
-
-    cvc::Term cvc5_t = to_cvc5_inner(f, env);
-    formulas.insert({f, cvc5_t});
-
-    return cvc5_t;
-  }
-
-  cvc::Term cvc5::_cvc5_t::to_cvc5(
-    term t, tsl::hopscotch_map<variable, cvc::Term> const&env
-  ) {
-    if(auto it = terms.find(t); it != terms.end()) 
-      return it->second;
-
-    cvc::Term cvc5_t = to_cvc5_inner(t, env);
-    if(!t.is<variable>() || env.find(*t.to<variable>()) == env.end())
-      terms.insert({t, cvc5_t});
-
-    return cvc5_t;
-  }
-
   cvc::Sort cvc5::_cvc5_t::to_cvc5(sort s) {
     switch(s){ 
       case sort::Int:
@@ -152,7 +126,7 @@ namespace black::sat::backends
     black_unreachable(); // LCOV_EXCL_LINE
   }
 
-  cvc::Term cvc5::_cvc5_t::to_cvc5_inner(
+  cvc::Term cvc5::_cvc5_t::to_cvc5(
     formula f, tsl::hopscotch_map<variable, cvc::Term> const&env
   ) {
     return f.match(
@@ -212,8 +186,14 @@ namespace black::sat::backends
             solver.mkTerm(cvc::EXISTS, {varlist, to_cvc5(q.matrix(), new_env)});
       },
       [&](proposition p) {
-        return 
+        if(auto it = props.find(p); it != props.end())
+          return it->second;
+
+        cvc::Term term =
           solver.mkConst(solver.getBooleanSort(), to_string(p.unique_id()));
+        props.insert({p, term});
+
+        return term;
       },
       [&](negation, formula n) {
         return solver.mkTerm(cvc::NOT, {to_cvc5(n, env)});
@@ -252,6 +232,9 @@ namespace black::sat::backends
     black_assert(arity > 0);
     black_assert(sigma->domain().has_value());
 
+    if(auto it = decls.find({name, arity, is_relation}); it != decls.end())
+      return it->second;
+
     std::vector<cvc::Sort> sorts{arity};
     std::fill(sorts.begin(), sorts.end(), to_cvc5(*sigma->domain()));
 
@@ -259,10 +242,12 @@ namespace black::sat::backends
 
     cvc::Sort funcSort = solver.mkFunctionSort(sorts, range);
 
-    return solver.mkConst(funcSort, name);
+    cvc::Term term = solver.mkConst(funcSort, name);
+    decls.insert({{name, arity, is_relation}, term});
+    return term;
   }
 
-  cvc::Term cvc5::_cvc5_t::to_cvc5_inner(
+  cvc::Term cvc5::_cvc5_t::to_cvc5(
     term t, tsl::hopscotch_map<variable, cvc::Term> const&env
   ) {
     return t.match(
@@ -283,9 +268,14 @@ namespace black::sat::backends
         if(auto it = env.find(v); it != env.end())
           return it->second;
 
+        if(auto it = vars.find(v); it != vars.end())
+          return it->second;
+
         std::optional<sort> s = t.sigma()->domain();
         black_assert(s.has_value());
-        return solver.mkConst(to_cvc5(*s), to_string(v.unique_id()));
+        cvc::Term term = solver.mkConst(to_cvc5(*s), to_string(v.unique_id()));
+        vars.insert({v, term});
+        return term;
       },
       [&](application a) {
         black_assert(a.sigma()->domain().has_value());
