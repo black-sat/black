@@ -87,7 +87,7 @@ namespace black::sat::backends
 
     return res.isSat() ? tribool{true} :
            res.isUnsat() ? tribool{false} :
-           tribool::undef;
+           tribool::undef; // LCOV_EXCL_LINE
   }
 
   tribool cvc5::is_sat() 
@@ -136,10 +136,10 @@ namespace black::sat::backends
     formula f, tsl::hopscotch_map<variable, cvc::Term> const&env
   ) {
     return f.match(
-      [&](boolean b) {
+      [&](boolean b) { // LCOV_EXCL_LINE
         return b.value() ? solver.mkTrue() : solver.mkFalse();
       },
-      [&](atom a) -> cvc::Term {
+      [&](atom a) -> cvc::Term { // LCOV_EXCL_LINE
         std::vector<cvc::Term> cvc_terms;
         for(term t : a.terms())
           cvc_terms.push_back(to_cvc5(t, env));
@@ -173,7 +173,7 @@ namespace black::sat::backends
         cvc_terms.insert(cvc_terms.begin(), rel);
         return solver.mkTerm(cvc::APPLY_UF, cvc_terms);
       },
-      [&](quantifier q) {
+      [&](quantifier q) { // LCOV_EXCL_LINE
         black_assert(q.sigma()->domain());
         cvc::Term var = 
           solver.mkVar(
@@ -204,25 +204,25 @@ namespace black::sat::backends
       [&](negation, formula n) {
         return solver.mkTerm(cvc::NOT, {to_cvc5(n, env)});
       },
-      [&](big_conjunction c) {
+      [&](big_conjunction c) { // LCOV_EXCL_LINE
         std::vector<cvc::Term> args;
         for(formula op : c.operands())
           args.push_back(to_cvc5(op, env));
 
         return solver.mkTerm(cvc::AND, args);
       },
-      [&](big_disjunction c) {
+      [&](big_disjunction c) { // LCOV_EXCL_LINE
         std::vector<cvc::Term> args;
         for(formula op : c.operands())
           args.push_back(to_cvc5(op, env));
 
         return solver.mkTerm(cvc::OR, args);
       },
-      [&](implication, formula left, formula right) {
+      [&](implication, formula left, formula right) { // LCOV_EXCL_LINE
         return 
           solver.mkTerm(cvc::IMPLIES,{to_cvc5(left, env), to_cvc5(right, env)});
       },
-      [&](iff, formula left, formula right) {
+      [&](iff, formula left, formula right) { // LCOV_EXCL_LINE
         return 
           solver.mkTerm(cvc::EQUAL, {to_cvc5(left, env), to_cvc5(right, env)});
       },
@@ -257,7 +257,7 @@ namespace black::sat::backends
     term t, tsl::hopscotch_map<variable, cvc::Term> const&env
   ) {
     return t.match(
-      [&](constant c) {
+      [&](constant c) { // LCOV_EXCL_LINE
         if(std::holds_alternative<int64_t>(c.value())) {
           black_assert(c.sigma()->domain().has_value());
 
@@ -270,7 +270,7 @@ namespace black::sat::backends
           return solver.mkReal(num, denum);
         }
       },
-      [&](variable v) {
+      [&](variable v) { // LCOV_EXCL_LINE
         if(auto it = env.find(v); it != env.end())
           return it->second;
 
@@ -283,7 +283,7 @@ namespace black::sat::backends
         vars.insert({v, term});
         return term;
       },
-      [&](application a) {
+      [&](application a) { // LCOV_EXCL_LINE
         black_assert(a.sigma()->domain().has_value());
 
         std::vector<cvc::Term> cvc_terms;
