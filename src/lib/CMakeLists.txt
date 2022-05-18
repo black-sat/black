@@ -23,6 +23,7 @@
 
 
 option(ENABLE_Z3 "Enable the Z3 backend, if found" ON)
+option(ENABLE_CVC5 "Enable the CVC5 backend, if found" ON)
 option(ENABLE_MATHSAT "Enable the MathSAT backend, if found" ON)
 option(ENABLE_CMSAT "Enable the CryptoMiniSAT backend, if found" ON)
 option(ENABLE_MINISAT "Enable the MiniSAT backend, if found" ON)
@@ -36,7 +37,8 @@ if(
   NOT (BLACK_DEFAULT_BACKEND STREQUAL "z3") AND
   NOT (BLACK_DEFAULT_BACKEND STREQUAL "mathsat") AND
   NOT (BLACK_DEFAULT_BACKEND STREQUAL "minisat") AND
-  NOT (BLACK_DEFAULT_BACKEND STREQUAL "cmsat")
+  NOT (BLACK_DEFAULT_BACKEND STREQUAL "cmsat") AND
+  NOT (BLACK_DEFAULT_BACKEND STREQUAL "cvc5")
 )
   message(
     FATAL_ERROR 
@@ -56,6 +58,18 @@ if(ENABLE_Z3)
   endif()
 else()
   message(STATUS "Z3 backend disabled.")
+endif()
+
+if(ENABLE_CVC5)
+  find_package(CVC5)
+
+  if(CVC5_FOUND)
+    message(STATUS "CVC5 solver found! Enabling the CVC5 backend...")
+  else()
+    message(STATUS "CVC5 solver not found. Disabling the CVC5 backend...")
+  endif()
+else()
+  message(STATUS "CVC5 backend disabled.")
 endif()
 
 if(ENABLE_MATHSAT)
@@ -103,6 +117,13 @@ if(NOT Z3_FOUND AND BLACK_DEFAULT_BACKEND STREQUAL "z3")
     "Please install Z3 or set BLACK_DEFAULT_BACKEND differently.")
 endif()
 
+if(NOT CVC5_FOUND AND BLACK_DEFAULT_BACKEND STREQUAL "cvc5")
+  message(
+    FATAL_ERROR 
+    "CVC5 set as default backend but not found or disabled.\n"
+    "Please install CVC5 or set BLACK_DEFAULT_BACKEND differently.")
+endif()
+
 if(NOT MathSAT_FOUND AND BLACK_DEFAULT_BACKEND STREQUAL "mathsat")
   message(
     FATAL_ERROR 
@@ -126,6 +147,7 @@ endif()
 
 if(
   (NOT Z3_FOUND) AND 
+  (NOT CVC5_FOUND) AND 
   (NOT MathSAT_FOUND) AND 
   (NOT MiniSAT_FOUND) AND
   (NOT CryptoMiniSAT_FOUND) 
@@ -161,6 +183,10 @@ set (
 
 if(Z3_FOUND)
   set(LIB_SRC ${LIB_SRC} src/sat/backends/z3.cpp)
+endif()
+
+if(CVC5_FOUND)
+  set(LIB_SRC ${LIB_SRC} src/sat/backends/cvc5.cpp)
 endif()
 
 if(MathSAT_FOUND)
@@ -233,6 +259,9 @@ if(MathSAT_FOUND)
 endif()
 if(Z3_FOUND)
   target_link_libraries(black PRIVATE Z3)
+endif()
+if(CVC5_FOUND)
+  target_link_libraries(black PRIVATE CVC5)
 endif()
 if(MiniSAT_FOUND)
   target_link_libraries(black PRIVATE MiniSAT)

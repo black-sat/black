@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Nicola Gigante
+// (C) 2022 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,41 +21,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <catch2/catch.hpp>
-#include <black/solver/solver.hpp>
+#include <black/support/common.hpp>
 #include <black/sat/solver.hpp>
-#include <black/sat/dimacs.hpp>
 
-TEST_CASE("SAT backends") {
+#include <memory>
 
-  std::vector<std::string> backends = {
-    "z3", "mathsat", "cmsat", "minisat", "cvc5"
+namespace black::sat::backends 
+{
+  class BLACK_EXPORT cvc5 : public ::black::sat::solver
+  {
+  public:
+    cvc5();
+    ~cvc5() override;
+
+    virtual void assert_formula(formula f) override;
+    virtual tribool is_sat() override;
+    virtual tribool is_sat_with(formula assumption) override;
+    virtual tribool value(proposition a) const override;
+    virtual void clear() override;
+    virtual std::optional<std::string> license() const override;
+
+  private:
+    struct _cvc5_t;
+    std::unique_ptr<_cvc5_t> _data;
   };
-
-  black::alphabet sigma;
-  auto p = sigma.prop("p");
-  auto q = sigma.prop("q");
-
-  for(auto backend : backends) {
-    DYNAMIC_SECTION("SAT backend: " << backend) {
-      if(black::sat::solver::backend_exists(backend)) {
-        auto slv = black::sat::solver::get_solver(backend);
-
-        REQUIRE(slv->value(p) == black::tribool::undef);
-        slv->assert_formula(p);
-        REQUIRE(slv->value(p) == black::tribool::undef);
-
-        REQUIRE(slv->is_sat());
-        REQUIRE(slv->value(p) == true);
-        REQUIRE(slv->value(q) == black::tribool::undef);
-
-        slv->clear();
-        slv->assert_formula(!p);
-        
-        REQUIRE(slv->is_sat());
-        REQUIRE(slv->value(p) == false);
-      }
-    }
-  }
-  
 }

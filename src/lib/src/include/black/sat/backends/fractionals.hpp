@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Nicola Gigante
+// (C) 2022 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,41 +21,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <catch2/catch.hpp>
-#include <black/solver/solver.hpp>
-#include <black/sat/solver.hpp>
-#include <black/sat/dimacs.hpp>
+#include <limits>
+#include <tuple>
+#include <cmath>
+#include <cstdint>
 
-TEST_CASE("SAT backends") {
+namespace black::internal {
+  //
+  // Thanks to Leonardo Taglialegne
+  //
+  inline std::pair<int, int> double_to_fraction(double n) {
+    uint64_t a = (uint64_t)floor(n), b = 1;
+    uint64_t c = (uint64_t)ceil(n), d = 1;
 
-  std::vector<std::string> backends = {
-    "z3", "mathsat", "cmsat", "minisat", "cvc5"
-  };
+    uint64_t num = 1;
+    uint64_t denum = 1;
+    while(
+      a + c <= (uint64_t)std::numeric_limits<int>::max() &&
+      b + d <= (uint64_t)std::numeric_limits<int>::max() &&
+      ((double)num/(double)denum != n)
+    ) {
+      num = a + c;
+      denum = b + d;
 
-  black::alphabet sigma;
-  auto p = sigma.prop("p");
-  auto q = sigma.prop("q");
-
-  for(auto backend : backends) {
-    DYNAMIC_SECTION("SAT backend: " << backend) {
-      if(black::sat::solver::backend_exists(backend)) {
-        auto slv = black::sat::solver::get_solver(backend);
-
-        REQUIRE(slv->value(p) == black::tribool::undef);
-        slv->assert_formula(p);
-        REQUIRE(slv->value(p) == black::tribool::undef);
-
-        REQUIRE(slv->is_sat());
-        REQUIRE(slv->value(p) == true);
-        REQUIRE(slv->value(q) == black::tribool::undef);
-
-        slv->clear();
-        slv->assert_formula(!p);
-        
-        REQUIRE(slv->is_sat());
-        REQUIRE(slv->value(p) == false);
+      if((double)num/(double)denum > n) {
+        c = num;
+        d = denum;
+      } else {
+        a = num;
+        b = denum;
       }
     }
+
+    return {static_cast<int>(num), static_cast<int>(denum)};
   }
-  
 }

@@ -59,34 +59,38 @@ TEST_CASE("Testing solver")
 }
 
 TEST_CASE("Quantified formulas") {
-  if(
-    !sat::solver::backend_has_feature(
-      BLACK_DEFAULT_BACKEND, sat::feature::quantifiers
-    )
-  ) return;
-  
-  alphabet sigma;
-  sigma.set_domain(sort::Int);
 
-  variable x = sigma.var("x");
-  variable y = sigma.var("y");
-  variable z = sigma.var("z");
-  proposition p = sigma.prop("p");
-  
-  std::vector<formula> tests = {
-    x == 2 && X(forall(y, x != y + y)) && X(X(forall(y, x != y * y))),
-    exists({x,y}, next(z) + 2 != y),
-    exists({x,y}, sigma.top()),
-    exists({x,y}, !p),
-    !forall({x,y}, x == y && z == z)
-  };
+  std::vector<std::string> backends = { "z3", "cvc5" };
 
-  for(formula f : tests) {
-    DYNAMIC_SECTION("Test formula: " << f) {
-      solver slv;
-      slv.set_formula(f);
+  for(auto backend : backends) {
+    DYNAMIC_SECTION("Backend: " << backend) {
+      if(black::sat::solver::backend_exists(backend)) {
+        alphabet sigma;
+        sigma.set_domain(sort::Int);
 
-      REQUIRE(slv.solve());
+        variable x = sigma.var("x");
+        variable y = sigma.var("y");
+        variable z = sigma.var("z");
+        proposition p = sigma.prop("p");
+        
+        std::vector<formula> tests = {
+          forall(x, x == x),
+          exists({x,y}, next(z) + 2 != y),
+          exists({x,y}, sigma.top()),
+          exists({x,y}, !p),
+          !forall({x,y}, x != y)
+        };
+
+        for(formula f : tests) {
+          DYNAMIC_SECTION("Test formula: " << f) {
+            solver slv;
+            slv.set_sat_backend(backend);
+            slv.set_formula(f);
+
+            REQUIRE(slv.solve());
+          }
+        }
+      }
     }
   }
 }
