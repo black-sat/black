@@ -28,7 +28,9 @@
 
 TEST_CASE("SAT backends") {
 
-  std::vector<std::string> backends = {"z3", "mathsat", "cmsat", "minisat"};
+  std::vector<std::string> backends = {
+    "z3", "mathsat", "cmsat", "minisat", "cvc5"
+  };
 
   black::alphabet sigma;
   auto p = sigma.prop("p");
@@ -46,10 +48,6 @@ TEST_CASE("SAT backends") {
         REQUIRE(slv->is_sat());
         REQUIRE(slv->value(p) == true);
         REQUIRE(slv->value(q) == black::tribool::undef);
-        if(auto *dimacs = dynamic_cast<black::sat::dimacs::solver*>(slv.get())){
-          REQUIRE(dimacs->nvars() > 0);
-          REQUIRE(dimacs->value(42) == black::tribool::undef);
-        }
 
         slv->clear();
         slv->assert_formula(!p);
