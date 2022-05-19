@@ -89,13 +89,13 @@ namespace black::internal
             term rhs = a.arguments()[1];
             return fmt::format("{} {} {}", 
               parens_if_needed(lhs, does_need_parens(a, lhs)),
-              a.func().name(),
+              to_string(a.func().name()),
               parens_if_needed(rhs, does_need_parens(a, rhs))
             );
           }
         }
         std::string result = 
-          a.func().name() + "(" + to_string(a.arguments()[0]);
+          to_string(a.func().name()) + "(" + to_string(a.arguments()[0]);
         for(size_t i = 1; i < a.arguments().size(); ++i) {
           result += ", " + to_string(a.arguments()[i]);
         }
@@ -132,12 +132,12 @@ namespace black::internal
           return fmt::format(
             "{} {} {}", 
             to_string(a.terms()[0]),
-            a.rel().name(), 
+            to_string(a.rel().name()),
             to_string(a.terms()[1])
           );
         
         std::string result = 
-          a.rel().name() + "(" + to_string(a.terms()[0]);
+          to_string(a.rel().name()) + "(" + to_string(a.terms()[0]);
         for(size_t i = 1; i < a.terms().size(); ++i) {
           result += ", " + to_string(a.terms()[i]);
         }

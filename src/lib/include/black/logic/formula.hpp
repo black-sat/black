@@ -85,6 +85,7 @@ namespace black::internal {
     relation() = delete;
     relation(type);
     relation(std::string const&name);
+    relation(identifier const&name);
 
     relation(relation const&) = default;
     relation(relation &&) = default;
@@ -99,10 +100,10 @@ namespace black::internal {
     atom operator()(T ...args);
 
     std::optional<type> known_type() const;
-    std::string name() const;
+    identifier name() const;
 
   private:
-    std::variant<type, std::string> _data;
+    std::variant<type, identifier> _data;
   };
 }
 

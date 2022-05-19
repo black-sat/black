@@ -25,6 +25,7 @@
 #define BLACK_TERM_HPP
 
 #include <black/support/meta.hpp>
+#include <black/support/hash.hpp>
 #include <cstdint>
 #include <string>
 #include <optional>
@@ -55,6 +56,7 @@ namespace black::internal {
     function() = delete;
     function(type);
     function(std::string const&name);
+    function(identifier const&name);
 
     function(function const&) = default;
     function(function &&) = default;
@@ -69,10 +71,10 @@ namespace black::internal {
     application operator()(T ...args);
 
     std::optional<type> known_type() const;
-    std::string name() const;
+    identifier name() const;
 
   private:
-    std::variant<type, std::string> _data;
+    std::variant<type, identifier> _data;
   };
 }
 

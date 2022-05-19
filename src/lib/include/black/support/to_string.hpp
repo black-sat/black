@@ -21,43 +21,59 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SAT_BACKEND_FRACTIONALS_HPP
-#define BLACK_SAT_BACKEND_FRACTIONALS_HPP
+#ifndef BLACK_TO_STRING_HPP
+#define BLACK_TO_STRING_HPP
 
-#include <limits>
+#include <type_traits>
+#include <string>
+#include <string_view>
 #include <tuple>
-#include <cmath>
-#include <cstdint>
+
+#include <black/support/meta.hpp>
 
 namespace black::internal {
-  //
-  // Thanks to Leonardo Taglialegne
-  //
-  inline std::pair<int, int> double_to_fraction(double n) {
-    uint64_t a = (uint64_t)floor(n), b = 1;
-    uint64_t c = (uint64_t)ceil(n), d = 1;
 
-    uint64_t num = 1;
-    uint64_t denum = 1;
-    while(
-      a + c <= (uint64_t)std::numeric_limits<int>::max() &&
-      b + d <= (uint64_t)std::numeric_limits<int>::max() &&
-      ((double)num/(double)denum != n)
-    ) {
-      num = a + c;
-      denum = b + d;
-
-      if((double)num/(double)denum > n) {
-        c = num;
-        d = denum;
-      } else {
-        a = num;
-        b = denum;
-      }
-    }
-
-    return {static_cast<int>(num), static_cast<int>(denum)};
+  template<typename T, REQUIRES(std::is_integral_v<T>)>
+  inline std::string to_string(T v) {
+    return std::to_string(v);
   }
+
+  template<typename T, REQUIRES(std::is_floating_point_v<T>)>
+  inline std::string to_string(T v) {
+    return std::to_string(v);
+  }
+
+  inline std::string to_string(std::string const&s) {
+    return s;
+  }
+
+  inline std::string to_string(std::string_view const&sv) {
+    return std::string{sv};
+  }
+
+  template<typename T, typename = void>
+  struct is_stringable_t : std::false_type { };
+
+  template<typename T>
+  constexpr bool is_stringable = is_stringable_t<T>::value;
+
+  template<
+    typename T, typename U,
+    REQUIRES(is_stringable<T>),
+    REQUIRES(is_stringable<U>)
+  >
+  std::string to_string(std::pair<T, U> const&p) {
+    return "<" + to_string(p.first) + ", " + to_string(p.second) + ">";
+  }
+
+  template<typename T>
+  struct is_stringable_t<T,
+    std::void_t<decltype(to_string(std::declval<T>()))>
+  > : std::true_type { };
+}
+
+namespace black {
+  using internal::to_string;
 }
 
 #endif

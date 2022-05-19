@@ -26,6 +26,7 @@
 
 #include <black/logic/alphabet.hpp>
 #include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <vector>
 
@@ -39,6 +40,10 @@ namespace black::internal {
       return formula == other.formula;
     }
   };
+
+  inline std::string to_string(past_label l) {
+    return "past_label(" + to_string(l.formula) + ")";
+  }
 
   // Substitute past operators with new propositional letters
   formula sub_past(formula);

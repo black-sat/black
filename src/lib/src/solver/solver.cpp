@@ -214,23 +214,29 @@ namespace black::internal
   static check_result_t _check_syntax(
     term t, std::function<void(std::string)> const& err,
     std::vector<variable> const& scope,
-    tsl::hopscotch_map<std::string, size_t> &rels,
-    tsl::hopscotch_map<std::string, size_t> &funcs
+    tsl::hopscotch_map<identifier, size_t> &rels,
+    tsl::hopscotch_map<identifier, size_t> &funcs
   ) {
     return t.match( // LCOV_EXCL_LINE
       [](constant) -> check_result_t { return false; },
       [](variable) -> check_result_t { return false; },
       [&](application a) -> check_result_t {
-        std::string id = a.func().name();
+        identifier id = a.func().name();
         size_t size = a.arguments().size();
         
         if(auto it = funcs.find(id); it != funcs.end() && it->second != size) {
-           err("Function '" + id + "' used twice with different arities");
-           return true;
+          err(
+            "Function '" + to_string(id) + 
+            "' used twice with different arities"
+          );
+          return true;
         }
 
         if(rels.find(id) != rels.end()) {
-          err("Function symbol '" + id + "' already used as a relation symbol");
+          err(
+            "Function symbol '" + to_string(id) + 
+            "' already used as a relation symbol"
+          );
           return true;
         }
 
@@ -281,22 +287,28 @@ namespace black::internal
   static check_result_t _check_syntax(
     formula f, std::function<void(std::string)> const& err, 
     std::vector<variable> const& scope, bool positive, 
-    tsl::hopscotch_map<std::string, size_t> &rels,
-    tsl::hopscotch_map<std::string, size_t> &funcs
+    tsl::hopscotch_map<identifier, size_t> &rels,
+    tsl::hopscotch_map<identifier, size_t> &funcs
   ) {
     return f.match( // LCOV_EXCL_LINE
       [](boolean) -> check_result_t { return false; },
       [](proposition) -> check_result_t { return false; },
       [&](atom a) -> check_result_t {  
-        std::string id = a.rel().name();
+        identifier id = a.rel().name();
         size_t size = a.terms().size();
         if(auto it = rels.find(id); it != rels.end() && it->second != size) {
-           err("Relation '" + id + "' used twice with different arities");
-           return true;
+          err(
+            "Relation '" + to_string(id) + 
+            "' used twice with different arities"
+          );
+          return true;
         }
 
         if(funcs.find(id) != funcs.end()) {
-          err("Relation symbol '" + id + "' already used as a function symbol");
+          err(
+            "Relation symbol '" + to_string(id) + 
+            "' already used as a function symbol"
+          );
           return true;
         }
 
@@ -364,8 +376,8 @@ namespace black::internal
 
   bool 
   solver::check_syntax(formula f, std::function<void(std::string)> const&err) {
-    tsl::hopscotch_map<std::string, size_t> rels;
-    tsl::hopscotch_map<std::string, size_t> funcs;
+    tsl::hopscotch_map<identifier, size_t> rels;
+    tsl::hopscotch_map<identifier, size_t> funcs;
     return 
       !_check_syntax(f, err, std::vector<variable>{}, true, rels, funcs).error;
   }

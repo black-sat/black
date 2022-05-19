@@ -30,6 +30,7 @@
 #endif
 
 #include <charconv>
+#include <string_view>
 
 namespace black::internal
 {
@@ -180,7 +181,9 @@ namespace black::internal {
 
   // struct function
   inline function::function(type f) : _data{f} { }
-  inline function::function(std::string const&name) : _data{name} { }
+  inline function::function(std::string const&name) : _data{identifier{name}} {}
+  inline function::function(identifier const&name) : _data{name} {}
+
 
   inline bool operator==(function const&f1, function const&f2) {
     return f1._data == f2._data;
@@ -205,22 +208,24 @@ namespace black::internal {
     return std::nullopt;
   }
 
-  inline std::string function::name() const {
-    if(std::holds_alternative<std::string>(_data))
-      return std::get<std::string>(_data);
+  inline identifier function::name() const {
+    using namespace std::literals;
+
+    if(std::holds_alternative<identifier>(_data))
+      return std::get<identifier>(_data);
     
     black_assert(std::holds_alternative<type>(_data));
     type func = std::get<type>(_data);
     switch(func) {
       case type::negation:
       case type::subtraction:
-        return "-";
+        return identifier{"-"sv};
       case type::addition:
-        return "+";
+        return identifier{"+"sv};
       case type::multiplication:
-        return "*";
+        return identifier{"*"sv};
       case type::division:
-        return "/";
+        return identifier{"/"sv};
     }
     black_unreachable(); // LCOV_EXCL_LINE
   }
@@ -276,7 +281,7 @@ namespace std {
       if(auto k = f.known_type(); k)
         return hash<uint8_t>{}(static_cast<uint8_t>(*k));
 
-      return hash<std::string>{}(f.name());
+      return hash<::black::internal::identifier>{}(f.name());
     }
   };
 
