@@ -58,24 +58,6 @@ namespace black::internal
     return H::cast(_alphabet, _term).has_value();
   }
 
-  /*
-   * Matching facility
-   */
-  using term_syntax = syntax<
-    constant,
-    variable,
-    application,
-    next,
-    wnext,
-    prev,
-    wprev
-  >;
-
-  template<typename ...Handlers>
-  auto term::match(Handlers&& ...handlers) const {
-    return matcher<term, term_syntax>::match(*this, FWD(handlers)...);
-  }
-
   inline size_t term::hash() const {
     return std::hash<term_base *>{}(_term);
   }
@@ -319,6 +301,24 @@ namespace black::internal {
   declare_ctor_operator(wnext)
   declare_ctor_operator(prev)
   declare_ctor_operator(wprev)
+
+  /*
+   * Matching facility
+   */
+  using term_syntax = syntax<
+    constant,
+    variable,
+    application,
+    next,
+    wnext,
+    prev,
+    wprev
+  >;
+
+  template<typename ...Handlers>
+  auto term::match(Handlers&& ...handlers) const {
+    return matcher<term, term_syntax>::match(*this, FWD(handlers)...);
+  }
 }
 
 namespace std {

@@ -66,9 +66,8 @@ namespace black::internal {
     return "<" + to_string(p.first) + ", " + to_string(p.second) + ">";
   }
 
-  template<typename T>
-  std::string to_string_impl(std::tuple<T> const&t) {
-    return to_string(std::get<0>(t));
+  inline std::string to_string_impl(std::tuple<> const&) {
+    return "";
   }
 
   template<typename T, typename ...Args>

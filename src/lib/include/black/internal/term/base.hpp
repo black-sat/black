@@ -102,8 +102,8 @@ namespace black::internal
   {
     static constexpr auto accepts_type = is_constructor_type;
 
-    constructor_t(term_type type, term_base *_arg) 
-      : term_base{type}, arg{_arg} 
+    constructor_t(term_type t, term_base *_arg) 
+      : term_base{t}, arg{_arg} 
     { 
       black_assert(is_constructor_type(type));
       black_assert(arg != nullptr);
