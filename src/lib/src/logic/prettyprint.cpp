@@ -72,13 +72,7 @@ namespace black::internal
           return fmt::format("{}", std::get<double>(c.value()));
       },
       [&](variable x) {
-        if(auto name = x.label<std::string>(); name.has_value())
-          return *name;
-        if(auto fname = x.label<std::pair<term,size_t>>(); fname.has_value()) {
-          return
-            fmt::format("<{},{}>", to_string(fname->first), fname->second);
-        }
-        return fmt::format("<{:x}>", to_underlying(term{x}.unique_id())); // LCOV_EXCL_LINE
+        return to_string(x.label());
       },
       [&](application a) {
         if(auto t2 = a.func().known_type(); t2) {
@@ -117,15 +111,7 @@ namespace black::internal
     using namespace std::literals;
     return f.match(
       [&](proposition p) {
-        if(auto name = p.label<std::string>(); name.has_value())
-          return *name;
-        if(auto fname = p.label<std::pair<formula,size_t>>(); fname.has_value())
-          return
-            fmt::format("<{},{}>", to_string(fname->first), fname->second); // LCOV_EXCL_LINE
-        if(auto fname = p.label<past_label>(); fname.has_value())
-          return fmt::format("<{}>", to_string(fname->formula)); // LCOV_EXCL_LINE
-        else
-          return fmt::format("<{:x}>", to_underlying(formula{p}.unique_id()));
+        return to_string(p.label());
       },
       [&](atom a) {
         if(auto t = a.rel().known_type(); t)

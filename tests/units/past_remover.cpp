@@ -66,16 +66,16 @@ TEST_CASE("Translation for basic past formulas")
   proposition p = sigma.prop("p");
   proposition q = sigma.prop("q");
 
-  proposition p_Y  = sigma.prop(internal::past_label{Y(p)});
-  proposition p_Z  = sigma.prop(internal::past_label{Z(p)});
-  proposition p_S  = sigma.prop(internal::past_label{S(p,q)});
-  proposition p_YS = sigma.prop(internal::past_label{Y(p_S)});
-  proposition p_T  = sigma.prop(internal::past_label{S(!p,!q)});
-  proposition p_YT = sigma.prop(internal::past_label{Y(p_T)});
-  proposition p_P  = sigma.prop(internal::past_label{S(sigma.top(),p)});
-  proposition p_YP = sigma.prop(internal::past_label{Y(p_P)});
-  proposition p_H  = sigma.prop(internal::past_label{S(sigma.top(),!p)});
-  proposition p_YH = sigma.prop(internal::past_label{Y(p_H)});
+  proposition p_Y  = internal::past_label(Y(p));
+  proposition p_Z  = internal::past_label(Z(p));
+  proposition p_S  = internal::past_label(S(p,q));
+  proposition p_YS = internal::past_label(Y(p_S));
+  proposition p_T  = internal::past_label(S(!p,!q));
+  proposition p_YT = internal::past_label(Y(p_T));
+  proposition p_P  = internal::past_label(S(sigma.top(),p));
+  proposition p_YP = internal::past_label(Y(p_P));
+  proposition p_H  = internal::past_label(S(sigma.top(),!p));
+  proposition p_YH = internal::past_label(Y(p_H));
 
   std::vector<test> tests = {
       {Y(p),    p_Y && (!p_Y && G(iff(X(p_Y), p)))},

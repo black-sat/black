@@ -29,20 +29,15 @@
 #include <black/logic/prettyprint.hpp>
 
 #include <vector>
+#include <string_view>
+#include <tuple>
 
 namespace black::internal {
 
   // Label data type for substituting past propositional letters
-  struct past_label {
-    class formula formula;
-
-    bool operator==(const past_label &other) const {
-      return formula == other.formula;
-    }
-  };
-
-  inline std::string to_string(past_label l) {
-    return "past_label(" + to_string(l.formula) + ")";
+  inline proposition past_label(formula f) {
+    using namespace std::literals;
+    return f.sigma()->prop(std::tuple{"_past_label"sv, f});
   }
 
   // Substitute past operators with new propositional letters
@@ -71,20 +66,6 @@ namespace black::internal {
   formula remove_past(formula);
 
 } // end namespace black::internal
-
-// Extend hash for past_label
-namespace std
-{
-  template<>
-  struct hash<black::internal::past_label> {
-    size_t operator()(const black::internal::past_label &t) const {
-      return
-        hash<pair<black::internal::formula_type, black::internal::formula>>{}(
-            pair(t.formula.formula_type(), t.formula)
-        );
-    }
-  };
-}
 
 // Names exported to the user
 namespace black {

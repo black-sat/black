@@ -67,6 +67,21 @@ namespace black::internal {
   }
 
   template<typename T>
+  std::string to_string_impl(std::tuple<T> const&t) {
+    return to_string(std::get<0>(t));
+  }
+
+  template<typename T, typename ...Args>
+  std::string to_string_impl(std::tuple<T, Args...> const & t) {
+    return to_string(std::get<0>(t)) + ", " + to_string_impl(tuple_tail(t));
+  }
+
+  template<typename ...Args>
+  std::string to_string(std::tuple<Args...> const& t) {
+    return "<" + to_string_impl(t) + ">";
+  }
+
+  template<typename T>
   struct is_stringable_t<T,
     std::void_t<decltype(to_string(std::declval<T>()))>
   > : std::true_type { };

@@ -27,17 +27,15 @@
 
 namespace black::internal {
   formula sub_past(formula f) {
-    alphabet *alpha = f.sigma();
-
     return f.match( // LCOV_EXCL_LINE
         [&](yesterday, formula op) {
-          return alpha->prop(past_label{Y(sub_past(op))});
+          return past_label(Y(sub_past(op)));
         },
         [&](w_yesterday, formula op) {
-          return alpha->prop(past_label{Z(sub_past(op))});
+          return past_label(Z(sub_past(op)));
         },
         [&](since, formula left, formula right) {
-          return alpha->prop(past_label{S(sub_past(left), sub_past(right))});
+          return past_label(S(sub_past(left), sub_past(right)));
         },
         [](triggered, formula left, formula right) {
           return sub_past(!S(!left, !right));
@@ -63,11 +61,11 @@ namespace black::internal {
         [](atom) { black_unreachable(); }, // LCOV_EXCL_LINE
         [](quantifier) { black_unreachable(); }, // LCOV_EXCL_LINE
         [&](proposition a) {
-          std::optional<past_label> label = a.label<past_label>();
+          auto label = a.label<std::tuple<std::string_view, formula>>();
 
           if (!label) return; // not a translator proposition
 
-          formula psi = label->formula;
+          formula psi = std::get<1>(*label);
           return psi.match( // LCOV_EXCL_LINE
               [&](yesterday y, formula op) {
                 formula sem_y = yesterday_semantics(a, y);
@@ -84,8 +82,7 @@ namespace black::internal {
                 gen_semantics(op, sem);
               },
               [&](since s, formula left, formula right) {
-                alphabet *alpha = f.sigma();
-                proposition y = alpha->prop(past_label{Y(a)});
+                proposition y = past_label(Y(a));
                 formula sem_s = since_semantics(a, s, y);
                 formula sem_y = yesterday_semantics(y, Y(a));
 

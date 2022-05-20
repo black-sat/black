@@ -25,6 +25,8 @@
 #define BLACK_META_HPP
 
 #include <type_traits>
+#include <cstddef>
+#include <tuple>
 
 // Shorthand for perfect forwarding
 #define FWD(a) std::forward<decltype(a)>(a)
@@ -61,6 +63,18 @@ namespace black::internal {
   // Always true type trait used for SFINAE tricks
   template<typename T>
   struct true_t : std::true_type { };
+
+  // facility to get the tail of a tuple
+  template<typename T, typename ...Ts, size_t ...Idx>
+  std::tuple<Ts...>
+  tuple_tail_impl(std::tuple<T,Ts...> const&t, std::index_sequence<Idx...>) {
+    return std::make_tuple(std::get<Idx + 1>(t)...);
+  }
+
+  template<typename T, typename ...Ts>
+  std::tuple<Ts...> tuple_tail(std::tuple<T, Ts...> const&t) {
+    return tuple_tail_impl(t, std::make_index_sequence<sizeof...(Ts)>{});
+  }
 
   //
   // constexpr function all(...) that returns true if all its arguments are

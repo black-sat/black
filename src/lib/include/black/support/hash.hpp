@@ -32,6 +32,7 @@
 #include <tuple>
 #include <optional>
 #include <vector>
+#include <typeinfo>
 
 //
 // std::hash specialization for tuples, pairs, and vectors
@@ -50,17 +51,6 @@ namespace black::internal {
     }
 
     return lhs;
-  }
-
-  template<typename T, typename ...Ts, size_t ...Idx>
-  std::tuple<Ts...>
-  tuple_tail_impl(std::tuple<T,Ts...> const&t, std::index_sequence<Idx...>) {
-    return std::make_tuple(std::get<Idx + 1>(t)...);
-  }
-
-  template<typename T, typename ...Ts>
-  std::tuple<Ts...> tuple_tail(std::tuple<T, Ts...> const&t) {
-    return tuple_tail_impl(t, std::make_index_sequence<sizeof...(Ts)>{});
   }
 }
 
@@ -254,7 +244,7 @@ namespace black::internal
     template<typename T, REQUIRES(!is_stringable<T>)>
     printer_t make_printer(T const&) {
       return [](std::any const&) -> std::string {
-        return "<not printable>";
+        return "<" + std::string{typeid(T).name()} + ">";
       };
     }
   };
