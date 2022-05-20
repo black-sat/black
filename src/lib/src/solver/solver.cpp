@@ -248,32 +248,22 @@ namespace black::internal
           funcs.insert({id, size});
         return res;
       }, // LCOV_EXCL_LINE
-      [&](next n) -> check_result_t {
-        term arg = n.argument();
+      [&](constructor c) -> check_result_t {
+        term arg = c.argument();
         if(!arg.is<variable>()) {
-          err("next() terms can only be applied directly to variables");
+          err(
+            "next()/wnext()/prev()/wprev() terms can only be applied "
+            "directly to variables"
+          );
           return true;
         }
 
         for(variable v : scope) { // LCOV_EXCL_LINE
           if(v == arg) {
-            err("next() terms cannot be applied to quantified variables");
-            return true;
-          }
-        }
-        
-        return {false, true, false};
-      },
-      [&](wnext n) -> check_result_t {
-        term arg = n.argument();
-        if(!arg.is<variable>()) {
-          err("wnext() terms can only be applied directly to variables");
-          return true;
-        }
-
-        for(variable v : scope) { // LCOV_EXCL_LINE
-          if(v == arg) {
-            err("wnext() terms cannot be applied to quantified variables");
+            err(
+              "next()/wnext()/prev()/wprev() terms cannot be applied "
+              "to quantified variables"
+            );
             return true;
           }
         }

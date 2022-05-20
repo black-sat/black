@@ -320,7 +320,9 @@ namespace black::sat::backends
       },
       // We should not have any next(var) term at this point
       [](next) -> cvc::Term { black_unreachable(); }, // LCOV_EXCL_LINE
-      [](wnext) -> cvc::Term { black_unreachable(); } // LCOV_EXCL_LINE
+      [](wnext) -> cvc::Term { black_unreachable(); }, // LCOV_EXCL_LINE
+      [](prev) -> cvc::Term { black_unreachable(); }, // LCOV_EXCL_LINE
+      [](wprev) -> cvc::Term { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 

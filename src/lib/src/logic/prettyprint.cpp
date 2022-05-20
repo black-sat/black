@@ -102,6 +102,12 @@ namespace black::internal
       },
       [&](wnext n) {
         return fmt::format("wnext({})", to_string(n.argument()));
+      },
+      [&](prev n) {
+        return fmt::format("prev({})", to_string(n.argument()));
+      },
+      [&](wprev n) {
+        return fmt::format("wprev({})", to_string(n.argument()));
       }
     );
   }

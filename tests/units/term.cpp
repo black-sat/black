@@ -59,11 +59,15 @@ TEST_CASE("Terms manipulation") {
         [](variable) { return "v2"; },
         [](application) { return "a2"; },
         [](next) { return "n2"; },
-        [](wnext) { return "w2"; }
+        [](wnext) { return "w2"; },
+        [](prev) { return "p2"; },
+        [](wprev) { return "wp2"; }
       );
     },
     [](next)        { return "n1"; },
-    [](wnext)       { return "w1"; }
+    [](wnext)        { return "w1"; },
+    [](prev)       { return "p1"; },
+    [](wprev)       { return "wp1"; }
   );
 
   REQUIRE(s == "n2");

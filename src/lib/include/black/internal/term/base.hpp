@@ -52,12 +52,9 @@ namespace black::internal
     return type == term_type::application;
   }
 
-  constexpr bool is_next_type(term_type type) {
-    return type == term_type::next;
-  }
-
-  constexpr bool is_wnext_type(term_type type) {
-    return type == term_type::wnext;
+  constexpr bool is_constructor_type(term_type type) {
+    return to_underlying(type) >= to_underlying(term_type::next) && 
+           to_underlying(type) <= to_underlying(term_type::wprev);
   }
 
   struct term_base
@@ -101,24 +98,18 @@ namespace black::internal
     std::vector<term_base *> args;
   };
 
-  struct next_t : term_base
+  struct constructor_t : term_base
   {
-    static constexpr auto accepts_type = is_next_type;
+    static constexpr auto accepts_type = is_constructor_type;
 
-    next_t(term_base *_arg)
-      : term_base{term_type::next}, arg{_arg} {}
+    constructor_t(term_type type, term_base *_arg) 
+      : term_base{type}, arg{_arg} 
+    { 
+      black_assert(is_constructor_type(type));
+      black_assert(arg != nullptr);
+    }
 
-    term_base *arg{};
-  };
-
-  struct wnext_t : term_base
-  {
-    static constexpr auto accepts_type = is_wnext_type;
-
-    wnext_t(term_base *_arg)
-      : term_base{term_type::wnext}, arg{_arg} {}
-
-    term_base *arg{};
+    term_base *arg;
   };
 
   template<typename U, typename T = std::remove_pointer_t<U>>
@@ -169,13 +160,9 @@ namespace black::internal
     static std::pair<class alphabet *, application_t *>
     allocate_application(function const&func, std::vector<term> const&args);
 
-    template<typename Arg>
-    static std::pair<class alphabet *, next_t *>
-    allocate_next(Arg arg);
-
-    template<typename Arg>
-    static std::pair<class alphabet *, wnext_t *>
-    allocate_wnext(Arg arg);
+    template<typename TType, typename Arg>
+    static std::pair<class alphabet *, constructor_t *>
+    allocate_constructor(TType type, Arg arg);
 
     class alphabet *_alphabet;
     T *_term;

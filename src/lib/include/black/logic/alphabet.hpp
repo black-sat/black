@@ -127,9 +127,8 @@ namespace black::internal {
     variable_t *allocate_variable(identifier _label);
     constant_t *allocate_constant(int64_t c);
     constant_t *allocate_constant(double c);
-    next_t *allocate_next(term_base *arg);
-    wnext_t *allocate_wnext(term_base *arg);
-    application_t*allocate_application(
+    constructor_t *allocate_constructor(constructor::type type, term_base *arg);
+    application_t *allocate_application(
       function const&func, std::vector<term_base *> const&args
     );
   };

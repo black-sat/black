@@ -438,7 +438,9 @@ namespace black::sat::backends
       }, // LCOV_EXCL_LINE
       // We should not have any next(var) term at this point
       [&](next) -> Z3_ast { black_unreachable(); }, // LCOV_EXCL_LINE
-      [&](wnext) -> Z3_ast { black_unreachable(); } // LCOV_EXCL_LINE 
+      [&](wnext) -> Z3_ast { black_unreachable(); }, // LCOV_EXCL_LINE 
+      [&](prev) -> Z3_ast { black_unreachable(); }, // LCOV_EXCL_LINE 
+      [&](wprev) -> Z3_ast { black_unreachable(); } // LCOV_EXCL_LINE 
     );
   }
 

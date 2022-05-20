@@ -46,6 +46,7 @@ namespace black::internal
       real,
       identifier,
       keyword,
+      constructor,
       relation,
       function,
       unary_operator,
@@ -64,8 +65,6 @@ namespace black::internal
 
     // we only have one keyword yet
     enum class keyword : uint8_t {
-      next,
-      wnext,
       exists,
       forall
     };
@@ -74,13 +73,14 @@ namespace black::internal
     explicit token(bool b)               : _data{b} { }
     explicit token(int64_t c)            : _data{c} { }
     explicit token(double d)             : _data{d} { }
-             token(std::string s)        : _data{std::move(s)} { }
-             token(keyword k)            : _data{k} { }
-             token(relation::type t)     : _data{t} { }
-             token(function::type t)     : _data{t} { }
-             token(unary::type t)        : _data{t} { }
-             token(binary::type t)       : _data{t} { }
-             token(punctuation s) : _data{s} { }
+    explicit token(std::string s)        : _data{std::move(s)} { }
+    explicit token(keyword k)            : _data{k} { }
+    explicit token(constructor::type t)  : _data{t} { }
+    explicit token(relation::type t)     : _data{t} { }
+    explicit token(function::type t)     : _data{t} { }
+    explicit token(unary::type t)        : _data{t} { }
+    explicit token(binary::type t)       : _data{t} { }
+    explicit token(punctuation s) : _data{s} { }
 
     template<typename T>
     bool is() const {
@@ -101,19 +101,34 @@ namespace black::internal
   private:
     // data related to recognized tokens
     std::variant<
-      std::monostate, // invalid tokens
-      bool,           // booleans
-      int64_t,        // integers
-      double,         // reals
-      std::string,    // identifiers
-      keyword,        // keywords
-      relation::type, // known relations
-      function::type, // known functions
-      unary::type,    // unary operator
-      binary::type,   // binary operator
-      punctuation     // any non-logical token
+      std::monostate,    // invalid tokens
+      bool,              // booleans
+      int64_t,           // integers
+      double,            // reals
+      std::string,       // identifiers
+      keyword,           // keywords
+      constructor::type, // next/prev/wnext/wprev
+      relation::type,    // known relations
+      function::type,    // known functions
+      unary::type,       // unary operator
+      binary::type,      // binary operator
+      punctuation        // any non-logical token
     > _data;
   };
+
+  inline std::string to_string(constructor::type t)
+  {
+    constexpr std::string_view toks[] = {
+      "next",  // next
+      "wnext", // wnext
+      "prev",  // prev
+      "wprev"  // wprev
+    };
+
+    return std::string{
+      toks[to_underlying(t) - to_underlying(constructor::type::next)]
+    };
+  }
 
   inline std::string to_string(unary::type t)
   {
@@ -211,6 +226,7 @@ namespace black::internal
       [](double d)             { return std::to_string(d); },
       [](std::string s)        { return s; },
       [](token::keyword k)     { return to_string(k); },
+      [](constructor::type t)  { return to_string(t); },
       [](relation::type t)     { return to_string(t); },
       [](function::type t)     { return to_string(t); },
       [](unary::type t)        { return to_string(t); },

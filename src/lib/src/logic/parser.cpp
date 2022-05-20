@@ -32,8 +32,6 @@
 #include <vector>
 #include <sstream>
 
-#include <iostream>
-
 namespace black::internal
 {
   // Easy entry-point for parsing formulas
@@ -92,8 +90,7 @@ namespace black::internal
     std::optional<term> parse_term_binary_rhs(int precedence, term lhs);
     std::optional<term> parse_term_constant();
     std::optional<term> parse_term_unary_minus();
-    std::optional<term> parse_term_next();
-    std::optional<term> parse_term_wnext();
+    std::optional<term> parse_term_ctor();
     std::optional<term> parse_term_var_or_func();
     std::optional<term> parse_term_parens();
   };
@@ -160,6 +157,7 @@ namespace black::internal
     auto tok = peek();
     if(tok)
       get();
+
     return tok;
   }
 
@@ -370,8 +368,10 @@ namespace black::internal
     if(peek()->token_type() == token::type::integer ||
        peek()->data<function::type>() == function::type::subtraction ||
        peek()->token_type() == token::type::identifier ||
-       peek()->data<token::keyword>() == token::keyword::next ||
-       peek()->data<token::keyword>() == token::keyword::wnext)
+       peek()->data<constructor::type>() == constructor::type::next ||
+       peek()->data<constructor::type>() == constructor::type::wnext ||
+       peek()->data<constructor::type>() == constructor::type::prev ||
+       peek()->data<constructor::type>() == constructor::type::wprev)
       return parse_atom();
     if(peek()->data<token::keyword>() == token::keyword::exists ||
        peek()->data<token::keyword>() == token::keyword::forall)
@@ -406,11 +406,11 @@ namespace black::internal
     if(peek()->data<function::type>() == function::type::subtraction)
       return parse_term_unary_minus();
 
-    if(peek()->data<token::keyword>() == token::keyword::next)
-       return parse_term_next();
-
-    if(peek()->data<token::keyword>() == token::keyword::wnext)
-       return parse_term_wnext();
+    if(peek()->data<constructor::type>() == constructor::type::next ||
+       peek()->data<constructor::type>() == constructor::type::wnext ||
+       peek()->data<constructor::type>() == constructor::type::prev ||
+       peek()->data<constructor::type>() == constructor::type::wprev)
+       return parse_term_ctor();
 
     if(peek()->token_type() == token::type::identifier)
       return parse_term_var_or_func();
@@ -471,28 +471,15 @@ namespace black::internal
     return application(function{function::type::negation}, {*t});
   }
 
-  std::optional<term> parser::_parser_t::parse_term_next() {
-    black_assert(peek()->data<token::keyword>() == token::keyword::next);
+  std::optional<term> parser::_parser_t::parse_term_ctor() {
+    black_assert(
+      peek()->data<constructor::type>() == constructor::type::next ||
+      peek()->data<constructor::type>() == constructor::type::wnext ||
+      peek()->data<constructor::type>() == constructor::type::prev ||
+      peek()->data<constructor::type>() == constructor::type::wprev
+    );
 
-    consume();
-
-    if(!consume(token::punctuation::left_paren))
-      return {};
-
-    std::optional<term> t = parse_term();
-    if(!t)
-      return {};
-
-    if(!consume(token::punctuation::right_paren))
-      return {};
-
-    return next(*t);
-  }
-
-  std::optional<term> parser::_parser_t::parse_term_wnext() {
-    black_assert(peek()->data<token::keyword>() == token::keyword::wnext);
-
-    consume();
+    token op = *consume();
 
     if(!consume(token::punctuation::left_paren))
       return {};
@@ -504,7 +491,7 @@ namespace black::internal
     if(!consume(token::punctuation::right_paren))
       return {};
 
-    return wnext(*t);
+    return constructor(*op.data<constructor::type>(), *t);
   }
 
   std::optional<term> 

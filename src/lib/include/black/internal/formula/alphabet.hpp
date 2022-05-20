@@ -159,27 +159,15 @@ namespace black::internal {
   }
 
   template<typename H, typename T>
-  template<typename Arg>
-  std::pair<alphabet *, next_t *>
-  term_handle_base<H, T>::allocate_next(Arg arg) {
+  template<typename FType, typename Arg>
+  std::pair<alphabet *, constructor_t *>
+  term_handle_base<H, T>::allocate_constructor(FType type, Arg arg) {
     class alphabet *sigma = arg._alphabet;
 
-    next_t *object = sigma->allocate_next(arg._term);
+    constructor_t *object = sigma->allocate_constructor(type, arg._term);
 
     return {sigma, object};
-  }
-  
-  template<typename H, typename T>
-  template<typename Arg>
-  std::pair<alphabet *, wnext_t *>
-  term_handle_base<H, T>::allocate_wnext(Arg arg) {
-    class alphabet *sigma = arg._alphabet;
-
-    wnext_t *object = sigma->allocate_wnext(arg._term);
-
-    return {sigma, object};
-  }
-  
+  }  
 } // namespace black::internal
 
 /*

@@ -343,7 +343,9 @@ namespace black::sat::backends
         return msat_make_uf(env, func, args.data());
       },
       [&](next) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
-      [&](wnext) -> msat_term { black_unreachable(); } // LCOV_EXCL_LINE
+      [&](wnext) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](prev) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](wprev) -> msat_term { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 

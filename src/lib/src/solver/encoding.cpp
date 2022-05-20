@@ -30,6 +30,8 @@
 
 #include <fmt/format.h>
 
+#include <iostream>
+
 using namespace std::literals;
 
 namespace black::internal 
@@ -195,6 +197,20 @@ namespace black::internal
     return ell && step && y && z;
   }
 
+  bool encoder::atom_has_strong_prev(atom a) {
+    for(term t : a.terms())
+      if(term_has_strong_prev(t))
+        return true;
+    return false;
+  }
+
+  bool encoder::atom_has_weak_prev(atom a) {
+    for(term t : a.terms())
+      if(term_has_weak_prev(t))
+        return true;
+    return false;
+  }
+
   bool encoder::atom_is_strong(atom a) {
     for(term t : a.terms())
       if(term_is_strong(t))
@@ -216,6 +232,40 @@ namespace black::internal
     return !has_strong_terms && has_weak_terms;
   }
 
+  bool encoder::term_has_strong_prev(term t) {
+    return t.match(
+      [](constant) { return false; },
+      [](variable) { return false; },
+      [&](application a) {
+        for(term t2 : a.arguments())
+          if(term_has_strong_prev(t2))
+            return true;
+        return false;
+      },
+      [](next) { return false; },
+      [](wnext) { return false; },
+      [](prev) { return true; },
+      [](wprev) { return false; }
+    );
+  }
+
+  bool encoder::term_has_weak_prev(term t) {
+    return t.match(
+      [](constant) { return false; },
+      [](variable) { return false; },
+      [&](application a) {
+        for(term t2 : a.arguments())
+          if(term_has_weak_prev(t2))
+            return true;
+        return false;
+      },
+      [](next) { return false; },
+      [](wnext) { return false; },
+      [](prev) { return false; },
+      [](wprev) { return true; }
+    );
+  }
+
   bool encoder::term_is_strong(term t) {
     return t.match(
       [](constant) { return false; },
@@ -227,7 +277,9 @@ namespace black::internal
         return false;
       },
       [](next) { return true; },
-      [](wnext) { return false; }
+      [](wnext) { return false; },
+      [](prev) { return false; },
+      [](wprev) { return false; }
     );
   }
 
@@ -248,7 +300,9 @@ namespace black::internal
         },
         [&](wnext) {
           has_wnext = true;
-        }
+        },
+        [](prev) { },
+        [](wprev) { }
       );
     };
 
@@ -273,6 +327,13 @@ namespace black::internal
     return f.match( // LCOV_EXCL_LINE
       [&](boolean)      { return f; },
       [&](atom a) -> formula { 
+        
+        if(atom_has_strong_prev(a) && k == 0)
+          return a.sigma()->bottom();
+
+        if(atom_has_weak_prev(a) && k == 0)
+          return a.sigma()->top();
+
         std::vector<term> terms;
         for(term t : a.terms())
           terms.push_back(stepped(t, k, scope));
@@ -438,11 +499,19 @@ namespace black::internal
         
         return application(stepped(a.func(), k), terms);
       }, // LCOV_EXCL_LINE
-      [&](next n) -> term {
+      [&](next n) {
         return stepped(n.argument(), k + 1, scope);
       },
       [&](wnext n) {
         return stepped(n.argument(), k + 1, scope);
+      },
+      [&](prev p) {
+        black_assert(k > 0);
+        return stepped(p.argument(), k - 1, scope);
+      },
+      [&](wprev p) {
+        black_assert(k > 0);
+        return stepped(p.argument(), k - 1, scope);
       }
     );
   }
