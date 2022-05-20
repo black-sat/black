@@ -116,10 +116,10 @@ TEST_CASE("Test formulas") {
     implies(x1 == 0, prev(x1) == 0)
   };
 
-  for(formula f : formulas) {
+  for(formula frm : formulas) {
     DYNAMIC_SECTION("Formula: " << f) {
       solver slv;
-      slv.set_formula(f);
+      slv.set_formula(frm);
       REQUIRE(slv.solve() == true);
     }
   }
