@@ -43,8 +43,9 @@ namespace black::internal {
 
   struct application;
 
-  struct function 
+  class function 
   {
+  public:
     enum type : uint8_t {
       negation,
       subtraction,
@@ -76,6 +77,10 @@ namespace black::internal {
   private:
     std::variant<type, identifier> _data;
   };
+
+  inline std::string to_string(function f) {
+    return to_string(f.name());
+  }
 }
 
 #include <black/internal/term/base.hpp>

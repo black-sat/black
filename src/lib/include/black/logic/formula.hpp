@@ -71,8 +71,9 @@ namespace black::internal {
 
   struct atom;
 
-  struct relation 
+  class relation 
   {
+  public:
     enum type : uint8_t {
       equal,
       not_equal,
@@ -105,6 +106,10 @@ namespace black::internal {
   private:
     std::variant<type, identifier> _data;
   };
+
+  inline std::string to_string(relation r) {
+    return to_string(r.name());
+  }
 }
 
 #include <black/internal/formula/base.hpp>

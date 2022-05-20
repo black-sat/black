@@ -149,7 +149,7 @@ namespace black::internal
     return result;
   }
 
-  // struct relation
+  // class relation
   inline relation::relation(type r) : _data{r} { }
   inline relation::relation(std::string const& name) : _data{identifier{name}}{}
   inline relation::relation(identifier const& name) : _data{name}{ }

@@ -59,6 +59,12 @@ namespace black::internal {
     // Make the stepped version of a term, t_G^k
     term stepped(term t, size_t k, std::vector<variable> const& scope);
 
+    // Make the stepped version of a relation
+    relation stepped(relation r, size_t k);
+    
+    // Make the stepped version of a function
+    function stepped(function r, size_t k);
+
     // Put a formula in negated normal form
     formula to_nnf(formula f);
 

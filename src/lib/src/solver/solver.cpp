@@ -355,9 +355,24 @@ namespace black::internal
           err, scope, positive, rels, funcs
         );
       },
+      [&](tomorrow, formula arg) {
+        return _check_syntax(arg, err, scope, positive, rels, funcs);
+      },
+      [&](w_tomorrow, formula arg) {
+        return _check_syntax(arg, err, scope, positive, rels, funcs);
+      },
+      [&](yesterday, formula arg) {
+        return _check_syntax(arg, err, scope, positive, rels, funcs);
+      },
+      [&](w_yesterday, formula arg) {
+        return _check_syntax(arg, err, scope, positive, rels, funcs);
+      },
       [&](temporal t) -> check_result_t {
         if(!scope.empty()) {
-          err("Temporal operators cannot appear inside quantifiers");
+          err(
+            "Temporal operators (excepting X/wX/Y/Z) cannot appear "
+            "inside quantifiers"
+          );
           return true;
         }
 

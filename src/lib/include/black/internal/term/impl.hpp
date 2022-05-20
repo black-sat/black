@@ -179,7 +179,7 @@ namespace black::internal {
     return _term->label.to<T>();
   }
 
-  // struct function
+  // class function
   inline function::function(type f) : _data{f} { }
   inline function::function(std::string const&name) : _data{identifier{name}} {}
   inline function::function(identifier const&name) : _data{name} {}
