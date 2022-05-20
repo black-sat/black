@@ -108,14 +108,19 @@ TEST_CASE("Test formulas") {
   variable x3 = sigma.var("x3");
   function f{"f"};
   
-  formula phi = G(x1 == x2) && F(f(x1) == x3);
-  formula psi = G(next(x1) == x1 + 1) && F(x1 == 42);
+  std::vector<formula> formulas = {
+    G(x1 == x2) && F(f(x1) == x3),
+    G(next(x1) == x1 + 1) && F(x1 == 42),
+    x1 == 0 && X(prev(x1) == 0),
+    wprev(x1) == 0,
+    implies(x1 == 0, prev(x1) == 0)
+  };
 
-  solver slv;
-  
-  slv.set_formula(phi);
-  REQUIRE(slv.solve() == true);
-
-  slv.set_formula(psi);
-  REQUIRE(slv.solve() == true);
+  for(formula f : formulas) {
+    DYNAMIC_SECTION("Formula: " << f) {
+      solver slv;
+      slv.set_formula(f);
+      REQUIRE(slv.solve() == true);
+    }
+  }
 }

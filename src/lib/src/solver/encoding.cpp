@@ -28,10 +28,6 @@
 
 #include <string_view>
 
-#include <fmt/format.h>
-
-#include <iostream>
-
 using namespace std::literals;
 
 namespace black::internal 
@@ -385,7 +381,6 @@ namespace black::internal
       [&](yesterday, formula arg) -> formula { 
         if(scope.empty())
           return ground(f, k);
-        fmt::print("{}\n", k);
         return k > 0 ? to_ground_snf(arg, k-1, scope) : f.sigma()->bottom();
       },
       [&](w_yesterday, formula arg) -> formula { 
