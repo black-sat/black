@@ -136,7 +136,8 @@ namespace black::frontend {
     if(!cli::semi_decision && (features & feature_t::nextvar)) {
       cli::semi_decision = true;
       io::errorln(
-      "{0}: warning: use of `next` terms implies the --semi-decision option.\n"
+      "{0}: warning: use of `next`/`prev` terms implies the --semi-decision "
+           "option.\n"
       "{0}: warning: execution may not terminate.\n"
       "{0}: warning: pass the --semi-decision option explicitly to silence "
       "this warning.", cli::command_name

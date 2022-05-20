@@ -93,8 +93,8 @@ namespace black::frontend
       },
       [](next) { return true; },
       [](wnext) { return true; },
-      [](prev) { return false; },
-      [](wprev) { return false; }
+      [](prev) { return true; },
+      [](wprev) { return true; }
     );
   }
 

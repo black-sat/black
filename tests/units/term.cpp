@@ -117,7 +117,7 @@ TEST_CASE("Test formulas") {
   };
 
   for(formula frm : formulas) {
-    DYNAMIC_SECTION("Formula: " << f) {
+    DYNAMIC_SECTION("Formula: " << frm) {
       solver slv;
       slv.set_formula(frm);
       REQUIRE(slv.solve() == true);
