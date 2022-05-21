@@ -111,8 +111,9 @@ TEST_CASE("Test formulas") {
   std::vector<formula> formulas = {
     G(x1 == x2) && F(f(x1) == x3),
     G(next(x1) == x1 + 1) && F(x1 == 42),
-    x1 == 0 && X(prev(x1) == 0),
-    wprev(x1) == 0,
+    x1 == 0 && X(f(prev(x1)) == 0),
+    f(wprev(x1)) == 0,
+    X(f(wprev(x1)) == 0),
     implies(x1 == 0, prev(x1) == 0)
   };
 
