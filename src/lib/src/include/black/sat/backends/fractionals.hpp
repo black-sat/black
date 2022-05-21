@@ -21,6 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#ifndef BLACK_SAT_BACKEND_FRACTIONALS_HPP
+#define BLACK_SAT_BACKEND_FRACTIONALS_HPP
+
 #include <limits>
 #include <tuple>
 #include <cmath>
@@ -56,3 +59,5 @@ namespace black::internal {
     return {static_cast<int>(num), static_cast<int>(denum)};
   }
 }
+
+#endif

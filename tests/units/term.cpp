@@ -59,11 +59,15 @@ TEST_CASE("Terms manipulation") {
         [](variable) { return "v2"; },
         [](application) { return "a2"; },
         [](next) { return "n2"; },
-        [](wnext) { return "w2"; }
+        [](wnext) { return "w2"; },
+        [](prev) { return "p2"; },
+        [](wprev) { return "wp2"; }
       );
     },
     [](next)        { return "n1"; },
-    [](wnext)       { return "w1"; }
+    [](wnext)        { return "w1"; },
+    [](prev)       { return "p1"; },
+    [](wprev)       { return "wp1"; }
   );
 
   REQUIRE(s == "n2");
@@ -104,14 +108,20 @@ TEST_CASE("Test formulas") {
   variable x3 = sigma.var("x3");
   function f{"f"};
   
-  formula phi = G(x1 == x2) && F(f(x1) == x3);
-  formula psi = G(next(x1) == x1 + 1) && F(x1 == 42);
+  std::vector<formula> formulas = {
+    G(x1 == x2) && F(f(x1) == x3),
+    G(next(x1) == x1 + 1) && F(x1 == 42),
+    x1 == 0 && X(f(prev(x1)) == 0),
+    f(wprev(x1)) == 0,
+    X(f(wprev(x1)) == 0),
+    implies(x1 == 0, prev(x1) == 0)
+  };
 
-  solver slv;
-  
-  slv.set_formula(phi);
-  REQUIRE(slv.solve() == true);
-
-  slv.set_formula(psi);
-  REQUIRE(slv.solve() == true);
+  for(formula frm : formulas) {
+    DYNAMIC_SECTION("Formula: " << frm) {
+      solver slv;
+      slv.set_formula(frm);
+      REQUIRE(slv.solve() == true);
+    }
+  }
 }

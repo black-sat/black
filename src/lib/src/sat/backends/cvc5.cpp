@@ -168,7 +168,8 @@ namespace black::sat::backends
         // Otherwise we go for uninterpreted relations
         cvc::Term rel = 
           to_cvc5_func_decl(
-            a.sigma(), a.rel().name(), unsigned(cvc_terms.size()), true);
+            a.sigma(), to_string(a.rel().name()), 
+            unsigned(cvc_terms.size()), true);
         
         cvc_terms.insert(cvc_terms.begin(), rel);
         return solver.mkTerm(cvc::APPLY_UF, cvc_terms);
@@ -311,14 +312,17 @@ namespace black::sat::backends
 
         // Otherwise we go for uninterpreted functions
         cvc::Term func = to_cvc5_func_decl(
-          a.sigma(), a.func().name(), unsigned(cvc_terms.size()), false);
+          a.sigma(), to_string(a.func().name()), 
+          unsigned(cvc_terms.size()), false);
 
         cvc_terms.insert(cvc_terms.begin(), func);
         return solver.mkTerm(cvc::APPLY_UF, cvc_terms);
       },
       // We should not have any next(var) term at this point
       [](next) -> cvc::Term { black_unreachable(); }, // LCOV_EXCL_LINE
-      [](wnext) -> cvc::Term { black_unreachable(); } // LCOV_EXCL_LINE
+      [](wnext) -> cvc::Term { black_unreachable(); }, // LCOV_EXCL_LINE
+      [](prev) -> cvc::Term { black_unreachable(); }, // LCOV_EXCL_LINE
+      [](wprev) -> cvc::Term { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 

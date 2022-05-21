@@ -34,6 +34,9 @@ should_fail ./black solve -B mathsat -s -d integers -f 'exists x . x = 0'
 should_fail ./black solve -s -f 'x = 0'
 
 ./black solve -d integers -f 'next(x) = 0' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'wnext(x) = 0' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'prev(x) = 0' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'wprev(x) = 0' 2>&1 | grep -- '--semi-decision'
 
 ./black solve -f 'p & q' --debug print
 ./black solve -f 'X p & X X q & F(q)' --debug trace

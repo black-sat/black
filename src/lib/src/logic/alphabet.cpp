@@ -67,8 +67,7 @@ namespace black::internal {
 
     std::deque<constant_t>    _consts;
     std::deque<variable_t>    _vars;
-    std::deque<next_t>        _nexts;
-    std::deque<wnext_t>       _wnexts;
+    std::deque<constructor_t> _ctors;
     std::deque<application_t> _apps;
 
     using unary_key = std::tuple<unary::type, formula_base*>;
@@ -81,6 +80,7 @@ namespace black::internal {
     using application_key = std::tuple<function, std::vector<term_base *>>;
     using atom_key = std::tuple<relation, std::vector<term_base *>>;
     using constant_key = std::variant<int64_t, double>;
+    using ctor_key = std::tuple<constructor::type, term_base*>;
 
     tsl::hopscotch_map<identifier,     proposition_t*> _props_map;
     tsl::hopscotch_map<atom_key,       atom_t*>        _atoms_map;
@@ -90,8 +90,7 @@ namespace black::internal {
 
     tsl::hopscotch_map<constant_key,    constant_t*>    _consts_map;
     tsl::hopscotch_map<identifier,      variable_t*>    _vars_map;
-    tsl::hopscotch_map<term_base *,     next_t*>        _nexts_map;
-    tsl::hopscotch_map<term_base *,     wnext_t*>       _wnexts_map;
+    tsl::hopscotch_map<ctor_key,        constructor_t*> _ctors_map;
     tsl::hopscotch_map<application_key, application_t*> _apps_map;
   };
 
@@ -238,26 +237,15 @@ namespace black::internal {
     return t;
   }
 
-  next_t *alphabet::allocate_next(term_base *arg)
-  {
-    auto it = _impl->_nexts_map.find(arg);
-    if(it != _impl->_nexts_map.end())
+  constructor_t *
+  alphabet::allocate_constructor(constructor::type type, term_base *arg) {
+    auto it = _impl->_ctors_map.find({type, arg});
+    if(it != _impl->_ctors_map.end())
       return it->second;
 
-    next_t *t = &_impl->_nexts.emplace_back(arg);
-    _impl->_nexts_map.insert({arg, t});
-
-    return t;
-  }
-
-  wnext_t *alphabet::allocate_wnext(term_base *arg)
-  {
-    auto it = _impl->_wnexts_map.find(arg);
-    if(it != _impl->_wnexts_map.end())
-      return it->second;
-
-    wnext_t *t = &_impl->_wnexts.emplace_back(arg);
-    _impl->_wnexts_map.insert({arg, t});
+    constructor_t *t = 
+      &_impl->_ctors.emplace_back(static_cast<term_type>(type), arg);
+    _impl->_ctors_map.insert({{type, arg}, t});
 
     return t;
   }

@@ -59,6 +59,12 @@ namespace black::internal {
     // Make the stepped version of a term, t_G^k
     term stepped(term t, size_t k, std::vector<variable> const& scope);
 
+    // Make the stepped version of a relation
+    relation stepped(relation r, size_t k);
+    
+    // Make the stepped version of a function
+    function stepped(function r, size_t k);
+
     // Put a formula in negated normal form
     formula to_nnf(formula f);
 
@@ -109,6 +115,10 @@ namespace black::internal {
 
     // collect X/Y/Z-requests
     void _add_xyz_requests(formula f);
+    bool atom_has_strong_prev(atom a);
+    bool atom_has_weak_prev(atom a);
+    bool term_has_strong_prev(term t);
+    bool term_has_weak_prev(term t);
     bool atom_is_strong(atom a);
     bool atom_is_weak(atom a);
     bool term_is_strong(term t);

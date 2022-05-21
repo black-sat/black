@@ -184,7 +184,8 @@ namespace black::sat::backends
         }
 
         msat_decl rel = 
-          to_mathsat(a.sigma(), a.rel().name(), (int)args.size(), true);
+          to_mathsat(a.sigma(), to_string(a.rel().name()), 
+          (int)args.size(), true);
 
         return msat_make_term(env, rel, args.data());
       },
@@ -336,12 +337,15 @@ namespace black::sat::backends
         }
 
         msat_decl func = to_mathsat(
-          a.arguments()[0].sigma(), a.func().name(), (int)args.size(), false
+          a.arguments()[0].sigma(), to_string(a.func().name()), 
+          (int)args.size(), false
         );
         return msat_make_uf(env, func, args.data());
       },
       [&](next) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
-      [&](wnext) -> msat_term { black_unreachable(); } // LCOV_EXCL_LINE
+      [&](wnext) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](prev) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](wprev) -> msat_term { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 

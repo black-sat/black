@@ -314,7 +314,8 @@ namespace black::sat::backends
         // Otherwise we go for uninterpreted relations
         Z3_func_decl rel = 
           to_z3_func_decl(
-            a.sigma(), a.rel().name(), unsigned(z3_terms.size()), true);
+            a.sigma(), to_string(a.rel().name()),
+            unsigned(z3_terms.size()), true);
         
         return 
           Z3_mk_app(context, rel, unsigned(z3_terms.size()), z3_terms.data());
@@ -429,14 +430,17 @@ namespace black::sat::backends
         // Otherwise we go for uninterpreted functions
         Z3_func_decl func = 
           to_z3_func_decl(
-            a.sigma(), a.func().name(), unsigned(z3_terms.size()), false);
+            a.sigma(), to_string(a.func().name()), 
+            unsigned(z3_terms.size()), false);
         
         return 
           Z3_mk_app(context, func, unsigned(z3_terms.size()), z3_terms.data());
       }, // LCOV_EXCL_LINE
       // We should not have any next(var) term at this point
       [&](next) -> Z3_ast { black_unreachable(); }, // LCOV_EXCL_LINE
-      [&](wnext) -> Z3_ast { black_unreachable(); } // LCOV_EXCL_LINE 
+      [&](wnext) -> Z3_ast { black_unreachable(); }, // LCOV_EXCL_LINE 
+      [&](prev) -> Z3_ast { black_unreachable(); }, // LCOV_EXCL_LINE 
+      [&](wprev) -> Z3_ast { black_unreachable(); } // LCOV_EXCL_LINE 
     );
   }
 

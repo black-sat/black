@@ -149,9 +149,10 @@ namespace black::internal
     return result;
   }
 
-  // struct relation
+  // class relation
   inline relation::relation(type r) : _data{r} { }
-  inline relation::relation(std::string const& name) : _data{name}{ }
+  inline relation::relation(std::string const& name) : _data{identifier{name}}{}
+  inline relation::relation(identifier const& name) : _data{name}{ }
 
   inline bool operator==(relation const&r1, relation const&r2) {
     return r1._data == r2._data;
@@ -176,25 +177,26 @@ namespace black::internal
     return std::nullopt;
   }
 
-  inline std::string relation::name() const {
-    if(std::holds_alternative<std::string>(_data))
-      return std::get<std::string>(_data);
+  inline identifier relation::name() const {
+    using namespace std::literals;
+    if(std::holds_alternative<identifier>(_data))
+      return std::get<identifier>(_data);
 
     black_assert(std::holds_alternative<type>(_data));
     type r = std::get<type>(_data);
     switch(r) {
       case equal:
-        return "=";
+        return identifier{"="sv};
       case not_equal:
-        return "!=";
+        return identifier{"!="sv};
       case less_than:
-        return "<";
+        return identifier{"<"sv};
       case less_than_equal:
-        return "<=";
+        return identifier{"<="sv};
       case greater_than:
-        return ">";
+        return identifier{">"sv};
       case greater_than_equal:
-        return ">=";
+        return identifier{">="sv};
     }
     black_unreachable(); // LCOV_EXCL_LINE
   }
@@ -443,7 +445,7 @@ namespace std {
       if(auto k = r.known_type(); k)
         return hash<uint8_t>{}(static_cast<uint8_t>(*k));
 
-      return hash<std::string>{}(r.name());
+      return hash<::black::internal::identifier>{}(r.name());
     }
   };
 }

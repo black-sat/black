@@ -193,6 +193,20 @@ namespace black::internal
     return ell && step && y && z;
   }
 
+  bool encoder::atom_has_strong_prev(atom a) {
+    for(term t : a.terms())
+      if(term_has_strong_prev(t))
+        return true;
+    return false;
+  }
+
+  bool encoder::atom_has_weak_prev(atom a) {
+    for(term t : a.terms())
+      if(term_has_weak_prev(t))
+        return true;
+    return false;
+  }
+
   bool encoder::atom_is_strong(atom a) {
     for(term t : a.terms())
       if(term_is_strong(t))
@@ -214,6 +228,40 @@ namespace black::internal
     return !has_strong_terms && has_weak_terms;
   }
 
+  bool encoder::term_has_strong_prev(term t) {
+    return t.match(
+      [](constant) { return false; },
+      [](variable) { return false; },
+      [&](application a) {
+        for(term t2 : a.arguments())
+          if(term_has_strong_prev(t2))
+            return true;
+        return false;
+      },
+      [](next) { return false; },
+      [](wnext) { return false; },
+      [](prev) { return true; },
+      [](wprev) { return false; }
+    );
+  }
+
+  bool encoder::term_has_weak_prev(term t) {
+    return t.match(
+      [](constant) { return false; },
+      [](variable) { return false; },
+      [&](application a) {
+        for(term t2 : a.arguments())
+          if(term_has_weak_prev(t2))
+            return true;
+        return false;
+      },
+      [](next) { return false; },
+      [](wnext) { return false; },
+      [](prev) { return false; },
+      [](wprev) { return true; }
+    );
+  }
+
   bool encoder::term_is_strong(term t) {
     return t.match(
       [](constant) { return false; },
@@ -225,7 +273,9 @@ namespace black::internal
         return false;
       },
       [](next) { return true; },
-      [](wnext) { return false; }
+      [](wnext) { return false; },
+      [](prev) { return false; },
+      [](wprev) { return false; }
     );
   }
 
@@ -246,7 +296,9 @@ namespace black::internal
         },
         [&](wnext) {
           has_wnext = true;
-        }
+        },
+        [](prev) { },
+        [](wprev) { }
       );
     };
 
@@ -271,17 +323,25 @@ namespace black::internal
     return f.match( // LCOV_EXCL_LINE
       [&](boolean)      { return f; },
       [&](atom a) -> formula { 
+        
+        if(atom_has_strong_prev(a) && k == 0)
+          return a.sigma()->bottom();
+
+        if(atom_has_weak_prev(a) && k == 0)
+          return a.sigma()->top();
+
         std::vector<term> terms;
         for(term t : a.terms())
           terms.push_back(stepped(t, k, scope));
 
         black_assert(!(atom_is_strong(a) && atom_is_weak(a))); // LCOV_EXCL_LINE
+        relation stepped_rel = stepped(a.rel(), k);
         if(atom_is_weak(a))
-          return !end_of_trace_prop(k) || atom(a.rel(), terms);
+          return !end_of_trace_prop(k) || atom(stepped_rel, terms);
         if(atom_is_strong(a))
-          return end_of_trace_prop(k) && atom(a.rel(), terms);
+          return end_of_trace_prop(k) && atom(stepped_rel, terms);
 
-        return atom(a.rel(), terms);
+        return atom(stepped_rel, terms);
       }, // LCOV_EXCL_LINE
       [&](quantifier q) {
         std::vector<variable> new_scope = scope;
@@ -308,10 +368,26 @@ namespace black::internal
       [&](iff) -> formula { // LCOV_EXCL_LINE 
         black_unreachable(); // LCOV_EXCL_LINE
       },
-      [&](tomorrow)     { return ground(f, k); },
-      [&](w_tomorrow)   { return ground(f, k); },
-      [&](yesterday)    { return ground(f, k); },
-      [&](w_yesterday)  { return ground(f, k); },
+      [&](tomorrow, formula arg) -> formula { 
+        if(scope.empty())
+          return ground(f, k);
+        return end_of_trace_prop(k) && to_ground_snf(arg, k+1, scope);
+      },
+      [&](w_tomorrow, formula arg) -> formula { 
+        if(scope.empty())
+          return ground(f, k);
+        return !end_of_trace_prop(k) || to_ground_snf(arg, k+1, scope);
+      },
+      [&](yesterday, formula arg) -> formula { 
+        if(scope.empty())
+          return ground(f, k);
+        return k > 0 ? to_ground_snf(arg, k-1, scope) : f.sigma()->bottom();
+      },
+      [&](w_yesterday, formula arg) -> formula { 
+        if(scope.empty())
+          return ground(f, k);
+        return k > 0 ? to_ground_snf(arg, k-1, scope) : f.sigma()->top();
+      },
       [&](until u, formula left, formula right) {
         return to_ground_snf(right,k, scope) ||
             (to_ground_snf(left,k, scope) && ground(X(u), k));
@@ -416,15 +492,37 @@ namespace black::internal
         for(term ti : a.arguments())
           terms.push_back(stepped(ti, k, scope));
         
-        return application(a.func(), terms);
+        return application(stepped(a.func(), k), terms);
       }, // LCOV_EXCL_LINE
-      [&](next n) -> term {
+      [&](next n) {
         return stepped(n.argument(), k + 1, scope);
       },
       [&](wnext n) {
         return stepped(n.argument(), k + 1, scope);
+      },
+      [&](prev p) {
+        black_assert(k > 0);
+        return stepped(p.argument(), k - 1, scope);
+      },
+      [&](wprev p) {
+        black_assert(k > 0);
+        return stepped(p.argument(), k - 1, scope);
       }
     );
+  }
+
+  relation encoder::stepped(relation r, size_t k) {
+    if(r.known_type())
+      return r;
+    else 
+      return relation{identifier{std::pair{r, k}}};
+  }
+
+  function encoder::stepped(function f, size_t k) {
+    if(f.known_type())
+      return f;
+    else 
+      return function{identifier{std::pair{f, k}}};
   }
 
   proposition encoder::ground(formula f, size_t k) {

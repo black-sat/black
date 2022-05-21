@@ -25,6 +25,7 @@
 #define BLACK_TERM_HPP
 
 #include <black/support/meta.hpp>
+#include <black/support/hash.hpp>
 #include <cstdint>
 #include <string>
 #include <optional>
@@ -37,13 +38,16 @@ namespace black::internal {
     variable,
     application,
     next,
-    wnext
+    wnext,
+    prev,
+    wprev
   };
 
   struct application;
 
-  struct function 
+  class function 
   {
+  public:
     enum type : uint8_t {
       negation,
       subtraction,
@@ -55,6 +59,7 @@ namespace black::internal {
     function() = delete;
     function(type);
     function(std::string const&name);
+    function(identifier const&name);
 
     function(function const&) = default;
     function(function &&) = default;
@@ -69,11 +74,15 @@ namespace black::internal {
     application operator()(T ...args);
 
     std::optional<type> known_type() const;
-    std::string name() const;
+    identifier name() const;
 
   private:
-    std::variant<type, std::string> _data;
+    std::variant<type, identifier> _data;
   };
+
+  inline std::string to_string(function f) {
+    return to_string(f.name());
+  }
 }
 
 #include <black/internal/term/base.hpp>
@@ -154,23 +163,28 @@ namespace black::internal {
     std::vector<term> arguments() const;
   };
 
-  struct next : term_handle_base<next, next_t>
+  struct constructor : term_handle_base<constructor, constructor_t>
   {
-    using term_handle_base<next, next_t>::term_handle_base;
+    using term_handle_base<constructor, constructor_t>::term_handle_base;
 
-    next(term arg);
+    enum class type : uint8_t {
+      next = to_underlying(term::type::next),
+      wnext,
+      prev,
+      wprev
+    };
+
+    constructor(type t, term arg);
+
+    type term_type() const;
 
     term argument() const;
   };
 
-  struct wnext : term_handle_base<wnext, wnext_t>
-  {
-    using term_handle_base<wnext, wnext_t>::term_handle_base;
-
-    wnext(term arg);
-
-    term argument() const;
-  };
+  struct next;
+  struct wnext;
+  struct prev;
+  struct wprev;
 
   // Syntactic sugar for known functions
   application operator-(term);
@@ -195,8 +209,7 @@ namespace black {
   using internal::constant;
   using internal::variable;
   using internal::application;
-  using internal::next;
-  using internal::wnext;
+  using internal::constructor;
   using internal::function;
 }
 

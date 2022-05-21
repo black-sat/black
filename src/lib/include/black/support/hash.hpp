@@ -26,11 +26,13 @@
 
 #include <black/support/meta.hpp>
 #include <black/support/assert.hpp>
+#include <black/support/to_string.hpp>
 
 #include <any>
 #include <tuple>
 #include <optional>
 #include <vector>
+#include <typeinfo>
 
 //
 // std::hash specialization for tuples, pairs, and vectors
@@ -49,17 +51,6 @@ namespace black::internal {
     }
 
     return lhs;
-  }
-
-  template<typename T, typename ...Ts, size_t ...Idx>
-  std::tuple<Ts...>
-  tuple_tail_impl(std::tuple<T,Ts...> const&t, std::index_sequence<Idx...>) {
-    return std::make_tuple(std::get<Idx + 1>(t)...);
-  }
-
-  template<typename T, typename ...Ts>
-  std::tuple<Ts...> tuple_tail(std::tuple<T, Ts...> const&t) {
-    return tuple_tail_impl(t, std::make_index_sequence<sizeof...(Ts)>{});
   }
 }
 
@@ -145,7 +136,10 @@ namespace black::internal
       REQUIRES(is_hashable<std::decay_t<T>>)
     >
     explicit identifier(T&& value)
-      : _any(FWD(value)), _hash(make_hasher(value)), _cmp(make_cmp(value)) {}
+      : _any(FWD(value)),
+        _hash(make_hasher(value)),
+        _cmp(make_cmp(value)),
+        _printer(make_printer(value)) {}
 
     size_t hash() const {
       black_assert(_any.has_value());
@@ -159,11 +153,16 @@ namespace black::internal
       return _cmp(_any, other);
     }
 
+    bool operator!=(identifier const&other) const {
+      return !_cmp(_any, other);
+    }
+
     template<typename T, REQUIRES(is_hashable<std::decay_t<T>>)>
     identifier &operator=(T&& value) {
       _any = FWD(value);
       _hash = make_hasher(value);
       _cmp = make_cmp(value);
+      _printer = make_printer(value);
       return *this;
     }
 
@@ -194,13 +193,19 @@ namespace black::internal
 
     std::any const&any() const { return _any; }
 
+    friend std::string to_string(identifier const&id) {
+      return id._printer(id._any);
+    }
+
   private:
     using hasher_t = size_t (*)(std::any const&);
     using comparator_t = bool (*)(std::any const&, identifier const&);
+    using printer_t = std::string (*)(std::any const&);
 
     std::any _any;
     hasher_t _hash;
     comparator_t _cmp;
+    printer_t _printer;
 
     //
     // note: these two function templates cause gcov false negatives
@@ -223,6 +228,23 @@ namespace black::internal
         black_assert(v != nullptr); // LCOV_EXCL_LINE
 
         return otherv != nullptr && *v == *otherv; // LCOV_EXCL_LINE
+      };
+    }
+
+    template<typename T, REQUIRES(is_stringable<T>)>
+    printer_t make_printer(T const&) {
+      return [](std::any const&me) -> std::string {
+        T const *v = std::any_cast<T>(&me);
+        black_assert(v != nullptr);
+
+        return to_string(*v);
+      };
+    }
+    
+    template<typename T, REQUIRES(!is_stringable<T>)>
+    printer_t make_printer(T const&) {
+      return [](std::any const&) -> std::string {
+        return "<" + std::string{typeid(T).name()} + ">";
       };
     }
   };

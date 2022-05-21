@@ -28,6 +28,7 @@
 #include <black/support/meta.hpp>
 #include <black/logic/formula.hpp>
 #include <black/logic/term.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <string>
 #include <unordered_map>
@@ -79,7 +80,8 @@ namespace black::internal {
     // Entry point to obtain a proposition.
     // Propositions can be labelled by a piece of data of any type T, as long as
     // T is Hashable (see the std::unordered_map documentation for reference)
-    template<typename T, REQUIRES(internal::is_hashable<T>)>
+    template<
+      typename T, REQUIRES(internal::is_hashable<T>)>
     proposition prop(T&& label);
 
     // Enty point to obtain variables.
@@ -125,9 +127,8 @@ namespace black::internal {
     variable_t *allocate_variable(identifier _label);
     constant_t *allocate_constant(int64_t c);
     constant_t *allocate_constant(double c);
-    next_t *allocate_next(term_base *arg);
-    wnext_t *allocate_wnext(term_base *arg);
-    application_t*allocate_application(
+    constructor_t *allocate_constructor(constructor::type type, term_base *arg);
+    application_t *allocate_application(
       function const&func, std::vector<term_base *> const&args
     );
   };

@@ -30,6 +30,7 @@
 #endif
 
 #include <charconv>
+#include <string_view>
 
 namespace black::internal
 {
@@ -57,63 +58,33 @@ namespace black::internal
     return H::cast(_alphabet, _term).has_value();
   }
 
-  /*
-   * Matching facility
-   */
-  using term_syntax = syntax<
-    constant,
-    variable,
-    application,
-    next,
-    wnext
-  >;
-
-  template<typename ...Handlers>
-  auto term::match(Handlers&& ...handlers) const {
-    return matcher<term, term_syntax>::match(*this, FWD(handlers)...);
-  }
-
   inline size_t term::hash() const {
     return std::hash<term_base *>{}(_term);
   }
 
   template<size_t I, REQUIRES(I == 0)>
-  term get(next n) {
-    return n.argument();
-  }
-  
-  template<size_t I, REQUIRES(I == 0)>
-  term get(wnext n) {
-    return n.argument();
+  term get(constructor c) {
+    return c.argument();
   }
 } // namespace black::internal
 
 namespace std {
   template<>
-    struct tuple_size<::black::internal::constant>
-      : std::integral_constant<int, 0> { };
+  struct tuple_size<::black::internal::constant>
+    : std::integral_constant<int, 0> { };
 
   template<>
-    struct tuple_size<::black::internal::variable>
-      : std::integral_constant<int, 0> { };
+  struct tuple_size<::black::internal::variable>
+    : std::integral_constant<int, 0> { };
 
   template<>
-    struct tuple_size<::black::internal::next>
-      : std::integral_constant<int, 1> { };
-
-  template<>
-    struct tuple_size<::black::internal::wnext>
-      : std::integral_constant<int, 1> { };
-
+  struct tuple_size<::black::internal::constructor>
+    : std::integral_constant<int, 1> { };
+  
   template<size_t I>
-    struct tuple_element<I, ::black::internal::next> {
-      using type = ::black::internal::term;
-    };
-
-  template<size_t I>
-    struct tuple_element<I, ::black::internal::wnext> {
-      using type = ::black::internal::term;
-    };
+  struct tuple_element<I, ::black::internal::constructor> {
+    using type = ::black::internal::term;
+  };
 
   template<>
     struct tuple_size<::black::internal::application>
@@ -178,9 +149,11 @@ namespace black::internal {
     return _term->label.to<T>();
   }
 
-  // struct function
+  // class function
   inline function::function(type f) : _data{f} { }
-  inline function::function(std::string const&name) : _data{name} { }
+  inline function::function(std::string const&name) : _data{identifier{name}} {}
+  inline function::function(identifier const&name) : _data{name} {}
+
 
   inline bool operator==(function const&f1, function const&f2) {
     return f1._data == f2._data;
@@ -205,22 +178,24 @@ namespace black::internal {
     return std::nullopt;
   }
 
-  inline std::string function::name() const {
-    if(std::holds_alternative<std::string>(_data))
-      return std::get<std::string>(_data);
+  inline identifier function::name() const {
+    using namespace std::literals;
+
+    if(std::holds_alternative<identifier>(_data))
+      return std::get<identifier>(_data);
     
     black_assert(std::holds_alternative<type>(_data));
     type func = std::get<type>(_data);
     switch(func) {
       case type::negation:
       case type::subtraction:
-        return "-";
+        return identifier{"-"sv};
       case type::addition:
-        return "+";
+        return identifier{"+"sv};
       case type::multiplication:
-        return "*";
+        return identifier{"*"sv};
       case type::division:
-        return "/";
+        return identifier{"/"sv};
     }
     black_unreachable(); // LCOV_EXCL_LINE
   }
@@ -247,26 +222,103 @@ namespace black::internal {
     return result;
   }
 
-  // struct next
-  inline next::next(term arg)
-    : term_handle_base<next, next_t>{allocate_next(arg)} { }
+  // struct constructor
+  inline constructor::constructor(type t, term arg)
+    : term_handle_base<constructor, constructor_t>{allocate_constructor(t, arg)}
+    { }
 
-  inline term next::argument() const {
-    return term{_alphabet, _term->arg};
+  inline constructor::type constructor::term_type() const {
+    return static_cast<constructor::type>(_term->type);
   }
-  
-  // struct wnext
-  inline wnext::wnext(term arg)
-    : term_handle_base<wnext, wnext_t>{allocate_wnext(arg)} { }
 
-  inline term wnext::argument() const {
+  inline term constructor::argument() const {
     return term{_alphabet, _term->arg};
   }
 
   //
-  // operators on terms defined in internal/formula/alphabet.hpp
+  // operators on terms are defined in internal/formula/alphabet.hpp
   // to have a complete alphabet type
   //
+
+  template<typename H, typename F, auto OT>
+  struct term_operator_base : term_handle_base<H, F>
+  {
+    friend class term;
+    friend class alphabet;
+
+    using base_t = term_handle_base<H, F>;
+    using base_t::base_t;
+
+  protected:
+    static std::optional<H> cast(alphabet *sigma, term_base *t) {
+      auto ptr = term_cast<F *>(t);
+      if(ptr && ptr->type == static_cast<term_type>(OT))
+        return std::optional<H>{H{sigma, ptr}};
+      return std::nullopt;
+    }
+  };
+
+  template<typename H, constructor::type OT>
+  struct term_ctor_operator : term_operator_base<H, constructor_t, OT>
+  {
+    using base_t = term_operator_base<H, constructor_t, OT>;
+    using base_t::base_t;
+
+    explicit term_ctor_operator(term t) 
+      : base_t{this->allocate_constructor(OT, t)}
+    {
+      black_assert(is_constructor_type(this->_term->type));
+      black_assert(this->_term->type == static_cast<term_type>(OT));
+    }
+
+    operator constructor() const { 
+      return constructor{this->_alphabet, this->_term}; 
+    }
+
+    term argument() const {
+      return term{this->_alphabet, this->_term->arg};
+    }
+  };
+
+  #define declare_ctor_operator(Op)                                          \
+    struct Op : term_ctor_operator<Op, constructor::type::Op> {              \
+      using base_t = term_ctor_operator<Op, constructor::type::Op>;          \
+      using base_t::base_t;                                                  \
+      friend term_operator_base<Op, constructor_t, constructor::type::Op>;   \
+    };                                                                       \
+  } namespace black { using internal::Op; } namespace std {                  \
+    template<>                                                               \
+    struct tuple_size<::black::internal::Op>                                 \
+      : std::integral_constant<int, 1> { };                                  \
+                                                                             \
+    template<size_t I>                                                       \
+    struct tuple_element<I, ::black::internal::Op> {                         \
+      using type = ::black::internal::term;                                  \
+    };                                                                       \
+  } namespace black::internal {
+
+  declare_ctor_operator(next)
+  declare_ctor_operator(wnext)
+  declare_ctor_operator(prev)
+  declare_ctor_operator(wprev)
+
+  /*
+   * Matching facility
+   */
+  using term_syntax = syntax<
+    constant,
+    variable,
+    application,
+    next,
+    wnext,
+    prev,
+    wprev
+  >;
+
+  template<typename ...Handlers>
+  auto term::match(Handlers&& ...handlers) const {
+    return matcher<term, term_syntax>::match(*this, FWD(handlers)...);
+  }
 }
 
 namespace std {
@@ -276,7 +328,7 @@ namespace std {
       if(auto k = f.known_type(); k)
         return hash<uint8_t>{}(static_cast<uint8_t>(*k));
 
-      return hash<std::string>{}(f.name());
+      return hash<::black::internal::identifier>{}(f.name());
     }
   };
 

@@ -72,13 +72,7 @@ namespace black::internal
           return fmt::format("{}", std::get<double>(c.value()));
       },
       [&](variable x) {
-        if(auto name = x.label<std::string>(); name.has_value())
-          return *name;
-        if(auto fname = x.label<std::pair<term,size_t>>(); fname.has_value()) {
-          return
-            fmt::format("<{},{}>", to_string(fname->first), fname->second);
-        }
-        return fmt::format("<{:x}>", to_underlying(term{x}.unique_id())); // LCOV_EXCL_LINE
+        return to_string(x.label());
       },
       [&](application a) {
         if(auto t2 = a.func().known_type(); t2) {
@@ -89,13 +83,13 @@ namespace black::internal
             term rhs = a.arguments()[1];
             return fmt::format("{} {} {}", 
               parens_if_needed(lhs, does_need_parens(a, lhs)),
-              a.func().name(),
+              to_string(a.func().name()),
               parens_if_needed(rhs, does_need_parens(a, rhs))
             );
           }
         }
         std::string result = 
-          a.func().name() + "(" + to_string(a.arguments()[0]);
+          to_string(a.func().name()) + "(" + to_string(a.arguments()[0]);
         for(size_t i = 1; i < a.arguments().size(); ++i) {
           result += ", " + to_string(a.arguments()[i]);
         }
@@ -108,6 +102,12 @@ namespace black::internal
       },
       [&](wnext n) {
         return fmt::format("wnext({})", to_string(n.argument()));
+      },
+      [&](prev n) {
+        return fmt::format("prev({})", to_string(n.argument()));
+      },
+      [&](wprev n) {
+        return fmt::format("wprev({})", to_string(n.argument()));
       }
     );
   }
@@ -117,27 +117,19 @@ namespace black::internal
     using namespace std::literals;
     return f.match(
       [&](proposition p) {
-        if(auto name = p.label<std::string>(); name.has_value())
-          return *name;
-        if(auto fname = p.label<std::pair<formula,size_t>>(); fname.has_value())
-          return
-            fmt::format("<{},{}>", to_string(fname->first), fname->second); // LCOV_EXCL_LINE
-        if(auto fname = p.label<past_label>(); fname.has_value())
-          return fmt::format("<{}>", to_string(fname->formula)); // LCOV_EXCL_LINE
-        else
-          return fmt::format("<{:x}>", to_underlying(formula{p}.unique_id()));
+        return to_string(p.label());
       },
       [&](atom a) {
         if(auto t = a.rel().known_type(); t)
           return fmt::format(
             "{} {} {}", 
             to_string(a.terms()[0]),
-            a.rel().name(), 
+            to_string(a.rel().name()),
             to_string(a.terms()[1])
           );
         
         std::string result = 
-          a.rel().name() + "(" + to_string(a.terms()[0]);
+          to_string(a.rel().name()) + "(" + to_string(a.terms()[0]);
         for(size_t i = 1; i < a.terms().size(); ++i) {
           result += ", " + to_string(a.terms()[i]);
         }
