@@ -382,8 +382,17 @@ namespace black::internal
     iff
   >;
 
+  using first_order_ops = syntax<
+    atom,
+    quantifier
+  >;
+
   struct propositional : fragment_matcher<propositional_ops> { 
     using fragment_matcher<propositional_ops>::fragment_matcher;
+  };
+
+  struct first_order : fragment_matcher<first_order_ops> { 
+    using fragment_matcher<first_order_ops>::fragment_matcher;
   };
 
   struct temporal : fragment_matcher<temporal_ltl_ops> { 

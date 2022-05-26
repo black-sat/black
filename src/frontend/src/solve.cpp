@@ -34,6 +34,7 @@
 #include <black/logic/prettyprint.hpp>
 #include <black/logic/past_remover.hpp>
 #include <black/solver/solver.hpp>
+#include <black/solver/core.hpp>
 #include <black/sat/solver.hpp>
 
 #include <iostream>
@@ -177,6 +178,11 @@ namespace black::frontend {
     size_t bound = 
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
     black::tribool res = slv.solve(bound, cli::semi_decision);
+
+    if(res == false && cli::debug == "core") {
+      formula muc = unsat_core(*f);
+      io::println("MUC: {}\n", to_string(muc));
+    }
 
     output(res, slv, *f);
 
