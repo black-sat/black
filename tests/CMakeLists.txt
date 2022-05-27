@@ -84,7 +84,7 @@ if(Catch2_FOUND)
     set(CATCH_TARGET Catch2::Catch2WithMain)
   else()
     set(CATCH_TARGET Catch2::Catch2)
-    set(UNIT_TESTS ${UNIT_TESTS} main.cpp)
+    set(UNIT_TESTS ${UNIT_TESTS} units/main.cpp)
   endif()
 
   add_executable(unit_tests ${UNIT_TESTS})
