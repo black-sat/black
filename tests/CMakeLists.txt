@@ -146,11 +146,13 @@ if(ENABLE_FORMULAS_TESTS)
     
     set(SMT_OPTS "")
     set(MODEL_OPT "")
+    set(CORE_OPT "")
     string(FIND "${FILE}" "ltlfmt" SMT_FOUND)
     if(SMT_FOUND GREATER_EQUAL 0)
       set(SMT_OPTS "-s")
     else()
       set(MODEL_OPT "-m")
+      set(CORE_OPT "-c")
     endif()
 
     string(FIND "${FILE}" "LRA" LRA_FOUND)
@@ -176,7 +178,7 @@ if(ENABLE_FORMULAS_TESTS)
         COMMAND
           ${SHELL_CMD}
           "$<TARGET_FILE:frontend> solve \
-          ${MODEL_OPT} -o json ${FINITE_OPT} ${SMT_OPTS} \
+          ${MODEL_OPT} ${CORE_OPT} -o json ${FINITE_OPT} ${SMT_OPTS} \
             -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
           $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} \
             -e ${RESULT} '${FILE}'"
@@ -184,7 +186,7 @@ if(ENABLE_FORMULAS_TESTS)
   
       if(BLACK_TEST_TIMEOUT)
         set_tests_properties(
-          "${TEST_NAME}" PROPERTIES TIMEOUT ${BLACK_TEST_TIMEOUT}
+          "${TEST_NAME}" PROPERTIES TIMEOUT ${TEST_TIMEOUT_SECS}
         )
       endif()
 

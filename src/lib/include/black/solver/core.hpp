@@ -31,7 +31,7 @@
 namespace black::internal {
   
   BLACK_EXPORT
-  formula unsat_core(formula f);
+  formula unsat_core(formula f, bool finite);
 
   struct core_placeholder_t {
     size_t n;

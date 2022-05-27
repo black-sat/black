@@ -136,6 +136,13 @@ namespace black::frontend {
       quit(status_code::command_line_error);
     }
 
+    if(cli::unsat_core && (features & feature_t::first_order)) {
+      command_line_error(
+        "unsat core extraction is not supported for first-order formulas."
+      );
+      quit(status_code::command_line_error);
+    }
+
     if(!cli::semi_decision && (features & feature_t::nextvar)) {
       cli::semi_decision = true;
       io::errorln(
@@ -183,7 +190,7 @@ namespace black::frontend {
 
     std::optional<formula> muc;
     if(res == false && cli::unsat_core) {
-      muc = unsat_core(*f);
+      muc = unsat_core(*f, cli::finite);
     }
 
     output(res, slv, *f, muc);
