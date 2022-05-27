@@ -18,8 +18,11 @@ should_fail() {
 ./black solve -k 1 -f 'G (Z False || Y !p2)' | grep UNKNOWN
 ./black solve --remove-past -f 'G (Z False || Y !p2)' | grep SAT
 ./black solve -c -f 'G((p U (q & w)) & c) & F((r U s) & !c)' | grep UNSAT
-./black solve -c -f 'G((p U (q & w)) & c) & F((r U s) & !c)' --debug uc-replacements | \
-  grep "MUC: G({0} & c) & F({1} & !c)"
+./black solve -c -f 'G((p U (q & w)) & c) & F((r U True) & !c)' --debug uc-replacements | \
+  grep 'MUC: G({0} & c) & F({1} & !c)'
+./black solve -o json -f 'p & !p' | ./black check -t - -f 'p & !p'
+./black solve -o json -f 'p & q' | ./black check -t - -f 'p & q'
+
 echo G F p | ./black solve -
 should_fail ./black solve non-existent.pltl
 should_fail ./black solve -f 'F' # syntax error
@@ -139,6 +142,22 @@ cat <<END | ./black check -t - -f 'q'
       }
     ]
   }
+}
+END
+
+cat <<END | should_fail ./black check -t - -f 'p'
+{
+    "result": "UNSAT",
+    "k": 1,
+    "muc": "G("
+}
+END
+
+cat <<END | should_fail ./black check -t - -f 'p & !p'
+{
+    "result": "UNSAT",
+    "k": 1,
+    "muc": "p & {0}"
 }
 END
 

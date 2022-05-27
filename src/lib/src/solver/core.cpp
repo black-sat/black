@@ -165,7 +165,7 @@ namespace black::internal {
           replace_impl(right, dontcares, indexes, next_index)
         );
       },
-      [](first_order) -> formula { black_unreachable(); }
+      [](first_order) -> formula { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 
@@ -202,7 +202,7 @@ namespace black::internal {
       [&](proposition p) {
         if(auto l = p.label<core_placeholder_t>(); l.has_value()) {
           if(formulas.contains(l->n) && formulas.at(l->n) != l->f)
-            return false;
+            return false; // LCOV_EXCL_LINE
           formulas.insert({l->n, l->f});
         }
         return true;

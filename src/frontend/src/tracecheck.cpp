@@ -273,6 +273,9 @@ namespace black::frontend
 
   static
   int check(trace_t trace, formula f) {
+    if(trace.states.size() == 0)
+      quit(status_code::success);
+
     size_t initial_state = 0;
     if(cli::initial_state)
       initial_state = *cli::initial_state;
@@ -413,11 +416,8 @@ namespace black::frontend
         quit(status_code::failed_check);
       }
 
-      if(trace.result == *cli::expected_result) {
+      if(trace.result == *cli::expected_result)
         io::println("MATCH");
-        if(trace.states.size() == 0)
-          quit(status_code::success);
-      }
     }
 
     if(trace.muc.has_value()) {
@@ -428,12 +428,9 @@ namespace black::frontend
         quit(status_code::failed_check);
       }
     }
-
+    
     black_assert(!(features & feature_t::first_order));
 
-    if(trace.states.size() == 0)
-      return 0;
-    
     return check(trace, *f);
   }
 
