@@ -42,7 +42,9 @@
 
 namespace black::frontend {
 
-  void output(tribool result, solver &solver, formula f);
+  void output(
+    tribool result, solver &solver, formula f, std::optional<formula> muc
+  );
   
   int solve(std::optional<std::string> const&path, std::istream &file);
 
@@ -179,12 +181,12 @@ namespace black::frontend {
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
     black::tribool res = slv.solve(bound, cli::semi_decision);
 
-    if(res == false && cli::debug == "core") {
-      formula muc = unsat_core(*f);
-      io::println("MUC: {}\n", to_string(muc));
+    std::optional<formula> muc;
+    if(res == false && cli::unsat_core) {
+      muc = unsat_core(*f);
     }
 
-    output(res, slv, *f);
+    output(res, slv, *f, muc);
 
     return 0;
   }
@@ -211,7 +213,9 @@ namespace black::frontend {
   }
 
   static
-  void readable(tribool result, solver &solver, formula f)
+  void readable(
+    tribool result, solver &solver, formula f, std::optional<formula> muc
+  )
   {
     if(result == tribool::undef) {
       io::println("UNKNOWN (stopped at k = {})", solver.last_bound());
@@ -220,6 +224,10 @@ namespace black::frontend {
 
     if(result == false) {
       io::println("UNSAT");
+      if(cli::unsat_core) {
+        black_assert(muc.has_value());
+        io::println("MUC: {}", *muc);
+      }
       return;
     }
 
@@ -261,7 +269,9 @@ namespace black::frontend {
   }
 
   static
-  void json(tribool result, solver &solver, formula f) {
+  void json(
+    tribool result, solver &solver, formula f, std::optional<formula> muc
+  ) {
     io::println("{{");
     
     io::println("    \"result\": \"{}\",", 
@@ -271,8 +281,14 @@ namespace black::frontend {
 
     io::println("    \"k\": {}{}", 
       solver.last_bound(),
-      cli::print_model && result == true ? "," : ""
+      (cli::print_model && result == true) || 
+      (cli::unsat_core && result == false) ? "," : ""
     );
+
+    if(result == false && cli::unsat_core) {
+      black_assert(muc.has_value());
+      io::println("    \"muc\": \"{}\"", to_string(*muc));
+    }
 
     if(result == true && cli::print_model) {
       auto model = solver.model();
@@ -312,11 +328,13 @@ namespace black::frontend {
     io::println("}}");
   }
 
-  void output(tribool result, solver &solver, formula f) {
+  void output(
+    tribool result, solver &solver, formula f, std::optional<formula> muc
+  ) {
     if(cli::output_format == "json")
-      return json(result, solver, f);
+      return json(result, solver, f, muc);
 
-    return readable(result, solver, f);
+    return readable(result, solver, f, muc);
   }
   
   void trace(black::solver::trace_t data) {

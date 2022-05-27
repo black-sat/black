@@ -30,8 +30,6 @@
 #include <tsl/hopscotch_map.h>
 #include <tsl/hopscotch_set.h>
 
-#include <fmt/format.h>
-
 namespace black::internal {
 
   struct K_data_t {

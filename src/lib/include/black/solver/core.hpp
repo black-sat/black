@@ -37,7 +37,7 @@ namespace black::internal {
     size_t n;
   };
 
-  bool operator==(core_placeholder_t p1, core_placeholder_t p2) {
+  inline bool operator==(core_placeholder_t p1, core_placeholder_t p2) {
     return p1.n == p2.n;
   }
 
