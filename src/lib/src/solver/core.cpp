@@ -81,6 +81,8 @@ namespace black::internal {
       groups[K].push_back(subf);
     }
 
+    std::reverse(begin(groups), end(groups));
+
     return groups;
   }
 
@@ -97,52 +99,97 @@ namespace black::internal {
     return pos;
   }
 
+  static std::vector<std::vector<bool>> build_bitsets(size_t size) {
+    std::vector<std::vector<bool>> result;
+    
+    std::vector<bool> v(size);
+    while(increment(v) != size) {
+      result.push_back(v);
+    }
+
+    std::sort(begin(result), end(result), [](auto const& a, auto const& b) {
+      size_t m = std::count_if(begin(a), end(a), [](bool a) { return a; });
+      size_t n = std::count_if(begin(b), end(b), [](bool b) { return b; });
+
+      return m > n;
+    });
+
+    return result;
+  }
+
   static 
-  formula replace(formula f, tsl::hopscotch_set<formula> const& dontcares) {
+  formula replace_impl(
+    formula f, tsl::hopscotch_set<formula> const& dontcares,
+    tsl::hopscotch_map<formula, size_t> &indexes,
+    size_t &next_index
+  ) {
     using namespace std::literals;
 
-    if(dontcares.contains(f))
-      return f.sigma()->prop(core_placeholder_t{f});
+    if(dontcares.contains(f)) {
+      size_t index = indexes.contains(f) ? indexes[f] : next_index++;
+      indexes.insert_or_assign(f, index);
+
+      return f.sigma()->prop(core_placeholder_t{index});
+    }
     
     return f.match(
       [&](boolean) { return f; },
       [&](proposition) { return f; },
       [&](unary u, formula arg) {
-        return unary(u.formula_type(), replace(arg, dontcares));
+        return unary(
+          u.formula_type(), 
+          replace_impl(arg, dontcares, indexes, next_index)
+        );
       },
       [&](binary b, formula left, formula right) {
         return binary(
           b.formula_type(), 
-          replace(left, dontcares), replace(right, dontcares)
+          replace_impl(left, dontcares, indexes, next_index), 
+          replace_impl(right, dontcares, indexes, next_index)
         );
       },
       [](first_order) -> formula { black_unreachable(); }
     );
   }
 
+  static
+  tsl::hopscotch_set<formula> build_subset(
+    std::vector<formula> const& universe, std::vector<bool> const&bitset
+  ) {
+    black_assert(universe.size() == bitset.size());
+    tsl::hopscotch_set<formula> subset;
+    for(size_t i = 0; i < bitset.size(); ++i) {
+      if(bitset[i])
+        subset.insert(universe[i]);
+    }
+
+    return subset;
+  }
+
+  static 
+  formula replace(formula f, tsl::hopscotch_set<formula> const&dontcares) {
+    tsl::hopscotch_map<formula, size_t> indexes;
+    size_t next_index = 0;
+
+    return replace_impl(f, dontcares, indexes, next_index);
+  }
+
   formula unsat_core(formula f) {
     auto ks = compute_K(f);
     auto groups = group_by_K(f, ks);
 
-    size_t k = groups.size() - 1;
-    for(auto it = groups.rbegin(); it != groups.rend(); ++it, --k) {
-      auto &group = *it;
-      
-      std::vector<bool> v(group.size());
-      
-      while(increment(v) != v.size()) {
-        tsl::hopscotch_set<formula> dontcares;
-        for(size_t i = 0; i < v.size(); ++i) {
-          if(v[i])
-            dontcares.insert(group[i]);
-        }
-       
-        formula candidate = replace(f, dontcares);
+    for(auto &group : groups) {
+      auto bitsets = build_bitsets(group.size());
+
+      for(auto &bitset : bitsets) 
+      { 
+        auto subset = build_subset(group, bitset);
+        formula candidate = replace(f, subset);
 
         solver slv;
         slv.set_formula(candidate);
-        tribool res = slv.solve();
-        if(res == false)
+        
+        if(slv.solve() == false)
           return unsat_core(candidate);
       }      
     }

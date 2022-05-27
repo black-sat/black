@@ -34,15 +34,15 @@ namespace black::internal {
   formula unsat_core(formula f);
 
   struct core_placeholder_t {
-    formula f;
+    size_t n;
   };
 
   bool operator==(core_placeholder_t p1, core_placeholder_t p2) {
-    return p1.f == p2.f;
+    return p1.n == p2.n;
   }
 
-  inline std::string to_string(core_placeholder_t) {
-    return "{}";
+  inline std::string to_string(core_placeholder_t p) {
+    return "{" + std::to_string(p.n) + "}";
   }
 }
 
@@ -55,7 +55,7 @@ namespace std {
   template<>
   struct hash<::black::internal::core_placeholder_t> {
     size_t operator()(::black::internal::core_placeholder_t const& p) const {
-      return std::hash<::black::internal::formula>{}(p.f);
+      return std::hash<size_t>{}(p.n);
     }                                                       
   };
 }
