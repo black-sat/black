@@ -36,6 +36,7 @@ TEST_CASE("Syntax errors") {
   alphabet sigma;
   std::vector<std::string> tests = {
     "F", "F(p U)", "p || q &&", "(p && q", "(", "F(p - q)", "F(p -)", 
+    "F({so\\}me\\\\th\\ing})",
     "F(p(x,))", "x = 1000000000000000000000", "x = 1.", "x x", "x % 1",
     "exists . p", "exists x y z +", "exists x . (x =)", "p(x",
     "x + y * = x", "F(-)", "next x", "next(x x", "wnext x", "wnext(x x",
@@ -66,9 +67,9 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
 {
   alphabet sigma;
 
-  proposition p = sigma.prop("p");
-  proposition q = sigma.prop("q");
-  variable x = sigma.var("x");
+  proposition p = sigma.prop("p{}");
+  proposition q = sigma.prop("");
+  variable x = sigma.var("x\\");
   variable y = sigma.var("y");
   variable z = sigma.var("z");
 

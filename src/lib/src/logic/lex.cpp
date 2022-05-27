@@ -271,8 +271,14 @@ namespace black::internal
         char c2 = (char)_stream.peek(); 
         if(c2 == '}') {
           c = '}';
-        } else
-          _error("Unknown escape sequence '\\"s + c2 + "' in raw identifier");
+        } else if(c2 == '\\') {
+          c = '\\';
+        } else {
+          _error(
+            "Unknown escape sequence '\\"s + c2 + "' in raw identifier"
+          );
+          return {};
+        }
       }      
       
       _stream.get();

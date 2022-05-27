@@ -62,21 +62,21 @@ namespace black::internal
 
     std::string escape(std::string s) {
       if(s.empty())
-        return s;
+        return "{}";
       
       bool escaped = false;
       if(!lexer::is_initial_identifier_char(s[0]))
         escaped = true;
       size_t i = 0;
-      if(s[0] == '}') {
+      if(s[0] == '}' || s[0] == '\\') {
         s.insert(0, 1, '\\');
         i = 1;
-      }      
+      }
 
       while(i < s.size()) {
         if(!lexer::is_identifier_char(s[i]))
           escaped = true;
-        if(s[i] == '}') {
+        if(s[i] == '}' || s[i] == '\\') {
           s.insert(i, 1, '\\');
           i++;
         }

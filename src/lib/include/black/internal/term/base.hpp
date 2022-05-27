@@ -53,7 +53,7 @@ namespace black::internal
   }
 
   constexpr bool is_constructor_type(term_type type) {
-    return to_underlying(type) >= to_underlying(term_type::next) && 
+    return to_underlying(type) >= to_underlying(term_type::next) && // LCOV_EXCL_LINE
            to_underlying(type) <= to_underlying(term_type::wprev);
   }
 

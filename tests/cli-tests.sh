@@ -18,8 +18,8 @@ should_fail() {
 ./black solve -k 1 -f 'G (Z False || Y !p2)' | grep UNKNOWN
 ./black solve --remove-past -f 'G (Z False || Y !p2)' | grep SAT
 ./black solve -c -f 'G((p U (q & w)) & c) & F((r U s) & !c)' | grep UNSAT
-./black solve -c -f 'G((p U (q & w)) & c) & F((r U True) & !c)' --debug uc-replacements | \
-  grep 'MUC: G({0} & c) & F({1} & !c)'
+./black solve -c -f 'G((p U (q & w)) & c) & F((r U True) & False)' --debug uc-replacements | \
+  grep 'MUC: {0} & F({1} & False)'
 ./black solve -o json -f 'p & !p' | ./black check -t - -f 'p & !p'
 ./black solve -o json -f 'p & q' | ./black check -t - -f 'p & q'
 
@@ -54,7 +54,6 @@ should_fail ./black check -t - -f 'p' file.pltl
 should_fail ./black check -t - -
 should_fail ./black check -t 
 should_fail ./black check -t ../tests/test-trace.json -f !p
-should_fail ./black check --trace - -f 'x = 0'
 
 ./black check -t ../tests/test-trace.json <(echo p)
 ./black check -t ../tests/test-trace.json --verbose -i 0 -e SAT -f p

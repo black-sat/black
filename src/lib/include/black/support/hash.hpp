@@ -244,7 +244,7 @@ namespace black::internal
     template<typename T, REQUIRES(!is_stringable<T>)>
     printer_t make_printer(T const&) {
       return [](std::any const&) -> std::string {
-        return "<" + std::string{typeid(T).name()} + ">";
+        return std::string{typeid(T).name()};
       };
     }
   };
