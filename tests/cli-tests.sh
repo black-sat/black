@@ -17,6 +17,9 @@ should_fail() {
 ./black solve -f 'p && !p' | grep -w UNSAT
 ./black solve -k 1 -f 'G (Z False || Y !p2)' | grep UNKNOWN
 ./black solve --remove-past -f 'G (Z False || Y !p2)' | grep SAT
+./black solve -c -f 'G((p U (q & w)) & c) & F((r U s) & !c)' | grep UNSAT
+./black solve -c -f 'G((p U (q & w)) & c) & F((r U s) & !c)' --debug uc-replacements | \
+  grep "MUC: G({0} & c) & F({1} & !c)"
 echo G F p | ./black solve -
 should_fail ./black solve non-existent.pltl
 should_fail ./black solve -f 'F' # syntax error
@@ -25,6 +28,7 @@ should_fail ./black solve
 should_fail ./black solve -f 'p' file.pltl
 should_fail ./black 
 should_fail ./black solve -o
+should_fail ./black solve -s -d integers -c -f 'x = 0 & x != 0'
 
 should_fail ./black solve --remove-past -s -d integers -f 'F H(x = 0)'
 should_fail ./black solve -m -d integers -f 'x = 0'
