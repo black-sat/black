@@ -56,8 +56,8 @@ TEST_CASE("CNF Translation")
       formula fc = simplify_deep(f);
       s.set_formula(!iff(fc,f));
 
-      INFO("Formula: " << f)
-      INFO("Simplification: " << fc)
+      INFO("Formula: " << f);
+      INFO("Simplification: " << fc);
       REQUIRE(!s.solve());
     }
   }
@@ -65,13 +65,13 @@ TEST_CASE("CNF Translation")
   SECTION("CNF of random formulas") {
     for(formula f : tests) 
     { 
-      INFO("Formula: " << f)
-      INFO("Simplification: " << simplify_deep(f))
+      INFO("Formula: " << f);
+      INFO("Simplification: " << simplify_deep(f));
 
       formula fc = to_formula(sigma, to_cnf(f));
       s.set_formula(!implies(fc,f));
 
-      INFO("CNF: " << fc)
+      INFO("CNF: " << fc);
       REQUIRE(!s.solve());
     }
   }
