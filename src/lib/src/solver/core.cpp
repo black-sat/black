@@ -37,14 +37,23 @@ namespace black::internal {
     size_t n;
   };
 
-  static size_t K_impl(formula f, tsl::hopscotch_map<formula, K_data_t> &ks) {
+  static size_t traverse_impl(
+    formula f, tsl::hopscotch_map<formula, K_data_t> &ks, 
+    size_t &next_placeholder
+  ) {
     return f.match(
       [](boolean) { return 1; },
-      [](proposition) { return 1; },
+      [&](proposition p) {
+        if(auto l = p.label<core_placeholder_t>(); l.has_value()) {
+          if(l->n >= next_placeholder)
+            next_placeholder = l->n + 1;
+        }
+        return 1;
+      },
       [&](unary, formula arg) {
         K_data_t data = ks.contains(f) ? ks[f] : K_data_t{0, 0};
         if(data.size == 0)
-          data.size = 1 + K_impl(arg, ks);
+          data.size = 1 + traverse_impl(arg, ks, next_placeholder);
         data.n += 1;
         ks[f] = data;
 
@@ -53,7 +62,8 @@ namespace black::internal {
       [&](binary, formula left, formula right) {
         K_data_t data = ks.contains(f) ? ks[f] : K_data_t{0, 0};
         if(data.size == 0)
-          data.size = 1 + K_impl(left, ks) + K_impl(right, ks);
+          data.size = 1 + traverse_impl(left, ks, next_placeholder) 
+                        + traverse_impl(right, ks, next_placeholder);
         data.n += 1;
         ks[f] = data;
 
@@ -63,10 +73,17 @@ namespace black::internal {
     );
   }
 
-  tsl::hopscotch_map<formula, K_data_t> compute_K(formula f) {
+  std::pair<
+    tsl::hopscotch_map<formula, K_data_t>,
+    size_t
+  >
+  traverse(formula f) {
     tsl::hopscotch_map<formula, K_data_t> ks;
-    K_impl(f, ks);
-    return ks;
+    size_t next_placeholder = 0;
+    
+    traverse_impl(f, ks, next_placeholder);
+    
+    return {ks, next_placeholder};
   }
 
   std::vector<std::vector<formula>>
@@ -165,15 +182,17 @@ namespace black::internal {
   }
 
   static 
-  formula replace(formula f, tsl::hopscotch_set<formula> const&dontcares) {
+  formula replace(
+    formula f, tsl::hopscotch_set<formula> const&dontcares,
+    size_t next_index
+  ) {
     tsl::hopscotch_map<formula, size_t> indexes;
-    size_t next_index = 0;
 
     return replace_impl(f, dontcares, indexes, next_index);
   }
 
   formula unsat_core(formula f) {
-    auto ks = compute_K(f);
+    auto [ks, next_placeholder] = traverse(f);
     auto groups = group_by_K(f, ks);
 
     for(auto &group : groups) {
@@ -182,7 +201,7 @@ namespace black::internal {
       for(auto &bitset : bitsets) 
       { 
         auto subset = build_subset(group, bitset);
-        formula candidate = replace(f, subset);
+        formula candidate = replace(f, subset, next_placeholder);
 
         solver slv;
         slv.set_formula(candidate);
