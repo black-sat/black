@@ -111,7 +111,7 @@ namespace black::internal
     if(auto t = tok.data<function::type>(); t)
       return fops[to_underlying(*t)];
 
-    return {};
+    return std::optional<int>{};
   }
 
 } // namespace black::internal
