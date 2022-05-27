@@ -273,9 +273,6 @@ namespace black::frontend
 
   static
   int check(trace_t trace, formula f) {
-    if(trace.states.size() == 0)
-      quit(status_code::success);
-
     size_t initial_state = 0;
     if(cli::initial_state)
       initial_state = *cli::initial_state;
@@ -398,16 +395,6 @@ namespace black::frontend
 
     black_assert(f.has_value());
 
-    uint8_t features = formula_features(*f);
-    if((features & feature_t::first_order) && !cli::expected_result) {
-      io::errorln(
-        "{0}: trace checking is not supported (yet) for first-order formulas.\n"
-        "{0}: please specify the -e option.",
-        cli::command_name
-      );
-      quit(status_code::command_line_error);
-    }
-
     trace_t trace = parse_trace(sigma, tracepath, tracefile);
 
     if(cli::expected_result) {
@@ -429,7 +416,12 @@ namespace black::frontend
       }
     }
     
-    black_assert(!(features & feature_t::first_order));
+    uint8_t features = formula_features(*f);
+    if(features & feature_t::first_order)
+      quit(status_code::success);
+
+    if(trace.states.size() == 0)
+      quit(status_code::success);
 
     return check(trace, *f);
   }
