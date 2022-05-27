@@ -35,10 +35,11 @@ namespace black::internal {
 
   struct core_placeholder_t {
     size_t n;
+    formula f;
   };
 
   inline bool operator==(core_placeholder_t p1, core_placeholder_t p2) {
-    return p1.n == p2.n;
+    return p1.n == p2.n && p1.f == p2.f;
   }
 
   inline std::string to_string(core_placeholder_t p) {
@@ -53,9 +54,9 @@ namespace black {
 
 namespace std {
   template<>
-  struct hash<::black::internal::core_placeholder_t> {
-    size_t operator()(::black::internal::core_placeholder_t const& p) const {
-      return std::hash<size_t>{}(p.n);
+  struct hash<::black::core_placeholder_t> {
+    size_t operator()(::black::core_placeholder_t const& p) const {
+      return std::hash<std::tuple<size_t, ::black::formula>>{}({p.n, p.f});
     }                                                       
   };
 }

@@ -144,7 +144,7 @@ namespace black::internal {
       size_t index = indexes.contains(f) ? indexes[f] : next_index++;
       indexes.insert_or_assign(f, index);
 
-      return f.sigma()->prop(core_placeholder_t{index});
+      return f.sigma()->prop(core_placeholder_t{index, f});
     }
     
     return f.match(
@@ -187,8 +187,40 @@ namespace black::internal {
     size_t next_index
   ) {
     tsl::hopscotch_map<formula, size_t> indexes;
-
+    
     return replace_impl(f, dontcares, indexes, next_index);
+  }
+
+  static
+  bool check_replacements_impl(
+    formula f, tsl::hopscotch_map<size_t, formula> &formulas
+  ) {
+    return f.match(
+      [](boolean) { return true; },
+      [&](proposition p) {
+        if(auto l = p.label<core_placeholder_t>(); l.has_value()) {
+          if(formulas.contains(l->n) && formulas.at(l->n) != l->f)
+            return false;
+          formulas.insert({l->n, l->f});
+        }
+        return true;
+      },
+      [&](unary, formula arg) {
+        return check_replacements_impl(arg, formulas);
+      },
+      [&](binary, formula left, formula right) {
+        return check_replacements_impl(left, formulas) && 
+               check_replacements_impl(right, formulas);
+      },
+      [](first_order) -> bool { black_unreachable(); } // LCOV_EXCL_LINE
+    );
+  }
+
+  [[maybe_unused]]
+  static 
+  bool check_replacements(formula f) {
+    tsl::hopscotch_map<size_t, formula> formulas;
+    return check_replacements_impl(f, formulas);
   }
 
   formula unsat_core(formula f) {
@@ -210,6 +242,7 @@ namespace black::internal {
           return unsat_core(candidate);
       }      
     }
+    black_assert(check_replacements(f));
     return f;
   }
 

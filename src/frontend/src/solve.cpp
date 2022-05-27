@@ -212,6 +212,29 @@ namespace black::frontend {
     );
   }
 
+  static 
+  void print_uc_replacements(formula f, size_t &last_index) {
+    f.match(
+      [](boolean) { },
+      [&](proposition p) {
+        if(auto l = p.label<core_placeholder_t>(); l.has_value()) {
+          if(l->n >= last_index) {
+            io::print(" - {{{}}}: {}\n", l->n, l->f);
+            last_index++;
+          }
+        }
+      },
+      [&](unary, formula arg) {
+        print_uc_replacements(arg, last_index);
+      },
+      [&](binary, formula left, formula right) {
+        print_uc_replacements(left, last_index);
+        print_uc_replacements(right, last_index);
+      },
+      [](first_order) { black_unreachable(); } // LCOV_EXCL_LINE
+    );
+  }
+
   static
   void readable(
     tribool result, solver &solver, formula f, std::optional<formula> muc
@@ -227,6 +250,13 @@ namespace black::frontend {
       if(cli::unsat_core) {
         black_assert(muc.has_value());
         io::println("MUC: {}", *muc);
+
+        if(cli::debug == "uc-replacements") {
+          io::println("Replacements:");
+          size_t last_index = 0;
+          print_uc_replacements(*muc, last_index);
+        }
+        
       }
       return;
     }
