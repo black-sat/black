@@ -109,6 +109,9 @@ namespace black::frontend
     // to print or not to print the model
     inline bool print_model = false;
 
+    // compute the unsat core
+    inline bool unsat_core = false;
+
     // debug options
     inline std::string debug;
   }

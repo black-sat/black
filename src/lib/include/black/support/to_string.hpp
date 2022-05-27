@@ -63,21 +63,21 @@ namespace black::internal {
     REQUIRES(is_stringable<U>)
   >
   std::string to_string(std::pair<T, U> const&p) {
-    return "<" + to_string(p.first) + ", " + to_string(p.second) + ">";
+    return to_string(p.first) + ", " + to_string(p.second);
   }
 
-  inline std::string to_string_impl(std::tuple<> const&) {
+  inline std::string to_string(std::tuple<> const&) {
     return "";
   }
 
-  template<typename T, typename ...Args>
-  std::string to_string_impl(std::tuple<T, Args...> const & t) {
-    return to_string(std::get<0>(t)) + ", " + to_string_impl(tuple_tail(t));
+  template<typename T>
+  std::string to_string(std::tuple<T> const & t) {
+    return to_string(std::get<0>(t));
   }
 
-  template<typename ...Args>
-  std::string to_string(std::tuple<Args...> const& t) {
-    return "<" + to_string_impl(t) + ">";
+  template<typename T, typename ...Args, REQUIRES(sizeof...(Args) > 0)>
+  std::string to_string(std::tuple<T, Args...> const & t) {
+    return to_string(std::get<0>(t)) + ", " + to_string(tuple_tail(t));
   }
 
   template<typename T>

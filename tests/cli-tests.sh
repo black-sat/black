@@ -17,6 +17,12 @@ should_fail() {
 ./black solve -f 'p && !p' | grep -w UNSAT
 ./black solve -k 1 -f 'G (Z False || Y !p2)' | grep UNKNOWN
 ./black solve --remove-past -f 'G (Z False || Y !p2)' | grep SAT
+./black solve -c -f 'G((p U (q & w)) & c) & F((r U s) & !c)' | grep UNSAT
+./black solve -c -f 'G((p U (q & w)) & c) & F((r U True) & False)' --debug uc-replacements | \
+  grep 'MUC: {0} & F({1} & False)'
+./black solve -o json -f 'p & !p' | ./black check -t - -f 'p & !p'
+./black solve -o json -f 'p & q' | ./black check -t - -f 'p & q'
+
 echo G F p | ./black solve -
 should_fail ./black solve non-existent.pltl
 should_fail ./black solve -f 'F' # syntax error
@@ -25,6 +31,7 @@ should_fail ./black solve
 should_fail ./black solve -f 'p' file.pltl
 should_fail ./black 
 should_fail ./black solve -o
+should_fail ./black solve -s -d integers -c -f 'x = 0 & x != 0'
 
 should_fail ./black solve --remove-past -s -d integers -f 'F H(x = 0)'
 should_fail ./black solve -m -d integers -f 'x = 0'
@@ -47,7 +54,6 @@ should_fail ./black check -t - -f 'p' file.pltl
 should_fail ./black check -t - -
 should_fail ./black check -t 
 should_fail ./black check -t ../tests/test-trace.json -f !p
-should_fail ./black check --trace - -f 'x = 0'
 
 ./black check -t ../tests/test-trace.json <(echo p)
 ./black check -t ../tests/test-trace.json --verbose -i 0 -e SAT -f p
@@ -135,6 +141,22 @@ cat <<END | ./black check -t - -f 'q'
       }
     ]
   }
+}
+END
+
+cat <<END | should_fail ./black check -t - -f 'p'
+{
+    "result": "UNSAT",
+    "k": 1,
+    "muc": "G("
+}
+END
+
+cat <<END | should_fail ./black check -t - -f 'p & !p'
+{
+    "result": "UNSAT",
+    "k": 1,
+    "muc": "p & {0}"
 }
 END
 

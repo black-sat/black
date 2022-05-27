@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Nicola Gigante
+// (C) 2022 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#define CATCH_CONFIG_MAIN
+#ifndef BLACK_SOLVER_CORE_HPP
+#define BLACK_SOLVER_CORE_HPP
 
-#include <catch2/catch.hpp>
+#include <black/logic/formula.hpp>
+
+#include <string>
+
+namespace black::internal {
+  
+  BLACK_EXPORT
+  formula unsat_core(formula f, bool finite);
+
+  struct core_placeholder_t {
+    size_t n;
+    formula f;
+  };
+
+  inline bool operator==(core_placeholder_t p1, core_placeholder_t p2) {
+    return p1.n == p2.n && p1.f == p2.f;
+  }
+
+  inline std::string to_string(core_placeholder_t p) {
+    return std::to_string(p.n);
+  }
+}
+
+namespace black {
+  using internal::unsat_core;
+  using internal::core_placeholder_t;
+}
+
+namespace std {
+  template<>
+  struct hash<::black::core_placeholder_t> {
+    size_t operator()(::black::core_placeholder_t const& p) const {
+      return std::hash<std::tuple<size_t, ::black::formula>>{}({p.n, p.f});
+    }                                                       
+  };
+}
+
+#endif

@@ -134,6 +134,8 @@ namespace black::frontend
         % "treat formulas as LTLf and look for finite models",
       option("-m", "--model").set(cli::print_model)
         % "print the model of the formula, if any",
+      option("-c", "--unsat-core").set(cli::unsat_core)
+        % "for unsatisfiable formulas, compute the minimum unsat core",
       (option("-d", "--domain")
         & value(is_sort, "sort", cli::domain))
         % "select the domain for first-order variables.\n"

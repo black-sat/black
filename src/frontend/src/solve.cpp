@@ -34,6 +34,7 @@
 #include <black/logic/prettyprint.hpp>
 #include <black/logic/past_remover.hpp>
 #include <black/solver/solver.hpp>
+#include <black/solver/core.hpp>
 #include <black/sat/solver.hpp>
 
 #include <iostream>
@@ -41,7 +42,9 @@
 
 namespace black::frontend {
 
-  void output(tribool result, solver &solver, formula f);
+  void output(
+    tribool result, solver &solver, formula f, std::optional<formula> muc
+  );
   
   int solve(std::optional<std::string> const&path, std::istream &file);
 
@@ -133,6 +136,13 @@ namespace black::frontend {
       quit(status_code::command_line_error);
     }
 
+    if(cli::unsat_core && (features & feature_t::first_order)) {
+      command_line_error(
+        "unsat core extraction is not supported for first-order formulas."
+      );
+      quit(status_code::command_line_error);
+    }
+
     if(!cli::semi_decision && (features & feature_t::nextvar)) {
       cli::semi_decision = true;
       io::errorln(
@@ -178,7 +188,12 @@ namespace black::frontend {
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
     black::tribool res = slv.solve(bound, cli::semi_decision);
 
-    output(res, slv, *f);
+    std::optional<formula> muc;
+    if(res == false && cli::unsat_core) {
+      muc = unsat_core(*f, cli::finite);
+    }
+
+    output(res, slv, *f, muc);
 
     return 0;
   }
@@ -204,8 +219,33 @@ namespace black::frontend {
     );
   }
 
+  static 
+  void print_uc_replacements(formula f, size_t &last_index) {
+    f.match(
+      [](boolean) { },
+      [&](proposition p) {
+        if(auto l = p.label<core_placeholder_t>(); l.has_value()) {
+          if(l->n >= last_index) {
+            io::print(" - {{{}}}: {}\n", l->n, l->f);
+            last_index++;
+          }
+        }
+      },
+      [&](unary, formula arg) {
+        print_uc_replacements(arg, last_index);
+      },
+      [&](binary, formula left, formula right) {
+        print_uc_replacements(left, last_index);
+        print_uc_replacements(right, last_index);
+      },
+      [](first_order) { black_unreachable(); } // LCOV_EXCL_LINE
+    );
+  }
+
   static
-  void readable(tribool result, solver &solver, formula f)
+  void readable(
+    tribool result, solver &solver, formula f, std::optional<formula> muc
+  )
   {
     if(result == tribool::undef) {
       io::println("UNKNOWN (stopped at k = {})", solver.last_bound());
@@ -214,6 +254,17 @@ namespace black::frontend {
 
     if(result == false) {
       io::println("UNSAT");
+      if(cli::unsat_core) {
+        black_assert(muc.has_value());
+        io::println("MUC: {}", *muc);
+
+        if(cli::debug == "uc-replacements") {
+          io::println("Replacements:");
+          size_t last_index = 0;
+          print_uc_replacements(*muc, last_index);
+        }
+        
+      }
       return;
     }
 
@@ -255,7 +306,9 @@ namespace black::frontend {
   }
 
   static
-  void json(tribool result, solver &solver, formula f) {
+  void json(
+    tribool result, solver &solver, formula f, std::optional<formula> muc
+  ) {
     io::println("{{");
     
     io::println("    \"result\": \"{}\",", 
@@ -265,8 +318,14 @@ namespace black::frontend {
 
     io::println("    \"k\": {}{}", 
       solver.last_bound(),
-      cli::print_model && result == true ? "," : ""
+      (cli::print_model && result == true) || 
+      (cli::unsat_core && result == false) ? "," : ""
     );
+
+    if(result == false && cli::unsat_core) {
+      black_assert(muc.has_value());
+      io::println("    \"muc\": \"{}\"", to_string(*muc));
+    }
 
     if(result == true && cli::print_model) {
       auto model = solver.model();
@@ -306,11 +365,13 @@ namespace black::frontend {
     io::println("}}");
   }
 
-  void output(tribool result, solver &solver, formula f) {
+  void output(
+    tribool result, solver &solver, formula f, std::optional<formula> muc
+  ) {
     if(cli::output_format == "json")
-      return json(result, solver, f);
+      return json(result, solver, f, muc);
 
-    return readable(result, solver, f);
+    return readable(result, solver, f, muc);
   }
   
   void trace(black::solver::trace_t data) {

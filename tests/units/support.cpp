@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 
 #include <black/support/meta.hpp>
 #include <black/support/hash.hpp>
@@ -101,6 +101,19 @@ TEST_CASE("Hashing functions for tuples")
   }
 }
 
+struct NonStringable {
+  bool operator==(NonStringable) const { return true; }
+};
+
+namespace std {
+  template<>
+  struct hash<NonStringable> {
+    size_t operator()(NonStringable) const {
+      return 1;
+    }
+  };
+}
+
 TEST_CASE("identifier class")
 {
   using namespace black::internal;
@@ -116,6 +129,8 @@ TEST_CASE("identifier class")
 
     REQUIRE(any_hash(h) == int_hash(i));
 
+    REQUIRE(to_string(h) == "42");
+
     std::optional opt = h.to<int>();
     std::optional c = h.to<char>();
 
@@ -128,6 +143,9 @@ TEST_CASE("identifier class")
 
     REQUIRE(opt2.has_value());
     REQUIRE(*opt2 == &i);
+
+    h = NonStringable{};
+    REQUIRE(to_string(h) == typeid(NonStringable).name());
   }
 
   SECTION("C strings") {

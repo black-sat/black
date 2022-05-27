@@ -72,7 +72,6 @@ if(Catch2_FOUND)
     units/cnf.cpp
     units/formula.cpp
     units/term.cpp
-    units/main.cpp
     units/match.cpp
     units/parser.cpp
     units/solver.cpp
@@ -81,8 +80,16 @@ if(Catch2_FOUND)
     units/sat.cpp
   )
 
+  if(TARGET Catch2::Catch2WithMain)
+    set(CATCH_TARGET Catch2::Catch2WithMain)
+  else()
+    set(CATCH_TARGET Catch2::Catch2)
+    set(UNIT_TESTS ${UNIT_TESTS} units/main.cpp)
+  endif()
+
   add_executable(unit_tests ${UNIT_TESTS})
-  target_link_libraries(unit_tests PRIVATE black Catch2::Catch2)
+  target_include_directories(unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/units)
+  target_link_libraries(unit_tests PRIVATE black ${CATCH_TARGET})
   target_enable_warnings(unit_tests)
   target_code_coverage(unit_tests)
   add_sanitizers(unit_tests)
@@ -146,11 +153,13 @@ if(ENABLE_FORMULAS_TESTS)
     
     set(SMT_OPTS "")
     set(MODEL_OPT "")
+    set(CORE_OPT "")
     string(FIND "${FILE}" "ltlfmt" SMT_FOUND)
     if(SMT_FOUND GREATER_EQUAL 0)
       set(SMT_OPTS "-s")
     else()
       set(MODEL_OPT "-m")
+      set(CORE_OPT "-c")
     endif()
 
     string(FIND "${FILE}" "LRA" LRA_FOUND)
@@ -176,7 +185,7 @@ if(ENABLE_FORMULAS_TESTS)
         COMMAND
           ${SHELL_CMD}
           "$<TARGET_FILE:frontend> solve \
-          ${MODEL_OPT} -o json ${FINITE_OPT} ${SMT_OPTS} \
+          ${MODEL_OPT} ${CORE_OPT} -o json ${FINITE_OPT} ${SMT_OPTS} \
             -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
           $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} \
             -e ${RESULT} '${FILE}'"
@@ -184,7 +193,7 @@ if(ENABLE_FORMULAS_TESTS)
   
       if(BLACK_TEST_TIMEOUT)
         set_tests_properties(
-          "${TEST_NAME}" PROPERTIES TIMEOUT ${BLACK_TEST_TIMEOUT}
+          "${TEST_NAME}" PROPERTIES TIMEOUT ${TEST_TIMEOUT_SECS}
         )
       endif()
 

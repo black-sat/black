@@ -109,7 +109,7 @@ namespace black::frontend
             nextvar = (uint8_t)feature_t::nextvar;
         return nextvar | (uint8_t)feature_t::first_order;
       },
-      [](quantifier) -> uint8_t {
+      [](quantifier) -> uint8_t { // LCOV_EXCL_LINE
         return (uint8_t)feature_t::first_order |
                (uint8_t)feature_t::quantifiers;
       },

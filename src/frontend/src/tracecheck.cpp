@@ -30,11 +30,13 @@
 #include <black/logic/parser.hpp>
 #include <black/logic/prettyprint.hpp>
 #include <black/logic/past_remover.hpp>
+#include <black/solver/solver.hpp>
 #include <black/support/tribool.hpp>
 
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <optional>
 
 #include <nlohmann/json.hpp>
 
@@ -48,6 +50,7 @@ namespace black::frontend
     std::optional<std::string> result;
     size_t loop = 0;
     std::vector<state_t> states;
+    std::optional<formula> muc;
   };
 
   static bool check(trace_t, formula, size_t);
@@ -287,8 +290,10 @@ namespace black::frontend
 
   static 
   trace_t
-  parse_trace(std::optional<std::string> const&tracepath, std::istream &file) 
-  {
+  parse_trace(
+    alphabet &sigma, 
+    std::optional<std::string> const&tracepath, std::istream &file
+  ) {
     std::string path = tracepath ? *tracepath : "<stdin>";
     json j;
     try {
@@ -297,6 +302,19 @@ namespace black::frontend
       trace_t trace;
       if(!j["result"].is_null())
         trace.result = j["result"];
+
+      json jmuc = j["muc"];
+      if(!jmuc.is_null()) {
+        std::string smuc = jmuc.get<std::string>();
+        trace.muc =
+          black::parse_formula(sigma, smuc, [&](auto error) {
+            io::fatal(
+              status_code::syntax_error, "{}: malformed 'muc' field: {}", 
+              path, error
+            );
+          });
+        black_assert(trace.muc.has_value());
+      }
 
       json model = j["model"];
       if(model.is_null())
@@ -377,17 +395,7 @@ namespace black::frontend
 
     black_assert(f.has_value());
 
-    uint8_t features = formula_features(*f);
-    if((features & feature_t::first_order) && !cli::expected_result) {
-      io::errorln(
-        "{0}: trace checking is not supported (yet) for first-order formulas.\n"
-        "{0}: please specify the -e option.",
-        cli::command_name
-      );
-      quit(status_code::command_line_error);
-    }
-
-    trace_t trace = parse_trace(tracepath, tracefile);
+    trace_t trace = parse_trace(sigma, tracepath, tracefile);
 
     if(cli::expected_result) {
       if(trace.result != *cli::expected_result) {
@@ -395,14 +403,25 @@ namespace black::frontend
         quit(status_code::failed_check);
       }
 
-      if(trace.result == *cli::expected_result) {
+      if(trace.result == *cli::expected_result)
         io::println("MATCH");
-        if(trace.states.size() == 0)
-          quit(status_code::success);
-      }
     }
 
-    black_assert(!(features & feature_t::first_order));
+    if(trace.muc.has_value()) {
+      black::solver slv;
+      slv.set_formula(*trace.muc, cli::finite);
+      if(slv.solve() != false) {
+        io::println("SAT CORE");
+        quit(status_code::failed_check);
+      }
+    }
+    
+    uint8_t features = formula_features(*f);
+    if(features & feature_t::first_order)
+      quit(status_code::success);
+
+    if(trace.states.size() == 0)
+      quit(status_code::success);
 
     return check(trace, *f);
   }

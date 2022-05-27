@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 #include <black/solver/solver.hpp>
 #include <black/sat/solver.hpp>
 #include <black/sat/dimacs.hpp>
