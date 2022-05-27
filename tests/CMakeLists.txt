@@ -82,6 +82,7 @@ if(Catch2_FOUND)
   )
 
   add_executable(unit_tests ${UNIT_TESTS})
+  target_include_directories(unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/units)
   target_link_libraries(unit_tests PRIVATE black Catch2::Catch2)
   target_enable_warnings(unit_tests)
   target_code_coverage(unit_tests)

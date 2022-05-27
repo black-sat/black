@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Nicola Gigante
+// (C) 2020 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//
-// Main Catch2 test driver
-//
-#define CATCH_CONFIG_MAIN
-
-#include <catch.hpp>
+#if __has_include(<catch2/catch.hpp>)
+  #include <catch2/catch.hpp>
+#else
+  #include <catch2/catch_all.hpp>
+#endif

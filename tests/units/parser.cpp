@@ -27,7 +27,7 @@
 #include <black/logic/parser.hpp>
 #include <black/logic/prettyprint.hpp>
 
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 
 using namespace black;
 
