@@ -409,7 +409,7 @@ namespace black::frontend
 
     if(trace.muc.has_value()) {
       black::solver slv;
-      slv.set_formula(*trace.muc);
+      slv.set_formula(*trace.muc, cli::finite);
       if(slv.solve() != false) {
         io::println("SAT CORE");
         quit(status_code::failed_check);
