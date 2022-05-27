@@ -75,7 +75,7 @@ namespace black::internal {
     return to_string(std::get<0>(t));
   }
 
-  template<typename T, typename ...Args>
+  template<typename T, typename ...Args, REQUIRES(sizeof...(Args) > 0)>
   std::string to_string(std::tuple<T, Args...> const & t) {
     return to_string(std::get<0>(t)) + ", " + to_string(tuple_tail(t));
   }

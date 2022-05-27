@@ -42,15 +42,15 @@ namespace black::internal {
     size_t &next_placeholder
   ) {
     return f.match(
-      [](boolean) { return 1; },
-      [&](proposition p) {
+      [](boolean) -> size_t { return 1; },
+      [&](proposition p) -> size_t {
         if(auto l = p.label<core_placeholder_t>(); l.has_value()) {
           if(l->n >= next_placeholder)
             next_placeholder = l->n + 1;
         }
         return 1;
       },
-      [&](unary, formula arg) {
+      [&](unary, formula arg) -> size_t {
         K_data_t data = ks.contains(f) ? ks[f] : K_data_t{0, 0};
         if(data.size == 0)
           data.size = 1 + traverse_impl(arg, ks, next_placeholder);
@@ -59,7 +59,7 @@ namespace black::internal {
 
         return data.size;
       },
-      [&](binary, formula left, formula right) {
+      [&](binary, formula left, formula right) -> size_t {
         K_data_t data = ks.contains(f) ? ks[f] : K_data_t{0, 0};
         if(data.size == 0)
           data.size = 1 + traverse_impl(left, ks, next_placeholder) 
@@ -73,6 +73,7 @@ namespace black::internal {
     );
   }
 
+  static 
   std::pair<
     tsl::hopscotch_map<formula, K_data_t>,
     size_t
@@ -86,6 +87,7 @@ namespace black::internal {
     return {ks, next_placeholder};
   }
 
+  static
   std::vector<std::vector<formula>>
   group_by_K(formula f, tsl::hopscotch_map<formula, K_data_t> ks) {
     std::vector<std::vector<formula>> groups(ks[f].size + 1);
@@ -123,8 +125,8 @@ namespace black::internal {
     }
 
     std::sort(begin(result), end(result), [](auto const& a, auto const& b) {
-      size_t m = std::count_if(begin(a), end(a), [](bool a) { return a; });
-      size_t n = std::count_if(begin(b), end(b), [](bool b) { return b; });
+      auto m = std::count_if(begin(a), end(a), [](bool x) { return x; });
+      auto n = std::count_if(begin(b), end(b), [](bool x) { return x; });
 
       return m > n;
     });

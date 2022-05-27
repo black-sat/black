@@ -264,11 +264,11 @@ namespace black::internal
     std::string id;
     
     while(_stream.peek() != '}') {
-      char c = _stream.peek();
+      char c = (char)_stream.peek();
       
       if(c == '\\') {
         _stream.get();
-        char c2 = _stream.peek(); 
+        char c2 = (char)_stream.peek(); 
         if(c2 == '}') {
           c = '}';
         } else
