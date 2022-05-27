@@ -80,9 +80,16 @@ if(Catch2_FOUND)
     units/sat.cpp
   )
 
+  if(TARGET Catch2::Catch2WithMain)
+    set(CATCH_TARGET Catch2::Catch2WithMain)
+  else()
+    set(CATCH_TARGET Catch2::Catch2)
+    set(UNIT_TESTS ${UNIT_TESTS} main.cpp)
+  endif()
+
   add_executable(unit_tests ${UNIT_TESTS})
   target_include_directories(unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/units)
-  target_link_libraries(unit_tests PRIVATE black Catch2::Catch2WithMain)
+  target_link_libraries(unit_tests PRIVATE black ${CATCH_TARGET})
   target_enable_warnings(unit_tests)
   target_code_coverage(unit_tests)
   add_sanitizers(unit_tests)
