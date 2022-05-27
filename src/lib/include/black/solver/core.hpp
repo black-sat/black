@@ -43,7 +43,7 @@ namespace black::internal {
   }
 
   inline std::string to_string(core_placeholder_t p) {
-    return "{" + std::to_string(p.n) + "}";
+    return std::to_string(p.n);
   }
 }
 

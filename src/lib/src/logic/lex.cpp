@@ -183,12 +183,12 @@ namespace black::internal
     }
   }  // namespace
 
-  bool lexer::_is_identifier_char(int c) {
+  bool lexer::is_identifier_char(int c) {
     return isalnum(c) || c == '_';
   }
 
-  bool lexer::_is_initial_identifier_char(int c) {
-    return isalpha(c) || c == '_';
+  bool lexer::is_initial_identifier_char(int c) {
+    return isalpha(c) || c == '_' || c == '{';
   }
 
   std::optional<token> lexer::_identifier()
@@ -224,7 +224,7 @@ namespace black::internal
       {"T",      token{binary::type::triggered}}
     };
 
-    if (!_stream.good() || !_is_initial_identifier_char(_stream.peek())) {
+    if (!_stream.good() || !is_initial_identifier_char(_stream.peek())) {
       _error(
         std::string{"Unrecognized input character: '"} + 
         (char)_stream.peek() + "'"
@@ -232,8 +232,11 @@ namespace black::internal
       return token{};
     }
 
+    if((char)_stream.peek() == '{')
+      return _raw_identifier();
+
     std::string id;
-    while (_stream.good() && _is_identifier_char(_stream.peek())) 
+    while (_stream.good() && is_identifier_char(_stream.peek())) 
     {
       id += char(_stream.peek());
       _stream.get();
@@ -247,6 +250,35 @@ namespace black::internal
 
     if(it != std::end(operators))
       return {it->second};
+
+    return token{std::move(id)};
+  }
+
+  std::optional<token> lexer::_raw_identifier()
+  {
+    using namespace std::literals;
+
+    black_assert(_stream.peek() == '{');
+
+    _stream.get();
+    std::string id;
+    
+    while(_stream.peek() != '}') {
+      char c = _stream.peek();
+      
+      if(c == '\\') {
+        _stream.get();
+        char c2 = _stream.peek(); 
+        if(c2 == '}') {
+          c = '}';
+        } else
+          _error("Unknown escape sequence '\\"s + c2 + "' in raw identifier");
+      }      
+      
+      _stream.get();
+      id += c;
+    }
+    _stream.get();
 
     return token{std::move(id)};
   }

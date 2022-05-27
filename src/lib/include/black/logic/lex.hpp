@@ -246,11 +246,13 @@ namespace black::internal
     std::optional<token> get() { return _token = _lex(); }
     std::optional<token> peek() const { return _token; }
 
+    static bool is_identifier_char(int c);
+    static bool is_initial_identifier_char(int c);
+
   private:
     std::optional<token> _lex();
     std::optional<token> _identifier();
-    bool _is_identifier_char(int c);
-    bool _is_initial_identifier_char(int c);
+    std::optional<token> _raw_identifier();
 
     std::optional<token> _token = std::nullopt;
     std::istream &_stream;

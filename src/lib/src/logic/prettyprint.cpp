@@ -59,6 +59,34 @@ namespace black::internal
     std::string parens_if_needed(T t, bool needs_parens) {
       return needs_parens ? "(" + to_string(t) + ")" : to_string(t);
     }
+
+    std::string escape(std::string s) {
+      if(s.empty())
+        return s;
+      
+      bool escaped = false;
+      if(!lexer::is_initial_identifier_char(s[0]))
+        escaped = true;
+      size_t i = 0;
+      if(s[0] == '}') {
+        s.insert(0, 1, '\\');
+        i = 1;
+      }      
+
+      while(i < s.size()) {
+        if(!lexer::is_identifier_char(s[i]))
+          escaped = true;
+        if(s[i] == '}') {
+          s.insert(i, 1, '\\');
+          i++;
+        }
+        i++;
+      }
+
+      if(escaped)
+        return "{" + s + "}";
+      return s;
+    }
   }
 
   std::string to_string(term t)
@@ -72,7 +100,7 @@ namespace black::internal
           return fmt::format("{}", std::get<double>(c.value()));
       },
       [&](variable x) {
-        return to_string(x.label());
+        return escape(to_string(x.label()));
       },
       [&](application a) {
         if(auto t2 = a.func().known_type(); t2) {
@@ -89,7 +117,7 @@ namespace black::internal
           }
         }
         std::string result = 
-          to_string(a.func().name()) + "(" + to_string(a.arguments()[0]);
+          escape(to_string(a.func().name()))+ "(" + to_string(a.arguments()[0]);
         for(size_t i = 1; i < a.arguments().size(); ++i) {
           result += ", " + to_string(a.arguments()[i]);
         }
@@ -117,7 +145,7 @@ namespace black::internal
     using namespace std::literals;
     return f.match(
       [&](proposition p) {
-        return to_string(p.label());
+        return escape(to_string(p.label()));
       },
       [&](atom a) {
         if(auto t = a.rel().known_type(); t)
@@ -129,7 +157,7 @@ namespace black::internal
           );
         
         std::string result = 
-          to_string(a.rel().name()) + "(" + to_string(a.terms()[0]);
+          escape(to_string(a.rel().name())) + "(" + to_string(a.terms()[0]);
         for(size_t i = 1; i < a.terms().size(); ++i) {
           result += ", " + to_string(a.terms()[i]);
         }
