@@ -70,7 +70,7 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
   proposition p = sigma.prop("p{}");
   proposition q = sigma.prop("");
   variable x = sigma.var("x\\");
-  variable y = sigma.var("y");
+  variable y = sigma.var("Y");
   variable z = sigma.var("z");
 
   function g{"g"};

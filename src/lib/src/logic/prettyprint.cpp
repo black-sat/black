@@ -63,6 +63,10 @@ namespace black::internal
     std::string escape(std::string s) {
       if(s.empty())
         return "{}";
+
+      if(lexer::is_keyword(s)) {
+        return "{" + s + "}";
+      }
       
       bool escaped = false;
       if(!lexer::is_initial_identifier_char(s[0]))

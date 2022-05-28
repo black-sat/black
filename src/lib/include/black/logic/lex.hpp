@@ -248,8 +248,10 @@ namespace black::internal
 
     static bool is_identifier_char(int c);
     static bool is_initial_identifier_char(int c);
+    static bool is_keyword(std::string_view s);
 
   private:
+    static std::pair<std::string_view, token> _keywords[28];
     std::optional<token> _lex();
     std::optional<token> _identifier();
     std::optional<token> _raw_identifier();
