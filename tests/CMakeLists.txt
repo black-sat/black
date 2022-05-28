@@ -78,6 +78,7 @@ if(Catch2_FOUND)
     units/past_remover.cpp
     units/support.cpp
     units/sat.cpp
+    units/new.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)
