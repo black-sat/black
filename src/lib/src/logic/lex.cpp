@@ -191,39 +191,46 @@ namespace black::internal
     return isalpha(c) || c == '_' || c == '{';
   }
 
+  std::pair<std::string_view, token> lexer::_keywords[28] = {
+    {"True",   token{true}},
+    {"False",  token{false}},
+    {"next",   token{constructor::type::next}},
+    {"wnext",  token{constructor::type::wnext}},
+    {"prev",   token{constructor::type::prev}},
+    {"wprev",  token{constructor::type::wprev}},
+    {"exists", token{token::keyword::exists}},
+    {"forall", token{token::keyword::forall}},
+    {"NOT",    token{unary::type::negation}},
+    {"X",      token{unary::type::tomorrow}},
+    {"wX",     token{unary::type::w_tomorrow}},
+    {"Y",      token{unary::type::yesterday}},
+    {"Z",      token{unary::type::w_yesterday}},
+    {"F",      token{unary::type::eventually}},
+    {"G",      token{unary::type::always}},
+    {"O",      token{unary::type::once}},
+    {"H",      token{unary::type::historically}},
+    {"AND",    token{binary::type::conjunction}},
+    {"OR",     token{binary::type::disjunction}},
+    {"THEN",   token{binary::type::implication}},
+    {"IFF",    token{binary::type::iff}},
+    {"U",      token{binary::type::until}},
+    {"R",      token{binary::type::release}},
+    {"V",      token{binary::type::release}},
+    {"W",      token{binary::type::w_until}},
+    {"M",      token{binary::type::s_release}},
+    {"S",      token{binary::type::since}},
+    {"T",      token{binary::type::triggered}}
+  };
+
+  bool lexer::is_keyword(std::string_view s) {
+    return
+      std::find_if(std::begin(_keywords), std::end(_keywords), [&](auto p) {
+        return p.first == s;
+      }) != std::end(_keywords);
+  }
+
   std::optional<token> lexer::_identifier()
   {
-    static std::pair<std::string_view, token> operators[] = {
-      {"True",   token{true}},
-      {"False",  token{false}},
-      {"next",   token{constructor::type::next}},
-      {"wnext",  token{constructor::type::wnext}},
-      {"prev",   token{constructor::type::prev}},
-      {"wprev",  token{constructor::type::wprev}},
-      {"exists", token{token::keyword::exists}},
-      {"forall", token{token::keyword::forall}},
-      {"NOT",    token{unary::type::negation}},
-      {"X",      token{unary::type::tomorrow}},
-      {"wX",     token{unary::type::w_tomorrow}},
-      {"Y",      token{unary::type::yesterday}},
-      {"Z",      token{unary::type::w_yesterday}},
-      {"F",      token{unary::type::eventually}},
-      {"G",      token{unary::type::always}},
-      {"O",      token{unary::type::once}},
-      {"H",      token{unary::type::historically}},
-      {"AND",    token{binary::type::conjunction}},
-      {"OR",     token{binary::type::disjunction}},
-      {"THEN",   token{binary::type::implication}},
-      {"IFF",    token{binary::type::iff}},
-      {"U",      token{binary::type::until}},
-      {"R",      token{binary::type::release}},
-      {"V",      token{binary::type::release}},
-      {"W",      token{binary::type::w_until}},
-      {"M",      token{binary::type::s_release}},
-      {"S",      token{binary::type::since}},
-      {"T",      token{binary::type::triggered}}
-    };
-
     if (!_stream.good() || !is_initial_identifier_char(_stream.peek())) {
       _error(
         std::string{"Unrecognized input character: '"} + 
@@ -243,12 +250,12 @@ namespace black::internal
     }
     black_assert(!id.empty());
 
-    auto it =
-      std::find_if(std::begin(operators), std::end(operators), [&](auto p) {
+    auto it = 
+      std::find_if(std::begin(_keywords), std::end(_keywords), [&](auto p) {
         return p.first == id;
       });
 
-    if(it != std::end(operators))
+    if(it != std::end(_keywords))
       return {it->second};
 
     return token{std::move(id)};
