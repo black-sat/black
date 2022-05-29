@@ -32,6 +32,7 @@
 #include <tuple>
 #include <optional>
 #include <vector>
+#include <string_view>
 #include <typeinfo>
 
 //
@@ -135,11 +136,17 @@ namespace black::internal
       REQUIRES(!std::is_convertible_v<T, identifier>),
       REQUIRES(is_hashable<std::decay_t<T>>)
     >
-    explicit identifier(T&& value)
+    identifier(T&& value)
       : _any(FWD(value)),
         _hash(make_hasher(value)),
         _cmp(make_cmp(value)),
         _printer(make_printer(value)) {}
+
+    identifier(std::string_view view) 
+      : identifier{std::string{view}} { }
+
+    identifier(char const* c_str) 
+      : identifier{std::string{c_str}} { }
 
     size_t hash() const {
       black_assert(_any.has_value());

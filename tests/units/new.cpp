@@ -24,28 +24,23 @@
 #include <catch.hpp>
 
 #include <black/new/formula.hpp>
+#include <string>
 
+using namespace std::literals;
 using namespace black::internal::new_api;
+using black::internal::identifier;
 
 TEST_CASE("New API") {
   
+  alphabet sigma;
+
+  boolean b = sigma.boolean(true);
   [[maybe_unused]]
-  formula_base t{formula_type::conjunction};
+  proposition p = sigma.proposition("hello");
 
-  static_assert(is_boolean_type(formula_type::boolean));
-  static_assert(!is_proposition_type(formula_type::boolean));
-  static_assert(is_unary_type(formula_type::negation));
-  static_assert(is_binary_type(formula_type::conjunction));
-  static_assert(!is_binary_type(formula_type::always));
+  unary u = unary(unary::type::negation, b);
 
-  boolean_t b{formula_type::boolean, {true}};
+  REQUIRE(b.value());
 
-  REQUIRE(b.data.value);
-
-  formula_base *base = &b;
-
-  REQUIRE(formula_cast<boolean_t *>(base) != nullptr);
-  REQUIRE(formula_cast<binary_t *>(base) == nullptr);
-
-  boolean b2{nullptr, &b};
+  formula f = conjunction(u, p);
 }

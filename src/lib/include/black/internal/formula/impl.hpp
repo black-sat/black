@@ -151,7 +151,6 @@ namespace black::internal
 
   // class relation
   inline relation::relation(type r) : _data{r} { }
-  inline relation::relation(std::string const& name) : _data{identifier{name}}{}
   inline relation::relation(identifier const& name) : _data{name}{ }
 
   inline bool operator==(relation const&r1, relation const&r2) {
@@ -436,18 +435,6 @@ namespace black::internal
   inline always     GF(formula f) { return G(F(f)); }
   inline yesterday  YO(formula f) { return Y(O(f)); }
   inline yesterday  YH(formula f) { return Y(H(f)); }
-}
-
-namespace std {
-  template<>
-  struct hash<::black::internal::relation> {
-    size_t operator()(black::internal::relation const&r) const {
-      if(auto k = r.known_type(); k)
-        return hash<uint8_t>{}(static_cast<uint8_t>(*k));
-
-      return hash<::black::internal::identifier>{}(r.name());
-    }
-  };
 }
 
 #include <black/internal/formula/match.hpp>

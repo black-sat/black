@@ -58,7 +58,6 @@ namespace black::internal {
 
     function() = delete;
     function(type);
-    function(std::string const&name);
     function(identifier const&name);
 
     function(function const&) = default;
@@ -83,6 +82,18 @@ namespace black::internal {
   inline std::string to_string(function f) {
     return to_string(f.name());
   }
+}
+
+namespace std {
+  template<>
+  struct hash<::black::internal::function> {
+    size_t operator()(black::internal::function const&f) const {
+      if(auto k = f.known_type(); k)
+        return hash<uint8_t>{}(static_cast<uint8_t>(*k));
+
+      return hash<::black::internal::identifier>{}(f.name());
+    }
+  };
 }
 
 #include <black/internal/term/base.hpp>

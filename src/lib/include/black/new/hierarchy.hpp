@@ -52,6 +52,9 @@
 #ifndef end_storage_kind
   #define end_storage_kind(Base, Storage)
 #endif
+#ifndef end_leaf_storage_kind
+  #define end_leaf_storage_kind end_storage_kind
+#endif
 #ifndef end_declare_hierarchy
   #define end_declare_hierarchy(Element)
 #endif
@@ -60,13 +63,11 @@ declare_hierarchy(formula)
 
   declare_leaf_storage_kind(formula, boolean)
     declare_last_field(formula, boolean, bool, value)
-    declare_hierarchy_element(formula, boolean, boolean)
-  end_storage_kind(formula, boolean)
+  end_leaf_storage_kind(formula, boolean)
 
   declare_leaf_storage_kind(formula, proposition)
     declare_last_field(formula, proposition, identifier, label)
-    declare_hierarchy_element(formula, proposition, proposition)
-  end_storage_kind(formula, proposition)
+  end_leaf_storage_kind(formula, proposition)
 
   // we need the term hierarchy for atoms and quantifiers
   // declare_storage_kind(formula, atom)
@@ -114,7 +115,10 @@ end_declare_hierarchy(formula)
 #undef declare_storage_kind
 #undef declare_leaf_storage_kind
 #undef declare_field
+#undef declare_last_field
 #undef declare_child
+#undef declare_last_child
 #undef declare_hierarchy_element
 #undef end_storage_kind
+#undef end_leaf_storage_kind
 #undef end_declare_hierarchy

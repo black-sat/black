@@ -151,7 +151,6 @@ namespace black::internal {
 
   // class function
   inline function::function(type f) : _data{f} { }
-  inline function::function(std::string const&name) : _data{identifier{name}} {}
   inline function::function(identifier const&name) : _data{name} {}
 
 
@@ -322,16 +321,6 @@ namespace black::internal {
 }
 
 namespace std {
-  template<>
-  struct hash<::black::internal::function> {
-    size_t operator()(black::internal::function const&f) const {
-      if(auto k = f.known_type(); k)
-        return hash<uint8_t>{}(static_cast<uint8_t>(*k));
-
-      return hash<::black::internal::identifier>{}(f.name());
-    }
-  };
-
   template<>
   struct hash<::black::internal::term_id> {
     size_t operator()(black::internal::term_id id) const {

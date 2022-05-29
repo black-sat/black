@@ -27,7 +27,10 @@
 #include <black/support/assert.hpp>
 #include <black/support/hash.hpp>
 
+#include <tsl/hopscotch_map.h>
+
 #include <cstdint>
+#include <deque>
 
 namespace black::internal::new_api 
 {
@@ -39,6 +42,7 @@ namespace black::internal::new_api
   #define declare_hierarchy(Base) \
     enum class Base##_type : uint8_t { \
 
+  #define declare_leaf_storage_kind(Base, Storage) Storage,
   #define declare_hierarchy_element(Base, Storage, Element) Element,
 
   #define end_declare_hierarchy(Base) \
@@ -66,6 +70,9 @@ namespace black::internal::new_api
       Base(Base const&) = default; \
       Base(Base &&) = default; \
       \
+      Base(alphabet *sigma, Base##_base *element) \
+        : _sigma{sigma}, _element{element} { } \
+      \
       Base &operator=(Base const&) = default; \
       Base &operator=(Base &&) = default; \
       \
@@ -79,21 +86,16 @@ namespace black::internal::new_api
     };
 
   #include <black/new/hierarchy.hpp>
-
-  //
-  // class allocator
-  //
-  #define declare_storage_kind(Base, Storage) \
-    using Storage##_key = std::tuple<
-  #define declare_field(Base, Storage, Type, Field) Type,
-  #define declare_child(Base, Storage, Child) Base##_base *,
-  #define end_storage_kind(Base, Storage) void>;
-
-  #include <black/new/hierarchy.hpp>
-  
+ 
   //
   // constexpr functions to categorize hierarchy type values into storage kinds
   //
+  #define declare_leaf_storage_kind(Base, Storage) \
+  constexpr bool is_##Storage##_type(Base##_type type) { \
+    return type == Base##_type::Storage; \
+  }
+  #define end_leaf_storage_kind(Base, Storage)
+
   #define declare_storage_kind(Base, Storage) \
   constexpr bool is_##Storage##_type(Base##_type type) { \
     return 
@@ -134,6 +136,16 @@ namespace black::internal::new_api
       Storage##_data_t data; \
     };
 
+  #define declare_leaf_storage_kind(Base, Storage) \
+    struct Storage##_t : Base##_base { \
+      static constexpr auto accepts_type = is_##Storage##_type; \
+      \
+      Storage##_t(Storage##_data_t _data) \
+        : Base##_base{Base##_type::Storage}, data{_data} { } \
+      \
+      Storage##_data_t data; \
+    };
+
   #include <black/new/hierarchy.hpp>
 
   //
@@ -152,27 +164,13 @@ namespace black::internal::new_api
   #include <black/new/hierarchy.hpp>
 
   //
-  // Handle classes.
-  // 
-  // The definition of an handle is split in pieces because of the macros.
-  // - The Storage##_fields CRTP class declare the fields accessors
-  // - The Storage##_type enum lists the types handled by the handle
-  // - The Storage class is the handle
+  // Enums with list of element types of a certain storage kind
   //
-  #define declare_hierarchy(Base) \
-    enum class Base##_id : uintptr_t { };
-
-  #define declare_storage_kind(Base, Storage) \
-    template<typename H> \
-    struct Storage##_fields {
-
-    #define declare_field(Base, Storage, Type, Field) \
-      Type Field() const { return static_cast<H&>(*this)._formula->Field; } \
-
-  #define end_storage_kind(Base, Storage) \
+  #define declare_leaf_storage_kind(Base, Storage) \
+    enum class Storage##_type : uint8_t { \
+      Storage = to_underlying(Base##_type::Storage) \
     };
-
-  #include <black/new/hierarchy.hpp>
+  #define end_leaf_storage_kind(Base, Storage)
 
   #define declare_storage_kind(Base, Storage) \
     enum class Storage##_type : uint8_t {
@@ -185,24 +183,23 @@ namespace black::internal::new_api
 
   #include <black/new/hierarchy.hpp>
 
+  //
+  // class allocator
+  //
   #define declare_storage_kind(Base, Storage) \
-    class Storage : public Storage##_fields<Storage> { \
-      \
-    public: \
-      using type = Storage##_type; \
-      \
-      template<typename ...Args> \
-      Storage(class alphabet *sigma, Storage##_t *element) \
-        : _sigma{sigma}, _element{element} { } \
-      \
-      alphabet *sigma() const { return _sigma; } \
-      Base##_id unique_id() const { \
-        return static_cast<Base##_id>(reinterpret_cast<uintptr_t>(_element)); \
-      } \
-    \
-    private: \
-      class alphabet *_sigma; \
-      Storage##_t *_element; \
+    using Storage##_key = std::tuple<Base##_type,
+  #define declare_leaf_storage_kind(Base, Storage) \
+    using Storage##_key = std::tuple<
+  #define declare_field(Base, Storage, Type, Field) Type,
+  #define declare_child(Base, Storage, Child) Base##_base *,
+  #define end_storage_kind(Base, Storage) void*>;
+
+  #include <black/new/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    struct Storage##_storage { \
+      std::deque<Storage##_t> Storage##_store; \
+      tsl::hopscotch_map<Storage##_key, Storage##_t *> Storage##_map; \
     };
 
   #include <black/new/hierarchy.hpp>
@@ -232,17 +229,186 @@ namespace black::internal::new_api
   }
 
   //
-  // allocation functions
+  // Helper function to transform a Base argument to its underlying element, if 
+  // the argument is a Base, leaving it untouched otherwise
   //
-  #define declare_leaf_storage_kind(Base, Storage)
-  #define declare_storage_kind(Base, Storage) \
-    template<typename ...Args> \
-    Storage allocate_##Storage(Storage::type, Args ...args) { \
-      \
-      alphabet *sigma = get_sigma(args...); \
-      \
-      return Storage{sigma, nullptr}; \
+  template<typename T, typename = void>
+  struct has_element : std::false_type { };
+
+  template<typename T>
+  struct has_element<T, std::void_t<decltype(std::declval<T>()._element)>>
+    : std::true_type { };
+
+  #define declare_hierarchy(Base) \
+    template<typename T> \
+    auto Base##_handle_args(T v) { \
+      if constexpr(has_element<T>::value) \
+        return (Base##_base *)v._element; \
+      else \
+        return v; \
     }
+
+  #define declare_storage_kind(Base, Storage) \
+    inline Base##_type Base##_handle_args(Storage##_type t) { \
+      return Base##_type{to_underlying(t)}; \
+    }
+
+  #include <black/new/hierarchy.hpp>
+
+  //
+  // Handle classes.
+  // 
+  // The definition of an handle is split in pieces because of the macros.
+  // - The Storage##_fields CRTP class declare the fields accessors
+  // - The Storage##_type enum lists the types handled by the handle
+  // - The Storage class is the handle
+  //
+  #define declare_hierarchy(Base) \
+    enum class Base##_id : uintptr_t { };
+
+  #define declare_storage_kind(Base, Storage) \
+    template<typename H> \
+    struct Storage##_fields {
+
+    #define declare_field(Base, Storage, Type, Field) \
+      Type Field() const { \
+        return static_cast<H const&>(*this)._element->data.Field; \
+      }
+
+    #define declare_child(Base, Storage, Child) \
+      Base Child() const { \
+        return Base{ \
+          static_cast<H const&>(*this)._sigma,  \
+          static_cast<H const&>(*this)._element->data.Child \
+        }; \
+      }
+
+  #define end_storage_kind(Base, Storage) \
+    };
+
+  #include <black/new/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    class Storage : public Storage##_fields<Storage> { \
+      \
+      friend struct Storage##_fields<Storage>; \
+    public: \
+      using type = Storage##_type; \
+      \
+      Storage(class alphabet *sigma, Storage##_t *element) \
+        : _sigma{sigma}, _element{element} { } \
+      \
+      template<typename ...Args> \
+      Storage(Args ...args); \
+      \
+      alphabet *sigma() const { return _sigma; } \
+      Base##_id unique_id() const { \
+        return static_cast<Base##_id>(reinterpret_cast<uintptr_t>(_element)); \
+      } \
+      \
+      operator Base() const { \
+        return Base{_sigma, _element}; \
+      } \
+      \
+      class alphabet *_sigma; \
+      Storage##_t *_element; \
+    };
+
+  #include <black/new/hierarchy.hpp>
+
+   #define declare_storage_kind(Base, Storage) \
+    struct Storage##_allocator : Storage##_storage { \
+      template<typename ...Args> \
+      Storage##_t *allocate_##Storage(Base##_type t, Args ...args) { \
+        black_assert(is_##Storage##_type(t)); \
+        auto it = Storage##_map.find(Storage##_key{t, args...,nullptr}); \
+        if(it != Storage##_map.end()) \
+          return it->second; \
+        \
+        Storage##_t *obj = \
+          &Storage##_store.emplace_back(t, Storage##_data_t{args...}); \
+        Storage##_map.insert({Storage##_key{t, args...,nullptr}, obj}); \
+        \
+        return obj; \
+      } \
+    };
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    struct Storage##_allocator : Storage##_storage { \
+      template<typename ...Args> \
+      Storage##_t *allocate_##Storage(Args ...args) { \
+        auto it = Storage##_map.find(Storage##_key{args...,nullptr}); \
+        if(it != Storage##_map.end()) \
+          return it->second; \
+        \
+        Storage##_t *obj = \
+          &Storage##_store.emplace_back(Storage##_data_t{args...}); \
+        Storage##_map.insert({Storage##_key{args...,nullptr}, obj}); \
+        \
+        return obj; \
+      } \
+    };
+
+  #include <black/new/hierarchy.hpp>
+
+  struct dummy_t {};
+  struct alphabet_impl : 
+  #define declare_storage_kind(Base, Storage) Storage##_allocator,
+  #include <black/new/hierarchy.hpp>
+    dummy_t { };
+
+  class alphabet
+  {
+  public:
+    alphabet() : _impl{std::make_unique<alphabet_impl>()} { }
+    ~alphabet() = default;
+
+    alphabet(alphabet const&) = delete;
+    alphabet(alphabet &&) = default;
+
+    alphabet &operator=(alphabet const&) = delete;
+    alphabet &operator=(alphabet &&) = default;
+
+    #define declare_leaf_storage_kind(Base, Storage) \
+      template<typename ...Args> \
+      class Storage Storage(Args ...args) { \
+        return \
+          ::black::internal::new_api::Storage{ \
+            this, _impl->allocate_##Storage(args...) \
+          }; \
+      }
+
+    #include <black/new/hierarchy.hpp>
+
+    #define declare_storage_kind(Base, Storage) \
+      friend class Storage;
+    #include <black/new/hierarchy.hpp>
+
+  private:
+    std::unique_ptr<alphabet_impl> _impl;
+  };
+
+  //
+  // Out-of-line constructor of Storage classes
+  //
+  #define declare_storage_kind(Base, Storage) \
+  template<typename ...Args> \
+    Storage::Storage(Args ...args) \
+      : _sigma{get_sigma(args...)}, \
+        _element{ \
+          get_sigma(args...)->_impl->allocate_##Storage( \
+            Base##_handle_args(args)... \
+          ) \
+        } { } \
+
+  #include <black/new/hierarchy.hpp>
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    class Element : public Storage { \
+    public: \
+      template<typename ...Args> \
+      Element(Args ...args) : Storage{Storage::type::Element, args...} { } \
+    };
 
   #include <black/new/hierarchy.hpp>
 

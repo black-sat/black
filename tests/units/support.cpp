@@ -28,6 +28,7 @@
 #include <black/support/tribool.hpp>
 
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -153,11 +154,21 @@ TEST_CASE("identifier class")
 
     identifier h{str};
 
-    std::optional opt = h.to<char const*>();
+    std::optional opt = h.to<std::string>();
 
     REQUIRE(opt.has_value());
-    REQUIRE(std::strcmp(*opt, "hello") == 0);
     REQUIRE(*opt == str);
+  }
+
+  SECTION("String views") {
+    std::string_view view = "hello";
+
+    identifier h{view};
+
+    std::optional opt = h.to<std::string>();
+
+    REQUIRE(opt.has_value());
+    REQUIRE((*opt == view));
   }
 
   SECTION("Class types") {

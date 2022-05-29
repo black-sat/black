@@ -85,7 +85,6 @@ namespace black::internal {
 
     relation() = delete;
     relation(type);
-    relation(std::string const&name);
     relation(identifier const&name);
 
     relation(relation const&) = default;
@@ -110,6 +109,18 @@ namespace black::internal {
   inline std::string to_string(relation r) {
     return to_string(r.name());
   }
+}
+
+namespace std {
+  template<>
+  struct hash<::black::internal::relation> {
+    size_t operator()(black::internal::relation const&r) const {
+      if(auto k = r.known_type(); k)
+        return hash<uint8_t>{}(static_cast<uint8_t>(*k));
+
+      return hash<::black::internal::identifier>{}(r.name());
+    }
+  };
 }
 
 #include <black/internal/formula/base.hpp>
