@@ -55,9 +55,32 @@
 #ifndef end_leaf_storage_kind
   #define end_leaf_storage_kind end_storage_kind
 #endif
-#ifndef end_declare_hierarchy
-  #define end_declare_hierarchy(Element)
+#ifndef end_hierarchy
+  #define end_hierarchy(Element)
 #endif
+
+declare_hierarchy(term)
+  declare_leaf_storage_kind(term, constant)
+    declare_last_field(term, constant, int, value)
+  end_leaf_storage_kind(term, constant)
+
+  declare_leaf_storage_kind(term, variable)
+    declare_last_field(term, variable, identifier, label)
+  end_leaf_storage_kind(term, variable)
+
+  declare_leaf_storage_kind(term, application)
+    declare_field(term, application, function, func)
+    declare_last_field(term, application, std::vector<term>, terms)
+  end_leaf_storage_kind(term, application)
+
+  declare_storage_kind(term, constructor)
+    declare_last_child(term, constructor, argument)
+    declare_hierarchy_element(term, constructor, next)
+    declare_hierarchy_element(term, constructor, wnext)
+    declare_hierarchy_element(term, constructor, prev)
+    declare_hierarchy_element(term, constructor, wprev)
+  end_storage_kind(term, constructor)
+end_hierarchy(term)
 
 declare_hierarchy(formula)
 
@@ -69,12 +92,10 @@ declare_hierarchy(formula)
     declare_last_field(formula, proposition, identifier, label)
   end_leaf_storage_kind(formula, proposition)
 
-  // we need the term hierarchy for atoms and quantifiers
-  // declare_storage_kind(formula, atom)
-  //   declare_field(formula, atom, identifier, relation)
-  //   declare_field(formula, atom, identifier, relation)
-  //   declare_hierarchy_element(formula, atom, atom)
-  // end_storage_kind(formula, atom)
+  declare_leaf_storage_kind(formula, atom)
+    declare_field(formula, atom, identifier, relation)
+    declare_field(formula, atom, std::vector<term>, terms)
+  end_leaf_storage_kind(formula, atom)
 
   // declare_storage_kind(formula, quantifier)
   //   declare_field(formula, quantifier, quantifier_type, qtype)
@@ -109,7 +130,7 @@ declare_hierarchy(formula)
     declare_hierarchy_element(formula, binary, triggered)
   end_storage_kind(formula, binary)
 
-end_declare_hierarchy(formula)
+end_hierarchy(formula)
 
 #undef declare_hierarchy
 #undef declare_storage_kind
@@ -121,4 +142,4 @@ end_declare_hierarchy(formula)
 #undef declare_hierarchy_element
 #undef end_storage_kind
 #undef end_leaf_storage_kind
-#undef end_declare_hierarchy
+#undef end_hierarchy

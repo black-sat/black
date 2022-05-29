@@ -34,7 +34,14 @@ TEST_CASE("New API") {
   
   alphabet sigma;
 
+  variable v = sigma.variable("x");
+  function f{"f"};
+
+  [[maybe_unused]]
+  term t = f(v);
+
   boolean b = sigma.boolean(true);
+
   [[maybe_unused]]
   proposition p = sigma.proposition("hello");
 
@@ -42,5 +49,6 @@ TEST_CASE("New API") {
 
   REQUIRE(b.value());
 
-  formula f = conjunction(u, p);
+  [[maybe_unused]]
+  formula c = conjunction(u, p);
 }
