@@ -399,4 +399,84 @@ namespace black::internal::new_api
     }
   
   #include <black/new/hierarchy.hpp>
+
+  //
+  // std::common_type specializations
+  //
+  #define declare_hierarchy(Base) \
+    template<typename T> \
+    struct is_##Base##_handler : std::false_type { }; \
+    \
+    template<> \
+    struct is_##Base##_handler<Base> : std::true_type { };
+
+  #include <black/new/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    template<> \
+    struct is_##Base##_handler<Storage> : std::true_type { }; \
+    \
+    template<typename T> \
+    struct is_##Storage##_handler : std::false_type { };
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    template<> \
+    struct is_##Base##_handler<Element> : std::true_type { }; \
+    \
+    template<> \
+    struct is_##Storage##_handler<Element> : std::true_type { };
+  
+  #include <black/new/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    } namespace std { \
+      template<typename T> \
+      struct common_type< \
+        enable_if_t< \
+          ::black::internal::new_api::is_##Storage##_handler<T>::value, \
+          ::black::internal::new_api::Storage \
+        >, T \
+      > { \
+        using type = ::black::internal::new_api::Storage; \
+      }; \
+      \
+      template<typename T> \
+      struct common_type< \
+        enable_if_t< \
+          !::black::internal::new_api::is_##Storage##_handler<T>::value && \
+          ::black::internal::new_api::is_##Base##_handler<T>::value, \
+          ::black::internal::new_api::Storage \
+        >, T \
+      > { \
+        using type = ::black::internal::new_api::Base; \
+      }; \
+    } namespace black::internal::new_api {
+
+  #include <black/new/hierarchy.hpp>
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    } namespace std { \
+      template<typename T> \
+      struct common_type< \
+        enable_if_t< \
+          ::black::internal::new_api::is_##Storage##_handler<T>::value, \
+          ::black::internal::new_api::Element \
+        >, T \
+      > { \
+        using type = ::black::internal::new_api::Storage; \
+      }; \
+      \
+      template<typename T> \
+      struct common_type< \
+        enable_if_t< \
+          !::black::internal::new_api::is_##Storage##_handler<T>::value && \
+          ::black::internal::new_api::is_##Base##_handler<T>::value, \
+          ::black::internal::new_api::Element \
+        >, T \
+      > { \
+        using type = ::black::internal::new_api::Base; \
+      }; \
+    } namespace black::internal::new_api {
+
+  #include <black/new/hierarchy.hpp>
 }

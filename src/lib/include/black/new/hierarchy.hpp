@@ -37,14 +37,8 @@
 #ifndef declare_field
   #define declare_field(Base, Storage, Type, Field)
 #endif
-#ifndef declare_last_field
-  #define declare_last_field declare_field
-#endif
 #ifndef declare_child
   #define declare_child(Base, Storage, Child)
-#endif
-#ifndef declare_last_child
-  #define declare_last_child declare_child
 #endif
 #ifndef declare_hierarchy_element
   #define declare_hierarchy_element(Base, Storage, Element)
@@ -62,20 +56,20 @@
 #ifdef BLACK_DEFINE_TERM_HIERARCHY
   declare_hierarchy(term)
     declare_leaf_storage_kind(term, constant)
-      declare_last_field(term, constant, int, value)
+      declare_field(term, constant, int, value)
     end_leaf_storage_kind(term, constant)
 
     declare_leaf_storage_kind(term, variable)
-      declare_last_field(term, variable, identifier, label)
+      declare_field(term, variable, identifier, label)
     end_leaf_storage_kind(term, variable)
 
     declare_leaf_storage_kind(term, application)
       declare_field(term, application, function, func)
-      declare_last_field(term, application, std::vector<term>, terms)
+      declare_field(term, application, std::vector<term>, terms)
     end_leaf_storage_kind(term, application)
 
     declare_storage_kind(term, constructor)
-      declare_last_child(term, constructor, argument)
+      declare_child(term, constructor, argument)
       declare_hierarchy_element(term, constructor, next)
       declare_hierarchy_element(term, constructor, wnext)
       declare_hierarchy_element(term, constructor, prev)
@@ -88,27 +82,27 @@
   declare_hierarchy(formula)
 
     declare_leaf_storage_kind(formula, boolean)
-      declare_last_field(formula, boolean, bool, value)
+      declare_field(formula, boolean, bool, value)
     end_leaf_storage_kind(formula, boolean)
 
     declare_leaf_storage_kind(formula, proposition)
-      declare_last_field(formula, proposition, identifier, label)
+      declare_field(formula, proposition, identifier, label)
     end_leaf_storage_kind(formula, proposition)
 
     declare_leaf_storage_kind(formula, atom)
       declare_field(formula, atom, identifier, relation)
-      declare_last_field(formula, atom, std::vector<term>, terms)
+      declare_field(formula, atom, std::vector<term>, terms)
     end_leaf_storage_kind(formula, atom)
 
     declare_storage_kind(formula, quantifier)
-      declare_last_field(formula, quantifier, variable, var)
-      declare_last_child(formula, quantifier, matrix)
+      declare_field(formula, quantifier, variable, var)
+      declare_child(formula, quantifier, matrix)
       declare_hierarchy_element(formula, quantifier, exists)
       declare_hierarchy_element(formula, quantifier, forall)
     end_storage_kind(formula, quantifier)
     
     declare_storage_kind(formula, unary)
-      declare_last_child(formula, unary, argument)
+      declare_child(formula, unary, argument)
       declare_hierarchy_element(formula, unary, negation)
       declare_hierarchy_element(formula, unary, tomorrow)
       declare_hierarchy_element(formula, unary, w_tomorrow)
@@ -122,7 +116,7 @@
 
     declare_storage_kind(formula, binary)
       declare_child(formula, binary, left)
-      declare_last_child(formula, binary, right)
+      declare_child(formula, binary, right)
       declare_hierarchy_element(formula, binary, conjunction)
       declare_hierarchy_element(formula, binary, disjunction)
       declare_hierarchy_element(formula, binary, implication)
@@ -142,9 +136,7 @@
 #undef declare_storage_kind
 #undef declare_leaf_storage_kind
 #undef declare_field
-#undef declare_last_field
 #undef declare_child
-#undef declare_last_child
 #undef declare_hierarchy_element
 #undef end_storage_kind
 #undef end_leaf_storage_kind
