@@ -49,7 +49,7 @@ TEST_CASE("New API") {
 
   REQUIRE(b.value());
 
-  formula c = conjunction(u, p);
+  formula c = formula{conjunction(u, p)};
 
   std::optional<binary> c2 = c.to<binary>();
   REQUIRE(c2.has_value());
@@ -61,4 +61,14 @@ TEST_CASE("New API") {
   std::optional<conjunction> c3 = c.to<conjunction>();
   REQUIRE(c3.has_value());
   REQUIRE(c.is<conjunction>());
+
+  static_assert(std::tuple_size_v<conjunction> == 2);
+  static_assert(std::tuple_size_v<proposition> == 0);
+
+  static_assert(std::is_same_v<std::tuple_element_t<0, conjunction>, formula>);
+
+  auto [u2, p2] = conjunction(u, p);
+
+  REQUIRE(u2 == u);
+  REQUIRE(p2 == p);
 }

@@ -234,6 +234,11 @@ namespace black::internal::new_api
   // - The Storage##_type enum lists the types handled by the handle
   // - The Storage class is the handle
   //
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    class Element;
+
+  #include <black/new/hierarchy.hpp>
+
   #define declare_hierarchy(Base) \
     enum class Base##_id : uintptr_t { };
 
@@ -269,11 +274,21 @@ namespace black::internal::new_api
       using storage_t = Storage##_t; \
       using type = Storage##_type; \
       \
+      Storage(Storage const&) = default; \
+      Storage(Storage &&) = default; \
+      \
       Storage(class alphabet *sigma, Storage##_t *element) \
         : _sigma{sigma}, _element{element} { } \
       \
       template<typename ...Args> \
-      Storage(Args ...args); \
+      Storage(Args ...args); 
+      
+  #define declare_hierarchy_element(Base, Storage, Element) \
+      Storage(Element const&e);
+  
+  #define end_storage_kind(Base, Storage) \
+      Storage &operator=(Storage const&) = default; \
+      Storage &operator=(Storage &&) = default; \
       \
       alphabet *sigma() const { return _sigma; } \
       Base##_id unique_id() const { \
@@ -302,8 +317,86 @@ namespace black::internal::new_api
       \
       template<typename ...Args> \
       Element(Args ...args) : Storage{Storage::type::Element, args...} { } \
-    };
+    }; \
+    Storage::Storage(Element const&e) : Storage{e._sigma, e._element} { }
 
   #include <black/new/hierarchy.hpp>
 
+  //
+  // tuple-like access
+  //
+  #define declare_storage_kind(Base, Storage) \
+    constexpr size_t Storage##_arity() { \
+      size_t arity = 0;
+
+  #define declare_child(Base, Storage, Child) \
+      arity++;
+
+  #define end_storage_kind(Base, Storage) \
+      return arity; \
+    }
+
+  #include <black/new/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    } namespace std { \
+      template<>                                           \
+      struct tuple_size<black::internal::new_api::Storage> \
+        : std::integral_constant< \
+            int, black::internal::new_api::Storage##_arity() \
+          > { }; \
+      \
+      template<size_t I>                                   \
+      struct tuple_element<I, black::internal::new_api::Storage> {  \
+        using type = black::internal::new_api::Base;             \
+      }; \
+    } namespace black::internal::new_api {
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    } namespace std { \
+      template<>                                           \
+      struct tuple_size<black::internal::new_api::Element> \
+        : std::integral_constant< \
+            int, black::internal::new_api::Storage##_arity() \
+          > { }; \
+      \
+      template<size_t I>                                   \
+      struct tuple_element<I, black::internal::new_api::Element> {  \
+        using type = black::internal::new_api::Base;             \
+      }; \
+    } namespace black::internal::new_api {
+
+  #include <black/new/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    using Storage##_unpack_t = std::tuple<
+  
+  #define declare_child(Base, Storage, Child) Base,
+  
+  #define end_storage_kind(Base, Storage) void *>;
+
+  #include <black/new/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    template<int I, REQUIRES(I < Storage##_arity())> \
+    Base get([[maybe_unused]] Storage s) {  \
+      return std::get<I>(Storage##_unpack_t{
+
+  #define declare_child(Base, Storage, Child)  \
+        s.Child(),
+        
+  #define end_storage_kind(Base, Storage) \
+        nullptr \
+      }); \
+    }
+
+  #include <black/new/hierarchy.hpp>
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    template<int I, REQUIRES(I < Storage##_arity())> \
+    Base get(Element e) { \
+      return get<I>(Storage{e}); \
+    }
+  
+  #include <black/new/hierarchy.hpp>
 }
