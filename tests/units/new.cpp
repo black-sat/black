@@ -49,6 +49,16 @@ TEST_CASE("New API") {
 
   REQUIRE(b.value());
 
-  [[maybe_unused]]
   formula c = conjunction(u, p);
+
+  std::optional<binary> c2 = c.to<binary>();
+  REQUIRE(c2.has_value());
+  REQUIRE(c.is<binary>());
+  REQUIRE(!c.is<unary>());
+  std::optional<unary> fail = c.to<unary>();
+  REQUIRE(!fail.has_value());
+
+  std::optional<conjunction> c3 = c.to<conjunction>();
+  REQUIRE(c3.has_value());
+  REQUIRE(c.is<conjunction>());
 }

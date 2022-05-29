@@ -30,11 +30,6 @@
 #include <variant>
 
 namespace black::internal::new_api {
-  
-  enum class quantifier_type : uint8_t {
-    exists,
-    forall
-  };
 
   class function 
   {
@@ -130,7 +125,63 @@ namespace std {
   };
 }
 
+namespace black::internal::new_api {
+
+  class alphabet;
+  //
+  // Helper function to call sigma() on the first argument that supports
+  // the call
+  //
+  template<typename T, typename = void>
+  struct has_sigma : std::false_type {  };
+
+  template<typename T>
+  struct has_sigma<T, std::void_t<decltype(std::declval<T>().sigma())>>
+    : std::true_type { };
+
+  template<typename T>
+  alphabet *get_sigma(T v) {
+    return v.sigma();
+  }
+
+  template<typename T, REQUIRES(has_sigma<T>::value)>
+  alphabet *get_sigma(std::vector<T> const&v) {
+    black_assert(!v.empty());
+    return v[0].sigma();
+  }
+
+  template<typename T, typename ...Args>
+  alphabet *get_sigma(T v, Args ...args) {
+    if constexpr(has_sigma<T>::value)
+      return v.sigma();
+    else
+      return get_sigma(args...);
+  }
+
+  //
+  // Helper trait to tell if a type has an `_element` member
+  //
+  template<typename T, typename = void>
+  struct has_element : std::false_type { };
+
+  template<typename T>
+  struct has_element<T, std::void_t<decltype(std::declval<T>()._element)>>
+    : std::true_type { };
+}
+
+#define BLACK_DEFINE_TERM_HIERARCHY
 #include <black/new/hierarchy_impl.hpp>
+#undef BLACK_DEFINE_TERM_HIERARCHY
+
+#define BLACK_DEFINE_FORMULA_HIERARCHY
+#include <black/new/hierarchy_impl.hpp>
+#undef BLACK_DEFINE_FORMULA_HIERARCHY
+
+#define BLACK_DEFINE_TERM_HIERARCHY
+#define BLACK_DEFINE_FORMULA_HIERARCHY
+#include <black/new/alphabet.hpp>
+#undef BLACK_DEFINE_TERM_HIERARCHY
+#undef BLACK_DEFINE_FORMULA_HIERARCHY
 
 namespace black::internal::new_api {
   template<typename... T>
