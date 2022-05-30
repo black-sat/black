@@ -79,7 +79,7 @@ TEST_CASE("New API") {
   static_assert(std::is_same_v<std::common_type_t<formula, tomorrow>, formula>);
 
   [[maybe_unused]] 
-  int_function func = sigma.negative();
+  function func = sigma.negative();
   
   REQUIRE(func.is<negative>());
 }
