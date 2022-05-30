@@ -31,8 +31,6 @@ namespace black::internal::new_api {
   //
   #define declare_storage_kind(Base, Storage) \
     using Storage##_key = std::tuple<Base##_type,
-  #define declare_leaf_storage_kind(Base, Storage) \
-    using Storage##_key = std::tuple<
   #define declare_field(Base, Storage, Type, Field) Type,
   #define declare_child(Base, Storage, Child) Base##_base *,
   #define end_storage_kind(Base, Storage) void*>;
@@ -64,22 +62,6 @@ namespace black::internal::new_api {
       } \
     };
 
-  #define declare_leaf_storage_kind(Base, Storage) \
-    struct Storage##_allocator : Storage##_storage { \
-      template<typename ...Args> \
-      Storage##_t *allocate_##Storage(Args ...args) { \
-        auto it = Storage##_map.find(Storage##_key{args...,nullptr}); \
-        if(it != Storage##_map.end()) \
-          return it->second; \
-        \
-        Storage##_t *obj = \
-          &Storage##_store.emplace_back(Storage##_data_t{args...}); \
-        Storage##_map.insert({Storage##_key{args...,nullptr}, obj}); \
-        \
-        return obj; \
-      } \
-    };
-
   #include <black/new/internal/formula/hierarchy.hpp>
 
   struct dummy_t {};
@@ -105,7 +87,16 @@ namespace black::internal::new_api {
       class Storage Storage(Args ...args) { \
         return \
           ::black::internal::new_api::Storage{ \
-            this, _impl->allocate_##Storage(args...) \
+            this, _impl->allocate_##Storage(Base##_type::Storage, args...) \
+          }; \
+      }
+
+    #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+      template<typename ...Args> \
+      class Element Element(Args ...args) { \
+        return \
+          ::black::internal::new_api::Element{ \
+            this, _impl->allocate_##Storage(Base##_type::Element, args...) \
           }; \
       }
 
@@ -117,22 +108,7 @@ namespace black::internal::new_api {
 
   private:
     std::unique_ptr<alphabet_impl> _impl;
-  };
-
-  //
-  // Out-of-line constructor of Storage classes
-  //
-  #define declare_storage_kind(Base, Storage) \
-  template<typename ...Args> \
-    Storage::Storage(Args ...args) \
-      : _sigma{get_sigma(args...)}, \
-        _element{ \
-          get_sigma(args...)->_impl->allocate_##Storage( \
-            Base##_handle_args(args)... \
-          ) \
-        } { } \
-
-  #include <black/new/internal/formula/hierarchy.hpp>
+  };  
 }
 
 #endif // BLACK_LOGIC_ALPHABET_HPP

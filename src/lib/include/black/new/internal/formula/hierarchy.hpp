@@ -28,9 +28,6 @@
 #ifndef declare_hierarchy
   #define declare_hierarchy(Base)
 #endif
-#ifndef declare_member_function
-  #define declare_member_function(Base, ...)
-#endif
 #ifndef declare_storage_kind
   #define declare_storage_kind(Base, Storage)
 #endif
@@ -43,8 +40,14 @@
 #ifndef declare_child
   #define declare_child(Base, Storage, Child)
 #endif
+#ifndef declare_no_hierarchy_elements
+  #define declare_no_hierarchy_elements(Base, Storage)
+#endif
 #ifndef declare_hierarchy_element
   #define declare_hierarchy_element(Base, Storage, Element)
+#endif
+#ifndef declare_leaf_hierarchy_element
+  #define declare_leaf_hierarchy_element declare_hierarchy_element
 #endif
 #ifndef end_storage_kind
   #define end_storage_kind(Base, Storage)
@@ -56,112 +59,123 @@
   #define end_hierarchy(Element)
 #endif
 
-#ifdef BLACK_DEFINE_SYMBOL_HIERARCHY
-  declare_hierarchy(symbol)
-    declare_leaf_storage_kind(symbol, uninterpreted)
-      declare_field(symbol, uninterpreted, identifier, label)
-    end_leaf_storage_kind(symbol, uninterpreted)
-    declare_storage_kind(symbol, function)
-      declare_hierarchy_element(symbol, function, negative)
-      declare_hierarchy_element(symbol, function, subtraction)
-      declare_hierarchy_element(symbol, function, addition)
-      declare_hierarchy_element(symbol, function, multiplication)
-      declare_hierarchy_element(symbol, function, division)
-    end_storage_kind(symbol, function)
-    declare_storage_kind(symbol, relation)
-      declare_hierarchy_element(symbol, relation, equal)
-      declare_hierarchy_element(symbol, relation, not_equal)
-      declare_hierarchy_element(symbol, relation, less_than)
-      declare_hierarchy_element(symbol, relation, less_than_equal)
-      declare_hierarchy_element(symbol, relation, greater_than)
-      declare_hierarchy_element(symbol, relation, greater_than_equal)
-    end_storage_kind(symbol, relation)
-  end_hierarchy(symbol)
-#endif
+declare_hierarchy(function)
+  declare_leaf_storage_kind(function, unint_function)
+    declare_field(function, unint_function, identifier, label)
+    declare_no_hierarchy_elements(function, unint_function)
+  end_leaf_storage_kind(function, unint_function)
+  declare_storage_kind(function, int_function)
+    declare_leaf_hierarchy_element(function, int_function, negative)
+    declare_leaf_hierarchy_element(function, int_function, subtraction)
+    declare_leaf_hierarchy_element(function, int_function, addition)
+    declare_leaf_hierarchy_element(function, int_function, multiplication)
+    declare_leaf_hierarchy_element(function, int_function, division)
+  end_storage_kind(function, int_function)
+end_hierarchy(function)
 
-#ifdef BLACK_DEFINE_TERM_HIERARCHY
-  declare_hierarchy(term)
-    declare_leaf_storage_kind(term, constant)
-      declare_field(term, constant, int, value)
-    end_leaf_storage_kind(term, constant)
+declare_hierarchy(relation)
+  declare_leaf_storage_kind(relation, unint_relation)
+    declare_field(relation, unint_relation, identifier, label)
+    declare_no_hierarchy_elements(relation, unint_relation)
+  end_leaf_storage_kind(relation, unint_relation)
+  declare_storage_kind(relation, int_relation)
+    declare_leaf_hierarchy_element(relation, int_relation, equal)
+    declare_leaf_hierarchy_element(relation, int_relation, not_equal)
+    declare_leaf_hierarchy_element(relation, int_relation, less_than)
+    declare_leaf_hierarchy_element(relation, int_relation, less_than_equal)
+    declare_leaf_hierarchy_element(relation, int_relation, greater_than)
+    declare_leaf_hierarchy_element(relation, int_relation, greater_than_equal)
+  end_storage_kind(relation, int_relation)
+end_hierarchy(relation)
 
-    declare_leaf_storage_kind(term, variable)
-      declare_field(term, variable, identifier, label)
-    end_leaf_storage_kind(term, variable)
+declare_hierarchy(term)
+  declare_leaf_storage_kind(term, constant)
+    declare_field(term, constant, int, value)
+    declare_no_hierarchy_elements(term, constant)
+  end_leaf_storage_kind(term, constant)
 
-    declare_leaf_storage_kind(term, compound)
-      declare_field(term, compound, application, func)
-    end_leaf_storage_kind(term, compound)
+  declare_leaf_storage_kind(term, variable)
+    declare_field(term, variable, identifier, label)
+    declare_no_hierarchy_elements(term, variable)
+  end_leaf_storage_kind(term, variable)
 
-    declare_storage_kind(term, constructor)
-      declare_child(term, constructor, argument)
-      declare_hierarchy_element(term, constructor, next)
-      declare_hierarchy_element(term, constructor, wnext)
-      declare_hierarchy_element(term, constructor, prev)
-      declare_hierarchy_element(term, constructor, wprev)
-    end_storage_kind(term, constructor)
-  end_hierarchy(term)
-#endif
+  declare_storage_kind(term, compound)
+    declare_field(term, compound, function, func)
+    declare_field(term, compound, std::vector<term>, terms)
+    declare_no_hierarchy_elements(term, compound)
+  end_storage_kind(term, compound)
 
-#ifdef BLACK_DEFINE_FORMULA_HIERARCHY
-  declare_hierarchy(formula)
+  declare_storage_kind(term, constructor)
+    declare_child(term, constructor, argument)
+    declare_hierarchy_element(term, constructor, next)
+    declare_hierarchy_element(term, constructor, wnext)
+    declare_hierarchy_element(term, constructor, prev)
+    declare_hierarchy_element(term, constructor, wprev)
+  end_storage_kind(term, constructor)
+end_hierarchy(term)
 
-    declare_leaf_storage_kind(formula, boolean)
-      declare_field(formula, boolean, bool, value)
-    end_leaf_storage_kind(formula, boolean)
+declare_hierarchy(formula)
 
-    declare_leaf_storage_kind(formula, proposition)
-      declare_field(formula, proposition, identifier, label)
-    end_leaf_storage_kind(formula, proposition)
+  declare_leaf_storage_kind(formula, boolean)
+    declare_field(formula, boolean, bool, value)
+    declare_no_hierarchy_elements(formula, boolean)
+  end_leaf_storage_kind(formula, boolean)
 
-    declare_leaf_storage_kind(formula, atom)
-      declare_field(formula, atom, application, rel)
-    end_leaf_storage_kind(formula, atom)
+  declare_leaf_storage_kind(formula, proposition)
+    declare_field(formula, proposition, identifier, label)
+    declare_no_hierarchy_elements(formula, proposition)
+  end_leaf_storage_kind(formula, proposition)
 
-    declare_storage_kind(formula, quantifier)
-      declare_field(formula, quantifier, variable, var)
-      declare_child(formula, quantifier, matrix)
-      declare_hierarchy_element(formula, quantifier, exists)
-      declare_hierarchy_element(formula, quantifier, forall)
-    end_storage_kind(formula, quantifier)
-    
-    declare_storage_kind(formula, unary)
-      declare_child(formula, unary, argument)
-      declare_hierarchy_element(formula, unary, negation)
-      declare_hierarchy_element(formula, unary, tomorrow)
-      declare_hierarchy_element(formula, unary, w_tomorrow)
-      declare_hierarchy_element(formula, unary, yesterday)
-      declare_hierarchy_element(formula, unary, w_yesterday)
-      declare_hierarchy_element(formula, unary, always)
-      declare_hierarchy_element(formula, unary, eventually)
-      declare_hierarchy_element(formula, unary, once)
-      declare_hierarchy_element(formula, unary, historically)
-    end_storage_kind(formula, unary)
+  declare_storage_kind(formula, atom)
+    declare_field(formula, atom, relation, rel)
+    declare_field(formula, atom, std::vector<term>, terms)
+    declare_no_hierarchy_elements(formula, atom)
+  end_storage_kind(formula, atom)
 
-    declare_storage_kind(formula, binary)
-      declare_child(formula, binary, left)
-      declare_child(formula, binary, right)
-      declare_hierarchy_element(formula, binary, conjunction)
-      declare_hierarchy_element(formula, binary, disjunction)
-      declare_hierarchy_element(formula, binary, implication)
-      declare_hierarchy_element(formula, binary, iff)
-      declare_hierarchy_element(formula, binary, until)
-      declare_hierarchy_element(formula, binary, release)
-      declare_hierarchy_element(formula, binary, w_until)
-      declare_hierarchy_element(formula, binary, s_release)
-      declare_hierarchy_element(formula, binary, since)
-      declare_hierarchy_element(formula, binary, triggered)
-    end_storage_kind(formula, binary)
+  declare_storage_kind(formula, quantifier)
+    declare_field(formula, quantifier, variable, var)
+    declare_child(formula, quantifier, matrix)
+    declare_hierarchy_element(formula, quantifier, exists)
+    declare_hierarchy_element(formula, quantifier, forall)
+  end_storage_kind(formula, quantifier)
+  
+  declare_storage_kind(formula, unary)
+    declare_child(formula, unary, argument)
+    declare_hierarchy_element(formula, unary, negation)
+    declare_hierarchy_element(formula, unary, tomorrow)
+    declare_hierarchy_element(formula, unary, w_tomorrow)
+    declare_hierarchy_element(formula, unary, yesterday)
+    declare_hierarchy_element(formula, unary, w_yesterday)
+    declare_hierarchy_element(formula, unary, always)
+    declare_hierarchy_element(formula, unary, eventually)
+    declare_hierarchy_element(formula, unary, once)
+    declare_hierarchy_element(formula, unary, historically)
+  end_storage_kind(formula, unary)
 
-  end_hierarchy(formula)
-#endif 
+  declare_storage_kind(formula, binary)
+    declare_child(formula, binary, left)
+    declare_child(formula, binary, right)
+    declare_hierarchy_element(formula, binary, conjunction)
+    declare_hierarchy_element(formula, binary, disjunction)
+    declare_hierarchy_element(formula, binary, implication)
+    declare_hierarchy_element(formula, binary, iff)
+    declare_hierarchy_element(formula, binary, until)
+    declare_hierarchy_element(formula, binary, release)
+    declare_hierarchy_element(formula, binary, w_until)
+    declare_hierarchy_element(formula, binary, s_release)
+    declare_hierarchy_element(formula, binary, since)
+    declare_hierarchy_element(formula, binary, triggered)
+  end_storage_kind(formula, binary)
+
+end_hierarchy(formula)
 
 #undef declare_hierarchy
-#undef declare_member_function
 #undef declare_storage_kind
 #undef declare_leaf_storage_kind
 #undef declare_field
 #undef declare_child
+#undef declare_no_hierarchy_elements
+#undef declare_leaf_hierarchy_element
 #undef declare_hierarchy_element
 #undef end_storage_kind
 #undef end_leaf_storage_kind

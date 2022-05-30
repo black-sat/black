@@ -26,7 +26,6 @@
 
 #include <black/support/assert.hpp>
 #include <black/support/hash.hpp>
-#include <black/new/internal/formula/match.hpp>
 
 #include <variant>
 
@@ -88,25 +87,13 @@ namespace black::internal::new_api {
   template<typename T>
   struct has_element<T, std::void_t<decltype(std::declval<T>()._element)>>
     : std::true_type { };
+
+  template<typename ...Ops>
+  struct syntax { };
 }
 
-#define BLACK_DEFINE_SYMBOL_HIERARCHY
 #include <black/new/internal/formula/interface.hpp>
-#undef BLACK_DEFINE_SYMBOL_HIERARCHY
-
-#define BLACK_DEFINE_TERM_HIERARCHY
-#include <black/new/internal/formula/interface.hpp>
-#undef BLACK_DEFINE_TERM_HIERARCHY
-
-#define BLACK_DEFINE_FORMULA_HIERARCHY
-#include <black/new/internal/formula/interface.hpp>
-#undef BLACK_DEFINE_FORMULA_HIERARCHY
-
-#define BLACK_DEFINE_TERM_HIERARCHY
-#define BLACK_DEFINE_FORMULA_HIERARCHY
 #include <black/new/internal/formula/alphabet.hpp>
 #include <black/new/internal/formula/impl.hpp>
-#undef BLACK_DEFINE_TERM_HIERARCHY
-#undef BLACK_DEFINE_FORMULA_HIERARCHY
 
 #endif // BLACK_LOGIC_FORMULA_HPP
