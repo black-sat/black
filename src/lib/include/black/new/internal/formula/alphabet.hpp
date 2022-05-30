@@ -37,7 +37,7 @@ namespace black::internal::new_api {
   #define declare_child(Base, Storage, Child) Base##_base *,
   #define end_storage_kind(Base, Storage) void*>;
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
     struct Storage##_storage { \
@@ -45,7 +45,7 @@ namespace black::internal::new_api {
       tsl::hopscotch_map<Storage##_key, Storage##_t *> Storage##_map; \
     };
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
     struct Storage##_allocator : Storage##_storage { \
@@ -80,12 +80,12 @@ namespace black::internal::new_api {
       } \
     };
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   struct dummy_t {};
   struct alphabet_impl : 
   #define declare_storage_kind(Base, Storage) Storage##_allocator,
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
     dummy_t { };
 
   class alphabet
@@ -109,11 +109,11 @@ namespace black::internal::new_api {
           }; \
       }
 
-    #include <black/new/hierarchy.hpp>
+    #include <black/new/internal/formula/hierarchy.hpp>
 
     #define declare_storage_kind(Base, Storage) \
       friend class Storage;
-    #include <black/new/hierarchy.hpp>
+    #include <black/new/internal/formula/hierarchy.hpp>
 
   private:
     std::unique_ptr<alphabet_impl> _impl;
@@ -132,7 +132,7 @@ namespace black::internal::new_api {
           ) \
         } { } \
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 }
 
 #endif // BLACK_LOGIC_ALPHABET_HPP

@@ -49,7 +49,7 @@ namespace black::internal::new_api
   #define end_hierarchy(Base) \
     };
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   //
   // Base class for internal representation of elements of the hierarchies
@@ -59,7 +59,7 @@ namespace black::internal::new_api
     Base##_type type; \
   };
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy(Base) \
     template<typename B> \
@@ -70,7 +70,7 @@ namespace black::internal::new_api
   #define end_hierarchy(Base) \
     };
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy(Base) \
     class Base : public Base##_member_functions<Base> \
@@ -123,7 +123,7 @@ namespace black::internal::new_api
       Base##_base *_element; \
     };
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy(Base) \
     } namespace std { \
@@ -135,7 +135,7 @@ namespace black::internal::new_api
       }; \
     } namespace black::internal::new_api {
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
  
   //
   // constexpr functions to categorize hierarchy type values into storage kinds
@@ -155,7 +155,7 @@ namespace black::internal::new_api
     
   #define end_storage_kind(Base, Storage) false; }
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   //
   // internal representation classes for each storage kind
@@ -172,7 +172,7 @@ namespace black::internal::new_api
   #define end_storage_kind(Base, Storage)  \
     };
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
     struct Storage##_t : Base##_base { \
@@ -194,7 +194,7 @@ namespace black::internal::new_api
       Storage##_data_t data; \
     };
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   //
   // Enums with list of element types of a certain storage kind
@@ -214,7 +214,7 @@ namespace black::internal::new_api
   #define end_storage_kind(Base, Storage) \
     };
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   //
   // Helper function to transform a Base argument to its underlying element, if 
@@ -234,7 +234,7 @@ namespace black::internal::new_api
       return Base##_type{to_underlying(t)}; \
     }
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   //
   // Handle classes.
@@ -247,7 +247,7 @@ namespace black::internal::new_api
   #define declare_hierarchy_element(Base, Storage, Element) \
     class Element;
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy(Base) \
     enum class Base##_id : uintptr_t { };
@@ -272,7 +272,7 @@ namespace black::internal::new_api
   #define end_storage_kind(Base, Storage) \
     };
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
     class Storage : public Storage##_fields<Storage> { \
@@ -313,7 +313,7 @@ namespace black::internal::new_api
       Storage##_t *_element; \
     };
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy_element(Base, Storage, Element) \
     class Element : public Storage { \
@@ -330,7 +330,7 @@ namespace black::internal::new_api
     }; \
     Storage::Storage(Element const&e) : Storage{e._sigma, e._element} { }
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   //
   // tuple-like access
@@ -346,7 +346,7 @@ namespace black::internal::new_api
       return arity; \
     }
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
     } namespace std { \
@@ -376,7 +376,7 @@ namespace black::internal::new_api
       }; \
     } namespace black::internal::new_api {
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
     using Storage##_unpack_t = std::tuple<
@@ -385,7 +385,7 @@ namespace black::internal::new_api
   
   #define end_storage_kind(Base, Storage) void *>;
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
     template<int I, REQUIRES(I < Storage##_arity())> \
@@ -400,7 +400,7 @@ namespace black::internal::new_api
       }); \
     }
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<int I, REQUIRES(I < Storage##_arity())> \
@@ -408,7 +408,7 @@ namespace black::internal::new_api
       return get<I>(Storage{e}); \
     }
   
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   //
   // std::common_type specializations
@@ -417,7 +417,7 @@ namespace black::internal::new_api
     template<typename T> \
     struct is_##Base##_handler : std::false_type { };
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
     template<> \
@@ -433,7 +433,7 @@ namespace black::internal::new_api
     template<> \
     struct is_##Storage##_handler<Element> : std::true_type { };
   
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
     } namespace std { \
@@ -473,7 +473,7 @@ namespace black::internal::new_api
       }; \
     } namespace black::internal::new_api {
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy_element(Base, Storage, Element) \
     } namespace std { \
@@ -513,5 +513,5 @@ namespace black::internal::new_api
       }; \
     } namespace black::internal::new_api {
 
-  #include <black/new/hierarchy.hpp>
+  #include <black/new/internal/formula/hierarchy.hpp>
 }

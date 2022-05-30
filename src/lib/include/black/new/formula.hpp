@@ -26,7 +26,7 @@
 
 #include <black/support/assert.hpp>
 #include <black/support/hash.hpp>
-#include <black/new/match.hpp>
+#include <black/new/internal/formula/match.hpp>
 
 #include <variant>
 
@@ -91,26 +91,21 @@ namespace black::internal::new_api {
 }
 
 #define BLACK_DEFINE_SYMBOL_HIERARCHY
-#include <black/new/hierarchy_impl.hpp>
+#include <black/new/internal/formula/interface.hpp>
 #undef BLACK_DEFINE_SYMBOL_HIERARCHY
 
-namespace black::internal::new_api {
-  class application {
-    
-  };
-}
-
 #define BLACK_DEFINE_TERM_HIERARCHY
-#include <black/new/hierarchy_impl.hpp>
+#include <black/new/internal/formula/interface.hpp>
 #undef BLACK_DEFINE_TERM_HIERARCHY
 
 #define BLACK_DEFINE_FORMULA_HIERARCHY
-#include <black/new/hierarchy_impl.hpp>
+#include <black/new/internal/formula/interface.hpp>
 #undef BLACK_DEFINE_FORMULA_HIERARCHY
 
 #define BLACK_DEFINE_TERM_HIERARCHY
 #define BLACK_DEFINE_FORMULA_HIERARCHY
-#include <black/new/alphabet.hpp>
+#include <black/new/internal/formula/alphabet.hpp>
+#include <black/new/internal/formula/impl.hpp>
 #undef BLACK_DEFINE_TERM_HIERARCHY
 #undef BLACK_DEFINE_FORMULA_HIERARCHY
 
