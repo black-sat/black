@@ -35,12 +35,6 @@ TEST_CASE("New API") {
   
   alphabet sigma;
 
-  variable v = sigma.variable("x");
-  function f{"f"};
-
-  [[maybe_unused]]
-  term t = f(v);
-
   boolean b = sigma.boolean(true);
 
   [[maybe_unused]]

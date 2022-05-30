@@ -62,7 +62,18 @@ namespace black::internal::new_api
   #include <black/new/hierarchy.hpp>
 
   #define declare_hierarchy(Base) \
-    class Base \
+    template<typename B> \
+    struct Base##_member_functions {
+
+  #define declare_member_function(Base, ...) __VA_ARGS__;
+
+  #define end_hierarchy(Base) \
+    };
+
+  #include <black/new/hierarchy.hpp>
+
+  #define declare_hierarchy(Base) \
+    class Base : public Base##_member_functions<Base> \
     { \
     public: \
       using type = black::internal::new_api::Base##_type; \

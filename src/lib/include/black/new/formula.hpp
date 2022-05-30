@@ -26,91 +26,11 @@
 
 #include <black/support/assert.hpp>
 #include <black/support/hash.hpp>
+#include <black/new/match.hpp>
 
 #include <variant>
 
-namespace black::internal::new_api {
-
-  class function 
-  {
-  public:
-    enum type : uint8_t {
-      negation,
-      subtraction,
-      addition,
-      multiplication,
-      division
-    };
-
-    function() = delete;
-    function(type t) : _data{t} { }
-    function(identifier const&name) : _data{name} { }
-
-    function(function const&) = default;
-    function(function &&) = default;
-
-    friend bool operator==(function const&f1, function const&f2) {
-      return f1._data == f2._data;
-    }
-
-    friend bool operator!=(function const&f1, function const&f2) {
-      return f1._data != f2._data;
-    }
-
-    function &operator=(function const&) = default;
-    function &operator=(function &&) = default;
-
-    template<typename... T>
-    class application operator()(T ...args);
-
-    std::optional<function::type> known_type() const {
-      if(std::holds_alternative<type>(_data))
-        return std::get<type>(_data);
-      return std::nullopt;
-    }
-
-    identifier name() const {
-      using namespace std::literals;
-
-      if(std::holds_alternative<identifier>(_data))
-        return std::get<identifier>(_data);
-      
-      black_assert(std::holds_alternative<type>(_data));
-      type func = std::get<type>(_data);
-      switch(func) {
-        case type::negation:
-        case type::subtraction:
-          return identifier{"-"sv};
-        case type::addition:
-          return identifier{"+"sv};
-        case type::multiplication:
-          return identifier{"*"sv};
-        case type::division:
-          return identifier{"/"sv};
-      }
-      black_unreachable(); // LCOV_EXCL_LINE
-    }
-
-  private:
-    std::variant<type, identifier> _data;
-  };
-
-  inline std::string to_string(function f) {
-    return to_string(f.name());
-  }
-}
-
 namespace std {
-  template<>
-  struct hash<::black::internal::new_api::function> {
-    size_t operator()(black::internal::new_api::function const&f) const {
-      if(auto k = f.known_type(); k)
-        return hash<uint8_t>{}(static_cast<uint8_t>(*k));
-
-      return hash<::black::internal::identifier>{}(f.name());
-    }
-  };
-
   template<typename T>
   struct hash<std::vector<T>>
   {
@@ -128,6 +48,7 @@ namespace std {
 namespace black::internal::new_api {
 
   class alphabet;
+  class application;
   //
   // Helper function to call sigma() on the first argument that supports
   // the call
@@ -169,6 +90,16 @@ namespace black::internal::new_api {
     : std::true_type { };
 }
 
+#define BLACK_DEFINE_SYMBOL_HIERARCHY
+#include <black/new/hierarchy_impl.hpp>
+#undef BLACK_DEFINE_SYMBOL_HIERARCHY
+
+namespace black::internal::new_api {
+  class application {
+    
+  };
+}
+
 #define BLACK_DEFINE_TERM_HIERARCHY
 #include <black/new/hierarchy_impl.hpp>
 #undef BLACK_DEFINE_TERM_HIERARCHY
@@ -182,14 +113,5 @@ namespace black::internal::new_api {
 #include <black/new/alphabet.hpp>
 #undef BLACK_DEFINE_TERM_HIERARCHY
 #undef BLACK_DEFINE_FORMULA_HIERARCHY
-
-namespace black::internal::new_api {
-  template<typename... T>
-  application function::operator()(T ...args) {
-    std::vector<term> argsv = {args...};
-
-    return application(*this, std::move(argsv));
-  }
-}
 
 #endif // BLACK_LOGIC_FORMULA_HPP

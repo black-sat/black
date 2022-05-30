@@ -28,6 +28,9 @@
 #ifndef declare_hierarchy
   #define declare_hierarchy(Base)
 #endif
+#ifndef declare_member_function
+  #define declare_member_function(Base, ...)
+#endif
 #ifndef declare_storage_kind
   #define declare_storage_kind(Base, Storage)
 #endif
@@ -53,6 +56,34 @@
   #define end_hierarchy(Element)
 #endif
 
+#ifdef BLACK_DEFINE_SYMBOL_HIERARCHY
+  declare_hierarchy(symbol)
+    declare_member_function(
+      symbol, 
+      template<typename ...Args> 
+      application operator()(Args ...args)
+    )
+    declare_leaf_storage_kind(symbol, uninterpreted)
+      declare_field(symbol, uninterpreted, identifier, label)
+    end_leaf_storage_kind(symbol, uninterpreted)
+    declare_storage_kind(symbol, function)
+      declare_hierarchy_element(symbol, function, negative)
+      declare_hierarchy_element(symbol, function, subtraction)
+      declare_hierarchy_element(symbol, function, addition)
+      declare_hierarchy_element(symbol, function, multiplication)
+      declare_hierarchy_element(symbol, function, division)
+    end_storage_kind(symbol, function)
+    declare_storage_kind(symbol, relation)
+      declare_hierarchy_element(symbol, relation, equal)
+      declare_hierarchy_element(symbol, relation, not_equal)
+      declare_hierarchy_element(symbol, relation, less_than)
+      declare_hierarchy_element(symbol, relation, less_than_equal)
+      declare_hierarchy_element(symbol, relation, greater_than)
+      declare_hierarchy_element(symbol, relation, greater_than_equal)
+    end_storage_kind(symbol, relation)
+  end_hierarchy(symbol)
+#endif
+
 #ifdef BLACK_DEFINE_TERM_HIERARCHY
   declare_hierarchy(term)
     declare_leaf_storage_kind(term, constant)
@@ -63,10 +94,9 @@
       declare_field(term, variable, identifier, label)
     end_leaf_storage_kind(term, variable)
 
-    declare_leaf_storage_kind(term, application)
-      declare_field(term, application, function, func)
-      declare_field(term, application, std::vector<term>, terms)
-    end_leaf_storage_kind(term, application)
+    declare_leaf_storage_kind(term, compound)
+      declare_field(term, compound, application, func)
+    end_leaf_storage_kind(term, compound)
 
     declare_storage_kind(term, constructor)
       declare_child(term, constructor, argument)
@@ -133,6 +163,7 @@
 #endif 
 
 #undef declare_hierarchy
+#undef declare_member_function
 #undef declare_storage_kind
 #undef declare_leaf_storage_kind
 #undef declare_field
