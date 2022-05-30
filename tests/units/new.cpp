@@ -26,6 +26,7 @@
 #include <black/new/formula.hpp>
 #include <string>
 #include <type_traits>
+#include <iostream>
 
 using namespace std::literals;
 using namespace black::internal::new_api;
@@ -44,7 +45,7 @@ TEST_CASE("New API") {
 
   REQUIRE(b.value());
 
-  formula c = formula{conjunction(u, p)};
+  formula c = conjunction(u, p);
 
   std::optional<binary> c2 = c.to<binary>();
   REQUIRE(c2.has_value());

@@ -75,6 +75,14 @@ namespace black::internal::new_api {
 
 
   #define declare_storage_kind(Base, Storage) \
+    Base::Base(Storage const&s) : _sigma{s._sigma}, _element{s._element} { }
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    Base::Base(Element const&e) : _sigma{e._sigma}, _element{e._element} { }
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
   template<typename ...Args> \
     Storage::Storage(Args ...args) \
       : _sigma{get_sigma(args...)}, \
@@ -82,15 +90,25 @@ namespace black::internal::new_api {
           get_sigma(args...)->_impl->allocate_##Storage( \
             Base##_handle_args(args)... \
           ) \
-        } { } \
-        \
-    Storage::operator Base() const { \
-        return Base{_sigma, _element}; \
-      } \
+        } { }
+      
+  #define declare_hierarchy_element(Base, Storage, Element) \
+      Storage::Storage(Element const&e) : Storage{e._sigma, e._element} { }
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  #define declare_hierarchy_element(Base, Storage, Element) \
+  template<typename ...Args> \
+    Element::Element(Args ...args) \
+      : _sigma{get_sigma(args...)}, \
+        _element{ \
+          get_sigma(args...)->_impl->allocate_##Storage( \
+            Base##_type::Element, \
+            Base##_handle_args(args)... \
+          ) \
+        } { }
 
+  #include <black/new/internal/formula/hierarchy.hpp>
 }
 
 #endif // BLACK_INTERNAL_FORMULA_IMPL_HPP

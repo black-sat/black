@@ -60,6 +60,13 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    class Element;
+  #define declare_storage_kind(Base, Storage) \
+    class Storage;
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
   
   #define declare_hierarchy(Base) \
     class Base \
@@ -72,8 +79,15 @@ namespace black::internal::new_api
       Base(Base &&) = default; \
       \
       Base(alphabet *sigma, Base##_base *element) \
-        : _sigma{sigma}, _element{element} { } \
-      \
+        : _sigma{sigma}, _element{element} { }
+      
+  #define declare_storage_kind(Base, Storage) \
+      Base(Storage const&s);
+  
+  #define declare_hierarchy_element(Base, Storage, Element) \
+      Base(Element const&s);
+
+  #define end_hierarchy(Base) \
       Base &operator=(Base const&) = default; \
       Base &operator=(Base &&) = default; \
       \
@@ -142,13 +156,6 @@ namespace black::internal::new_api
     type == Base##_type::Element ||
     
   #define end_storage_kind(Base, Storage) false; }
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    class Element;
-  #define declare_storage_kind(Base, Storage) \
-    class Storage;
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
@@ -271,8 +278,6 @@ namespace black::internal::new_api
         return static_cast<Base##_id>(reinterpret_cast<uintptr_t>(_element)); \
       } \
       \
-      operator Base() const; \
-      \
       class alphabet *_sigma; \
       Storage##_t *_element; \
     };
@@ -280,19 +285,39 @@ namespace black::internal::new_api
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy_element(Base, Storage, Element) \
-    class Element : public Storage { \
+    class Element : public Storage##_fields<Element> { \
+      friend struct Storage##_fields<Element>; \
     public: \
       static constexpr bool accepts_type(Base##_type t) { \
         return t == Base##_type::Element; \
       } \
       \
-      Element(alphabet *sigma, Storage##_t *element)  \
-        : Storage{sigma, element} { } \
+      using storage_t = Storage##_t; \
+      using type = Storage##_type; \
+      \
+      Element(Element const&) = default; \
+      Element(Element &&) = default; \
+      \
+      Element(class alphabet *sigma, Storage##_t *element) \
+        : _sigma{sigma}, _element{element} { \
+          black_assert(_element->type == Base##_type::Element); \
+        } \
       \
       template<typename ...Args> \
-      Element(Args ...args) : Storage{Storage::type::Element, args...} { } \
-    }; \
-    Storage::Storage(Element const&e) : Storage{e._sigma, e._element} { }
+      Element(Args ...args); \
+      \
+      Element &operator=(Element const&) = default; \
+      Element &operator=(Element &&) = default; \
+      \
+      alphabet *sigma() const { return _sigma; } \
+      \
+      Base##_id unique_id() const { \
+        return static_cast<Base##_id>(reinterpret_cast<uintptr_t>(_element)); \
+      } \
+      \
+      class alphabet *_sigma; \
+      Storage##_t *_element; \
+    };
 
   #include <black/new/internal/formula/hierarchy.hpp>
 

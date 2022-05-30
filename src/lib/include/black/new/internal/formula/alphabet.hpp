@@ -104,6 +104,8 @@ namespace black::internal::new_api {
 
     #define declare_storage_kind(Base, Storage) \
       friend class Storage;
+    #define declare_hierarchy_element(Base, Storage, Element) \
+      friend class Element;
     #include <black/new/internal/formula/hierarchy.hpp>
 
   private:
