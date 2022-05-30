@@ -81,7 +81,6 @@ TEST_CASE("New API") {
   static_assert(std::is_same_v<std::common_type_t<binary, tomorrow>, formula>);
   static_assert(std::is_same_v<std::common_type_t<tomorrow, formula>, formula>);
   static_assert(std::is_same_v<std::common_type_t<binary, formula>, formula>);
-  
-  // static_assert(std::is_same_v<std::common_type_t<formula, binary>, formula>);
-  // static_assert(std::is_same_v<std::common_type_t<formula, tomorrow>, formula>);
+  static_assert(std::is_same_v<std::common_type_t<formula, binary>, formula>);
+  static_assert(std::is_same_v<std::common_type_t<formula, tomorrow>, formula>);
 }

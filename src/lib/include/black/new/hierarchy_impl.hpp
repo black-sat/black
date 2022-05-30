@@ -405,10 +405,7 @@ namespace black::internal::new_api
   //
   #define declare_hierarchy(Base) \
     template<typename T> \
-    struct is_##Base##_handler : std::false_type { }; \
-    \
-    template<> \
-    struct is_##Base##_handler<Base> : std::true_type { };
+    struct is_##Base##_handler : std::false_type { };
 
   #include <black/new/hierarchy.hpp>
 
@@ -450,6 +447,20 @@ namespace black::internal::new_api
       > { \
         using type = ::black::internal::new_api::Base; \
       }; \
+      \
+      template<> \
+      struct common_type< \
+        ::black::internal::new_api::Base, ::black::internal::new_api::Storage \
+      > { \
+        using type = ::black::internal::new_api::Base; \
+      }; \
+      \
+      template<> \
+      struct common_type< \
+        ::black::internal::new_api::Storage, ::black::internal::new_api::Base \
+      > { \
+        using type = ::black::internal::new_api::Base; \
+      }; \
     } namespace black::internal::new_api {
 
   #include <black/new/hierarchy.hpp>
@@ -473,6 +484,20 @@ namespace black::internal::new_api
           ::black::internal::new_api::is_##Base##_handler<T>::value, \
           ::black::internal::new_api::Element \
         >, T \
+      > { \
+        using type = ::black::internal::new_api::Base; \
+      }; \
+      \
+      template<> \
+      struct common_type< \
+        ::black::internal::new_api::Base, ::black::internal::new_api::Element \
+      > { \
+        using type = ::black::internal::new_api::Base; \
+      }; \
+      \
+      template<> \
+      struct common_type< \
+        ::black::internal::new_api::Element, ::black::internal::new_api::Base \
       > { \
         using type = ::black::internal::new_api::Base; \
       }; \
