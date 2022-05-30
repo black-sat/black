@@ -147,7 +147,7 @@ namespace black::internal::new_api
   #define end_leaf_storage_kind(Base, Storage)
 
   #define declare_storage_kind(Base, Storage) \
-  constexpr bool is_##Storage##_type([[maybe_unused]] Base##_type type) { \
+  constexpr bool is_##Storage##_type(Base##_type type) { \
     return 
 
   #define declare_hierarchy_element(Base, Storage, Element) \
@@ -187,7 +187,6 @@ namespace black::internal::new_api
 
   #define declare_leaf_storage_kind(Base, Storage) \
     struct Storage##_t : Base##_base { \
-      static constexpr auto accepts_type = is_##Storage##_type; \
       \
       Storage##_t(Storage##_data_t _data) \
         : Base##_base{Base##_type::Storage}, data{_data} { } \

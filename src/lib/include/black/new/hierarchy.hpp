@@ -58,11 +58,6 @@
 
 #ifdef BLACK_DEFINE_SYMBOL_HIERARCHY
   declare_hierarchy(symbol)
-    declare_member_function(
-      symbol, 
-      template<typename ...Args> 
-      application operator()(Args ...args)
-    )
     declare_leaf_storage_kind(symbol, uninterpreted)
       declare_field(symbol, uninterpreted, identifier, label)
     end_leaf_storage_kind(symbol, uninterpreted)
@@ -120,8 +115,7 @@
     end_leaf_storage_kind(formula, proposition)
 
     declare_leaf_storage_kind(formula, atom)
-      declare_field(formula, atom, identifier, relation)
-      declare_field(formula, atom, std::vector<term>, terms)
+      declare_field(formula, atom, application, rel)
     end_leaf_storage_kind(formula, atom)
 
     declare_storage_kind(formula, quantifier)
