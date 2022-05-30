@@ -57,15 +57,15 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_field(Base, Storage, Type, Field) \
-    template<typename H> \
-    Type Storage##_fields<H>::Field() const { \
+    template<typename Syntax, typename H> \
+    Type Storage##_fields<Syntax, H>::Field() const { \
       return static_cast<H const&>(*this)._element->data.Field; \
     }
 
   #define declare_child(Base, Storage, Child) \
-    template<typename H> \
-    Base Storage##_fields<H>::Child() const { \
-      return Base{ \
+    template<typename Syntax, typename H> \
+    Base<Syntax> Storage##_fields<Syntax, H>::Child() const { \
+      return Base<Syntax>{ \
         static_cast<H const&>(*this)._sigma,  \
         static_cast<H const&>(*this)._element->data.Child \
       }; \
@@ -75,14 +75,39 @@ namespace black::internal::new_api {
 
 
   #define declare_storage_kind(Base, Storage) \
-    Base::Base(Storage const&s) : _sigma{s._sigma}, _element{s._element} { }
+    template<typename Syntax> \
+    Base<Syntax>::Base(Storage<Syntax> const&s) \
+      : _sigma{s._sigma}, _element{s._element} { }
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    template<typename Syntax> \
+    Base<Syntax>::Base(Storage const&s) \
+      : _sigma{s._sigma}, _element{s._element} { }
 
   #define declare_hierarchy_element(Base, Storage, Element) \
-    Base::Base(Element const&e) : _sigma{e._sigma}, _element{e._element} { }
+    template<typename Syntax> \
+    Base<Syntax>::Base(Element<Syntax> const&e) \
+       : _sigma{e._sigma}, _element{e._element} { }
+
+  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+    template<typename Syntax> \
+    Base<Syntax>::Base(Element const&e) \
+      : _sigma{e._sigma}, _element{e._element} { }
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
+  template<typename Syntax> \
+  template<typename ...Args> \
+    Storage<Syntax>::Storage(Args ...args) \
+      : _sigma{get_sigma(args...)}, \
+        _element{ \
+          get_sigma(args...)->_impl->allocate_##Storage( \
+            Base##_handle_args(args)... \
+          ) \
+        } { }
+
+  #define declare_leaf_storage_kind(Base, Storage) \
   template<typename ...Args> \
     Storage::Storage(Args ...args) \
       : _sigma{get_sigma(args...)}, \
@@ -93,11 +118,30 @@ namespace black::internal::new_api {
         } { }
       
   #define declare_hierarchy_element(Base, Storage, Element) \
-      Storage::Storage(Element const&e) : Storage{e._sigma, e._element} { }
+    template<typename Syntax> \
+    Storage<Syntax>::Storage(Element<Syntax> const&e) \
+      : Storage{e._sigma, e._element} { }
+  
+  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+    template<typename Syntax> \
+    Storage<Syntax>::Storage(Element const&e) \
+      : Storage{e._sigma, e._element} { }
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy_element(Base, Storage, Element) \
+  template<typename Syntax> \
+  template<typename ...Args> \
+    Element<Syntax>::Element(Args ...args) \
+      : _sigma{get_sigma(args...)}, \
+        _element{ \
+          get_sigma(args...)->_impl->allocate_##Storage( \
+            Base##_type::Element, \
+            Base##_handle_args(args)... \
+          ) \
+        } { }
+
+  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
   template<typename ...Args> \
     Element::Element(Args ...args) \
       : _sigma{get_sigma(args...)}, \

@@ -88,12 +88,22 @@ namespace black::internal::new_api {
   struct has_element<T, std::void_t<decltype(std::declval<T>()._element)>>
     : std::true_type { };
 
-  template<typename ...Ops>
+  template<auto ...Ops>
   struct syntax { };
 }
 
 #include <black/new/internal/formula/interface.hpp>
 #include <black/new/internal/formula/alphabet.hpp>
 #include <black/new/internal/formula/impl.hpp>
+
+namespace black::internal::new_api {
+  using LTL = syntax<
+    #define has_no_hierarchy_elements(Base, Storage) \
+      Base##_type::Storage,
+    #define declare_hierarchy_element(Base, Storage, Element) \
+      Base##_type::Element,
+    #include <black/new/internal/formula/hierarchy.hpp>
+  0>;
+}
 
 #endif // BLACK_LOGIC_FORMULA_HPP

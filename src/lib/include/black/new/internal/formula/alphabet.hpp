@@ -82,7 +82,7 @@ namespace black::internal::new_api {
     alphabet &operator=(alphabet const&) = delete;
     alphabet &operator=(alphabet &&) = default;
 
-    #define declare_leaf_storage_kind(Base, Storage) \
+    #define has_no_leaf_hierarchy_elements(Base, Storage) \
       template<typename ...Args> \
       class Storage Storage(Args ...args) { \
         return \
@@ -103,8 +103,14 @@ namespace black::internal::new_api {
     #include <black/new/internal/formula/hierarchy.hpp>
 
     #define declare_storage_kind(Base, Storage) \
+      template<typename Syntax> \
+      friend class Storage;
+    #define declare_leaf_storage_kind(Base, Storage) \
       friend class Storage;
     #define declare_hierarchy_element(Base, Storage, Element) \
+      template<typename Syntax> \
+      friend class Element;
+    #define declare_leaf_hierarchy_element(Base, Storage, Element) \
       friend class Element;
     #include <black/new/internal/formula/hierarchy.hpp>
 

@@ -38,49 +38,36 @@ TEST_CASE("New API") {
 
   boolean b = sigma.boolean(true);
 
-  [[maybe_unused]]
   proposition p = sigma.proposition("hello");
 
-  unary u = unary(unary::type::negation, b);
+  unary u = unary<LTL>(unary<LTL>::type::negation, b);
 
   REQUIRE(b.value());
 
-  formula c = conjunction(u, p);
+  formula<LTL> c = conjunction<LTL>(u, p);
 
-  std::optional<binary> c2 = c.to<binary>();
+  std::optional<binary<LTL>> c2 = c.to<binary<LTL>>();
   REQUIRE(c2.has_value());
-  REQUIRE(c.is<binary>());
-  REQUIRE(!c.is<unary>());
-  std::optional<unary> fail = c.to<unary>();
+  REQUIRE(c.is<binary<LTL>>());
+  REQUIRE(!c.is<unary<LTL>>());
+  std::optional<unary<LTL>> fail = c.to<unary<LTL>>();
   REQUIRE(!fail.has_value());
 
-  std::optional<conjunction> c3 = c.to<conjunction>();
+  std::optional<conjunction<LTL>> c3 = c.to<conjunction<LTL>>();
   REQUIRE(c3.has_value());
-  REQUIRE(c.is<conjunction>());
+  REQUIRE(c.is<conjunction<LTL>>());
 
-  static_assert(std::tuple_size_v<conjunction> == 2);
-  static_assert(std::tuple_size_v<proposition> == 0);
+  static_assert(std::tuple_size_v<conjunction<LTL>> == 2);
 
-  static_assert(std::is_same_v<std::tuple_element_t<0, conjunction>, formula>);
+  static_assert(std::is_same_v<std::tuple_element_t<0, conjunction<LTL>>, formula<LTL>>);
 
-  auto [u2, p2] = conjunction(u, p);
+  auto [u2, p2] = conjunction<LTL>(u, p);
 
   REQUIRE(u2 == u);
   REQUIRE(p2 == p);
 
-  static_assert(std::is_same_v<std::common_type_t<binary, iff>, binary>);
-  static_assert(std::is_same_v<std::common_type_t<binary, negation>, formula>);
-  static_assert(std::is_same_v<std::common_type_t<tomorrow, negation>, unary>);
-  static_assert(std::is_same_v<std::common_type_t<tomorrow, iff>, formula>);
-  static_assert(std::is_same_v<std::common_type_t<tomorrow, binary>, formula>);
-  static_assert(std::is_same_v<std::common_type_t<binary, tomorrow>, formula>);
-  static_assert(std::is_same_v<std::common_type_t<tomorrow, formula>, formula>);
-  static_assert(std::is_same_v<std::common_type_t<binary, formula>, formula>);
-  static_assert(std::is_same_v<std::common_type_t<formula, binary>, formula>);
-  static_assert(std::is_same_v<std::common_type_t<formula, tomorrow>, formula>);
-
   [[maybe_unused]] 
-  function func = sigma.negative();
+  function<LTL> func = sigma.negative();
   
   REQUIRE(func.is<negative>());
 }
