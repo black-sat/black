@@ -123,7 +123,11 @@ declare_hierarchy(formula)
   end_leaf_storage_kind(formula, proposition)
 
   declare_storage_kind(formula, atom)
-    // declare_field(formula, atom, symbol<Syntax>, rel)
+    // declare_field(
+    //   formula, atom, 
+    //   (symbol<syntax<symbol::type::uninterpreted, symbol::type::relation>>), 
+    //   rel
+    // )
     // declare_field(formula, atom, std::vector<term<Syntax>>, terms)
     has_no_hierarchy_elements(formula, atom)
   end_storage_kind(formula, atom)

@@ -261,7 +261,7 @@ namespace black::internal::new_api
     class Storage : public Storage##_fields<void, Storage> { \
       \
       friend struct Storage##_fields<void, Storage>; \
-      using Syntax = syntax<Base##_type::Storage>; \
+      using Syntax = syntax<Storage>; \
     public: 
 
   #define declare_hierarchy_element(Base, Storage, Element) \
