@@ -76,21 +76,34 @@ namespace black::internal::new_api {
 
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
-    Base<Syntax>::Base(Storage<Syntax> const&s) \
+    template< \
+      typename Syntax2, \
+      REQUIRES_OUT_OF_LINE(are_types_allowed<Syntax2, Syntax>) \
+    > \
+    Base<Syntax>::Base(Storage<Syntax2> const&s) \
       : _sigma{s._sigma}, _element{s._element} { }
 
   #define declare_leaf_storage_kind(Base, Storage) \
     template<typename Syntax> \
+    template<REQUIRES_OUT_OF_LINE(is_type_allowed<Storage, Syntax>)> \
     Base<Syntax>::Base(Storage const&s) \
       : _sigma{s._sigma}, _element{s._element} { }
 
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
-    Base<Syntax>::Base(Element<Syntax> const&e) \
+    template< \
+        typename Syntax2, \
+        REQUIRES_OUT_OF_LINE( \
+          is_type_allowed<Element<void>, Syntax> && \
+          are_types_allowed<Syntax2, Syntax> \
+        ) \
+      > \
+    Base<Syntax>::Base(Element<Syntax2> const&e) \
        : _sigma{e._sigma}, _element{e._element} { }
 
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
+    template<REQUIRES_OUT_OF_LINE(is_type_allowed<Element, Syntax>)> \
     Base<Syntax>::Base(Element const&e) \
       : _sigma{e._sigma}, _element{e._element} { }
 

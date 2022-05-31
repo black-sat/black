@@ -74,6 +74,38 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  #define declare_hierarchy(Base) \
+    template<typename T> \
+    struct Base##_syntax_t_ { }; \
+    \
+    template<typename T> \
+    using Base##_syntax_t = typename Base##_syntax_t_<T>::type;
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    template<> \
+    struct Base##_syntax_t_<Storage> { \
+      using type = Storage; \
+    };
+
+  #define has_no_hierarchy_elements(Base, Storage) \
+    template<typename Syntax> \
+    struct Base##_syntax_t_<Storage<Syntax>> { \
+      using type = Storage<void>; \
+    };
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    template<typename Syntax> \
+    struct Base##_syntax_t_<Element<Syntax>> { \
+      using type = Element<void>; \
+    };
+
+  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+    template<> \
+    struct Base##_syntax_t_<Element> { \
+      using type = Element; \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
   
   #define declare_hierarchy(Base) \
     template<typename Syntax> \
@@ -90,15 +122,25 @@ namespace black::internal::new_api
         : _sigma{sigma}, _element{element} { }
       
   #define declare_storage_kind(Base, Storage) \
-      Base(Storage<Syntax> const&s);
+      template<typename Syntax2, REQUIRES(are_types_allowed<Syntax2, Syntax>)> \
+      Base(Storage<Syntax2> const&s);
   
   #define declare_leaf_storage_kind(Base, Storage) \
+      template<REQUIRES(is_type_allowed<Storage, Syntax>)> \
       Base(Storage const&s);
   
   #define declare_hierarchy_element(Base, Storage, Element) \
-      Base(Element<Syntax> const&s);
+      template< \
+        typename Syntax2, \
+        REQUIRES( \
+          is_type_allowed<Element<void>, Syntax> && \
+          are_types_allowed<Syntax2, Syntax> \
+        ) \
+      > \
+      Base(Element<Syntax2> const&s);
   
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+      template<REQUIRES(is_type_allowed<Element, Syntax>)> \
       Base(Element const&s);
 
   #define end_hierarchy(Base) \
@@ -271,6 +313,7 @@ namespace black::internal::new_api
         Storage(Element const&e);
 
   #define end_storage_kind(Base, Storage) \
+      using syntax_t = Storage<void>; \
       static constexpr auto accepts_type = is_##Storage##_type; \
       \
       using storage_t = Storage##_t; \
@@ -313,6 +356,7 @@ namespace black::internal::new_api
       friend struct Storage##_fields<void, Storage>; \
       using Syntax = syntax<Storage>; \
     public: \
+      using syntax_t = Storage; \
       static constexpr auto accepts_type = is_##Storage##_type; \
       \
       using storage_t = Storage##_t; \
@@ -357,6 +401,7 @@ namespace black::internal::new_api
     class Element : public Storage##_fields<Syntax, Element<Syntax>> { \
       friend struct Storage##_fields<Syntax, Element<Syntax>>; \
     public: \
+      using syntax_t = Element<void>; \
       static constexpr bool accepts_type(Base##_type t) { \
         return t == Base##_type::Element; \
       } \
@@ -392,6 +437,7 @@ namespace black::internal::new_api
     class Element : public Storage##_fields<void, Element> { \
       friend struct Storage##_fields<void, Element>; \
     public: \
+      using syntax_t = Element; \
       static constexpr bool accepts_type(Base##_type t) { \
         return t == Base##_type::Element; \
       } \
