@@ -82,7 +82,7 @@ namespace black::internal::new_api {
     alphabet &operator=(alphabet const&) = delete;
     alphabet &operator=(alphabet &&) = default;
 
-    #define has_no_leaf_hierarchy_elements(Base, Storage) \
+    #define declare_leaf_storage_kind(Base, Storage) \
       template<typename ...Args> \
       class Storage Storage(Args ...args) { \
         return \

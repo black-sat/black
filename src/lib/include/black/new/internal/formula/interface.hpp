@@ -42,6 +42,7 @@ namespace black::internal::new_api
   #define declare_hierarchy(Base) \
     enum class Base##_type : uint8_t { \
 
+  #define declare_leaf_storage_kind(Base, Storage) Storage,
   #define has_no_hierarchy_elements(Base, Storage) Storage,
   #define declare_hierarchy_element(Base, Storage, Element) Element,
 
@@ -169,6 +170,12 @@ namespace black::internal::new_api
     type == Base##_type::Element ||
     
   #define end_storage_kind(Base, Storage) false; }
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+  constexpr bool is_##Storage##_type(Base##_type type) { \
+    return type == Base##_type::Storage; \
+  }
+  #define end_leaf_storage_kind(Base, Storage)
 
   #include <black/new/internal/formula/hierarchy.hpp>
 

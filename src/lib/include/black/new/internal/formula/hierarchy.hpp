@@ -43,9 +43,6 @@
 #ifndef has_no_hierarchy_elements
   #define has_no_hierarchy_elements(Base, Storage)
 #endif
-#ifndef has_no_leaf_hierarchy_elements
-  #define has_no_leaf_hierarchy_elements has_no_hierarchy_elements
-#endif
 #ifndef declare_hierarchy_element
   #define declare_hierarchy_element(Base, Storage, Element)
 #endif
@@ -61,11 +58,13 @@
 #ifndef end_hierarchy
   #define end_hierarchy(Element)
 #endif
+#ifndef escape_commas
+#define escape_commas(...) __VA_ARGS__
+#endif 
 
 declare_hierarchy(symbol)
   declare_leaf_storage_kind(symbol, uninterpreted)
     declare_field(symbol, uninterpreted, identifier, label)
-    has_no_leaf_hierarchy_elements(symbol, uninterpreted)
   end_leaf_storage_kind(symbol, uninterpreted)
   declare_storage_kind(symbol, function)
     declare_leaf_hierarchy_element(symbol, function, negative)
@@ -87,16 +86,25 @@ end_hierarchy(symbol)
 declare_hierarchy(term)
   declare_leaf_storage_kind(term, constant)
     declare_field(term, constant, int, value)
-    has_no_leaf_hierarchy_elements(term, constant)
   end_leaf_storage_kind(term, constant)
 
   declare_leaf_storage_kind(term, variable)
     declare_field(term, variable, identifier, label)
-    has_no_leaf_hierarchy_elements(term, variable)
   end_leaf_storage_kind(term, variable)
 
   declare_storage_kind(term, compound)
-    // declare_field(term, compound, symbol<Syntax>, func)
+    declare_field(
+      term, compound, 
+      escape_commas(symbol<syntax<
+        uninterpreted,
+        negative,
+        subtraction,
+        addition,
+        multiplication,
+        division
+      >>),
+      func
+    )
     // declare_field(term, compound, std::vector<term<Syntax>>, terms)
     has_no_hierarchy_elements(term, compound)
   end_storage_kind(term, compound)
@@ -114,20 +122,26 @@ declare_hierarchy(formula)
 
   declare_leaf_storage_kind(formula, boolean)
     declare_field(formula, boolean, bool, value)
-    has_no_leaf_hierarchy_elements(formula, boolean)
   end_leaf_storage_kind(formula, boolean)
 
   declare_leaf_storage_kind(formula, proposition)
     declare_field(formula, proposition, identifier, label)
-    has_no_leaf_hierarchy_elements(formula, proposition)
   end_leaf_storage_kind(formula, proposition)
 
   declare_storage_kind(formula, atom)
-    // declare_field(
-    //   formula, atom, 
-    //   (symbol<syntax<symbol::type::uninterpreted, symbol::type::relation>>), 
-    //   rel
-    // )
+    declare_field(
+      formula, atom, 
+      escape_commas(symbol<syntax<
+        uninterpreted,
+        equal,
+        not_equal,
+        less_than,
+        less_than_equal,
+        greater_than,
+        greater_than_equal
+      >>), 
+      rel
+    )
     // declare_field(formula, atom, std::vector<term<Syntax>>, terms)
     has_no_hierarchy_elements(formula, atom)
   end_storage_kind(formula, atom)
@@ -181,3 +195,4 @@ end_hierarchy(formula)
 #undef end_storage_kind
 #undef end_leaf_storage_kind
 #undef end_hierarchy
+#undef escape_commas

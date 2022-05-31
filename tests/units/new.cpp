@@ -70,4 +70,12 @@ TEST_CASE("New API") {
   function<LTL> func = sigma.negative();
   
   REQUIRE(func.is<negative>());
+
+  auto i = sigma.uninterpreted("ciao");
+
+  REQUIRE(*i.label().get<std::string>() == "ciao");
+  
+  relation<LTL> e = sigma.equal();
+
+  REQUIRE(e.to<equal>().has_value());
 }

@@ -90,6 +90,8 @@ namespace black::internal::new_api {
 
   template<typename ...Ops>
   struct syntax { };
+
+  
 }
 
 #include <black/new/internal/formula/interface.hpp>
@@ -97,27 +99,17 @@ namespace black::internal::new_api {
 #include <black/new/internal/formula/impl.hpp>
 
 namespace black::internal::new_api {
-  struct LTL : syntax<
+  using LTL = syntax<
     #define has_no_leaf_hierarchy_elements(Base, Storage) \
       Storage,
     #define has_no_hierarchy_elements(Base, Storage) \
-      Storage<LTL>,
+      Storage<void>,
     #define declare_hierarchy_element(Base, Storage, Element) \
-      Element<LTL>,
+      Element<void>,
     #define declare_leaf_hierarchy_element(Base, Storage, Element) \
       Element,
     #include <black/new/internal/formula/hierarchy.hpp>
-  void> { };
-
-  struct U : syntax<
-    uninterpreted,
-    equal,
-    not_equal,
-    less_than,
-    less_than_equal,
-    greater_than,
-    greater_than_equal
-  > { };
+  void>;
 }
 
 #endif // BLACK_LOGIC_FORMULA_HPP
