@@ -78,4 +78,6 @@ TEST_CASE("New API") {
   relation<LTL> e = sigma.equal();
 
   REQUIRE(e.to<equal>().has_value());
+
+  static_assert(is_type_allowed<equal,LTL>);
 }

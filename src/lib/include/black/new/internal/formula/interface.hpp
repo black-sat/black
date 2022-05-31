@@ -264,13 +264,6 @@ namespace black::internal::new_api
       friend struct Storage##_fields<Syntax, Storage<Syntax>>; \
     public: 
 
-  #define declare_leaf_storage_kind(Base, Storage) \
-    class Storage : public Storage##_fields<void, Storage> { \
-      \
-      friend struct Storage##_fields<void, Storage>; \
-      using Syntax = syntax<Storage>; \
-    public: 
-
   #define declare_hierarchy_element(Base, Storage, Element) \
         Storage(Element<Syntax> const&e);
   
@@ -313,6 +306,49 @@ namespace black::internal::new_api
       class alphabet *_sigma; \
       Storage##_t *_element; \
     };
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    class Storage : public Storage##_fields<void, Storage> { \
+      \
+      friend struct Storage##_fields<void, Storage>; \
+      using Syntax = syntax<Storage>; \
+    public: \
+      static constexpr auto accepts_type = is_##Storage##_type; \
+      \
+      using storage_t = Storage##_t; \
+      using type = Storage##_type; \
+      \
+      Storage(Storage const&) = default; \
+      Storage(Storage &&) = default; \
+      \
+      Storage(class alphabet *sigma, Storage##_t *element) \
+        : _sigma{sigma}, _element{element} { } \
+      \
+      template<typename ...Args> \
+      Storage(Args ...args); \
+      \
+      template<typename H> \
+      std::optional<H> to() const { \
+        return Base<Syntax>{*this}.template to<H>(); \
+      } \
+      \
+      template<typename H> \
+      bool is() const { \
+        return to<H>().has_value(); \
+      } \
+      \
+      Storage &operator=(Storage const&) = default; \
+      Storage &operator=(Storage &&) = default; \
+      \
+      alphabet *sigma() const { return _sigma; } \
+      Base##_id unique_id() const { \
+        return static_cast<Base##_id>(reinterpret_cast<uintptr_t>(_element)); \
+      } \
+      \
+      class alphabet *_sigma; \
+      Storage##_t *_element; \
+    };
+  #define end_leaf_storage_kind(Base, Storage)
 
   #include <black/new/internal/formula/hierarchy.hpp>
 

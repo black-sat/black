@@ -91,7 +91,18 @@ namespace black::internal::new_api {
   template<typename ...Ops>
   struct syntax { };
 
-  
+  template<typename T, typename Syntax>
+  struct is_type_allowed_ : std::false_type { };
+
+  template<typename T, typename ...Ops>
+  struct is_type_allowed_<T, syntax<T, Ops...>> : std::true_type { };
+
+  template<typename T, typename Op, typename ...Ops>
+  struct is_type_allowed_<T, syntax<Op, Ops...>> 
+    : is_type_allowed_<T, syntax<Ops...>> { };
+
+  template<typename T, typename Syntax>
+  constexpr bool is_type_allowed = is_type_allowed_<T, Syntax>::value;
 }
 
 #include <black/new/internal/formula/interface.hpp>
