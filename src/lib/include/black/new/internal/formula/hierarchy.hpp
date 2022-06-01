@@ -59,10 +59,27 @@
   #define end_hierarchy(Element)
 #endif
 #ifndef declare_fragment
-  #define declare_fragment(Fragment, Namespace)
+  #define declare_fragment(Fragment)
 #endif
 #ifndef end_fragment
-  #define end_fragment(Fragment, Namespace)
+  #define end_fragment(Fragment)
+#endif
+#ifndef declare_derived_fragment
+  #define declare_derived_fragment(Fragment, Parent) \
+    declare_fragment(Fragment)
+#endif
+#ifndef end_derived_fragment
+  #define end_derived_fragment(Fragment, Parent) \
+    end_fragment(Fragment)
+#endif
+#ifndef declare_combined_fragment
+  #define declare_combined_fragment(Fragment, ...)
+#endif
+#ifndef allow
+  #define allow(Fragment, Element)
+#endif
+#ifndef allow_also
+  #define allow_also allow
 #endif
 #ifndef escape_commas
 #define escape_commas(...) __VA_ARGS__
@@ -98,22 +115,11 @@ declare_hierarchy(term)
     declare_field(term, variable, identifier, label)
   end_leaf_storage_kind(term, variable)
 
-  declare_storage_kind(term, compound)
-    declare_field(
-      term, compound, 
-      escape_commas(symbol<syntax<
-        uninterpreted,
-        negative,
-        subtraction,
-        addition,
-        multiplication,
-        division
-      >>),
-      func
-    )
-    // declare_field(term, compound, std::vector<term<Syntax>>, terms)
-    has_no_hierarchy_elements(term, compound)
-  end_storage_kind(term, compound)
+  declare_storage_kind(term, application)
+    // field symbol...
+    // declare_field(term, application, std::vector<term<Syntax>>, terms)
+    has_no_hierarchy_elements(term, application)
+  end_storage_kind(term, application)
 
   declare_storage_kind(term, constructor)
     declare_child(term, constructor, argument)
@@ -135,19 +141,7 @@ declare_hierarchy(formula)
   end_leaf_storage_kind(formula, proposition)
 
   declare_storage_kind(formula, atom)
-    declare_field(
-      formula, atom, 
-      escape_commas(symbol<syntax<
-        uninterpreted,
-        equal,
-        not_equal,
-        less_than,
-        less_than_equal,
-        greater_than,
-        greater_than_equal
-      >>), 
-      rel
-    )
+    // field symbol...
     // declare_field(formula, atom, std::vector<term<Syntax>>, terms)
     has_no_hierarchy_elements(formula, atom)
   end_storage_kind(formula, atom)
@@ -189,85 +183,63 @@ declare_hierarchy(formula)
 
 end_hierarchy(formula)
 
-declare_fragment(Boolean, boolean)
-  include_leaf_storage_kind(Boolean, boolean)
-  include_leaf_storage_kind(Boolean, proposition)
-  include_storage_kind(Boolean, unary)
-    include_hierarchy_element(Boolean, unary, negation)
-  end_include_storage_kind(Boolean, unary)
-  include_storage_kind(Boolean, binary)
-    include_hierarchy_element(Boolean, binary, conjunction)
-    include_hierarchy_element(Boolean, binary, disjunction)
-    include_hierarchy_element(Boolean, binary, implication)
-    include_hierarchy_element(Boolean, binary, iff)
-  end_include_storage_kind(Boolean, binary)
-end_fragment(Boolean, boolean)
+declare_fragment(Boolean)
+  allow(Boolean, boolean)
+  allow(Boolean, proposition)
+  allow(Boolean, negation)
+  allow(Boolean, conjunction)
+  allow(Boolean, disjunction)
+  allow(Boolean, implication)
+  allow(Boolean, iff)
+end_fragment(Boolean)
 
-declare_derived_fragment(FO, fo, Boolean)
+declare_derived_fragment(FO, Boolean)
   // formulas 
-  include_storage_kind(FO, atom)
-    include_no_hierarchy_elements(FO, atom)
-  end_include_storage_kind()
-  include_storage_kind(FO, quantifier)
-    include_hierarchy_element(FO, quantifier, exists)
-    include_hierarchy_element(FO, quantifier, forall)
-  end_include_storage_kind()
+  allow_also(FO, atom)
+  allow_also(FO, exists)
+  allow_also(FO, forall)
   
   // terms
-  include_leaf_storage_kind(FO, constant)
-  include_leaf_storage_kind(FO, variable)
-  include_storage_kind(FO, compound)
-    include_no_hierarchy_elements(FO, compound)
-  end_include_storage_kind(FO, compound)
+  allow_also(FO, constant)
+  allow_also(FO, variable)
+  allow_also(FO, application)
   
   // functions and relations
-  include_leaf_storage_kind(FO, uninterpreted)
-  include_storage_kind(symbol, function)
-    include_hierarchy_element(FO, negative)
-    include_hierarchy_element(FO, subtraction)
-    include_hierarchy_element(FO, addition)
-    include_hierarchy_element(FO, multiplication)
-    include_hierarchy_element(FO, division)
-  end_include_storage_kind(symbol, function)
-  include_storage_kind(symbol, relation)
-    include_hierarchy_element(FO, equal)
-    include_hierarchy_element(FO, not_equal)
-    include_hierarchy_element(FO, less_than)
-    include_hierarchy_element(FO, less_than_equal)
-    include_hierarchy_element(FO, greater_than)
-    include_hierarchy_element(FO, greater_than_equal)
-  end_include_storage_kind(symbol, relation)
-end_derived_fragment(FO, boolean)
+  allow_also(FO, negative)
+  allow_also(FO, subtraction)
+  allow_also(FO, addition)
+  allow_also(FO, multiplication)
+  allow_also(FO, division)
+  allow_also(FO, equal)
+  allow_also(FO, not_equal)
+  allow_also(FO, less_than)
+  allow_also(FO, less_than_equal)
+  allow_also(FO, greater_than)
+  allow_also(FO, greater_than_equal)
+end_derived_fragment(FO, Boolean)
 
-declare_derived_fragment(LTL, ltl, Boolean)
-  include_storage_kind(LTL, unary)
-    include_hierarchy_element(LTL, tomorrow)
-    include_hierarchy_element(LTL, w_tomorrow)
-    include_hierarchy_element(LTL, always)
-    include_hierarchy_element(LTL, eventually)
-  end_include_storage_kind(LTL, unary)
-  include_storage_kind(LTL, binary)
-    include_hierarchy_element(LTL, until)
-    include_hierarchy_element(LTL, release)
-    include_hierarchy_element(LTL, w_until)
-    include_hierarchy_element(LTL, s_release)
-  end_include_storage_kind(LTL, binary)
-end_derived_fragment(LTL, ltl, Boolean)
+declare_derived_fragment(LTL, Boolean)
+  allow_also(LTL, tomorrow)
+  allow_also(LTL, w_tomorrow)
+  allow_also(LTL, always)
+  allow_also(LTL, eventually)
+  allow_also(LTL, until)
+  allow_also(LTL, release)
+  allow_also(LTL, w_until)
+  allow_also(LTL, s_release)
+end_derived_fragment(LTL, Boolean)
 
-declare_derived_fragment(LTLP, ltlp, LTL)
-  include_storage_kind(LTLP, unary)
-    include_hierarchy_element(LTLP, yesterday)
-    include_hierarchy_element(LTLP, w_yesterday)
-    include_hierarchy_element(LTLP, once)
-    include_hierarchy_element(LTLP, historically)
-  end_include_storage_kind(LTLP, unary)
-  include_storage_kind(LTLP, binary)
-    include_hierarchy_element(LTLP, since)
-    include_hierarchy_element(LTLP, triggered)
-  end_include_storage_kind(LTLP, binary)
-end_derived_fragment(LTLP, ltlp, LTL)
+declare_derived_fragment(LTLP, LTL)
+  allow_also(LTLP, yesterday)
+  allow_also(LTLP, w_yesterday)
+  allow_also(LTLP, once)
+  allow_also(LTLP, historically)
+  allow_also(LTLP, since)
+  allow_also(LTLP, triggered)
+end_derived_fragment(LTLP, LTL)
 
-declare_combined_fragment(LTLFO, ltlfo, LTL, FO)
+declare_combined_fragment(LTLFO, LTL, FO)
+declare_combined_fragment(LTLPFO, LTLP, FO)
 
 #undef declare_hierarchy
 #undef declare_storage_kind
@@ -283,4 +255,9 @@ declare_combined_fragment(LTLFO, ltlfo, LTL, FO)
 #undef end_hierarchy
 #undef declare_fragment
 #undef end_fragment
+#undef declare_derived_fragment
+#undef end_derived_fragment
+#undef declare_combined_fragment
+#undef allow
+#undef allow_also
 #undef escape_commas

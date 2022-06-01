@@ -32,8 +32,9 @@ using namespace std::literals;
 using namespace black::internal::new_api;
 using black::internal::identifier;
 
+
 TEST_CASE("New API") {
-  
+
   alphabet sigma;
 
   boolean b = sigma.boolean(true);
@@ -91,5 +92,7 @@ TEST_CASE("New API") {
   static_assert(are_types_allowed<S,S>);
   static_assert(are_types_allowed<S, LTL>);
 
-  formula<S> f10 = disjunction<S>(p7, p7);
+  [[maybe_unused]]
+  LTL_type<formula_accepts_type> t = 
+    LTL_type<formula_accepts_type>::boolean;
 }

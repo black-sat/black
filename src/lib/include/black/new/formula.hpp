@@ -47,7 +47,6 @@ namespace std {
 namespace black::internal::new_api {
 
   class alphabet;
-  class application;
   //
   // Helper function to call sigma() on the first argument that supports
   // the call
@@ -124,6 +123,7 @@ namespace black::internal::new_api {
 #include <black/new/internal/formula/interface.hpp>
 #include <black/new/internal/formula/alphabet.hpp>
 #include <black/new/internal/formula/impl.hpp>
+#include <black/new/internal/formula/fragments.hpp>
 
 namespace black::internal::new_api {
   using LTL = syntax<

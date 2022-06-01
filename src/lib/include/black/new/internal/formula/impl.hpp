@@ -46,7 +46,7 @@ namespace black::internal::new_api {
   #define declare_storage_kind(Base, Storage) \
     struct Storage##_t : Base##_base { \
       \
-      Storage##_t(Base##_type t, Storage##_data_t _data) \
+      Storage##_t(hierarchy_type t, Storage##_data_t _data) \
         : Base##_base{t}, data{_data} { \
           black_assert(is_##Storage##_type(t)); \
         } \
@@ -149,7 +149,7 @@ namespace black::internal::new_api {
       : _sigma{get_sigma(args...)}, \
         _element{ \
           get_sigma(args...)->_impl->allocate_##Storage( \
-            Base##_type::Element, \
+            hierarchy_type::Element, \
             Base##_handle_args(args)... \
           ) \
         } { }
@@ -160,7 +160,7 @@ namespace black::internal::new_api {
       : _sigma{get_sigma(args...)}, \
         _element{ \
           get_sigma(args...)->_impl->allocate_##Storage( \
-            Base##_type::Element, \
+            hierarchy_type::Element, \
             Base##_handle_args(args)... \
           ) \
         } { }

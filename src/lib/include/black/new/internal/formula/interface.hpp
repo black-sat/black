@@ -39,24 +39,22 @@ namespace black::internal::new_api
   //
   // enum type of all the elements of the hierarchies
   //
-  #define declare_hierarchy(Base) \
-    enum class Base##_type : uint8_t { \
+  enum class hierarchy_type : uint8_t {
 
-  #define declare_leaf_storage_kind(Base, Storage) Storage,
-  #define has_no_hierarchy_elements(Base, Storage) Storage,
-  #define declare_hierarchy_element(Base, Storage, Element) Element,
+    #define declare_leaf_storage_kind(Base, Storage) Storage,
+    #define has_no_hierarchy_elements(Base, Storage) Storage,
+    #define declare_hierarchy_element(Base, Storage, Element) Element,
 
-  #define end_hierarchy(Base) \
-    };
+    #include <black/new/internal/formula/hierarchy.hpp>
 
-  #include <black/new/internal/formula/hierarchy.hpp>
+  };
 
   //
   // Base class for internal representation of elements of the hierarchies
   //
   #define declare_hierarchy(Base) \
   struct Base##_base { \
-    Base##_type type; \
+    hierarchy_type type; \
   };
 
   #include <black/new/internal/formula/hierarchy.hpp>
@@ -74,35 +72,60 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  //
+  // constexpr functions to categorize hierarchy type values into storage kinds
+  //
+
   #define declare_hierarchy(Base) \
-    template<typename T> \
-    struct Base##_syntax_t_ { }; \
-    \
-    template<typename T> \
-    using Base##_syntax_t = typename Base##_syntax_t_<T>::type;
+    struct Base##_accepts_type { \
+      static constexpr bool doesit(hierarchy_type type) { \
+        return 
 
   #define declare_leaf_storage_kind(Base, Storage) \
-    template<> \
-    struct Base##_syntax_t_<Storage> { \
-      using type = Storage; \
+          type == hierarchy_type::Storage ||
+  #define has_no_hierarchy_elements(Base, Storage) \
+          type == hierarchy_type::Storage ||
+  #define declare_hierarchy_element(Base, Storage, Element) \
+          type == hierarchy_type::Element ||
+    
+  #define end_hierarchy(Base) \
+        false; \
+      } \
     };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    struct Storage##_accepts_type { \
+      static constexpr bool doesit(hierarchy_type type) { \
+        return   
 
   #define has_no_hierarchy_elements(Base, Storage) \
-    template<typename Syntax> \
-    struct Base##_syntax_t_<Storage<Syntax>> { \
-      using type = Storage<void>; \
-    };
+          type == hierarchy_type::Storage ||
 
   #define declare_hierarchy_element(Base, Storage, Element) \
-    template<typename Syntax> \
-    struct Base##_syntax_t_<Element<Syntax>> { \
-      using type = Element<void>; \
+          type == hierarchy_type::Element ||
+    
+  #define end_storage_kind(Base, Storage) \
+          false; \
+      } \
     };
 
-  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    template<> \
-    struct Base##_syntax_t_<Element> { \
-      using type = Element; \
+  #define declare_leaf_storage_kind(Base, Storage) \
+    struct Storage##_accepts_type { \
+      static constexpr bool doesit(hierarchy_type type) { \
+        return type == hierarchy_type::Storage; \
+      } \
+    };
+  #define end_leaf_storage_kind(Base, Storage)
+  
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    struct Element##_accepts_type { \
+      static constexpr bool doesit(hierarchy_type type) { \
+        return type == hierarchy_type::Element; \
+      } \
     };
 
   #include <black/new/internal/formula/hierarchy.hpp>
@@ -112,7 +135,8 @@ namespace black::internal::new_api
     class Base \
     { \
     public: \
-      using type = black::internal::new_api::Base##_type; \
+      using type = black::internal::new_api::hierarchy_type; \
+      using accepts_type = Base##_accepts_type; \
       \
       Base() = delete; \
       Base(Base const&) = default; \
@@ -157,7 +181,7 @@ namespace black::internal::new_api
       template<typename H> \
       std::optional<H> to() const { \
         black_assert(_element != nullptr); \
-        if(!H::accepts_type(_element->type)) \
+        if(!H::accepts_type::doesit(_element->type)) \
           return {}; \
         \
         auto obj = static_cast<typename H::storage_t *>(_element); \
@@ -169,7 +193,7 @@ namespace black::internal::new_api
         return to<H>().has_value(); \
       } \
       \
-      type Base##_type() const { return _element->type; } \
+      type hierarchy_type() const { return _element->type; } \
       \
       alphabet *sigma() const { return _sigma; }  \
       \
@@ -199,29 +223,6 @@ namespace black::internal::new_api
   #include <black/new/internal/formula/hierarchy.hpp>
  
   //
-  // constexpr functions to categorize hierarchy type values into storage kinds
-  //
-  #define declare_storage_kind(Base, Storage) \
-  constexpr bool is_##Storage##_type(Base##_type type) { \
-    return 
-
-  #define has_no_hierarchy_elements(Base, Storage) \
-    type == Base##_type::Storage ||
-
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    type == Base##_type::Element ||
-    
-  #define end_storage_kind(Base, Storage) false; }
-
-  #define declare_leaf_storage_kind(Base, Storage) \
-  constexpr bool is_##Storage##_type(Base##_type type) { \
-    return type == Base##_type::Storage; \
-  }
-  #define end_leaf_storage_kind(Base, Storage)
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  //
   // internal representation classes for each storage kind
   //
   #define declare_storage_kind(Base, Storage) \
@@ -241,10 +242,10 @@ namespace black::internal::new_api
     enum class Storage##_type : uint8_t {
   
   #define declare_no_hierarchy_element(Base, Storage) \
-      Storage = to_underlying(Base##_type::Storage),
+      Storage = to_underlying(hierarchy_type::Storage),
 
   #define declare_hierarchy_element(Base, Storage, Element) \
-      Element = to_underlying(Base##_type::Element),
+      Element = to_underlying(hierarchy_type::Element),
   
   #define end_storage_kind(Base, Storage) \
     };
@@ -265,8 +266,8 @@ namespace black::internal::new_api
     }
 
   #define declare_storage_kind(Base, Storage) \
-    inline Base##_type Base##_handle_args(Storage##_type t) { \
-      return Base##_type{to_underlying(t)}; \
+    inline hierarchy_type Base##_handle_args(Storage##_type t) { \
+      return hierarchy_type{to_underlying(t)}; \
     }
 
   #include <black/new/internal/formula/hierarchy.hpp>
@@ -314,7 +315,7 @@ namespace black::internal::new_api
 
   #define end_storage_kind(Base, Storage) \
       using syntax_t = Storage<void>; \
-      static constexpr auto accepts_type = is_##Storage##_type; \
+      using accepts_type = Storage##_accepts_type; \
       \
       using storage_t = Storage##_t; \
       using type = Storage##_type; \
@@ -357,7 +358,7 @@ namespace black::internal::new_api
       using Syntax = syntax<Storage>; \
     public: \
       using syntax_t = Storage; \
-      static constexpr auto accepts_type = is_##Storage##_type; \
+      using accepts_type = Storage##_accepts_type; \
       \
       using storage_t = Storage##_t; \
       using type = Storage##_type; \
@@ -402,9 +403,7 @@ namespace black::internal::new_api
       friend struct Storage##_fields<Syntax, Element<Syntax>>; \
     public: \
       using syntax_t = Element<void>; \
-      static constexpr bool accepts_type(Base##_type t) { \
-        return t == Base##_type::Element; \
-      } \
+      using accepts_type = Element##_accepts_type; \
       \
       using storage_t = Storage##_t; \
       using type = Storage##_type; \
@@ -414,7 +413,7 @@ namespace black::internal::new_api
       \
       Element(class alphabet *sigma, Storage##_t *element) \
         : _sigma{sigma}, _element{element} { \
-          black_assert(_element->type == Base##_type::Element); \
+          black_assert(_element->type == hierarchy_type::Element); \
         } \
       \
       template<typename ...Args> \
@@ -438,9 +437,7 @@ namespace black::internal::new_api
       friend struct Storage##_fields<void, Element>; \
     public: \
       using syntax_t = Element; \
-      static constexpr bool accepts_type(Base##_type t) { \
-        return t == Base##_type::Element; \
-      } \
+      using accepts_type = Element##_accepts_type; \
       \
       using storage_t = Storage##_t; \
       using type = Storage##_type; \
@@ -450,7 +447,7 @@ namespace black::internal::new_api
       \
       Element(class alphabet *sigma, Storage##_t *element) \
         : _sigma{sigma}, _element{element} { \
-          black_assert(_element->type == Base##_type::Element); \
+          black_assert(_element->type == hierarchy_type::Element); \
         } \
       \
       template<typename ...Args> \
