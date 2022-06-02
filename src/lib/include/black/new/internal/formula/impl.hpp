@@ -47,9 +47,7 @@ namespace black::internal::new_api {
     struct Storage##_t : Base##_base { \
       \
       Storage##_t(syntax_element t, Storage##_data_t _data) \
-        : Base##_base{t}, data{_data} { \
-          black_assert(is_##Storage##_type(t)); \
-        } \
+        : Base##_base{t}, data{_data} { } \
       \
       Storage##_data_t data; \
     };
@@ -115,8 +113,8 @@ namespace black::internal::new_api {
     template< \
       typename ...Args, \
       REQUIRES_OUT_OF_LINE( \
-        Storage##_has_hierarchy_elements() && \
-        (is_argument_allowed<Args, Syntax> && ...) \
+        (Storage##_has_hierarchy_elements() && \
+        (is_argument_allowed<Args, Syntax> && ...)) \
       ) \
     > \
     Storage<Syntax>::Storage(type t, Args ...args) \
@@ -132,8 +130,8 @@ namespace black::internal::new_api {
     template< \
       typename ...Args, \
       REQUIRES_OUT_OF_LINE( \
-        !Storage##_has_hierarchy_elements() && \
-        (is_argument_allowed<Args, Syntax> && ...) \
+        (!Storage##_has_hierarchy_elements() && \
+        (is_argument_allowed<Args, Syntax> && ...)) \
       ) \
     > \
     Storage<Syntax>::Storage(Args ...args) \
@@ -183,7 +181,13 @@ namespace black::internal::new_api {
             syntax_element::Element, \
             Base##_handle_args(args)... \
           ) \
-        } { }
+        } { } \
+    \
+    template<typename Syntax> \
+    Element<Syntax>::Element(class alphabet *sigma, Storage##_t *element) \
+        : _sigma{sigma}, _element{element} { \
+          black_assert(_element->type == syntax_element::Element); \
+        } 
 
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
   template<typename ...Args> \
@@ -194,9 +198,15 @@ namespace black::internal::new_api {
             syntax_element::Element, \
             Base##_handle_args(args)... \
           ) \
-        } { }
+        } { } \
+    \
+    Element::Element(class alphabet *sigma, Storage##_t *element) \
+        : _sigma{sigma}, _element{element} { \
+          black_assert(_element->type == syntax_element::Element); \
+        } 
 
   #include <black/new/internal/formula/hierarchy.hpp>
+
 }
 
 #endif // BLACK_INTERNAL_FORMULA_IMPL_HPP

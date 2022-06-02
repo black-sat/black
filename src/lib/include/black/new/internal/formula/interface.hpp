@@ -479,10 +479,7 @@ namespace black::internal::new_api
       Element(Element const&) = default; \
       Element(Element &&) = default; \
       \
-      Element(class alphabet *sigma, Storage##_t *element) \
-        : _sigma{sigma}, _element{element} { \
-          black_assert(_element->type == syntax_element::Element); \
-        } \
+      Element(class alphabet *sigma, Storage##_t *element); \
       \
       template< \
         typename ...Args, \
@@ -528,10 +525,7 @@ namespace black::internal::new_api
       Element(Element const&) = default; \
       Element(Element &&) = default; \
       \
-      Element(class alphabet *sigma, Storage##_t *element) \
-        : _sigma{sigma}, _element{element} { \
-          black_assert(_element->type == syntax_element::Element); \
-        } \
+      Element(class alphabet *sigma, Storage##_t *element); \
       \
       template<typename ...Args> \
       Element(Args ...args); \

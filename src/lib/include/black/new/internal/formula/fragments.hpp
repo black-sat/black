@@ -33,22 +33,19 @@ namespace black::internal::new_api {
       } \
     }; \
     \
-    template<typename Derived, bool = true> \
+    template<bool = true> \
     struct Element##_type_base_t_ { }; \
     \
-    template<typename Derived> \
-    struct Element##_type_base_t_<Derived, true> { \
-      static constexpr Derived Element = Derived{ \
-        Element##_syntax_element_t{} \
-      }; \
+    template<> \
+    struct Element##_type_base_t_<true> { \
+      static constexpr Element##_syntax_element_t Element{}; \
     }; \
     \
-    template<typename Derived, typename AcceptsType> \
+    template<typename AcceptsType> \
     struct Element##_type_base_t \
       : Element##_type_base_t_< \
-          Derived,  \
           AcceptsType::doesit(syntax_element::Element) \
-    > { };
+        > { };
 
   #define declare_leaf_storage_kind(Base, Storage) declare_type_t(Storage)
   #define has_no_hierarchy_elements(Base, Storage) declare_type_t(Storage)
@@ -59,16 +56,16 @@ namespace black::internal::new_api {
 
   #undef declare_type_t
 
-  template<typename Derived, typename AcceptsType, syntax_element Element>
+  template<typename AcceptsType, syntax_element Element>
   struct type_base_t;
 
-  template<typename Derived, typename AcceptsType>
-  struct type_base_t<Derived, AcceptsType, syntax_element::no_type> { };
+  template<typename AcceptsType>
+  struct type_base_t<AcceptsType, syntax_element::no_type> { };
 
   #define declare_type_t(Element) \
-  template<typename Derived, typename AcceptsType> \
-  struct type_base_t<Derived, AcceptsType, syntax_element::Element> \
-    : Element##_type_base_t<Derived, AcceptsType> { };
+  template<typename AcceptsType> \
+  struct type_base_t<AcceptsType, syntax_element::Element> \
+    : Element##_type_base_t<AcceptsType> { };
 
   #define declare_leaf_storage_kind(Base, Storage) declare_type_t(Storage)
   #define has_no_hierarchy_elements(Base, Storage) declare_type_t(Storage)
@@ -79,22 +76,20 @@ namespace black::internal::new_api {
 
   #undef declare_type_t
 
-  template<typename Derived, typename AcceptsType, typename TypeList>
+  template<typename AcceptsType, typename TypeList>
   struct fragment_type_base_t;
   
-  template<typename Derived, typename AcceptsType, syntax_element ...Types>
-  struct fragment_type_base_t<Derived, AcceptsType, type_list<Types...>>
-    : type_base_t<Derived, AcceptsType, Types>... { };
+  template<typename AcceptsType, syntax_element ...Types>
+  struct fragment_type_base_t<AcceptsType, type_list<Types...>>
+    : type_base_t<AcceptsType, Types>... { };
 
   template<typename AcceptsType, typename TypeList>
   struct fragment_type 
-    : fragment_type_base_t<
-        fragment_type<AcceptsType, TypeList>, AcceptsType, TypeList
-      > {
+    : fragment_type_base_t<AcceptsType, TypeList> {
     fragment_type() = delete;
     
     template<typename T, REQUIRES(type_list_contains<TypeList, T::type()>)>
-    explicit constexpr fragment_type(T) : _type{T::type()} { }
+    fragment_type(T) : _type{T::type()} { }
 
     syntax_element type() const { return _type; }
   private:

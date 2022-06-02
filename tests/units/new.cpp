@@ -41,7 +41,7 @@ TEST_CASE("New API") {
 
   proposition p = sigma.proposition("hello");
 
-  unary u = unary<LTL>(unary<LTL>::type::negation, b);
+  unary<LTL> u = unary<LTL>(unary<LTL>::type::negation, b);
 
   REQUIRE(b.value());
 
