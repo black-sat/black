@@ -173,6 +173,7 @@ set (
    src/logic/prettyprint.cpp
    src/logic/past_remover.cpp
    src/logic/cnf.cpp
+   src/logic/new/alphabet.cpp
    src/sat/solver.cpp
    src/sat/dimacs/solver.cpp
    src/sat/dimacs/parser.cpp

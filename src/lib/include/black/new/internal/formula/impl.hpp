@@ -120,9 +120,8 @@ namespace black::internal::new_api {
     Storage<Syntax>::Storage(type t, Args ...args) \
       : _sigma{get_sigma(args...)}, \
         _element{ \
-          get_sigma(args...)->_impl->allocate_##Storage( \
-            t.type(), \
-            Base##_handle_args(args)... \
+          get_sigma(args...)->allocate_##Storage( \
+            Storage##_key{t.type(), Base##_handle_args(args)..., nullptr} \
           ) \
         } { } \
     \
@@ -177,9 +176,12 @@ namespace black::internal::new_api {
     Element<Syntax>::Element(Args ...args) \
       : _sigma{get_sigma(args...)}, \
         _element{ \
-          get_sigma(args...)->_impl->allocate_##Storage( \
-            syntax_element::Element, \
-            Base##_handle_args(args)... \
+          get_sigma(args...)->allocate_##Storage( \
+            Storage##_key{ \
+              syntax_element::Element, \
+              Base##_handle_args(args)..., \
+              nullptr \
+            } \
           ) \
         } { } \
     \

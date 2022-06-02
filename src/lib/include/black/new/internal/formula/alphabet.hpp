@@ -26,9 +26,6 @@
 
 namespace black::internal::new_api {
 
-  //
-  // class alphabet, with all the allocator classes
-  //
   #define declare_storage_kind(Base, Storage) \
     using Storage##_key = std::tuple<syntax_element,
   #define declare_field(Base, Storage, Type, Field) Type,
@@ -37,58 +34,30 @@ namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  #define declare_storage_kind(Base, Storage) \
-    struct Storage##_storage { \
-      std::deque<Storage##_t> Storage##_store; \
-      tsl::hopscotch_map<Storage##_key, Storage##_t *> Storage##_map; \
-    };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #define declare_storage_kind(Base, Storage) \
-    struct Storage##_allocator : Storage##_storage { \
-      template<typename ...Args> \
-      Storage##_t *allocate_##Storage(syntax_element t, Args ...args) { \
-        auto it = Storage##_map.find(Storage##_key{t, args...,nullptr}); \
-        if(it != Storage##_map.end()) \
-          return it->second; \
-        \
-        Storage##_t *obj = \
-          &Storage##_store.emplace_back(t, Storage##_data_t{args...}); \
-        Storage##_map.insert({Storage##_key{t, args...,nullptr}, obj}); \
-        \
-        return obj; \
-      } \
-    };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  template<typename T>
-  struct dummy_t {};
-
-  struct alphabet_impl : 
-  #define declare_storage_kind(Base, Storage) Storage##_allocator,
-  #include <black/new/internal/formula/hierarchy.hpp>
-    dummy_t<alphabet_impl> { };
-
+  //
+  // class alphabet
+  //
   class alphabet
   {
   public:
-    alphabet() : _impl{std::make_unique<alphabet_impl>()} { }
-    ~alphabet() = default;
+    alphabet();
+    ~alphabet();
 
     alphabet(alphabet const&) = delete;
-    alphabet(alphabet &&) = default;
+    alphabet(alphabet &&);
 
     alphabet &operator=(alphabet const&) = delete;
-    alphabet &operator=(alphabet &&) = default;
+    alphabet &operator=(alphabet &&);
 
     #define declare_leaf_storage_kind(Base, Storage) \
       template<typename ...Args> \
       class Storage Storage(Args ...args) { \
         return \
           ::black::internal::new_api::Storage{ \
-            this, _impl->allocate_##Storage(syntax_element::Storage, args...) \
+            this, \
+            allocate_##Storage( \
+              Storage##_key{syntax_element::Storage, args..., nullptr} \
+            ) \
           }; \
       }
 
@@ -97,7 +66,10 @@ namespace black::internal::new_api {
       class Element Element(Args ...args) { \
         return \
           ::black::internal::new_api::Element{ \
-            this, _impl->allocate_##Storage(syntax_element::Element, args...) \
+            this, \
+            allocate_##Storage( \
+              Storage##_key{syntax_element::Element, args..., nullptr} \
+            ) \
           }; \
       }
 
@@ -116,6 +88,12 @@ namespace black::internal::new_api {
     #include <black/new/internal/formula/hierarchy.hpp>
 
   private:
+    #define declare_storage_kind(Base, Storage) \
+      Storage##_t *allocate_##Storage(Storage##_key key);
+
+    #include <black/new/internal/formula/hierarchy.hpp>
+
+    struct alphabet_impl;
     std::unique_ptr<alphabet_impl> _impl;
   };  
 }
