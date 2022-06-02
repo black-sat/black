@@ -218,6 +218,17 @@ declare_derived_fragment(FO, Boolean)
   allow_also(FO, greater_than_equal)
 end_derived_fragment(FO, Boolean)
 
+declare_derived_fragment(EUF, Boolean)
+  // formulas 
+  allow_also(EUF, atom)
+  allow_also(EUF, exists)
+  allow_also(EUF, forall)
+  
+  // terms
+  allow_also(EUF, variable)
+  allow_also(EUF, application)
+end_derived_fragment(EUF, Boolean)
+
 declare_derived_fragment(LTL, Boolean)
   allow_also(LTL, tomorrow)
   allow_also(LTL, w_tomorrow)

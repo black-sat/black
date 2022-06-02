@@ -80,19 +80,28 @@ TEST_CASE("New API") {
 
   REQUIRE(e.to<equal>().has_value());
 
-  static_assert(is_type_allowed<equal,LTL>);
+  [[maybe_unused]]
+  LTL::type<formula_accepts_type> t = 
+    LTL::type<formula_accepts_type>::boolean;
 
-  using S = syntax<proposition, boolean, conjunction<void>>;
+  static_assert(type_list_contains<LTL::list, hierarchy_type::conjunction>);
+  static_assert(!type_list_contains<LTL::list, hierarchy_type::historically>);
+  static_assert(type_list_includes<LTL::list, Boolean::list>);
+  static_assert(!type_list_includes<Boolean::list, LTL::list>);
 
-  proposition p7 = sigma.proposition("p");
+  static_assert(is_syntax_allowed<Boolean, LTL>);
+  static_assert(!is_syntax_allowed<LTL, Boolean>);
 
   [[maybe_unused]]
-  formula<S> f8 = p7;
+  formula<LTL> f10 = unary<LTL>(unary<LTL>::type::always, p);
+  formula<LTL> f11 = always<LTL>(p);
 
-  static_assert(are_types_allowed<S,S>);
-  static_assert(are_types_allowed<S, LTL>);
+  REQUIRE(f10 == f11);
 
   [[maybe_unused]]
-  LTL_type<formula_accepts_type> t = 
-    LTL_type<formula_accepts_type>::boolean;
+  formula<Boolean> f12 = negation<Boolean>(p);
+
+  unary<Boolean> f13 = negation<Boolean>(f12);
+
+  formula<EUF> f14 = sigma.negative();
 }

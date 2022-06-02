@@ -41,6 +41,8 @@ namespace black::internal::new_api
   //
   enum class hierarchy_type : uint8_t {
 
+    no_type,
+
     #define declare_leaf_storage_kind(Base, Storage) Storage,
     #define has_no_hierarchy_elements(Base, Storage) Storage,
     #define declare_hierarchy_element(Base, Storage, Element) Element,
@@ -136,6 +138,7 @@ namespace black::internal::new_api
     { \
     public: \
       using type = black::internal::new_api::hierarchy_type; \
+      using syntax = Syntax; \
       using accepts_type = Base##_accepts_type; \
       \
       Base() = delete; \
@@ -146,25 +149,25 @@ namespace black::internal::new_api
         : _sigma{sigma}, _element{element} { }
       
   #define declare_storage_kind(Base, Storage) \
-      template<typename Syntax2, REQUIRES(are_types_allowed<Syntax2, Syntax>)> \
-      Base(Storage<Syntax2> const&s);
+      template<typename Syntax2, REQUIRES(is_syntax_allowed<Syntax2, Syntax>)> \
+      Base(Storage<Syntax2> const&s); \
+      \
+      template<typename Syntax2, REQUIRES(!is_syntax_allowed<Syntax2, Syntax>)>\
+      Base(Storage<Syntax2> const&s) = delete;
   
   #define declare_leaf_storage_kind(Base, Storage) \
-      template<REQUIRES(is_type_allowed<Storage, Syntax>)> \
+      template<REQUIRES(is_type_allowed<hierarchy_type::Storage, Syntax>)> \
       Base(Storage const&s);
   
   #define declare_hierarchy_element(Base, Storage, Element) \
-      template< \
-        typename Syntax2, \
-        REQUIRES( \
-          is_type_allowed<Element<void>, Syntax> && \
-          are_types_allowed<Syntax2, Syntax> \
-        ) \
-      > \
-      Base(Element<Syntax2> const&s);
+      template<typename Syntax2, REQUIRES(is_syntax_allowed<Syntax2, Syntax>)> \
+      Base(Element<Syntax2> const&s); \
+      \
+      template<typename Syntax2, REQUIRES(!is_syntax_allowed<Syntax2, Syntax>)>\
+      Base(Element<Syntax2> const&s) = delete;
   
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-      template<REQUIRES(is_type_allowed<Element, Syntax>)> \
+      template<REQUIRES(is_type_allowed<hierarchy_type::Element, Syntax>)> \
       Base(Element const&s);
 
   #define end_hierarchy(Base) \
@@ -201,7 +204,6 @@ namespace black::internal::new_api
         return std::hash<Base##_base *>{}(_element); \
       } \
       \
-    private: \
       alphabet *_sigma; \
       Base##_base *_element; \
     };
@@ -236,38 +238,18 @@ namespace black::internal::new_api
   #include <black/new/internal/formula/hierarchy.hpp>
 
   //
-  // Enums with list of element types of a certain storage kind
-  //
-  #define declare_storage_kind(Base, Storage) \
-    enum class Storage##_type : uint8_t {
-  
-  #define declare_no_hierarchy_element(Base, Storage) \
-      Storage = to_underlying(hierarchy_type::Storage),
-
-  #define declare_hierarchy_element(Base, Storage, Element) \
-      Element = to_underlying(hierarchy_type::Element),
-  
-  #define end_storage_kind(Base, Storage) \
-    };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  //
   // Helper function to transform a Base argument to its underlying element, if 
   // the argument is a Base, leaving it untouched otherwise
   //
   #define declare_hierarchy(Base) \
     template<typename T> \
     auto Base##_handle_args(T v) { \
-      if constexpr(has_element<T>::value) \
+      if constexpr(has_member_element<T>::value) \
         return (Base##_base *)v._element; \
+      else if constexpr(has_member_type<T>::value) \
+        return hierarchy_type{v.type()}; \
       else \
         return v; \
-    }
-
-  #define declare_storage_kind(Base, Storage) \
-    inline hierarchy_type Base##_handle_args(Storage##_type t) { \
-      return hierarchy_type{to_underlying(t)}; \
     }
 
   #include <black/new/internal/formula/hierarchy.hpp>
@@ -277,7 +259,6 @@ namespace black::internal::new_api
   // 
   // The definition of an handle is split in pieces because of the macros.
   // - The Storage##_fields CRTP class declare the fields accessors
-  // - The Storage##_type enum lists the types handled by the handle
   // - The Storage class is the handle
   //
   #include <black/new/internal/formula/hierarchy.hpp>
@@ -286,13 +267,22 @@ namespace black::internal::new_api
     enum class Base##_id : uintptr_t { };
 
   #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax, typename H> \
+    template<typename H> \
     struct Storage##_fields {
 
     #define declare_field(Base, Storage, Type, Field) \
       Type Field() const;
 
-    #define declare_child(Base, Storage, Child) \
+  #define end_storage_kind(Base, Storage) \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    template<typename Syntax, typename H> \
+    struct Storage##_children {
+
+  #define declare_child(Base, Storage, Child) \
       Base<Syntax> Child() const;
 
   #define end_storage_kind(Base, Storage) \
@@ -302,23 +292,30 @@ namespace black::internal::new_api
 
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
-    class Storage : public Storage##_fields<Syntax, Storage<Syntax>> { \
-      \
-      friend struct Storage##_fields<Syntax, Storage<Syntax>>; \
+    class Storage : \
+      public Storage##_fields<Storage<Syntax>>, \
+      public Storage##_children<Syntax, Storage<Syntax>> \
+    { \
+      friend struct Storage##_fields<Storage<Syntax>>; \
+      friend struct Storage##_children<Syntax, Storage<Syntax>>; \
     public: 
 
   #define declare_hierarchy_element(Base, Storage, Element) \
-        Storage(Element<Syntax> const&e);
+      template<typename Syntax2, REQUIRES(is_syntax_allowed<Syntax2, Syntax>)> \
+      Storage(Element<Syntax2> const&e); \
+      \
+      template<typename Syntax2, REQUIRES(!is_syntax_allowed<Syntax2, Syntax>)>\
+      Storage(Element<Syntax2> const&e) = delete;
   
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
         Storage(Element const&e);
 
   #define end_storage_kind(Base, Storage) \
-      using syntax_t = Storage<void>; \
       using accepts_type = Storage##_accepts_type; \
+      using syntax = Syntax; \
       \
       using storage_t = Storage##_t; \
-      using type = Storage##_type; \
+      using type = typename Syntax::template type<accepts_type>; \
       \
       Storage(Storage const&) = default; \
       Storage(Storage &&) = default; \
@@ -326,7 +323,10 @@ namespace black::internal::new_api
       Storage(class alphabet *sigma, Storage##_t *element) \
         : _sigma{sigma}, _element{element} { } \
       \
-      template<typename ...Args> \
+      template< \
+        typename ...Args, \
+        REQUIRES((is_argument_allowed<Args, Syntax> && ...)) \
+      > \
       Storage(Args ...args); \
       \
       template<typename H> \
@@ -352,16 +352,13 @@ namespace black::internal::new_api
     };
 
   #define declare_leaf_storage_kind(Base, Storage) \
-    class Storage : public Storage##_fields<void, Storage> { \
+    class Storage : public Storage##_fields<Storage> { \
       \
-      friend struct Storage##_fields<void, Storage>; \
-      using Syntax = syntax<Storage>; \
+      friend struct Storage##_fields<Storage>; \
     public: \
-      using syntax_t = Storage; \
       using accepts_type = Storage##_accepts_type; \
       \
       using storage_t = Storage##_t; \
-      using type = Storage##_type; \
       \
       Storage(Storage const&) = default; \
       Storage(Storage &&) = default; \
@@ -371,16 +368,6 @@ namespace black::internal::new_api
       \
       template<typename ...Args> \
       Storage(Args ...args); \
-      \
-      template<typename H> \
-      std::optional<H> to() const { \
-        return Base<Syntax>{*this}.template to<H>(); \
-      } \
-      \
-      template<typename H> \
-      bool is() const { \
-        return to<H>().has_value(); \
-      } \
       \
       Storage &operator=(Storage const&) = default; \
       Storage &operator=(Storage &&) = default; \
@@ -399,14 +386,18 @@ namespace black::internal::new_api
 
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
-    class Element : public Storage##_fields<Syntax, Element<Syntax>> { \
-      friend struct Storage##_fields<Syntax, Element<Syntax>>; \
+    class Element : \
+      public Storage##_fields<Element<Syntax>>, \
+      public Storage##_children<Syntax, Element<Syntax>> \
+    { \
+      friend struct Storage##_fields<Element<Syntax>>; \
+      friend struct Storage##_children<Syntax, Element<Syntax>>; \
     public: \
-      using syntax_t = Element<void>; \
       using accepts_type = Element##_accepts_type; \
+      using syntax = Syntax; \
       \
       using storage_t = Storage##_t; \
-      using type = Storage##_type; \
+      using type = typename Syntax::template type<accepts_type>; \
       \
       Element(Element const&) = default; \
       Element(Element &&) = default; \
@@ -416,7 +407,10 @@ namespace black::internal::new_api
           black_assert(_element->type == hierarchy_type::Element); \
         } \
       \
-      template<typename ...Args> \
+      template< \
+        typename ...Args, \
+        REQUIRES((is_argument_allowed<Args, Syntax> && ...)) \
+      > \
       Element(Args ...args); \
       \
       Element &operator=(Element const&) = default; \
@@ -433,14 +427,12 @@ namespace black::internal::new_api
     };
   
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    class Element : public Storage##_fields<void, Element> { \
-      friend struct Storage##_fields<void, Element>; \
+    class Element : public Storage##_fields<Element> { \
+      friend struct Storage##_fields<Element>; \
     public: \
-      using syntax_t = Element; \
       using accepts_type = Element##_accepts_type; \
       \
       using storage_t = Storage##_t; \
-      using type = Storage##_type; \
       \
       Element(Element const&) = default; \
       Element(Element &&) = default; \

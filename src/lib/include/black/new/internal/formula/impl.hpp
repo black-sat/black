@@ -57,14 +57,14 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_field(Base, Storage, Type, Field) \
-    template<typename Syntax, typename H> \
-    Type Storage##_fields<Syntax, H>::Field() const { \
+    template<typename H> \
+    Type Storage##_fields<H>::Field() const { \
       return static_cast<H const&>(*this)._element->data.Field; \
     }
 
   #define declare_child(Base, Storage, Child) \
     template<typename Syntax, typename H> \
-    Base<Syntax> Storage##_fields<Syntax, H>::Child() const { \
+    Base<Syntax> Storage##_children<Syntax, H>::Child() const { \
       return Base<Syntax>{ \
         static_cast<H const&>(*this)._sigma,  \
         static_cast<H const&>(*this)._element->data.Child \
@@ -78,40 +78,44 @@ namespace black::internal::new_api {
     template<typename Syntax> \
     template< \
       typename Syntax2, \
-      REQUIRES_OUT_OF_LINE(are_types_allowed<Syntax2, Syntax>) \
+      REQUIRES_OUT_OF_LINE(is_syntax_allowed<Syntax2, Syntax>) \
     > \
     Base<Syntax>::Base(Storage<Syntax2> const&s) \
       : _sigma{s._sigma}, _element{s._element} { }
 
   #define declare_leaf_storage_kind(Base, Storage) \
     template<typename Syntax> \
-    template<REQUIRES_OUT_OF_LINE(is_type_allowed<Storage, Syntax>)> \
+    template< \
+      REQUIRES_OUT_OF_LINE(is_type_allowed<hierarchy_type::Storage, Syntax>) \
+    > \
     Base<Syntax>::Base(Storage const&s) \
       : _sigma{s._sigma}, _element{s._element} { }
 
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
     template< \
-        typename Syntax2, \
-        REQUIRES_OUT_OF_LINE( \
-          is_type_allowed<Element<void>, Syntax> && \
-          are_types_allowed<Syntax2, Syntax> \
-        ) \
-      > \
+      typename Syntax2, \
+      REQUIRES_OUT_OF_LINE(is_syntax_allowed<Syntax2, Syntax>) \
+    > \
     Base<Syntax>::Base(Element<Syntax2> const&e) \
        : _sigma{e._sigma}, _element{e._element} { }
 
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
-    template<REQUIRES_OUT_OF_LINE(is_type_allowed<Element, Syntax>)> \
+    template< \
+      REQUIRES_OUT_OF_LINE(is_type_allowed<hierarchy_type::Element, Syntax>) \
+    > \
     Base<Syntax>::Base(Element const&e) \
       : _sigma{e._sigma}, _element{e._element} { }
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
-  template<typename Syntax> \
-  template<typename ...Args> \
+    template<typename Syntax> \
+    template< \
+      typename ...Args, \
+      REQUIRES_OUT_OF_LINE((is_argument_allowed<Args, Syntax> && ...)) \
+    > \
     Storage<Syntax>::Storage(Args ...args) \
       : _sigma{get_sigma(args...)}, \
         _element{ \
@@ -121,7 +125,7 @@ namespace black::internal::new_api {
         } { }
 
   #define declare_leaf_storage_kind(Base, Storage) \
-  template<typename ...Args> \
+    template<typename ...Args> \
     Storage::Storage(Args ...args) \
       : _sigma{get_sigma(args...)}, \
         _element{ \
@@ -132,8 +136,14 @@ namespace black::internal::new_api {
       
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
-    Storage<Syntax>::Storage(Element<Syntax> const&e) \
-      : Storage{e._sigma, e._element} { }
+    template< \
+      typename Syntax2, \
+      REQUIRES_OUT_OF_LINE(is_syntax_allowed<Syntax2, Syntax>) \
+    > \
+    Storage<Syntax>::Storage(Element<Syntax2> const&e) \
+      : Storage{e._sigma, e._element} { \
+      std::cerr << #Storage "<Syntax>(" #Element "<Syntax2>)\n"; \
+    }
   
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
@@ -143,8 +153,11 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy_element(Base, Storage, Element) \
-  template<typename Syntax> \
-  template<typename ...Args> \
+    template<typename Syntax> \
+    template< \
+        typename ...Args, \
+        REQUIRES_OUT_OF_LINE((is_argument_allowed<Args, Syntax> && ...)) \
+      > \
     Element<Syntax>::Element(Args ...args) \
       : _sigma{get_sigma(args...)}, \
         _element{ \

@@ -28,6 +28,7 @@
 #include <black/support/hash.hpp>
 
 #include <variant>
+#include <iostream>
 
 namespace std {
   template<typename T>
@@ -81,62 +82,107 @@ namespace black::internal::new_api {
   // Helper trait to tell if a type has an `_element` member
   //
   template<typename T, typename = void>
-  struct has_element : std::false_type { };
+  struct has_member_element : std::false_type { };
 
   template<typename T>
-  struct has_element<T, std::void_t<decltype(std::declval<T>()._element)>>
+  struct has_member_element<T, 
+    std::void_t<decltype(std::declval<T>()._element)>
+  > : std::true_type { };
+  
+  template<typename T, typename = void>
+  struct has_member_type : std::false_type { };
+
+  template<typename T>
+  struct has_member_type<T, std::void_t<decltype(std::declval<T>().type())>>
     : std::true_type { };
 
-  template<typename ...Ops>
-  struct syntax { };
+  enum class hierarchy_type : uint8_t;
 
-  template<typename T, typename Syntax>
-  struct is_type_allowed_ : std::false_type { };
+  template<hierarchy_type ...Types>
+  struct type_list { };
 
-  template<typename T, typename ...Ops>
-  struct is_type_allowed_<T, syntax<T, Ops...>> : std::true_type { };
+  template<typename T, typename U>
+  struct type_list_concat_;
 
-  template<typename T, typename Op, typename ...Ops>
-  struct is_type_allowed_<T, syntax<Op, Ops...>> 
-    : is_type_allowed_<T, syntax<Ops...>> { };
-
-  template<typename T, typename Syntax>
-  constexpr bool is_type_allowed = is_type_allowed_<T, Syntax>::value;
-
-  template<typename Syntax, typename Allowed>
-  struct are_types_allowed_ : std::false_type { };
-
-  template<typename Allowed>
-  struct are_types_allowed_<syntax<>, Allowed> : std::false_type { };
-  
-  template<typename Op, typename ...Ops, typename Allowed>
-  struct are_types_allowed_<syntax<Op, Ops...>, Allowed> {
-    static constexpr bool value = 
-      is_type_allowed<Op, Allowed> || 
-      are_types_allowed_<syntax<Ops...>, Allowed>::value;
+  template<hierarchy_type ...Types1, hierarchy_type ...Types2>
+  struct type_list_concat_<type_list<Types1...>, type_list<Types2...>> {
+    using type = type_list<Types1..., Types2...>;
   };
 
+  template<typename T, typename U>
+  using type_list_concat = typename type_list_concat_<T,U>::type;
+
+  template<typename List>
+  struct type_list_remove_last_;
+
+  template<typename List>
+  using type_list_remove_last = typename type_list_remove_last_<List>::type;
+
+  template<hierarchy_type Type>
+  struct type_list_remove_last_<type_list<Type>> {
+    using type = type_list<>;
+  };
+
+  template<hierarchy_type Type, hierarchy_type ...Types>
+  struct type_list_remove_last_<type_list<Type, Types...>> {
+    using type = type_list_concat<
+      type_list<Type>, 
+      type_list_remove_last<type_list<Types...>>
+    >;
+  };
+
+  template<typename List, hierarchy_type Type>
+  struct type_list_contains_ : std::false_type { };
+
+  template<hierarchy_type ...Types, hierarchy_type Type>
+  struct type_list_contains_<type_list<Type, Types...>, Type> 
+    : std::true_type { };
+
+  template<hierarchy_type ...Types, hierarchy_type Type1, hierarchy_type Type2>
+  struct type_list_contains_<type_list<Type1, Types...>, Type2> 
+    : type_list_contains_<type_list<Types...>, Type2> { };
+
+  template<typename List, hierarchy_type Type>
+  constexpr bool type_list_contains = type_list_contains_<List, Type>::value;
+
+  template<typename List, typename SubList>
+  struct type_list_includes_ : std::false_type { };
+
+  template<typename List, hierarchy_type ...Types>
+  struct type_list_includes_<List, type_list<Types...>> {
+    static constexpr bool value = (type_list_contains<List, Types> && ...);
+  };
+
+  template<typename List, typename Sublist>
+  constexpr bool type_list_includes = type_list_includes_<List, Sublist>::value;
+
   template<typename Syntax, typename Allowed>
-  constexpr bool are_types_allowed = are_types_allowed_<Syntax, Allowed>::value;
+  constexpr bool is_syntax_allowed = 
+    type_list_includes<
+      typename Allowed::list,
+      typename Syntax::list
+    >;
+
+  template<hierarchy_type Type, typename Allowed>
+  constexpr bool is_type_allowed = 
+    type_list_contains<typename Allowed::list, Type>;
+
+  template<typename T, typename Allowed, typename = void>
+  struct is_argument_allowed_ : std::true_type { };
+
+  template<typename T, typename Allowed>
+  struct is_argument_allowed_<T, Allowed, std::void_t<typename T::syntax>> {
+    static constexpr bool value = 
+      is_syntax_allowed<typename T::syntax, Allowed>;
+  };
+
+  template<typename T, typename Allowed>
+  constexpr bool is_argument_allowed = is_argument_allowed_<T, Allowed>::value;
 }
 
 #include <black/new/internal/formula/interface.hpp>
 #include <black/new/internal/formula/alphabet.hpp>
 #include <black/new/internal/formula/impl.hpp>
 #include <black/new/internal/formula/fragments.hpp>
-
-namespace black::internal::new_api {
-  using LTL = syntax<
-    #define has_no_leaf_hierarchy_elements(Base, Storage) \
-      Storage,
-    #define has_no_hierarchy_elements(Base, Storage) \
-      Storage<void>,
-    #define declare_hierarchy_element(Base, Storage, Element) \
-      Element<void>,
-    #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-      Element,
-    #include <black/new/internal/formula/hierarchy.hpp>
-  void>;
-}
 
 #endif // BLACK_LOGIC_FORMULA_HPP

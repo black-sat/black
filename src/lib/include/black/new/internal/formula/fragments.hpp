@@ -92,10 +92,40 @@ namespace black::internal::new_api {
     { \
       Fragment##_type() = delete; \
       template<typename T> \
-      explicit constexpr Fragment##_type(T t) : type{t.type()} { } \
+      explicit constexpr Fragment##_type(T t) : _type{t.type()} { } \
     \
+      hierarchy_type type() const { return _type; } \
     private: \
-      hierarchy_type type; \
+      hierarchy_type _type; \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_fragment(Fragment) \
+    using Fragment##_type_list = type_list_remove_last<type_list<
+
+  #define allow(Fragment, Element) hierarchy_type::Element,
+    
+  #define end_fragment(Fragment) \
+    hierarchy_type::no_type>>;
+
+  #define declare_derived_fragment(Fragment, Parent) \
+    using Fragment##_type_list = type_list_concat<Parent##_type_list, \
+      type_list_remove_last<type_list<
+
+  #define allow_also(Fragment, Element) hierarchy_type::Element,
+    
+  #define end_derived_fragment(Fragment, Parent) \
+    hierarchy_type::no_type>>>;
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_fragment(Fragment) \
+    struct Fragment { \
+      template<typename AcceptsType> \
+      using type = Fragment##_type<AcceptsType>; \
+      \
+      using list = Fragment##_type_list; \
     };
 
   #include <black/new/internal/formula/hierarchy.hpp>

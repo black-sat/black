@@ -49,7 +49,7 @@ namespace black::internal::new_api {
     struct Storage##_allocator : Storage##_storage { \
       template<typename ...Args> \
       Storage##_t *allocate_##Storage(hierarchy_type t, Args ...args) { \
-        black_assert(is_##Storage##_type(t)); \
+        black_assert(Storage::accepts_type::doesit(t)); \
         auto it = Storage##_map.find(Storage##_key{t, args...,nullptr}); \
         if(it != Storage##_map.end()) \
           return it->second; \
