@@ -193,6 +193,15 @@ declare_fragment(Boolean)
   allow(Boolean, iff)
 end_fragment(Boolean)
 
+declare_fragment(Test)
+  allow(Test, boolean)
+  allow(Test, negation)
+  allow(Test, conjunction)
+  allow(Test, disjunction)
+  allow(Test, implication)
+  allow(Test, iff)
+end_fragment(Test)
+
 declare_derived_fragment(FO, Boolean)
   // formulas 
   allow_also(FO, atom)

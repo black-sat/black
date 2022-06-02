@@ -27,6 +27,7 @@
 #include <black/support/assert.hpp>
 #include <black/support/hash.hpp>
 
+#include <type_traits>
 #include <variant>
 #include <iostream>
 
@@ -112,24 +113,21 @@ namespace black::internal::new_api {
   template<typename T, typename U>
   using type_list_concat = typename type_list_concat_<T,U>::type;
 
-  template<typename List>
-  struct type_list_remove_last_;
-
-  template<typename List>
-  using type_list_remove_last = typename type_list_remove_last_<List>::type;
-
-  template<hierarchy_type Type>
-  struct type_list_remove_last_<type_list<Type>> {
-    using type = type_list<>;
+  template <typename T, typename List>
+  struct type_list_unique_ { 
+    using type = T;
   };
 
-  template<hierarchy_type Type, hierarchy_type ...Types>
-  struct type_list_remove_last_<type_list<Type, Types...>> {
-    using type = type_list_concat<
-      type_list<Type>, 
-      type_list_remove_last<type_list<Types...>>
-    >;
-  };
+  template <hierarchy_type... Ts, hierarchy_type U, hierarchy_type... Us>
+  struct type_list_unique_<type_list<Ts...>, type_list<U, Us...>>
+    : std::conditional_t<
+        ((U == Ts) || ...),
+        type_list_unique_<type_list<Ts...>, type_list<Us...>>,
+        type_list_unique_<type_list<Ts..., U>, type_list<Us...>>
+    > { };
+
+  template <typename List>
+  using type_list_unique = typename type_list_unique_<type_list<>, List>::type;  
 
   template<typename List, hierarchy_type Type>
   struct type_list_contains_ : std::false_type { };

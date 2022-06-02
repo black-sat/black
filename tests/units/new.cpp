@@ -93,7 +93,7 @@ TEST_CASE("New API") {
   static_assert(!is_syntax_allowed<LTL, Boolean>);
 
   [[maybe_unused]]
-  formula<LTL> f10 = unary<LTL>(unary<LTL>::type::always, p);
+  formula<LTL> f10 = unary<LTL>(unary<LTLP>::type::w_yesterday, p);
   formula<LTL> f11 = always<LTL>(p);
 
   REQUIRE(f10 == f11);
@@ -101,7 +101,11 @@ TEST_CASE("New API") {
   [[maybe_unused]]
   formula<Boolean> f12 = negation<Boolean>(p);
 
-  unary<Boolean> f13 = negation<Boolean>(f12);
+  [[maybe_unused]]
+  unary<Boolean> f13 = negation<Boolean>(p);
 
-  formula<EUF> f14 = sigma.negative();
+  [[maybe_unused]]
+  formula<Test> f14 = negation<Test>(p);
+
+  
 }

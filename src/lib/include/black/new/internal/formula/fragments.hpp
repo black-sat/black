@@ -25,10 +25,10 @@
 #define BLACK_LOGIC_FRAGMENTS_HPP
 
 namespace black::internal::new_api {
-  
+
   #define declare_type_t(Element) \
     struct Element##_hierarchy_type_t { \
-      constexpr hierarchy_type type() const { \
+      static constexpr hierarchy_type type() { \
         return hierarchy_type::Element; \
       } \
     }; \
@@ -59,74 +59,81 @@ namespace black::internal::new_api {
 
   #undef declare_type_t
 
-  #define declare_fragment(Fragment) \
-    template<typename Derived, typename AcceptsType> \
-    struct Fragment##_type_base_t :
-  
-  #define allow(Fragment, Element) \
-    Element##_type_base_t<Derived, AcceptsType>,
+  template<typename Derived, typename AcceptsType, hierarchy_type Element>
+  struct type_base_t;
 
-  #define end_fragment(Fragment) \
-    dummy_t<Fragment##_type_base_t<Derived, AcceptsType>> { \
-      hierarchy_type value; \
-    };
+  template<typename Derived, typename AcceptsType>
+  struct type_base_t<Derived, AcceptsType, hierarchy_type::no_type> { };
 
-  #define declare_derived_fragment(Fragment, Parent) \
-    template<typename Derived, typename AcceptsType> \
-    struct Fragment##_type_base_t : Parent##_type_base_t<Derived, AcceptsType>,
-  
-  #define allow_also(Fragment, Element) \
-    Element##_type_base_t<Derived, AcceptsType>,
+  #define declare_type_t(Element) \
+  template<typename Derived, typename AcceptsType> \
+  struct type_base_t<Derived, AcceptsType, hierarchy_type::Element> \
+    : Element##_type_base_t<Derived, AcceptsType> { };
 
-  #define end_derived_fragment(Fragment, Parent) \
-    dummy_t<Fragment##_type_base_t<Derived, AcceptsType>> { \
-      hierarchy_type value; \
-    };
+  #define declare_leaf_storage_kind(Base, Storage) declare_type_t(Storage)
+  #define has_no_hierarchy_elements(Base, Storage) declare_type_t(Storage)
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    declare_type_t(Element)
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  #define declare_fragment(Fragment) \
-    template<typename AcceptsType> \
-    struct Fragment##_type \
-      : Fragment##_type_base_t<Fragment##_type<AcceptsType>, AcceptsType> \
-    { \
-      Fragment##_type() = delete; \
-      template<typename T> \
-      explicit constexpr Fragment##_type(T t) : _type{t.type()} { } \
-    \
-      hierarchy_type type() const { return _type; } \
-    private: \
-      hierarchy_type _type; \
-    };
+  #undef declare_type_t
 
-  #include <black/new/internal/formula/hierarchy.hpp>
+  template<typename Derived, typename AcceptsType, typename TypeList>
+  struct fragment_type_base_t;
+  
+  template<typename Derived, typename AcceptsType, hierarchy_type ...Types>
+  struct fragment_type_base_t<Derived, AcceptsType, type_list<Types...>>
+    : type_base_t<Derived, AcceptsType, Types>... { };
+
+  template<typename AcceptsType, typename TypeList>
+  struct fragment_type 
+    : fragment_type_base_t<
+        fragment_type<AcceptsType, TypeList>, AcceptsType, TypeList
+      > {
+    fragment_type() = delete;
+    
+    template<typename T, REQUIRES(type_list_contains<TypeList, T::type()>)>
+    explicit constexpr fragment_type(T) : _type{T::type()} { }
+
+    hierarchy_type type() const { return _type; }
+  private:
+    hierarchy_type _type;
+  };
+
+  template<hierarchy_type ...Types>
+  struct make_fragment {
+    using list = type_list_unique<type_list<Types...>>;
+    
+    template<typename AcceptsType>
+    using type = fragment_type<AcceptsType, list>;
+  };
+
+  template<typename Parent, hierarchy_type ...Types>
+  struct make_derived_fragment {
+    using list = type_list_unique<
+      type_list_concat<typename Parent::list, type_list<Types...>>
+    >;
+
+    template<typename AcceptsType>
+    using type = fragment_type<AcceptsType, list>;
+  };
 
   #define declare_fragment(Fragment) \
-    using Fragment##_type_list = type_list_remove_last<type_list<
+    struct Fragment : make_fragment<
 
   #define allow(Fragment, Element) hierarchy_type::Element,
-    
+  
   #define end_fragment(Fragment) \
-    hierarchy_type::no_type>>;
+    hierarchy_type::no_type> { };
 
   #define declare_derived_fragment(Fragment, Parent) \
-    using Fragment##_type_list = type_list_concat<Parent##_type_list, \
-      type_list_remove_last<type_list<
+    struct Fragment : make_derived_fragment<Parent,
 
   #define allow_also(Fragment, Element) hierarchy_type::Element,
-    
+  
   #define end_derived_fragment(Fragment, Parent) \
-    hierarchy_type::no_type>>>;
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #define declare_fragment(Fragment) \
-    struct Fragment { \
-      template<typename AcceptsType> \
-      using type = Fragment##_type<AcceptsType>; \
-      \
-      using list = Fragment##_type_list; \
-    };
+    hierarchy_type::no_type> { };
 
   #include <black/new/internal/formula/hierarchy.hpp>
 }
