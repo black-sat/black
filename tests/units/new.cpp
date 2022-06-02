@@ -65,7 +65,7 @@ TEST_CASE("New API") {
   auto [u2, p2] = conjunction<LTL>(u, p);
 
   REQUIRE(u2 == u);
-  // REQUIRE(p2 == p);
+  REQUIRE(p2 == p);
 
   [[maybe_unused]] 
   function<LTL> func = sigma.negative();
@@ -84,8 +84,8 @@ TEST_CASE("New API") {
   LTL::type<formula_accepts_type> t = 
     LTL::type<formula_accepts_type>::boolean;
 
-  static_assert(type_list_contains<LTL::list, hierarchy_type::conjunction>);
-  static_assert(!type_list_contains<LTL::list, hierarchy_type::historically>);
+  static_assert(type_list_contains<LTL::list, syntax_element::conjunction>);
+  static_assert(!type_list_contains<LTL::list, syntax_element::historically>);
   static_assert(type_list_includes<LTL::list, Boolean::list>);
   static_assert(!type_list_includes<Boolean::list, LTL::list>);
 
@@ -93,7 +93,10 @@ TEST_CASE("New API") {
   static_assert(!is_syntax_allowed<LTL, Boolean>);
 
   [[maybe_unused]]
-  formula<LTL> f10 = unary<LTL>(unary<LTLP>::type::w_yesterday, p);
+  formula<LTL> f20 = binary<LTL>(binary<LTL>::type::conjunction, u, p);
+
+  [[maybe_unused]]
+  formula<LTL> f10 = unary<LTL>(unary<LTL>::type::always, p);
   formula<LTL> f11 = always<LTL>(p);
 
   REQUIRE(f10 == f11);
@@ -104,8 +107,26 @@ TEST_CASE("New API") {
   [[maybe_unused]]
   unary<Boolean> f13 = negation<Boolean>(p);
 
-  [[maybe_unused]]
-  formula<Test> f14 = negation<Test>(p);
+  formula<LTL> f14 = negation<LTL>(formula<LTL>{p});
 
+  REQUIRE(f14.is<negation<LTLP>>());
+  REQUIRE(!f14.is<negation<Boolean>>());
+  REQUIRE(f14.is<unary<LTLP>>());
+  REQUIRE(!f14.is<unary<Boolean>>());
+  REQUIRE(!f14.is<proposition>());
+
+  struct props : make_fragment<syntax_element::proposition> { };
+  struct untilprops : make_derived_fragment<props, syntax_element::until> { };
+
+  [[maybe_unused]]
+  formula<untilprops> f = until<untilprops>(p, p);
+
+  variable x = sigma.variable("x");
+
+  [[maybe_unused]]
+  tsl::hopscotch_map<variable, std::string> map;
+
+  [[maybe_unused]]
+  formula<LTLFO> f30 = conjunction<LTLFO>(until<LTL>(p,p), forall<FO>(x, p));
   
 }

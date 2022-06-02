@@ -27,9 +27,9 @@
 namespace black::internal::new_api {
 
   #define declare_type_t(Element) \
-    struct Element##_hierarchy_type_t { \
-      static constexpr hierarchy_type type() { \
-        return hierarchy_type::Element; \
+    struct Element##_syntax_element_t { \
+      static constexpr syntax_element type() { \
+        return syntax_element::Element; \
       } \
     }; \
     \
@@ -39,7 +39,7 @@ namespace black::internal::new_api {
     template<typename Derived> \
     struct Element##_type_base_t_<Derived, true> { \
       static constexpr Derived Element = Derived{ \
-        Element##_hierarchy_type_t{} \
+        Element##_syntax_element_t{} \
       }; \
     }; \
     \
@@ -47,7 +47,7 @@ namespace black::internal::new_api {
     struct Element##_type_base_t \
       : Element##_type_base_t_< \
           Derived,  \
-          AcceptsType::doesit(hierarchy_type::Element) \
+          AcceptsType::doesit(syntax_element::Element) \
     > { };
 
   #define declare_leaf_storage_kind(Base, Storage) declare_type_t(Storage)
@@ -59,15 +59,15 @@ namespace black::internal::new_api {
 
   #undef declare_type_t
 
-  template<typename Derived, typename AcceptsType, hierarchy_type Element>
+  template<typename Derived, typename AcceptsType, syntax_element Element>
   struct type_base_t;
 
   template<typename Derived, typename AcceptsType>
-  struct type_base_t<Derived, AcceptsType, hierarchy_type::no_type> { };
+  struct type_base_t<Derived, AcceptsType, syntax_element::no_type> { };
 
   #define declare_type_t(Element) \
   template<typename Derived, typename AcceptsType> \
-  struct type_base_t<Derived, AcceptsType, hierarchy_type::Element> \
+  struct type_base_t<Derived, AcceptsType, syntax_element::Element> \
     : Element##_type_base_t<Derived, AcceptsType> { };
 
   #define declare_leaf_storage_kind(Base, Storage) declare_type_t(Storage)
@@ -82,7 +82,7 @@ namespace black::internal::new_api {
   template<typename Derived, typename AcceptsType, typename TypeList>
   struct fragment_type_base_t;
   
-  template<typename Derived, typename AcceptsType, hierarchy_type ...Types>
+  template<typename Derived, typename AcceptsType, syntax_element ...Types>
   struct fragment_type_base_t<Derived, AcceptsType, type_list<Types...>>
     : type_base_t<Derived, AcceptsType, Types>... { };
 
@@ -96,12 +96,12 @@ namespace black::internal::new_api {
     template<typename T, REQUIRES(type_list_contains<TypeList, T::type()>)>
     explicit constexpr fragment_type(T) : _type{T::type()} { }
 
-    hierarchy_type type() const { return _type; }
+    syntax_element type() const { return _type; }
   private:
-    hierarchy_type _type;
+    syntax_element _type;
   };
 
-  template<hierarchy_type ...Types>
+  template<syntax_element ...Types>
   struct make_fragment {
     using list = type_list_unique<type_list<Types...>>;
     
@@ -109,7 +109,7 @@ namespace black::internal::new_api {
     using type = fragment_type<AcceptsType, list>;
   };
 
-  template<typename Parent, hierarchy_type ...Types>
+  template<typename Parent, syntax_element ...Types>
   struct make_derived_fragment {
     using list = type_list_unique<
       type_list_concat<typename Parent::list, type_list<Types...>>
@@ -119,21 +119,42 @@ namespace black::internal::new_api {
     using type = fragment_type<AcceptsType, list>;
   };
 
+  template<typename ...Syntaxes>
+  struct make_combined_fragment;
+
+  template<typename Syntax>
+  struct make_combined_fragment<Syntax> : Syntax { };
+
+  template<typename Syntax, typename ...Syntaxes>
+  struct make_combined_fragment<Syntax, Syntaxes...> {
+    using list = type_list_unique<
+      type_list_concat<
+        typename Syntax::list, 
+        typename make_combined_fragment<Syntaxes...>::list
+      >>;
+
+    template<typename AcceptsType>
+    using type = fragment_type<AcceptsType, list>;
+  };
+
   #define declare_fragment(Fragment) \
     struct Fragment : make_fragment<
 
-  #define allow(Fragment, Element) hierarchy_type::Element,
+  #define allow(Fragment, Element) syntax_element::Element,
   
   #define end_fragment(Fragment) \
-    hierarchy_type::no_type> { };
+    syntax_element::no_type> { };
 
   #define declare_derived_fragment(Fragment, Parent) \
     struct Fragment : make_derived_fragment<Parent,
 
-  #define allow_also(Fragment, Element) hierarchy_type::Element,
+  #define allow_also(Fragment, Element) syntax_element::Element,
   
   #define end_derived_fragment(Fragment, Parent) \
-    hierarchy_type::no_type> { };
+    syntax_element::no_type> { };
+
+  #define declare_combined_fragment(Fragment, ...) \
+    struct Fragment : make_combined_fragment<__VA_ARGS__> { };
 
   #include <black/new/internal/formula/hierarchy.hpp>
 }

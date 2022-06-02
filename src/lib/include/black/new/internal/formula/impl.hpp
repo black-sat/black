@@ -46,7 +46,7 @@ namespace black::internal::new_api {
   #define declare_storage_kind(Base, Storage) \
     struct Storage##_t : Base##_base { \
       \
-      Storage##_t(hierarchy_type t, Storage##_data_t _data) \
+      Storage##_t(syntax_element t, Storage##_data_t _data) \
         : Base##_base{t}, data{_data} { \
           black_assert(is_##Storage##_type(t)); \
         } \
@@ -86,7 +86,7 @@ namespace black::internal::new_api {
   #define declare_leaf_storage_kind(Base, Storage) \
     template<typename Syntax> \
     template< \
-      REQUIRES_OUT_OF_LINE(is_type_allowed<hierarchy_type::Storage, Syntax>) \
+      REQUIRES_OUT_OF_LINE(is_type_allowed<syntax_element::Storage, Syntax>) \
     > \
     Base<Syntax>::Base(Storage const&s) \
       : _sigma{s._sigma}, _element{s._element} { }
@@ -103,7 +103,7 @@ namespace black::internal::new_api {
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
     template< \
-      REQUIRES_OUT_OF_LINE(is_type_allowed<hierarchy_type::Element, Syntax>) \
+      REQUIRES_OUT_OF_LINE(is_type_allowed<syntax_element::Element, Syntax>) \
     > \
     Base<Syntax>::Base(Element const&e) \
       : _sigma{e._sigma}, _element{e._element} { }
@@ -114,7 +114,27 @@ namespace black::internal::new_api {
     template<typename Syntax> \
     template< \
       typename ...Args, \
-      REQUIRES_OUT_OF_LINE((is_argument_allowed<Args, Syntax> && ...)) \
+      REQUIRES_OUT_OF_LINE( \
+        Storage##_has_hierarchy_elements() && \
+        (is_argument_allowed<Args, Syntax> && ...) \
+      ) \
+    > \
+    Storage<Syntax>::Storage(type t, Args ...args) \
+      : _sigma{get_sigma(args...)}, \
+        _element{ \
+          get_sigma(args...)->_impl->allocate_##Storage( \
+            t.type(), \
+            Base##_handle_args(args)... \
+          ) \
+        } { } \
+    \
+    template<typename Syntax> \
+    template< \
+      typename ...Args, \
+      REQUIRES_OUT_OF_LINE( \
+        !Storage##_has_hierarchy_elements() && \
+        (is_argument_allowed<Args, Syntax> && ...) \
+      ) \
     > \
     Storage<Syntax>::Storage(Args ...args) \
       : _sigma{get_sigma(args...)}, \
@@ -141,9 +161,7 @@ namespace black::internal::new_api {
       REQUIRES_OUT_OF_LINE(is_syntax_allowed<Syntax2, Syntax>) \
     > \
     Storage<Syntax>::Storage(Element<Syntax2> const&e) \
-      : Storage{e._sigma, e._element} { \
-      std::cerr << #Storage "<Syntax>(" #Element "<Syntax2>)\n"; \
-    }
+      : Storage{e._sigma, e._element} { }
   
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
@@ -162,7 +180,7 @@ namespace black::internal::new_api {
       : _sigma{get_sigma(args...)}, \
         _element{ \
           get_sigma(args...)->_impl->allocate_##Storage( \
-            hierarchy_type::Element, \
+            syntax_element::Element, \
             Base##_handle_args(args)... \
           ) \
         } { }
@@ -173,7 +191,7 @@ namespace black::internal::new_api {
       : _sigma{get_sigma(args...)}, \
         _element{ \
           get_sigma(args...)->_impl->allocate_##Storage( \
-            hierarchy_type::Element, \
+            syntax_element::Element, \
             Base##_handle_args(args)... \
           ) \
         } { }

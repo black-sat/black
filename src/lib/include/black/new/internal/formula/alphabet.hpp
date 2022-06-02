@@ -30,7 +30,7 @@ namespace black::internal::new_api {
   // class alphabet, with all the allocator classes
   //
   #define declare_storage_kind(Base, Storage) \
-    using Storage##_key = std::tuple<hierarchy_type,
+    using Storage##_key = std::tuple<syntax_element,
   #define declare_field(Base, Storage, Type, Field) Type,
   #define declare_child(Base, Storage, Child) Base##_base *,
   #define end_storage_kind(Base, Storage) void*>;
@@ -48,7 +48,7 @@ namespace black::internal::new_api {
   #define declare_storage_kind(Base, Storage) \
     struct Storage##_allocator : Storage##_storage { \
       template<typename ...Args> \
-      Storage##_t *allocate_##Storage(hierarchy_type t, Args ...args) { \
+      Storage##_t *allocate_##Storage(syntax_element t, Args ...args) { \
         black_assert(Storage::accepts_type::doesit(t)); \
         auto it = Storage##_map.find(Storage##_key{t, args...,nullptr}); \
         if(it != Storage##_map.end()) \
@@ -89,7 +89,7 @@ namespace black::internal::new_api {
       class Storage Storage(Args ...args) { \
         return \
           ::black::internal::new_api::Storage{ \
-            this, _impl->allocate_##Storage(hierarchy_type::Storage, args...) \
+            this, _impl->allocate_##Storage(syntax_element::Storage, args...) \
           }; \
       }
 
@@ -98,7 +98,7 @@ namespace black::internal::new_api {
       class Element Element(Args ...args) { \
         return \
           ::black::internal::new_api::Element{ \
-            this, _impl->allocate_##Storage(hierarchy_type::Element, args...) \
+            this, _impl->allocate_##Storage(syntax_element::Element, args...) \
           }; \
       }
 

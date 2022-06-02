@@ -29,7 +29,6 @@
 
 #include <type_traits>
 #include <variant>
-#include <iostream>
 
 namespace std {
   template<typename T>
@@ -97,15 +96,15 @@ namespace black::internal::new_api {
   struct has_member_type<T, std::void_t<decltype(std::declval<T>().type())>>
     : std::true_type { };
 
-  enum class hierarchy_type : uint8_t;
+  enum class syntax_element : uint8_t;
 
-  template<hierarchy_type ...Types>
+  template<syntax_element ...Types>
   struct type_list { };
 
   template<typename T, typename U>
   struct type_list_concat_;
 
-  template<hierarchy_type ...Types1, hierarchy_type ...Types2>
+  template<syntax_element ...Types1, syntax_element ...Types2>
   struct type_list_concat_<type_list<Types1...>, type_list<Types2...>> {
     using type = type_list<Types1..., Types2...>;
   };
@@ -118,7 +117,7 @@ namespace black::internal::new_api {
     using type = T;
   };
 
-  template <hierarchy_type... Ts, hierarchy_type U, hierarchy_type... Us>
+  template <syntax_element... Ts, syntax_element U, syntax_element... Us>
   struct type_list_unique_<type_list<Ts...>, type_list<U, Us...>>
     : std::conditional_t<
         ((U == Ts) || ...),
@@ -129,24 +128,24 @@ namespace black::internal::new_api {
   template <typename List>
   using type_list_unique = typename type_list_unique_<type_list<>, List>::type;  
 
-  template<typename List, hierarchy_type Type>
+  template<typename List, syntax_element Type>
   struct type_list_contains_ : std::false_type { };
 
-  template<hierarchy_type ...Types, hierarchy_type Type>
+  template<syntax_element ...Types, syntax_element Type>
   struct type_list_contains_<type_list<Type, Types...>, Type> 
     : std::true_type { };
 
-  template<hierarchy_type ...Types, hierarchy_type Type1, hierarchy_type Type2>
+  template<syntax_element ...Types, syntax_element Type1, syntax_element Type2>
   struct type_list_contains_<type_list<Type1, Types...>, Type2> 
     : type_list_contains_<type_list<Types...>, Type2> { };
 
-  template<typename List, hierarchy_type Type>
+  template<typename List, syntax_element Type>
   constexpr bool type_list_contains = type_list_contains_<List, Type>::value;
 
   template<typename List, typename SubList>
   struct type_list_includes_ : std::false_type { };
 
-  template<typename List, hierarchy_type ...Types>
+  template<typename List, syntax_element ...Types>
   struct type_list_includes_<List, type_list<Types...>> {
     static constexpr bool value = (type_list_contains<List, Types> && ...);
   };
@@ -161,7 +160,7 @@ namespace black::internal::new_api {
       typename Syntax::list
     >;
 
-  template<hierarchy_type Type, typename Allowed>
+  template<syntax_element Type, typename Allowed>
   constexpr bool is_type_allowed = 
     type_list_contains<typename Allowed::list, Type>;
 
