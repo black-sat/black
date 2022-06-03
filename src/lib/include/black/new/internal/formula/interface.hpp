@@ -158,49 +158,38 @@ namespace black::internal::new_api
     class Base : public Base##_custom_members_t<Base<Syntax>> \
     { \
     public: \
-      using type = black::internal::new_api::syntax_element; \
       using syntax = Syntax; \
       using accepts_type = Base##_accepts_type; \
+      using type = typename Syntax::template type<accepts_type>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
       \
       Base() = delete; \
       Base(Base const&) = default; \
       Base(Base &&) = default; \
       \
-      Base(alphabet *sigma, Base##_base *element) \
-        : _sigma{sigma}, _element{element} { } \
-      \
-      template<typename Syntax2, REQUIRES(is_syntax_allowed<Syntax2, Syntax>)> \
-      Base(Base<Syntax2> const& b);
-      
-  #define declare_storage_kind(Base, Storage) \
-      template<typename Syntax2, REQUIRES(is_syntax_allowed<Syntax2, Syntax>)> \
-      Base(Storage<Syntax2> const&s); \
-      \
-      template<typename Syntax2, REQUIRES(!is_syntax_allowed<Syntax2, Syntax>)>\
-      Base(Storage<Syntax2> const&s) = delete;
-  
-  #define declare_leaf_storage_kind(Base, Storage) \
-      template<REQUIRES(is_type_allowed<syntax_element::Storage, Syntax>)> \
-      Base(Storage const&s);
-  
-  #define declare_hierarchy_element(Base, Storage, Element) \
-      template<typename Syntax2, REQUIRES(is_syntax_allowed<Syntax2, Syntax>)> \
-      Base(Element<Syntax2> const&s); \
-      \
-      template<typename Syntax2, REQUIRES(!is_syntax_allowed<Syntax2, Syntax>)>\
-      Base(Element<Syntax2> const&s) = delete;
-  
-  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-      template<REQUIRES(is_type_allowed<syntax_element::Element, Syntax>)> \
-      Base(Element const&s);
-
-  #define end_hierarchy(Base) \
       Base &operator=(Base const&) = default; \
       Base &operator=(Base &&) = default; \
       \
-      template<typename Syntax2, REQUIRES(is_syntax_allowed<Syntax2, Syntax>)> \
-      Base &operator=(Base<Syntax2> const& b); \
+      Base(alphabet *sigma, Base##_base *element) \
+        : _sigma{sigma}, _element{element} { } \
+      \
+      template< \
+        typename H, \
+        REQUIRES( \
+          H::hierarchy == hierarchy_type::Base && \
+          is_syntax_allowed<typename H::syntax, Syntax> \
+        ) \
+      > \
+      Base(H const& h); \
+      \
+      template< \
+        typename H, \
+        REQUIRES( \
+          H::hierarchy == hierarchy_type::Base && \
+          is_syntax_allowed<typename H::syntax, Syntax> \
+        ) \
+      > \
+      Base &operator=(H const& h); \
       \
       template<typename H> \
       std::optional<H> to() const { \

@@ -93,57 +93,29 @@ namespace black::internal::new_api {
   #define declare_hierarchy(Base) \
     template<typename Syntax> \
     template< \
-      typename Syntax2, \
-      REQUIRES_OUT_OF_LINE(is_syntax_allowed<Syntax2, Syntax>) \
-    > \
-    Base<Syntax>::Base(Base<Syntax2> const& b) \
-      : _sigma{b._sigma}, _element{b._element} { } \
+        typename H, \
+        REQUIRES_OUT_OF_LINE( \
+          H::hierarchy == hierarchy_type::Base && \
+          is_syntax_allowed<typename H::syntax, Syntax> \
+        ) \
+      > \
+    Base<Syntax>::Base(H const& h) \
+      : _sigma{h._sigma}, _element{h._element} { } \
     \
     template<typename Syntax> \
     template< \
-      typename Syntax2, \
-      REQUIRES_OUT_OF_LINE(is_syntax_allowed<Syntax2, Syntax>) \
+      typename H, \
+      REQUIRES_OUT_OF_LINE( \
+        H::hierarchy == hierarchy_type::Base && \
+        is_syntax_allowed<typename H::syntax, Syntax> \
+      ) \
     > \
-    Base<Syntax> &Base<Syntax>::operator=(Base<Syntax2> const& b) { \
-      _sigma = b._sigma; \
-      _element = b._element; \
+    Base<Syntax> &Base<Syntax>::operator=(H const& h) { \
+      _sigma = h._sigma; \
+      _element = h._element; \
       \
       return *this; \
     }
-
-  #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax> \
-    template< \
-      typename Syntax2, \
-      REQUIRES_OUT_OF_LINE(is_syntax_allowed<Syntax2, Syntax>) \
-    > \
-    Base<Syntax>::Base(Storage<Syntax2> const&s) \
-      : _sigma{s._sigma}, _element{s._element} { }
-
-  #define declare_leaf_storage_kind(Base, Storage) \
-    template<typename Syntax> \
-    template< \
-      REQUIRES_OUT_OF_LINE(is_type_allowed<syntax_element::Storage, Syntax>) \
-    > \
-    Base<Syntax>::Base(Storage const&s) \
-      : _sigma{s._sigma}, _element{s._element} { }
-
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    template<typename Syntax> \
-    template< \
-      typename Syntax2, \
-      REQUIRES_OUT_OF_LINE(is_syntax_allowed<Syntax2, Syntax>) \
-    > \
-    Base<Syntax>::Base(Element<Syntax2> const&e) \
-       : _sigma{e._sigma}, _element{e._element} { }
-
-  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    template<typename Syntax> \
-    template< \
-      REQUIRES_OUT_OF_LINE(is_type_allowed<syntax_element::Element, Syntax>) \
-    > \
-    Base<Syntax>::Base(Element const&e) \
-      : _sigma{e._sigma}, _element{e._element} { }
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
