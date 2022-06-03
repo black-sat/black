@@ -28,6 +28,9 @@
 #ifndef declare_hierarchy
   #define declare_hierarchy(Base)
 #endif
+#ifndef declare_custom_members
+  #define declare_custom_members(Base, Class)
+#endif
 #ifndef declare_storage_kind
   #define declare_storage_kind(Base, Storage)
 #endif
@@ -89,6 +92,7 @@
 #endif 
 
 declare_hierarchy(function)
+  declare_custom_members(function, function_call_operator_t)
   declare_leaf_storage_kind(function, function_symbol)
     declare_field(function, function_symbol, identifier, label)
   end_leaf_storage_kind(function, function_symbol)
@@ -102,6 +106,7 @@ declare_hierarchy(function)
 end_hierarchy(function)
 
 declare_hierarchy(relation)
+  declare_custom_members(function, relation_call_operator_t)
   declare_leaf_storage_kind(relation, relation_symbol)
     declare_field(relation, relation_symbol, identifier, label)
   end_leaf_storage_kind(relation, relation_symbol)
@@ -273,6 +278,7 @@ declare_combined_fragment(LTLFO, LTL, FO)
 declare_combined_fragment(LTLPFO, LTLP, FO)
 
 #undef declare_hierarchy
+#undef declare_custom_members
 #undef declare_storage_kind
 #undef declare_leaf_storage_kind
 #undef declare_field

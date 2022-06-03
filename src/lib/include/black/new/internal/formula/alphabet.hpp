@@ -78,7 +78,7 @@ namespace black::internal::new_api {
         children.push_back(h._element);
     }
 
-    std::vector<hierarchy_type_of<Hierarchy> *> children;
+    std::vector<hierarchy_base_type_of<Hierarchy> *> children;
   };
 
   #define declare_storage_kind(Base, Storage) \

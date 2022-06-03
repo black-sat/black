@@ -134,7 +134,21 @@ TEST_CASE("New API") {
   static_assert(is_argument_allowed<function_symbol, FO>);
   
   function_symbol fs = sigma.function_symbol("f");
+  relation_symbol rs = sigma.relation_symbol("r");
 
   [[maybe_unused]]
   term<FO> t40 = application<FO>(fs, std::vector{x});
+
+  [[maybe_unused]]
+  term<FO> t50 = fs(x);
+
+  [[maybe_unused]]
+  term<FO> t60 = fs(std::vector{x,x});
+  
+  [[maybe_unused]]
+  formula<FO> a50 = rs(x);
+
+  [[maybe_unused]]
+  formula<FO> a60 = rs(std::vector{x,x});
+
 }

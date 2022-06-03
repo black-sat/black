@@ -140,9 +140,22 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
   
+  struct dummy_t {};
+
+  #define declare_hierarchy(Base) \
+    template<typename Derived> \
+    struct Base##_custom_members_t :
+  
+  #define declare_custom_members(Base, Class) Class<Derived>, 
+
+  #define end_hierarchy(Base) \
+    dummy_t { };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
   #define declare_hierarchy(Base) \
     template<typename Syntax> \
-    class Base \
+    class Base : public Base##_custom_members_t<Base<Syntax>> \
     { \
     public: \
       using type = black::internal::new_api::syntax_element; \
@@ -252,15 +265,30 @@ namespace black::internal::new_api
 
   
   template<hierarchy_type H>
-  struct hierarchy_type_of_;
+  struct hierarchy_base_type_of_;
 
   template<hierarchy_type H>
-  using hierarchy_type_of = typename hierarchy_type_of_<H>::type;
+  using hierarchy_base_type_of = typename hierarchy_base_type_of_<H>::type;
   
   #define declare_hierarchy(Base) \
     template<> \
-    struct hierarchy_type_of_<hierarchy_type::Base> { \
+    struct hierarchy_base_type_of_<hierarchy_type::Base> { \
       using type = Base##_base; \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  template<typename Syntax, hierarchy_type H>
+  struct hierarchy_type_of_;
+
+  template<typename Syntax, hierarchy_type H>
+  using hierarchy_type_of = 
+    typename hierarchy_type_of_<Syntax, H>::type;
+  
+  #define declare_hierarchy(Base) \
+    template<typename Syntax> \
+    struct hierarchy_type_of_<Syntax, hierarchy_type::Base> { \
+      using type = Base<Syntax>; \
     };
 
   #include <black/new/internal/formula/hierarchy.hpp>
@@ -342,7 +370,8 @@ namespace black::internal::new_api
     template<typename Syntax> \
     class Storage : \
       public Storage##_fields<Storage<Syntax>>, \
-      public Storage##_children<Syntax, Storage<Syntax>> \
+      public Storage##_children<Syntax, Storage<Syntax>>, \
+      Base##_custom_members_t<Storage<Syntax>> \
     { \
       friend struct Storage##_fields<Storage<Syntax>>; \
       friend struct Storage##_children<Syntax, Storage<Syntax>>; \
@@ -425,7 +454,10 @@ namespace black::internal::new_api
     };
 
   #define declare_leaf_storage_kind(Base, Storage) \
-    class Storage : public Storage##_fields<Storage> { \
+    class Storage : \
+      public Storage##_fields<Storage>, \
+      public Base##_custom_members_t<Storage> \
+    { \
       \
       friend struct Storage##_fields<Storage>; \
     public: \
@@ -438,9 +470,6 @@ namespace black::internal::new_api
       \
       Storage(class alphabet *sigma, Storage##_t *element) \
         : _sigma{sigma}, _element{element} { } \
-      \
-      template<typename ...Args> \
-      Storage(Args ...args); \
       \
       Storage &operator=(Storage const&) = default; \
       Storage &operator=(Storage &&) = default; \
@@ -474,7 +503,8 @@ namespace black::internal::new_api
     template<typename Syntax> \
     class Element : \
       public Storage##_fields<Element<Syntax>>, \
-      public Storage##_children<Syntax, Element<Syntax>> \
+      public Storage##_children<Syntax, Element<Syntax>>, \
+      public Base##_custom_members_t<Element<Syntax>> \
     { \
       friend struct Storage##_fields<Element<Syntax>>; \
       friend struct Storage##_children<Syntax, Element<Syntax>>; \
@@ -528,7 +558,10 @@ namespace black::internal::new_api
     };
   
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    class Element : public Storage##_fields<Element> { \
+    class Element : \
+      public Storage##_fields<Element>, \
+      public Base##_custom_members_t<Element> \
+    { \
       friend struct Storage##_fields<Element>; \
     public: \
       using accepts_type = Element##_accepts_type; \
@@ -539,9 +572,6 @@ namespace black::internal::new_api
       Element(Element &&) = default; \
       \
       Element(class alphabet *sigma, Storage##_t *element); \
-      \
-      template<typename ...Args> \
-      Element(Args ...args); \
       \
       Element &operator=(Element const&) = default; \
       Element &operator=(Element &&) = default; \

@@ -146,6 +146,7 @@ namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  #define declare_leaf_storage_kind(Base, Storage)
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
     template< \
@@ -178,20 +179,6 @@ namespace black::internal::new_api {
             Storage##_args_to_key( \
               Storage##_alloc_args<Storage::syntax>{ \
                 Storage##_syntax_element(), args... \
-              } \
-            ) \
-          ) \
-        } { }
-
-  #define declare_leaf_storage_kind(Base, Storage) \
-    template<typename ...Args> \
-    Storage::Storage(Args ...args) \
-      : _sigma{get_sigma(args...)}, \
-        _element{ \
-          get_sigma(args...)->allocate_##Storage( \
-            Storage##_args_to_key( \
-              Storage##_alloc_args<Storage::syntax>{ \
-                syntax_element::Storage, args... \
               } \
             ) \
           ) \
@@ -236,19 +223,6 @@ namespace black::internal::new_api {
         } 
 
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-  template<typename ...Args> \
-    Element::Element(Args ...args) \
-      : _sigma{get_sigma(args...)}, \
-        _element{ \
-          get_sigma(args...)->allocate_##Storage( \
-            Storage##_args_to_key( \
-              Storage##_alloc_args<Element::syntax>{ \
-                syntax_element::Element, args... \
-              } \
-            ) \
-          ) \
-        } { } \
-    \
     Element::Element(class alphabet *sigma, Storage##_t *element) \
         : _sigma{sigma}, _element{element} { \
           black_assert(_element->type == syntax_element::Element); \
