@@ -176,11 +176,6 @@ namespace black::internal::new_api {
   template<typename T, typename Allowed>
   constexpr bool is_argument_allowed = is_argument_allowed_<T, Allowed>::value;
 
-  template<size_t N, typename ...Args, REQUIRES(N < sizeof...(Args))>
-  auto nth_of(Args ...args) {
-    return std::get<N>(std::make_tuple(args...));
-  }
-
   template<typename Derived>
   struct function_call_operator_t {
     template<typename Arg, typename ...Args>

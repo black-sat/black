@@ -67,7 +67,7 @@ TEST_CASE("New API") {
   REQUIRE(p2 == p);
 
   [[maybe_unused]] 
-  known_func<LTL> func = sigma.negative();
+  known_func<LTLFO> func = sigma.negative();
   
   REQUIRE(func.is<negative>());
 
@@ -151,9 +151,15 @@ TEST_CASE("New API") {
   [[maybe_unused]]
   formula<FO> a60 = rs(std::vector{x,x});
 
-
   formula<LTL> f400 = sigma.boolean(true);
   formula<LTLFO> f500 = f400;
 
   f500 = rs(x);
+
+  f500 = f400;
+
+  unary<LTLFO> u100 = unary<LTLFO>(unary<LTLFO>::type::always, p);
+  unary<LTL> u200 = unary<LTL>(unary<LTL>::type::negation, p);
+
+  u100 = u200;
 }

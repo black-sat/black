@@ -81,10 +81,32 @@ namespace black::internal::new_api {
     std::vector<hierarchy_base_type_of<Hierarchy> *> children;
   };
 
+  #define declare_leaf_storage_kind(Base, Storage)
+  #define declare_storage_kind(Base, Storage) \
+    template<typename Syntax, bool B = true> \
+    struct Storage##_alloc_args_type { \
+      int x; \
+    }; \
+    \
+    template<typename Syntax> \
+    struct Storage##_alloc_args_type< \
+      Syntax, \
+      Storage##_has_hierarchy_elements() \
+    > { \
+      int x; \
+      typename Storage<Syntax>::type type; \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
+    struct Storage##_alloc_args : Storage##_alloc_args_type<Syntax> { \
+  
+  #define declare_leaf_storage_kind(Base, Storage) \
+    template<typename Syntax> \
     struct Storage##_alloc_args { \
-      syntax_element type;
+      int x;
 
   #define declare_field(Base, Storage, Type, Field) Type Field;
 
@@ -113,12 +135,12 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax> \
+    template<typename Syntax, REQUIRES(Storage##_has_hierarchy_elements())> \
     Storage##_key Storage##_args_to_key( \
       Storage##_alloc_args<Syntax> const&args \
     ) { \
       return Storage##_key { \
-        args.type,
+        args.type.type(),
 
   #define declare_field(Base, Storage, Type, Field) args.Field,
 
@@ -130,6 +152,27 @@ namespace black::internal::new_api {
   #define end_storage_kind(Base, Storage) \
       }; \
     }
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    template<typename Syntax, REQUIRES(!Storage##_has_hierarchy_elements())> \
+    Storage##_key Storage##_args_to_key( \
+      [[maybe_unused]] Storage##_alloc_args<Syntax> const&args \
+    ) { \
+      return Storage##_key { \
+        syntax_element::no_type,
+
+  #define declare_field(Base, Storage, Type, Field) args.Field,
+
+  #define declare_child(Base, Storage, Hierarchy, Child) args.Child._element,
+
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    args.Children.children,
+
+  #define end_storage_kind(Base, Storage) \
+      }; \
+   }
 
   #include <black/new/internal/formula/hierarchy.hpp>
 

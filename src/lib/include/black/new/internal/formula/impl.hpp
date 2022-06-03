@@ -100,22 +100,7 @@ namespace black::internal::new_api {
         ) \
       > \
     Base<Syntax>::Base(H const& h) \
-      : _sigma{h._sigma}, _element{h._element} { } \
-    \
-    template<typename Syntax> \
-    template< \
-      typename H, \
-      REQUIRES_OUT_OF_LINE( \
-        H::hierarchy == hierarchy_type::Base && \
-        is_syntax_allowed<typename H::syntax, Syntax> \
-      ) \
-    > \
-    Base<Syntax> &Base<Syntax>::operator=(H const& h) { \
-      _sigma = h._sigma; \
-      _element = h._element; \
-      \
-      return *this; \
-    }
+      : _sigma{h._sigma}, _element{h._element} { }
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
@@ -139,59 +124,38 @@ namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+
   #define declare_leaf_storage_kind(Base, Storage)
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
     template< \
       typename ...Args, \
       REQUIRES_OUT_OF_LINE( \
-        (Storage##_has_hierarchy_elements() && \
-        (is_argument_allowed<Args, Syntax> && ...)) \
-      ) \
-    > \
-    Storage<Syntax>::Storage(type t, Args ...args) \
-      : _sigma{get_sigma(args...)}, \
-        _element{ \
-          get_sigma(args...)->allocate_##Storage( \
-            Storage##_args_to_key<Syntax>({t.type(), args...}) \
-          ) \
-        } { } \
-    \
-    template<typename Syntax> \
-    template< \
-      typename ...Args, \
-      REQUIRES_OUT_OF_LINE( \
-        (!Storage##_has_hierarchy_elements() && \
-        (is_argument_allowed<Args, Syntax> && ...)) \
+        is_aggregate_constructible< \
+          Storage##_alloc_args<Syntax>, int, Args... \
+        > \
       ) \
     > \
     Storage<Syntax>::Storage(Args ...args) \
       : _sigma{get_sigma(args...)}, \
         _element{ \
           get_sigma(args...)->allocate_##Storage( \
-            Storage##_args_to_key( \
-              Storage##_alloc_args<Storage::syntax>{ \
-                Storage##_syntax_element(), args... \
-              } \
+            Storage##_args_to_key<Syntax>( \
+              Storage##_alloc_args<Syntax>{0, args...} \
             ) \
           ) \
-        } { }
-      
-  #define declare_hierarchy_element(Base, Storage, Element) \
+        } { } \
+    \
     template<typename Syntax> \
-    template< \
-      typename Syntax2, \
-      REQUIRES_OUT_OF_LINE(is_syntax_allowed<Syntax2, Syntax>) \
-    > \
-    Storage<Syntax>::Storage(Element<Syntax2> const&e) \
-      : Storage{e._sigma, e._element} { }
-  
-  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    template<typename Syntax> \
-    Storage<Syntax>::Storage(Element const&e) \
-      : Storage{e._sigma, e._element} { }
-
-  #include <black/new/internal/formula/hierarchy.hpp>
+      template< \
+          typename H, \
+          REQUIRES_OUT_OF_LINE( \
+            H::storage == storage_type::Storage && \
+            is_syntax_allowed<typename H::syntax, Syntax> \
+          ) \
+        > \
+        Storage<Syntax>::Storage(H const&e) \
+          : _sigma{e._sigma}, _element{e._element} { }
 
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
@@ -204,7 +168,10 @@ namespace black::internal::new_api {
         _element{ \
           get_sigma(args...)->allocate_##Storage( \
             Storage##_args_to_key( \
-              Storage##_alloc_args<Syntax>{syntax_element::Element, args...} \
+              Storage##_alloc_args<Syntax>{0, \
+                Storage<Syntax>::type::Element, \
+                args... \
+              } \
             ) \
           ) \
         } { } \
