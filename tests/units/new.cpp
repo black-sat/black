@@ -151,4 +151,9 @@ TEST_CASE("New API") {
   [[maybe_unused]]
   formula<FO> a60 = rs(std::vector{x,x});
 
+
+  formula<LTL> f400 = sigma.boolean(true);
+  formula<LTLFO> f500 = f400;
+
+  f500 = f400;
 }

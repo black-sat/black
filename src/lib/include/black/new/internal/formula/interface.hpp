@@ -168,7 +168,10 @@ namespace black::internal::new_api
       Base(Base &&) = default; \
       \
       Base(alphabet *sigma, Base##_base *element) \
-        : _sigma{sigma}, _element{element} { }
+        : _sigma{sigma}, _element{element} { } \
+      \
+      template<typename Syntax2, REQUIRES(is_syntax_allowed<Syntax2, Syntax>)> \
+      Base(Base<Syntax2> const& b);
       
   #define declare_storage_kind(Base, Storage) \
       template<typename Syntax2, REQUIRES(is_syntax_allowed<Syntax2, Syntax>)> \
@@ -195,6 +198,9 @@ namespace black::internal::new_api
   #define end_hierarchy(Base) \
       Base &operator=(Base const&) = default; \
       Base &operator=(Base &&) = default; \
+      \
+      template<typename Syntax2, REQUIRES(is_syntax_allowed<Syntax2, Syntax>)> \
+      Base &operator=(Base<Syntax2> const& b); \
       \
       template<typename H> \
       std::optional<H> to() const { \

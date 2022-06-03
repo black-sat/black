@@ -90,6 +90,27 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
 
+  #define declare_hierarchy(Base) \
+    template<typename Syntax> \
+    template< \
+      typename Syntax2, \
+      REQUIRES_OUT_OF_LINE(is_syntax_allowed<Syntax2, Syntax>) \
+    > \
+    Base<Syntax>::Base(Base<Syntax2> const& b) \
+      : _sigma{b._sigma}, _element{b._element} { } \
+    \
+    template<typename Syntax> \
+    template< \
+      typename Syntax2, \
+      REQUIRES_OUT_OF_LINE(is_syntax_allowed<Syntax2, Syntax>) \
+    > \
+    Base<Syntax> &Base<Syntax>::operator=(Base<Syntax2> const& b) { \
+      _sigma = b._sigma; \
+      _element = b._element; \
+      \
+      return *this; \
+    }
+
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
     template< \
