@@ -251,24 +251,34 @@ namespace black::internal::new_api
   #include <black/new/internal/formula/hierarchy.hpp>
 
   
+  template<hierarchy_type H>
+  struct hierarchy_type_of_;
+
+  template<hierarchy_type H>
+  using hierarchy_type_of = typename hierarchy_type_of_<H>::type;
+  
+  #define declare_hierarchy(Base) \
+    template<> \
+    struct hierarchy_type_of_<hierarchy_type::Base> { \
+      using type = Base##_base; \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   //
   // Helper function to transform a Base argument to its underlying element, if 
   // the argument is a Base, leaving it untouched otherwise
   //
-  #define declare_hierarchy(Base) \
-    template<typename T, REQUIRES(T::hierarchy != hierarchy_type::Base)> \
-    auto Base##_handle_args(T v) { \
-      return v; \
-    } \
-    \
-    template<typename T, REQUIRES(T::hierarchy == hierarchy_type::Base)> \
-    auto Base##_handle_args(T v) { \
-      return v._element; \
-    }
+  template<typename T, typename = void>
+  struct is_hierarchy_ : std::false_type { };
 
-  #include <black/new/internal/formula/hierarchy.hpp>
+  template<typename T>
+  struct is_hierarchy_<T, std::void_t<decltype(T::hierarchy)>> 
+    : std::true_type { };
 
+  template<typename T>
+  constexpr bool is_hierarchy = is_hierarchy_<T>::value;
+  
   //
   // Handle classes.
   // 
@@ -300,6 +310,9 @@ namespace black::internal::new_api
   #define declare_child(Base, Storage, Hierarchy, Child) \
       Hierarchy<Syntax> Child() const;
 
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+      std::vector<Hierarchy<Syntax>> Children() const;
+
   #define end_storage_kind(Base, Storage) \
     };
 
@@ -309,7 +322,7 @@ namespace black::internal::new_api
     constexpr bool Storage##_has_hierarchy_elements() { \
       return 
   
-  #define has_no_hierarchy_element(Base, Storage) false &&
+  #define has_no_hierarchy_elements(Base, Storage) false &&
 
   #define end_storage_kind(Base, Storage) \
       true; \
@@ -618,6 +631,9 @@ namespace black::internal::new_api
   #define declare_child(Base, Storage, Hierarchy, Child) \
       arity++;
 
+  #define declare_children(Base, Storage, Hierarchy, Child) \
+      arity++;
+
   #define end_storage_kind(Base, Storage) \
       return arity; \
     }
@@ -663,6 +679,8 @@ namespace black::internal::new_api
     using Storage##_unpack_t = std::tuple<
   
   #define declare_child(Base, Storage, Hierarchy, Child) Hierarchy<Syntax>,
+  #define declare_children(Base, Storage, Hierarchy, Child) \
+    std::vector<Hierarchy<Syntax>>,
   
   #define end_storage_kind(Base, Storage) void *>;
   #define end_leaf_storage_kind(Base, Storage)
@@ -677,6 +695,8 @@ namespace black::internal::new_api
 
   #define declare_child(Base, Storage, Hierarchy, Child)  \
         s.Child(),
+  #define declare_children(Base, Storage, Hierarchy, Child)  \
+        s.Children(),
   
   #define end_leaf_storage_kind(Base, Storage)
   #define end_storage_kind(Base, Storage) \

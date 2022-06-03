@@ -25,12 +25,93 @@
 #define BLACK_LOGIC_ALPHABET_HPP
 
 namespace black::internal::new_api {
+  
+  #define declare_storage_kind(Base, Storage) \
+    struct Storage##_key { \
+      syntax_element type;
+
+  #define declare_field(Base, Storage, Type, Field) Type Field;
+
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+    Hierarchy##_base *Child;
+
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    std::vector<Hierarchy##_base *> Children;
+
+  #define end_storage_kind(Base, Storage) \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
-    using Storage##_key = std::tuple<syntax_element,
-  #define declare_field(Base, Storage, Type, Field) Type,
-  #define declare_child(Base, Storage, Hierarchy, Child) Hierarchy##_base *,
-  #define end_storage_kind(Base, Storage) void*>;
+    inline bool operator==( \
+      [[maybe_unused]] Storage##_key k1, \
+      [[maybe_unused]] Storage##_key k2 \
+    ) { \
+      return 
+
+  #define declare_field(Base, Storage, Type, Field) k1.Field == k2.Field &&
+
+  #define declare_child(Base, Storage, Hierarchy, Child) k1.Child == k2.Child &&
+
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    k1.Children == k2.Children &&
+  
+  #define end_storage_kind(Base, Storage) \
+        true; \
+    }
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    template<typename Syntax> \
+    struct Storage##_alloc_args { \
+      syntax_element type;
+
+  #define declare_field(Base, Storage, Type, Field) Type Field;
+
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+    Hierarchy<Syntax> Child;
+
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    std::vector<Hierarchy<Syntax>> Children;
+
+  #define end_storage_kind(Base, Storage) \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_hierarchy(Base) \
+    template<typename T> \
+    auto Base##_children_to_key(std::vector<T> const& v) \
+    { \
+      std::vector<Base##_base *> result; \
+      for(auto x : v) { \
+        result.push_back(x._element); \
+      } \
+      return result; \
+    }
+  
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    template<typename Syntax> \
+    Storage##_key Storage##_args_to_key( \
+      Storage##_alloc_args<Syntax> const&args \
+    ) { \
+      return Storage##_key { \
+        args.type,
+
+  #define declare_field(Base, Storage, Type, Field) args.Field,
+
+  #define declare_child(Base, Storage, Hierarchy, Child) args.Child._element,
+
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    Hierarchy##_children_to_key(args.Children),
+
+  #define end_storage_kind(Base, Storage) \
+      }; \
+    }
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
@@ -56,7 +137,7 @@ namespace black::internal::new_api {
           ::black::internal::new_api::Storage{ \
             this, \
             allocate_##Storage( \
-              Storage##_key{syntax_element::Storage, args..., nullptr} \
+              Storage##_key{syntax_element::Storage, args...} \
             ) \
           }; \
       }
@@ -68,7 +149,7 @@ namespace black::internal::new_api {
           ::black::internal::new_api::Element{ \
             this, \
             allocate_##Storage( \
-              Storage##_key{syntax_element::Element, args..., nullptr} \
+              Storage##_key{syntax_element::Element, args...} \
             ) \
           }; \
       }

@@ -32,7 +32,6 @@ using namespace std::literals;
 using namespace black::internal::new_api;
 using black::internal::identifier;
 
-
 TEST_CASE("New API") {
 
   alphabet sigma;
@@ -121,11 +120,21 @@ TEST_CASE("New API") {
   [[maybe_unused]]
   formula<untilprops> f = until<untilprops>(p, p);
 
-  variable x = sigma.variable("x");
 
   [[maybe_unused]]
   tsl::hopscotch_map<variable, std::string> map;
 
+  variable x = sigma.variable("x");
   [[maybe_unused]]
   formula<LTLFO> f30 = conjunction<LTLFO>(until<LTL>(p,p), forall<FO>(x, p));
+
+  REQUIRE(x == f30.to<conjunction<LTLFO>>()->right().to<forall<LTLFO>>()->var());
+
+  static_assert(!application_has_hierarchy_elements());
+  static_assert(is_argument_allowed<function_symbol, FO>);
+  
+  function_symbol fs = sigma.function_symbol("f");
+
+  [[maybe_unused]]
+  term<FO> t40 = application<FO>(fs, std::vector{term<FO>(x)});
 }

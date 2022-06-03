@@ -26,6 +26,36 @@
 namespace black::internal::new_api {
 
   #define declare_storage_kind(Base, Storage) \
+    } namespace std { \
+      template<> \
+      struct hash<::black::internal::new_api::Storage##_key> { \
+        size_t operator()( \
+          ::black::internal::new_api::Storage##_key const&k \
+        ) const { \
+          using namespace ::black::internal::new_api; \
+          using namespace ::black::internal; \
+          using namespace ::black; \
+          size_t h = std::hash<syntax_element>{}(k.type);
+
+  #define declare_field(Base, Storage, Type, Field) \
+          h = hash_combine(h, std::hash<Type>{}(k.Field));
+
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+          h = hash_combine(h, std::hash<Hierarchy##_base *>{}(k.Child));
+
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+          for(auto child : k.Children) \
+            h = hash_combine(h, std::hash<Hierarchy##_base *>{}(child));
+
+  #define end_storage_kind(Base, Storage) \
+          return h; \
+        } \
+      }; \
+    } namespace black::internal::new_api {
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
     struct Storage##_storage { \
       std::deque<Storage##_t> Storage##_store; \
       tsl::hopscotch_map<Storage##_key, Storage##_t *> Storage##_map; \
@@ -33,21 +63,23 @@ namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  template<typename Data, typename ...Types, size_t ...Indexes>
-  Data key_to_data(
-    std::tuple<Types...> t, 
-    std::index_sequence<Indexes...>) 
-  {
-    return Data{std::get<Indexes + 1>(t)...};
-  }
+  #define declare_storage_kind(Base, Storage) \
+    Storage##_data_t Storage##_key_to_data( \
+      [[maybe_unused]]Storage##_key const& k \
+    ) { \
+      return Storage##_data_t {
 
-  template<typename Data, typename ...Types>
-  Data key_to_data(std::tuple<Types...> t) 
-  {
-    return key_to_data<Data>(
-      t, std::make_index_sequence<sizeof...(Types) - 2>{}
-    );
-  }
+  #define declare_field(Base, Storage, Type, Field) k.Field,
+
+  #define declare_child(Base, Storage, Hierarchy, Child) k.Child,
+
+  #define declare_children(Base, Storage, Hierarchy, Children) k.Children,
+  
+  #define end_storage_kind(Base, Storage) \
+      }; \
+    }
+
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
     struct Storage##_allocator : Storage##_storage { \
@@ -57,9 +89,7 @@ namespace black::internal::new_api {
           return it->second; \
         \
         Storage##_t *obj = \
-          &Storage##_store.emplace_back( \
-            std::get<0>(key), key_to_data<Storage##_data_t>(key) \
-          ); \
+          &Storage##_store.emplace_back(key.type, Storage##_key_to_data(key)); \
         Storage##_map.insert({key, obj}); \
         \
         return obj; \

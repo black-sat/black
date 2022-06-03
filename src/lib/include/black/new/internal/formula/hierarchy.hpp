@@ -40,6 +40,9 @@
 #ifndef declare_child
   #define declare_child(Base, Storage, Hierarchy, Child)
 #endif
+#ifndef declare_children
+  #define declare_children(Base, Storage, Hierarchy, Children)
+#endif
 #ifndef has_no_hierarchy_elements
   #define has_no_hierarchy_elements(Base, Storage)
 #endif
@@ -123,7 +126,7 @@ declare_hierarchy(term)
 
   declare_storage_kind(term, application)
     declare_child(term, application, function, func)
-    // declare_field(term, application, std::vector<term<Syntax>>, terms)
+    declare_children(term, application, term, terms)
     has_no_hierarchy_elements(term, application)
   end_storage_kind(term, application)
 
@@ -148,7 +151,7 @@ declare_hierarchy(formula)
 
   declare_storage_kind(formula, atom)
     declare_child(formula, atom, relation, rel)
-    // declare_field(formula, atom, std::vector<term<Syntax>>, terms)
+    declare_children(formula, atom, term, terms)
     has_no_hierarchy_elements(formula, atom)
   end_storage_kind(formula, atom)
 
@@ -274,6 +277,7 @@ declare_combined_fragment(LTLPFO, LTLP, FO)
 #undef declare_leaf_storage_kind
 #undef declare_field
 #undef declare_child
+#undef declare_children
 #undef has_no_leaf_hierarchy_elements
 #undef has_no_hierarchy_elements
 #undef declare_leaf_hierarchy_element

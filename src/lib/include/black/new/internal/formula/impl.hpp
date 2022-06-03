@@ -37,6 +37,9 @@ namespace black::internal::new_api {
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
     Hierarchy##_base *Child;
+  
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    std::vector<Hierarchy##_base *> Children;
 
   #define end_storage_kind(Base, Storage)  \
     };
@@ -67,6 +70,21 @@ namespace black::internal::new_api {
         static_cast<H const&>(*this)._sigma,  \
         static_cast<H const&>(*this)._element->data.Child \
       }; \
+    }
+
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    template<typename Syntax, typename H> \
+    std::vector<Hierarchy<Syntax>> \
+    Storage##_children<Syntax, H>::Children() const { \
+      std::vector<Hierarchy<Syntax>> result; \
+      std::vector<Hierarchy##_base *> children = \
+        static_cast<H const&>(*this)._element->data.Children; \
+      alphabet *sigma = static_cast<H const&>(*this)._sigma; \
+      \
+      for(auto child : children) \
+        result.push_back(Hierarchy<Syntax>{sigma, child}); \
+      \
+      return result; \
     }
 
   #include <black/new/internal/formula/hierarchy.hpp>
@@ -109,6 +127,26 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
+   constexpr syntax_element Storage##_syntax_element() { \
+     return 
+  
+  #define has_no_hierarchy_elements(Base, Storage) \
+    true ? syntax_element::Storage : 
+
+  #define end_storage_kind(Base, Storage) \
+     syntax_element::no_type; \
+   }
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    constexpr syntax_element Storage##_syntax_element() { \
+      return syntax_element::Storage; \
+    }
+
+  #define end_leaf_storage_kind(Base, Storage)
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
     template< \
       typename ...Args, \
@@ -121,7 +159,7 @@ namespace black::internal::new_api {
       : _sigma{get_sigma(args...)}, \
         _element{ \
           get_sigma(args...)->allocate_##Storage( \
-            Storage##_key{t.type(), Base##_handle_args(args)..., nullptr} \
+            Storage##_args_to_key<Syntax>({t.type(), args...}) \
           ) \
         } { } \
     \
@@ -136,8 +174,12 @@ namespace black::internal::new_api {
     Storage<Syntax>::Storage(Args ...args) \
       : _sigma{get_sigma(args...)}, \
         _element{ \
-          get_sigma(args...)->_impl->allocate_##Storage( \
-            Base##_handle_args(args)... \
+          get_sigma(args...)->allocate_##Storage( \
+            Storage##_args_to_key( \
+              Storage##_alloc_args<Storage::syntax>{ \
+                Storage##_syntax_element(), args... \
+              } \
+            ) \
           ) \
         } { }
 
@@ -146,8 +188,12 @@ namespace black::internal::new_api {
     Storage::Storage(Args ...args) \
       : _sigma{get_sigma(args...)}, \
         _element{ \
-          get_sigma(args...)->_impl->allocate_##Storage( \
-            Base##_handle_args(args)... \
+          get_sigma(args...)->allocate_##Storage( \
+            Storage##_args_to_key( \
+              Storage##_alloc_args<Storage::syntax>{ \
+                syntax_element::Storage, args... \
+              } \
+            ) \
           ) \
         } { }
       
@@ -177,11 +223,9 @@ namespace black::internal::new_api {
       : _sigma{get_sigma(args...)}, \
         _element{ \
           get_sigma(args...)->allocate_##Storage( \
-            Storage##_key{ \
-              syntax_element::Element, \
-              Base##_handle_args(args)..., \
-              nullptr \
-            } \
+            Storage##_args_to_key( \
+              Storage##_alloc_args<Syntax>{syntax_element::Element, args...} \
+            ) \
           ) \
         } { } \
     \
@@ -196,9 +240,12 @@ namespace black::internal::new_api {
     Element::Element(Args ...args) \
       : _sigma{get_sigma(args...)}, \
         _element{ \
-          get_sigma(args...)->_impl->allocate_##Storage( \
-            syntax_element::Element, \
-            Base##_handle_args(args)... \
+          get_sigma(args...)->allocate_##Storage( \
+            Storage##_args_to_key( \
+              Storage##_alloc_args<Element::syntax>{ \
+                syntax_element::Element, args... \
+              } \
+            ) \
           ) \
         } { } \
     \
