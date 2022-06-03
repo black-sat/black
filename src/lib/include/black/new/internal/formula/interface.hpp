@@ -377,11 +377,73 @@ namespace black::internal::new_api
     is_aggregate_constructible_<T, void, Args...>::value;
 
   #define declare_storage_kind(Base, Storage) \
+    template<typename Syntax, typename ...Args> \
+    constexpr bool is_##Storage##_constructible = \
+      is_aggregate_constructible< \
+        Storage##_alloc_args<Syntax>, int, Args... \
+      >;
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    template<typename Syntax, typename ...Args> \
+    constexpr bool is_##Element##_constructible = \
+      is_aggregate_constructible< \
+        Storage##_alloc_args<Syntax>, \
+        int, decltype(Storage<Syntax>::type::Element), \
+        Args... \
+      >;
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    template<typename Derived> \
+    struct Storage##_common_interface \
+    { \
+      template<typename H> \
+      std::optional<H> to() const { \
+        return H::from(self()); \
+      } \
+      \
+      template<typename H> \
+      bool is() const { \
+        return to<H>().has_value(); \
+      } \
+      \
+      size_t hash() const { \
+        return std::hash<Storage##_t const*>{}(self()._element); \
+      } \
+      \
+      alphabet *sigma() const { return self()._sigma; } \
+      Base##_id unique_id() const { \
+        return static_cast<Base##_id>( \
+          reinterpret_cast<uintptr_t>(self()._element) \
+        ); \
+      } \
+      \
+      template<typename F> \
+      static std::optional<Derived> from(F f) { \
+        using accepts_type = typename Derived::accepts_type; \
+        if(!accepts_type::doesit(f._element->type) || \
+            !is_syntax_allowed<typename F::syntax, typename Derived::syntax>) \
+          return {}; \
+        \
+        auto obj = static_cast<Storage##_t *>(f._element); \
+        return std::optional<Derived>{Derived{f._sigma, obj}}; \
+      } \
+    \
+    protected: \
+      Derived &self() { return static_cast<Derived &>(*this); } \
+      Derived const&self() const { return static_cast<Derived const&>(*this); }\
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
     class Storage : \
       public Storage##_fields<Storage<Syntax>>, \
       public Storage##_children<Syntax, Storage<Syntax>>, \
-      Base##_custom_members_t<Storage<Syntax>> \
+      public Storage##_common_interface<Storage<Syntax>>, \
+      public Base##_custom_members_t<Storage<Syntax>> \
     { \
       friend struct Storage##_fields<Storage<Syntax>>; \
       friend struct Storage##_children<Syntax, Storage<Syntax>>; \
@@ -413,42 +475,9 @@ namespace black::internal::new_api
       \
       template< \
         typename ...Args, \
-        REQUIRES( \
-          is_aggregate_constructible< \
-            Storage##_alloc_args<Syntax>, int, Args... \
-          > \
-        ) \
+        REQUIRES(is_##Storage##_constructible<Syntax, Args...>) \
       > \
       Storage(Args ...args); \
-      \
-      template<typename H> \
-      std::optional<H> to() const { \
-        return H::from(*this); \
-      } \
-      \
-      template<typename H> \
-      bool is() const { \
-        return to<H>().has_value(); \
-      } \
-      \
-      size_t hash() const { \
-        return std::hash<Storage##_t const*>{}(_element); \
-      } \
-      \
-      alphabet *sigma() const { return _sigma; } \
-      Base##_id unique_id() const { \
-        return static_cast<Base##_id>(reinterpret_cast<uintptr_t>(_element)); \
-      } \
-      \
-      template<typename F> \
-      static std::optional<Storage> from(F f) { \
-        if(!accepts_type::doesit(f._element->type) || \
-           !is_syntax_allowed<typename F::syntax, Syntax>) \
-          return {}; \
-        \
-        auto obj = static_cast<Storage##_t *>(f._element); \
-        return std::optional<Storage>{Storage{f._sigma, obj}}; \
-      } \
       \
       class alphabet *_sigma; \
       Storage##_t *_element; \
@@ -457,6 +486,7 @@ namespace black::internal::new_api
   #define declare_leaf_storage_kind(Base, Storage) \
     class Storage : \
       public Storage##_fields<Storage>, \
+      public Storage##_common_interface<Storage>, \
       public Base##_custom_members_t<Storage> \
     { \
       \
@@ -476,28 +506,9 @@ namespace black::internal::new_api
       Storage &operator=(Storage const&) = default; \
       Storage &operator=(Storage &&) = default; \
       \
-      alphabet *sigma() const { return _sigma; } \
-      Base##_id unique_id() const { \
-        return static_cast<Base##_id>(reinterpret_cast<uintptr_t>(_element)); \
-      } \
-      \
-      size_t hash() const { \
-        return std::hash<Storage##_t const*>{}(_element); \
-      } \
-      \
-      template<typename F> \
-      static std::optional<Storage> from(F f) { \
-        if(!accepts_type::doesit(f._element->type)) \
-          return {}; \
-        \
-        auto obj = static_cast<Storage##_t *>(f._element); \
-        return std::optional<Storage>{Storage{f._sigma, obj}}; \
-      } \
-      \
       class alphabet *_sigma; \
       Storage##_t *_element; \
     };
-  #define end_leaf_storage_kind(Base, Storage)
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
@@ -506,6 +517,7 @@ namespace black::internal::new_api
     class Element : \
       public Storage##_fields<Element<Syntax>>, \
       public Storage##_children<Syntax, Element<Syntax>>, \
+      public Storage##_common_interface<Element<Syntax>>, \
       public Base##_custom_members_t<Element<Syntax>> \
     { \
       friend struct Storage##_fields<Element<Syntax>>; \
@@ -529,32 +541,12 @@ namespace black::internal::new_api
       \
       template< \
         typename ...Args, \
-        REQUIRES((is_argument_allowed<Args, Syntax> && ...)) \
+        REQUIRES(is_##Element##_constructible<Syntax, Args...>) \
       > \
       Element(Args ...args); \
       \
       Element &operator=(Element const&) = default; \
       Element &operator=(Element &&) = default; \
-      \
-      alphabet *sigma() const { return _sigma; } \
-      \
-      Base##_id unique_id() const { \
-        return static_cast<Base##_id>(reinterpret_cast<uintptr_t>(_element)); \
-      } \
-      \
-      size_t hash() const { \
-        return std::hash<Storage##_t const*>{}(_element); \
-      } \
-      \
-      template<typename F> \
-      static std::optional<Element> from(F f) { \
-        if(!accepts_type::doesit(f._element->type) || \
-           !is_syntax_allowed<typename F::syntax, Syntax>) \
-          return {}; \
-        \
-        auto obj = static_cast<Storage##_t *>(f._element); \
-        return std::optional<Element>{Element{f._sigma, obj}}; \
-      } \
       \
       class alphabet *_sigma; \
       Storage##_t *_element; \
@@ -563,6 +555,7 @@ namespace black::internal::new_api
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     class Element : \
       public Storage##_fields<Element>, \
+      public Storage##_common_interface<Element>, \
       public Base##_custom_members_t<Element> \
     { \
       friend struct Storage##_fields<Element>; \
@@ -579,25 +572,6 @@ namespace black::internal::new_api
       \
       Element &operator=(Element const&) = default; \
       Element &operator=(Element &&) = default; \
-      \
-      alphabet *sigma() const { return _sigma; } \
-      \
-      Base##_id unique_id() const { \
-        return static_cast<Base##_id>(reinterpret_cast<uintptr_t>(_element)); \
-      } \
-      \
-      size_t hash() const { \
-        return std::hash<Storage##_t const*>{}(_element); \
-      } \
-      \
-      template<typename F> \
-      static std::optional<Element> from(F f) { \
-        if(!accepts_type::doesit(f._element->type)) \
-          return {}; \
-        \
-        auto obj = static_cast<Storage##_t *>(f._element); \
-        return std::optional<Element>{Element{f._sigma, obj}}; \
-      } \
       \
       class alphabet *_sigma; \
       Storage##_t *_element; \

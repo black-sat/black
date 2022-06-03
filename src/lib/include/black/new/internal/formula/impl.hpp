@@ -130,11 +130,7 @@ namespace black::internal::new_api {
     template<typename Syntax> \
     template< \
       typename ...Args, \
-      REQUIRES_OUT_OF_LINE( \
-        is_aggregate_constructible< \
-          Storage##_alloc_args<Syntax>, int, Args... \
-        > \
-      ) \
+      REQUIRES_OUT_OF_LINE(is_##Storage##_constructible<Syntax, Args...>) \
     > \
     Storage<Syntax>::Storage(Args ...args) \
       : _sigma{get_sigma(args...)}, \
@@ -161,8 +157,8 @@ namespace black::internal::new_api {
     template<typename Syntax> \
     template< \
         typename ...Args, \
-        REQUIRES_OUT_OF_LINE((is_argument_allowed<Args, Syntax> && ...)) \
-      > \
+        REQUIRES_OUT_OF_LINE(is_##Element##_constructible<Syntax, Args...>) \
+      >  \
     Element<Syntax>::Element(Args ...args) \
       : _sigma{get_sigma(args...)}, \
         _element{ \

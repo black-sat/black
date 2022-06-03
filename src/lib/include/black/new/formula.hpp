@@ -164,18 +164,6 @@ namespace black::internal::new_api {
   constexpr bool is_type_allowed = 
     type_list_contains<typename Allowed::list, Type>;
 
-  template<typename T, typename Allowed, typename = void>
-  struct is_argument_allowed_ : std::true_type { };
-
-  template<typename T, typename Allowed>
-  struct is_argument_allowed_<T, Allowed, std::void_t<typename T::syntax>> {
-    static constexpr bool value = 
-      is_syntax_allowed<typename T::syntax, Allowed>;
-  };
-
-  template<typename T, typename Allowed>
-  constexpr bool is_argument_allowed = is_argument_allowed_<T, Allowed>::value;
-
   template<typename Derived>
   struct function_call_operator_t {
     template<typename Arg, typename ...Args>

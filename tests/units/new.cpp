@@ -131,7 +131,6 @@ TEST_CASE("New API") {
   REQUIRE(x == f30.to<conjunction<LTLFO>>()->right().to<forall<LTLFO>>()->var());
 
   static_assert(!application_has_hierarchy_elements());
-  static_assert(is_argument_allowed<function_symbol, FO>);
   
   function_symbol fs = sigma.function_symbol("f");
   relation_symbol rs = sigma.relation_symbol("r");
