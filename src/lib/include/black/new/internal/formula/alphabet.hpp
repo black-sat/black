@@ -63,6 +63,24 @@ namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  template<typename Syntax, hierarchy_type Hierarchy>
+  struct children_vector 
+  {
+    template<
+      typename H, 
+      REQUIRES(
+        H::hierarchy == Hierarchy && 
+        is_syntax_allowed<typename H::syntax, Syntax>
+      )
+    >
+    children_vector(std::vector<H> const& v) {
+      for(auto h : v)
+        children.push_back(h._element);
+    }
+
+    std::vector<hierarchy_type_of<Hierarchy> *> children;
+  };
+
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
     struct Storage##_alloc_args { \
@@ -74,7 +92,7 @@ namespace black::internal::new_api {
     Hierarchy<Syntax> Child;
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
-    std::vector<Hierarchy<Syntax>> Children;
+    children_vector<Syntax, hierarchy_type::Hierarchy> Children;
 
   #define end_storage_kind(Base, Storage) \
     };
@@ -107,7 +125,7 @@ namespace black::internal::new_api {
   #define declare_child(Base, Storage, Hierarchy, Child) args.Child._element,
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
-    Hierarchy##_children_to_key(args.Children),
+    args.Children.children,
 
   #define end_storage_kind(Base, Storage) \
       }; \

@@ -136,5 +136,5 @@ TEST_CASE("New API") {
   function_symbol fs = sigma.function_symbol("f");
 
   [[maybe_unused]]
-  term<FO> t40 = application<FO>(fs, std::vector{term<FO>(x)});
+  term<FO> t40 = application<FO>(fs, std::vector{x});
 }
