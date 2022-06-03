@@ -297,8 +297,8 @@ namespace black::internal::new_api
     template<typename Syntax, typename H> \
     struct Storage##_children {
 
-  #define declare_child(Base, Storage, Child) \
-      Base<Syntax> Child() const;
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+      Hierarchy<Syntax> Child() const;
 
   #define end_storage_kind(Base, Storage) \
     };
@@ -615,7 +615,7 @@ namespace black::internal::new_api
     constexpr size_t Storage##_arity() { \
       size_t arity = 0;
 
-  #define declare_child(Base, Storage, Child) \
+  #define declare_child(Base, Storage, Hierarchy, Child) \
       arity++;
 
   #define end_storage_kind(Base, Storage) \
@@ -662,7 +662,7 @@ namespace black::internal::new_api
     template<typename Syntax> \
     using Storage##_unpack_t = std::tuple<
   
-  #define declare_child(Base, Storage, Child) Base<Syntax>,
+  #define declare_child(Base, Storage, Hierarchy, Child) Hierarchy<Syntax>,
   
   #define end_storage_kind(Base, Storage) void *>;
   #define end_leaf_storage_kind(Base, Storage)
@@ -675,7 +675,7 @@ namespace black::internal::new_api
     Base<Syntax> get([[maybe_unused]] Storage<Syntax> s) {  \
       return std::get<I>(Storage##_unpack_t<Syntax>{
 
-  #define declare_child(Base, Storage, Child)  \
+  #define declare_child(Base, Storage, Hierarchy, Child)  \
         s.Child(),
   
   #define end_leaf_storage_kind(Base, Storage)

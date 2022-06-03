@@ -35,8 +35,8 @@ namespace black::internal::new_api {
   #define declare_field(Base, Storage, Type, Field) \
     Type Field;
 
-  #define declare_child(Base, Storage, Child) \
-    Base##_base *Child;
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+    Hierarchy##_base *Child;
 
   #define end_storage_kind(Base, Storage)  \
     };
@@ -60,10 +60,10 @@ namespace black::internal::new_api {
       return static_cast<H const&>(*this)._element->data.Field; \
     }
 
-  #define declare_child(Base, Storage, Child) \
+  #define declare_child(Base, Storage, Hierarchy, Child) \
     template<typename Syntax, typename H> \
-    Base<Syntax> Storage##_children<Syntax, H>::Child() const { \
-      return Base<Syntax>{ \
+    Hierarchy<Syntax> Storage##_children<Syntax, H>::Child() const { \
+      return Hierarchy<Syntax>{ \
         static_cast<H const&>(*this)._sigma,  \
         static_cast<H const&>(*this)._element->data.Child \
       }; \

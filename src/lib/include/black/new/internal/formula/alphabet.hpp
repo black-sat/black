@@ -29,7 +29,7 @@ namespace black::internal::new_api {
   #define declare_storage_kind(Base, Storage) \
     using Storage##_key = std::tuple<syntax_element,
   #define declare_field(Base, Storage, Type, Field) Type,
-  #define declare_child(Base, Storage, Child) Base##_base *,
+  #define declare_child(Base, Storage, Hierarchy, Child) Hierarchy##_base *,
   #define end_storage_kind(Base, Storage) void*>;
 
   #include <black/new/internal/formula/hierarchy.hpp>

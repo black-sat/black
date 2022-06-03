@@ -68,15 +68,15 @@ TEST_CASE("New API") {
   REQUIRE(p2 == p);
 
   [[maybe_unused]] 
-  function<LTL> func = sigma.negative();
+  known_func<LTL> func = sigma.negative();
   
   REQUIRE(func.is<negative>());
 
-  auto i = sigma.uninterpreted("ciao");
+  auto i = sigma.function_symbol("ciao");
 
   REQUIRE(*i.label().get<std::string>() == "ciao");
   
-  relation<LTL> e = sigma.equal();
+  relation<FO> e = sigma.equal();
 
   REQUIRE(e.to<equal>().has_value());
 
@@ -128,5 +128,4 @@ TEST_CASE("New API") {
 
   [[maybe_unused]]
   formula<LTLFO> f30 = conjunction<LTLFO>(until<LTL>(p,p), forall<FO>(x, p));
-  
 }
