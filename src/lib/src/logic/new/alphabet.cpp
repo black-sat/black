@@ -64,7 +64,7 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
-    Storage##_data_t Storage##_key_to_data( \
+    inline Storage##_data_t Storage##_key_to_data( \
       [[maybe_unused]]Storage##_key const& k \
     ) { \
       return Storage##_data_t {
