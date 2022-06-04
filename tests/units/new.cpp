@@ -163,4 +163,8 @@ TEST_CASE("New API") {
   unary<LTL> u200 = unary<LTL>(unary<LTL>::type::negation, p);
 
   u100 = u200;
+
+  u100 = always<LTL>(p);
+
+  f400 = sigma.boolean(true);
 }

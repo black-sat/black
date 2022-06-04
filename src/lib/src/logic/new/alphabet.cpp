@@ -86,10 +86,29 @@ namespace black::internal::new_api {
     };
 
   #include <black/new/internal/formula/hierarchy.hpp>
-  
+
+  #define declare_storage_kind(Base, Storage) \
+    auto key_to_tuple([[maybe_unused]] Storage##_key key) { \
+      return std::make_tuple(
+
+  #define declare_field(Base, Storage, Type, Field) key.Field,
+
+  #define declare_child(Base, Storage, Hierarchy, Child) key.Child,
+
+  #define declare_children(Base, Storage, Hierarchy, Children) key.Children,
+
+  #define end_storage_kind(Base, Storage) \
+      0); \
+    }
+
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   template<storage_type Storage>
-  struct storage_allocator {
+  using key_to_tuple_type = 
+    decltype(key_to_tuple(std::declval<storage_key_of<Storage>>()));
+
+  template<storage_type Storage, typename = key_to_tuple_type<Storage>>
+  struct storage_allocator_ {
     using storage_t = storage_base_type_of<Storage>;
     using storage_key = storage_key_of<Storage>;
     
@@ -108,6 +127,39 @@ namespace black::internal::new_api {
       return obj;
     }
   };
+
+  template<storage_type Storage>
+  struct syntax_element_of_leaf_storage_ { };
+
+  template<storage_type Storage>
+  constexpr syntax_element syntax_element_of_leaf_storage =
+    syntax_element_of_leaf_storage_<Storage>::value;
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    template<> \
+    struct syntax_element_of_leaf_storage_<storage_type::Storage> { \
+      static constexpr auto value = syntax_element::Storage; \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  template<storage_type Storage>
+  struct storage_allocator_<Storage, std::tuple<bool, int>> {
+    using storage_t = storage_base_type_of<Storage>;
+    using storage_key = storage_key_of<Storage>;
+
+    storage_t _true{syntax_element_of_leaf_storage<Storage>, {true}};
+    storage_t _false{syntax_element_of_leaf_storage<Storage>, {false}};
+    
+    storage_t *allocate(storage_key key) {
+      if(std::get<0>(key_to_tuple(key)))
+        return &_true;
+      return &_false;
+    }
+  };
+
+  template<storage_type Storage, typename = key_to_tuple_type<Storage>>
+  struct storage_allocator : storage_allocator_<Storage> { };
 
   #define declare_storage_kind(Base, Storage) \
     struct Storage##_allocator : storage_allocator<storage_type::Storage> { \
