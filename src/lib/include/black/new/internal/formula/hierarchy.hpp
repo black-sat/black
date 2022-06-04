@@ -64,29 +64,6 @@
 #ifndef end_hierarchy
   #define end_hierarchy(Element)
 #endif
-#ifndef declare_fragment
-  #define declare_fragment(Fragment)
-#endif
-#ifndef end_fragment
-  #define end_fragment(Fragment)
-#endif
-#ifndef declare_derived_fragment
-  #define declare_derived_fragment(Fragment, Parent) \
-    declare_fragment(Fragment)
-#endif
-#ifndef end_derived_fragment
-  #define end_derived_fragment(Fragment, Parent) \
-    end_fragment(Fragment)
-#endif
-#ifndef declare_combined_fragment
-  #define declare_combined_fragment(Fragment, ...)
-#endif
-#ifndef allow
-  #define allow(Fragment, Element)
-#endif
-#ifndef allow_also
-  #define allow_also allow
-#endif
 #ifndef escape_commas
 #define escape_commas(...) __VA_ARGS__
 #endif 
@@ -197,85 +174,6 @@ declare_hierarchy(formula)
 
 end_hierarchy(formula)
 
-declare_fragment(Boolean)
-  allow(Boolean, boolean)
-  allow(Boolean, proposition)
-  allow(Boolean, negation)
-  allow(Boolean, conjunction)
-  allow(Boolean, disjunction)
-  allow(Boolean, implication)
-  allow(Boolean, iff)
-end_fragment(Boolean)
-
-declare_derived_fragment(FO, Boolean)
-  // formulas 
-  allow_also(FO, atom)
-  allow_also(FO, exists)
-  allow_also(FO, forall)
-  
-  // terms
-  allow_also(FO, constant)
-  allow_also(FO, variable)
-  allow_also(FO, application)
-  
-  // functions and relations
-  allow_also(FO, function_symbol)
-  allow_also(FO, relation_symbol)
-  allow_also(FO, negative)
-  allow_also(FO, subtraction)
-  allow_also(FO, addition)
-  allow_also(FO, multiplication)
-  allow_also(FO, division)
-  allow_also(FO, equal)
-  allow_also(FO, not_equal)
-  allow_also(FO, less_than)
-  allow_also(FO, less_than_equal)
-  allow_also(FO, greater_than)
-  allow_also(FO, greater_than_equal)
-end_derived_fragment(FO, Boolean)
-
-declare_derived_fragment(XFO, FO)
-  allow_also(XFO, tomorrow)
-  allow_also(XFO, next)
-  allow_also(XFO, wnext)
-  allow_also(XFO, prev)
-  allow_also(XFO, wprev)
-end_derived_fragment(XFO, FO)
-
-declare_derived_fragment(EUF, Boolean)
-  // formulas 
-  allow_also(EUF, atom)
-  allow_also(EUF, exists)
-  allow_also(EUF, forall)
-  
-  // terms
-  allow_also(EUF, variable)
-  allow_also(EUF, application)
-end_derived_fragment(EUF, Boolean)
-
-declare_derived_fragment(LTL, Boolean)
-  allow_also(LTL, tomorrow)
-  allow_also(LTL, w_tomorrow)
-  allow_also(LTL, always)
-  allow_also(LTL, eventually)
-  allow_also(LTL, until)
-  allow_also(LTL, release)
-  allow_also(LTL, w_until)
-  allow_also(LTL, s_release)
-end_derived_fragment(LTL, Boolean)
-
-declare_derived_fragment(LTLP, LTL)
-  allow_also(LTLP, yesterday)
-  allow_also(LTLP, w_yesterday)
-  allow_also(LTLP, once)
-  allow_also(LTLP, historically)
-  allow_also(LTLP, since)
-  allow_also(LTLP, triggered)
-end_derived_fragment(LTLP, LTL)
-
-declare_combined_fragment(LTLFO, LTL, XFO)
-declare_combined_fragment(LTLPFO, LTLP, XFO)
-
 #undef declare_hierarchy
 #undef declare_custom_members
 #undef declare_storage_kind
@@ -290,11 +188,4 @@ declare_combined_fragment(LTLPFO, LTLP, XFO)
 #undef end_storage_kind
 #undef end_leaf_storage_kind
 #undef end_hierarchy
-#undef declare_fragment
-#undef end_fragment
-#undef declare_derived_fragment
-#undef end_derived_fragment
-#undef declare_combined_fragment
-#undef allow
-#undef allow_also
 #undef escape_commas

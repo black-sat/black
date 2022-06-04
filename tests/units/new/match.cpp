@@ -29,7 +29,7 @@
 
 using namespace std::literals;
 
-using namespace black::internal::new_api;
+using namespace black::new_api::syntax;
 
 TEST_CASE("Pattern matching") {
   alphabet sigma;

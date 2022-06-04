@@ -29,7 +29,7 @@
 #include <iostream>
 
 using namespace std::literals;
-using namespace black::internal::new_api;
+using namespace black::new_api::syntax;
 using black::internal::identifier;
 
 //

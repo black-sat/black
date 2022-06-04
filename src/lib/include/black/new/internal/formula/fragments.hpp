@@ -157,27 +157,6 @@ namespace black::internal::new_api {
     template<typename AcceptsType>
     using type = fragment_type<AcceptsType, list>;
   };
-
-  #define declare_fragment(Fragment) \
-    struct Fragment : make_fragment<
-
-  #define allow(Fragment, Element) syntax_element::Element,
-  
-  #define end_fragment(Fragment) \
-    syntax_element::no_type> { };
-
-  #define declare_derived_fragment(Fragment, Parent) \
-    struct Fragment : make_derived_fragment<Parent,
-
-  #define allow_also(Fragment, Element) syntax_element::Element,
-  
-  #define end_derived_fragment(Fragment, Parent) \
-    syntax_element::no_type> { };
-
-  #define declare_combined_fragment(Fragment, ...) \
-    struct Fragment : make_combined_fragment<__VA_ARGS__> { };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
 }
 
 #endif // BLACK_LOGIC_FRAGMENTS_HPP
