@@ -207,15 +207,6 @@ declare_fragment(Boolean)
   allow(Boolean, iff)
 end_fragment(Boolean)
 
-declare_fragment(Test)
-  allow(Test, boolean)
-  allow(Test, negation)
-  allow(Test, conjunction)
-  allow(Test, disjunction)
-  allow(Test, implication)
-  allow(Test, iff)
-end_fragment(Test)
-
 declare_derived_fragment(FO, Boolean)
   // formulas 
   allow_also(FO, atom)
@@ -242,6 +233,14 @@ declare_derived_fragment(FO, Boolean)
   allow_also(FO, greater_than)
   allow_also(FO, greater_than_equal)
 end_derived_fragment(FO, Boolean)
+
+declare_derived_fragment(XFO, FO)
+  allow_also(XFO, tomorrow)
+  allow_also(XFO, next)
+  allow_also(XFO, wnext)
+  allow_also(XFO, prev)
+  allow_also(XFO, wprev)
+end_derived_fragment(XFO, FO)
 
 declare_derived_fragment(EUF, Boolean)
   // formulas 
@@ -274,8 +273,8 @@ declare_derived_fragment(LTLP, LTL)
   allow_also(LTLP, triggered)
 end_derived_fragment(LTLP, LTL)
 
-declare_combined_fragment(LTLFO, LTL, FO)
-declare_combined_fragment(LTLPFO, LTLP, FO)
+declare_combined_fragment(LTLFO, LTL, XFO)
+declare_combined_fragment(LTLPFO, LTLP, XFO)
 
 #undef declare_hierarchy
 #undef declare_custom_members
