@@ -179,7 +179,7 @@ namespace black::internal::new_api {
         } 
 
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    Element::Element(class alphabet *sigma, Storage##_t *element) \
+    inline Element::Element(class alphabet *sigma, Storage##_t *element) \
         : _sigma{sigma}, _element{element} { \
           black_assert(_element->type == syntax_element::Element); \
         } 
