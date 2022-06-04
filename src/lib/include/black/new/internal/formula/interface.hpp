@@ -180,6 +180,13 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  template<typename H>
+  struct matcher;
+
+  template<typename H>
+  using syntax_elements_for = 
+    type_list_filter<typename H::syntax::list, typename H::accepts_type>;
+
   #define declare_hierarchy(Base) \
     template<typename Syntax> \
     class Base : public Base##_custom_members_t<Base<Syntax>> \
@@ -188,6 +195,7 @@ namespace black::internal::new_api
       using syntax = Syntax; \
       using accepts_type = Base##_accepts_type; \
       using type = typename Syntax::template type<accepts_type>; \
+      using syntax_elements = syntax_elements_for<Base>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
       \
       Base() = delete; \
@@ -217,6 +225,11 @@ namespace black::internal::new_api
       template<typename H> \
       bool is() const { \
         return to<H>().has_value(); \
+      } \
+      \
+      template<typename ...Handlers> \
+      auto match(Handlers ...handlers) const { \
+        return matcher<Base>{}.match(*this, handlers...); \
       } \
       \
       type syntax_element() const { return _element->type; } \
@@ -471,25 +484,24 @@ namespace black::internal::new_api
       );
     }
    
-    template<typename F>
+    template<
+      typename F, typename D = Derived,
+      REQUIRES(F::hierarchy == D::hierarchy)
+    >
     static std::optional<Derived> from(F f) {
-      if constexpr(F::hierarchy != Derived::hierarchy) {
+      using storage_t = storage_base_type_of<Derived::storage>;
+      using accepts_type = typename Derived::accepts_type;
+
+      if constexpr(
+        !Leaf && 
+        !is_syntax_allowed<typename F::syntax, typename Derived::syntax>
+      ) return {};
+
+      if(!accepts_type::doesit(f._element->type))
         return {};
-      } else {
-        using storage_t = storage_base_type_of<Derived::storage>;
-        using accepts_type = typename Derived::accepts_type;
 
-        if constexpr(
-          !Leaf && 
-          !is_syntax_allowed<typename F::syntax, typename Derived::syntax>
-        ) return {};
-
-        if(!accepts_type::doesit(f._element->type))
-          return {};
-
-        auto obj = static_cast<storage_t *>(f._element);
-        return std::optional<Derived>{Derived{f._sigma, obj}};
-      }
+      auto obj = static_cast<storage_t *>(f._element);
+      return std::optional<Derived>{Derived{f._sigma, obj}};
     }
  
   protected:
@@ -510,6 +522,7 @@ namespace black::internal::new_api
     public: \
       using accepts_type = Storage##_accepts_type; \
       using syntax = Syntax; \
+      using syntax_elements = syntax_elements_for<Storage>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
       static constexpr auto storage = storage_type::Storage; \
       \
@@ -538,6 +551,12 @@ namespace black::internal::new_api
         REQUIRES(is_##Storage##_constructible<Syntax, Args...>) \
       > \
       explicit Storage(Args ...args); \
+      \
+      template<typename ...Handlers> \
+      auto match(Handlers ...handlers) const \
+      { \
+        return matcher<Storage>{}.match(*this, handlers...); \
+      } \
       \
       class alphabet *_sigma; \
       Storage##_t *_element; \

@@ -30,8 +30,6 @@
 #include <type_traits>
 #include <tuple>
 
-#include <iostream>
-
 namespace black::internal::new_api {
   
   struct otherwise {};
@@ -79,7 +77,6 @@ namespace black::internal::new_api {
       REQUIRES(std::is_invocable_v<Handler, Formula>)
     >
     auto dispatch(Formula f, Handler&& handler, Handlers&& ...) {
-      std::cerr << "dispatch(Handler, Handlers...)\n";
       return std::invoke(FWD(handler), f);
     }
 
@@ -97,10 +94,8 @@ namespace black::internal::new_api {
       REQUIRES(!std::is_invocable_v<H1, Formula>),
       REQUIRES(!can_be_unpacked<H1, Formula>::value)
     >
-    auto dispatch(Formula f, H1&&, H2&& h2, Handlers&& ...handlers) 
-      //-> decltype(dispatch(f, FWD(h2), FWD(handlers)...)) 
+    auto dispatch(Formula f, H1&&, H2&& h2, Handlers&& ...handlers)
     {
-      std::cerr << "dispatch(H1, H2, Handlers...)\n";
       return dispatch(f, FWD(h2), FWD(handlers)...);
     }
   }
@@ -150,9 +145,10 @@ namespace black::internal::new_api {
     }
   };
 
-  template<typename Formula>
-  using matcher = 
-    matcher_<Formula, typename Formula::syntax, typename Formula::syntax::list>;
+  template<typename H>
+  struct matcher :
+    matcher_<H, typename H::syntax, typename H::syntax_elements>
+    { };
 
 }
 

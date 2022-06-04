@@ -161,7 +161,6 @@ TEST_CASE("New API") {
       REQUIRE(n.is<negation<LTL>>());
       REQUIRE(n.is<negation<LTLP>>());
       REQUIRE(!n.is<negation<Boolean>>());
-      REQUIRE(!n.is<variable>());
     }
   }
 

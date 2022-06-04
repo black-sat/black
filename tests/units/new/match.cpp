@@ -25,45 +25,64 @@
 
 #include <black/new/formula.hpp>
 
+#include <string>
+
+using namespace std::literals;
+
 using namespace black::internal::new_api;
 
 TEST_CASE("Pattern matching") {
   alphabet sigma;
 
-  using Bool = make_fragment<syntax_element::boolean, syntax_element::proposition, syntax_element::negation>;
+  SECTION("Matching on formulas") {
+    boolean b = sigma.boolean(true);
+    formula<Boolean> n = negation<Boolean>(b);
 
-  boolean b = sigma.boolean(true);
-  negation<Bool> n = negation<Bool>(b);
+    std::string s = n.match(
+      [](boolean) { return "boolean"s; },
+      [](proposition) { return "proposition"s; },
+      [](unary<Boolean>, formula<Boolean> arg) { 
+        return "unary<Boolean>("s + 
+          arg.match(
+            [](boolean) { return "boolean"; },
+            [](proposition) { return "proposition"; },
+            [](unary<Boolean>) { return "unary<Boolean>"; },
+            [](binary<Boolean>) { return "binary<Boolean>"; } 
+          ) + ")"; 
+      },
+      [](binary<Boolean>) { return "binary<Boolean>"s; }
+    );
 
-  // match::unpack(f, u);
+    REQUIRE(s == "unary<Boolean>(boolean)");
+  }
 
-  auto f = [&](negation<Bool> arg) { REQUIRE(arg.argument() == b); };
+  SECTION("Matching on storage kinds") {
+    boolean b = sigma.boolean(true);
+    unary<LTL> n = negation<LTL>(b);
 
-  f(n);
+    std::string s = n.match(
+      [](negation<LTL>) { return "negation"; },
+      [](tomorrow<LTL>) { return "tomorrow"; },
+      [](w_tomorrow<LTL>) { return "w_tomorrow"; },
+      [](always<LTL>) { return "always"; },
+      [](eventually<LTL>) { return "eventually"; }
+    );
 
-  //static_assert(!std::is_invocable_v<decltype(f), decltype(n)>);
+    REQUIRE(s == "negation");
+  }
 
-  match::dispatch(n, 
-    [](proposition) { std::cerr << "proposition\n"; },
-    [](negation<Bool>) { std::cerr << "negation<Bool>\n"; },
-    [](boolean) { std::cerr << "boolean\n"; }
-  );
+  SECTION("Matching with different syntaxes") {
+    boolean b = sigma.boolean(true);
+    formula<LTL> n = negation<LTL>(b);
 
-  // formula<Bool> b = sigma.boolean(true);
+    std::string s = n.match(
+      [](boolean) { return "boolean"; },
+      [](proposition) { return "proposition"; },
+      [](unary<LTLP>) { return "unary<LTLP>"; },
+      [](binary<LTLFO>) { return "binary<LTLFO>"; }
+    );
 
-  matcher<formula<Bool>> m;
-  m.match(n,
-    [](boolean) { std::cerr << "boolean\n"; },
-    [](proposition) { std::cerr << "proposition\n"; },
-    [](negation<Bool>) { std::cerr << "negation<Bool>\n"; }
-  );
-  // m.match(u,
-  //   [](boolean) { },
-  //   //[](proposition) { },
-  //   [](unary<Bool>) { }
-  //   //[](conjunction<Bool>) { }
-  //   // [](proposition) { },
-  //   // [](unary<Boolean>) { },
-  //   // [](binary<Boolean>) { }
-  // );
+    REQUIRE(s == "unary<LTLP>");
+  }
+  
 }

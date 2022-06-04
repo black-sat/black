@@ -153,6 +153,28 @@ namespace black::internal::new_api {
   template<typename List, typename Sublist>
   constexpr bool type_list_includes = type_list_includes_<List, Sublist>::value;
 
+  template<typename List, typename AcceptsType>
+  struct type_list_filter_;
+
+  template<typename List, typename AcceptsType>
+  using type_list_filter = typename type_list_filter_<List, AcceptsType>::type;
+
+  template<typename AcceptsType>
+  struct type_list_filter_<type_list<>, AcceptsType> {
+    using type = type_list<>;
+  };
+
+  template<typename AcceptsType, syntax_element Type, syntax_element ...Types>
+  struct type_list_filter_<type_list<Type, Types...>, AcceptsType> {
+    using type = std::conditional_t<
+      AcceptsType::doesit(Type), 
+      type_list_concat<
+        type_list<Type>, type_list_filter<type_list<Types...>, AcceptsType>
+      >,
+      type_list_filter<type_list<Types...>, AcceptsType>
+    >;
+  };
+
   template<typename Syntax, typename Allowed>
   constexpr bool is_syntax_allowed = 
     type_list_includes<
