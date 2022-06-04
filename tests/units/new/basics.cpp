@@ -155,5 +155,43 @@ TEST_CASE("New API") {
       REQUIRE(u == a);
     }
   }
+
+  SECTION("Atoms and applications") {
+    function<FO> f = sigma.function_symbol("f");
+
+    REQUIRE(f.is<function_symbol>());
+
+    variable x = sigma.variable("x");
+    variable y = sigma.variable("y");
+
+    application<FO> app = application<FO>(f, std::vector{x,y});
+    REQUIRE(app.func() == f);
+    REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
+
+    application<FO> app2 = f(x, y);
+
+    REQUIRE(app.func() == f);
+    REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
+
+    application<FO> app3 = f(std::vector{x, y});
+
+    REQUIRE(app.func() == f);
+    REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
+
+    REQUIRE(app == app2);
+    REQUIRE(app == app3);
+  }
+
+  SECTION("Quantifiers") {
+    variable x = sigma.variable("x");
+    atom<FO> e = atom<FO>(sigma.equal(), std::vector{x, x});
+    quantifier<FO> f = quantifier<FO>(quantifier<FO>::type::forall, x, e);
+
+    REQUIRE(e.rel() == sigma.equal());
+    REQUIRE(e.terms() == std::vector<term<FO>>{x, x});
+
+    REQUIRE(f.var() == x);
+    REQUIRE(f.matrix() == e);
+  }
   
 }
