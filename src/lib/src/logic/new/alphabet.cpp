@@ -88,7 +88,7 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
-    auto key_to_tuple([[maybe_unused]] Storage##_key key) { \
+    inline auto key_to_tuple([[maybe_unused]] Storage##_key key) { \
       return std::make_tuple(
 
   #define declare_field(Base, Storage, Type, Field) key.Field,
