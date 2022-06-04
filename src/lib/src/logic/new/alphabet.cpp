@@ -56,15 +56,7 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
-    struct Storage##_storage { \
-      std::deque<Storage##_t> Storage##_store; \
-      tsl::hopscotch_map<Storage##_key, Storage##_t *> Storage##_map; \
-    };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #define declare_storage_kind(Base, Storage) \
-    inline Storage##_data_t Storage##_key_to_data( \
+    inline Storage##_data_t key_to_data( \
       [[maybe_unused]]Storage##_key const& k \
     ) { \
       return Storage##_data_t {
@@ -81,18 +73,47 @@ namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  template<storage_type Storage>
+  struct storage_key_of_;
+
+  template<storage_type Storage>
+  using storage_key_of = typename storage_key_of_<Storage>::type;
+
   #define declare_storage_kind(Base, Storage) \
-    struct Storage##_allocator : Storage##_storage { \
-      Storage##_t *allocate_##Storage(Storage##_key key) { \
-        auto it = Storage##_map.find(key); \
-        if(it != Storage##_map.end()) \
-          return it->second; \
-        \
-        Storage##_t *obj = \
-          &Storage##_store.emplace_back(key.type, Storage##_key_to_data(key)); \
-        Storage##_map.insert({key, obj}); \
-        \
-        return obj; \
+    template<> \
+    struct storage_key_of_<storage_type::Storage> { \
+      using type = Storage##_key; \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+  
+
+  template<storage_type Storage>
+  struct storage_allocator {
+    using storage_t = storage_base_type_of<Storage>;
+    using storage_key = storage_key_of<Storage>;
+    
+    std::deque<storage_t> _store;
+    tsl::hopscotch_map<storage_key, storage_t *> _map;
+   
+    storage_t *allocate(storage_key key) {
+      auto it = _map.find(key);
+      if(it != _map.end())
+        return it->second;
+     
+      storage_t *obj =
+        &_store.emplace_back(key.type, key_to_data(key));
+      _map.insert({key, obj});
+     
+      return obj;
+    }
+  };
+
+  #define declare_storage_kind(Base, Storage) \
+    struct Storage##_allocator : storage_allocator<storage_type::Storage> { \
+      template<typename T> \
+      auto allocate_##Storage(T t) { \
+        return allocate(t); \
       } \
     };
 

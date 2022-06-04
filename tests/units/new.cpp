@@ -68,8 +68,10 @@ TEST_CASE("New API") {
 
   [[maybe_unused]] 
   known_func<LTLFO> func = sigma.negative();
+
   
   REQUIRE(func.is<negative>());
+  REQUIRE(!func.is<addition>());
 
   auto i = sigma.function_symbol("ciao");
 
@@ -108,6 +110,7 @@ TEST_CASE("New API") {
 
   formula<LTL> f14 = negation<LTL>(formula<LTL>{p});
 
+  REQUIRE(!f14.is<quantifier<LTL>>());
   REQUIRE(f14.is<negation<LTLP>>());
   REQUIRE(!f14.is<negation<Boolean>>());
   REQUIRE(f14.is<unary<LTLP>>());
@@ -119,7 +122,6 @@ TEST_CASE("New API") {
 
   [[maybe_unused]]
   formula<untilprops> f = until<untilprops>(p, p);
-
 
   [[maybe_unused]]
   tsl::hopscotch_map<variable, std::string> map;

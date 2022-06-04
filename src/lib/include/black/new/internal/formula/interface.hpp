@@ -249,6 +249,12 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  enum class storage_type {
+
+    #define declare_storage_kind(Base, Storage) Storage,
+    #include <black/new/internal/formula/hierarchy.hpp>
+
+  };
   
   template<hierarchy_type H>
   struct hierarchy_base_type_of_;
@@ -279,6 +285,20 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  template<storage_type H>
+  struct storage_base_type_of_;
+
+  template<storage_type H>
+  using storage_base_type_of = typename storage_base_type_of_<H>::type;
+  
+  #define declare_storage_kind(Base, Storage) \
+    template<> \
+    struct storage_base_type_of_<storage_type::Storage> { \
+      using type = Storage##_t; \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
   //
   // Helper function to transform a Base argument to its underlying element, if 
   // the argument is a Base, leaving it untouched otherwise
@@ -302,8 +322,19 @@ namespace black::internal::new_api
   //
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  template<hierarchy_type Hierarchy>
+  struct unique_id_of_ { };
+
+  template<hierarchy_type Hierarchy>
+  using unique_id_of = typename unique_id_of_<Hierarchy>::type;
+
   #define declare_hierarchy(Base) \
-    enum class Base##_id : uintptr_t { };
+    enum class Base##_id : uintptr_t { }; \
+    \
+    template<> \
+    struct unique_id_of_<hierarchy_type::Base> { \
+      using type = Base##_id; \
+    };
 
   #define declare_storage_kind(Base, Storage) \
     template<typename H> \
@@ -350,13 +381,6 @@ namespace black::internal::new_api
   #define end_leaf_storage_kind(Base, Storage)
 
   #include <black/new/internal/formula/hierarchy.hpp>
-  
-  enum class storage_type {
-
-    #define declare_storage_kind(Base, Storage) Storage,
-    #include <black/new/internal/formula/hierarchy.hpp>
-
-  };
 
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
@@ -394,55 +418,65 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  #define declare_storage_kind(Base, Storage) \
-    template<typename Derived> \
-    struct Storage##_common_interface \
-    { \
-      template<typename H> \
-      std::optional<H> to() const { \
-        return H::from(self()); \
-      } \
-      \
-      template<typename H> \
-      bool is() const { \
-        return to<H>().has_value(); \
-      } \
-      \
-      size_t hash() const { \
-        return std::hash<Storage##_t const*>{}(self()._element); \
-      } \
-      \
-      alphabet *sigma() const { return self()._sigma; } \
-      Base##_id unique_id() const { \
-        return static_cast<Base##_id>( \
-          reinterpret_cast<uintptr_t>(self()._element) \
-        ); \
-      } \
-      \
-      template<typename F> \
-      static std::optional<Derived> from(F f) { \
-        using accepts_type = typename Derived::accepts_type; \
-        if(!accepts_type::doesit(f._element->type) || \
-            !is_syntax_allowed<typename F::syntax, typename Derived::syntax>) \
-          return {}; \
-        \
-        auto obj = static_cast<Storage##_t *>(f._element); \
-        return std::optional<Derived>{Derived{f._sigma, obj}}; \
-      } \
-    \
-    protected: \
-      Derived &self() { return static_cast<Derived &>(*this); } \
-      Derived const&self() const { return static_cast<Derived const&>(*this); }\
-    };
+  
+  template<typename Derived, bool Leaf>
+  struct storage_common_interface
+  {
+    template<typename H>
+    std::optional<H> to() const {
+      return H::from(self());
+    }
+   
+    template<typename H>
+    bool is() const {
+      return to<H>().has_value();
+    }
+   
+    size_t hash() const {
+      using storage_t = storage_base_type_of<Derived::storage>;
+      return std::hash<storage_t const*>{}(self()._element);
+    }
+   
+    alphabet *sigma() const { return self()._sigma; }
+    auto unique_id() const {
+      return static_cast<unique_id_of<Derived::hierarchy>>(
+        reinterpret_cast<uintptr_t>(self()._element)
+      );
+    }
+   
+    template<typename F>
+    static std::optional<Derived> from(F f) {
+      static_assert(
+        F::hierarchy == Derived::hierarchy,
+        "is<>, to<> or from<> used with types of a different hierarchy"
+      );
+      
+      using storage_t = storage_base_type_of<Derived::storage>;
+      using accepts_type = typename Derived::accepts_type;
 
-  #include <black/new/internal/formula/hierarchy.hpp>
+      if constexpr(
+        !Leaf && 
+        !is_syntax_allowed<typename F::syntax, typename Derived::syntax>
+      ) return {};
+
+      if(!accepts_type::doesit(f._element->type))
+        return {};
+
+      auto obj = static_cast<storage_t *>(f._element);
+      return std::optional<Derived>{Derived{f._sigma, obj}};
+    }
+ 
+  protected:
+    Derived &self() { return static_cast<Derived &>(*this); }
+    Derived const&self() const { return static_cast<Derived const&>(*this); }
+  };
 
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
     class Storage : \
       public Storage##_fields<Storage<Syntax>>, \
       public Storage##_children<Syntax, Storage<Syntax>>, \
-      public Storage##_common_interface<Storage<Syntax>>, \
+      public storage_common_interface<Storage<Syntax>, false>, \
       public Base##_custom_members_t<Storage<Syntax>> \
     { \
       friend struct Storage##_fields<Storage<Syntax>>; \
@@ -486,7 +520,7 @@ namespace black::internal::new_api
   #define declare_leaf_storage_kind(Base, Storage) \
     class Storage : \
       public Storage##_fields<Storage>, \
-      public Storage##_common_interface<Storage>, \
+      public storage_common_interface<Storage, true>, \
       public Base##_custom_members_t<Storage> \
     { \
       \
@@ -517,7 +551,7 @@ namespace black::internal::new_api
     class Element : \
       public Storage##_fields<Element<Syntax>>, \
       public Storage##_children<Syntax, Element<Syntax>>, \
-      public Storage##_common_interface<Element<Syntax>>, \
+      public storage_common_interface<Element<Syntax>, false>, \
       public Base##_custom_members_t<Element<Syntax>> \
     { \
       friend struct Storage##_fields<Element<Syntax>>; \
@@ -555,7 +589,7 @@ namespace black::internal::new_api
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     class Element : \
       public Storage##_fields<Element>, \
-      public Storage##_common_interface<Element>, \
+      public storage_common_interface<Element, true>, \
       public Base##_custom_members_t<Element> \
     { \
       friend struct Storage##_fields<Element>; \
