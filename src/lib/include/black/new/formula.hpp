@@ -187,6 +187,7 @@ namespace black::internal::new_api {
 #include <black/new/internal/formula/alphabet.hpp>
 #include <black/new/internal/formula/impl.hpp>
 #include <black/new/internal/formula/fragments.hpp>
+#include <black/new/internal/formula/match.hpp>
 
 namespace black::internal::new_api {
   template<typename Derived>

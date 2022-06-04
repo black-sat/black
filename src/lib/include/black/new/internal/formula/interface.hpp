@@ -82,6 +82,33 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  template<typename Syntax, syntax_element Element>
+  struct type_for_syntax_element_;
+
+  template<typename Syntax, syntax_element Element>
+  using type_for_syntax_element = 
+    typename type_for_syntax_element_<Syntax, Element>::type;
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    template<typename Syntax> \
+    struct type_for_syntax_element_<Syntax, syntax_element::Element> { \
+      using type = Element<Syntax>; \
+    };
+  
+  #define has_no_hierarchy_elements(Base, Storage) \
+    declare_hierarchy_element(Base, Storage, Storage)
+    
+  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+    template<typename Syntax> \
+    struct type_for_syntax_element_<Syntax, syntax_element::Element> { \
+      using type = Element; \
+    };
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    declare_leaf_hierarchy_element(Base, Storage, Storage)
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
   //
   // constexpr functions to categorize hierarchy type values into storage kinds
   //
@@ -446,24 +473,23 @@ namespace black::internal::new_api
    
     template<typename F>
     static std::optional<Derived> from(F f) {
-      static_assert(
-        F::hierarchy == Derived::hierarchy,
-        "is<>, to<> or from<> used with types of a different hierarchy"
-      );
-      
-      using storage_t = storage_base_type_of<Derived::storage>;
-      using accepts_type = typename Derived::accepts_type;
-
-      if constexpr(
-        !Leaf && 
-        !is_syntax_allowed<typename F::syntax, typename Derived::syntax>
-      ) return {};
-
-      if(!accepts_type::doesit(f._element->type))
+      if constexpr(F::hierarchy != Derived::hierarchy) {
         return {};
+      } else {
+        using storage_t = storage_base_type_of<Derived::storage>;
+        using accepts_type = typename Derived::accepts_type;
 
-      auto obj = static_cast<storage_t *>(f._element);
-      return std::optional<Derived>{Derived{f._sigma, obj}};
+        if constexpr(
+          !Leaf && 
+          !is_syntax_allowed<typename F::syntax, typename Derived::syntax>
+        ) return {};
+
+        if(!accepts_type::doesit(f._element->type))
+          return {};
+
+        auto obj = static_cast<storage_t *>(f._element);
+        return std::optional<Derived>{Derived{f._sigma, obj}};
+      }
     }
  
   protected:
@@ -511,7 +537,7 @@ namespace black::internal::new_api
         typename ...Args, \
         REQUIRES(is_##Storage##_constructible<Syntax, Args...>) \
       > \
-      Storage(Args ...args); \
+      explicit Storage(Args ...args); \
       \
       class alphabet *_sigma; \
       Storage##_t *_element; \
@@ -577,7 +603,7 @@ namespace black::internal::new_api
         typename ...Args, \
         REQUIRES(is_##Element##_constructible<Syntax, Args...>) \
       > \
-      Element(Args ...args); \
+      explicit Element(Args ...args); \
       \
       Element &operator=(Element const&) = default; \
       Element &operator=(Element &&) = default; \
@@ -682,7 +708,12 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  #define declare_leaf_storage_kind(Base, Storage)
+  #define declare_leaf_storage_kind(Base, Storage) \
+   } namespace std { \
+      template<>                            \
+      struct tuple_size<black::internal::new_api::Storage> \
+        : std::integral_constant<int, 0> { }; \
+    } namespace black::internal::new_api {
 
   #define declare_storage_kind(Base, Storage) \
     } namespace std { \
@@ -698,7 +729,13 @@ namespace black::internal::new_api
       }; \
     } namespace black::internal::new_api {
 
-  #define declare_leaf_hierarchy_element(Base, Storage, Element)
+  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+    } namespace std { \
+      template<>                                \
+      struct tuple_size<black::internal::new_api::Element> \
+        : std::integral_constant<int, 0> { }; \
+    } namespace black::internal::new_api {
+
   #define declare_hierarchy_element(Base, Storage, Element) \
     } namespace std { \
       template<typename Syntax>                                \

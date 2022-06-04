@@ -25,6 +25,45 @@
 
 #include <black/new/formula.hpp>
 
+using namespace black::internal::new_api;
+
 TEST_CASE("Pattern matching") {
-  
+  alphabet sigma;
+
+  using Bool = make_fragment<syntax_element::boolean, syntax_element::proposition, syntax_element::negation>;
+
+  boolean b = sigma.boolean(true);
+  negation<Bool> n = negation<Bool>(b);
+
+  // match::unpack(f, u);
+
+  auto f = [&](negation<Bool> arg) { REQUIRE(arg.argument() == b); };
+
+  f(n);
+
+  //static_assert(!std::is_invocable_v<decltype(f), decltype(n)>);
+
+  match::dispatch(n, 
+    [](proposition) { std::cerr << "proposition\n"; },
+    [](negation<Bool>) { std::cerr << "negation<Bool>\n"; },
+    [](boolean) { std::cerr << "boolean\n"; }
+  );
+
+  // formula<Bool> b = sigma.boolean(true);
+
+  matcher<formula<Bool>> m;
+  m.match(n,
+    [](boolean) { std::cerr << "boolean\n"; },
+    [](proposition) { std::cerr << "proposition\n"; },
+    [](negation<Bool>) { std::cerr << "negation<Bool>\n"; }
+  );
+  // m.match(u,
+  //   [](boolean) { },
+  //   //[](proposition) { },
+  //   [](unary<Bool>) { }
+  //   //[](conjunction<Bool>) { }
+  //   // [](proposition) { },
+  //   // [](unary<Boolean>) { },
+  //   // [](binary<Boolean>) { }
+  // );
 }

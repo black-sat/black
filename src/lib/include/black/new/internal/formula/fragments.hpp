@@ -96,9 +96,35 @@ namespace black::internal::new_api {
     syntax_element _type;
   };
 
+  template<typename TypeList>
+  struct type_list_remove_no_type_;
+  
+  template<typename TypeList>
+  using type_list_remove_no_type = 
+    typename type_list_remove_no_type_<TypeList>::type;
+
+  template<>
+  struct type_list_remove_no_type_<type_list<>> {
+    using type = type_list<>;
+  };
+
+  template<syntax_element Type, syntax_element ...Types>
+  struct type_list_remove_no_type_<type_list<Type, Types...>> {
+    using type = type_list_concat<
+      type_list<Type>, type_list_remove_no_type<type_list<Types...>>
+    >;
+  };
+
+  template<syntax_element ...Types>
+  struct type_list_remove_no_type_<type_list<syntax_element::no_type, Types...>>
+  {
+    using type = type_list<Types...>;
+  };
+
   template<syntax_element ...Types>
   struct make_fragment {
-    using list = type_list_unique<type_list<Types...>>;
+    using list = 
+      type_list_remove_no_type<type_list_unique<type_list<Types...>>>;
     
     template<typename AcceptsType>
     using type = fragment_type<AcceptsType, list>;
@@ -106,9 +132,9 @@ namespace black::internal::new_api {
 
   template<typename Parent, syntax_element ...Types>
   struct make_derived_fragment {
-    using list = type_list_unique<
+    using list = type_list_remove_no_type<type_list_unique<
       type_list_concat<typename Parent::list, type_list<Types...>>
-    >;
+    >>;
 
     template<typename AcceptsType>
     using type = fragment_type<AcceptsType, list>;

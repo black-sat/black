@@ -154,6 +154,15 @@ TEST_CASE("New API") {
       u = a;
       REQUIRE(u == a);
     }
+
+    SECTION("is<>, to<> and from<>") {
+      negation<LTL> n = negation<LTL>(sigma.boolean(true));
+
+      REQUIRE(n.is<negation<LTL>>());
+      REQUIRE(n.is<negation<LTLP>>());
+      REQUIRE(!n.is<negation<Boolean>>());
+      REQUIRE(!n.is<variable>());
+    }
   }
 
   SECTION("Atoms and applications") {
