@@ -26,7 +26,6 @@
 #include <black/new/formula.hpp>
 #include <string>
 #include <type_traits>
-#include <iostream>
 
 using namespace std::literals;
 using namespace black::new_api::syntax;
@@ -34,7 +33,7 @@ using black::internal::identifier;
 
 TEST_CASE("New API") {
 
-  black::new_api::alphabet sigma;
+  black::new_api::syntax::alphabet sigma;
 
   SECTION("Formula deduplication") {
     REQUIRE(sigma.boolean(true) == sigma.boolean(true));
@@ -74,17 +73,17 @@ TEST_CASE("New API") {
   SECTION("Storage kinds") {
     boolean b = sigma.boolean(true);
 
-    unary<LTL> u = unary<LTL>(unary<LTL>::type::negation, b);
+    unary<LTL> u = unary<LTL>(unary<LTL>::type::eventually, b);
 
     REQUIRE(u.argument() == b);
 
     REQUIRE(u.argument().is<boolean>());
     REQUIRE(u.argument().to<boolean>()->value() == true);
 
-    REQUIRE(u.is<negation<LTL>>());
-    REQUIRE(u.to<negation<LTL>>()->argument() == b);
-    REQUIRE(u.to<negation<LTL>>()->argument().is<boolean>());
-    REQUIRE(u.to<negation<LTL>>()->argument().to<boolean>()->value() == true);
+    REQUIRE(u.is<eventually<LTL>>());
+    REQUIRE(u.to<eventually<LTL>>()->argument() == b);
+    REQUIRE(u.to<eventually<LTL>>()->argument().is<boolean>());
+    REQUIRE(u.to<eventually<LTL>>()->argument().to<boolean>()->value() == true);
   }
 
   SECTION("Hierarchy elements") {
@@ -199,4 +198,94 @@ TEST_CASE("New API") {
     REQUIRE(f.matrix() == e);
   }
   
+  SECTION("Deduction guides") {
+    formula b = sigma.boolean(true);
+    formula p = sigma.proposition("p");
+    variable x = sigma.variable("x");
+    unary u = unary<Boolean>(unary<Boolean>::type::negation, b);
+    conjunction c = conjunction(p, b);
+    binary c2 = conjunction(u, b);
+    atom app = atom(sigma.equal(), std::vector{x, x});
+
+    static_assert(std::is_same_v<decltype(c2), binary<Boolean>>);
+
+    REQUIRE(b.is<boolean>());
+    REQUIRE(p.is<proposition>());
+    REQUIRE(u.is<negation<Boolean>>());
+    REQUIRE(c.is<conjunction<Boolean>>());
+    REQUIRE(c2.is<conjunction<Boolean>>());
+    REQUIRE(app._element->type == syntax_element::atom);
+    REQUIRE(app.is<atom<FO>>());
+  }
+
+  SECTION("Sugar for formulas") {
+    boolean b = sigma.boolean(true);
+    proposition p = sigma.proposition("p");
+
+    negation n = !b;
+    tomorrow x = X(b);
+    w_tomorrow wx = w_tomorrow(b);
+    yesterday y = Y(b);
+    w_yesterday z = Z(b);
+    always g = G(b);
+    eventually f = F(b);
+    once o = O(b);
+    historically h = H(b);
+
+    REQUIRE(n.is<negation<LTLP>>());
+    REQUIRE(x.is<tomorrow<LTLP>>());
+    REQUIRE(wx.is<w_tomorrow<LTLP>>());
+    REQUIRE(y.is<yesterday<LTLP>>());
+    REQUIRE(z.is<w_yesterday<LTLP>>());
+    REQUIRE(g.is<always<LTLP>>());
+    REQUIRE(f.is<eventually<LTLP>>());
+    REQUIRE(o.is<once<LTLP>>());
+    REQUIRE(h.is<historically<LTLP>>());
+
+    conjunction c = b && p;
+    disjunction d = b || p;
+    implication i = implies(b, p);
+    until u = U(b, p);
+    release r = R(b, p);
+    w_until wu = wU(b, p);
+    s_release sr = sR(b, p);
+    since s = S(b, p);
+    triggered t = T(b, p);
+
+    REQUIRE(c.is<conjunction<LTLP>>());
+    REQUIRE(d.is<disjunction<LTLP>>());
+    REQUIRE(i.is<implication<LTLP>>());
+    REQUIRE(u.is<until<LTLP>>());
+    REQUIRE(r.is<release<LTLP>>());
+    REQUIRE(wu.is<w_until<LTLP>>());
+    REQUIRE(sr.is<s_release<LTLP>>());
+    REQUIRE(s.is<since<LTLP>>());
+    REQUIRE(t.is<triggered<LTLP>>());
+  }
+
+  SECTION("Sugar for terms") {
+    variable x = sigma.variable("x");
+
+    atom lt = x < x;
+    atom le = x <= x;
+    atom gt = x > x;
+    atom ge = x >= x;
+
+    application plus = x + x;
+    application minus = x - x;
+    application neg = -x;
+    application mult = x * x;
+    application div = x / x;
+
+    REQUIRE(lt.is<atom<FO>>());
+    REQUIRE(le.is<atom<FO>>());
+    REQUIRE(gt.is<atom<FO>>());
+    REQUIRE(ge.is<atom<FO>>());
+
+    REQUIRE(plus.is<application<FO>>());
+    REQUIRE(minus.is<application<FO>>());
+    REQUIRE(neg.is<application<FO>>());
+    REQUIRE(mult.is<application<FO>>());
+    REQUIRE(div.is<application<FO>>());
+  }
 }

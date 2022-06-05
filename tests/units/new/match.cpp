@@ -32,7 +32,7 @@ using namespace std::literals;
 using namespace black::new_api::syntax;
 
 TEST_CASE("Pattern matching") {
-  black::new_api::alphabet sigma;
+  black::new_api::syntax::alphabet sigma;
 
   SECTION("Matching on formulas") {
     boolean b = sigma.boolean(true);
@@ -157,8 +157,6 @@ TEST_CASE("Pattern matching") {
     );
 
     REQUIRE(f2 == sigma.proposition("p"));
-
-    //decltype(f2)::syntax::pippo p;
   }
   
 }

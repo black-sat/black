@@ -60,36 +60,35 @@ namespace black::internal::new_api
   struct make_fragment;
   template<typename, syntax_element ...>
   struct make_derived_fragment;
-  template<typename ...>
+  template<typename Syntax1, typename Syntax2>
   struct make_combined_fragment_impl;
 
-  template<typename, typename ...Syntaxes>
-  struct make_combined_fragment_;
+  template<typename Syntax1, typename Syntax2, typename = void>
+  struct make_combined_fragment_ {
+    using type = make_combined_fragment_impl<Syntax1, Syntax2>;
+  };
 
-  template<typename ...Syntaxes>
+  template<typename Syntax1, typename Syntax2>
+  struct make_combined_fragment_<
+    Syntax1, Syntax2, std::enable_if_t<is_syntax_allowed<Syntax1, Syntax2>>
+  > { 
+    using type = Syntax2;
+  };
+
+  template<typename Syntax1, typename Syntax2>
+  struct make_combined_fragment_<
+    Syntax1, Syntax2, 
+    std::enable_if_t<
+      !is_syntax_allowed<Syntax1, Syntax2> &&
+      is_syntax_allowed<Syntax2, Syntax1> 
+    >
+  > { 
+    using type = Syntax1;
+  };
+
+  template<typename Syntax1, typename Syntax2>
   using make_combined_fragment = 
-    typename make_combined_fragment_<void, Syntaxes...>::type;
-
-  template<typename Syntax>
-  struct make_combined_fragment_<void, Syntax> {
-    using type = Syntax;
-  };
- 
-  template<typename Syntax, typename ...Syntaxes>
-  struct make_combined_fragment_<
-    std::enable_if_t<(is_syntax_allowed<Syntax, Syntaxes> || ...)>,
-    Syntax, Syntaxes...
-  > : make_combined_fragment_<void, Syntaxes...> { };
- 
-  template<typename Syntax, typename ...Syntaxes>
-  struct make_combined_fragment_<
-    std::enable_if_t<!(is_syntax_allowed<Syntax, Syntaxes> || ...)>,
-    Syntax, Syntaxes...
-  > {
-    using type = make_combined_fragment_impl<
-      Syntax, make_combined_fragment<Syntaxes...>
-    >;
-  };
+    typename make_combined_fragment_<Syntax1, Syntax2>::type;
 
   //
   // Base class for internal representation of elements of the hierarchies
@@ -229,8 +228,6 @@ namespace black::internal::new_api
       using type = typename Syntax::template type<accepts_type>; \
       using syntax_elements = syntax_elements_for<Base>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
-      template<typename S> \
-      using reapply = Base<S>; \
       \
       Base() = delete; \
       Base(Base const&) = default; \
@@ -276,7 +273,10 @@ namespace black::internal::new_api
       \
       alphabet *_sigma; \
       Base##_base *_element; \
-    };
+    }; \
+    \
+    template<typename H> \
+    Base(H const&) -> Base<typename H::syntax>;
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
@@ -563,6 +563,73 @@ namespace black::internal::new_api
     Derived const&self() const { return static_cast<Derived const&>(*this); }
   };
 
+  template<typename Arg, typename = void>
+  struct can_get_syntax_from_arg_ : std::false_type { };
+
+  template<typename Arg>
+  struct can_get_syntax_from_arg_<Arg, std::enable_if_t<is_hierarchy<Arg>>>
+    : std::true_type { };
+  
+  template<typename Arg>
+  struct can_get_syntax_from_arg_<
+    Arg, std::enable_if_t<is_hierarchy<typename Arg::value_type>>
+  > : std::true_type { };
+
+  template<typename Arg>
+  constexpr bool can_get_syntax_from_arg =
+    can_get_syntax_from_arg_<Arg>::value;
+
+  template<typename Arg, typename = void>
+  struct get_syntax_from_arg_ { };
+
+  template<typename Arg>
+  struct get_syntax_from_arg_<Arg, std::enable_if_t<is_hierarchy<Arg>>> { 
+    using type = typename Arg::syntax;
+  };
+  
+  template<typename Arg>
+  struct get_syntax_from_arg_<
+    Arg, std::enable_if_t<is_hierarchy<typename Arg::value_type>>
+  > {
+    using type = typename Arg::value_type::syntax;
+  };
+
+  template<typename Arg>
+  using get_syntax_from_arg = typename get_syntax_from_arg_<Arg>::type;
+  
+  template<typename, typename ...Args>
+  struct combined_fragment_from_args_ { };
+
+  template<typename ...Args>
+  using combined_fragment_from_args = 
+    typename combined_fragment_from_args_<void, Args...>::type;
+
+  template<typename Arg>
+  struct combined_fragment_from_args_<
+    std::enable_if_t<can_get_syntax_from_arg<Arg>>, Arg
+  > {
+    using type = get_syntax_from_arg<Arg>;
+  };
+
+  template<typename Arg, typename ...Args>
+  struct combined_fragment_from_args_<
+    std::enable_if_t<can_get_syntax_from_arg<Arg>>,
+    Arg, Args...
+  > {
+    using type = make_combined_fragment<
+      get_syntax_from_arg<Arg>,
+      combined_fragment_from_args<Args...>
+    >;
+  };
+  
+  template<typename Arg, typename ...Args>
+  struct combined_fragment_from_args_<
+    std::enable_if_t<!can_get_syntax_from_arg<Arg>>,
+    Arg, Args...
+  > {
+    using type = combined_fragment_from_args<Args...>;
+  };
+
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
     class Storage : \
@@ -579,8 +646,6 @@ namespace black::internal::new_api
       using syntax_elements = syntax_elements_for<Storage>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
       static constexpr auto storage = storage_type::Storage; \
-      template<typename S> \
-      using reapply = Storage<S>; \
       \
       using type = typename Syntax::template type<accepts_type>; \
       \
@@ -616,7 +681,20 @@ namespace black::internal::new_api
       \
       class alphabet *_sigma; \
       Storage##_t *_element; \
-    };
+    };\
+    \
+    template<typename H> \
+    Storage(H const&) -> Storage<typename H::syntax>; \
+  
+  #define has_no_hierarchy_elements(Base, Storage) \
+    template<typename ...Args> \
+    explicit Storage(Args ...args) -> \
+      Storage< \
+        make_combined_fragment< \
+          make_fragment<syntax_element::Storage>, \
+          combined_fragment_from_args<Args...> \
+        > \
+      >;
 
   #define declare_leaf_storage_kind(Base, Storage) \
     class Storage : \
@@ -685,7 +763,16 @@ namespace black::internal::new_api
       \
       class alphabet *_sigma; \
       Storage##_t *_element; \
-    };
+    }; \
+    \
+    template<typename ...Args> \
+    explicit Element(Args ...args) -> \
+      Element< \
+        make_combined_fragment< \
+          make_fragment<syntax_element::Element>, \
+          combined_fragment_from_args<Args...> \
+        > \
+      >;
   
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     class Element : \

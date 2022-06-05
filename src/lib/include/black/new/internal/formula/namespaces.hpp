@@ -1,4 +1,4 @@
-  //
+//
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
 // (C) 2022 Nicola Gigante
@@ -169,7 +169,7 @@ namespace black::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  using namespace LTLPFO;
+  //using namespace LTLPFO;
 
   #undef enum_elements_Boolean
   #undef enum_elements_FO

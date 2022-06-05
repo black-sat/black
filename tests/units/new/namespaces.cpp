@@ -33,22 +33,7 @@
 
 TEST_CASE("Fragment namespaces") {
 
-  black::new_api::alphabet sigma;
-
-  SECTION("Top-level namespace") {
-    using namespace black::new_api;
-  
-    static_assert(type_exists(formula, LTLPFO));
-    static_assert(type_exists(term, LTLPFO));
-    static_assert(type_exists(function, LTLPFO));
-    static_assert(type_exists(relation, LTLPFO));
-    static_assert(type_exists(unary, LTLPFO));
-    static_assert(type_exists(binary, LTLPFO));
-
-    formula f = sigma.proposition("p");
-
-    REQUIRE(f.is<proposition>());
-  }
+  black::new_api::syntax::alphabet sigma;
 
   SECTION("Specific fragments") {
     using namespace black::new_api::FO;

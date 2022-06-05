@@ -48,7 +48,7 @@ namespace black::internal::new_api {
       [[maybe_unused]] Storage##_key k1, \
       [[maybe_unused]] Storage##_key k2 \
     ) { \
-      return 
+      return k1.type == k2.type &&
 
   #define declare_field(Base, Storage, Type, Field) k1.Field == k2.Field &&
 
@@ -161,7 +161,7 @@ namespace black::internal::new_api {
       [[maybe_unused]] Storage##_alloc_args<Syntax> const&args \
     ) { \
       return Storage##_key { \
-        syntax_element::no_type,
+        args.type.type(),
 
   #define declare_field(Base, Storage, Type, Field) args.Field,
 
