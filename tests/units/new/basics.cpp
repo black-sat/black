@@ -40,10 +40,10 @@ TEST_CASE("New API") {
 
     REQUIRE(sigma.proposition("p") == sigma.proposition("p"));
 
-    REQUIRE(
-      conjunction<LTL>(sigma.boolean(true), sigma.boolean(true)) ==
-      conjunction<LTL>(sigma.boolean(true), sigma.boolean(true))
-    );
+    formula<LTL> c = conjunction<LTL>(sigma.boolean(true), sigma.boolean(true));
+    formula<LTL> d = conjunction<LTL>(sigma.boolean(true), sigma.boolean(true));
+
+    REQUIRE(c == d);
   }
 
   SECTION("Leaf storage kinds") {
@@ -182,8 +182,8 @@ TEST_CASE("New API") {
     REQUIRE(app.func() == f);
     REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
 
-    REQUIRE(app == app2);
-    REQUIRE(app == app3);
+    REQUIRE(bool(app == app2));
+    REQUIRE(bool(app == app3));
   }
 
   SECTION("Quantifiers") {
@@ -194,7 +194,7 @@ TEST_CASE("New API") {
     REQUIRE(e.rel() == sigma.equal());
     REQUIRE(e.terms() == std::vector<term<FO>>{x, x});
 
-    REQUIRE(f.var() == x);
+    REQUIRE(bool(f.var() == x));
     REQUIRE(f.matrix() == e);
   }
   
@@ -214,7 +214,6 @@ TEST_CASE("New API") {
     REQUIRE(u.is<negation<Boolean>>());
     REQUIRE(c.is<conjunction<Boolean>>());
     REQUIRE(c2.is<conjunction<Boolean>>());
-    REQUIRE(app._element->type == syntax_element::atom);
     REQUIRE(app.is<atom<FO>>());
   }
 
@@ -265,27 +264,144 @@ TEST_CASE("New API") {
 
   SECTION("Sugar for terms") {
     variable x = sigma.variable("x");
+    constant c = sigma.integer(42);
 
-    atom lt = x < x;
-    atom le = x <= x;
-    atom gt = x > x;
-    atom ge = x >= x;
-
-    application plus = x + x;
-    application minus = x - x;
-    application neg = -x;
-    application mult = x * x;
-    application div = x / x;
+    atom lt = x < c;
+    atom le = x <= c;
+    atom gt = x > c;
+    atom ge = x >= c;
+    atom eq = x == c;
+    atom ne = x != c;
+    formula feq = x == c;
+    formula fne = x != c;
+    atom lt0 = x < 0;
+    atom le0 = x <= 0;
+    atom gt0 = x > 0;
+    atom ge0 = x >= 0;
+    atom eq0 = x == 0;
+    atom ne0 = x != 0;
+    formula feq0 = x == 0;
+    formula fne0 = x != 0;
+    atom lt0p = 0 < x;
+    atom le0p = 0 <= x;
+    atom gt0p = 0 > x;
+    atom ge0p = 0 >= x;
+    atom eq0p = 0 == x;
+    atom ne0p = 0 != x;
+    formula feq0p = 0 == x;
+    formula fne0p = 0 != x;
+    atom lt0f = x < 0.0;
+    atom le0f = x <= 0.0;
+    atom gt0f = x > 0.0;
+    atom ge0f = x >= 0.0;
+    atom eq0f = x == 0.0;
+    atom ne0f = x != 0.0;
+    formula feq0f = x == 0.0;
+    formula fne0f = x != 0.0;
+    atom lt0fp = 0.0 < x;
+    atom le0fp = 0.0 <= x;
+    atom gt0fp = 0.0 > x;
+    atom ge0fp = 0.0 >= x;
+    atom eq0fp = 0.0 == x;
+    atom ne0fp = 0.0 != x;
+    formula feq0fp = 0.0 == x;
+    formula fne0fp = 0.0 != x;
 
     REQUIRE(lt.is<atom<FO>>());
     REQUIRE(le.is<atom<FO>>());
     REQUIRE(gt.is<atom<FO>>());
     REQUIRE(ge.is<atom<FO>>());
+    REQUIRE(eq.is<atom<FO>>());
+    REQUIRE(ne.is<atom<FO>>());
+    REQUIRE(feq.is<atom<FO>>());
+    REQUIRE(fne.is<atom<FO>>());
+    REQUIRE(lt0.is<atom<FO>>());
+    REQUIRE(le0.is<atom<FO>>());
+    REQUIRE(gt0.is<atom<FO>>());
+    REQUIRE(ge0.is<atom<FO>>());
+    REQUIRE(eq0.is<atom<FO>>());
+    REQUIRE(ne0.is<atom<FO>>());
+    REQUIRE(feq0.is<atom<FO>>());
+    REQUIRE(fne0.is<atom<FO>>());
+    REQUIRE(lt0p.is<atom<FO>>());
+    REQUIRE(le0p.is<atom<FO>>());
+    REQUIRE(gt0p.is<atom<FO>>());
+    REQUIRE(ge0p.is<atom<FO>>());
+    REQUIRE(eq0p.is<atom<FO>>());
+    REQUIRE(ne0p.is<atom<FO>>());
+    REQUIRE(feq0p.is<atom<FO>>());
+    REQUIRE(fne0p.is<atom<FO>>());
+    REQUIRE(lt0f.is<atom<FO>>());
+    REQUIRE(le0f.is<atom<FO>>());
+    REQUIRE(gt0f.is<atom<FO>>());
+    REQUIRE(ge0f.is<atom<FO>>());
+    REQUIRE(eq0f.is<atom<FO>>());
+    REQUIRE(ne0f.is<atom<FO>>());
+    REQUIRE(feq0f.is<atom<FO>>());
+    REQUIRE(fne0f.is<atom<FO>>());
+    REQUIRE(lt0fp.is<atom<FO>>());
+    REQUIRE(le0fp.is<atom<FO>>());
+    REQUIRE(gt0fp.is<atom<FO>>());
+    REQUIRE(ge0fp.is<atom<FO>>());
+    REQUIRE(eq0fp.is<atom<FO>>());
+    REQUIRE(ne0fp.is<atom<FO>>());
+    REQUIRE(feq0fp.is<atom<FO>>());
+    REQUIRE(fne0fp.is<atom<FO>>());
+
+
+    application plus = x + c;
+    application minus = x - c;
+    application neg = -x;
+    application mult = x * c;
+    application div = x / c;
+    application plus0 = x + 0;
+    application minus0 = x - 0;
+    application mult0 = x * 0;
+    application div0 = x / 0;
+    application plus0p = 0 + x;
+    application minus0p = 0 - x;
+    application mult0p = 0 * x;
+    application div0p = 0 / x;
+    application plus0f = x + 0.0;
+    application minus0f = x - 0.0;
+    application mult0f = x * 0.0;
+    application div0f = x / 0.0;
+    application plus0fp = 0.0 + x;
+    application minus0fp = 0.0 - x;
+    application mult0fp = 0.0 * x;
+    application div0fp = 0.0 / x;
 
     REQUIRE(plus.is<application<FO>>());
     REQUIRE(minus.is<application<FO>>());
     REQUIRE(neg.is<application<FO>>());
     REQUIRE(mult.is<application<FO>>());
     REQUIRE(div.is<application<FO>>());
+    REQUIRE(plus0.is<application<FO>>());
+    REQUIRE(minus0.is<application<FO>>());
+    REQUIRE(mult0.is<application<FO>>());
+    REQUIRE(div0.is<application<FO>>());
+    REQUIRE(plus0p.is<application<FO>>());
+    REQUIRE(minus0p.is<application<FO>>());
+    REQUIRE(mult0p.is<application<FO>>());
+    REQUIRE(div0p.is<application<FO>>());
+    REQUIRE(plus0f.is<application<FO>>());
+    REQUIRE(minus0f.is<application<FO>>());
+    REQUIRE(mult0f.is<application<FO>>());
+    REQUIRE(div0f.is<application<FO>>());
+    REQUIRE(plus0fp.is<application<FO>>());
+    REQUIRE(minus0fp.is<application<FO>>());
+    REQUIRE(mult0fp.is<application<FO>>());
+    REQUIRE(div0fp.is<application<FO>>());
+    
   }
+
+  SECTION("Complex formula") {
+    variable x = sigma.variable("x");
+    function f = sigma.function_symbol("f");
+
+    formula complex = (x == 0 && G(wnext(x) == f(x) + 1) && F(x == 42));
+
+    REQUIRE(complex.is<conjunction<LTLFO>>());
+  }
+  
 }

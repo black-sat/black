@@ -111,7 +111,9 @@ namespace black::new_api {
     Enum(Syntax, less_than) \
     Enum(Syntax, less_than_equal) \
     Enum(Syntax, greater_than) \
-    Enum(Syntax, greater_than_equal)
+    Enum(Syntax, greater_than_equal) \
+    Enum(Syntax, integer) \
+    Enum(Syntax, real)
 
   #define enum_elements_LTL(Syntax, Enum) \
     enum_elements_Boolean(Syntax, Enum) \

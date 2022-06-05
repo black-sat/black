@@ -211,6 +211,22 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  template<hierarchy_type Hierarchy>
+  struct unique_id_of_ { };
+
+  template<hierarchy_type Hierarchy>
+  using unique_id_of = typename unique_id_of_<Hierarchy>::type;
+
+  #define declare_hierarchy(Base) \
+    enum class Base##_id : uintptr_t { }; \
+    \
+    template<> \
+    struct unique_id_of_<hierarchy_type::Base> { \
+      using type = Base##_id; \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
   template<typename H>
   struct matcher;
 
@@ -258,6 +274,10 @@ namespace black::internal::new_api
         return to<H>().has_value(); \
       } \
       \
+      auto unique_id() const { \
+        return static_cast<Base##_id>(reinterpret_cast<uintptr_t>(_element)); \
+      } \
+      \
       template<typename ...Handlers> \
       auto match(Handlers ...handlers) const { \
         return matcher<Base>{}.match(*this, handlers...); \
@@ -294,21 +314,56 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  template<typename T, typename = void>
+  struct is_hierarchy_ : std::false_type { };
+
+  template<typename T>
+  struct is_hierarchy_<T, std::void_t<decltype(T::hierarchy)>> 
+    : std::true_type { };
+
+  template<typename T>
+  constexpr bool is_hierarchy = is_hierarchy_<T>::value;
+
   template<
-    typename H1, typename H2, 
-    REQUIRES(H1::hierarchy == H2::hierarchy)
+    typename T1, typename T2, 
+    REQUIRES(is_hierarchy<T1> && is_hierarchy<T2>)
   >
-  bool operator==(H1 h1, H2 h2) {
-    return h1._element == h2._element;
+  bool are_equal(T1 t1, T2 t2) {
+    return t1.unique_id() == t2.unique_id();
   }
 
   template<
-    typename H1, typename H2, 
-    REQUIRES(H1::hierarchy == H2::hierarchy)
+    typename T1, typename T2, 
+    REQUIRES(!is_hierarchy<T1> || !is_hierarchy<T2>)
   >
-  bool operator!=(H1 h1, H2 h2) {
-    return h1._element != h2._element;
+  bool are_equal(T1 t1, T2 t2) {
+    return t1 == t2;
   }
+
+  #define has_standard_equality(Base) \
+    template< \
+      typename H1, typename H2, \
+      REQUIRES( \
+        H1::hierarchy == hierarchy_type::Base && \
+        H2::hierarchy == hierarchy_type::Base \
+      ) \
+    > \
+    bool operator==(H1 h1, H2 h2) { \
+      return are_equal(h1, h2); \
+    } \
+    \
+    template< \
+      typename H1, typename H2, \
+      REQUIRES( \
+        H1::hierarchy == hierarchy_type::Base && \
+        H2::hierarchy == hierarchy_type::Base \
+      ) \
+    > \
+    bool operator!=(H1 h1, H2 h2) { \
+      return !are_equal(h1, h2); \
+    }
+
+  #include <black/new/internal/formula/hierarchy.hpp>
 
   //
   // internal representation classes for each storage kind
@@ -392,20 +447,6 @@ namespace black::internal::new_api
     };
 
   #include <black/new/internal/formula/hierarchy.hpp>
-
-  //
-  // Helper function to transform a Base argument to its underlying element, if 
-  // the argument is a Base, leaving it untouched otherwise
-  //
-  template<typename T, typename = void>
-  struct is_hierarchy_ : std::false_type { };
-
-  template<typename T>
-  struct is_hierarchy_<T, std::void_t<decltype(T::hierarchy)>> 
-    : std::true_type { };
-
-  template<typename T>
-  constexpr bool is_hierarchy = is_hierarchy_<T>::value;
   
   //
   // Handle classes.
@@ -415,20 +456,6 @@ namespace black::internal::new_api
   // - The Storage class is the handle
   //
   #include <black/new/internal/formula/hierarchy.hpp>
-
-  template<hierarchy_type Hierarchy>
-  struct unique_id_of_ { };
-
-  template<hierarchy_type Hierarchy>
-  using unique_id_of = typename unique_id_of_<Hierarchy>::type;
-
-  #define declare_hierarchy(Base) \
-    enum class Base##_id : uintptr_t { }; \
-    \
-    template<> \
-    struct unique_id_of_<hierarchy_type::Base> { \
-      using type = Base##_id; \
-    };
 
   #define declare_storage_kind(Base, Storage) \
     template<typename H> \
@@ -671,7 +698,7 @@ namespace black::internal::new_api
         typename ...Args, \
         REQUIRES(is_##Storage##_constructible<Syntax, Args...>) \
       > \
-      explicit Storage(Args ...args); \
+      Storage(Args ...args); \
       \
       template<typename ...Handlers> \
       auto match(Handlers ...handlers) const \
@@ -756,7 +783,7 @@ namespace black::internal::new_api
         typename ...Args, \
         REQUIRES(is_##Element##_constructible<Syntax, Args...>) \
       > \
-      explicit Element(Args ...args); \
+      Element(Args ...args); \
       \
       Element &operator=(Element const&) = default; \
       Element &operator=(Element &&) = default; \

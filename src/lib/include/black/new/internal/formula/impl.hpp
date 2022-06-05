@@ -104,26 +104,6 @@ namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  #define declare_storage_kind(Base, Storage) \
-   constexpr syntax_element Storage##_syntax_element() { \
-     return 
-  
-  #define has_no_hierarchy_elements(Base, Storage) \
-    true ? syntax_element::Storage : 
-
-  #define end_storage_kind(Base, Storage) \
-     syntax_element::no_type; \
-   }
-
-  #define declare_leaf_storage_kind(Base, Storage) \
-    constexpr syntax_element Storage##_syntax_element() { \
-      return syntax_element::Storage; \
-    }
-
-  #define end_leaf_storage_kind(Base, Storage)
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
 
   #define declare_leaf_storage_kind(Base, Storage)
   #define declare_storage_kind(Base, Storage) \

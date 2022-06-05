@@ -50,7 +50,8 @@ namespace black::internal::new_api {
     ) { \
       return k1.type == k2.type &&
 
-  #define declare_field(Base, Storage, Type, Field) k1.Field == k2.Field &&
+  #define declare_field(Base, Storage, Type, Field) \
+    are_equal(k1.Field, k2.Field) &&
 
   #define declare_child(Base, Storage, Hierarchy, Child) k1.Child == k2.Child &&
 
@@ -156,12 +157,33 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
+   constexpr syntax_element Storage##_syntax_element() { \
+     return 
+  
+  #define has_no_hierarchy_elements(Base, Storage) \
+    true ? syntax_element::Storage : 
+
+  #define end_storage_kind(Base, Storage) \
+     syntax_element::no_type; \
+   }
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    constexpr syntax_element Storage##_syntax_element() { \
+      return syntax_element::Storage; \
+    }
+
+  #define end_leaf_storage_kind(Base, Storage)
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
     template<typename Syntax, REQUIRES(!Storage##_has_hierarchy_elements())> \
     Storage##_key Storage##_args_to_key( \
       [[maybe_unused]] Storage##_alloc_args<Syntax> const&args \
     ) { \
+      black_assert(Storage##_syntax_element() != syntax_element::no_type); \
       return Storage##_key { \
-        args.type.type(),
+        Storage##_syntax_element(),
 
   #define declare_field(Base, Storage, Type, Field) args.Field,
 

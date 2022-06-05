@@ -26,10 +26,257 @@
 
 namespace black::internal::new_api {
 
+  #define declare_term_sugar(Kind, Op, Rel) \
+    template< \
+      typename T1, typename T2, \
+      REQUIRES( \
+        T1::hierarchy == hierarchy_type::term && \
+        T2::hierarchy == hierarchy_type::term \
+      ) \
+    > \
+    auto operator Op(T1 t1, T2 t2) { \
+      using S = make_combined_fragment< \
+        make_combined_fragment<typename T1::syntax, typename T2::syntax>, \
+        make_fragment<syntax_element::Rel> \
+      >; \
+      return Kind<S>(t1.sigma()->Rel(), std::vector<term<S>>{t1, t2}); \
+    } \
+    \
+    template<typename T1, typename T2, \
+      REQUIRES( \
+        T1::hierarchy == hierarchy_type::term && \
+        std::is_integral_v<T2> \
+      ) \
+    > \
+    auto operator Op(T1 t1, T2 t2) { \
+      using S = make_combined_fragment< \
+        typename T1::syntax, \
+        make_combined_fragment< \
+          integer::syntax, make_fragment<syntax_element::Rel> \
+        > \
+      >; \
+      \
+      constant c = constant(t1.sigma()->integer(int64_t{t2})); \
+      return Kind<S>(t1.sigma()->Rel(), std::vector<term<S>>{t1, c}); \
+    } \
+    \
+    template<typename T1, typename T2, \
+      REQUIRES( \
+        T1::hierarchy == hierarchy_type::term && \
+        std::is_integral_v<T2> \
+      ) \
+    > \
+    auto operator Op(T2 t2, T1 t1) { \
+      using S = make_combined_fragment< \
+        typename T1::syntax, \
+        make_combined_fragment< \
+          integer::syntax, make_fragment<syntax_element::Rel> \
+        > \
+      >; \
+      \
+      constant c = constant(t1.sigma()->integer(int64_t{t2})); \
+      return Kind<S>(t1.sigma()->Rel(), std::vector<term<S>>{c, t1}); \
+    } \
+    \
+    template<typename T1, typename T2, \
+      REQUIRES( \
+        T1::hierarchy == hierarchy_type::term && \
+        std::is_floating_point_v<T2> \
+      ) \
+    > \
+    auto operator Op(T1 t1, T2 t2) { \
+      using S = make_combined_fragment< \
+        typename T1::syntax, \
+        make_combined_fragment< \
+          real::syntax, make_fragment<syntax_element::Rel> \
+        > \
+      >; \
+      \
+      constant c = constant(t1.sigma()->real(double{t2})); \
+      return Kind<S>(t1.sigma()->Rel(), std::vector<term<S>>{t1, c}); \
+    } \
+    \
+    template<typename T1, typename T2, \
+      REQUIRES( \
+        T1::hierarchy == hierarchy_type::term && \
+        std::is_floating_point_v<T2> \
+      ) \
+    > \
+    auto operator Op(T2 t2, T1 t1) { \
+      using S = make_combined_fragment< \
+        typename T1::syntax, \
+        make_combined_fragment< \
+          real::syntax, make_fragment<syntax_element::Rel> \
+        > \
+      >; \
+      \
+      constant c = constant(t1.sigma()->real(double{t2})); \
+      return Kind<S>(t1.sigma()->Rel(), std::vector<term<S>>{c, t1}); \
+    }
+
+  declare_term_sugar(atom, <, less_than)
+  declare_term_sugar(atom, <=, less_than_equal)
+  declare_term_sugar(atom, >, greater_than)
+  declare_term_sugar(atom, >=, greater_than_equal)
+  declare_term_sugar(application, -, subtraction)
+  declare_term_sugar(application, +, addition)
+  declare_term_sugar(application, *, multiplication)
+  declare_term_sugar(application, /, division)
+
+  #undef declare_term_sugar
+
+  template<typename T, REQUIRES(T::hierarchy == hierarchy_type::term)>
+  auto operator-(T t) {
+    return application(t.sigma()->negative(), std::vector{t});
+  }
+
+  template<typename Syntax>
+  struct term_equality_wrapper {
+    bool _eq;
+    atom<Syntax> _atom;
+
+    bool operator!() const { return !_eq; }
+    operator bool() const { return _eq; }
+    
+    template<typename S, REQUIRES(is_syntax_allowed<Syntax, S>)>
+    operator atom<S>() const { return _atom; }
+
+    template<typename S, REQUIRES(is_syntax_allowed<Syntax, S>)>
+    operator formula<S>() const { return _atom; }
+  };
+
+  template<typename Syntax>
+  atom(term_equality_wrapper<Syntax>) -> atom<Syntax>;
+  template<typename Syntax>
+  formula(term_equality_wrapper<Syntax>) -> formula<Syntax>;
+
+  template<
+    typename T1, typename T2, 
+    REQUIRES(
+      T1::hierarchy == hierarchy_type::term &&
+      T2::hierarchy == hierarchy_type::term
+    )
+  >
+  auto operator==(T1 t1, T2 t2) {
+    using S = make_combined_fragment<
+      make_combined_fragment<typename T1::syntax, typename T2::syntax>,
+      make_fragment<syntax_element::equal>
+    >;
+    return term_equality_wrapper<S>{
+      t1.unique_id() == t1.unique_id(),
+      atom<S>(t1.sigma()->equal(), std::vector<term<S>>{t1, t2})
+    };
+  }
+
+  template<
+    typename T1, typename T2, 
+    REQUIRES(
+      T1::hierarchy == hierarchy_type::term &&
+      T2::hierarchy == hierarchy_type::term
+    )
+  >
+  auto operator!=(T1 t1, T2 t2) {
+    using S = make_combined_fragment<
+      make_combined_fragment<typename T1::syntax, typename T2::syntax>,
+      make_fragment<syntax_element::not_equal>
+    >;
+    return term_equality_wrapper<S>{
+      t1.unique_id() != t1.unique_id(),
+      atom<S>(t1.sigma()->not_equal(), std::vector<term<S>>{t1, t2})
+    };
+  }
+
+  template<
+    typename T1, typename T2,
+    REQUIRES(
+      T1::hierarchy == hierarchy_type::term &&
+      std::is_integral_v<T2>
+    )
+  >
+  auto operator==(T1 t1, T2 t2) {
+    return t1 == constant{t1.sigma()->integer(int64_t{t2})};
+  }
+  template<
+    typename T1, typename T2,
+    REQUIRES(
+      T1::hierarchy == hierarchy_type::term &&
+      std::is_integral_v<T2>
+    )
+  >
+  auto operator!=(T1 t1, T2 t2) {
+    return t1 != constant{t1.sigma()->integer(int64_t{t2})};
+  }
+
+  template<
+    typename T1, typename T2,
+    REQUIRES(
+      T1::hierarchy == hierarchy_type::term &&
+      std::is_integral_v<T2>
+    )
+  >
+  auto operator==(T2 t2, T1 t1) {
+    return constant{t1.sigma()->integer(int64_t{t2})} == t1;
+  }
+  template<
+    typename T1, typename T2,
+    REQUIRES(
+      T1::hierarchy == hierarchy_type::term &&
+      std::is_integral_v<T2>
+    )
+  >
+  auto operator!=(T2 t2, T1 t1) {
+    return constant{t1.sigma()->integer(int64_t{t2})} != t1;
+  }
+  template<
+    typename T1, typename T2,
+    REQUIRES(
+      T1::hierarchy == hierarchy_type::term &&
+      std::is_floating_point_v<T2>
+    )
+  >
+  auto operator==(T1 t1, T2 t2) {
+    return t1 == constant{t1.sigma()->real(double{t2})};
+  }
+  template<
+    typename T1, typename T2,
+    REQUIRES(
+      T1::hierarchy == hierarchy_type::term &&
+      std::is_floating_point_v<T2>
+    )
+  >
+  auto operator!=(T1 t1, T2 t2) {
+    return t1 != constant{t1.sigma()->real(double{t2})};
+  }
+
+  template<
+    typename T1, typename T2,
+    REQUIRES(
+      T1::hierarchy == hierarchy_type::term &&
+      std::is_floating_point_v<T2>
+    )
+  >
+  auto operator==(T2 t2, T1 t1) {
+    return constant{t1.sigma()->real(double{t2})} == t1;
+  }
+  template<
+    typename T1, typename T2,
+    REQUIRES(
+      T1::hierarchy == hierarchy_type::term &&
+      std::is_floating_point_v<T2>
+    )
+  >
+  auto operator!=(T2 t2, T1 t1) {
+    return constant{t1.sigma()->real(double{t2})} != t1;
+  }
+
   #define declare_unary_formula_sugar(Func, Op) \
     template<typename T, REQUIRES(T::hierarchy == hierarchy_type::formula)> \
     auto Func(T f) { \
       return Op(f); \
+    } \
+    template<typename Syntax> \
+    auto Func(term_equality_wrapper<Syntax> w) { \
+      return Op(w._atom); \
     }
   
   declare_unary_formula_sugar(operator!, negation)
@@ -54,6 +301,20 @@ namespace black::internal::new_api {
     > \
     auto Func(F1 f1, F2 f2) { \
       return Op(f1, f2); \
+    } \
+    template< \
+      typename F1, typename Syntax, \
+      REQUIRES(F1::hierarchy == hierarchy_type::formula) \
+    > \
+    auto Func(F1 f1, term_equality_wrapper<Syntax> w) { \
+      return Op(f1, w._atom); \
+    } \
+    template< \
+      typename F1, typename Syntax, \
+      REQUIRES(F1::hierarchy == hierarchy_type::formula) \
+    > \
+    auto Func(term_equality_wrapper<Syntax> w, F1 f1) { \
+      return Op(w._atom, f1); \
     }
 
   declare_binary_formula_sugar(operator&&, conjunction)
@@ -67,49 +328,6 @@ namespace black::internal::new_api {
   declare_binary_formula_sugar(T, triggered)
 
   #undef declare_binary_formula_sugar
-
-  #define declare_atom_sugar(Op, Rel) \
-    template< \
-      typename T1, typename T2, \
-      REQUIRES( \
-        T1::hierarchy == hierarchy_type::term && \
-        T2::hierarchy == hierarchy_type::term \
-      ) \
-    > \
-    auto operator Op(T1 t1, T2 t2) { \
-      return atom(t1.sigma()->Rel(), std::vector{t1, t2}); \
-    }
-
-  declare_atom_sugar(<, less_than)
-  declare_atom_sugar(<=, less_than_equal)
-  declare_atom_sugar(>, greater_than)
-  declare_atom_sugar(>=, greater_than_equal)
-
-  #undef declare_atom_sugar
-
-  #define declare_application_sugar(Op, Func) \
-    template< \
-      typename T1, typename T2, \
-      REQUIRES( \
-        T1::hierarchy == hierarchy_type::term && \
-        T2::hierarchy == hierarchy_type::term \
-      ) \
-    > \
-    auto operator Op(T1 t1, T2 t2) { \
-      return application(t1.sigma()->Func(), std::vector{t1, t2}); \
-    }
-
-  declare_application_sugar(-, subtraction)
-  declare_application_sugar(+, addition)
-  declare_application_sugar(*, multiplication)
-  declare_application_sugar(/, division)
-
-  #undef declare_application_sugar
-
-  template<typename T, REQUIRES(T::hierarchy == hierarchy_type::term)>
-  auto operator-(T t) {
-    return application(t.sigma()->negative(), std::vector{t});
-  }
 
 }
 
