@@ -84,5 +84,79 @@ TEST_CASE("Pattern matching") {
 
     REQUIRE(s == "unary<LTLP>");
   }
+
+  SECTION("Otherwise") { 
+    formula<LTL> f = sigma.boolean(true);
+
+    bool ok = f.match(
+      [](boolean) { return true; },
+      [](otherwise) { return false; }
+    );
+
+    REQUIRE(ok);
+  }
+
+  SECTION("Common type") {
+    static_assert(
+      std::is_same_v<
+        std::common_type_t<formula<LTL>, proposition>, formula<LTL>
+      >
+    );
+    static_assert(
+      black::internal::new_api::is_syntax_allowed<
+        std::common_type_t<formula<LTL>, unary<FO>>::syntax, LTLFO
+      >
+    );
+    static_assert(
+      black::internal::new_api::is_syntax_allowed<
+        std::common_type_t<unary<LTL>, formula<FO>>::syntax, LTLFO
+      >
+    );
+    static_assert(
+      black::internal::new_api::is_syntax_allowed<
+        std::common_type_t<unary<LTL>, negation<FO>>::syntax, LTLFO
+      >
+    );
+    static_assert(
+      black::internal::new_api::is_syntax_allowed<
+        std::common_type_t<negation<LTL>, unary<FO>>::syntax, LTLFO
+      >
+    );
+    static_assert(
+      black::internal::new_api::is_syntax_allowed<
+        std::common_type_t<negation<FO>, proposition>::syntax, FO
+      >
+    );
+    static_assert(
+      black::internal::new_api::is_syntax_allowed<
+        std::common_type_t<tomorrow<LTL>, negation<FO>, proposition>::syntax, LTLFO
+      >
+    );
+    static_assert(
+      black::internal::new_api::is_syntax_allowed<
+        std::common_type_t<proposition, unary<LTL>>::syntax, LTL
+      >
+    );
+    static_assert(
+      black::internal::new_api::is_syntax_allowed<
+        std::common_type_t<negation<FO>, formula<LTL>>::syntax, LTLFO
+      >
+    );
+
+    formula<LTLFO> f = sigma.proposition("p");
+    f = f.match(
+      [](boolean b) {
+        return negation<FO>(b);
+      },
+      [](proposition p) {
+        return p;
+      },
+      [&](otherwise) {
+        return tomorrow<LTL>(sigma.boolean(false));
+      }
+    );
+
+    REQUIRE(f == sigma.proposition("p"));
+  }
   
 }

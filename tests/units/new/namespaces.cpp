@@ -24,13 +24,48 @@
 #include <catch.hpp>
 
 #include <black/new/formula.hpp>
+#include <type_traits>
+
+#define type_exists(Type, Syntax) \
+  std::is_same_v< \
+    Type, black::new_api::syntax::Type<black::new_api::syntax::Syntax> \
+  >
 
 TEST_CASE("Fragment namespaces") {
-  using namespace black::new_api::LTL;
 
   black::new_api::alphabet sigma;
-  
-  formula f = sigma.proposition("p");
 
-  REQUIRE(f.is<proposition>());
+  SECTION("Top-level namespace") {
+    using namespace black::new_api;
+  
+    static_assert(type_exists(formula, LTLPFO));
+    static_assert(type_exists(term, LTLPFO));
+    static_assert(type_exists(function, LTLPFO));
+    static_assert(type_exists(relation, LTLPFO));
+    static_assert(type_exists(unary, LTLPFO));
+    static_assert(type_exists(binary, LTLPFO));
+
+    formula f = sigma.proposition("p");
+
+    REQUIRE(f.is<proposition>());
+  }
+
+  SECTION("Specific fragments") {
+    using namespace black::new_api::FO;
+
+    static_assert(type_exists(formula, FO));
+    static_assert(type_exists(term, FO));
+    static_assert(type_exists(function, FO));
+    static_assert(type_exists(relation, FO));
+    static_assert(type_exists(unary, FO));
+    static_assert(type_exists(binary, FO));
+
+    relation r = sigma.relation_symbol("r");
+    variable x = sigma.variable("x");
+    
+    formula f = exists(x, r(x));
+
+    REQUIRE(f.is<exists>());
+  }
+  
 }

@@ -26,9 +26,9 @@
 
 namespace black::new_api {
 
-  using black::internal::new_api::alphabet;
-
   namespace syntax {
+    using black::internal::new_api::alphabet;
+    using black::internal::new_api::otherwise;
     using black::internal::new_api::syntax_element;
     using black::internal::new_api::make_fragment;
     using black::internal::new_api::make_derived_fragment;
@@ -69,6 +69,8 @@ namespace black::new_api {
       > { }; \
     } \
     namespace Fragment { \
+      using black::internal::new_api::alphabet; \
+      using black::internal::new_api::otherwise; \
       enum_elements_##Fragment(Fragment, using_element) \
     }
 

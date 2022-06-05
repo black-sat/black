@@ -32,15 +32,14 @@
 
 namespace black::internal::new_api {
   
-  struct otherwise {};
+  struct otherwise {
+    template<typename T>
+    otherwise(T) { }
+  };
 
   namespace match {
 
     using std::get;
-    /*
-    * Dummy type for default case in matchers
-    */
-    struct otherwise {};
 
     // this is just like std::apply but applies the formula f before the args
     template<typename Handler, typename Formula, size_t ...I>
