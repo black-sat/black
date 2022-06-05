@@ -140,18 +140,23 @@ namespace black::internal::new_api {
     using type = fragment_type<AcceptsType, list>;
   };
 
-  template<typename ...Syntaxes>
-  struct make_combined_fragment;
+  template<>
+  struct make_combined_fragment_impl<> {
+    using list = type_list<>;
+    
+    template<typename AcceptsType>
+    using type = fragment_type<AcceptsType, list>;
+  };
 
   template<typename Syntax>
-  struct make_combined_fragment<Syntax> : Syntax { };
+  struct make_combined_fragment_impl<Syntax> : Syntax { };
 
   template<typename Syntax, typename ...Syntaxes>
-  struct make_combined_fragment<Syntax, Syntaxes...> {
+  struct make_combined_fragment_impl<Syntax, Syntaxes...> {
     using list = type_list_unique<
       type_list_concat<
         typename Syntax::list, 
-        typename make_combined_fragment<Syntaxes...>::list
+        typename make_combined_fragment_impl<Syntaxes...>::list
       >>;
 
     template<typename AcceptsType>

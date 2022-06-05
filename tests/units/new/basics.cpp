@@ -32,9 +32,6 @@ using namespace std::literals;
 using namespace black::new_api::syntax;
 using black::internal::identifier;
 
-//
-// Runtime tests
-//
 TEST_CASE("New API") {
 
   black::new_api::alphabet sigma;

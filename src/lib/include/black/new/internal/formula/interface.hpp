@@ -61,7 +61,35 @@ namespace black::internal::new_api
   template<typename, syntax_element ...>
   struct make_derived_fragment;
   template<typename ...>
-  struct make_combined_fragment;
+  struct make_combined_fragment_impl;
+
+  template<typename, typename ...Syntaxes>
+  struct make_combined_fragment_;
+
+  template<typename ...Syntaxes>
+  using make_combined_fragment = 
+    typename make_combined_fragment_<void, Syntaxes...>::type;
+
+  template<typename Syntax>
+  struct make_combined_fragment_<void, Syntax> {
+    using type = Syntax;
+  };
+ 
+  template<typename Syntax, typename ...Syntaxes>
+  struct make_combined_fragment_<
+    std::enable_if_t<(is_syntax_allowed<Syntax, Syntaxes> || ...)>,
+    Syntax, Syntaxes...
+  > : make_combined_fragment_<void, Syntaxes...> { };
+ 
+  template<typename Syntax, typename ...Syntaxes>
+  struct make_combined_fragment_<
+    std::enable_if_t<!(is_syntax_allowed<Syntax, Syntaxes> || ...)>,
+    Syntax, Syntaxes...
+  > {
+    using type = make_combined_fragment_impl<
+      Syntax, make_combined_fragment<Syntaxes...>
+    >;
+  };
 
   //
   // Base class for internal representation of elements of the hierarchies

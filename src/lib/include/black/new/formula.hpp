@@ -182,6 +182,24 @@ namespace black::internal::new_api {
       typename Syntax::list
     >;
 
+  template<typename ...Syntaxes>
+  struct are_syntaxes_equivalent_ : std::true_type { };
+
+  template<typename ...Syntaxes>
+  constexpr bool are_syntaxes_equivalent = 
+    are_syntaxes_equivalent_<Syntaxes...>::value;
+
+  template<typename Syntax1, typename Syntax2>
+  struct are_syntaxes_equivalent_<Syntax1, Syntax2> : 
+    std::bool_constant<
+      is_syntax_allowed<Syntax1, Syntax2> && is_syntax_allowed<Syntax2,Syntax1>
+    > { };
+
+  template<typename Syntax, typename ...Syntaxes>
+  struct are_syntaxes_equivalent_<Syntax, Syntaxes...> :
+    std::conjunction<std::is_same<Syntax, Syntaxes>...> { };
+
+
   template<syntax_element Type, typename Allowed>
   constexpr bool is_type_allowed = 
     type_list_contains<typename Allowed::list, Type>;

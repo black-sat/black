@@ -144,7 +144,7 @@ TEST_CASE("Pattern matching") {
     );
 
     formula<LTLFO> f = sigma.proposition("p");
-    f = f.match(
+    auto f2 = f.match(
       [](boolean b) {
         return negation<FO>(b);
       },
@@ -156,7 +156,9 @@ TEST_CASE("Pattern matching") {
       }
     );
 
-    REQUIRE(f == sigma.proposition("p"));
+    REQUIRE(f2 == sigma.proposition("p"));
+
+    //decltype(f2)::syntax::pippo p;
   }
   
 }
