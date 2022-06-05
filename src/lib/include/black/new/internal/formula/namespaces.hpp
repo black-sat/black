@@ -1,4 +1,4 @@
-//
+  //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
 // (C) 2022 Nicola Gigante
@@ -25,8 +25,10 @@
 #define BLACK_LOGIC_NAMESPACES_HPP_
 
 namespace black::new_api {
+
+  using black::internal::new_api::alphabet;
+
   namespace syntax {
-    using black::internal::new_api::alphabet;
     using black::internal::new_api::syntax_element;
     using black::internal::new_api::make_fragment;
     using black::internal::new_api::make_derived_fragment;
@@ -44,20 +46,39 @@ namespace black::new_api {
     #include <black/new/internal/formula/hierarchy.hpp>
   }
 
+  #define export_in_fragment_namespace(Fragment, Element) \
+    namespace Fragment { \
+      using Element = \
+        black::new_api::syntax::Element<black::new_api::syntax::Fragment>; \
+    }
+
   #define append_syntax_element(Syntax, Element) \
     syntax_element::Element,
 
   #define using_element(Syntax, Element) \
-    using Element = type_for_syntax_element<Syntax, syntax_element::Element>;
+    using Element = \
+      black::internal::new_api::type_for_syntax_element< \
+        syntax::Syntax, syntax::syntax_element::Element \
+      >;
 
-  #define declare_fragment(Fragment) \
+  #define declare_fragment(Fragment, ...) \
     namespace syntax { \
       struct Fragment : make_fragment< \
         enum_elements_##Fragment(Fragment, append_syntax_element) \
         syntax_element::no_type \
       > { }; \
+    } \
+    namespace Fragment { \
+      enum_elements_##Fragment(Fragment, using_element) \
     }
 
+  #define enum_fragments(Macro, ...) \
+    Macro(Boolean, __VA_ARGS__) \
+    Macro(FO, __VA_ARGS__) \
+    Macro(LTL, __VA_ARGS__) \
+    Macro(LTLP, __VA_ARGS__) \
+    Macro(LTLFO, __VA_ARGS__) \
+    Macro(LTLPFO, __VA_ARGS__) \
  
   #define enum_elements_Boolean(Syntax, Enum) \
     Enum(Syntax, boolean) \
@@ -67,8 +88,6 @@ namespace black::new_api {
     Enum(Syntax, disjunction) \
     Enum(Syntax, implication) \
     Enum(Syntax, iff)
-
-  declare_fragment(Boolean)
   
   #define enum_elements_FO(Syntax, Enum) \
     enum_elements_Boolean(Syntax, Enum) \
@@ -92,8 +111,6 @@ namespace black::new_api {
     Enum(Syntax, greater_than) \
     Enum(Syntax, greater_than_equal)
 
-  declare_fragment(FO)
-
   #define enum_elements_LTL(Syntax, Enum) \
     enum_elements_Boolean(Syntax, Enum) \
     Enum(Syntax, tomorrow) \
@@ -105,8 +122,6 @@ namespace black::new_api {
     Enum(Syntax, w_until) \
     Enum(Syntax, s_release)
 
-  declare_fragment(LTL)
-
   #define enum_elements_LTLP(Syntax, Enum) \
     enum_elements_LTL(Syntax, Enum) \
     Enum(Syntax,yesterday) \
@@ -115,8 +130,6 @@ namespace black::new_api {
     Enum(Syntax,historically) \
     Enum(Syntax,since) \
     Enum(Syntax,triggered)
-
-  declare_fragment(LTLP)
   
   #define enum_elements_LTLFO(Syntax, Enum) \
     enum_elements_FO(Syntax, Enum) \
@@ -132,18 +145,39 @@ namespace black::new_api {
     Enum(Syntax, wnext) \
     Enum(Syntax, prev) \
     Enum(Syntax, wprev)
-  
-  declare_fragment(LTLFO)
+
+  #define enum_elements_LTLPFO(Syntax, Enum) \
+    enum_elements_LTLFO(Syntax, Enum) \
+    Enum(Syntax,yesterday) \
+    Enum(Syntax,w_yesterday) \
+    Enum(Syntax,once) \
+    Enum(Syntax,historically) \
+    Enum(Syntax,since) \
+    Enum(Syntax,triggered)
+
+  enum_fragments(declare_fragment)
 
 
+  #define declare_hierarchy(Base) \
+    enum_fragments(export_in_fragment_namespace, Base)
 
+  #define declare_leaf_storage_kind(Base, Storage)
+  #define declare_storage_kind(Base, Storage) \
+    enum_fragments(export_in_fragment_namespace, Storage)
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  using namespace LTLPFO;
 
   #undef enum_elements_Boolean
   #undef enum_elements_FO
   #undef enum_elements_LTL
   #undef enum_elements_LTLP
   #undef enum_elements_LTLFO
+  #undef enum_elements_LTLPFO
+  #undef enum_fragments
 
+  #undef export_in_fragment_namespace
   #undef declare_fragment
   #undef append_syntax_element
   #undef using_element

@@ -37,7 +37,7 @@ using black::internal::identifier;
 //
 TEST_CASE("New API") {
 
-  alphabet sigma;
+  black::new_api::alphabet sigma;
 
   SECTION("Formula deduplication") {
     REQUIRE(sigma.boolean(true) == sigma.boolean(true));

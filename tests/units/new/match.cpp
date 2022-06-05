@@ -32,7 +32,7 @@ using namespace std::literals;
 using namespace black::new_api::syntax;
 
 TEST_CASE("Pattern matching") {
-  alphabet sigma;
+  black::new_api::alphabet sigma;
 
   SECTION("Matching on formulas") {
     boolean b = sigma.boolean(true);
