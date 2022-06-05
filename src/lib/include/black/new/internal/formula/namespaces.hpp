@@ -157,7 +157,7 @@ namespace black::new_api {
     Enum(Syntax,since) \
     Enum(Syntax,triggered)
 
-  enum_fragments(declare_fragment)
+  enum_fragments(declare_fragment, Dummy)
 
 
   #define declare_hierarchy(Base) \
