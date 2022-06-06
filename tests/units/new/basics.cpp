@@ -31,6 +31,19 @@ using namespace std::literals;
 using namespace black::new_api::syntax;
 using black::internal::identifier;
 
+static_assert(black::internal::new_api::Hierarchy<formula<LTL>>);
+static_assert(black::internal::new_api::Hierarchy<proposition>);
+static_assert(black::internal::new_api::Hierarchy<unary<LTL>>);
+static_assert(black::internal::new_api::Hierarchy<conjunction<LTL>>);
+static_assert(black::internal::new_api::Hierarchy<equal>);
+static_assert(black::internal::new_api::StorageKind<proposition>);
+static_assert(black::internal::new_api::StorageKind<unary<LTL>>);
+static_assert(black::internal::new_api::StorageKind<conjunction<LTL>>);
+static_assert(black::internal::new_api::HierarchyElement<conjunction<LTL>>);
+static_assert(black::internal::new_api::HierarchyElement<equal>);
+
+
+
 TEST_CASE("New API") {
 
   black::new_api::syntax::alphabet sigma;

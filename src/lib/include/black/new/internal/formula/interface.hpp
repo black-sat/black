@@ -240,7 +240,7 @@ namespace black::internal::new_api
     type_list_filter<typename H::syntax::list, typename H::accepts_type>;
 
   #define declare_hierarchy(Base) \
-    template<typename Syntax> \
+    template<Fragment Syntax> \
     class Base : public Base##_custom_members_t<Base<Syntax>> \
     { \
     public: \
@@ -248,6 +248,7 @@ namespace black::internal::new_api
       using accepts_type = Base##_accepts_type; \
       using type = typename Syntax::template type<accepts_type>; \
       using syntax_elements = syntax_elements_for<Base>; \
+      using id_type = Base##_id; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
       \
       Base() = delete; \
@@ -382,13 +383,6 @@ namespace black::internal::new_api
     struct Storage##_t;
 
   #include <black/new/internal/formula/hierarchy.hpp>
-
-  enum class storage_type {
-
-    #define declare_storage_kind(Base, Storage) Storage,
-    #include <black/new/internal/formula/hierarchy.hpp>
-
-  };
   
   template<hierarchy_type H>
   struct hierarchy_base_type_of_;
@@ -676,10 +670,10 @@ namespace black::internal::new_api
       using accepts_type = Storage##_accepts_type; \
       using syntax = Syntax; \
       using syntax_elements = syntax_elements_for<Storage>; \
+      using id_type = Base##_id; \
+      using type = typename Syntax::template type<accepts_type>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
       static constexpr auto storage = storage_type::Storage; \
-      \
-      using type = typename Syntax::template type<accepts_type>; \
       \
       Storage(Storage const&) = default; \
       Storage(Storage &&) = default; \
@@ -740,6 +734,8 @@ namespace black::internal::new_api
       using accepts_type = Storage##_accepts_type; \
       using syntax = make_fragment<syntax_element::Storage>; \
       using syntax_elements = type_list<syntax_element::Storage>; \
+      using id_type = Base##_id; \
+      using type = syntax::template type<accepts_type>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
       static constexpr auto storage = storage_type::Storage; \
       \
@@ -776,10 +772,11 @@ namespace black::internal::new_api
       using accepts_type = Element##_accepts_type; \
       using syntax = Syntax; \
       using syntax_elements = type_list<syntax_element::Element>; \
+      using id_type = Base##_id; \
+      using type = typename Syntax::template type<accepts_type>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
       static constexpr auto storage = storage_type::Storage; \
-      \
-      using type = typename Syntax::template type<accepts_type>; \
+      static constexpr auto element = syntax_element::Element; \
       \
       Element(Element const&) = default; \
       Element(Element &&) = default; \
@@ -822,8 +819,11 @@ namespace black::internal::new_api
       using accepts_type = Element##_accepts_type; \
       using syntax = make_fragment<syntax_element::Element>; \
       using syntax_elements = type_list<syntax_element::Element>; \
+      using id_type = Base##_id; \
+      using type = syntax::template type<accepts_type>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
       static constexpr auto storage = storage_type::Storage; \
+      static constexpr auto element = syntax_element::Element; \
       \
       Element(Element const&) = default; \
       Element(Element &&) = default; \

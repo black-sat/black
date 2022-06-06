@@ -75,15 +75,6 @@ namespace black::internal::new_api {
   struct has_member_element<T, 
     std::void_t<decltype(std::declval<T>()._element)>
   > : std::true_type { };
-  
-  template<typename T, typename = void>
-  struct has_member_type : std::false_type { };
-
-  template<typename T>
-  struct has_member_type<T, std::void_t<decltype(std::declval<T>().type())>>
-    : std::true_type { };
-
-  enum class syntax_element : uint8_t;
 
   template<typename List>
   struct type_list_head_;
@@ -218,10 +209,10 @@ namespace black::internal::new_api {
   };
 }
 
+#include <black/new/internal/formula/fragments.hpp>
 #include <black/new/internal/formula/interface.hpp>
 #include <black/new/internal/formula/alphabet.hpp>
 #include <black/new/internal/formula/impl.hpp>
-#include <black/new/internal/formula/fragments.hpp>
 #include <black/new/internal/formula/match.hpp>
 #include <black/new/internal/formula/namespaces.hpp>
 #include <black/new/internal/formula/sugar.hpp>
