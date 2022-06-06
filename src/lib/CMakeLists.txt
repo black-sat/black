@@ -249,7 +249,7 @@ target_include_directories(black PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 target_include_directories(black PRIVATE src/include)
-target_compile_features(black PUBLIC cxx_std_17)
+target_compile_features(black PUBLIC cxx_std_20)
 target_enable_warnings(black)
 target_code_coverage(black)
 add_sanitizers(black)

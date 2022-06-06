@@ -45,7 +45,7 @@ set(
 
 add_executable(frontend ${FRONTEND_SRC} ${FRONTEND_HEADERS})
 
-target_compile_features(frontend PRIVATE cxx_std_17)
+target_compile_features(frontend PRIVATE cxx_std_20)
 target_include_directories(frontend PRIVATE include)
 target_link_libraries(frontend PRIVATE black fmt::fmt clipp::clipp)
 target_link_libraries(frontend PRIVATE nlohmann_json::nlohmann_json)
