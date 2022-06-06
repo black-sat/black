@@ -36,26 +36,6 @@ namespace black::internal::new_api
 {
   class alphabet;
 
-  enum class hierarchy_type : uint8_t {
-    #define declare_hierarchy(Base) Base,
-    #include <black/new/internal/formula/hierarchy.hpp>
-  };
-
-  //
-  // enum type of all the elements of the hierarchies
-  //
-  enum class syntax_element : uint8_t {
-
-    no_type,
-
-    #define declare_leaf_storage_kind(Base, Storage) Storage,
-    #define has_no_hierarchy_elements(Base, Storage) Storage,
-    #define declare_hierarchy_element(Base, Storage, Element) Element,
-
-    #include <black/new/internal/formula/hierarchy.hpp>
-
-  };
-
   template<syntax_element ...>
   struct make_fragment;
   template<typename, syntax_element ...>

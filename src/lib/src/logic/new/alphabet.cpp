@@ -23,6 +23,8 @@
 
 #include <black/new/formula.hpp>
 
+#include <vector>
+
 namespace black::internal::new_api {
 
   #define declare_storage_kind(Base, Storage) \
@@ -54,6 +56,21 @@ namespace black::internal::new_api {
     } namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
+
+  } namespace std {
+    template<typename T>
+    struct hash<std::vector<T>>
+    {
+      size_t operator()(std::vector<T> const&v) const {
+        hash<T> h;
+        size_t result = 0;
+        for(size_t i = 0; i < v.size(); ++i)
+          result = ::black::internal::hash_combine(result, h(v[i]));
+
+        return result;
+      }
+    };
+  } namespace black::internal::new_api {
 
   #define declare_storage_kind(Base, Storage) \
     inline Storage##_data_t key_to_data( \

@@ -30,20 +30,7 @@
 #include <type_traits>
 #include <variant>
 
-namespace std {
-  template<typename T>
-  struct hash<std::vector<T>>
-  {
-    size_t operator()(std::vector<T> const&v) const {
-      hash<T> h;
-      size_t result = 0;
-      for(size_t i = 0; i < v.size(); ++i)
-        result = ::black::internal::hash_combine(result, h(v[i]));
-
-      return result;
-    }
-  };
-}
+#include <black/new/internal/formula/support.hpp>
 
 namespace black::internal::new_api {
 
@@ -97,9 +84,6 @@ namespace black::internal::new_api {
     : std::true_type { };
 
   enum class syntax_element : uint8_t;
-
-  template<syntax_element ...Types>
-  struct type_list { };
 
   template<typename List>
   struct type_list_head_;
