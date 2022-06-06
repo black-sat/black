@@ -242,7 +242,7 @@ namespace black::internal::new_api {
     Base _base;
   };
 
-  namespace matcher_fragments {
+  namespace matching_fragments {
     struct Future : make_fragment<
       syntax_element::tomorrow,
       syntax_element::w_tomorrow,

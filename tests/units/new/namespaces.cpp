@@ -52,5 +52,32 @@ TEST_CASE("Fragment namespaces") {
 
     REQUIRE(f.is<exists>());
   }
+
+  SECTION("Only") {
+    using namespace black::new_api::LTL;
+
+    proposition p = sigma.proposition("p");
+    boolean b = sigma.boolean(true);
+
+    formula f = G(p && b);
+
+    std::string s = f.match(
+      [](boolean) { return "boolean"; },
+      [](proposition) { return "proposition"; },
+      [](only<Future> o) { 
+        return o.match(
+          [](tomorrow) { return "tomorrow"; },
+          [](w_tomorrow) { return "w_tomorrow"; },
+          [](always) { return "always"; },
+          [](eventually) { return "eventually"; },
+          [](until) { return "until"; },
+          [](release) { return "release"; }
+        );
+      },
+      [](otherwise) { return "other"; }
+    );
+
+    REQUIRE(s == "always");
+  }
   
 }

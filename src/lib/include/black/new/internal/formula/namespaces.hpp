@@ -35,6 +35,10 @@ namespace black::new_api {
     using black::internal::new_api::make_combined_fragment;
     using black::internal::new_api::only;
 
+    inline namespace matching_fragments {
+      using namespace black::internal::new_api::matching_fragments;
+    }
+
     #define declare_hierarchy(Base) \
       using black::internal::new_api::Base;
 
@@ -72,6 +76,11 @@ namespace black::new_api {
     namespace Fragment { \
       using black::internal::new_api::alphabet; \
       using black::internal::new_api::otherwise; \
+      using namespace black::new_api::syntax::matching_fragments; \
+      template<typename Only> \
+      using only = black::new_api::syntax::only< \
+        Only, black::new_api::syntax::Fragment \
+      >; \
       enum_elements_##Fragment(Fragment, using_element) \
     }
 
