@@ -33,6 +33,7 @@ namespace black::new_api {
     using black::internal::new_api::make_fragment;
     using black::internal::new_api::make_derived_fragment;
     using black::internal::new_api::make_combined_fragment;
+    using black::internal::new_api::only;
 
     #define declare_hierarchy(Base) \
       using black::internal::new_api::Base;

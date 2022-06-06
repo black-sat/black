@@ -248,7 +248,11 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  template<typename H>
+  template<
+    typename H, 
+    typename Syntax = typename H::syntax, 
+    typename Cases = typename H::syntax_elements
+  >
   struct matcher;
 
   template<typename H>
@@ -719,7 +723,7 @@ namespace black::internal::new_api
         typename ...Args, \
         REQUIRES(is_##Storage##_constructible<Syntax, Args...>) \
       > \
-      Storage(Args ...args); \
+      explicit Storage(Args ...args); \
       \
       template<typename ...Handlers> \
       auto match(Handlers ...handlers) const \
@@ -755,6 +759,7 @@ namespace black::internal::new_api
     public: \
       using accepts_type = Storage##_accepts_type; \
       using syntax = make_fragment<syntax_element::Storage>; \
+      using syntax_elements = type_list<syntax_element::Storage>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
       static constexpr auto storage = storage_type::Storage; \
       \
@@ -790,6 +795,7 @@ namespace black::internal::new_api
     public: \
       using accepts_type = Element##_accepts_type; \
       using syntax = Syntax; \
+      using syntax_elements = type_list<syntax_element::Element>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
       static constexpr auto storage = storage_type::Storage; \
       \
@@ -800,11 +806,14 @@ namespace black::internal::new_api
       \
       Element(class alphabet *sigma, Storage##_t *element); \
       \
+      template<typename S, REQUIRES(is_syntax_allowed<S, Syntax>)> \
+      Element(Element<S> e); \
+      \
       template< \
         typename ...Args, \
         REQUIRES(is_##Element##_constructible<Syntax, Args...>) \
       > \
-      Element(Args ...args); \
+      explicit Element(Args ...args); \
       \
       Element &operator=(Element const&) = default; \
       Element &operator=(Element &&) = default; \
@@ -832,6 +841,7 @@ namespace black::internal::new_api
     public: \
       using accepts_type = Element##_accepts_type; \
       using syntax = make_fragment<syntax_element::Element>; \
+      using syntax_elements = type_list<syntax_element::Element>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
       static constexpr auto storage = storage_type::Storage; \
       \

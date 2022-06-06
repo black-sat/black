@@ -101,6 +101,17 @@ namespace black::internal::new_api {
   template<syntax_element ...Types>
   struct type_list { };
 
+  template<typename List>
+  struct type_list_head_;
+
+  template<syntax_element Element, syntax_element ...Elements>
+  struct type_list_head_<type_list<Element, Elements...>> {
+    static constexpr auto value = Element;
+  };
+
+  template<typename List>
+  constexpr auto type_list_head = type_list_head_<List>::value;
+
   template<typename T, typename U>
   struct type_list_concat_;
 

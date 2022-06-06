@@ -99,16 +99,16 @@ namespace black::internal::new_api {
     }
   }
 
-  template<typename Formula, typename Syntax, typename TypeList>
-  struct matcher_;
+  template<typename H, typename Syntax, typename Cases>
+  struct matcher;
 
-  template<typename Formula, typename Syntax, syntax_element Case>
-  struct matcher_<Formula, Syntax, type_list<Case>> 
+  template<typename H, typename Syntax, syntax_element Case>
+  struct matcher<H, Syntax, type_list<Case>> 
   {
     using case_t = type_for_syntax_element<Syntax, Case>;
 
     template<typename ...Handlers>
-    static auto match(Formula f, Handlers&& ...handlers)
+    static auto match(H f, Handlers&& ...handlers)
       -> decltype(match::dispatch(*f.template to<case_t>(), FWD(handlers)...))
     {
       if(f.template is<case_t>())
@@ -119,18 +119,18 @@ namespace black::internal::new_api {
   };
 
   template<
-    typename Formula, typename Syntax, 
+    typename H, typename Syntax, 
     syntax_element Case, syntax_element ...Cases
   >
-  struct matcher_<Formula, Syntax, type_list<Case, Cases...>>
+  struct matcher<H, Syntax, type_list<Case, Cases...>>
   {
     using case_t = type_for_syntax_element<Syntax, Case>;
 
     template<typename ...Handlers>
-    static auto match(Formula f, Handlers&& ...handlers) 
+    static auto match(H f, Handlers&& ...handlers) 
       -> std::common_type_t<
         decltype(match::dispatch(*f.template to<case_t>(), FWD(handlers)...)),
-        decltype(matcher_<Formula, Syntax, type_list<Cases...>>::match(
+        decltype(matcher<H, Syntax, type_list<Cases...>>::match(
           f, FWD(handlers)...
         ))
       >
@@ -138,16 +138,131 @@ namespace black::internal::new_api {
       if(f.template is<case_t>())
         return match::dispatch(*f.template to<case_t>(), FWD(handlers)...);
       else
-        return matcher_<Formula, Syntax, type_list<Cases...>>::match(
+        return matcher<H, Syntax, type_list<Cases...>>::match(
           f, FWD(handlers)...
         );
     }
   };
 
-  template<typename H>
-  struct matcher :
-    matcher_<H, typename H::syntax, typename H::syntax_elements>
-    { };
+  template<syntax_element Element>
+  struct hierarchy_of_syntax_element_;
+
+  template<syntax_element Element>
+  constexpr auto hierarchy_of_syntax_element = 
+    hierarchy_of_syntax_element_<Element>::value;
+
+  #define declare(Base, Element) \
+    template<> \
+    struct hierarchy_of_syntax_element_<syntax_element::Element> { \
+      static constexpr auto value = hierarchy_type::Base; \
+    };
+
+  #define declare_leaf_storage_kind(Base, Storage) declare(Base, Storage)
+  #define has_no_hierarchy_elements(Base, Storage) declare(Base, Storage)
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    declare(Base, Element)
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #undef declare
+
+  template<typename TypeList>
+  struct are_uniform_elements : std::false_type { };
+
+  template<syntax_element Element, syntax_element ...Elements>
+  struct are_uniform_elements<type_list<Element, Elements...>>
+    : std::bool_constant<
+        ((hierarchy_of_syntax_element<Element> == 
+          hierarchy_of_syntax_element<Elements>) && ...
+        )> { };
+
+  template<typename Syntax>
+  struct is_uniform_syntax_ : are_uniform_elements<typename Syntax::list> { };
+
+  template<typename Syntax>
+  constexpr bool is_uniform_syntax = is_uniform_syntax_<Syntax>::value;
+
+  template<typename Syntax, typename = void>
+  struct hierarchy_of_uniform_syntax_;
+
+  template<typename Syntax>
+  struct hierarchy_of_uniform_syntax_<
+    Syntax, std::enable_if_t<is_uniform_syntax<Syntax>>
+  > {
+    static constexpr auto value = 
+      hierarchy_of_syntax_element<type_list_head<typename Syntax::list>>;
+  };
+
+  template<typename Syntax>
+  constexpr auto hierarchy_of_uniform_syntax = 
+    hierarchy_of_uniform_syntax_<Syntax>::value;
+
+  template<typename TopLevel, typename Syntax, typename = void>
+  struct only;
+
+  template<typename TopLevel, typename Syntax>
+  struct only<TopLevel, Syntax, std::enable_if_t<is_uniform_syntax<TopLevel>>> 
+  {
+    using Base = 
+      hierarchy_type_of<Syntax, hierarchy_of_uniform_syntax<TopLevel>>;
+
+    template<
+      typename H, 
+      REQUIRES(
+        H::hierarchy == Base::hierarchy && 
+        type_list_includes<
+          typename TopLevel::list, 
+          typename H::syntax_elements
+        > && is_syntax_allowed<typename H::syntax, typename Base::syntax>
+      )
+    >
+    only(H h) : _base{h} { }
+
+    operator Base() const { return _base; }
+
+    template<typename H2>
+    bool is() const {
+      return _base.template is<H2>();
+    }
+
+    template<typename H2>
+    std::optional<H2> to() const {
+      return _base.template to<H2>();
+    }
+
+    template<typename ...Handlers>
+    auto match(Handlers ...handlers) const {
+      return 
+        matcher<Base, typename Base::syntax, typename TopLevel::list>{}.match(
+          _base, handlers...
+        );
+    }
+
+  private:
+    Base _base;
+  };
+
+  namespace matcher_fragments {
+    struct Future : make_fragment<
+      syntax_element::tomorrow,
+      syntax_element::w_tomorrow,
+      syntax_element::always,
+      syntax_element::eventually,
+      syntax_element::until,
+      syntax_element::release
+    > { };
+
+    struct Past : make_fragment<
+      syntax_element::yesterday,
+      syntax_element::w_yesterday,
+      syntax_element::once,
+      syntax_element::historically,
+      syntax_element::since,
+      syntax_element::triggered
+    > { };
+
+    struct Temporal : make_combined_fragment<Future, Past> { };
+  }
 
 }
 

@@ -131,7 +131,7 @@ TEST_CASE("New API") {
 
     SECTION("Hierarchy elements") {
       negation<LTL> n = negation<LTL>(b);
-      always<LTL> a = always<LTL>(b);
+      always<LTLP> a = always<LTL>(b);
 
       formula<LTLP> f = a;
       REQUIRE(f == a);
@@ -141,8 +141,8 @@ TEST_CASE("New API") {
     }
 
     SECTION("Storage kinds and hierarchy elements") {
-      negation<LTL> n = negation<LTL>(b);
-      always<LTL> a = always<LTL>(b);
+      negation<LTL> n = negation<Boolean>(b);
+      always<LTLP> a = always<LTL>(b);
 
       unary<LTLP> u = n;
       REQUIRE(u == n);
@@ -264,7 +264,7 @@ TEST_CASE("New API") {
 
   SECTION("Sugar for terms") {
     variable x = sigma.variable("x");
-    constant c = sigma.integer(42);
+    constant c = constant{sigma.integer(42)};
 
     atom lt = x < c;
     atom le = x <= c;

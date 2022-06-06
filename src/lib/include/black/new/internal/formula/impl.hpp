@@ -153,6 +153,11 @@ namespace black::internal::new_api {
         } { } \
     \
     template<typename Syntax> \
+    template<typename S, REQUIRES_OUT_OF_LINE(is_syntax_allowed<S, Syntax>)> \
+    Element<Syntax>::Element(Element<S> e) \
+      : _sigma{e._sigma}, _element{e._element} { } \
+    \
+    template<typename Syntax> \
     Element<Syntax>::Element(class alphabet *sigma, Storage##_t *element) \
         : _sigma{sigma}, _element{element} { \
           black_assert(_element->type == syntax_element::Element); \

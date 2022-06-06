@@ -85,12 +85,44 @@ TEST_CASE("Pattern matching") {
     REQUIRE(s == "unary<LTLP>");
   }
 
+  SECTION("Matching with restricted syntax") {
+    boolean b = sigma.boolean(true);
+    proposition p = sigma.proposition("p");
+
+    formula<LTLP> f = (b && Y(p));
+
+    std::string s = f.match(
+      [](yesterday<LTLP>) { return "yesterday"; },
+      [](only<Boolean, LTLP> o) {
+        return o.match(
+          [](boolean) { return "boolean"; },
+          [](proposition) { return "proposition"; },
+          [](negation<LTLP>) { return "negation"; },
+          [](disjunction<LTLP>) { return "disjunction"; },
+          [](conjunction<LTLP>) { return "conjunction"; },
+          [](implication<LTLP>) { return "implication"; },
+          [](iff<LTLP>) { return "iff"; }
+        );
+      },
+      [](otherwise) { return "otherwise"; }
+    );
+
+    REQUIRE(s == "conjunction");
+  }
+
   SECTION("Otherwise") { 
     formula<LTL> f = sigma.boolean(true);
 
     bool ok = f.match(
       [](boolean) { return true; },
       [](otherwise) { return false; }
+    );
+
+    REQUIRE(ok);
+
+    ok = f.match(
+      [](proposition) { return false; },
+      [](otherwise) { return true; }
     );
 
     REQUIRE(ok);
