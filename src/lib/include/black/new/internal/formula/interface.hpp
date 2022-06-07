@@ -57,7 +57,7 @@ namespace black::internal::new_api
 
   template<typename Syntax1, typename Syntax2>
   struct make_combined_fragment_<
-    Syntax1, Syntax2, std::enable_if_t<is_syntax_allowed<Syntax1, Syntax2>>
+    Syntax1, Syntax2, std::enable_if_t<is_subfragment_of_v<Syntax1, Syntax2>>
   > { 
     using type = Syntax2;
   };
@@ -66,8 +66,8 @@ namespace black::internal::new_api
   struct make_combined_fragment_<
     Syntax1, Syntax2, 
     std::enable_if_t<
-      !is_syntax_allowed<Syntax1, Syntax2> &&
-      is_syntax_allowed<Syntax2, Syntax1> 
+      !is_subfragment_of_v<Syntax1, Syntax2> &&
+      is_subfragment_of_v<Syntax2, Syntax1> 
     >
   > { 
     using type = Syntax1;
@@ -265,7 +265,7 @@ namespace black::internal::new_api
         typename H, \
         REQUIRES( \
           H::hierarchy == hierarchy_type::Base && \
-          is_syntax_allowed<typename H::syntax, Syntax> \
+          is_subfragment_of_v<typename H::syntax, Syntax> \
         ) \
       > \
       Base(H const& h); \
@@ -574,7 +574,7 @@ namespace black::internal::new_api
 
       if constexpr(
         !Leaf && 
-        !is_syntax_allowed<typename F::syntax, typename Derived::syntax>
+        !is_subfragment_of_v<typename F::syntax, typename Derived::syntax>
       ) return {};
 
       if(!accepts_type::doesit(f._element->type))
@@ -688,7 +688,7 @@ namespace black::internal::new_api
         typename H, \
         REQUIRES( \
           H::storage == storage_type::Storage && \
-          is_syntax_allowed<typename H::syntax, Syntax> \
+          is_subfragment_of_v<typename H::syntax, Syntax> \
         ) \
       > \
       Storage(H const&e); \
@@ -765,7 +765,7 @@ namespace black::internal::new_api
       friend struct Storage##_fields<Element<Syntax>>; \
       friend struct Storage##_children<Syntax, Element<Syntax>>; \
       static_assert( \
-        is_type_allowed<syntax_element::Element, Syntax>, \
+        is_subfragment_of_v<make_fragment<syntax_element::Element>, Syntax>, \
         "'" #Element "' instance not allowed in its own syntax" \
       ); \
     public: \
@@ -783,7 +783,7 @@ namespace black::internal::new_api
       \
       Element(class alphabet *sigma, Storage##_t *element); \
       \
-      template<typename S, REQUIRES(is_syntax_allowed<S, Syntax>)> \
+      template<typename S, REQUIRES(is_subfragment_of_v<S, Syntax>)> \
       Element(Element<S> e); \
       \
       template< \

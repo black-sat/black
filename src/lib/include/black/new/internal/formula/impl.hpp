@@ -96,7 +96,7 @@ namespace black::internal::new_api {
         typename H, \
         REQUIRES_OUT_OF_LINE( \
           H::hierarchy == hierarchy_type::Base && \
-          is_syntax_allowed<typename H::syntax, Syntax> \
+          is_subfragment_of_v<typename H::syntax, Syntax> \
         ) \
       > \
     Base<Syntax>::Base(H const& h) \
@@ -127,7 +127,7 @@ namespace black::internal::new_api {
           typename H, \
           REQUIRES_OUT_OF_LINE( \
             H::storage == storage_type::Storage && \
-            is_syntax_allowed<typename H::syntax, Syntax> \
+            is_subfragment_of_v<typename H::syntax, Syntax> \
           ) \
         > \
         Storage<Syntax>::Storage(H const&e) \
@@ -153,7 +153,7 @@ namespace black::internal::new_api {
         } { } \
     \
     template<typename Syntax> \
-    template<typename S, REQUIRES_OUT_OF_LINE(is_syntax_allowed<S, Syntax>)> \
+    template<typename S, REQUIRES_OUT_OF_LINE(is_subfragment_of_v<S, Syntax>)> \
     Element<Syntax>::Element(Element<S> e) \
       : _sigma{e._sigma}, _element{e._element} { } \
     \

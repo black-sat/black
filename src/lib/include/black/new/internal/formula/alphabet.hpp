@@ -71,7 +71,7 @@ namespace black::internal::new_api {
       typename H, 
       REQUIRES(
         H::hierarchy == Hierarchy && 
-        is_syntax_allowed<typename H::syntax, Syntax>
+        is_subfragment_of_v<typename H::syntax, Syntax>
       )
     >
     children_vector(std::vector<H> const& v) {

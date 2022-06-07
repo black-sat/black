@@ -213,7 +213,7 @@ namespace black::internal::new_api {
         syntax_list_includes_v<
           typename TopLevel::list, 
           typename H::syntax_elements
-        > && is_syntax_allowed<typename H::syntax, typename Base::syntax>
+        > && is_subfragment_of_v<typename H::syntax, typename Base::syntax>
       )
     >
     only(H h) : _base{h} { }

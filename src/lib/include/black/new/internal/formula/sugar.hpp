@@ -138,10 +138,10 @@ namespace black::internal::new_api {
     bool operator!() const { return !_eq; }
     operator bool() const { return _eq; }
     
-    template<typename S, REQUIRES(is_syntax_allowed<Syntax, S>)>
+    template<typename S, REQUIRES(is_subfragment_of_v<Syntax, S>)>
     operator atom<S>() const { return _atom; }
 
-    template<typename S, REQUIRES(is_syntax_allowed<Syntax, S>)>
+    template<typename S, REQUIRES(is_subfragment_of_v<Syntax, S>)>
     operator formula<S>() const { return _atom; }
   };
 

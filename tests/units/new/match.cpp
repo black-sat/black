@@ -135,42 +135,42 @@ TEST_CASE("Pattern matching") {
       >
     );
     static_assert(
-      black::internal::new_api::is_syntax_allowed<
+      black::internal::new_api::is_subfragment_of_v<
         std::common_type_t<formula<LTL>, unary<FO>>::syntax, LTLFO
       >
     );
     static_assert(
-      black::internal::new_api::is_syntax_allowed<
+      black::internal::new_api::is_subfragment_of_v<
         std::common_type_t<unary<LTL>, formula<FO>>::syntax, LTLFO
       >
     );
     static_assert(
-      black::internal::new_api::is_syntax_allowed<
+      black::internal::new_api::is_subfragment_of_v<
         std::common_type_t<unary<LTL>, negation<FO>>::syntax, LTLFO
       >
     );
     static_assert(
-      black::internal::new_api::is_syntax_allowed<
+      black::internal::new_api::is_subfragment_of_v<
         std::common_type_t<negation<LTL>, unary<FO>>::syntax, LTLFO
       >
     );
     static_assert(
-      black::internal::new_api::is_syntax_allowed<
+      black::internal::new_api::is_subfragment_of_v<
         std::common_type_t<negation<FO>, proposition>::syntax, FO
       >
     );
     static_assert(
-      black::internal::new_api::is_syntax_allowed<
+      black::internal::new_api::is_subfragment_of_v<
         std::common_type_t<tomorrow<LTL>, negation<FO>, proposition>::syntax, LTLFO
       >
     );
     static_assert(
-      black::internal::new_api::is_syntax_allowed<
+      black::internal::new_api::is_subfragment_of_v<
         std::common_type_t<proposition, unary<LTL>>::syntax, LTL
       >
     );
     static_assert(
-      black::internal::new_api::is_syntax_allowed<
+      black::internal::new_api::is_subfragment_of_v<
         std::common_type_t<negation<FO>, formula<LTL>>::syntax, LTLFO
       >
     );

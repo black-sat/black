@@ -259,6 +259,21 @@ namespace black::internal::new_api {
   };
 
   //
+  // Trait to tell whether a fragment is subsumed by another. This trait is used
+  // in every place where a conversion between different syntaxes is requested,
+  // e.g. from formula<Boolean> to formula<LTL>.
+  //
+  template<fragment Syntax, fragment Allowed>
+  struct is_subfragment_of : syntax_list_includes<
+    typename Allowed::list,
+    typename Syntax::list
+  > { };
+  
+  template<fragment Syntax, fragment Allowed>
+  inline constexpr bool is_subfragment_of_v = 
+    is_subfragment_of<Syntax, Allowed>::value;
+
+  //
   // This concept models the most important types of the system, i.e. hierarchy
   // bases like `formula`, `term`, etc... and all the storage kinds such as
   // `unary`, `binary` and hierarchy elements such as `conjunction`. There are
