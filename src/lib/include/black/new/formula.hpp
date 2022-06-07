@@ -39,29 +39,19 @@ namespace black::internal::new_api {
   // Helper function to call sigma() on the first argument that supports
   // the call
   //
-  template<typename T, typename = void>
-  struct has_sigma : std::false_type {  };
-
-  template<typename T>
-  struct has_sigma<T, std::void_t<decltype(std::declval<T>().sigma())>>
-    : std::true_type { };
-
-  template<typename T>
-  alphabet *get_sigma(T v) {
-    return v.sigma();
-  }
-
-  template<typename T, REQUIRES(has_sigma<T>::value)>
-  alphabet *get_sigma(std::vector<T> const&v) {
+  template<hierarchy T, typename ...Args>
+  alphabet *get_sigma(std::vector<T> const&v, Args ...) {
     black_assert(!v.empty());
     return v[0].sigma();
   }
 
-  template<typename T, typename ...Args>
-  alphabet *get_sigma(T v, Args ...args) {
-    if constexpr(has_sigma<T>::value)
+  template<hierarchy T, typename ...Args>
+  alphabet *get_sigma(T v, Args ...) {
       return v.sigma();
-    else
+  }
+  
+  template<typename T, typename ...Args>
+  alphabet *get_sigma(T, Args ...args) {
       return get_sigma(args...);
   }
 
