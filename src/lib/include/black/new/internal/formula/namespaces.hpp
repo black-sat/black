@@ -26,7 +26,7 @@
 
 namespace black::internal::new_api {
   template<int, syntax_element ...Elements>
-  using make_fragment_helper = make_fragment<Elements...>;
+  using make_fragment_t_helper = make_fragment_t<Elements...>;
 }
 
 namespace black::new_api {
@@ -35,9 +35,8 @@ namespace black::new_api {
     using black::internal::new_api::alphabet;
     using black::internal::new_api::otherwise;
     using black::internal::new_api::syntax_element;
-    using black::internal::new_api::make_fragment;
-    using black::internal::new_api::make_derived_fragment;
-    using black::internal::new_api::make_combined_fragment;
+    using black::internal::new_api::make_fragment_t;
+    using black::internal::new_api::make_combined_fragment_t;
     using black::internal::new_api::only;
 
     inline namespace matching_fragments {
@@ -73,7 +72,7 @@ namespace black::new_api {
 
   #define declare_fragment(Fragment, ...) \
     namespace syntax { \
-      struct Fragment : black::internal::new_api::make_fragment_helper<0 \
+      struct Fragment : black::internal::new_api::make_fragment_t_helper<0 \
         enum_elements_##Fragment(Fragment, append_syntax_element) \
       > { }; \
     } \

@@ -243,7 +243,7 @@ namespace black::internal::new_api {
   };
 
   namespace matching_fragments {
-    struct Future : make_fragment<
+    struct Future : make_fragment_t<
       syntax_element::tomorrow,
       syntax_element::w_tomorrow,
       syntax_element::always,
@@ -252,7 +252,7 @@ namespace black::internal::new_api {
       syntax_element::release
     > { };
 
-    struct Past : make_fragment<
+    struct Past : make_fragment_t<
       syntax_element::yesterday,
       syntax_element::w_yesterday,
       syntax_element::once,
@@ -261,7 +261,7 @@ namespace black::internal::new_api {
       syntax_element::triggered
     > { };
 
-    struct Temporal : make_combined_fragment<Future, Past> { };
+    struct Temporal : make_combined_fragment_t<Future, Past> { };
   }
 
 }

@@ -226,15 +226,83 @@ namespace black::internal::new_api {
     { };
 
   //
-  // `fragment_type` models types used as pseudo-enum types for enumerating
-  // hierarchy elements of storage kinds, e.g. `unary<LTL>::type`. We can only
-  // just model the fact that the type holds a value of type `syntax_element`.
+  // `fragment_pseudo_enum` models types used as pseudo-enum types for
+  // enumerating hierarchy elements of storage kinds, e.g. `unary<LTL>::type`.
+  // We can only just model the fact that the type holds a value of type
+  // `syntax_element`.
   //
   template<typename T>
-  concept fragment_type = requires(T t) {
-    { t.type() } -> std::convertible_to<syntax_element>;
+  concept fragment_pseudo_enum = requires(T t) {
+    { t.element() } -> std::convertible_to<syntax_element>;
   };
   
+  //
+  // The `fragment_type` class will provide the concrete instances of the
+  // `fragment_pseudo_enum` concept. For a given `syntax_predicate` `P` and a
+  // `syntax_list` `S`, `fragment_type<P, S>` will have one constexpr member
+  // named exactly `Element` for each syntax element from `S` allowed by `P`.
+  // For example, `unary<LTL>::type` has members `unary<LTL>::type::negation`,
+  // `unary<LTL>::type::always`, etc... The concrete names will be injected by
+  // the preprocessor later. Here, we define the needed types. That is why we
+  // call it `pseudo enum`.
+  //
+  // We first declare a struct whose only purpose is to encapsulate a statically
+  // known `syntax_element`.
+  template<syntax_element Element>
+  struct pseudo_enum_value {
+    static constexpr syntax_element value = Element;
+  };
+
+  //
+  // Then, an incomplete template class that will be specialized by the
+  // preprocessor with the concrete names of the pseudo-enum values, e.g. we
+  // will have:
+  //
+  // template<> 
+  // struct pseudo_enum_element<syntax_element::conjunction> {
+  //   static constexpr 
+  //   pseudo_enum_value<syntax_element::conjunction> conjunction;
+  // };
+  template<syntax_element Element>
+  struct pseudo_enum_element;
+
+  //
+  // Then, a class that derives from all the `pseudo_enum_element`s of a given
+  // syntax list, used as a base class for `fragment_type`.
+  //
+  template<typename List>
+  struct fragment_type_base;
+
+  template<syntax_element ...Elements>
+  struct fragment_type_base<syntax_list<Elements...>>
+    : pseudo_enum_element<Elements>... { };
+
+  //
+  // Now we can define `fragment_type`, which derives from `fragment_type_base`
+  // after filtering the list by the given predicate.
+  //
+  // The type itself is simple, and it only carries over the currently assigned
+  // `syntax_element`. It can be only constructed by `pseudo_enum_value`s
+  // corresponding to syntax elements included in its list.
+  //
+  template<syntax_predicate AcceptsType, typename List>
+  struct fragment_type
+    : fragment_type_base<syntax_list_filter_t<List, AcceptsType>> 
+  {
+    using list = syntax_list_filter_t<List, AcceptsType>;
+
+    fragment_type() = delete;
+
+    template<syntax_element Element>
+      requires syntax_list_contains_v<list, Element>
+    fragment_type(pseudo_enum_value<Element>) : _element{Element} { }
+
+    syntax_element element() const { return _element; }
+
+  private:
+    syntax_element _element;
+  };
+
   //
   // Dummy `syntax_predicate` instance used in the following concept.
   //
@@ -248,14 +316,31 @@ namespace black::internal::new_api {
   // 1. a `syntax_list` called `list`, providing the list of `syntax_element`s
   //    allowed in this fragment.
   // 2. a template accepting an `syntax_predicate` type that, when
-  //    instantiated,will give a `fragment_type`. This will be used as the
-  //    pseudo-enum enumerating the allowed sub elements of storage kinds, such
-  //    as `unary<LTL>::type`.
+  //    instantiated,will give a `fragment_pseudo_enum`.
   //
   template<typename T>
   concept fragment = requires {
     requires is_syntax_list_v<typename T::list>;
-    requires fragment_type<typename T::template type<false_syntax_predicate>>;
+    requires fragment_pseudo_enum<
+      typename T::template type<false_syntax_predicate>
+    >;
+  };
+
+  //
+  // Now we can define actual fragments. A fragment made of a list of
+  // `syntax_element` is `make_fragment_t<Elements...>`
+  //
+  template<syntax_element ...Elements>
+  struct make_fragment_t {
+    using list = syntax_list_unique_t<syntax_list<Elements...>>;
+    
+    template<syntax_predicate AcceptsType>
+    using type = fragment_type<AcceptsType, list>;
+  };
+
+  template<syntax_element ...Elements>
+  struct make_fragment {
+    using type = make_fragment_t<Elements...>;
   };
 
   //
@@ -263,15 +348,77 @@ namespace black::internal::new_api {
   // in every place where a conversion between different syntaxes is requested,
   // e.g. from formula<Boolean> to formula<LTL>.
   //
-  template<fragment Syntax, fragment Allowed>
+  template<fragment Fragment, fragment Allowed>
   struct is_subfragment_of : syntax_list_includes<
     typename Allowed::list,
-    typename Syntax::list
+    typename Fragment::list
   > { };
   
-  template<fragment Syntax, fragment Allowed>
+  template<fragment Fragment, fragment Allowed>
   inline constexpr bool is_subfragment_of_v = 
-    is_subfragment_of<Syntax, Allowed>::value;
+    is_subfragment_of<Fragment, Allowed>::value;
+
+  //
+  // Fragments can also be created by combining other fragments. This is a bit
+  // complex because we want to avoid creating bigger and bigger types (in terms
+  // of instantiation depth) when we compose `make_combined_fragment_t` multiple
+  // times, and we also want to short-circuit common cases like combining a
+  // fragment with a proper subfragment of itself.
+  //
+  // For example, `make_combined_fragment_t<Boolean, LTL>` should be exactly
+  // `LTL`, not some more complex type leading to an equivalent fragment.
+  //
+  // So first we declare the type doing the actual combination of two fragments.
+  //
+  template<fragment Fragment1, fragment Fragment2>
+  struct make_combined_fragment_impl_t {
+    using list = syntax_list_unique_t<
+      syntax_list_concat_t<typename Fragment1::list, typename Fragment2::list>
+    >;
+
+    template<syntax_predicate AcceptsType>
+    using type = fragment_type<AcceptsType, list>;
+  };
+
+  //
+  // Now we implement a trait on top of that to simplify common scenarios.
+  //
+  template<fragment Fragment1, fragment Fragment2>
+  struct make_combined_fragment_simplified {
+    using type = make_combined_fragment_impl_t<Fragment1, Fragment2>;
+  };
+
+  template<fragment Fragment1, fragment Fragment2>
+    requires is_subfragment_of_v<Fragment1, Fragment2>
+  struct make_combined_fragment_simplified<Fragment1, Fragment2> { 
+    using type = Fragment2;
+  };
+  
+  template<fragment Fragment1, fragment Fragment2>
+    requires (!is_subfragment_of_v<Fragment1, Fragment2> &&
+              is_subfragment_of_v<Fragment2, Fragment1>)
+  struct make_combined_fragment_simplified<Fragment1, Fragment2> { 
+    using type = Fragment1;
+  };
+
+  //
+  // And then the final vararg version that puts everything together
+  //
+  template<fragment ...Fragments>
+  struct make_combined_fragment;
+
+  template<>
+  struct make_combined_fragment<> : make_fragment<> { };
+
+  template<fragment Fragment, fragment ...Fragments>
+  struct make_combined_fragment<Fragment, Fragments...> 
+    : make_combined_fragment_simplified<
+        Fragment, typename make_combined_fragment<Fragments...>::type
+      > { };
+
+  template<fragment ...Fragments>
+  using make_combined_fragment_t = 
+    typename make_combined_fragment<Fragments...>::type;
 
   //
   // This concept models the most important types of the system, i.e. hierarchy
@@ -299,7 +446,7 @@ namespace black::internal::new_api {
   concept hierarchy = requires(T t) {
     requires fragment<typename T::syntax>;
     requires syntax_predicate<typename T::accepts_type>;
-    requires fragment_type<typename T::type>;
+    requires fragment_pseudo_enum<typename T::type>;
     requires is_syntax_list_v<typename T::syntax_elements>;
     typename T::id_type;
     { T::hierarchy } -> std::convertible_to<hierarchy_type>;

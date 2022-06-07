@@ -141,7 +141,7 @@ namespace black::internal::new_api {
       Storage##_alloc_args<Syntax> const&args \
     ) { \
       return Storage##_key { \
-        args.type.type(),
+        args.type.element(),
 
   #define declare_field(Base, Storage, Type, Field) args.Field,
 

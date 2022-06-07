@@ -42,6 +42,9 @@ static_assert(black::internal::new_api::storage_kind<conjunction<LTL>>);
 static_assert(black::internal::new_api::hierarchy_element<conjunction<LTL>>);
 static_assert(black::internal::new_api::hierarchy_element<equal>);
 
+static_assert(
+  std::is_same_v<black::internal::new_api::make_combined_fragment_t<LTL>, LTL>
+);
 
 
 TEST_CASE("New API") {

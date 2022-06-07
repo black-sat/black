@@ -35,9 +35,9 @@ namespace black::internal::new_api {
       ) \
     > \
     auto operator Op(T1 t1, T2 t2) { \
-      using S = make_combined_fragment< \
-        make_combined_fragment<typename T1::syntax, typename T2::syntax>, \
-        make_fragment<syntax_element::Rel> \
+      using S = make_combined_fragment_t< \
+        make_combined_fragment_t<typename T1::syntax, typename T2::syntax>, \
+        make_fragment_t<syntax_element::Rel> \
       >; \
       return Kind<S>(t1.sigma()->Rel(), std::vector<term<S>>{t1, t2}); \
     } \
@@ -49,10 +49,10 @@ namespace black::internal::new_api {
       ) \
     > \
     auto operator Op(T1 t1, T2 t2) { \
-      using S = make_combined_fragment< \
+      using S = make_combined_fragment_t< \
         typename T1::syntax, \
-        make_combined_fragment< \
-          integer::syntax, make_fragment<syntax_element::Rel> \
+        make_combined_fragment_t< \
+          integer::syntax, make_fragment_t<syntax_element::Rel> \
         > \
       >; \
       \
@@ -67,10 +67,10 @@ namespace black::internal::new_api {
       ) \
     > \
     auto operator Op(T2 t2, T1 t1) { \
-      using S = make_combined_fragment< \
+      using S = make_combined_fragment_t< \
         typename T1::syntax, \
-        make_combined_fragment< \
-          integer::syntax, make_fragment<syntax_element::Rel> \
+        make_combined_fragment_t< \
+          integer::syntax, make_fragment_t<syntax_element::Rel> \
         > \
       >; \
       \
@@ -85,10 +85,10 @@ namespace black::internal::new_api {
       ) \
     > \
     auto operator Op(T1 t1, T2 t2) { \
-      using S = make_combined_fragment< \
+      using S = make_combined_fragment_t< \
         typename T1::syntax, \
-        make_combined_fragment< \
-          real::syntax, make_fragment<syntax_element::Rel> \
+        make_combined_fragment_t< \
+          real::syntax, make_fragment_t<syntax_element::Rel> \
         > \
       >; \
       \
@@ -103,10 +103,10 @@ namespace black::internal::new_api {
       ) \
     > \
     auto operator Op(T2 t2, T1 t1) { \
-      using S = make_combined_fragment< \
+      using S = make_combined_fragment_t< \
         typename T1::syntax, \
-        make_combined_fragment< \
-          real::syntax, make_fragment<syntax_element::Rel> \
+        make_combined_fragment_t< \
+          real::syntax, make_fragment_t<syntax_element::Rel> \
         > \
       >; \
       \
@@ -158,9 +158,9 @@ namespace black::internal::new_api {
     )
   >
   auto operator==(T1 t1, T2 t2) {
-    using S = make_combined_fragment<
-      make_combined_fragment<typename T1::syntax, typename T2::syntax>,
-      make_fragment<syntax_element::equal>
+    using S = make_combined_fragment_t<
+      make_combined_fragment_t<typename T1::syntax, typename T2::syntax>,
+      make_fragment_t<syntax_element::equal>
     >;
     return term_equality_wrapper<S>{
       t1.unique_id() == t1.unique_id(),
@@ -176,9 +176,9 @@ namespace black::internal::new_api {
     )
   >
   auto operator!=(T1 t1, T2 t2) {
-    using S = make_combined_fragment<
-      make_combined_fragment<typename T1::syntax, typename T2::syntax>,
-      make_fragment<syntax_element::not_equal>
+    using S = make_combined_fragment_t<
+      make_combined_fragment_t<typename T1::syntax, typename T2::syntax>,
+      make_fragment_t<syntax_element::not_equal>
     >;
     return term_equality_wrapper<S>{
       t1.unique_id() != t1.unique_id(),

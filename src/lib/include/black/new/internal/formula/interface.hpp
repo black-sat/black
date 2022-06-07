@@ -36,60 +36,40 @@ namespace black::internal::new_api
 {
   class alphabet;
 
-  template<syntax_element ...>
-  struct make_fragment;
-  template<typename, syntax_element ...>
-  struct make_derived_fragment;
-  template<typename Syntax1, typename Syntax2>
-  struct make_combined_fragment_impl;
-
-  template<typename ...Syntaxes>
-  struct make_combined_fragment__;
-
-  template<typename ...Syntaxes>
-  using make_combined_fragment = 
-    typename make_combined_fragment__<Syntaxes...>::type;
-
-  template<typename Syntax1, typename Syntax2, typename = void>
-  struct make_combined_fragment_ {
-    using type = make_combined_fragment_impl<Syntax1, Syntax2>;
+  enum class hierarchy_type  : uint8_t {
+    #define declare_hierarchy(Base) Base,
+    #include <black/new/internal/formula/hierarchy.hpp>
   };
 
-  template<typename Syntax1, typename Syntax2>
-  struct make_combined_fragment_<
-    Syntax1, Syntax2, std::enable_if_t<is_subfragment_of_v<Syntax1, Syntax2>>
-  > { 
-    using type = Syntax2;
+  enum class storage_type  : uint8_t {
+
+    #define declare_storage_kind(Base, Storage) Storage,
+    #include <black/new/internal/formula/hierarchy.hpp>
+
   };
 
-  template<typename Syntax1, typename Syntax2>
-  struct make_combined_fragment_<
-    Syntax1, Syntax2, 
-    std::enable_if_t<
-      !is_subfragment_of_v<Syntax1, Syntax2> &&
-      is_subfragment_of_v<Syntax2, Syntax1> 
-    >
-  > { 
-    using type = Syntax1;
+  enum class syntax_element : uint8_t {
+    #define declare_leaf_storage_kind(Base, Storage) Storage,
+    #define has_no_hierarchy_elements(Base, Storage) Storage,
+    #define declare_hierarchy_element(Base, Storage, Element) Element,
+
+    #include <black/new/internal/formula/hierarchy.hpp>
   };
 
-  template<>
-  struct make_combined_fragment__<> {
-    using type = make_fragment<>;
-  };
+  #define declare_enum_element(Element) \
+    template<> \
+    struct pseudo_enum_element<syntax_element::Element> { \
+      static constexpr pseudo_enum_value<syntax_element::Element> Element{}; \
+    };
 
-  template<typename Syntax>
-  struct make_combined_fragment__<Syntax> {
-    using type = Syntax;
-  };
+  #define declare_leaf_storage_kind(Base, Storage) declare_enum_element(Storage)
+  #define has_no_hierarchy_elements(Base, Storage) declare_enum_element(Storage)
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    declare_enum_element(Element)
 
-  template<typename Syntax, typename ...Syntaxes>
-  struct make_combined_fragment__<Syntax, Syntaxes...> {
-    using type = 
-      typename make_combined_fragment_<
-        Syntax, make_combined_fragment<Syntaxes...>
-      >::type;
-  };
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #undef declare_enum_element
 
   //
   // Base class for internal representation of elements of the hierarchies
@@ -642,7 +622,7 @@ namespace black::internal::new_api
     std::enable_if_t<can_get_syntax_from_arg<Arg>>,
     Arg, Args...
   > {
-    using type = make_combined_fragment<
+    using type = make_combined_fragment_t<
       get_syntax_from_arg<Arg>,
       combined_fragment_from_args<Args...>
     >;
@@ -716,8 +696,8 @@ namespace black::internal::new_api
     template<typename ...Args> \
     explicit Storage(Args ...args) -> \
       Storage< \
-        make_combined_fragment< \
-          make_fragment<syntax_element::Storage>, \
+        make_combined_fragment_t< \
+          make_fragment_t<syntax_element::Storage>, \
           combined_fragment_from_args<Args...> \
         > \
       >;
@@ -732,7 +712,7 @@ namespace black::internal::new_api
       friend struct Storage##_fields<Storage>; \
     public: \
       using accepts_type = Storage##_accepts_type; \
-      using syntax = make_fragment<syntax_element::Storage>; \
+      using syntax = make_fragment_t<syntax_element::Storage>; \
       using syntax_elements = syntax_list<syntax_element::Storage>; \
       using id_type = Base##_id; \
       using type = syntax::template type<accepts_type>; \
@@ -765,7 +745,7 @@ namespace black::internal::new_api
       friend struct Storage##_fields<Element<Syntax>>; \
       friend struct Storage##_children<Syntax, Element<Syntax>>; \
       static_assert( \
-        is_subfragment_of_v<make_fragment<syntax_element::Element>, Syntax>, \
+        is_subfragment_of_v<make_fragment_t<syntax_element::Element>, Syntax>, \
         "'" #Element "' instance not allowed in its own syntax" \
       ); \
     public: \
@@ -802,8 +782,8 @@ namespace black::internal::new_api
     template<typename ...Args> \
     explicit Element(Args ...args) -> \
       Element< \
-        make_combined_fragment< \
-          make_fragment<syntax_element::Element>, \
+        make_combined_fragment_t< \
+          make_fragment_t<syntax_element::Element>, \
           combined_fragment_from_args<Args...> \
         > \
       >;
@@ -817,7 +797,7 @@ namespace black::internal::new_api
       friend struct Storage##_fields<Element>; \
     public: \
       using accepts_type = Element##_accepts_type; \
-      using syntax = make_fragment<syntax_element::Element>; \
+      using syntax = make_fragment_t<syntax_element::Element>; \
       using syntax_elements = syntax_list<syntax_element::Element>; \
       using id_type = Base##_id; \
       using type = syntax::template type<accepts_type>; \
@@ -1006,9 +986,9 @@ namespace black::internal::new_api
   >
   struct common_type_helper<
     H1<S1>, H2<S2>, std::enable_if_t<
-      std::is_constructible_v<H1<make_combined_fragment<S1, S2>>, H2<S2>>
+      std::is_constructible_v<H1<make_combined_fragment_t<S1, S2>>, H2<S2>>
     >
-  > { using type = H1<make_combined_fragment<S1, S2>>; };
+  > { using type = H1<make_combined_fragment_t<S1, S2>>; };
 
   template<typename H, typename T, typename = void>
   struct common_type_leaf_helper;
@@ -1039,7 +1019,7 @@ namespace black::internal::new_api
     >
   > { 
     using type = storage_type_of<
-      make_combined_fragment<typename H1::syntax, typename H2::syntax>,
+      make_combined_fragment_t<typename H1::syntax, typename H2::syntax>,
       H1::storage
     >;
   };
@@ -1052,7 +1032,7 @@ namespace black::internal::new_api
     >
   > { 
     using type = hierarchy_type_of<
-      make_combined_fragment<typename H1::syntax, typename H2::syntax>,
+      make_combined_fragment_t<typename H1::syntax, typename H2::syntax>,
       H1::hierarchy
     >;
   };
@@ -1065,7 +1045,7 @@ namespace black::internal::new_api
     >
   > { 
     using type = hierarchy_type_of<
-      make_combined_fragment<typename H1::syntax, typename H2::syntax>,
+      make_combined_fragment_t<typename H1::syntax, typename H2::syntax>,
       H1::hierarchy
     >;
   };
