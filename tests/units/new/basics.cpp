@@ -31,16 +31,16 @@ using namespace std::literals;
 using namespace black::new_api::syntax;
 using black::internal::identifier;
 
-static_assert(black::internal::new_api::Hierarchy<formula<LTL>>);
-static_assert(black::internal::new_api::Hierarchy<proposition>);
-static_assert(black::internal::new_api::Hierarchy<unary<LTL>>);
-static_assert(black::internal::new_api::Hierarchy<conjunction<LTL>>);
-static_assert(black::internal::new_api::Hierarchy<equal>);
-static_assert(black::internal::new_api::StorageKind<proposition>);
-static_assert(black::internal::new_api::StorageKind<unary<LTL>>);
-static_assert(black::internal::new_api::StorageKind<conjunction<LTL>>);
-static_assert(black::internal::new_api::HierarchyElement<conjunction<LTL>>);
-static_assert(black::internal::new_api::HierarchyElement<equal>);
+static_assert(black::internal::new_api::hierarchy<formula<LTL>>);
+static_assert(black::internal::new_api::hierarchy<proposition>);
+static_assert(black::internal::new_api::hierarchy<unary<LTL>>);
+static_assert(black::internal::new_api::hierarchy<conjunction<LTL>>);
+static_assert(black::internal::new_api::hierarchy<equal>);
+static_assert(black::internal::new_api::storage_kind<proposition>);
+static_assert(black::internal::new_api::storage_kind<unary<LTL>>);
+static_assert(black::internal::new_api::storage_kind<conjunction<LTL>>);
+static_assert(black::internal::new_api::hierarchy_element<conjunction<LTL>>);
+static_assert(black::internal::new_api::hierarchy_element<equal>);
 
 
 

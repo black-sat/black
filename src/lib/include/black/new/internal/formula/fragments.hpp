@@ -80,16 +80,16 @@ namespace black::internal::new_api {
   struct fragment_type_base_t;
   
   template<typename AcceptsType, syntax_element ...Types>
-  struct fragment_type_base_t<AcceptsType, type_list<Types...>>
+  struct fragment_type_base_t<AcceptsType, syntax_list<Types...>>
     : type_base_t<AcceptsType, Types>... { };
 
   template<typename AcceptsType, typename TypeList>
-  struct fragment_type 
+  struct fragment_type_t
     : fragment_type_base_t<AcceptsType, TypeList> {
-    fragment_type() = delete;
+    fragment_type_t() = delete;
     
-    template<typename T, REQUIRES(type_list_contains<TypeList, T::type()>)>
-    fragment_type(T) : _type{T::type()} { }
+    template<typename T, REQUIRES(syntax_list_contains_v<TypeList, T::type()>)>
+    fragment_type_t(T) : _type{T::type()} { }
 
     syntax_element type() const { return _type; }
   private:
@@ -97,57 +97,57 @@ namespace black::internal::new_api {
   };
 
   template<typename TypeList>
-  struct type_list_remove_no_type_;
+  struct syntax_list_remove_no_type_;
   
   template<typename TypeList>
-  using type_list_remove_no_type = 
-    typename type_list_remove_no_type_<TypeList>::type;
+  using syntax_list_remove_no_type = 
+    typename syntax_list_remove_no_type_<TypeList>::type;
 
   template<>
-  struct type_list_remove_no_type_<type_list<>> {
-    using type = type_list<>;
+  struct syntax_list_remove_no_type_<syntax_list<>> {
+    using type = syntax_list<>;
   };
 
   template<syntax_element Type, syntax_element ...Types>
-  struct type_list_remove_no_type_<type_list<Type, Types...>> {
-    using type = type_list_concat<
-      type_list<Type>, type_list_remove_no_type<type_list<Types...>>
+  struct syntax_list_remove_no_type_<syntax_list<Type, Types...>> {
+    using type = syntax_list_concat_t<
+      syntax_list<Type>, syntax_list_remove_no_type<syntax_list<Types...>>
     >;
   };
 
   template<syntax_element ...Types>
-  struct type_list_remove_no_type_<type_list<syntax_element::no_type, Types...>>
+  struct syntax_list_remove_no_type_<syntax_list<syntax_element::no_type, Types...>>
   {
-    using type = type_list<Types...>;
+    using type = syntax_list<Types...>;
   };
 
   template<syntax_element ...Types>
   struct make_fragment {
     using list = 
-      type_list_remove_no_type<type_list_unique<type_list<Types...>>>;
+      syntax_list_remove_no_type<syntax_list_unique_t<syntax_list<Types...>>>;
     
     template<typename AcceptsType>
-    using type = fragment_type<AcceptsType, list>;
+    using type = fragment_type_t<AcceptsType, list>;
   };
 
   template<typename Parent, syntax_element ...Types>
   struct make_derived_fragment {
-    using list = type_list_remove_no_type<type_list_unique<
-      type_list_concat<typename Parent::list, type_list<Types...>>
+    using list = syntax_list_remove_no_type<syntax_list_unique_t<
+      syntax_list_concat_t<typename Parent::list, syntax_list<Types...>>
     >>;
 
     template<typename AcceptsType>
-    using type = fragment_type<AcceptsType, list>;
+    using type = fragment_type_t<AcceptsType, list>;
   };
 
   template<typename Syntax1, typename Syntax2>
   struct make_combined_fragment_impl {
-    using list = type_list_unique<
-      type_list_concat<typename Syntax1::list, typename Syntax2::list>
+    using list = syntax_list_unique_t<
+      syntax_list_concat_t<typename Syntax1::list, typename Syntax2::list>
     >;
 
     template<typename AcceptsType>
-    using type = fragment_type<AcceptsType, list>;
+    using type = fragment_type_t<AcceptsType, list>;
   };
 }
 

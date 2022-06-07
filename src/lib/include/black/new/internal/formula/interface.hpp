@@ -237,10 +237,10 @@ namespace black::internal::new_api
 
   template<typename H>
   using syntax_elements_for = 
-    type_list_filter<typename H::syntax::list, typename H::accepts_type>;
+    syntax_list_filter<typename H::syntax::list, typename H::accepts_type>;
 
   #define declare_hierarchy(Base) \
-    template<Fragment Syntax> \
+    template<fragment Syntax> \
     class Base : public Base##_custom_members_t<Base<Syntax>> \
     { \
     public: \
@@ -733,7 +733,7 @@ namespace black::internal::new_api
     public: \
       using accepts_type = Storage##_accepts_type; \
       using syntax = make_fragment<syntax_element::Storage>; \
-      using syntax_elements = type_list<syntax_element::Storage>; \
+      using syntax_elements = syntax_list<syntax_element::Storage>; \
       using id_type = Base##_id; \
       using type = syntax::template type<accepts_type>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
@@ -771,7 +771,7 @@ namespace black::internal::new_api
     public: \
       using accepts_type = Element##_accepts_type; \
       using syntax = Syntax; \
-      using syntax_elements = type_list<syntax_element::Element>; \
+      using syntax_elements = syntax_list<syntax_element::Element>; \
       using id_type = Base##_id; \
       using type = typename Syntax::template type<accepts_type>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
@@ -818,7 +818,7 @@ namespace black::internal::new_api
     public: \
       using accepts_type = Element##_accepts_type; \
       using syntax = make_fragment<syntax_element::Element>; \
-      using syntax_elements = type_list<syntax_element::Element>; \
+      using syntax_elements = syntax_list<syntax_element::Element>; \
       using id_type = Base##_id; \
       using type = syntax::template type<accepts_type>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \

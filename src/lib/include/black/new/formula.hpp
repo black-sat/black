@@ -76,94 +76,42 @@ namespace black::internal::new_api {
     std::void_t<decltype(std::declval<T>()._element)>
   > : std::true_type { };
 
-  template<typename List>
-  struct type_list_head_;
-
-  template<syntax_element Element, syntax_element ...Elements>
-  struct type_list_head_<type_list<Element, Elements...>> {
-    static constexpr auto value = Element;
-  };
-
-  template<typename List>
-  constexpr auto type_list_head = type_list_head_<List>::value;
-
-  template<typename T, typename U>
-  struct type_list_concat_;
-
-  template<syntax_element ...Types1, syntax_element ...Types2>
-  struct type_list_concat_<type_list<Types1...>, type_list<Types2...>> {
-    using type = type_list<Types1..., Types2...>;
-  };
-
-  template<typename T, typename U>
-  using type_list_concat = typename type_list_concat_<T,U>::type;
-
-  template <typename T, typename List>
-  struct type_list_unique_ { 
-    using type = T;
-  };
-
-  template <syntax_element... Ts, syntax_element U, syntax_element... Us>
-  struct type_list_unique_<type_list<Ts...>, type_list<U, Us...>>
-    : std::conditional_t<
-        ((U == Ts) || ...),
-        type_list_unique_<type_list<Ts...>, type_list<Us...>>,
-        type_list_unique_<type_list<Ts..., U>, type_list<Us...>>
-    > { };
-
-  template <typename List>
-  using type_list_unique = typename type_list_unique_<type_list<>, List>::type;  
-
-  template<typename List, syntax_element Type>
-  struct type_list_contains_ : std::false_type { };
-
-  template<syntax_element ...Types, syntax_element Type>
-  struct type_list_contains_<type_list<Type, Types...>, Type> 
-    : std::true_type { };
-
-  template<syntax_element ...Types, syntax_element Type1, syntax_element Type2>
-  struct type_list_contains_<type_list<Type1, Types...>, Type2> 
-    : type_list_contains_<type_list<Types...>, Type2> { };
-
-  template<typename List, syntax_element Type>
-  constexpr bool type_list_contains = type_list_contains_<List, Type>::value;
-
   template<typename List, typename SubList>
-  struct type_list_includes_ : std::false_type { };
+  struct syntax_list_includes_ : std::false_type { };
 
   template<typename List, syntax_element ...Types>
-  struct type_list_includes_<List, type_list<Types...>> {
-    static constexpr bool value = (type_list_contains<List, Types> && ...);
+  struct syntax_list_includes_<List, syntax_list<Types...>> {
+    static constexpr bool value = (syntax_list_contains_v<List, Types> && ...);
   };
 
   template<typename List, typename Sublist>
-  constexpr bool type_list_includes = type_list_includes_<List, Sublist>::value;
+  constexpr bool syntax_list_includes = syntax_list_includes_<List, Sublist>::value;
 
   template<typename List, typename AcceptsType>
-  struct type_list_filter_;
+  struct syntax_list_filter_;
 
   template<typename List, typename AcceptsType>
-  using type_list_filter = typename type_list_filter_<List, AcceptsType>::type;
+  using syntax_list_filter = typename syntax_list_filter_<List, AcceptsType>::type;
 
   template<typename AcceptsType>
-  struct type_list_filter_<type_list<>, AcceptsType> {
-    using type = type_list<>;
+  struct syntax_list_filter_<syntax_list<>, AcceptsType> {
+    using type = syntax_list<>;
   };
 
   template<typename AcceptsType, syntax_element Type, syntax_element ...Types>
-  struct type_list_filter_<type_list<Type, Types...>, AcceptsType> {
+  struct syntax_list_filter_<syntax_list<Type, Types...>, AcceptsType> {
     using type = std::conditional_t<
       AcceptsType::doesit(Type), 
-      type_list_concat<
-        type_list<Type>, type_list_filter<type_list<Types...>, AcceptsType>
+      syntax_list_concat_t<
+        syntax_list<Type>, syntax_list_filter<syntax_list<Types...>, AcceptsType>
       >,
-      type_list_filter<type_list<Types...>, AcceptsType>
+      syntax_list_filter<syntax_list<Types...>, AcceptsType>
     >;
   };
 
   template<typename Syntax, typename Allowed>
   constexpr bool is_syntax_allowed = 
-    type_list_includes<
+    syntax_list_includes<
       typename Allowed::list,
       typename Syntax::list
     >;
@@ -188,7 +136,7 @@ namespace black::internal::new_api {
 
   template<syntax_element Type, typename Allowed>
   constexpr bool is_type_allowed = 
-    type_list_contains<typename Allowed::list, Type>;
+    syntax_list_contains_v<typename Allowed::list, Type>;
 
   template<typename Derived>
   struct function_call_operator_t {

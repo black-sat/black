@@ -103,7 +103,7 @@ namespace black::internal::new_api {
   struct matcher;
 
   template<typename H, typename Syntax, syntax_element Case>
-  struct matcher<H, Syntax, type_list<Case>> 
+  struct matcher<H, Syntax, syntax_list<Case>> 
   {
     using case_t = type_for_syntax_element<Syntax, Case>;
 
@@ -122,7 +122,7 @@ namespace black::internal::new_api {
     typename H, typename Syntax, 
     syntax_element Case, syntax_element ...Cases
   >
-  struct matcher<H, Syntax, type_list<Case, Cases...>>
+  struct matcher<H, Syntax, syntax_list<Case, Cases...>>
   {
     using case_t = type_for_syntax_element<Syntax, Case>;
 
@@ -130,7 +130,7 @@ namespace black::internal::new_api {
     static auto match(H f, Handlers&& ...handlers) 
       -> std::common_type_t<
         decltype(match::dispatch(*f.template to<case_t>(), FWD(handlers)...)),
-        decltype(matcher<H, Syntax, type_list<Cases...>>::match(
+        decltype(matcher<H, Syntax, syntax_list<Cases...>>::match(
           f, FWD(handlers)...
         ))
       >
@@ -138,7 +138,7 @@ namespace black::internal::new_api {
       if(f.template is<case_t>())
         return match::dispatch(*f.template to<case_t>(), FWD(handlers)...);
       else
-        return matcher<H, Syntax, type_list<Cases...>>::match(
+        return matcher<H, Syntax, syntax_list<Cases...>>::match(
           f, FWD(handlers)...
         );
     }
@@ -170,7 +170,7 @@ namespace black::internal::new_api {
   struct are_uniform_elements : std::false_type { };
 
   template<syntax_element Element, syntax_element ...Elements>
-  struct are_uniform_elements<type_list<Element, Elements...>>
+  struct are_uniform_elements<syntax_list<Element, Elements...>>
     : std::bool_constant<
         ((hierarchy_of_syntax_element<Element> == 
           hierarchy_of_syntax_element<Elements>) && ...
@@ -190,7 +190,7 @@ namespace black::internal::new_api {
     Syntax, std::enable_if_t<is_uniform_syntax<Syntax>>
   > {
     static constexpr auto value = 
-      hierarchy_of_syntax_element<type_list_head<typename Syntax::list>>;
+      hierarchy_of_syntax_element<syntax_list_head_v<typename Syntax::list>>;
   };
 
   template<typename Syntax>
@@ -210,7 +210,7 @@ namespace black::internal::new_api {
       typename H, 
       REQUIRES(
         H::hierarchy == Base::hierarchy && 
-        type_list_includes<
+        syntax_list_includes<
           typename TopLevel::list, 
           typename H::syntax_elements
         > && is_syntax_allowed<typename H::syntax, typename Base::syntax>
