@@ -24,10 +24,20 @@
 #ifndef BLACK_LOGIC_SUPPORT_HPP_
 #define BLACK_LOGIC_SUPPORT_HPP_
 
+//
+// This file contains all the declarations that do not depend on including the
+// hierarchy definition file, i.e. everything that does not need the
+// preprocessor.
+//
+
 namespace black::internal::new_api {
   
+  //
+  // `alphabet` is the main factory class for all the formulas. See its
+  // definition for more details.
+  //
   class alphabet;
-
+  
   //
   // This type enums the base hierarchy types like `formula`, `term`, etc...
   // Throughout the code, elements of this enum are used to identify the base 
@@ -35,21 +45,13 @@ namespace black::internal::new_api {
   // corresponding hierarchy class cannot be instantiated, e.g. `formula<S>` is 
   // not available because `S` is not known.
   //
-  enum class hierarchy_type : uint8_t {
-    #define declare_hierarchy(Base) Base,
-    #include <black/new/internal/formula/hierarchy.hpp>
-  };
+  enum class hierarchy_type : uint8_t;
 
   //
   // Enumeration similar to `hierarchy_type`, to identify specific storage
   // kinds.
   //
-  enum class storage_type {
-
-    #define declare_storage_kind(Base, Storage) Storage,
-    #include <black/new/internal/formula/hierarchy.hpp>
-
-  };
+  enum class storage_type : uint8_t;
 
   //
   // This is the most important enumeration of the system. It lists all the
@@ -59,15 +61,7 @@ namespace black::internal::new_api {
   // `boolean` and `proposition`, hierarchy elements like `conjunction` and
   // `disjunction`, and storage kinds without hierarchy elements such as `atom`.
   //
-  enum class syntax_element : uint8_t {
-    no_type,
-
-    #define declare_leaf_storage_kind(Base, Storage) Storage,
-    #define has_no_hierarchy_elements(Base, Storage) Storage,
-    #define declare_hierarchy_element(Base, Storage, Element) Element,
-
-    #include <black/new/internal/formula/hierarchy.hpp>
-  };
+  enum class syntax_element : uint8_t;
 
   //
   // Here we start to define things related to the definition of the syntax of
@@ -88,7 +82,7 @@ namespace black::internal::new_api {
   struct is_syntax_list<syntax_list<Elements...>> : std::true_type { };
 
   template<typename T>
-  constexpr bool is_syntax_list_v = is_syntax_list<T>::value;
+  inline constexpr bool is_syntax_list_v = is_syntax_list<T>::value;
 
   //
   // Trait to extract the first element from a `syntax_list`
@@ -102,7 +96,7 @@ namespace black::internal::new_api {
   };
 
   template<typename List>
-  constexpr auto syntax_list_head_v = syntax_list_head<List>::value;
+  inline constexpr auto syntax_list_head_v = syntax_list_head<List>::value;
 
   //
   // Trait to extract the tail of a `syntax_list`
@@ -124,9 +118,9 @@ namespace black::internal::new_api {
   template<typename T, typename U>
   struct syntax_list_concat;
 
-  template<syntax_element ...Types1, syntax_element ...Types2>
-  struct syntax_list_concat<syntax_list<Types1...>, syntax_list<Types2...>> {
-    using type = syntax_list<Types1..., Types2...>;
+  template<syntax_element ...E1, syntax_element ...E2>
+  struct syntax_list_concat<syntax_list<E1...>, syntax_list<E2...>> {
+    using type = syntax_list<E1..., E2...>;
   };
 
   template<typename T, typename U>
@@ -141,12 +135,12 @@ namespace black::internal::new_api {
     using type = T;
   };
 
-  template <syntax_element... Ts, syntax_element U, syntax_element... Us>
-  struct syntax_list_unique_<syntax_list<Ts...>, syntax_list<U, Us...>>
+  template <syntax_element... E1, syntax_element E, syntax_element... E2>
+  struct syntax_list_unique_<syntax_list<E1...>, syntax_list<E, E2...>>
     : std::conditional_t<
-        ((U == Ts) || ...),
-        syntax_list_unique_<syntax_list<Ts...>, syntax_list<Us...>>,
-        syntax_list_unique_<syntax_list<Ts..., U>, syntax_list<Us...>>
+        ((E == E1) || ...),
+        syntax_list_unique_<syntax_list<E1...>, syntax_list<E2...>>,
+        syntax_list_unique_<syntax_list<E1..., E>, syntax_list<E2...>>
     > { };
 
   template<typename List>
@@ -161,8 +155,8 @@ namespace black::internal::new_api {
   template<typename List, syntax_element Element>
   struct syntax_list_contains : std::false_type { };
 
-  template<syntax_element ...Types, syntax_element Element>
-  struct syntax_list_contains<syntax_list<Element, Types...>, Element> 
+  template<syntax_element ...Elements, syntax_element Element>
+  struct syntax_list_contains<syntax_list<Element, Elements...>, Element> 
     : std::true_type { };
 
   template<
@@ -172,11 +166,25 @@ namespace black::internal::new_api {
     : syntax_list_contains<syntax_list<Elements...>, Element2> { };
 
   template<typename List, syntax_element Element>
-  constexpr bool syntax_list_contains_v = 
+  inline constexpr bool syntax_list_contains_v = 
     syntax_list_contains<List, Element>::value;
 
   //
-  // The `syntax_filter` concept models types used to define, either a
+  // Trait to check whether a syntax list in included in another
+  //
+  template<typename List, typename SubList>
+  struct syntax_list_includes;
+
+  template<typename List, syntax_element ...Elements>
+  struct syntax_list_includes<List, syntax_list<Elements...>> 
+    : std::bool_constant<(syntax_list_contains_v<List, Elements> && ...)> { };
+
+  template<typename List, typename Sublist>
+  inline constexpr bool syntax_list_includes_v = 
+    syntax_list_includes<List, Sublist>::value;
+
+  //
+  // The `syntax_predicate` concept models types used to define, either a
   // compile-time or at runtime, whether a given `syntax_element` is allowed in
   // a given fragment or by a given storage kind. These types define a
   // `doesit()` member function that returns `true` if the syntax element is
@@ -184,9 +192,38 @@ namespace black::internal::new_api {
   // hierarchy objects.
   //
   template<typename T>
-  concept syntax_filter = requires(syntax_element e) {
+  concept syntax_predicate = requires(syntax_element e) {
     { T::doesit(e) } -> std::convertible_to<bool>;
   };
+
+  //
+  // Trait to filter a `syntax_list` based on a `syntax_predicate`
+  //
+  template<typename List, syntax_predicate AcceptsType>
+  struct syntax_list_filter;
+
+  template<typename List, syntax_predicate AcceptsType>
+  using syntax_list_filter_t = 
+    typename syntax_list_filter<List, AcceptsType>::type;
+
+  template<syntax_predicate AcceptsType>
+  struct syntax_list_filter<syntax_list<>, AcceptsType>
+    : std::type_identity<syntax_list<>> { };
+
+  template<
+    syntax_predicate AcceptsType, 
+    syntax_element Element, syntax_element ...Elements
+  >
+  struct syntax_list_filter<syntax_list<Element, Elements...>, AcceptsType>
+    : std::conditional<
+        AcceptsType::doesit(Element), 
+        syntax_list_concat_t<
+          syntax_list<Element>, 
+          syntax_list_filter_t<syntax_list<Elements...>, AcceptsType>
+        >,
+        syntax_list_filter_t<syntax_list<Elements...>, AcceptsType>
+      >
+    { };
 
   //
   // `fragment_type` models types used as pseudo-enum types for enumerating
@@ -199,9 +236,9 @@ namespace black::internal::new_api {
   };
   
   //
-  // Dummy `syntax_filter` instance used in the following concept.
+  // Dummy `syntax_predicate` instance used in the following concept.
   //
-  struct false_accepts_type {
+  struct false_syntax_predicate {
     static constexpr bool doesit(syntax_element) { return false; }
   };
 
@@ -210,7 +247,7 @@ namespace black::internal::new_api {
   // provide two member types:
   // 1. a `syntax_list` called `list`, providing the list of `syntax_element`s
   //    allowed in this fragment.
-  // 2. a template accepting an `syntax_filter` type that, when
+  // 2. a template accepting an `syntax_predicate` type that, when
   //    instantiated,will give a `fragment_type`. This will be used as the
   //    pseudo-enum enumerating the allowed sub elements of storage kinds, such
   //    as `unary<LTL>::type`.
@@ -218,7 +255,7 @@ namespace black::internal::new_api {
   template<typename T>
   concept fragment = requires {
     requires is_syntax_list_v<typename T::list>;
-    requires fragment_type<typename T::template type<false_accepts_type>>;
+    requires fragment_type<typename T::template type<false_syntax_predicate>>;
   };
 
   //
@@ -246,7 +283,7 @@ namespace black::internal::new_api {
   template<typename T>
   concept hierarchy = requires(T t) {
     requires fragment<typename T::syntax>;
-    requires syntax_filter<typename T::accepts_type>;
+    requires syntax_predicate<typename T::accepts_type>;
     requires fragment_type<typename T::type>;
     requires is_syntax_list_v<typename T::syntax_elements>;
     typename T::id_type;

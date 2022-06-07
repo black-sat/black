@@ -76,42 +76,10 @@ namespace black::internal::new_api {
     std::void_t<decltype(std::declval<T>()._element)>
   > : std::true_type { };
 
-  template<typename List, typename SubList>
-  struct syntax_list_includes_ : std::false_type { };
-
-  template<typename List, syntax_element ...Types>
-  struct syntax_list_includes_<List, syntax_list<Types...>> {
-    static constexpr bool value = (syntax_list_contains_v<List, Types> && ...);
-  };
-
-  template<typename List, typename Sublist>
-  constexpr bool syntax_list_includes = syntax_list_includes_<List, Sublist>::value;
-
-  template<typename List, typename AcceptsType>
-  struct syntax_list_filter_;
-
-  template<typename List, typename AcceptsType>
-  using syntax_list_filter = typename syntax_list_filter_<List, AcceptsType>::type;
-
-  template<typename AcceptsType>
-  struct syntax_list_filter_<syntax_list<>, AcceptsType> {
-    using type = syntax_list<>;
-  };
-
-  template<typename AcceptsType, syntax_element Type, syntax_element ...Types>
-  struct syntax_list_filter_<syntax_list<Type, Types...>, AcceptsType> {
-    using type = std::conditional_t<
-      AcceptsType::doesit(Type), 
-      syntax_list_concat_t<
-        syntax_list<Type>, syntax_list_filter<syntax_list<Types...>, AcceptsType>
-      >,
-      syntax_list_filter<syntax_list<Types...>, AcceptsType>
-    >;
-  };
-
+  
   template<typename Syntax, typename Allowed>
   constexpr bool is_syntax_allowed = 
-    syntax_list_includes<
+    syntax_list_includes_v<
       typename Allowed::list,
       typename Syntax::list
     >;
@@ -154,6 +122,26 @@ namespace black::internal::new_api {
 
     template<typename T>
     auto operator()(std::vector<T> const& v) const;
+  };
+
+  enum class hierarchy_type  : uint8_t {
+    #define declare_hierarchy(Base) Base,
+    #include <black/new/internal/formula/hierarchy.hpp>
+  };
+
+  enum class storage_type  : uint8_t {
+
+    #define declare_storage_kind(Base, Storage) Storage,
+    #include <black/new/internal/formula/hierarchy.hpp>
+
+  };
+
+  enum class syntax_element : uint8_t {
+    #define declare_leaf_storage_kind(Base, Storage) Storage,
+    #define has_no_hierarchy_elements(Base, Storage) Storage,
+    #define declare_hierarchy_element(Base, Storage, Element) Element,
+
+    #include <black/new/internal/formula/hierarchy.hpp>
   };
 }
 

@@ -24,6 +24,11 @@
 #ifndef BLACK_LOGIC_NAMESPACES_HPP_
 #define BLACK_LOGIC_NAMESPACES_HPP_
 
+namespace black::internal::new_api {
+  template<int, syntax_element ...Elements>
+  using make_fragment_helper = make_fragment<Elements...>;
+}
+
 namespace black::new_api {
 
   namespace syntax {
@@ -58,7 +63,7 @@ namespace black::new_api {
     }
 
   #define append_syntax_element(Syntax, Element) \
-    syntax_element::Element,
+    , syntax_element::Element
 
   #define using_element(Syntax, Element) \
     using Element = \
@@ -68,9 +73,8 @@ namespace black::new_api {
 
   #define declare_fragment(Fragment, ...) \
     namespace syntax { \
-      struct Fragment : make_fragment< \
+      struct Fragment : black::internal::new_api::make_fragment_helper<0 \
         enum_elements_##Fragment(Fragment, append_syntax_element) \
-        syntax_element::no_type \
       > { }; \
     } \
     namespace Fragment { \

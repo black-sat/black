@@ -157,18 +157,18 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
-   constexpr syntax_element Storage##_syntax_element() { \
+   constexpr std::optional<syntax_element> Storage##_syntax_element() { \
      return 
   
   #define has_no_hierarchy_elements(Base, Storage) \
     true ? syntax_element::Storage : 
 
   #define end_storage_kind(Base, Storage) \
-     syntax_element::no_type; \
+     std::optional<syntax_element>{}; \
    }
 
   #define declare_leaf_storage_kind(Base, Storage) \
-    constexpr syntax_element Storage##_syntax_element() { \
+    constexpr std::optional<syntax_element> Storage##_syntax_element() { \
       return syntax_element::Storage; \
     }
 
@@ -181,9 +181,9 @@ namespace black::internal::new_api {
     Storage##_key Storage##_args_to_key( \
       [[maybe_unused]] Storage##_alloc_args<Syntax> const&args \
     ) { \
-      black_assert(Storage##_syntax_element() != syntax_element::no_type); \
+      black_assert(Storage##_syntax_element().has_value()); \
       return Storage##_key { \
-        Storage##_syntax_element(),
+        *Storage##_syntax_element(),
 
   #define declare_field(Base, Storage, Type, Field) args.Field,
 

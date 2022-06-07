@@ -148,7 +148,7 @@ namespace black::internal::new_api {
   struct hierarchy_of_syntax_element_;
 
   template<syntax_element Element>
-  constexpr auto hierarchy_of_syntax_element = 
+  inline constexpr auto hierarchy_of_syntax_element = 
     hierarchy_of_syntax_element_<Element>::value;
 
   #define declare(Base, Element) \
@@ -194,7 +194,7 @@ namespace black::internal::new_api {
   };
 
   template<typename Syntax>
-  constexpr auto hierarchy_of_uniform_syntax = 
+  inline constexpr auto hierarchy_of_uniform_syntax = 
     hierarchy_of_uniform_syntax_<Syntax>::value;
 
   template<typename TopLevel, typename Syntax, typename = void>
@@ -210,7 +210,7 @@ namespace black::internal::new_api {
       typename H, 
       REQUIRES(
         H::hierarchy == Base::hierarchy && 
-        syntax_list_includes<
+        syntax_list_includes_v<
           typename TopLevel::list, 
           typename H::syntax_elements
         > && is_syntax_allowed<typename H::syntax, typename Base::syntax>

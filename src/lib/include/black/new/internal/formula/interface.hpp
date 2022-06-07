@@ -237,7 +237,7 @@ namespace black::internal::new_api
 
   template<typename H>
   using syntax_elements_for = 
-    syntax_list_filter<typename H::syntax::list, typename H::accepts_type>;
+    syntax_list_filter_t<typename H::syntax::list, typename H::accepts_type>;
 
   #define declare_hierarchy(Base) \
     template<fragment Syntax> \

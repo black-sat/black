@@ -59,9 +59,6 @@ namespace black::internal::new_api {
   template<typename AcceptsType, syntax_element Element>
   struct type_base_t;
 
-  template<typename AcceptsType>
-  struct type_base_t<AcceptsType, syntax_element::no_type> { };
-
   #define declare_type_t(Element) \
   template<typename AcceptsType> \
   struct type_base_t<AcceptsType, syntax_element::Element> \
@@ -96,35 +93,9 @@ namespace black::internal::new_api {
     syntax_element _type;
   };
 
-  template<typename TypeList>
-  struct syntax_list_remove_no_type_;
-  
-  template<typename TypeList>
-  using syntax_list_remove_no_type = 
-    typename syntax_list_remove_no_type_<TypeList>::type;
-
-  template<>
-  struct syntax_list_remove_no_type_<syntax_list<>> {
-    using type = syntax_list<>;
-  };
-
-  template<syntax_element Type, syntax_element ...Types>
-  struct syntax_list_remove_no_type_<syntax_list<Type, Types...>> {
-    using type = syntax_list_concat_t<
-      syntax_list<Type>, syntax_list_remove_no_type<syntax_list<Types...>>
-    >;
-  };
-
-  template<syntax_element ...Types>
-  struct syntax_list_remove_no_type_<syntax_list<syntax_element::no_type, Types...>>
-  {
-    using type = syntax_list<Types...>;
-  };
-
   template<syntax_element ...Types>
   struct make_fragment {
-    using list = 
-      syntax_list_remove_no_type<syntax_list_unique_t<syntax_list<Types...>>>;
+    using list = syntax_list_unique_t<syntax_list<Types...>>;
     
     template<typename AcceptsType>
     using type = fragment_type_t<AcceptsType, list>;
@@ -132,9 +103,9 @@ namespace black::internal::new_api {
 
   template<typename Parent, syntax_element ...Types>
   struct make_derived_fragment {
-    using list = syntax_list_remove_no_type<syntax_list_unique_t<
+    using list = syntax_list_unique_t<
       syntax_list_concat_t<typename Parent::list, syntax_list<Types...>>
-    >>;
+    >;
 
     template<typename AcceptsType>
     using type = fragment_type_t<AcceptsType, list>;

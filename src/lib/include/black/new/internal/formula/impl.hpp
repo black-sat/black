@@ -91,7 +91,7 @@ namespace black::internal::new_api {
 
 
   #define declare_hierarchy(Base) \
-    template<typename Syntax> \
+    template<fragment Syntax> \
     template< \
         typename H, \
         REQUIRES_OUT_OF_LINE( \
@@ -158,14 +158,14 @@ namespace black::internal::new_api {
       : _sigma{e._sigma}, _element{e._element} { } \
     \
     template<typename Syntax> \
-    Element<Syntax>::Element(class alphabet *sigma, Storage##_t *element) \
-        : _sigma{sigma}, _element{element} { \
+    Element<Syntax>::Element(class alphabet *sigma, Storage##_t *node) \
+        : _sigma{sigma}, _element{node} { \
           black_assert(_element->type == syntax_element::Element); \
         } 
 
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    inline Element::Element(class alphabet *sigma, Storage##_t *element) \
-        : _sigma{sigma}, _element{element} { \
+    inline Element::Element(class alphabet *sigma, Storage##_t *node) \
+        : _sigma{sigma}, _element{node} { \
           black_assert(_element->type == syntax_element::Element); \
         } 
 
