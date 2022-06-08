@@ -71,6 +71,14 @@ namespace black::internal::new_api
 
   #undef declare_enum_element
 
+  #define declare_storage_kind(Base, Storage) \
+    template<> \
+    struct hierarchy_of_storage<storage_type::Storage> { \
+      static constexpr auto value = hierarchy_type::Base; \
+    };
+  
+  #include <black/new/internal/formula/hierarchy.hpp>
+
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
     class Element;
@@ -118,7 +126,7 @@ namespace black::internal::new_api
   #define declare_hierarchy(Base) \
     template<> \
     struct hierarchy_syntax_predicate<hierarchy_type::Base> \
-      : make_syntax_predicate<0 \
+      : make_syntax_predicate_cpp<0 \
 
   #define declare_leaf_storage_kind(Base, Storage) \
           , syntax_element::Storage
@@ -135,7 +143,7 @@ namespace black::internal::new_api
   #define declare_storage_kind(Base, Storage) \
     template<> \
     struct storage_syntax_predicate<storage_type::Storage> \
-      : make_syntax_predicate<0
+      : make_syntax_predicate_cpp<0
       
   #define has_no_hierarchy_elements(Base, Storage) \
           , syntax_element::Storage
@@ -149,20 +157,10 @@ namespace black::internal::new_api
   #define declare_leaf_storage_kind(Base, Storage) \
     template<> \
     struct storage_syntax_predicate<storage_type::Storage> \
-      : make_syntax_predicate<0, syntax_element::Storage> { };
+      : make_syntax_predicate<syntax_element::Storage> { };
 
   #define end_leaf_storage_kind(Base, Storage)
   
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    struct Element##_accepts_type { \
-      static constexpr bool doesit(syntax_element type) { \
-        return type == syntax_element::Element; \
-      } \
-    };
-
   #include <black/new/internal/formula/hierarchy.hpp>
   
   struct dummy_t {};
@@ -178,73 +176,13 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  template<
-    typename H, 
-    typename Syntax = typename H::syntax, 
-    typename Cases = typename hierarchy_traits<H>::accepted_elements
-  >
-  struct matcher;
-
   #define declare_hierarchy(Base) \
     template<fragment Syntax> \
-    class Base : public Base##_custom_members_t<Base<Syntax>> \
+    struct Base \
+      : hierarchy_base<hierarchy_type::Base, Syntax>, \
+        Base##_custom_members_t<Base<Syntax>> \
     { \
-    public: \
-      using syntax = Syntax; \
-      using accepts_type = hierarchy_syntax_predicate_t<hierarchy_type::Base>; \
-      using type = typename Syntax::template type<accepts_type>; \
-      static constexpr auto hierarchy = hierarchy_type::Base; \
-      \
-      Base() = delete; \
-      Base(Base const&) = default; \
-      Base(Base &&) = default; \
-      \
-      Base &operator=(Base const&) = default; \
-      Base &operator=(Base &&) = default; \
-      \
-      Base(alphabet *sigma, hierarchy_base<hierarchy_type::Base> *element) \
-        : _sigma{sigma}, _element{element} { } \
-      \
-      template< \
-        typename H, \
-        REQUIRES( \
-          H::hierarchy == hierarchy_type::Base && \
-          is_subfragment_of_v<typename H::syntax, Syntax> \
-        ) \
-      > \
-      Base(H const& h); \
-      \
-      template<typename H> \
-      std::optional<H> to() const { \
-        return H::from(*this); \
-      } \
-      \
-      template<typename H> \
-      bool is() const { \
-        return to<H>().has_value(); \
-      } \
-      \
-      auto unique_id() const { \
-        return hierarchy_unique_id_t<hierarchy>{ \
-          reinterpret_cast<uintptr_t>(_element) \
-        }; \
-      } \
-      \
-      template<typename ...Handlers> \
-      auto match(Handlers ...handlers) const { \
-        return matcher<Base>{}.match(*this, handlers...); \
-      } \
-      \
-      type syntax_element() const { return _element->type; } \
-      \
-      alphabet *sigma() const { return _sigma; }  \
-      \
-      size_t hash() const { \
-        return std::hash<hierarchy_base<hierarchy_type::Base> const*>{}(_element); \
-      } \
-      \
-      alphabet *_sigma; \
-      hierarchy_base<hierarchy_type::Base> *_element; \
+      using hierarchy_base<hierarchy_type::Base, Syntax>::hierarchy_base; \
     }; \
     \
     template<typename H> \
@@ -316,30 +254,17 @@ namespace black::internal::new_api
     }
 
   #include <black/new/internal/formula/hierarchy.hpp>
-
-  //
-  // internal representation classes for each storage kind
-  //
-  #define declare_storage_kind(Base, Storage) \
-    struct Storage##_data_t;
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #define declare_storage_kind(Base, Storage) \
-    struct Storage##_t;
-
-  #include <black/new/internal/formula/hierarchy.hpp>
   
   template<hierarchy_type H>
-  struct hierarchy_base_type_of_;
+  struct hierarchy_node_type_of_;
 
   template<hierarchy_type H>
-  using hierarchy_base_type_of = typename hierarchy_base_type_of_<H>::type;
+  using hierarchy_node_type_of = typename hierarchy_node_type_of_<H>::type;
   
   #define declare_hierarchy(Base) \
     template<> \
-    struct hierarchy_base_type_of_<hierarchy_type::Base> { \
-      using type = hierarchy_base<hierarchy_type::Base>; \
+    struct hierarchy_node_type_of_<hierarchy_type::Base> { \
+      using type = hierarchy_node<hierarchy_type::Base>; \
     };
 
   #include <black/new/internal/formula/hierarchy.hpp>
@@ -368,7 +293,7 @@ namespace black::internal::new_api
   #define declare_storage_kind(Base, Storage) \
     template<> \
     struct storage_base_type_of_<storage_type::Storage> { \
-      using type = Storage##_t; \
+      using type = storage_node<storage_type::Storage>; \
     };
 
   #include <black/new/internal/formula/hierarchy.hpp>
@@ -500,14 +425,15 @@ namespace black::internal::new_api
    
     size_t hash() const {
       using storage_t = storage_base_type_of<Derived::storage>;
-      return std::hash<storage_t const*>{}(self()._element);
+      return std::hash<storage_t const*>{}(self()._node);
     }
    
     alphabet *sigma() const { return self()._sigma; }
+    auto node() const { return self()._node; }
     auto unique_id() const {
       return 
         hierarchy_unique_id_t<Derived::hierarchy>{
-          reinterpret_cast<uintptr_t>(self()._element)
+          reinterpret_cast<uintptr_t>(self().node())
         };
     }
    
@@ -524,11 +450,11 @@ namespace black::internal::new_api
         !is_subfragment_of_v<typename F::syntax, typename Derived::syntax>
       ) return {};
 
-      if(!accepts_type::doesit(f._element->type))
+      if(!accepts_type::doesit(f.node()->type))
         return {};
 
-      auto obj = static_cast<storage_t *>(f._element);
-      return std::optional<Derived>{Derived{f._sigma, obj}};
+      auto obj = static_cast<storage_t const *>(f.node());
+      return std::optional<Derived>{Derived{f.sigma(), obj}};
     }
  
   protected:
@@ -613,6 +539,7 @@ namespace black::internal::new_api
     { \
       friend struct Storage##_fields<Storage<Syntax>>; \
       friend struct Storage##_children<Syntax, Storage<Syntax>>; \
+      friend struct storage_common_interface<Storage<Syntax>, false>; \
     public: \
       using accepts_type = storage_syntax_predicate_t<storage_type::Storage>; \
       using syntax = Syntax; \
@@ -626,8 +553,8 @@ namespace black::internal::new_api
       Storage &operator=(Storage const&) = default; \
       Storage &operator=(Storage &&) = default; \
       \
-      Storage(class alphabet *sigma, Storage##_t *element) \
-        : _sigma{sigma}, _element{element} { } \
+      Storage(class alphabet *sigma, storage_node<storage_type::Storage> const*node) \
+        : _sigma{sigma}, _node{node} { } \
       \
       template< \
         typename H, \
@@ -651,7 +578,7 @@ namespace black::internal::new_api
       } \
       \
       class alphabet *_sigma; \
-      Storage##_t *_element; \
+      storage_node<storage_type::Storage> const*_node; \
     };\
     \
     template<typename H> \
@@ -675,6 +602,7 @@ namespace black::internal::new_api
     { \
       \
       friend struct Storage##_fields<Storage>; \
+      friend struct storage_common_interface<Storage, true>; \
     public: \
       using accepts_type = storage_syntax_predicate_t<storage_type::Storage>; \
       using syntax = make_fragment_t<syntax_element::Storage>; \
@@ -685,14 +613,14 @@ namespace black::internal::new_api
       Storage(Storage const&) = default; \
       Storage(Storage &&) = default; \
       \
-      Storage(class alphabet *sigma, Storage##_t *element) \
-        : _sigma{sigma}, _element{element} { } \
+      Storage(class alphabet *sigma, storage_node<storage_type::Storage> const*node) \
+        : _sigma{sigma}, _node{node} { } \
       \
       Storage &operator=(Storage const&) = default; \
       Storage &operator=(Storage &&) = default; \
       \
       class alphabet *_sigma; \
-      Storage##_t *_element; \
+      storage_node<storage_type::Storage> const*_node; \
     };
 
   #include <black/new/internal/formula/hierarchy.hpp>
@@ -707,12 +635,13 @@ namespace black::internal::new_api
     { \
       friend struct Storage##_fields<Element<Syntax>>; \
       friend struct Storage##_children<Syntax, Element<Syntax>>; \
+      friend struct storage_common_interface<Element<Syntax>, false>; \
       static_assert( \
         is_subfragment_of_v<make_fragment_t<syntax_element::Element>, Syntax>, \
         "'" #Element "' instance not allowed in its own syntax" \
       ); \
     public: \
-      using accepts_type = Element##_accepts_type; \
+      using accepts_type = make_syntax_predicate_t<syntax_element::Element>;\
       using syntax = Syntax; \
       using type = typename Syntax::template type<accepts_type>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
@@ -722,7 +651,7 @@ namespace black::internal::new_api
       Element(Element const&) = default; \
       Element(Element &&) = default; \
       \
-      Element(class alphabet *sigma, Storage##_t *element); \
+      Element(class alphabet *sigma, storage_node<storage_type::Storage> const*node); \
       \
       template<typename S, REQUIRES(is_subfragment_of_v<S, Syntax>)> \
       Element(Element<S> e); \
@@ -737,7 +666,7 @@ namespace black::internal::new_api
       Element &operator=(Element &&) = default; \
       \
       class alphabet *_sigma; \
-      Storage##_t *_element; \
+      storage_node<storage_type::Storage> const*_node; \
     }; \
     \
     template<typename ...Args> \
@@ -756,8 +685,9 @@ namespace black::internal::new_api
       public Base##_custom_members_t<Element> \
     { \
       friend struct Storage##_fields<Element>; \
+      friend struct storage_common_interface<Element, true>; \
     public: \
-      using accepts_type = Element##_accepts_type; \
+      using accepts_type = make_syntax_predicate_t<syntax_element::Element>;\
       using syntax = make_fragment_t<syntax_element::Element>; \
       using type = syntax::template type<accepts_type>; \
       static constexpr auto hierarchy = hierarchy_type::Base; \
@@ -767,13 +697,13 @@ namespace black::internal::new_api
       Element(Element const&) = default; \
       Element(Element &&) = default; \
       \
-      Element(class alphabet *sigma, Storage##_t *element); \
+      Element(class alphabet *sigma, storage_node<storage_type::Storage> const*node); \
       \
       Element &operator=(Element const&) = default; \
       Element &operator=(Element &&) = default; \
       \
       class alphabet *_sigma; \
-      Storage##_t *_element; \
+      storage_node<storage_type::Storage> const*_node; \
     };
 
   #include <black/new/internal/formula/hierarchy.hpp>

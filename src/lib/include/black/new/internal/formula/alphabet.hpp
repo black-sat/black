@@ -33,10 +33,10 @@ namespace black::internal::new_api {
   #define declare_field(Base, Storage, Type, Field) Type Field;
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
-    hierarchy_base<hierarchy_type::Hierarchy> *Child;
+    hierarchy_node<hierarchy_type::Hierarchy> const*Child;
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
-    std::vector<hierarchy_base<hierarchy_type::Hierarchy> *> Children;
+    std::vector<hierarchy_node<hierarchy_type::Hierarchy> const*> Children;
 
   #define end_storage_kind(Base, Storage) \
     };
@@ -76,10 +76,10 @@ namespace black::internal::new_api {
     >
     children_vector(std::vector<H> const& v) {
       for(auto h : v)
-        children.push_back(h._element);
+        children.push_back(h.node());
     }
 
-    std::vector<hierarchy_base_type_of<Hierarchy> *> children;
+    std::vector<hierarchy_node_type_of<Hierarchy> const*> children;
   };
 
   #define declare_leaf_storage_kind(Base, Storage)
@@ -126,7 +126,7 @@ namespace black::internal::new_api {
     template<typename T> \
     auto Base##_children_to_key(std::vector<T> const& v) \
     { \
-      std::vector<hierarchy_base<hierarchy_type::Base> *> result; \
+      std::vector<hierarchy_node<hierarchy_type::Base> *> result; \
       for(auto x : v) { \
         result.push_back(x._element); \
       } \
@@ -145,7 +145,7 @@ namespace black::internal::new_api {
 
   #define declare_field(Base, Storage, Type, Field) args.Field,
 
-  #define declare_child(Base, Storage, Hierarchy, Child) args.Child._element,
+  #define declare_child(Base, Storage, Hierarchy, Child) args.Child.node(),
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
     args.Children.children,
@@ -187,7 +187,7 @@ namespace black::internal::new_api {
 
   #define declare_field(Base, Storage, Type, Field) args.Field,
 
-  #define declare_child(Base, Storage, Hierarchy, Child) args.Child._element,
+  #define declare_child(Base, Storage, Hierarchy, Child) args.Child.node(),
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
     args.Children.children,
@@ -253,7 +253,7 @@ namespace black::internal::new_api {
 
   private:
     #define declare_storage_kind(Base, Storage) \
-      Storage##_t *allocate_##Storage(Storage##_key key);
+      storage_node<storage_type::Storage> *allocate_##Storage(Storage##_key key);
 
     #include <black/new/internal/formula/hierarchy.hpp>
 

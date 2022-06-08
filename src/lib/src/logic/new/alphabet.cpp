@@ -44,13 +44,17 @@ namespace black::internal::new_api {
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
           h = hash_combine(h, \
-            std::hash<hierarchy_base<hierarchy_type::Hierarchy> *>{}(k.Child) \
+            std::hash<hierarchy_node<hierarchy_type::Hierarchy> const*>{}( \
+              k.Child \
+            ) \
           );
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
           for(auto child : k.Children) \
             h = hash_combine(h, \
-              std::hash<hierarchy_base<hierarchy_type::Hierarchy> *>{}(child) \
+              std::hash<hierarchy_node<hierarchy_type::Hierarchy> const *>{}( \
+                child \
+              ) \
             );
 
   #define end_storage_kind(Base, Storage) \
@@ -77,10 +81,10 @@ namespace black::internal::new_api {
   } namespace black::internal::new_api {
 
   #define declare_storage_kind(Base, Storage) \
-    inline Storage##_data_t key_to_data( \
+    inline storage_data_t<storage_type::Storage> key_to_data( \
       [[maybe_unused]]Storage##_key const& k \
     ) { \
-      return Storage##_data_t {
+      return storage_data_t<storage_type::Storage> {
 
   #define declare_field(Base, Storage, Type, Field) k.Field,
 
@@ -203,7 +207,7 @@ namespace black::internal::new_api {
   alphabet::~alphabet() = default;
 
   #define declare_storage_kind(Base, Storage) \
-    Storage##_t *alphabet::allocate_##Storage(Storage##_key key) { \
+    storage_node<storage_type::Storage> *alphabet::allocate_##Storage(Storage##_key key) { \
       return _impl->allocate_##Storage(key); \
     }
 
