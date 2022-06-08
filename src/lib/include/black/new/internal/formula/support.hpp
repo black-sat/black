@@ -727,6 +727,85 @@ namespace black::internal::new_api {
     return t1 == t2;
   }
 
+  //
+  // To define hierarchy types for storage kinds is more complex because they
+  // have to call back to the alphabet to allocate the underlying nodes. Hence
+  // we have to also consider the definition of the `alphabet` class. Thus, the
+  // "allocating constructor" of storage types has to be defined in the
+  // generated code. Nevertheless, here we can declare all the rest, and we can
+  // inherit directly from hierarchy_base<> for all the common parts.
+  //
+  // Note that this base class is for non-leaf storage kinds with at least a
+  // hierarchy element. Leaf storage kinds, or storage kinds with no hierarchy
+  // elements, are more similar to hierarchy elements and thus inherit from
+  // `hierarchy_element_base` declared below. Differently from hierarchy_base,
+  // this is a CRTP base class.
+  //
+  template<storage_type Storage, fragment Syntax, typename Derived>
+  class storage_base 
+    : public hierarchy_base<hierarchy_of_storage_v<Storage>, Syntax> 
+  {
+    using node_t = storage_node<Storage>;
+    using base_t = hierarchy_base<hierarchy_of_storage_v<Storage>, Syntax>;
+  public:
+    // these members from the base have to be overriden and specialized
+    using accepts_type = storage_syntax_predicate_t<Storage>;
+    using type = typename Syntax::template type<accepts_type>;
+    static constexpr storage_type storage = Storage;
+
+    storage_base() = default;
+    storage_base(storage_base const&) = default;
+    storage_base(storage_base &&) = default;
+
+    storage_base &operator=(storage_base const&) = default;
+    storage_base &operator=(storage_base &&) = default;
+
+    // the wrapping constructor delegates to the base's one
+    storage_base(alphabet *sigma, node_t const*node) 
+      : base_t{sigma, node} { }
+
+    // converting constructors from other storages of the same kind
+    template<storage_kind S>
+      requires (S::storage == storage && 
+                is_subfragment_of_v<
+                  typename S::syntax, typename base_t::syntax
+                >)
+    storage_base(S s) : storage_base{s.sigma(), s.node()} { }
+
+    // we override node() to return a more specific node type
+    node_t const*node() const { 
+      return static_cast<node_t const*>(base_t::node()); 
+    }
+
+    // we override match() to be more specific in the list of possible cases
+    template<typename ...Handlers>
+    auto match(Handlers ...handlers) const {
+      return matcher<storage_base>{}.match(*this, handlers...);
+    }
+    
+    // this member function does the job of the to<> and is<> members of
+    // `hierarchy_base`. The conversion takes place if the syntaxes agree, and
+    // the actual `syntax_element` of the node at runtime is the correct one.
+    //
+    // The dummy template parameter `D` is always used with its default argument
+    // equal to `Derived`, and is needed to access to Derived::syntax, which
+    // otherwise would not be available because `Derived` is not complete at
+    // this point.
+    template<hierarchy F, typename D = Derived>
+      requires (F::hierarchy == D::hierarchy)
+    static std::optional<Derived> from(F f) {
+      if constexpr(
+        !is_subfragment_of_v<typename F::syntax, typename Derived::syntax>
+      ) return {};
+
+      if(!accepts_type::doesit(f.node()->type))
+        return {};
+
+      auto obj = static_cast<node_t const *>(f.node());
+      return std::optional<Derived>{Derived{f.sigma(), obj}};
+    }
+  };
+
 }
 
 #endif // BLACK_LOGIC_SUPPORT_HPP_

@@ -463,52 +463,22 @@ namespace black::internal::new_api
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
     class Storage : \
+      public storage_base<storage_type::Storage, Syntax, Storage<Syntax>>, \
       public Storage##_fields<Storage<Syntax>>, \
-      public Storage##_children<Syntax, Storage<Syntax>>, \
-      public storage_common_interface<Storage<Syntax>, false> \
+      public Storage##_children<Syntax, Storage<Syntax>> \
     { \
       friend struct Storage##_fields<Storage<Syntax>>; \
       friend struct Storage##_children<Syntax, Storage<Syntax>>; \
-      friend struct storage_common_interface<Storage<Syntax>, false>; \
+      using base_t = \
+        storage_base<storage_type::Storage, Syntax, Storage<Syntax>>; \
     public: \
-      using accepts_type = storage_syntax_predicate_t<storage_type::Storage>; \
-      using syntax = Syntax; \
-      using type = typename Syntax::template type<accepts_type>; \
-      static constexpr auto hierarchy = hierarchy_type::Base; \
-      static constexpr auto storage = storage_type::Storage; \
-      \
-      Storage(Storage const&) = default; \
-      Storage(Storage &&) = default; \
-      \
-      Storage &operator=(Storage const&) = default; \
-      Storage &operator=(Storage &&) = default; \
-      \
-      Storage(class alphabet *sigma, storage_node<storage_type::Storage> const*node) \
-        : _sigma{sigma}, _node{node} { } \
-      \
-      template< \
-        typename H, \
-        REQUIRES( \
-          H::storage == storage_type::Storage && \
-          is_subfragment_of_v<typename H::syntax, Syntax> \
-        ) \
-      > \
-      Storage(H const&e); \
+      using base_t::base_t; \
       \
       template< \
         typename ...Args, \
         REQUIRES(is_##Storage##_constructible<Syntax, Args...>) \
       > \
       explicit Storage(Args ...args); \
-      \
-      template<typename ...Handlers> \
-      auto match(Handlers ...handlers) const \
-      { \
-        return matcher<Storage>{}.match(*this, handlers...); \
-      } \
-      \
-      class alphabet *_sigma; \
-      storage_node<storage_type::Storage> const*_node; \
     };\
     \
     template<typename H> \

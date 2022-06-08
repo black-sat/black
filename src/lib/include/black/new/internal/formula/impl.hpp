@@ -68,25 +68,14 @@ namespace black::internal::new_api {
       REQUIRES_OUT_OF_LINE(is_##Storage##_constructible<Syntax, Args...>) \
     > \
     Storage<Syntax>::Storage(Args ...args) \
-      : _sigma{get_sigma(args...)}, \
-        _node{ \
+      : Storage{ \
+          get_sigma(args...), \
           get_sigma(args...)->allocate_##Storage( \
             Storage##_args_to_key<Syntax>( \
               Storage##_alloc_args<Syntax>{0, args...} \
             ) \
           ) \
-        } { } \
-    \
-    template<typename Syntax> \
-      template< \
-          typename H, \
-          REQUIRES_OUT_OF_LINE( \
-            H::storage == storage_type::Storage && \
-            is_subfragment_of_v<typename H::syntax, Syntax> \
-          ) \
-        > \
-        Storage<Syntax>::Storage(H const&e) \
-          : _sigma{e._sigma}, _node{e._node} { }
+        } { }
 
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
