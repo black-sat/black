@@ -28,8 +28,8 @@
 #ifndef declare_hierarchy
   #define declare_hierarchy(Base)
 #endif
-#ifndef has_standard_equality
-  #define has_standard_equality(Base)
+#ifndef has_no_standard_equality
+  #define has_no_standard_equality(Base)
 #endif
 #ifndef declare_custom_members
   #define declare_custom_members(Base, Class)
@@ -72,7 +72,6 @@
 #endif 
 
 declare_hierarchy(function)
-  has_standard_equality(function)
   declare_custom_members(function, function_call_operator_t)
   declare_leaf_storage_kind(function, function_symbol)
     declare_field(function, function_symbol, identifier, label)
@@ -87,7 +86,6 @@ declare_hierarchy(function)
 end_hierarchy(function)
 
 declare_hierarchy(relation)
-  has_standard_equality(relation)
   declare_custom_members(function, relation_call_operator_t)
   declare_leaf_storage_kind(relation, relation_symbol)
     declare_field(relation, relation_symbol, identifier, label)
@@ -103,7 +101,6 @@ declare_hierarchy(relation)
 end_hierarchy(relation)
 
 declare_hierarchy(number)
-  has_standard_equality(number)
   declare_leaf_storage_kind(number, integer)
     declare_field(number, integer, int64_t, value)
   end_leaf_storage_kind(number, integer)
@@ -113,6 +110,7 @@ declare_hierarchy(number)
 end_hierarchy(number)
 
 declare_hierarchy(term)
+  has_no_standard_equality(term)
   declare_storage_kind(term, constant)
     declare_child(term, constant, number, value)
     has_no_hierarchy_elements(term, constant)
@@ -138,7 +136,6 @@ declare_hierarchy(term)
 end_hierarchy(term)
 
 declare_hierarchy(formula)
-  has_standard_equality(formula)
 
   declare_leaf_storage_kind(formula, boolean)
     declare_field(formula, boolean, bool, value)
@@ -192,7 +189,7 @@ declare_hierarchy(formula)
 end_hierarchy(formula)
 
 #undef declare_hierarchy
-#undef has_standard_equality
+#undef has_no_standard_equality
 #undef declare_custom_members
 #undef declare_storage_kind
 #undef declare_leaf_storage_kind

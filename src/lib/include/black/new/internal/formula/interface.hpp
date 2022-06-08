@@ -214,44 +214,10 @@ namespace black::internal::new_api
   template<typename T>
   constexpr bool is_hierarchy = is_hierarchy_<T>::value;
 
-  template<
-    typename T1, typename T2, 
-    REQUIRES(is_hierarchy<T1> && is_hierarchy<T2>)
-  >
-  bool are_equal(T1 t1, T2 t2) {
-    return t1.unique_id() == t2.unique_id();
-  }
-
-  template<
-    typename T1, typename T2, 
-    REQUIRES(!is_hierarchy<T1> || !is_hierarchy<T2>)
-  >
-  bool are_equal(T1 t1, T2 t2) {
-    return t1 == t2;
-  }
-
-  #define has_standard_equality(Base) \
-    template< \
-      typename H1, typename H2, \
-      REQUIRES( \
-        H1::hierarchy == hierarchy_type::Base && \
-        H2::hierarchy == hierarchy_type::Base \
-      ) \
-    > \
-    bool operator==(H1 h1, H2 h2) { \
-      return are_equal(h1, h2); \
-    } \
-    \
-    template< \
-      typename H1, typename H2, \
-      REQUIRES( \
-        H1::hierarchy == hierarchy_type::Base && \
-        H2::hierarchy == hierarchy_type::Base \
-      ) \
-    > \
-    bool operator!=(H1 h1, H2 h2) { \
-      return !are_equal(h1, h2); \
-    }
+  #define has_no_standard_equality(Base) \
+    template<> \
+    struct hierarchy_has_standard_equality<hierarchy_type::Base> \
+      : std::false_type { };
 
   #include <black/new/internal/formula/hierarchy.hpp>
   
@@ -704,6 +670,24 @@ namespace black::internal::new_api
       \
       class alphabet *_sigma; \
       storage_node<storage_type::Storage> const*_node; \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    template<> \
+    struct storage_data_t<storage_type::Storage> {
+
+  #define declare_field(Base, Storage, Type, Field) \
+    Type Field;
+
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+    hierarchy_node<hierarchy_type::Hierarchy> const *Child;
+  
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    std::vector<hierarchy_node<hierarchy_type::Hierarchy> const*> Children;
+
+  #define end_storage_kind(Base, Storage)  \
     };
 
   #include <black/new/internal/formula/hierarchy.hpp>

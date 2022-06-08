@@ -677,6 +677,54 @@ namespace black::internal::new_api {
     node_t const*_node;
   };
   
+  //
+  // In general, hierarchy types are equality comparable in a standard way, but
+  // the definition file can opt out of it to customize the comparison. What
+  // follows set up things to handle that.
+  //
+  // The first thing is a specializable trait to signal that a hierarchy type
+  // has or not a standard equality comparison operator.
+  //
+  template<hierarchy_type H>
+  struct hierarchy_has_standard_equality : std::true_type { };
+
+  template<hierarchy_type H>
+  inline constexpr bool hierarchy_has_standard_equality_v =
+    hierarchy_has_standard_equality<H>::value;
+
+  //
+  // Here we define the standard comparison operators.
+  //
+  template<hierarchy H1, hierarchy H2>
+    requires (H1::hierarchy == H2::hierarchy && 
+             hierarchy_has_standard_equality_v<H1::hierarchy>)
+  bool operator==(H1 h1, H2 h2) {
+    return h1.unique_id() == h2.unique_id();
+  }
+ 
+  template<hierarchy H1, hierarchy H2>
+    requires (H1::hierarchy == H2::hierarchy && 
+             hierarchy_has_standard_equality_v<H1::hierarchy>)
+  bool operator!=(H1 h1, H2 h2) {
+    return h1.unique_id() != h2.unique_id();
+  }
+
+  // Given the above, this is a small helper function needed in a few places
+  // later. It compares for equality with `operator==` any pair of types
+  // excepting for two hierarchy types, where `unique_id()`s are compared
+  // instead. Useful as a generic way of comparing values that *might* be
+  // hierarchies, such as fields of storage kinds, considering that not all
+  // hierarchies might have standard `operator==` instances.
+  //
+  template<hierarchy T1, hierarchy T2>
+  bool are_equal(T1 t1, T2 t2) {
+    return t1.unique_id() == t2.unique_id();
+  }
+
+  template<typename T1, typename T2>
+  bool are_equal(T1 t1, T2 t2) {
+    return t1 == t2;
+  }
 
 }
 

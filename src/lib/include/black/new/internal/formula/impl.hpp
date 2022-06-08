@@ -25,27 +25,7 @@
 #define BLACK_INTERNAL_FORMULA_IMPL_HPP
 
 namespace black::internal::new_api {
-  
-  //
-  // internal representation classes for each storage kind
-  //
-  #define declare_storage_kind(Base, Storage) \
-    template<> \
-    struct storage_data_t<storage_type::Storage> {
 
-  #define declare_field(Base, Storage, Type, Field) \
-    Type Field;
-
-  #define declare_child(Base, Storage, Hierarchy, Child) \
-    hierarchy_node<hierarchy_type::Hierarchy> const *Child;
-  
-  #define declare_children(Base, Storage, Hierarchy, Children) \
-    std::vector<hierarchy_node<hierarchy_type::Hierarchy> const*> Children;
-
-  #define end_storage_kind(Base, Storage)  \
-    };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_field(Base, Storage, Type, Field) \
     template<typename H> \
