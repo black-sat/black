@@ -728,6 +728,18 @@ namespace black::internal::new_api {
   }
 
   //
+  // hierarchy types for storage kinds need to provide access to fields and
+  // children. Here we declare an empty CRTP base class that will be specialized
+  // later by the preprocessed hierarchy definition file to provide access to
+  // those members.
+  //
+  template<storage_type Storage, typename Derived>
+  struct storage_fields_base { };
+
+  template<storage_type Storage, fragment Syntax, typename Derived>
+  struct storage_children_base { };
+
+  //
   // To define hierarchy types for storage kinds is more complex because they
   // have to call back to the alphabet to allocate the underlying nodes. Hence
   // we have to also consider the definition of the `alphabet` class. Thus, the
@@ -743,7 +755,9 @@ namespace black::internal::new_api {
   //
   template<storage_type Storage, fragment Syntax, typename Derived>
   class storage_base 
-    : public hierarchy_base<hierarchy_of_storage_v<Storage>, Syntax> 
+    : public hierarchy_base<hierarchy_of_storage_v<Storage>, Syntax>,
+      public storage_fields_base<Storage, Derived>,
+      public storage_children_base<Storage, Syntax, Derived>
   {
     using node_t = storage_node<Storage>;
     using base_t = hierarchy_base<hierarchy_of_storage_v<Storage>, Syntax>;
@@ -805,6 +819,12 @@ namespace black::internal::new_api {
       return std::optional<Derived>{Derived{f.sigma(), obj}};
     }
   };
+
+  //
+  // The following is the last of the three kinds of hierarchy types. Hierarchy
+  // elements are the leaves of the hierarchy tree. They are associated to a
+  // single `syntax_element` with no more uncertainty.
+  //
 
 }
 

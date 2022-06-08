@@ -274,18 +274,10 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
   
-  //
-  // Handle classes.
-  // 
-  // The definition of an handle is split in pieces because of the macros.
-  // - The Storage##_fields CRTP class declare the fields accessors
-  // - The Storage class is the handle
-  //
-  #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
-    template<typename H> \
-    struct Storage##_fields {
+    template<typename Derived> \
+    struct storage_fields_base<storage_type::Storage, Derived> {
 
     #define declare_field(Base, Storage, Type, Field) \
       Type Field() const;
@@ -296,13 +288,13 @@ namespace black::internal::new_api
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax, typename H> \
-    struct Storage##_children {
+    template<typename Derived, fragment Syntax> \
+    struct storage_children_base<storage_type::Storage, Syntax, Derived> {
 
-  #define declare_child(Base, Storage, Hierarchy, Child) \
+    #define declare_child(Base, Storage, Hierarchy, Child) \
       Hierarchy<Syntax> Child() const;
 
-  #define declare_children(Base, Storage, Hierarchy, Children) \
+    #define declare_children(Base, Storage, Hierarchy, Children) \
       std::vector<Hierarchy<Syntax>> Children() const;
 
   #define end_storage_kind(Base, Storage) \
@@ -463,12 +455,8 @@ namespace black::internal::new_api
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
     class Storage : \
-      public storage_base<storage_type::Storage, Syntax, Storage<Syntax>>, \
-      public Storage##_fields<Storage<Syntax>>, \
-      public Storage##_children<Syntax, Storage<Syntax>> \
+      public storage_base<storage_type::Storage, Syntax, Storage<Syntax>> \
     { \
-      friend struct Storage##_fields<Storage<Syntax>>; \
-      friend struct Storage##_children<Syntax, Storage<Syntax>>; \
       using base_t = \
         storage_base<storage_type::Storage, Syntax, Storage<Syntax>>; \
     public: \
@@ -496,12 +484,10 @@ namespace black::internal::new_api
 
   #define declare_leaf_storage_kind(Base, Storage) \
     class Storage : \
-      public Storage##_fields<Storage>, \
+      public storage_fields_base<storage_type::Storage, Storage>, \
       public storage_common_interface<Storage, true>, \
       public Base##_custom_members_t<Storage> \
     { \
-      \
-      friend struct Storage##_fields<Storage>; \
       friend struct storage_common_interface<Storage, true>; \
     public: \
       using accepts_type = storage_syntax_predicate_t<storage_type::Storage>; \
@@ -528,13 +514,12 @@ namespace black::internal::new_api
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
     class Element : \
-      public Storage##_fields<Element<Syntax>>, \
-      public Storage##_children<Syntax, Element<Syntax>>, \
+      public storage_fields_base<storage_type::Storage, Element<Syntax>>, \
+      public \
+        storage_children_base<storage_type::Storage, Syntax, Element<Syntax>>, \
       public storage_common_interface<Element<Syntax>, false>, \
       public Base##_custom_members_t<Element<Syntax>> \
     { \
-      friend struct Storage##_fields<Element<Syntax>>; \
-      friend struct Storage##_children<Syntax, Element<Syntax>>; \
       friend struct storage_common_interface<Element<Syntax>, false>; \
       static_assert( \
         is_subfragment_of_v<make_fragment_t<syntax_element::Element>, Syntax>, \
@@ -580,11 +565,10 @@ namespace black::internal::new_api
   
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     class Element : \
-      public Storage##_fields<Element>, \
+      public storage_fields_base<storage_type::Storage, Element>, \
       public storage_common_interface<Element, true>, \
       public Base##_custom_members_t<Element> \
     { \
-      friend struct Storage##_fields<Element>; \
       friend struct storage_common_interface<Element, true>; \
     public: \
       using accepts_type = make_syntax_predicate_t<syntax_element::Element>;\

@@ -29,13 +29,14 @@ namespace black::internal::new_api {
 
   #define declare_field(Base, Storage, Type, Field) \
     template<typename H> \
-    Type Storage##_fields<H>::Field() const { \
+    Type storage_fields_base<storage_type::Storage, H>::Field() const { \
       return static_cast<H const&>(*this).node()->data.Field; \
     }
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
-    template<typename Syntax, typename H> \
-    Hierarchy<Syntax> Storage##_children<Syntax, H>::Child() const { \
+    template<typename H, fragment Syntax> \
+    Hierarchy<Syntax> \
+    storage_children_base<storage_type::Storage, Syntax, H>::Child() const { \
       return Hierarchy<Syntax>{ \
         static_cast<H const&>(*this).sigma(),  \
         static_cast<H const&>(*this).node()->data.Child \
@@ -43,9 +44,9 @@ namespace black::internal::new_api {
     }
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
-    template<typename Syntax, typename H> \
+    template<typename H, fragment Syntax> \
     std::vector<Hierarchy<Syntax>> \
-    Storage##_children<Syntax, H>::Children() const { \
+    storage_children_base<storage_type::Storage, Syntax, H>::Children() const {\
       std::vector<Hierarchy<Syntax>> result; \
       std::vector<hierarchy_node<hierarchy_type::Hierarchy> const*> children = \
         static_cast<H const&>(*this).node()->data.Children; \
