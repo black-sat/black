@@ -36,10 +36,10 @@ namespace black::internal::new_api {
     Type Field;
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
-    Hierarchy##_base *Child;
+    hierarchy_base<hierarchy_type::Hierarchy> *Child;
   
   #define declare_children(Base, Storage, Hierarchy, Children) \
-    std::vector<Hierarchy##_base *> Children;
+    std::vector<hierarchy_base<hierarchy_type::Hierarchy> *> Children;
 
   #define end_storage_kind(Base, Storage)  \
     };
@@ -47,10 +47,10 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
-    struct Storage##_t : Base##_base { \
+    struct Storage##_t : hierarchy_base<hierarchy_type::Base> { \
       \
       Storage##_t(syntax_element t, Storage##_data_t _data) \
-        : Base##_base{t}, data{_data} { } \
+        : hierarchy_base<hierarchy_type::Base>{t}, data{_data} { } \
       \
       Storage##_data_t data; \
     };
@@ -77,7 +77,7 @@ namespace black::internal::new_api {
     std::vector<Hierarchy<Syntax>> \
     Storage##_children<Syntax, H>::Children() const { \
       std::vector<Hierarchy<Syntax>> result; \
-      std::vector<Hierarchy##_base *> children = \
+      std::vector<hierarchy_base<hierarchy_type::Hierarchy> *> children = \
         static_cast<H const&>(*this)._element->data.Children; \
       alphabet *sigma = static_cast<H const&>(*this)._sigma; \
       \

@@ -212,7 +212,7 @@ namespace black::internal::new_api {
         H::hierarchy == Base::hierarchy && 
         syntax_list_includes_v<
           typename TopLevel::list, 
-          typename H::syntax_elements
+          typename hierarchy_traits<H>::accepted_elements
         > && is_subfragment_of_v<typename H::syntax, typename Base::syntax>
       )
     >

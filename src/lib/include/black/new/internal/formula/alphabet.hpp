@@ -33,10 +33,10 @@ namespace black::internal::new_api {
   #define declare_field(Base, Storage, Type, Field) Type Field;
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
-    Hierarchy##_base *Child;
+    hierarchy_base<hierarchy_type::Hierarchy> *Child;
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
-    std::vector<Hierarchy##_base *> Children;
+    std::vector<hierarchy_base<hierarchy_type::Hierarchy> *> Children;
 
   #define end_storage_kind(Base, Storage) \
     };
@@ -126,7 +126,7 @@ namespace black::internal::new_api {
     template<typename T> \
     auto Base##_children_to_key(std::vector<T> const& v) \
     { \
-      std::vector<Base##_base *> result; \
+      std::vector<hierarchy_base<hierarchy_type::Base> *> result; \
       for(auto x : v) { \
         result.push_back(x._element); \
       } \
@@ -141,7 +141,7 @@ namespace black::internal::new_api {
       Storage##_alloc_args<Syntax> const&args \
     ) { \
       return Storage##_key { \
-        args.type.element(),
+        syntax_element(args.type),
 
   #define declare_field(Base, Storage, Type, Field) args.Field,
 

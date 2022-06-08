@@ -43,11 +43,15 @@ namespace black::internal::new_api {
           h = hash_combine(h, std::hash<Type>{}(k.Field));
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
-          h = hash_combine(h, std::hash<Hierarchy##_base *>{}(k.Child));
+          h = hash_combine(h, \
+            std::hash<hierarchy_base<hierarchy_type::Hierarchy> *>{}(k.Child) \
+          );
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
           for(auto child : k.Children) \
-            h = hash_combine(h, std::hash<Hierarchy##_base *>{}(child));
+            h = hash_combine(h, \
+              std::hash<hierarchy_base<hierarchy_type::Hierarchy> *>{}(child) \
+            );
 
   #define end_storage_kind(Base, Storage) \
           return h; \
