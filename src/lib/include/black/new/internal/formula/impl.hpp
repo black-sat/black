@@ -78,6 +78,7 @@ namespace black::internal::new_api {
           ) \
         } { }
 
+  #define declare_leaf_hierarchy_element(Base, Storage, Element)
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
     template< \
@@ -85,8 +86,8 @@ namespace black::internal::new_api {
         REQUIRES_OUT_OF_LINE(is_##Element##_constructible<Syntax, Args...>) \
       >  \
     Element<Syntax>::Element(Args ...args) \
-      : _sigma{get_sigma(args...)}, \
-        _node{ \
+      : Element{ \
+          get_sigma(args...), \
           get_sigma(args...)->allocate_##Storage( \
             Storage##_args_to_key( \
               Storage##_alloc_args<Syntax>{0, \
@@ -95,24 +96,7 @@ namespace black::internal::new_api {
               } \
             ) \
           ) \
-        } { } \
-    \
-    template<typename Syntax> \
-    template<typename S, REQUIRES_OUT_OF_LINE(is_subfragment_of_v<S, Syntax>)> \
-    Element<Syntax>::Element(Element<S> e) \
-      : _sigma{e._sigma}, _node{e._node} { } \
-    \
-    template<typename Syntax> \
-    Element<Syntax>::Element(class alphabet *sigma, storage_node<storage_type::Storage> const*node) \
-        : _sigma{sigma}, _node{node} { \
-          black_assert(_node->type == syntax_element::Element); \
-        } 
-
-  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    inline Element::Element(class alphabet *sigma, storage_node<storage_type::Storage> const*node) \
-        : _sigma{sigma}, _node{node} { \
-          black_assert(_node->type == syntax_element::Element); \
-        } 
+        } { }
 
   #include <black/new/internal/formula/hierarchy.hpp>
 

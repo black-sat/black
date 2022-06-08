@@ -24,6 +24,8 @@
 #ifndef BLACK_LOGIC_SUPPORT_HPP_
 #define BLACK_LOGIC_SUPPORT_HPP_
 
+#include <iostream>
+
 //
 // This file contains all the declarations that do not depend on including the
 // hierarchy definition file, i.e. everything that does not need the
@@ -74,6 +76,16 @@ namespace black::internal::new_api {
   template<storage_type Storage>
   inline constexpr auto hierarchy_of_storage_v = 
     hierarchy_of_storage<Storage>::value;
+  
+  //
+  // Same thing as above, but to get the `storage_type` of a `syntax_element`
+  //
+  template<syntax_element Element>
+  struct storage_of_element;
+
+  template<syntax_element Element>
+  inline constexpr auto storage_of_element_v = 
+    storage_of_element<Element>::value;
 
   //
   // Here we start to define things related to the definition of the syntax of
@@ -123,6 +135,19 @@ namespace black::internal::new_api {
 
   template<typename List>
   constexpr auto syntax_list_tail_t = syntax_list_tail<List>::value;
+
+  //
+  // Trait to tell the length of a `syntax_list`
+  //
+  template<typename List>
+  struct syntax_list_length;
+
+  template<syntax_element ...Elements>
+  struct syntax_list_length<syntax_list<Elements...>>
+    : std::integral_constant<size_t, sizeof...(Elements)> { };
+
+  template<typename List>
+  inline constexpr auto syntax_list_length_v = syntax_list_length<List>::value;
 
   //
   // Trait to concatenate two syntax lists
@@ -532,8 +557,13 @@ namespace black::internal::new_api {
       std::convertible_to<hierarchy_unique_id_t<T::hierarchy>>;
     { t.sigma() } -> std::convertible_to<alphabet *>;
     { t.hash() } -> std::convertible_to<size_t>;
-    { t.node() } -> std::convertible_to<hierarchy_node<T::hierarchy> const *>;
 
+    // we should constrain the return type of `node()`, but then checking this
+    // concept would force the instantiation of `hierarchy_node<>`, which is
+    // only defined much later in the preprocessed definition file
+    { t.node() };
+    
+    // missing members:
     // to<H>() function to convert to another compatible hierarchy type H
     // is<H>() function to tell if it can be converted to H
     // match(...) function for pattern matching
@@ -581,7 +611,6 @@ namespace black::internal::new_api {
   template<typename T>
   concept storage_kind = hierarchy<T> && requires(T t) {
     { T::storage } -> std::convertible_to<storage_type>;
-    { t.node() } -> std::convertible_to<storage_node<T::storage> const *>;
   };
 
   //
@@ -728,10 +757,30 @@ namespace black::internal::new_api {
   }
 
   //
+  // This small trait tells us whether a storage kind has hierarchy elements.
+  // It is specialized later by the preprocessed code.
+  //
+  template<storage_type Storage>
+  struct storage_has_hierarchy_elements : std::true_type { };
+
+  template<storage_type Storage>
+  inline constexpr bool storage_has_hierarchy_elements_v =
+    storage_has_hierarchy_elements<Storage>::value;
+
+  //
+  // This concept tells whether a given `storage_kind` is leaf or not. This can
+  // be detected by looking at size of its fragment. If the fragment is a
+  // singleton, we have a leaf.
+  //
+  template<typename S>
+  concept leaf_storage_kind = storage_kind<S> &&
+    (syntax_list_length_v<typename S::syntax::list> == 1);
+
+  //
   // hierarchy types for storage kinds need to provide access to fields and
-  // children. Here we declare an empty CRTP base class that will be specialized
-  // later by the preprocessed hierarchy definition file to provide access to
-  // those members.
+  // children. Here we declare two empty CRTP base classes that will be
+  // specialized later by the preprocessed hierarchy definition file to provide
+  // access to those members.
   //
   template<storage_type Storage, typename Derived>
   struct storage_fields_base { };
@@ -750,7 +799,7 @@ namespace black::internal::new_api {
   // Note that this base class is for non-leaf storage kinds with at least a
   // hierarchy element. Leaf storage kinds, or storage kinds with no hierarchy
   // elements, are more similar to hierarchy elements and thus inherit from
-  // `hierarchy_element_base` declared below. Differently from hierarchy_base,
+  // `hierarchy_element_base` declared below. Differently from `hierarchy_base`,
   // this is a CRTP base class.
   //
   template<storage_type Storage, fragment Syntax, typename Derived>
@@ -776,9 +825,11 @@ namespace black::internal::new_api {
 
     // the wrapping constructor delegates to the base's one
     storage_base(alphabet *sigma, node_t const*node) 
-      : base_t{sigma, node} { }
+      : base_t{sigma, node} { 
+      black_assert(accepts_type::doesit(node->type));
+    }
 
-    // converting constructors from other storages of the same kind
+    // converting constructors from other storages of the same kind. 
     template<storage_kind S>
       requires (S::storage == storage && 
                 is_subfragment_of_v<
@@ -797,9 +848,19 @@ namespace black::internal::new_api {
       return matcher<storage_base>{}.match(*this, handlers...);
     }
     
-    // this member function does the job of the to<> and is<> members of
-    // `hierarchy_base`. The conversion takes place if the syntaxes agree, and
+    // this member function does the job of the `to<>` and `is<>` members of
+    // `hierarchy_base`. The conversion takes place if the fragments agree, and
     // the actual `syntax_element` of the node at runtime is the correct one.
+    //
+    // The fragment of the original type (`F`) must be a subfragment of ours.
+    // But this does not holds for leaves, which always have a singleton
+    // fragment. So for example, if `f` is a `formula<LTL>` which concretely is
+    // a `negation<LTL>`, `f.to<negation<Boolean>>()` is `false` because `LTL`
+    // is not a subfragment of `Boolean`. However, if `f` is a `proposition`
+    // (whose fragment always contains only `syntax_element::proposition`), we
+    // cannot make `f.to<proposition>()` fail for the same reason. On the other
+    // hand, `proposition` does not have any children (it's a leaf), so we do
+    // not risk downcasting the fragment of children.
     //
     // The dummy template parameter `D` is always used with its default argument
     // equal to `Derived`, and is needed to access to Derived::syntax, which
@@ -809,10 +870,14 @@ namespace black::internal::new_api {
       requires (F::hierarchy == D::hierarchy)
     static std::optional<Derived> from(F f) {
       if constexpr(
-        !is_subfragment_of_v<typename F::syntax, typename Derived::syntax>
+        !leaf_storage_kind<Derived> &&
+        !is_subfragment_of_v<typename F::syntax, typename base_t::syntax>
       ) return {};
 
-      if(!accepts_type::doesit(f.node()->type))
+      // note the subtlety here: we have to use Derived::accepts_type to get the
+      // right set of accepted elements.
+      using derived_accepts_type = typename Derived::accepts_type;
+      if(!derived_accepts_type::doesit(f.node()->type))
         return {};
 
       auto obj = static_cast<node_t const *>(f.node());
@@ -823,8 +888,53 @@ namespace black::internal::new_api {
   //
   // The following is the last of the three kinds of hierarchy types. Hierarchy
   // elements are the leaves of the hierarchy tree. They are associated to a
-  // single `syntax_element` with no more uncertainty.
+  // single `syntax_element` with no more uncertainty. This is a CRTP class as
+  // well.
   //
+  template<syntax_element Element, fragment Syntax, typename Derived>
+  class hierarchy_element_base
+    : public storage_base<storage_of_element_v<Element>, Syntax, Derived>
+  {
+    using node_t = storage_node<storage_of_element_v<Element>>;
+    using base_t = 
+      storage_base<storage_of_element_v<Element>, Syntax, Derived>;
+
+  public:
+    // these members from the base have to be overriden and specialized
+    using accepts_type = make_syntax_predicate_t<Element>;
+    using type = typename base_t::syntax::template type<accepts_type>;
+    static constexpr syntax_element element = Element;
+
+    hierarchy_element_base() = delete;
+    hierarchy_element_base(hierarchy_element_base const&) = default;
+    hierarchy_element_base(hierarchy_element_base &&) = default;
+
+    hierarchy_element_base &operator=(hierarchy_element_base const&) = default;
+    hierarchy_element_base &operator=(hierarchy_element_base &&) = default;
+
+    // the wrapping constructor delegates to the base's one
+    hierarchy_element_base(alphabet *sigma, node_t const*node) 
+      : base_t{sigma, node} {
+      black_assert(accepts_type::doesit(node->type));
+    }
+
+    // converting constructor only from other equal elements with compatible
+    // syntax.
+    template<hierarchy_element E>
+      requires (E::element == element &&
+                is_subfragment_of_v<
+                  typename E::syntax, typename base_t::syntax
+                >)
+    hierarchy_element_base(E e) 
+      : hierarchy_element_base{e.sigma(), e.node()} { }
+
+    // match() is useless on hierarchy elements but we keep it for generic
+    // code. It is specialized to only need the only sensible case to match.
+    template<typename ...Handlers>
+    auto match(Handlers ...handlers) const {
+      return matcher<hierarchy_element_base>{}.match(*this, handlers...);
+    }
+  };
 
 }
 

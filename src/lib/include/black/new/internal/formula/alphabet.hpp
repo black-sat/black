@@ -92,7 +92,7 @@ namespace black::internal::new_api {
     template<typename Syntax> \
     struct Storage##_alloc_args_type< \
       Syntax, \
-      Storage##_has_hierarchy_elements() \
+      storage_has_hierarchy_elements_v<storage_type::Storage> \
     > { \
       int x; \
       typename Storage<Syntax>::type type; \
@@ -136,7 +136,9 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax, REQUIRES(Storage##_has_hierarchy_elements())> \
+    template<typename Syntax, \
+      REQUIRES(storage_has_hierarchy_elements_v<storage_type::Storage>) \
+    > \
     Storage##_key Storage##_args_to_key( \
       Storage##_alloc_args<Syntax> const&args \
     ) { \
@@ -177,7 +179,9 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax, REQUIRES(!Storage##_has_hierarchy_elements())> \
+    template<typename Syntax, \
+      REQUIRES(!storage_has_hierarchy_elements_v<storage_type::Storage>) \
+    > \
     Storage##_key Storage##_args_to_key( \
       [[maybe_unused]] Storage##_alloc_args<Syntax> const&args \
     ) { \
