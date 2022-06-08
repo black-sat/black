@@ -204,16 +204,6 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  template<typename T, typename = void>
-  struct is_hierarchy_ : std::false_type { };
-
-  template<typename T>
-  struct is_hierarchy_<T, std::void_t<decltype(T::hierarchy)>> 
-    : std::true_type { };
-
-  template<typename T>
-  constexpr bool is_hierarchy = is_hierarchy_<T>::value;
-
   #define has_no_standard_equality(Base) \
     template<> \
     struct hierarchy_has_standard_equality<hierarchy_type::Base> \
@@ -428,80 +418,54 @@ namespace black::internal::new_api
     Derived const&self() const { return static_cast<Derived const&>(*this); }
   };
 
-  template<typename Arg, typename = void>
-  struct can_get_syntax_from_arg_ : std::false_type { };
-
-  template<typename Arg>
-  struct can_get_syntax_from_arg_<Arg, std::enable_if_t<is_hierarchy<Arg>>>
-    : std::true_type { };
-  
-  template<typename Arg>
-  struct can_get_syntax_from_arg_<
-    Arg, std::enable_if_t<is_hierarchy<typename Arg::value_type>>
-  > : std::true_type { };
-
-  template<typename Arg>
-  constexpr bool can_get_syntax_from_arg =
-    can_get_syntax_from_arg_<Arg>::value;
+  template<typename T>
+  concept can_get_fragment = hierarchy<T> || 
+    (std::ranges::range<T> && hierarchy<std::ranges::range_value_t<T>>);
 
   template<typename Arg, typename = void>
-  struct get_syntax_from_arg_ { };
+  struct get_fragment_from_arg { };
 
-  template<typename Arg>
-  struct get_syntax_from_arg_<Arg, std::enable_if_t<is_hierarchy<Arg>>> { 
+  template<hierarchy Arg>
+  struct get_fragment_from_arg<Arg> { 
     using type = typename Arg::syntax;
   };
   
-  template<typename Arg>
-  struct get_syntax_from_arg_<
-    Arg, std::enable_if_t<is_hierarchy<typename Arg::value_type>>
-  > {
-    using type = typename Arg::value_type::syntax;
+  template<std::ranges::range Arg>
+    requires hierarchy<std::ranges::range_value_t<Arg>>
+  struct get_fragment_from_arg<Arg> {
+    using type = typename std::ranges::range_value_t<Arg>::syntax;
   };
 
   template<typename Arg>
-  using get_syntax_from_arg = typename get_syntax_from_arg_<Arg>::type;
+  using get_fragment_from_arg_t = typename get_fragment_from_arg<Arg>::type;
   
-  template<typename, typename ...Args>
+  template<typename ...Args>
   struct combined_fragment_from_args_ { };
 
   template<typename ...Args>
   using combined_fragment_from_args = 
-    typename combined_fragment_from_args_<void, Args...>::type;
+    typename combined_fragment_from_args_<Args...>::type;
 
-  template<typename Arg>
-  struct combined_fragment_from_args_<
-    std::enable_if_t<can_get_syntax_from_arg<Arg>>, Arg
-  > {
-    using type = get_syntax_from_arg<Arg>;
-  };
+  template<can_get_fragment Arg>
+  struct combined_fragment_from_args_<Arg> : get_fragment_from_arg<Arg> { };
 
-  template<typename Arg, typename ...Args>
-  struct combined_fragment_from_args_<
-    std::enable_if_t<can_get_syntax_from_arg<Arg>>,
-    Arg, Args...
-  > {
-    using type = make_combined_fragment_t<
-      get_syntax_from_arg<Arg>,
-      combined_fragment_from_args<Args...>
-    >;
-  };
+  template<can_get_fragment Arg, typename ...Args>
+  struct combined_fragment_from_args_<Arg, Args...> 
+    : make_combined_fragment<
+        get_fragment_from_arg_t<Arg>,
+        combined_fragment_from_args<Args...>
+      > { };
   
   template<typename Arg, typename ...Args>
-  struct combined_fragment_from_args_<
-    std::enable_if_t<!can_get_syntax_from_arg<Arg>>,
-    Arg, Args...
-  > {
-    using type = combined_fragment_from_args<Args...>;
-  };
+  struct combined_fragment_from_args_<Arg, Args...>
+    : combined_fragment_from_args_<Args...> { };
 
   #define declare_storage_kind(Base, Storage) \
     template<typename Syntax> \
     class Storage : \
       public Storage##_fields<Storage<Syntax>>, \
       public Storage##_children<Syntax, Storage<Syntax>>, \
-      public storage_common_interface<Storage<Syntax>, false>, \
-      public Base##_custom_members_t<Storage<Syntax>> \
+      public storage_common_interface<Storage<Syntax>, false> \
     { \
       friend struct Storage##_fields<Storage<Syntax>>; \
       friend struct Storage##_children<Syntax, Storage<Syntax>>; \

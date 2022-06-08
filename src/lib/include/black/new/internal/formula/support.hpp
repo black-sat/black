@@ -611,7 +611,8 @@ namespace black::internal::new_api {
   // constructors.
   //
   template<hierarchy_type Hierarchy, fragment Syntax>
-  class hierarchy_base {
+  class hierarchy_base 
+  {
     using node_t = hierarchy_node<Hierarchy>;
   public:
     // members required by the `hierarchy` concept
@@ -666,7 +667,7 @@ namespace black::internal::new_api {
     }
 
     size_t hash() const {
-      return std::hash<hierarchy_node<hierarchy> const*>{}(_node);\
+      return std::hash<hierarchy_node<hierarchy> const*>{}(_node);
     }
     
     alphabet *sigma() const { return _sigma; }
@@ -676,7 +677,7 @@ namespace black::internal::new_api {
     alphabet *_sigma;
     node_t const*_node;
   };
-  
+
   //
   // In general, hierarchy types are equality comparable in a standard way, but
   // the definition file can opt out of it to customize the comparison. What
