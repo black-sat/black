@@ -616,7 +616,7 @@ namespace black::internal::new_api {
   { 
     template<typename ...Args>
     storage_node(syntax_element element, Args&& ...args)
-      : hierarchy_node<hierarchy_of_storage_v<Storage>>(element), 
+      : hierarchy_node<hierarchy_of_storage_v<Storage>>{element}, 
         data{std::forward<Args>(args)...} { }
 
     storage_data_t<Storage> data;

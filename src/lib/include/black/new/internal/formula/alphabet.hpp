@@ -223,6 +223,7 @@ namespace black::internal::new_api {
 
     #define declare_leaf_storage_kind(Base, Storage) \
       template<typename ...Args> \
+        requires is_leaf_storage_constructible_v<Storage, Args...> \
       class Storage Storage(Args ...args) { \
         return \
           ::black::internal::new_api::Storage{ \
@@ -237,6 +238,7 @@ namespace black::internal::new_api {
 
     #define declare_leaf_hierarchy_element(Base, Storage, Element) \
       template<typename ...Args> \
+        requires is_leaf_storage_constructible_v<Element, Args...> \
       class Element Element(Args ...args) { \
         return \
           ::black::internal::new_api::Element{ \

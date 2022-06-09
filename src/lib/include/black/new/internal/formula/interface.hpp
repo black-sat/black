@@ -343,8 +343,9 @@ namespace black::internal::new_api
     public: \
       using base_t::base_t; \
       \
-      template<typename ...Args> \
-        requires is_storage_constructible_v<Storage, Args...> \
+      template<typename ...Args, \
+        REQUIRES(is_storage_constructible_v<Storage<Syntax>, Args...>) \
+      > \
       explicit Storage(Args ...args); \
     };\
     \
@@ -395,8 +396,9 @@ namespace black::internal::new_api
         syntax_element::Element, Syntax, Element<Syntax> \
       >::hierarchy_element_base; \
       \
-      template<typename ...Args> \
-        requires is_hierarchy_element_constructible_v<Element, Args...> \
+      template<typename ...Args, \
+        REQUIRES(is_hierarchy_element_constructible_v<Element, Args...>) \
+      > \
       explicit Element(Args ...args); \
     }; \
     \
