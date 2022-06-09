@@ -95,10 +95,10 @@ namespace black::internal::new_api
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy_element(Base, Storage, Element) \
-    template<typename Syntax> \
+    template<fragment Syntax> \
     class Element;
   #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax> \
+    template<fragment Syntax> \
     class Storage;
   #define declare_leaf_storage_kind(Base, Storage) \
     class Storage;
@@ -107,27 +107,19 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  template<typename Syntax, syntax_element Element>
-  struct type_for_syntax_element_;
-
-  template<typename Syntax, syntax_element Element>
-  using type_for_syntax_element = 
-    typename type_for_syntax_element_<Syntax, Element>::type;
-
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax> \
-    struct type_for_syntax_element_<Syntax, syntax_element::Element> { \
+    struct element_type_of<Syntax, syntax_element::Element> { \
       using type = Element<Syntax>; \
+    };
+  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+    template<typename Syntax> \
+    struct element_type_of<Syntax, syntax_element::Element> { \
+      using type = Element; \
     };
   
   #define has_no_hierarchy_elements(Base, Storage) \
     declare_hierarchy_element(Base, Storage, Storage)
-    
-  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    template<typename Syntax> \
-    struct type_for_syntax_element_<Syntax, syntax_element::Element> { \
-      using type = Element; \
-    };
 
   #define declare_leaf_storage_kind(Base, Storage) \
     declare_leaf_hierarchy_element(Base, Storage, Storage)
@@ -297,17 +289,6 @@ namespace black::internal::new_api
   constexpr bool is_aggregate_constructible = 
     is_aggregate_constructible_<T, void, Args...>::value;
 
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    template<typename Syntax, typename ...Args> \
-    constexpr bool is_##Element##_constructible = \
-      is_aggregate_constructible< \
-        storage_alloc_args<Syntax, storage_type::Storage>, \
-        int, decltype(Storage<Syntax>::type::Element), \
-        Args... \
-      >;
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
   template<typename T>
   concept can_get_fragment = hierarchy<T> || 
     (std::ranges::range<T> && hierarchy<std::ranges::range_value_t<T>>);
@@ -351,7 +332,7 @@ namespace black::internal::new_api
     : combined_fragment_from_args_<Args...> { };
 
   #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax> \
+    template<fragment Syntax> \
     class Storage : \
       public \
         storage_base<storage_type::Storage, Syntax, Storage<Syntax>>, \
@@ -362,10 +343,8 @@ namespace black::internal::new_api
     public: \
       using base_t::base_t; \
       \
-      template< \
-        typename ...Args, \
-        REQUIRES(is_storage_constructible_v<Storage, Args...>) \
-      > \
+      template<typename ...Args> \
+        requires is_storage_constructible_v<Storage, Args...> \
       explicit Storage(Args ...args); \
     };\
     \
@@ -400,7 +379,7 @@ namespace black::internal::new_api
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy_element(Base, Storage, Element) \
-    template<typename Syntax> \
+    template<fragment Syntax> \
     class Element : \
       public hierarchy_element_base< \
         syntax_element::Element, Syntax, Element<Syntax> \
@@ -416,10 +395,8 @@ namespace black::internal::new_api
         syntax_element::Element, Syntax, Element<Syntax> \
       >::hierarchy_element_base; \
       \
-      template< \
-        typename ...Args, \
-        REQUIRES(is_##Element##_constructible<Syntax, Args...>) \
-      > \
+      template<typename ...Args> \
+        requires is_hierarchy_element_constructible_v<Element, Args...> \
       explicit Element(Args ...args); \
     }; \
     \
@@ -464,56 +441,6 @@ namespace black::internal::new_api
 
   #define end_storage_kind(Base, Storage)  \
     };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #define declare_storage_kind(Base, Storage) \
-    } namespace std { \
-      template<typename Syntax> \
-      struct hash<black::internal::new_api::Storage<Syntax>>  {              \
-        size_t operator()( \
-          black::internal::new_api::Storage<Syntax> const& t \
-        ) const { \
-          return t.hash();                \
-        }                                                        \
-      }; \
-    } namespace black::internal::new_api {
-  
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    } namespace std { \
-      template<typename Syntax> \
-      struct hash<black::internal::new_api::Element<Syntax>>  {              \
-        size_t operator()( \
-          black::internal::new_api::Element<Syntax> const& t \
-        ) const { \
-          return t.hash();                \
-        }                                                        \
-      }; \
-    } namespace black::internal::new_api {
-
-  #define declare_leaf_storage_kind(Base, Storage) \
-    } namespace std { \
-      template<> \
-      struct hash<black::internal::new_api::Storage>  {              \
-        size_t operator()( \
-          black::internal::new_api::Storage const& t \
-        ) const { \
-          return t.hash();                \
-        }                                                        \
-      }; \
-    } namespace black::internal::new_api {
-  
-  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    } namespace std { \
-      template<> \
-      struct hash<black::internal::new_api::Element>  {              \
-        size_t operator()( \
-          black::internal::new_api::Element const& t \
-        ) const { \
-          return t.hash();                \
-        }                                                        \
-      }; \
-    } namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 

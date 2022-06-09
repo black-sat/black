@@ -25,45 +25,9 @@
 
 #include <vector>
 
+#include <iostream>
+
 namespace black::internal::new_api {
-
-  #define declare_storage_kind(Base, Storage) \
-    } namespace std { \
-      template<> \
-      struct hash<::black::internal::new_api::Storage##_key> { \
-        size_t operator()( \
-          ::black::internal::new_api::Storage##_key const&k \
-        ) const { \
-          using namespace ::black::internal::new_api; \
-          using namespace ::black::internal; \
-          using namespace ::black; \
-          size_t h = std::hash<syntax_element>{}(k.type);
-
-  #define declare_field(Base, Storage, Type, Field) \
-          h = hash_combine(h, std::hash<Type>{}(k.Field));
-
-  #define declare_child(Base, Storage, Hierarchy, Child) \
-          h = hash_combine(h, \
-            std::hash<hierarchy_node<hierarchy_type::Hierarchy> const*>{}( \
-              k.Child \
-            ) \
-          );
-
-  #define declare_children(Base, Storage, Hierarchy, Children) \
-          for(auto child : k.Children) \
-            h = hash_combine(h, \
-              std::hash<hierarchy_node<hierarchy_type::Hierarchy> const *>{}( \
-                child \
-              ) \
-            );
-
-  #define end_storage_kind(Base, Storage) \
-          return h; \
-        } \
-      }; \
-    } namespace black::internal::new_api {
-
-  #include <black/new/internal/formula/hierarchy.hpp>
 
   } namespace std {
     template<typename T>
@@ -81,17 +45,20 @@ namespace black::internal::new_api {
   } namespace black::internal::new_api {
 
   #define declare_storage_kind(Base, Storage) \
-    inline storage_data_t<storage_type::Storage> key_to_data( \
-      [[maybe_unused]]Storage##_key const& k \
+    inline auto node_to_tuple( \
+      [[maybe_unused]] storage_node<storage_type::Storage> const& node \
     ) { \
-      return storage_data_t<storage_type::Storage> {
+      return std::tuple{
 
-  #define declare_field(Base, Storage, Type, Field) k.Field,
+  #define declare_field(Base, Storage, Type, Field) \
+    node.data.Field,
 
-  #define declare_child(Base, Storage, Hierarchy, Child) k.Child,
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+    node.data.Child,
 
-  #define declare_children(Base, Storage, Hierarchy, Children) k.Children,
-  
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    node.data.Children,
+
   #define end_storage_kind(Base, Storage) \
       }; \
     }
@@ -99,56 +66,22 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   template<storage_type Storage>
-  struct storage_key_of_;
+  using node_to_tuple_type = 
+    decltype(node_to_tuple(std::declval<storage_node<Storage>>()));
 
-  template<storage_type Storage>
-  using storage_key_of = typename storage_key_of_<Storage>::type;
-
-  #define declare_storage_kind(Base, Storage) \
-    template<> \
-    struct storage_key_of_<storage_type::Storage> { \
-      using type = Storage##_key; \
-    };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #define declare_storage_kind(Base, Storage) \
-    inline auto key_to_tuple([[maybe_unused]] Storage##_key key) { \
-      return std::make_tuple(
-
-  #define declare_field(Base, Storage, Type, Field) key.Field,
-
-  #define declare_child(Base, Storage, Hierarchy, Child) key.Child,
-
-  #define declare_children(Base, Storage, Hierarchy, Children) key.Children,
-
-  #define end_storage_kind(Base, Storage) \
-      0); \
-    }
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  template<storage_type Storage>
-  using key_to_tuple_type = 
-    decltype(key_to_tuple(std::declval<storage_key_of<Storage>>()));
-
-  template<storage_type Storage, typename = key_to_tuple_type<Storage>>
+  template<storage_type Storage, typename = node_to_tuple_type<Storage>>
   struct storage_allocator_ {
-    using storage_t = storage_node<Storage>;
-    using storage_key = storage_key_of<Storage>;
-    
-    std::deque<storage_t> _store;
-    tsl::hopscotch_map<storage_key, storage_t *> _map;
+    std::deque<storage_node<Storage>> _store;
+    tsl::hopscotch_map<storage_node<Storage>, storage_node<Storage> *> _map;
    
-    storage_t *allocate(storage_key key) {
-      auto it = _map.find(key);
+    storage_node<Storage> *allocate(storage_node<Storage> node) {
+      auto it = _map.find(node);
       if(it != _map.end())
         return it->second;
      
-      storage_t *obj =
-        &_store.emplace_back(key.type, key_to_data(key));
-      _map.insert({key, obj});
-     
+      storage_node<Storage> *obj = &_store.emplace_back(node);
+      _map.insert({node, obj});
+
       return obj;
     }
   };
@@ -169,21 +102,21 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   template<storage_type Storage>
-  struct storage_allocator_<Storage, std::tuple<bool, int>> {
-    using storage_t = storage_node<Storage>;
-    using storage_key = storage_key_of<Storage>;
-
-    storage_t _true{syntax_element_of_leaf_storage<Storage>, {true}};
-    storage_t _false{syntax_element_of_leaf_storage<Storage>, {false}};
+  struct storage_allocator_<Storage, std::tuple<bool>> 
+  {  
+    storage_node<Storage> 
+      _true{syntax_element_of_leaf_storage<Storage>, true};
+    storage_node<Storage> 
+      _false{syntax_element_of_leaf_storage<Storage>, false};
     
-    storage_t *allocate(storage_key key) {
-      if(std::get<0>(key_to_tuple(key)))
+    storage_node<Storage> *allocate(storage_node<Storage> node) {
+      if(std::get<0>(node_to_tuple(node)))
         return &_true;
       return &_false;
     }
   };
 
-  template<storage_type Storage, typename = key_to_tuple_type<Storage>>
+  template<storage_type Storage, typename = node_to_tuple_type<Storage>>
   struct storage_allocator : storage_allocator_<Storage> { };
 
   #define declare_storage_kind(Base, Storage) \
@@ -207,8 +140,10 @@ namespace black::internal::new_api {
   alphabet::~alphabet() = default;
 
   #define declare_storage_kind(Base, Storage) \
-    storage_node<storage_type::Storage> *alphabet::allocate_##Storage(Storage##_key key) { \
-      return _impl->allocate_##Storage(key); \
+    storage_node<storage_type::Storage> * \
+    alphabet::allocate_##Storage(storage_node<storage_type::Storage> node)\
+    { \
+      return _impl->allocate_##Storage(std::move(node)); \
     }
 
   #include <black/new/internal/formula/hierarchy.hpp>

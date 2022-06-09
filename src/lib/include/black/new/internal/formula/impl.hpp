@@ -63,18 +63,14 @@ namespace black::internal::new_api {
 
   #define declare_leaf_storage_kind(Base, Storage)
   #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax> \
-    template< \
-      typename ...Args, \
-      REQUIRES_OUT_OF_LINE( \
-        is_storage_constructible_v<Storage<Syntax>, Args...> \
-      ) \
-    > \
+    template<fragment Syntax> \
+    template<typename ...Args> \
+        requires is_storage_constructible_v<Storage<Syntax>, Args...> \
     Storage<Syntax>::Storage(Args ...args) \
       : Storage{ \
           get_sigma(args...), \
           get_sigma(args...)->allocate_##Storage( \
-            Storage##_args_to_key<Syntax>( \
+            args_to_node( \
               storage_alloc_args<Syntax, storage_type::Storage>{0, args...} \
             ) \
           ) \
@@ -82,16 +78,14 @@ namespace black::internal::new_api {
 
   #define declare_leaf_hierarchy_element(Base, Storage, Element)
   #define declare_hierarchy_element(Base, Storage, Element) \
-    template<typename Syntax> \
-    template< \
-        typename ...Args, \
-        REQUIRES_OUT_OF_LINE(is_##Element##_constructible<Syntax, Args...>) \
-      >  \
+    template<fragment Syntax> \
+    template<typename ...Args> \
+      requires is_hierarchy_element_constructible_v<Element<Syntax>, Args...> \
     Element<Syntax>::Element(Args ...args) \
       : Element{ \
           get_sigma(args...), \
           get_sigma(args...)->allocate_##Storage( \
-            Storage##_args_to_key( \
+            args_to_node( \
               storage_alloc_args<Syntax, storage_type::Storage>{0, \
                 Storage<Syntax>::type::Element, \
                 args... \

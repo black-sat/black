@@ -66,7 +66,7 @@ namespace black::new_api {
 
   #define using_element(Syntax, Element) \
     using Element = \
-      black::internal::new_api::type_for_syntax_element< \
+      black::internal::new_api::element_type_of_t< \
         syntax::Syntax, syntax::syntax_element::Element \
       >;
 

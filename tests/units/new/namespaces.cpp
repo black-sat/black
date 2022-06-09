@@ -45,6 +45,7 @@ TEST_CASE("Fragment namespaces") {
     static_assert(type_exists(unary, FO));
     static_assert(type_exists(binary, FO));
 
+    [[maybe_unused]]
     relation r = sigma.relation_symbol("r");
     variable x = sigma.variable("x");
     

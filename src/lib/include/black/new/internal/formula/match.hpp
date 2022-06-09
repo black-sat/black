@@ -102,7 +102,7 @@ namespace black::internal::new_api {
   template<hierarchy H, fragment Syntax, syntax_element Case>
   struct matcher<H, Syntax, syntax_list<Case>> 
   {
-    using case_t = type_for_syntax_element<Syntax, Case>;
+    using case_t = element_type_of_t<Syntax, Case>;
 
     template<typename ...Handlers>
     static auto match(H f, Handlers&& ...handlers)
@@ -121,7 +121,7 @@ namespace black::internal::new_api {
   >
   struct matcher<H, Syntax, syntax_list<Case, Cases...>>
   {
-    using case_t = type_for_syntax_element<Syntax, Case>;
+    using case_t = element_type_of_t<Syntax, Case>;
 
     template<typename ...Handlers>
     static auto match(H f, Handlers&& ...handlers) 

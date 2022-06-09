@@ -35,25 +35,6 @@
 namespace black::internal::new_api {
 
   class alphabet;
-  //
-  // Helper function to call sigma() on the first argument that supports
-  // the call
-  //
-  template<hierarchy T, typename ...Args>
-  alphabet *get_sigma(std::vector<T> const&v, Args ...) {
-    black_assert(!v.empty());
-    return v[0].sigma();
-  }
-
-  template<hierarchy T, typename ...Args>
-  alphabet *get_sigma(T v, Args ...) {
-      return v.sigma();
-  }
-  
-  template<typename T, typename ...Args>
-  alphabet *get_sigma(T, Args ...args) {
-      return get_sigma(args...);
-  }
 
   template<typename Derived>
   struct function_call_operator_t {
