@@ -30,16 +30,18 @@ namespace black::internal::new_api {
   #define declare_field(Base, Storage, Type, Field) \
     template<typename H> \
     Type storage_fields_base<storage_type::Storage, H>::Field() const { \
-      return static_cast<H const&>(*this).node()->data.Field; \
+      constexpr size_t I = index_of_field_v<storage_type::Storage, #Field>; \
+      return std::get<I>(static_cast<H const&>(*this).node()->data.values); \
     }
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
     template<typename H, fragment Syntax> \
     Hierarchy<Syntax> \
     storage_children_base<storage_type::Storage, Syntax, H>::Child() const { \
+      constexpr size_t I = index_of_field_v<storage_type::Storage, #Child>; \
       return Hierarchy<Syntax>{ \
         static_cast<H const&>(*this).sigma(),  \
-        static_cast<H const&>(*this).node()->data.Child \
+        std::get<I>(static_cast<H const&>(*this).node()->data.values) \
       }; \
     }
 
@@ -47,9 +49,10 @@ namespace black::internal::new_api {
     template<typename H, fragment Syntax> \
     std::vector<Hierarchy<Syntax>> \
     storage_children_base<storage_type::Storage, Syntax, H>::Children() const {\
+      constexpr size_t I = index_of_field_v<storage_type::Storage, #Children>;
       std::vector<Hierarchy<Syntax>> result; \
       std::vector<hierarchy_node<hierarchy_type::Hierarchy> const*> children = \
-        static_cast<H const&>(*this).node()->data.Children; \
+        std::get<I>(static_cast<H const&>(*this).node()->data.values); \
       alphabet *sigma = static_cast<H const&>(*this).sigma(); \
       \
       for(auto child : children) \
@@ -64,16 +67,16 @@ namespace black::internal::new_api {
   #define declare_leaf_storage_kind(Base, Storage)
   #define declare_storage_kind(Base, Storage) \
     template<fragment Syntax> \
-    template<typename ...Args, \
-      REQUIRES_OUT_OF_LINE( \
-        is_storage_constructible_v<Storage<Syntax>, Args...> \
-      )> \
+    template<typename ...Args> \
+      requires is_storage_constructible_v< \
+        storage_type::Storage, Syntax, Args... \
+      > \
     Storage<Syntax>::Storage(Args ...args) \
       : Storage{ \
           get_sigma(args...), \
           get_sigma(args...)->allocate_##Storage( \
-            args_to_node( \
-              storage_alloc_args<Syntax, storage_type::Storage>{0, args...} \
+            args_to_node<Syntax, storage_type::Storage>( \
+              storage_alloc_args_t<Syntax, storage_type::Storage>{args...} \
             ) \
           ) \
         } { }
@@ -81,16 +84,16 @@ namespace black::internal::new_api {
   #define declare_leaf_hierarchy_element(Base, Storage, Element)
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<fragment Syntax> \
-    template<typename ...Args, \
-      REQUIRES_OUT_OF_LINE( \
-        is_hierarchy_element_constructible_v<Element<Syntax>, Args...> \
-      )> \
+    template<typename ...Args> \
+      requires is_hierarchy_element_constructible_v< \
+        syntax_element::Element, Syntax, Args... \
+      > \
     Element<Syntax>::Element(Args ...args) \
       : Element{ \
           get_sigma(args...), \
           get_sigma(args...)->allocate_##Storage( \
-            args_to_node( \
-              storage_alloc_args<Syntax, storage_type::Storage>{0, \
+            args_to_node<Syntax, storage_type::Storage>( \
+              storage_alloc_args_t<Syntax, storage_type::Storage>{ \
                 Storage<Syntax>::type::Element, \
                 args... \
               } \

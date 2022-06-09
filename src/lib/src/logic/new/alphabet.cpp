@@ -44,37 +44,20 @@ namespace black::internal::new_api {
     };
   } namespace black::internal::new_api {
 
-  #define declare_storage_kind(Base, Storage) \
-    inline auto node_to_tuple( \
-      [[maybe_unused]] storage_node<storage_type::Storage> const& node \
-    ) { \
-      return std::tuple{
-
-  #define declare_field(Base, Storage, Type, Field) \
-    node.data.Field,
-
-  #define declare_child(Base, Storage, Hierarchy, Child) \
-    node.data.Child,
-
-  #define declare_children(Base, Storage, Hierarchy, Children) \
-    node.data.Children,
-
-  #define end_storage_kind(Base, Storage) \
-      }; \
-    }
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
+  //
+  // Once we got the node, we have to unique it. The `alphabet` class will keep
+  // an hash table from nodes to pointer to nodes. When we insert a node, if it
+  // already exists, we get the existing copy of it from the hash table. If it
+  // does not, we insert it in the hash table. This mechanism is implemented in
+  // the following class, which will be indirectly inherited by the pimpl class
+  // of `alphabet` in `alphabet.cpp`
+  //
   template<storage_type Storage>
-  using node_to_tuple_type = 
-    decltype(node_to_tuple(std::declval<storage_node<Storage>>()));
-
-  template<storage_type Storage, typename = node_to_tuple_type<Storage>>
-  struct storage_allocator_ {
+  struct storage_allocator {
     std::deque<storage_node<Storage>> _store;
     tsl::hopscotch_map<storage_node<Storage>, storage_node<Storage> *> _map;
    
-    storage_node<Storage> *allocate(storage_node<Storage> node) {
+    storage_node<Storage> *allocate(storage_node<Storage> const& node) {
       auto it = _map.find(node);
       if(it != _map.end())
         return it->second;
@@ -86,38 +69,26 @@ namespace black::internal::new_api {
     }
   };
 
+  //
+  // We specialize the case of a single boolean field (i.e. the `boolean`
+  // storage kinds).
+  //
   template<storage_type Storage>
-  struct syntax_element_of_leaf_storage_ { };
-
-  template<storage_type Storage>
-  constexpr syntax_element syntax_element_of_leaf_storage =
-    syntax_element_of_leaf_storage_<Storage>::value;
-
-  #define declare_leaf_storage_kind(Base, Storage) \
-    template<> \
-    struct syntax_element_of_leaf_storage_<storage_type::Storage> { \
-      static constexpr auto value = syntax_element::Storage; \
-    };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  template<storage_type Storage>
-  struct storage_allocator_<Storage, std::tuple<bool>> 
+    requires (std::is_same_v<
+      typename storage_data_t<Storage>::tuple_type, std::tuple<bool>
+    >)
+  struct storage_allocator<Storage> 
   {  
-    storage_node<Storage> 
-      _true{syntax_element_of_leaf_storage<Storage>, true};
-    storage_node<Storage> 
-      _false{syntax_element_of_leaf_storage<Storage>, false};
+    storage_node<Storage> _true{element_of_storage_v<Storage>, true};
+    storage_node<Storage> _false{element_of_storage_v<Storage>, false};
     
     storage_node<Storage> *allocate(storage_node<Storage> node) {
-      if(std::get<0>(node_to_tuple(node)))
+      if(std::get<0>(node.data.values))
         return &_true;
       return &_false;
     }
   };
-
-  template<storage_type Storage, typename = node_to_tuple_type<Storage>>
-  struct storage_allocator : storage_allocator_<Storage> { };
+  
 
   #define declare_storage_kind(Base, Storage) \
     struct Storage##_allocator : storage_allocator<storage_type::Storage> { \

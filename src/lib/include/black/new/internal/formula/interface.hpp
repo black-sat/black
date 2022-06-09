@@ -94,6 +94,17 @@ namespace black::internal::new_api
   
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  #define declare_leaf_storage_kind(Base, Storage) \
+  template<> \
+  struct element_of_storage<storage_type::Storage> { \
+    static constexpr auto value = syntax_element::Storage; \
+  };
+
+  #define has_no_hierarchy_elements(Base, Storage) \
+    declare_leaf_storage_kind(Base, Storage)
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<fragment Syntax> \
     class Element;
@@ -343,9 +354,8 @@ namespace black::internal::new_api
     public: \
       using base_t::base_t; \
       \
-      template<typename ...Args, \
-        REQUIRES(is_storage_constructible_v<Storage<Syntax>, Args...>) \
-      > \
+      template<typename ...Args> \
+        requires is_storage_constructible_v<storage_type::Storage, Syntax, Args...> \
       explicit Storage(Args ...args); \
     };\
     \
@@ -396,9 +406,10 @@ namespace black::internal::new_api
         syntax_element::Element, Syntax, Element<Syntax> \
       >::hierarchy_element_base; \
       \
-      template<typename ...Args, \
-        REQUIRES(is_hierarchy_element_constructible_v<Element, Args...>) \
-      > \
+      template<typename ...Args> \
+        requires is_hierarchy_element_constructible_v< \
+          syntax_element::Element, Syntax, Args... \
+        > \
       explicit Element(Args ...args); \
     }; \
     \
@@ -430,19 +441,35 @@ namespace black::internal::new_api
 
   #define declare_storage_kind(Base, Storage) \
     template<> \
-    struct storage_data_t<storage_type::Storage> {
+    struct storage_data<storage_type::Storage> \
+      : make_storage_data<0
 
-  #define declare_field(Base, Storage, Type, Field) \
-    Type Field;
+  #define declare_field(Base, Storage, Type, Field) , Type
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
-    hierarchy_node<hierarchy_type::Hierarchy> const *Child;
+    , hierarchy_node<hierarchy_type::Hierarchy> const *
   
   #define declare_children(Base, Storage, Hierarchy, Children) \
-    std::vector<hierarchy_node<hierarchy_type::Hierarchy> const*> Children;
+    , std::vector<hierarchy_node<hierarchy_type::Hierarchy> const*>
 
-  #define end_storage_kind(Base, Storage)  \
-    };
+  #define end_storage_kind(Base, Storage) \
+      > { };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    template<> \
+    struct storage_field_names<storage_type::Storage> \
+      : make_string_list_cpp<0
+
+  #define declare_field(Base, Storage, Type, Field) , #Field
+
+  #define declare_child(Base, Storage, Hierarchy, Child) , #Child
+  
+  #define declare_children(Base, Storage, Hierarchy, Children) , #Children
+
+  #define end_storage_kind(Base, Storage) \
+      > { };
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
@@ -456,7 +483,7 @@ namespace black::internal::new_api
   #define declare_child(Base, Storage, Hierarchy, Child) \
       arity++;
 
-  #define declare_children(Base, Storage, Hierarchy, Child) \
+  #define declare_children(Base, Storage, Hierarchy, Children) \
       arity++;
 
   #define end_storage_kind(Base, Storage) \

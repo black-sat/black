@@ -24,7 +24,7 @@
 #ifndef BLACK_LOGIC_SUPPORT_HPP_
 #define BLACK_LOGIC_SUPPORT_HPP_
 
-#include <iostream>
+#include <deque>
 
 //
 // This file contains all the declarations that do not depend on including the
@@ -86,6 +86,19 @@ namespace black::internal::new_api {
   template<syntax_element Element>
   inline constexpr auto storage_of_element_v = 
     storage_of_element<Element>::value;
+  
+  //
+  // Last, we get the `syntax_element` of a leaf `storage_type`, or of one that
+  // has no hierarchy elements. Note that this is a partial meta-function, since
+  // non-leaf storage kinds with hierarchy elements (e.g. `unary`) are not
+  // associated with a single `syntax_element`.
+  //
+  template<storage_type Storage>
+  struct element_of_storage;
+
+  template<storage_type Storage>
+  inline constexpr auto element_of_storage_v = 
+    element_of_storage<Storage>::value;
 
   //
   // Here we start to define things related to the definition of the syntax of
@@ -375,7 +388,7 @@ namespace black::internal::new_api {
       requires syntax_list_contains_v<list, Element>
     fragment_type(pseudo_enum_value<Element>) : _element{Element} { }
 
-    explicit operator syntax_element() const { return _element; }
+    operator syntax_element() const { return _element; }
     explicit operator uint8_t() const { return uint8_t(_element); }
 
   private:
@@ -605,12 +618,142 @@ namespace black::internal::new_api {
   //
   // Similarly to hierarchy_node<>, we have storage_node<> as a concrete node
   // type for storage kinds. Its members however must be personalized for each
-  // storage kind from the definitions file, so we declare here an empty data
-  // class that will have to be specialized later.
+  // storage kind from the definitions file, so we declare here a trait that
+  // will return the concrete type for each element, and will be defined later
+  // in the preprocessed part of the code. 
   //
   template<storage_type Storage>
-  struct storage_data_t;
+  struct storage_data { };
 
+  template<storage_type Storage>
+  using storage_data_t = typename storage_data<Storage>::type;
+
+  //
+  // All the specializations of `storage_data` return an instance of the
+  // following class template, which simply wraps a tuple of elements. We wrap
+  // the tuple because this type will have to be Hashable, but we do not want to
+  // define specializations of types of the standard library in a library's
+  // header files. So we define the wrapper and provide the instances of
+  // `tuple_size`, `tuple_element` and `get<>` for easy access later.
+  template<typename ...Types>
+  struct make_storage_data_t {
+    using tuple_type = std::tuple<Types...>;
+
+    template<typename ...Args>
+    make_storage_data_t(Args&& ...args)  
+      : values{std::forward<Args>(args)...} { }
+
+    tuple_type values;
+  };
+
+  //
+  // The trait has a dummy `int` template parameter in order to ease the
+  // handling of trailing commas in the macros.
+  //
+  template<int Dummy, typename ...Types>
+  struct make_storage_data {
+    using type = make_storage_data_t<Types...>;
+  };
+
+  //
+  // Here we define the traits for the tuple-like access to `storage_data_t`
+  //
+  } namespace std {
+
+    template<typename ...Types>
+    struct tuple_size<
+      black::internal::new_api::make_storage_data_t<Types...>
+    > : std::integral_constant<size_t, sizeof...(Types)> { };
+
+    template<size_t I, typename ...Types>
+    struct tuple_element<I, 
+      black::internal::new_api::make_storage_data_t<Types...>
+    > : tuple_element<I, tuple<Types...>> { };
+
+  } namespace black::internal::new_api {
+
+  //
+  // And the function get<> to access the elements
+  //
+  template<size_t I, typename ...Types>
+  std::tuple_element_t<I, make_storage_data_t<Types...>> const&
+  get(make_storage_data_t<Types...> const& data) {
+    return std::get<I>(data.values);
+  }
+  
+  //
+  // To make `make_storage_data_t` hashable, we provide a specialization of
+  // std::hash<>
+  //
+  } namespace std {
+
+    template<typename ...Types>
+    struct hash<black::internal::new_api::make_storage_data_t<Types...>> 
+    {
+      size_t operator()(
+        black::internal::new_api::make_storage_data_t<Types...> const& data
+      ) {
+        using namespace black::internal;
+
+        size_t h = 0;
+        std::apply([&]<typename ...Ts>(Ts const& ...values) {
+          ((h = hash_combine(h, std::hash<Ts>{}(values))), ...);
+        }, data.values);
+
+        return h;
+      }
+    };
+
+  } namespace black::internal::new_api {
+
+  //
+  // Last thing is to make `storage_data_t` hashable is a proper `operator==`
+  //
+  // However, the standard `operator==` of tuples is not enough. Some hierarchy
+  // types, which may end up as types of fields of `make_storage_data_t` (think
+  // of the `var` field of `quantifier` which is of type `variable`), might have
+  // a custom `operator==` (this happens for `term`s). However, that is defined
+  // much later, because we do not have concrete hierarchy types here yet. So we
+  // define this helper function that compares everything with the standard
+  // `operator==` except for two `hierarchy`s that are compared by
+  // `unique_id()`.
+  //
+  template<hierarchy T1, hierarchy T2>
+  bool are_equal(T1 t1, T2 t2) {
+    return t1.unique_id() == t2.unique_id();
+  }
+
+  template<typename T1, typename T2>
+  bool are_equal(T1 t1, T2 t2) {
+    return t1 == t2;
+  }
+
+  //
+  // Now the `operator==` for `make_storage_data_t`. Since we have to zip the
+  // two tuples we need an auxiliary function to unpack an index sequence.
+  //
+  template<size_t ...Idx, typename ...Types>
+  bool storage_data_t_cmp_aux(
+    make_storage_data_t<Types...> const& k1,
+    make_storage_data_t<Types...> const& k2,
+    std::index_sequence<Idx...>
+  ) {
+    return 
+      (are_equal(std::get<Idx>(k1.values), std::get<Idx>(k2.values)) && ...);
+  }
+
+  template<typename ...Types>
+  bool operator==(
+    make_storage_data_t<Types...> const& k1,
+    make_storage_data_t<Types...> const& k2
+  ) {
+    return storage_data_t_cmp_aux(k1, k2, std::index_sequence_for<Types...>{});
+  }
+
+  //
+  // Now we can finally declare the actuals `storage_node` type, which inherits
+  // from `hierarchy_node` and wraps the corresponding `storage_data_t`.
+  //
   template<storage_type Storage>
   struct storage_node : hierarchy_node<hierarchy_of_storage_v<Storage>>
   { 
@@ -628,7 +771,7 @@ namespace black::internal::new_api {
   // We will use storage nodes themselves as a key in the alphabet's hash tables
   // to retrieve the actual uniqued nodes. Thus we need `storage_node` to be
   // hashable. This is based on the `std::hash` instance of `storage_data_t`,
-  // which is generated by the preprocessed definition file.
+  // defined above.
   //
   } namespace std {
     template<black::internal::new_api::storage_type Storage>
@@ -789,23 +932,6 @@ namespace black::internal::new_api {
              hierarchy_has_standard_equality_v<H1::hierarchy>)
   bool operator!=(H1 h1, H2 h2) {
     return h1.unique_id() != h2.unique_id();
-  }
-
-  // Given the above, this is a small helper function needed in a few places
-  // later. It compares for equality with `operator==` any pair of types
-  // excepting for two hierarchy types, where `unique_id()`s are compared
-  // instead. Useful as a generic way of comparing values that *might* be
-  // hierarchies, such as fields of storage kinds, considering that not all
-  // hierarchies might have standard `operator==` instances.
-  //
-  template<hierarchy T1, hierarchy T2>
-  bool are_equal(T1 t1, T2 t2) {
-    return t1.unique_id() == t2.unique_id();
-  }
-
-  template<typename T1, typename T2>
-  bool are_equal(T1 t1, T2 t2) {
-    return t1 == t2;
   }
 
   //
@@ -1027,81 +1153,121 @@ namespace black::internal::new_api {
   template<fragment Syntax, storage_type Storage>
   struct storage_alloc_args { };
 
+  template<fragment Syntax, storage_type Storage>
+  using storage_alloc_args_t = 
+    typename storage_alloc_args<Syntax, Storage>::type;
+
   //
   // storage kinds with hierarchy elements must accept a type parameter before
   // the actual fields and children, so the first field of
-  // `storage_alloc_args<>` must be a type. We ensure that here with a base
-  // class for instances of `storage_alloc_args<>` that declares the `type`
-  // parameter if needed. We also include a dummy `int` field useful to silence
-  // warnings about aggregate initialization of empty subobjects.
+  // `storage_alloc_args_t<>` must be a type, but not if there are no hierarchy
+  // elements. We ensure that here with a maker trait that adds the needed type
+  // on the top of those provided and returns a tuple of everything.
   //
-  template<fragment Syntax, storage_type Storage>
-  struct storage_alloc_args_base { 
-    int x;
+  template<fragment Syntax, storage_type Storage, typename ...Types>
+  struct make_storage_alloc_args { 
+    using type = std::tuple<Types...>;
   };
 
-  template<fragment Syntax, storage_type Storage>
+  template<fragment Syntax, storage_type Storage, typename ...Types>
     requires storage_has_hierarchy_elements_v<Storage>
-  struct storage_alloc_args_base<Syntax, Storage> {
-    int x;
-    typename storage_type_of_t<Syntax, Storage>::type type;
+  struct make_storage_alloc_args<Syntax, Storage, Types...> { 
+    using type = std::tuple<
+      typename storage_type_of_t<Syntax, Storage>::type, Types...
+    >;
   };
 
   //
-  // Then, we need a trait to check whether a given invocation of the allocating
-  // constructor is well formed. 
+  // Some hierarchy types can appear as arguments both for fields (e.g. the
+  // `var` field of `quantifier` which is of type `variable`), and for children.
+  // In the second case, since we must handle the fragments etc.., we store the
+  // pointer to the underlying node. In the first case we do not. To distinguish
+  // these cases, we declare here small wrapper types that will convert to the
+  // appropriate type later.
   //
-  template<storage_kind Storage, typename ...Args>
-  struct is_storage_constructible : std::false_type { };
+  template<hierarchy_type H, fragment Syntax>
+  struct child_wrapper 
+  {
+    child_wrapper(hierarchy_base<H, Syntax> h) : child{h} { }
 
-  template<storage_kind Storage, typename ...Args>
-    requires requires { 
-      storage_alloc_args<typename Storage::syntax, Storage::storage>{
-        0, std::declval<Args>()...
-      }; 
+    operator hierarchy_node<H> const*() const {
+      return child.node();
     }
-  struct is_storage_constructible<Storage, Args...> : std::true_type { };
+    
+    hierarchy_base<H, Syntax> child;
+  };
 
-  template<storage_kind Storage, typename ...Args>
-  constexpr bool is_storage_constructible_v = 
-    is_storage_constructible<Storage, Args...>::value;
+  template<hierarchy_type H, fragment Syntax>
+  struct children_wrapper
+  {
+    template<std::ranges::range R>
+    using value_t = std::ranges::range_value_t<R>;
+
+    template<std::ranges::range R>
+      requires (value_t<R>::hierarchy == H && 
+                is_subfragment_of_v<typename value_t<R>::syntax, Syntax>)
+    children_wrapper(R v) {
+      for(auto h : v)
+        children.push_back(h.node());
+    }
+
+    operator std::vector<hierarchy_node<H> const*>() const {
+      return children;
+    }
+
+    std::vector<hierarchy_node<H> const*> children;
+  };
+
+
+  //
+  // To declare the allocating constructor, we need a trait to check whether a
+  // given invocation is well formed. 
+  //
+  template<storage_type Storage, typename Syntax, typename ...Args>
+  inline constexpr bool is_storage_constructible_v = requires { 
+    storage_alloc_args_t<Syntax, Storage>{std::declval<Args>()...}; 
+  };
+
+  template<storage_type Storage, typename Syntax, typename ...Args>
+  struct is_storage_constructible : std::bool_constant<
+    is_storage_constructible_v<Storage, Syntax, Args...>
+  > { };
 
   //
   // Similar thing for hierarchy elements, but a bit different because we need
   // to pass the type which does not come from the arguments.
   //
-  template<hierarchy_element Element, typename ...Args>
+  template<syntax_element Element, typename Syntax, typename ...Args>
   struct is_hierarchy_element_constructible
     : is_storage_constructible<
-        Element, pseudo_enum_value<Element::element>, Args...
+        storage_of_element_v<Element>, Syntax,
+        pseudo_enum_value<Element>, Args...
       > { };
 
-  template<hierarchy_element Element, typename ...Args>
+  template<syntax_element Element, typename Syntax, typename ...Args>
   inline constexpr auto is_hierarchy_element_constructible_v = 
-    is_hierarchy_element_constructible<Element, Args...>::value;
+    is_hierarchy_element_constructible<Element, Syntax, Args...>::value;
   
   //
   // The same thing for leaf types is still a bit different. Here, since we do
   // not have children, we do not have to do any conversion between the argument
   // (e.g. `formula<LTL>`) and the actual value stored (e.g.
   // `hierarchy_node<hierarchy_type::formula>`). So we do not use
-  // `storage_alloc_args`, and we just have to check if the arguments can
+  // `storage_alloc_args_t`, and we just have to check if the arguments can
   // directly initialize the corresponding `storage_node`.
   //
   template<leaf_storage_kind Storage, typename ...Args>
-  struct is_leaf_storage_constructible : std::false_type { };
+  inline constexpr auto is_leaf_storage_constructible_v = requires { 
+    storage_node<Storage::storage>{
+      std::declval<syntax_element>(), std::declval<Args>()...
+    }; 
+  };
 
   template<leaf_storage_kind Storage, typename ...Args>
-    requires requires { 
-      storage_node<Storage::storage>{
-        std::declval<syntax_element>(), std::declval<Args>()...
-      }; 
-    }
-  struct is_leaf_storage_constructible<Storage, Args...> : std::true_type { };
+  struct is_leaf_storage_constructible
+    : std::bool_constant<is_leaf_storage_constructible_v<Storage, Args...>> { };
 
-  template<leaf_storage_kind Storage, typename ...Args>
-  inline constexpr auto is_leaf_storage_constructible_v =
-    is_leaf_storage_constructible<Storage, Args...>::value;
+  
   //
   // The allocating constructor needs to get access to the alphabet to make any
   // allocation. The alphabet is extracted with the following function from the
@@ -1125,6 +1291,100 @@ namespace black::internal::new_api {
   alphabet *get_sigma(T, Args ...args) {
       return get_sigma(args...);
   }
+
+  //
+  // Once we got the arguments into the allocating constructor, we need to build
+  // a `storage_node` from them. Since we wrapped the elements of
+  // `storage_alloc_args_t` into suitable wrapper types `child_wrapper` and
+  // `children_wrapper`, which have the right conversion operators, the
+  // conversion is automatic, we just have to unpack the tuples correctly.
+  //
+  template<typename Syntax, storage_type Storage>
+    requires storage_has_hierarchy_elements_v<Storage>
+  storage_node<Storage> args_to_node(
+    storage_alloc_args_t<Syntax, Storage> const&args
+  ) {
+    return std::apply([](auto ...values) {
+      return storage_node<Storage>{values...};
+    }, args);
+  }
+
+  template<typename Syntax, storage_type Storage>
+  storage_node<Storage> args_to_node(
+    storage_alloc_args_t<Syntax, Storage> const&args
+  ) {
+    return std::apply([](auto ...values) {
+      return storage_node<Storage>{element_of_storage_v<Storage>, values...};
+    }, args);
+  }
+
+  //
+  // Let us now address the remaining parts of the user interface of hierarchy
+  // types. `storage_kind`s provides the user with member functions to access
+  // fields and children (e.g. left() and right(), or label()). In the
+  // preprocessing code, we only have the name of those fields, while the
+  // contents are stored in tuples which can be accessed by index. Hence we need
+  // a map from names of fields to indices in the tuples.
+  //
+  // So we first need an helper type to be able to use string literals as
+  // template arguments.
+  template<size_t N>
+  struct string_literal {
+    constexpr string_literal(const char (&str)[N]) {
+        std::copy_n(str, N, _data);
+    }
+    
+    constexpr const char *data() const { return _data; }
+    constexpr size_t size() const { return N; }
+
+    char _data[N];
+  };
+
+  //
+  // Then, a type to be used as a compile-time sequence of string literals 
+  //
+  template<string_literal ...Fields>
+  struct string_list { };
+
+  //
+  // and a string of literals for each storage kind, to be specialized in the
+  // preprocessed code.
+  //
+  template<storage_type Storage>
+  struct storage_field_names;
+
+  template<storage_type Storage>
+  using storage_field_names_t = typename storage_field_names<Storage>::type;
+
+  //
+  // Helper with a dummy parameter to deal with trailing commas
+  //
+  template<int Dummy, string_literal ...Fields>
+  struct make_string_list_cpp {
+    using type = string_list<Fields...>;
+  }
+
+  //
+  // Now, a trait to get the index of a literal in a string literals list
+  //
+  template<size_t I, string_literal Field, string_literal ...Fields>
+  struct index_of_field_impl<I, Field, string_list<Field, Fields...>>
+    : std::integral_constant<size_t, I> { };
+  
+  template<
+    size_t I, string_literal Field1, string_literal Field2,
+    string_literal ...Fields
+  >
+  struct index_of_field_impl<I, Field, string_list<Field2, Fields...>>
+    : index_of_field_impl<I+1, Field, string_list<Fields...>> { };
+
+  template<storage_type Storage, string_literal Field>
+  struct index_of_field 
+    : index_of_field_impl<0, Field, storage_field_names_t<Storage>> { };
+
+  template<storage_type Storage, string_literal Field>
+  using index_of_field_v = index_of_field<Storage, Field>::value;
+
 }
 
 #endif // BLACK_LOGIC_SUPPORT_HPP_
