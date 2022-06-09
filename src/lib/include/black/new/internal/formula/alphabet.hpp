@@ -64,51 +64,25 @@ namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  template<typename Syntax, hierarchy_type Hierarchy>
+  template<fragment Syntax, hierarchy_type Hierarchy>
   struct children_vector 
   {
-    template<
-      typename H, 
-      REQUIRES(
-        H::hierarchy == Hierarchy && 
-        is_subfragment_of_v<typename H::syntax, Syntax>
-      )
-    >
+    template<hierarchy H>
+      requires (H::hierarchy == Hierarchy && 
+                is_subfragment_of_v<typename H::syntax, Syntax>)
     children_vector(std::vector<H> const& v) {
       for(auto h : v)
         children.push_back(h.node());
     }
 
-    std::vector<hierarchy_node_type_of<Hierarchy> const*> children;
+    std::vector<hierarchy_node<Hierarchy> const*> children;
   };
 
-  #define declare_leaf_storage_kind(Base, Storage)
   #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax, bool B = true> \
-    struct Storage##_alloc_args_type { \
-      int x; \
-    }; \
-    \
-    template<typename Syntax> \
-    struct Storage##_alloc_args_type< \
-      Syntax, \
-      storage_has_hierarchy_elements_v<storage_type::Storage> \
-    > { \
-      int x; \
-      typename Storage<Syntax>::type type; \
-    };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax> \
-    struct Storage##_alloc_args : Storage##_alloc_args_type<Syntax> { \
+    template<fragment Syntax> \
+    struct storage_alloc_args<Syntax, storage_type::Storage> \
+      : storage_alloc_args_base<Syntax, storage_type::Storage> { \
   
-  #define declare_leaf_storage_kind(Base, Storage) \
-    template<typename Syntax> \
-    struct Storage##_alloc_args { \
-      int x;
-
   #define declare_field(Base, Storage, Type, Field) Type Field;
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
@@ -140,7 +114,7 @@ namespace black::internal::new_api {
       REQUIRES(storage_has_hierarchy_elements_v<storage_type::Storage>) \
     > \
     Storage##_key Storage##_args_to_key( \
-      Storage##_alloc_args<Syntax> const&args \
+      storage_alloc_args<Syntax, storage_type::Storage> const&args \
     ) { \
       return Storage##_key { \
         syntax_element(args.type),
@@ -183,7 +157,8 @@ namespace black::internal::new_api {
       REQUIRES(!storage_has_hierarchy_elements_v<storage_type::Storage>) \
     > \
     Storage##_key Storage##_args_to_key( \
-      [[maybe_unused]] Storage##_alloc_args<Syntax> const&args \
+      [[maybe_unused]] \
+      storage_alloc_args<Syntax, storage_type::Storage> const&args \
     ) { \
       black_assert(Storage##_syntax_element().has_value()); \
       return Storage##_key { \

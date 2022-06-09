@@ -91,7 +91,7 @@ namespace black::internal::new_api {
       make_combined_fragment_t<
         typename Derived::syntax, typename Arg::syntax, typename Args::syntax...
       >;
-    using Hierarchy = hierarchy_type_of<Syntax, Arg::hierarchy>;
+    using Hierarchy = hierarchy_type_of_t<Syntax, Arg::hierarchy>;
 
     std::vector<Hierarchy> v{Hierarchy(arg), Hierarchy(args)...};
     return application<Syntax>(static_cast<Derived const&>(*this), v);
@@ -117,7 +117,7 @@ namespace black::internal::new_api {
       make_combined_fragment_t<
         typename Derived::syntax, typename Arg::syntax, typename Args::syntax...
       >;
-    using Hierarchy = hierarchy_type_of<Syntax, Arg::hierarchy>;
+    using Hierarchy = hierarchy_type_of_t<Syntax, Arg::hierarchy>;
 
     std::vector<Hierarchy> v{Hierarchy(arg), Hierarchy(args)...};
     return atom<Syntax>(static_cast<Derived const&>(*this), v);

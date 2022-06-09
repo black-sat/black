@@ -66,14 +66,16 @@ namespace black::internal::new_api {
     template<typename Syntax> \
     template< \
       typename ...Args, \
-      REQUIRES_OUT_OF_LINE(is_##Storage##_constructible<Syntax, Args...>) \
+      REQUIRES_OUT_OF_LINE( \
+        is_storage_constructible_v<Storage<Syntax>, Args...> \
+      ) \
     > \
     Storage<Syntax>::Storage(Args ...args) \
       : Storage{ \
           get_sigma(args...), \
           get_sigma(args...)->allocate_##Storage( \
             Storage##_args_to_key<Syntax>( \
-              Storage##_alloc_args<Syntax>{0, args...} \
+              storage_alloc_args<Syntax, storage_type::Storage>{0, args...} \
             ) \
           ) \
         } { }
@@ -90,7 +92,7 @@ namespace black::internal::new_api {
           get_sigma(args...), \
           get_sigma(args...)->allocate_##Storage( \
             Storage##_args_to_key( \
-              Storage##_alloc_args<Syntax>{0, \
+              storage_alloc_args<Syntax, storage_type::Storage>{0, \
                 Storage<Syntax>::type::Element, \
                 args... \
               } \

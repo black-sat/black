@@ -225,70 +225,26 @@ namespace black::internal::new_api
       : std::false_type { };
 
   #include <black/new/internal/formula/hierarchy.hpp>
-  
-  template<hierarchy_type H>
-  struct hierarchy_node_type_of_;
 
-  template<hierarchy_type H>
-  using hierarchy_node_type_of = typename hierarchy_node_type_of_<H>::type;
-  
   #define declare_hierarchy(Base) \
-    template<> \
-    struct hierarchy_node_type_of_<hierarchy_type::Base> { \
-      using type = hierarchy_node<hierarchy_type::Base>; \
-    };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  template<typename Syntax, hierarchy_type H>
-  struct hierarchy_type_of_;
-
-  template<typename Syntax, hierarchy_type H>
-  using hierarchy_type_of = 
-    typename hierarchy_type_of_<Syntax, H>::type;
-  
-  #define declare_hierarchy(Base) \
-    template<typename Syntax> \
-    struct hierarchy_type_of_<Syntax, hierarchy_type::Base> { \
+    template<fragment Syntax> \
+    struct hierarchy_type_of<Syntax, hierarchy_type::Base> { \
       using type = Base<Syntax>; \
     };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  template<storage_type H>
-  struct storage_base_type_of_;
-
-  template<storage_type H>
-  using storage_base_type_of = typename storage_base_type_of_<H>::type;
   
   #define declare_storage_kind(Base, Storage) \
-    template<> \
-    struct storage_base_type_of_<storage_type::Storage> { \
-      using type = storage_node<storage_type::Storage>; \
-    };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  template<typename Syntax, storage_type H>
-  struct storage_type_of_;
-
-  template<typename Syntax, storage_type H>
-  using storage_type_of = typename storage_type_of_<Syntax, H>::type;
-  
-  #define declare_leaf_storage_kind(Base, Storage) \
-    template<typename Syntax> \
-    struct storage_type_of_<Syntax, storage_type::Storage> { \
-      using type = Storage; \
-    };
-  
-  #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax> \
-    struct storage_type_of_<Syntax, storage_type::Storage> { \
+    template<fragment Syntax> \
+    struct storage_type_of<Syntax, storage_type::Storage> { \
       using type = Storage<Syntax>; \
     };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
   
+  #define declare_leaf_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    struct storage_type_of<Syntax, storage_type::Storage> { \
+      using type = Storage; \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>  
 
   #define declare_storage_kind(Base, Storage) \
     template<typename Derived> \
@@ -329,12 +285,6 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax> \
-    struct Storage##_alloc_args;
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
   template<typename T, typename = void, typename ...Args>
   struct is_aggregate_constructible_ : std::false_type { };
 
@@ -347,18 +297,11 @@ namespace black::internal::new_api
   constexpr bool is_aggregate_constructible = 
     is_aggregate_constructible_<T, void, Args...>::value;
 
-  #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax, typename ...Args> \
-    constexpr bool is_##Storage##_constructible = \
-      is_aggregate_constructible< \
-        Storage##_alloc_args<Syntax>, int, Args... \
-      >;
-
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<typename Syntax, typename ...Args> \
     constexpr bool is_##Element##_constructible = \
       is_aggregate_constructible< \
-        Storage##_alloc_args<Syntax>, \
+        storage_alloc_args<Syntax, storage_type::Storage>, \
         int, decltype(Storage<Syntax>::type::Element), \
         Args... \
       >;
@@ -421,7 +364,7 @@ namespace black::internal::new_api
       \
       template< \
         typename ...Args, \
-        REQUIRES(is_##Storage##_constructible<Syntax, Args...>) \
+        REQUIRES(is_storage_constructible_v<Storage, Args...>) \
       > \
       explicit Storage(Args ...args); \
     };\
@@ -723,7 +666,7 @@ namespace black::internal::new_api
       H1::storage == H2::storage
     >
   > { 
-    using type = storage_type_of<
+    using type = storage_type_of_t<
       make_combined_fragment_t<typename H1::syntax, typename H2::syntax>,
       H1::storage
     >;
@@ -736,7 +679,7 @@ namespace black::internal::new_api
       H1::storage != H2::storage
     >
   > { 
-    using type = hierarchy_type_of<
+    using type = hierarchy_type_of_t<
       make_combined_fragment_t<typename H1::syntax, typename H2::syntax>,
       H1::hierarchy
     >;
@@ -749,7 +692,7 @@ namespace black::internal::new_api
       (!is_storage<H1> || !is_storage<H2>)
     >
   > { 
-    using type = hierarchy_type_of<
+    using type = hierarchy_type_of_t<
       make_combined_fragment_t<typename H1::syntax, typename H2::syntax>,
       H1::hierarchy
     >;

@@ -134,7 +134,7 @@ namespace black::internal::new_api {
 
   template<storage_type Storage, typename = key_to_tuple_type<Storage>>
   struct storage_allocator_ {
-    using storage_t = storage_base_type_of<Storage>;
+    using storage_t = storage_node<Storage>;
     using storage_key = storage_key_of<Storage>;
     
     std::deque<storage_t> _store;
@@ -170,7 +170,7 @@ namespace black::internal::new_api {
 
   template<storage_type Storage>
   struct storage_allocator_<Storage, std::tuple<bool, int>> {
-    using storage_t = storage_base_type_of<Storage>;
+    using storage_t = storage_node<Storage>;
     using storage_key = storage_key_of<Storage>;
 
     storage_t _true{syntax_element_of_leaf_storage<Storage>, {true}};

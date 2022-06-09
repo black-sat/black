@@ -201,7 +201,7 @@ namespace black::internal::new_api {
   struct only<TopLevel, Syntax, std::enable_if_t<is_uniform_syntax<TopLevel>>> 
   {
     using Base = 
-      hierarchy_type_of<Syntax, hierarchy_of_uniform_syntax<TopLevel>>;
+      hierarchy_type_of_t<Syntax, hierarchy_of_uniform_syntax<TopLevel>>;
 
     template<
       typename H, 
