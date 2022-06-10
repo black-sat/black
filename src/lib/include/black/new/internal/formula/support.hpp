@@ -26,7 +26,7 @@
 
 #include <deque>
 #include <string_view>
-#include <iostream>
+#include <functional>
 
 //
 // This file contains all the declarations that do not depend on including the
@@ -1636,6 +1636,156 @@ namespace black::internal::new_api {
         >
       > { };
 
+  //
+  // The actual specialization
+  //
+  } namespace std {
+
+    template<
+      black::internal::new_api::hierarchy T, 
+      black::internal::new_api::hierarchy U
+    > struct common_type<T, U>
+      : black::internal::new_api::common_type_helper<T, U> { };
+
+  } namespace black::internal::new_api {
+
+  //
+  // Here we declare the infrastructure for pattern matching. The machinery is
+  // based on the to<> function of hierarchy types, and on the list of
+  // `syntax_element`s provided by the hierarchy's fragment. For each syntax
+  // element we try to cast the formula to the corresponding type using
+  // `to<>()`, calling the corresponding lambda case if the cast succeeds. This
+  // is all made more complex because of the support for tuple-unpacking the
+  // hierarchy type to the lambda arguments.
+  //
+  // The first thing we need is a function to do this std::apply-like unpacking
+  // of the hierarchy to the called lambda. 
+
+  template<typename Handler, hierarchy Hierarchy, size_t ...I>
+    requires std::invocable<
+      Handler, Hierarchy, std::tuple_element_t<I, Hierarchy>...
+    >
+  auto unpack(
+    Handler&& handler, Hierarchy h, std::index_sequence<I...>
+  ) {
+    return std::invoke(std::forward<Handler>(handler), h, get<I>(h)...);
+  }
+
+  //
+  // It is cumbersome to repeat everything both in the body and in `decltype()`
+  // but we need to remove the function from overload resolution if the handler
+  // is not callable.
+  //
+  template<typename Handler, hierarchy Hierarchy>
+  auto unpack(Handler&& handler, Hierarchy h)
+  -> decltype(
+    unpack(
+      std::forward<Handler>(handler), h, 
+      std::make_index_sequence<std::tuple_size_v<Hierarchy>>{}
+    )
+  ) {
+    return unpack(
+      std::forward<Handler>(handler), h, 
+      std::make_index_sequence<std::tuple_size_v<Hierarchy>>{}
+    );
+  }
+
+  //
+  // This trait holds if the call to `unpack` is well-formed
+  //
+  template<typename H, typename Handler>
+  inline constexpr bool can_be_unpacked_v = hierarchy<H> && requires { 
+    unpack(std::declval<Handler>(), std::declval<H>()); 
+  };
+
+  //
+  // The `dispatch()` function takes a hierarchy object and the list of handlers
+  // and calls the first handler that can be called either directly or by
+  // unpacking.
+  //
+  template<hierarchy Hierarchy, typename Handler, typename ... Handlers>
+  auto dispatch(Hierarchy f, Handler&& handler, Handlers&& ...handlers) 
+  {
+    if constexpr(std::is_invocable_v<Handler, Hierarchy>)
+      return std::invoke(std::forward<Handler>(handler), f);
+    else if constexpr(can_be_unpacked_v<Hierarchy, Handler>) 
+      return unpack(std::forward<Handler>(handler), f);
+    else 
+      return dispatch(f, std::forward<Handlers>(handlers)...);
+  }
+
+  //
+  // Finally, the `matcher` class, which calls the machinery above to do the
+  // trick. The list of syntax elements in the given fragment is traversed
+  // one-by-one trying to cast the hierarchy type with `to<>()`
+  //
+  template<
+    hierarchy H, fragment Syntax, 
+    syntax_element Case, syntax_element ...Cases
+  >
+  struct matcher<H, Syntax, syntax_list<Case, Cases...>>
+  {
+    using case_t = element_type_of_t<Syntax, Case>;
+
+    //
+    // The return type of `match()` is computed with `std::common_type`, which
+    // has been specialized for hierarchies above. Again, it is cumbersome to
+    // repeat the body twice but there's no other way.
+    //
+    template<typename ...Handlers>
+    static auto match(H h, Handlers&& ...handlers) 
+      -> std::common_type_t<
+        decltype(dispatch(
+          *h.template to<case_t>(), std::forward<Handlers>(handlers)...
+        )),
+        decltype(matcher<H, Syntax, syntax_list<Cases...>>::match(
+          h, std::forward<Handlers>(handlers)...
+        ))
+      >
+    {
+      if(h.template is<case_t>())
+        return dispatch(
+          *h.template to<case_t>(), std::forward<Handlers>(handlers)...
+        );
+      else
+        return matcher<H, Syntax, syntax_list<Cases...>>::match(
+          h, std::forward<Handlers>(handlers)...
+        );
+    }
+  };
+
+  //
+  // The base case of the recursion above is the singleton syntax list. If we
+  // reach this, and the hierarchy type cannot be casted to this last syntax
+  // element, it means it could not have been casted to any of the elements
+  // included in its fragment, which is clearly a bug, so we raise an assertion.
+  //
+  template<hierarchy H, fragment Syntax, syntax_element Case>
+  struct matcher<H, Syntax, syntax_list<Case>>
+  {
+    using case_t = element_type_of_t<Syntax, Case>;
+
+    template<typename ...Handlers>
+    static auto match(H h, Handlers&& ...handlers) 
+      -> decltype(dispatch(
+        *h.template to<case_t>(), std::forward<Handlers>(handlers)...
+      )) 
+    {
+      if(h.template is<case_t>())
+        return dispatch(
+          *h.template to<case_t>(), std::forward<Handlers>(handlers)...
+        );
+      black_unreachable();
+    }
+  };
+
+  //
+  // Little catch-all type used as a wildcard in patter matching 
+  //
+  struct otherwise {
+    template<typename T>
+    otherwise(T const&) { }
+  };
 }
 
 #endif // BLACK_LOGIC_SUPPORT_HPP_

@@ -213,20 +213,6 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  #define declare_hierarchy(Base) \
-    } namespace std { \
-      template<typename Syntax> \
-      struct hash<black::internal::new_api::Base<Syntax>>  {              \
-        size_t operator()( \
-          black::internal::new_api::Base<Syntax> const& t \
-        ) const { \
-          return t.hash();                \
-        }                                                        \
-      }; \
-    } namespace black::internal::new_api {
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
   #define has_no_standard_equality(Base) \
     template<> \
     struct hierarchy_has_standard_equality<hierarchy_type::Base> \
@@ -451,42 +437,6 @@ namespace black::internal::new_api
   #define end_leaf_storage_kind(Base, Storage)
 
   #include <black/new/internal/formula/hierarchy.hpp>
-
-  //
-  // common_type
-  //
-  #define declare_ct(Type) \
-    } namespace std { \
-      template<typename Syntax, typename T> \
-        struct common_type< \
-          black::internal::new_api::Type<Syntax>, T \
-        > : black::internal::new_api::common_type_helper< \
-            black::internal::new_api::Type<Syntax>, T \
-          > { }; \
-    } namespace black::internal::new_api {
-  
-  #define declare_hierarchy(Base) declare_ct(Base)
-  #define declare_storage_kind(Base, Storage) declare_ct(Storage)
-  #define declare_hierarchy_element(Base, Storage, Element) declare_ct(Element)
-
-  #define declare_ct_leaf(Type) \
-    } namespace std { \
-      template<typename T> \
-        struct common_type< \
-          black::internal::new_api::Type, T \
-        > : black::internal::new_api::common_type_helper< \
-            black::internal::new_api::Type, T \
-          > { }; \
-    } namespace black::internal::new_api {
-
-  #define declare_leaf_storage_kind(Base, Storage) declare_ct_leaf(Storage)
-  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    declare_ct_leaf(Element)
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #undef declare_ct
-  #undef declare_ct_leaf
 }
 
 #endif // BLACK_INTERNAL_FORMULA_INTERFACE_HPP
