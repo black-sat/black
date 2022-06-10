@@ -128,6 +128,58 @@ TEST_CASE("Pattern matching") {
     REQUIRE(ok);
   }
 
+  SECTION("Unpacking") {
+    SECTION("Simple children") {
+      boolean b = sigma.boolean(true);
+      proposition p = sigma.proposition("p");
+
+      conjunction<LTLP> c = (b && Y(p));
+
+      auto [l, r] = c;
+
+      REQUIRE(l == b);
+      REQUIRE(r == Y(p));
+
+      formula<LTLP> f = c;
+      f.match(
+        [&](conjunction<LTLP> conj, formula<LTLP> left, formula<LTLP> right) {
+          REQUIRE(conj.left() == left);
+          REQUIRE(conj.right() == right);
+
+          REQUIRE(left == b);
+          REQUIRE(right == Y(p));
+        },
+        [](otherwise) {
+          REQUIRE(false);
+        }
+      );
+    }
+    
+    SECTION("Children vector") {
+      relation r = sigma.relation_symbol("r");
+      std::vector<term<LTLFO>> vars = {
+        sigma.variable("x"), sigma.variable("y")
+      };
+      
+      atom<LTLFO> a = r(vars);
+
+      formula<LTLFO> f = a;
+      f.match(
+        [&](
+          atom<LTLFO> at, relation<LTLFO> rel, 
+          std::vector<term<LTLFO>> const& terms
+        ) { 
+          REQUIRE(at.rel() == rel);
+          REQUIRE(at.terms() == terms);
+          REQUIRE(terms == vars);
+        },
+        [](otherwise) {
+          REQUIRE(false); 
+        }
+      );
+    }
+  }
+
   SECTION("Common type") {
     static_assert(
       std::is_same_v<

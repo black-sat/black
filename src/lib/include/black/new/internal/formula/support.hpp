@@ -26,6 +26,7 @@
 
 #include <deque>
 #include <string_view>
+#include <iostream>
 
 //
 // This file contains all the declarations that do not depend on including the
@@ -1076,6 +1077,78 @@ namespace black::internal::new_api {
   using storage_type_of_t = 
     typename storage_type_of<Syntax, H>::type;
 
+  //
+  // Concrete storage types without hierarchy elements (e.g. `atom<>`) have
+  // deduction guides that help avoid to specify the fragment each time. The
+  // deduction guide has to sum up all the fragments of the children into a
+  // combined fragment. We take the fragments from the arguments, if available.
+  // We can get the fragment from an argument of hierarcy type or from a vector
+  // of hierarchy types.
+  //
+  // The following is a concept that tells us whether an argument is one of
+  // those two cases.
+  //
+  template<typename T>
+  concept can_get_fragment = hierarchy<T> || 
+    (std::ranges::range<T> && hierarchy<std::ranges::range_value_t<T>>);
+
+  //
+  // This trait actually extracts the fragment from the argument.
+  //
+  template<typename Arg, typename = void>
+  struct get_fragment_from_arg { };
+
+  template<hierarchy Arg>
+  struct get_fragment_from_arg<Arg> { 
+    using type = typename Arg::syntax;
+  };
+  
+  template<std::ranges::range Arg>
+    requires hierarchy<std::ranges::range_value_t<Arg>>
+  struct get_fragment_from_arg<Arg> {
+    using type = typename std::ranges::range_value_t<Arg>::syntax;
+  };
+
+  template<typename Arg>
+  using get_fragment_from_arg_t = typename get_fragment_from_arg<Arg>::type;
+  
+  //
+  // Then, this trait combines the found fragments into one.
+  //
+  template<typename ...Args>
+  struct combined_fragment_from_args;
+
+  template<typename ...Args>
+  using combined_fragment_from_args_t = 
+    typename combined_fragment_from_args<Args...>::type;
+
+  template<can_get_fragment Arg>
+  struct combined_fragment_from_args<Arg> : get_fragment_from_arg<Arg> { };
+
+  template<can_get_fragment Arg, typename ...Args>
+  struct combined_fragment_from_args<Arg, Args...> 
+    : make_combined_fragment<
+        get_fragment_from_arg_t<Arg>,
+        combined_fragment_from_args_t<Args...>
+      > { };
+  
+  template<typename Arg, typename ...Args>
+  struct combined_fragment_from_args<Arg, Args...>
+    : combined_fragment_from_args<Args...> { };
+
+  //
+  // We sum up everything here, ready for use in the deduction guide
+  //
+  template<syntax_element Element, typename ...Args>
+  struct deduce_fragment_for_storage :
+    make_combined_fragment< \
+      make_fragment_t<Element>, \
+      combined_fragment_from_args_t<Args...> \
+    > { };
+
+  template<syntax_element Element, typename ...Args>
+  using deduce_fragment_for_storage_t = 
+    typename deduce_fragment_for_storage<Element, Args...>::type;
 
   //
   // The following is the last of the three kinds of hierarchy types. Hierarchy
@@ -1127,6 +1200,18 @@ namespace black::internal::new_api {
       return matcher<hierarchy_element_base>{}.match(*this, handlers...);
     }
   };
+
+  //
+  // The preprocessed definition file will define concrete instances of
+  // `hierarchy_base` for each `hierarchy_type`. This trait will give us those
+  // types. Specialized later.
+  //
+  template<hierarchy_type Hierarchy, fragment Syntax>
+  struct concrete_hierarchy_type;
+  
+  template<hierarchy_type Hierarchy, fragment Syntax>
+  using concrete_hierarchy_type_t = 
+    typename concrete_hierarchy_type<Hierarchy, Syntax>::type;
 
   //
   // Similarly to `hierarchy_type_of` and `storage_type_of`, we can obtain the
@@ -1347,20 +1432,40 @@ namespace black::internal::new_api {
     index_of_field<0, lits, literal>::value;
 
   //
-  // Once we found which field to get, we just wrap it if needed.
+  // Once we found which field to get, we just wrap it if needed. In order to
+  // wrap child and children fields, we need to know their `hierarchy_type`.
+  // This trait does this, specialized later.
   //
-  template<size_t I, hierarchy H>
+  template<size_t I, storage_type Storage>
+  struct hierarchy_of_storage_child;
+  
+  template<size_t I, storage_type Storage>
+  inline constexpr auto hierarchy_of_storage_child_v =
+    hierarchy_of_storage_child<I, Storage>::value;
+  
+  //
+  // Now we can actually get the fields.
+  //
+  template<size_t I, storage_kind H>
   auto get_field(H h) {
     return std::get<I>(h.node()->data.values);
   }
 
-  template<size_t I, hierarchy ChildH, hierarchy H>
+  template<size_t I, fragment Syntax, storage_kind H>
   auto get_child(H h) {
+    using ChildH = 
+      concrete_hierarchy_type_t<
+        hierarchy_of_storage_child_v<I, H::storage>, Syntax
+      >;
     return ChildH{h.sigma(), std::get<I>(h.node()->data.values)};
   }
 
-  template<size_t I, hierarchy ChildH, hierarchy H>
+  template<size_t I, fragment Syntax, storage_kind H>
   auto get_children(H h) {
+    using ChildH = 
+      concrete_hierarchy_type_t<
+        hierarchy_of_storage_child_v<I, H::storage>, Syntax
+      >;
     std::vector<ChildH> result;
     alphabet *sigma = h.sigma();
     auto children = std::get<I>(h.node()->data.values);
@@ -1370,6 +1475,85 @@ namespace black::internal::new_api {
    
     return result;
   }
+
+  //
+  // Another piece of public interface is the tuple-like access to hierarchy
+  // types. This allows one to do something like `auto [l, r] = c;` to get left
+  // and right children of a conjunction, and is also used by the pattern
+  // matching infrastructure defined later.
+  //
+  // First we need a trait, specialized, later, for the number of children of a
+  // given hierarchy. Note that this is different from the cardinality of the
+  // `storage_node_data_t` tuple because here we do not consider fields but only
+  // children.
+  //
+  template<storage_type Storage>
+  struct storage_arity { };
+  
+  template<storage_type Storage>
+  inline constexpr size_t storage_arity_v = storage_arity<Storage>::value;
+
+  //
+  // We also need to know if the last child is a vector of children. Specialized
+  // later.
+  //
+  template<storage_type Storage>
+  struct storage_has_children_vector : std::false_type { };
+  
+  template<storage_type Storage>
+  inline constexpr bool storage_has_children_vector_v =
+    storage_has_children_vector<Storage>::value;
+
+  //
+  // From the arity, given that children are always declared after fields, we
+  // can compute the index of the first child in the `storage_data_t` tuple by
+  // subtracting the arity defined above from the size of the whole tuple.
+  //
+  template<storage_type Storage>
+  struct storage_index_of_first_child 
+    : std::integral_constant<size_t, 
+        (std::tuple_size_v<typename storage_data_t<Storage>::tuple_type> - 
+          storage_arity_v<Storage>)
+      > { };
+
+  template<storage_type Storage>
+  inline constexpr size_t storage_index_of_first_child_v =
+    storage_index_of_first_child<Storage>::value;
+ 
+  //
+  // The implementation of get<> calls get_child() or get_children() depending
+  // on whether the requested index is the last and the storage kind has the
+  // children vector.
+  //
+  template<size_t I, storage_kind S>
+  auto get(S s) {
+    constexpr size_t Idx = storage_index_of_first_child_v<S::storage> + I;
+    
+    if constexpr(
+      storage_has_children_vector_v<S::storage> &&
+      I == storage_arity_v<S::storage> - 1
+    )
+      return get_children<Idx, typename S::syntax>(s);
+    else 
+      return get_child<Idx, typename S::syntax>(s);
+  }
+
+  //
+  // Then we can declare the actual specializations.
+  //
+  } namespace std {
+
+    template<black::internal::new_api::storage_kind S>
+    struct tuple_size<S> 
+      : black::internal::new_api::storage_arity<S::storage> { };
+
+    template<size_t I, black::internal::new_api::storage_kind S>
+    struct tuple_element<I, S> {
+      using type = decltype(get<I>(std::declval<S>()));
+    };
+
+  } namespace black::internal::new_api {
+
 }
 
 #endif // BLACK_LOGIC_SUPPORT_HPP_

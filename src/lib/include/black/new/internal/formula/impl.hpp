@@ -51,6 +51,20 @@ namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+  template<> \
+  struct hierarchy_of_storage_child< \
+    index_of_field_v<Storage##_fields, Storage##_##Child##_field>, \
+    storage_type::Storage \
+  > { \
+    static constexpr auto value = hierarchy_type::Hierarchy; \
+  };
+
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    declare_child(Base, Storage, Hierarchy, Children)
+  
+  #include <black/new/internal/formula/hierarchy.hpp>
+
 
   #define declare_field(Base, Storage, Type, Field) \
     template<typename H> \
@@ -66,7 +80,7 @@ namespace black::internal::new_api {
     storage_children_base<storage_type::Storage, Syntax, H>::Child() const { \
       constexpr size_t I = \
         index_of_field_v<Storage##_fields, Storage##_##Child##_field>;\
-      return get_child<I, Hierarchy<Syntax>>(static_cast<H const&>(*this)); \
+      return get_child<I, Syntax>(static_cast<H const&>(*this)); \
     }
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
@@ -75,7 +89,7 @@ namespace black::internal::new_api {
     storage_children_base<storage_type::Storage, Syntax, H>::Children() const {\
       constexpr size_t I = \
         index_of_field_v<Storage##_fields, Storage##_##Children##_field>;\
-      return get_children<I, Hierarchy<Syntax>>(static_cast<H const&>(*this)); \
+      return get_children<I, Syntax>(static_cast<H const&>(*this)); \
     }
 
   #include <black/new/internal/formula/hierarchy.hpp>

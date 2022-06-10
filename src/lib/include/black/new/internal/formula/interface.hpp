@@ -204,7 +204,12 @@ namespace black::internal::new_api
     }; \
     \
     template<typename H> \
-    Base(H const&) -> Base<typename H::syntax>;
+    Base(H const&) -> Base<typename H::syntax>; \
+  \
+  template<fragment Syntax> \
+  struct concrete_hierarchy_type<hierarchy_type::Base, Syntax> { \
+    using type = Base<Syntax>; \
+  };
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
@@ -288,60 +293,6 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  template<typename T, typename = void, typename ...Args>
-  struct is_aggregate_constructible_ : std::false_type { };
-
-  template<typename T, typename ...Args>
-  struct is_aggregate_constructible_<
-    T, std::void_t<decltype(T{std::declval<Args>()...})>, Args...
-  > : std::true_type { };
-
-  template<typename T, typename ...Args>
-  constexpr bool is_aggregate_constructible = 
-    is_aggregate_constructible_<T, void, Args...>::value;
-
-  template<typename T>
-  concept can_get_fragment = hierarchy<T> || 
-    (std::ranges::range<T> && hierarchy<std::ranges::range_value_t<T>>);
-
-  template<typename Arg, typename = void>
-  struct get_fragment_from_arg { };
-
-  template<hierarchy Arg>
-  struct get_fragment_from_arg<Arg> { 
-    using type = typename Arg::syntax;
-  };
-  
-  template<std::ranges::range Arg>
-    requires hierarchy<std::ranges::range_value_t<Arg>>
-  struct get_fragment_from_arg<Arg> {
-    using type = typename std::ranges::range_value_t<Arg>::syntax;
-  };
-
-  template<typename Arg>
-  using get_fragment_from_arg_t = typename get_fragment_from_arg<Arg>::type;
-  
-  template<typename ...Args>
-  struct combined_fragment_from_args_ { };
-
-  template<typename ...Args>
-  using combined_fragment_from_args = 
-    typename combined_fragment_from_args_<Args...>::type;
-
-  template<can_get_fragment Arg>
-  struct combined_fragment_from_args_<Arg> : get_fragment_from_arg<Arg> { };
-
-  template<can_get_fragment Arg, typename ...Args>
-  struct combined_fragment_from_args_<Arg, Args...> 
-    : make_combined_fragment<
-        get_fragment_from_arg_t<Arg>,
-        combined_fragment_from_args<Args...>
-      > { };
-  
-  template<typename Arg, typename ...Args>
-  struct combined_fragment_from_args_<Arg, Args...>
-    : combined_fragment_from_args_<Args...> { };
-
   #define declare_storage_kind(Base, Storage) \
     template<fragment Syntax> \
     class Storage : \
@@ -360,17 +311,12 @@ namespace black::internal::new_api
     };\
     \
     template<typename H> \
-    Storage(H const&) -> Storage<typename H::syntax>; \
+    Storage(H const&) -> Storage<typename H::syntax>;
   
   #define has_no_hierarchy_elements(Base, Storage) \
     template<typename ...Args> \
     explicit Storage(Args ...args) -> \
-      Storage< \
-        make_combined_fragment_t< \
-          make_fragment_t<syntax_element::Storage>, \
-          combined_fragment_from_args<Args...> \
-        > \
-      >;
+      Storage<deduce_fragment_for_storage_t<syntax_element::Storage, Args...>>;
 
   #define declare_leaf_storage_kind(Base, Storage) \
     class Storage : \
@@ -415,12 +361,7 @@ namespace black::internal::new_api
     \
     template<typename ...Args> \
     explicit Element(Args ...args) -> \
-      Element< \
-        make_combined_fragment_t< \
-          make_fragment_t<syntax_element::Element>, \
-          combined_fragment_from_args<Args...> \
-        > \
-      >;
+      Element<deduce_fragment_for_storage_t<syntax_element::Element, Args...>>;
   
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     class Element : \
@@ -461,62 +402,24 @@ namespace black::internal::new_api
   // tuple-like access
   //
   #define declare_storage_kind(Base, Storage) \
-    constexpr size_t Storage##_arity() { \
-      size_t arity = 0;
+    template<> \
+    struct storage_arity<storage_type::Storage> \
+      : std::integral_constant<size_t, 
 
-  #define declare_child(Base, Storage, Hierarchy, Child) \
-      arity++;
+  #define declare_child(Base, Storage, Hierarchy, Child) 1 +
 
-  #define declare_children(Base, Storage, Hierarchy, Children) \
-      arity++;
+  #define declare_children(Base, Storage, Hierarchy, Children) 1 +
 
   #define end_storage_kind(Base, Storage) \
-      return arity; \
-    }
+      0> { };
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  #define declare_leaf_storage_kind(Base, Storage) \
-   } namespace std { \
-      template<>                            \
-      struct tuple_size<black::internal::new_api::Storage> \
-        : std::integral_constant<int, 0> { }; \
-    } namespace black::internal::new_api {
 
-  #define declare_storage_kind(Base, Storage) \
-    } namespace std { \
-      template<typename Syntax>                            \
-      struct tuple_size<black::internal::new_api::Storage<Syntax>> \
-        : std::integral_constant< \
-            int, black::internal::new_api::Storage##_arity() \
-          > { }; \
-      \
-      template<size_t I, typename Syntax>                        \
-      struct tuple_element<I, black::internal::new_api::Storage<Syntax>> {  \
-        using type = black::internal::new_api::Base<Syntax>;             \
-      }; \
-    } namespace black::internal::new_api {
-
-  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    } namespace std { \
-      template<>                                \
-      struct tuple_size<black::internal::new_api::Element> \
-        : std::integral_constant<int, 0> { }; \
-    } namespace black::internal::new_api {
-
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    } namespace std { \
-      template<typename Syntax>                                \
-      struct tuple_size<black::internal::new_api::Element<Syntax>> \
-        : std::integral_constant< \
-            int, black::internal::new_api::Storage##_arity() \
-          > { }; \
-      \
-      template<size_t I, typename Syntax>                                   \
-      struct tuple_element<I, black::internal::new_api::Element<Syntax>> {  \
-        using type = black::internal::new_api::Base<Syntax>;             \
-      }; \
-    } namespace black::internal::new_api {
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    template<> \
+    struct storage_has_children_vector<storage_type::Storage> \
+      : std::true_type { };
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
@@ -532,34 +435,6 @@ namespace black::internal::new_api
   #define end_storage_kind(Base, Storage) void *>;
   #define end_leaf_storage_kind(Base, Storage)
 
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #define declare_leaf_storage_kind(Base, Storage)
-  #define declare_storage_kind(Base, Storage) \
-    template<int I, typename Syntax, REQUIRES(I < Storage##_arity())> \
-    Base<Syntax> get([[maybe_unused]] Storage<Syntax> s) {  \
-      return std::get<I>(Storage##_unpack_t<Syntax>{
-
-  #define declare_child(Base, Storage, Hierarchy, Child)  \
-        s.Child(),
-  #define declare_children(Base, Storage, Hierarchy, Children)  \
-        s.Children(),
-  
-  #define end_leaf_storage_kind(Base, Storage)
-  #define end_storage_kind(Base, Storage) \
-        nullptr \
-      }); \
-    }
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #define declare_leaf_hierarchy_element(Base, Storage, Element)
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    template<int I, typename Syntax, REQUIRES(I < Storage##_arity())> \
-    Base<Syntax> get(Element<Syntax> e) { \
-      return get<I>(Storage<Syntax>{e}); \
-    }
-  
   #include <black/new/internal/formula/hierarchy.hpp>
 
   //
