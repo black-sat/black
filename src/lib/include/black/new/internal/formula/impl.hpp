@@ -24,41 +24,58 @@
 #ifndef BLACK_INTERNAL_FORMULA_IMPL_HPP
 #define BLACK_INTERNAL_FORMULA_IMPL_HPP
 
+#include <string_view>
+
 namespace black::internal::new_api {
+
+  #define declare_field(Base, Storage, Type, Field) \
+    inline constexpr const char Storage##_##Field##_field[] = #Field;
+
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+    declare_field(Base, Storage, Hierarchy, Child)
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    declare_field(Base, Storage, Hierarchy, Children)
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    inline constexpr std::string_view Storage##_fields[] = {
+  
+  #define declare_field(Base, Storage, Type, Field) #Field, 
+  #define declare_child(Base, Storage, Hierarchy, Child) #Child, 
+  #define declare_children(Base, Storage, Hierarchy, Children) #Children,
+
+  #define end_storage_kind(Base, Storage) \
+      "LAST" \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
 
 
   #define declare_field(Base, Storage, Type, Field) \
     template<typename H> \
     Type storage_fields_base<storage_type::Storage, H>::Field() const { \
-      constexpr size_t I = index_of_field_v<storage_type::Storage, #Field>; \
-      return std::get<I>(static_cast<H const&>(*this).node()->data.values); \
+      constexpr size_t I = \
+        index_of_field_v<Storage##_fields, Storage##_##Field##_field>; \
+      return get_field<I>(static_cast<H const&>(*this)); \
     }
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
     template<typename H, fragment Syntax> \
     Hierarchy<Syntax> \
     storage_children_base<storage_type::Storage, Syntax, H>::Child() const { \
-      constexpr size_t I = index_of_field_v<storage_type::Storage, #Child>; \
-      return Hierarchy<Syntax>{ \
-        static_cast<H const&>(*this).sigma(),  \
-        std::get<I>(static_cast<H const&>(*this).node()->data.values) \
-      }; \
+      constexpr size_t I = \
+        index_of_field_v<Storage##_fields, Storage##_##Child##_field>;\
+      return get_child<I, Hierarchy<Syntax>>(static_cast<H const&>(*this)); \
     }
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
     template<typename H, fragment Syntax> \
     std::vector<Hierarchy<Syntax>> \
     storage_children_base<storage_type::Storage, Syntax, H>::Children() const {\
-      constexpr size_t I = index_of_field_v<storage_type::Storage, #Children>;
-      std::vector<Hierarchy<Syntax>> result; \
-      std::vector<hierarchy_node<hierarchy_type::Hierarchy> const*> children = \
-        std::get<I>(static_cast<H const&>(*this).node()->data.values); \
-      alphabet *sigma = static_cast<H const&>(*this).sigma(); \
-      \
-      for(auto child : children) \
-        result.push_back(Hierarchy<Syntax>{sigma, child}); \
-      \
-      return result; \
+      constexpr size_t I = \
+        index_of_field_v<Storage##_fields, Storage##_##Children##_field>;\
+      return get_children<I, Hierarchy<Syntax>>(static_cast<H const&>(*this)); \
     }
 
   #include <black/new/internal/formula/hierarchy.hpp>

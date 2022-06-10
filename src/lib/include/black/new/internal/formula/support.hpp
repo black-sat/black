@@ -25,6 +25,7 @@
 #define BLACK_LOGIC_SUPPORT_HPP_
 
 #include <deque>
+#include <string_view>
 
 //
 // This file contains all the declarations that do not depend on including the
@@ -1324,67 +1325,51 @@ namespace black::internal::new_api {
   // fields and children (e.g. left() and right(), or label()). In the
   // preprocessing code, we only have the name of those fields, while the
   // contents are stored in tuples which can be accessed by index. Hence we need
-  // a map from names of fields to indices in the tuples.
-  //
-  // So we first need an helper type to be able to use string literals as
-  // template arguments.
-  template<size_t N>
-  struct string_literal {
-    constexpr string_literal(const char (&str)[N]) {
-        std::copy_n(str, N, _data);
-    }
-    
-    constexpr const char *data() const { return _data; }
-    constexpr size_t size() const { return N; }
+  // a map from names of fields to indices in the tuples. This is implemented as
+  // just an array of string views declared in the preprocessed code. Then, a
+  // bunch of constexpr simbols holding the name of the single fields is
+  // declared. Here, we only need to declare a function that searches for one
+  // symbol in the table and returns its index. Note that the specialization of
+  // the trait is selected with SFINAE instead of a `requires` clause because of
+  // a bug in GCC 10.
+  template<
+    size_t I, std::string_view const*lits, const char *literal, typename = void
+  >
+  struct index_of_field : index_of_field<I + 1, lits, literal> { };
 
-    char _data[N];
-  };
+  template<size_t I, std::string_view const*lits, const char *literal>
+  struct index_of_field<
+    I, lits, literal, std::enable_if_t<lits[I] == literal>
+  > : std::integral_constant<size_t, I> { };
 
-  //
-  // Then, a type to be used as a compile-time sequence of string literals 
-  //
-  template<string_literal ...Fields>
-  struct string_list { };
-
-  //
-  // and a string of literals for each storage kind, to be specialized in the
-  // preprocessed code.
-  //
-  template<storage_type Storage>
-  struct storage_field_names;
-
-  template<storage_type Storage>
-  using storage_field_names_t = typename storage_field_names<Storage>::type;
+  template<std::string_view const*lits, const char *literal>
+  inline constexpr size_t index_of_field_v = 
+    index_of_field<0, lits, literal>::value;
 
   //
-  // Helper with a dummy parameter to deal with trailing commas
+  // Once we found which field to get, we just wrap it if needed.
   //
-  template<int Dummy, string_literal ...Fields>
-  struct make_string_list_cpp {
-    using type = string_list<Fields...>;
+  template<size_t I, hierarchy H>
+  auto get_field(H h) {
+    return std::get<I>(h.node()->data.values);
   }
 
-  //
-  // Now, a trait to get the index of a literal in a string literals list
-  //
-  template<size_t I, string_literal Field, string_literal ...Fields>
-  struct index_of_field_impl<I, Field, string_list<Field, Fields...>>
-    : std::integral_constant<size_t, I> { };
-  
-  template<
-    size_t I, string_literal Field1, string_literal Field2,
-    string_literal ...Fields
-  >
-  struct index_of_field_impl<I, Field, string_list<Field2, Fields...>>
-    : index_of_field_impl<I+1, Field, string_list<Fields...>> { };
+  template<size_t I, hierarchy ChildH, hierarchy H>
+  auto get_child(H h) {
+    return ChildH{h.sigma(), std::get<I>(h.node()->data.values)};
+  }
 
-  template<storage_type Storage, string_literal Field>
-  struct index_of_field 
-    : index_of_field_impl<0, Field, storage_field_names_t<Storage>> { };
-
-  template<storage_type Storage, string_literal Field>
-  using index_of_field_v = index_of_field<Storage, Field>::value;
-
+  template<size_t I, hierarchy ChildH, hierarchy H>
+  auto get_children(H h) {
+    std::vector<ChildH> result;
+    alphabet *sigma = h.sigma();
+    auto children = std::get<I>(h.node()->data.values);
+   
+    for(auto child : children)
+      result.push_back(ChildH{sigma, child});
+   
+    return result;
+  }
 }
 
 #endif // BLACK_LOGIC_SUPPORT_HPP_

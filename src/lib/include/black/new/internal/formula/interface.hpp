@@ -457,22 +457,6 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  #define declare_storage_kind(Base, Storage) \
-    template<> \
-    struct storage_field_names<storage_type::Storage> \
-      : make_string_list_cpp<0
-
-  #define declare_field(Base, Storage, Type, Field) , #Field
-
-  #define declare_child(Base, Storage, Hierarchy, Child) , #Child
-  
-  #define declare_children(Base, Storage, Hierarchy, Children) , #Children
-
-  #define end_storage_kind(Base, Storage) \
-      > { };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
   //
   // tuple-like access
   //
