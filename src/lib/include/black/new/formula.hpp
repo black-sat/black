@@ -58,11 +58,36 @@ namespace black::internal::new_api {
 #include <black/new/internal/formula/interface.hpp>
 #include <black/new/internal/formula/alphabet.hpp>
 #include <black/new/internal/formula/impl.hpp>
-#include <black/new/internal/formula/match.hpp>
+
+namespace black::internal::new_api {
+  namespace matching_fragments {
+    struct Future : make_fragment_t<
+      syntax_element::tomorrow,
+      syntax_element::w_tomorrow,
+      syntax_element::always,
+      syntax_element::eventually,
+      syntax_element::until,
+      syntax_element::release
+    > { };
+
+    struct Past : make_fragment_t<
+      syntax_element::yesterday,
+      syntax_element::w_yesterday,
+      syntax_element::once,
+      syntax_element::historically,
+      syntax_element::since,
+      syntax_element::triggered
+    > { };
+
+    struct Temporal : make_combined_fragment_t<Future, Past> { };
+  }
+}
+
 #include <black/new/internal/formula/namespaces.hpp>
 #include <black/new/internal/formula/sugar.hpp>
 
 namespace black::internal::new_api {
+
   template<typename Derived>
   template<typename Arg, typename ...Args>
   auto 

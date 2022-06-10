@@ -1786,6 +1786,100 @@ namespace black::internal::new_api {
     template<typename T>
     otherwise(T const&) { }
   };
+
+  //
+  // A useful addition to the pattern matching infrastructure is the `only<>`
+  // class. It allows the user to match only a selected list of syntax elements
+  // independently of their storage kind etc...
+  //
+  // First we define a trait to tell whether a fragment has only syntax elements
+  // of the same hierarchy. The first template argument of `only<>` is of this
+  // type.
+  //
+  template<typename List>
+  struct are_uniform_elements : std::false_type { };
+
+  template<syntax_element Element, syntax_element ...Elements>
+  struct are_uniform_elements<syntax_list<Element, Elements...>>
+    : std::bool_constant<
+        ((hierarchy_of_storage_v<storage_of_element_v<Element>> == 
+          hierarchy_of_storage_v<storage_of_element_v<Elements>>) && ...)> { };
+
+  template<typename List>
+  inline constexpr bool are_uniform_elements_v =
+    are_uniform_elements<List>::value;
+
+  //
+  // Then, the `only<>` class. The first argument is the fragment to which
+  // `only<>` will restrict its matching. `Syntax` is the general fragment we
+  // are considering, i.e. those of the children of the matched object.
+  //
+  // For example, `only<Future, formula<LTLP>` matches all the formulas of LTLP
+  // which happens to have a future operator as the top level operator.
+  //
+  template<fragment TopLevel, fragment Syntax>
+    requires are_uniform_elements_v<typename TopLevel::list>
+  struct only
+  {
+    // This is the hierarchy type that corresponds to the syntax elemnts in the
+    // `TopLevel` fragment.
+    using Base = 
+      hierarchy_type_of_t<Syntax, 
+        hierarchy_of_storage_v<
+          storage_of_element_v<
+            syntax_list_head_v<typename TopLevel::list>
+          >
+        >
+      >;
+
+    //
+    // Converting constructor. Remember that this will be called in the
+    // `dispatch()` function above with an already-converted `hierarchy_element`
+    // H. Hence, `H::accepted_elements` is a singleton, e.g.
+    // `syntax_element::conjunction`, and we can know if the conversion is
+    // successful at compile-time. Then, we also check the general fragment to
+    // tell whether we are compatible.
+    //
+    template<hierarchy H>
+      requires (H::hierarchy == Base::hierarchy && 
+        syntax_list_includes_v<
+          typename TopLevel::list, 
+          typename hierarchy_traits<H>::accepted_elements
+        > && is_subfragment_of_v<typename H::syntax, typename Base::syntax>)
+    only(H h) : _base{h} { }
+
+    //
+    // Here we have some member functions to mimic the interface of hierarchy
+    // types.
+    //
+    operator Base() const { return _base; }
+
+    template<typename H>
+    bool is() const {
+      return _base.template is<H>();
+    }
+
+    template<typename H>
+    std::optional<H> to() const {
+      return _base.template to<H>();
+    }
+
+    //
+    // We did all of this to come to this point: we call the `matcher` class but
+    // passing only `TopLevel::list` as the list of syntax elements, so the
+    // pattern matching is limited to those.
+    //
+    template<typename ...Handlers>
+    auto match(Handlers ...handlers) const {
+      return 
+        matcher<Base, typename Base::syntax, typename TopLevel::list>{}.match(
+          _base, handlers...
+        );
+    }
+
+  private:
+    Base _base;
+  };
 }
 
 #endif // BLACK_LOGIC_SUPPORT_HPP_
