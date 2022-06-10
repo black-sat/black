@@ -181,66 +181,39 @@ TEST_CASE("Pattern matching") {
   }
 
   SECTION("Common type") {
-    static_assert(
-      std::is_same_v<
-        std::common_type_t<formula<LTL>, proposition>, formula<LTL>
-      >
-    );
-    static_assert(
-      black::internal::new_api::is_subfragment_of_v<
-        std::common_type_t<formula<LTL>, unary<FO>>::syntax, LTLFO
-      >
-    );
-    static_assert(
-      black::internal::new_api::is_subfragment_of_v<
-        std::common_type_t<unary<LTL>, formula<FO>>::syntax, LTLFO
-      >
-    );
-    static_assert(
-      black::internal::new_api::is_subfragment_of_v<
-        std::common_type_t<unary<LTL>, negation<FO>>::syntax, LTLFO
-      >
-    );
-    static_assert(
-      black::internal::new_api::is_subfragment_of_v<
-        std::common_type_t<negation<LTL>, unary<FO>>::syntax, LTLFO
-      >
-    );
-    static_assert(
-      black::internal::new_api::is_subfragment_of_v<
-        std::common_type_t<negation<FO>, proposition>::syntax, FO
-      >
-    );
-    static_assert(
-      black::internal::new_api::is_subfragment_of_v<
-        std::common_type_t<tomorrow<LTL>, negation<FO>, proposition>::syntax, LTLFO
-      >
-    );
-    static_assert(
-      black::internal::new_api::is_subfragment_of_v<
-        std::common_type_t<proposition, unary<LTL>>::syntax, LTL
-      >
-    );
-    static_assert(
-      black::internal::new_api::is_subfragment_of_v<
-        std::common_type_t<negation<FO>, formula<LTL>>::syntax, LTLFO
-      >
-    );
 
-    formula<LTLFO> f = sigma.proposition("p");
-    auto f2 = f.match(
-      [](boolean b) {
-        return negation<FO>(b);
-      },
-      [](proposition p) {
-        return p;
-      },
-      [&](otherwise) {
-        return tomorrow<LTL>(sigma.boolean(false));
-      }
-    );
+    #define REQUIRE_CT(x, y, ...) \
+      STATIC_REQUIRE( \
+        black::internal::new_api::are_same_hierarchy_types_v< \
+          std::common_type_t<decltype(x),decltype(y)>, \
+          __VA_ARGS__ \
+        > \
+      );
 
-    REQUIRE(f2 == sigma.proposition("p"));
+    boolean b = sigma.boolean("b");
+    proposition p = sigma.proposition("p");
+    unary<LTL> u = !b;
+    conjunction<LTL> c = b && p;
+    disjunction<LTL> d = b || p;
+    binary<LTLP> bin = c;
+    formula<LTL> f = u;
+
+    using F = make_combined_fragment_t<
+      make_fragment_t<syntax_element::proposition>, make_fragment_t<syntax_element::boolean>
+    >;
+
+    REQUIRE_CT(b, p, formula<F>);
+
+    REQUIRE_CT(u, b, formula<LTL>);
+    REQUIRE_CT(bin, u, formula<LTLP>);
+    REQUIRE_CT(f, u, formula<LTL>);
+    REQUIRE_CT(f, bin, formula<LTLP>);
+    REQUIRE_CT(c, d, binary<LTL>);
+    REQUIRE_CT(c, bin, binary<LTLP>);
+    REQUIRE_CT(b, c, formula<LTL>);
+    REQUIRE_CT(p, p, proposition);
+    REQUIRE_CT(u, u, unary<LTL>);
+    REQUIRE_CT(f, f, formula<LTL>);
   }
   
 }

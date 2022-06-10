@@ -335,6 +335,21 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  
+  #define declare_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    struct concrete_storage_type<storage_type::Storage, Syntax> { \
+      using type = Storage<Syntax>; \
+    };
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    struct concrete_storage_type<storage_type::Storage, Syntax> { \
+      using type = Storage; \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<fragment Syntax> \
     class Element : \
@@ -440,163 +455,33 @@ namespace black::internal::new_api
   //
   // common_type
   //
-  template<typename H, typename T, typename = void>
-  struct common_type_helper;
-
-  template<
-    template<typename> class H1, template<typename> class H2,
-    typename S1, typename S2
-  >
-  struct common_type_helper<
-    H1<S1>, H2<S2>, std::enable_if_t<
-      std::is_constructible_v<H1<make_combined_fragment_t<S1, S2>>, H2<S2>>
-    >
-  > { using type = H1<make_combined_fragment_t<S1, S2>>; };
-
-  template<typename H, typename T, typename = void>
-  struct common_type_leaf_helper;
-
-  template<typename H, typename T>
-  struct common_type_leaf_helper<
-    H, T, std::enable_if_t<std::is_constructible_v<H, T>>
-  > { using type = H; };
+  #define declare_ct(Type) \
+    } namespace std { \
+      template<typename Syntax, typename T> \
+        struct common_type< \
+          black::internal::new_api::Type<Syntax>, T \
+        > : black::internal::new_api::common_type_helper< \
+            black::internal::new_api::Type<Syntax>, T \
+          > { }; \
+    } namespace black::internal::new_api {
   
-  template<typename T, typename = void>
-  struct is_storage_ : std::false_type { };
+  #define declare_hierarchy(Base) declare_ct(Base)
+  #define declare_storage_kind(Base, Storage) declare_ct(Storage)
+  #define declare_hierarchy_element(Base, Storage, Element) declare_ct(Element)
 
-  template<typename T>
-  struct is_storage_<T, std::void_t<decltype(T::storage)>> 
-    : std::true_type { };
-
-  template<typename T>
-  constexpr bool is_storage = is_storage_<T>::value;
-
-  template<typename H, typename T, typename = void>
-  struct common_type_different_helper;
-
-  template<typename H1, typename H2>
-  struct common_type_different_helper<
-    H1, H2, std::enable_if_t<
-      H1::hierarchy == H2::hierarchy &&
-      H1::storage == H2::storage
-    >
-  > { 
-    using type = storage_type_of_t<
-      make_combined_fragment_t<typename H1::syntax, typename H2::syntax>,
-      H1::storage
-    >;
-  };
-
-  template<typename H1, typename H2>
-  struct common_type_different_helper<
-    H1, H2, std::enable_if_t<
-      H1::hierarchy == H2::hierarchy &&
-      H1::storage != H2::storage
-    >
-  > { 
-    using type = hierarchy_type_of_t<
-      make_combined_fragment_t<typename H1::syntax, typename H2::syntax>,
-      H1::hierarchy
-    >;
-  };
-
-  template<typename H1, typename H2>
-  struct common_type_different_helper<
-    H1, H2, std::enable_if_t<
-      H1::hierarchy == H2::hierarchy &&
-      (!is_storage<H1> || !is_storage<H2>)
-    >
-  > { 
-    using type = hierarchy_type_of_t<
-      make_combined_fragment_t<typename H1::syntax, typename H2::syntax>,
-      H1::hierarchy
-    >;
-  };
-
-  #define declare_ct_leaf(General, Specific) \
-    template<typename Syntax> \
-      struct common_type< \
-        black::internal::new_api::General<Syntax>, \
-        black::internal::new_api::Specific \
-      > : black::internal::new_api::common_type_leaf_helper< \
-          black::internal::new_api::General<Syntax>, \
-          black::internal::new_api::Specific \
-        > { }; \
-      \
-      template<typename Syntax> \
-      struct common_type< \
-        black::internal::new_api::Specific, \
-        black::internal::new_api::General<Syntax> \
-      > : black::internal::new_api::common_type_leaf_helper< \
-          black::internal::new_api::General<Syntax>, \
-          black::internal::new_api::Specific \
-        > { };
-
-  #define declare_ct(General, Specific) \
-    template<typename Syntax1, typename Syntax2> \
-    struct common_type< \
-      black::internal::new_api::General<Syntax1>, \
-      black::internal::new_api::Specific<Syntax2> \
-    > : black::internal::new_api::common_type_helper< \
-        black::internal::new_api::General<Syntax1>, \
-        black::internal::new_api::Specific<Syntax2> \
-      > { }; \
-    \
-    template<typename Syntax1, typename Syntax2> \
-    struct common_type< \
-      black::internal::new_api::Specific<Syntax1>, \
-      black::internal::new_api::General<Syntax2> \
-    > : black::internal::new_api::common_type_helper< \
-        black::internal::new_api::General<Syntax2>, \
-        black::internal::new_api::Specific<Syntax1> \
-      > { };
-  
-  #define declare_ct_different(Element) \
-    template<typename Syntax, typename T> \
-    struct common_type< \
-      black::internal::new_api::Element<Syntax>, T \
-    > : black::internal::new_api::common_type_different_helper< \
-        black::internal::new_api::Element<Syntax>, \
-        T \
-      > { };
-  
-  #define declare_ct_different_leaf(Element) \
-    template<typename T> \
-    struct common_type< \
-      black::internal::new_api::Element, T \
-    > : black::internal::new_api::common_type_different_helper< \
-        black::internal::new_api::Element, \
-        T \
-      > { };
-
-  #define declare_hierarchy(Base) \
-    } namespace std {
-
-  #define declare_leaf_storage_kind(Base, Storage) \
-    declare_ct_leaf(Base, Storage) \
-    declare_ct_different_leaf(Storage)
-  
-  #define declare_storage_kind(Base, Storage) \
-    declare_ct(Base, Storage) \
-    declare_ct_different(Storage)
-
-  #define end_hierarchy(Base) \
+  #define declare_ct_leaf(Type) \
+    } namespace std { \
+      template<typename T> \
+        struct common_type< \
+          black::internal::new_api::Type, T \
+        > : black::internal::new_api::common_type_helper< \
+            black::internal::new_api::Type, T \
+          > { }; \
     } namespace black::internal::new_api {
 
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #define declare_storage_kind(Base, Storage) \
-    } namespace std {
-
+  #define declare_leaf_storage_kind(Base, Storage) declare_ct_leaf(Storage)
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    declare_ct_leaf(Storage, Element)
-
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    declare_ct(Storage, Element) \
-    declare_ct_different(Element)
-
-  #define end_storage_kind(Base, Storage) \
-    } namespace black::internal::new_api {
+    declare_ct_leaf(Element)
 
   #include <black/new/internal/formula/hierarchy.hpp>
 

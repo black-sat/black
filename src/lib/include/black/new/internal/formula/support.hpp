@@ -1202,6 +1202,22 @@ namespace black::internal::new_api {
   };
 
   //
+  // Sometimes it is useful (e.g. in tests), to compare two hierarchy types for
+  // equivalence. Exact equality of types can be difficult to achieve because of
+  // different fragments being equivalent (e.g. different calls to
+  // `make_combined_fragment`). Hence, here we define a trait
+  // `are_same_hierarchy_types` to smartly compare for equivalence two hierarchy
+  // types.
+  //
+  template<hierarchy T, hierarchy U>
+  struct are_same_hierarchy_types : 
+    std::conjunction<std::is_convertible<T, U>, std::is_convertible<U, T>> { };
+
+  template<hierarchy T, hierarchy U>
+  inline constexpr bool are_same_hierarchy_types_v = 
+    are_same_hierarchy_types<T,U>::value;
+
+  //
   // The preprocessed definition file will define concrete instances of
   // `hierarchy_base` for each `hierarchy_type`. This trait will give us those
   // types. Specialized later.
@@ -1212,6 +1228,16 @@ namespace black::internal::new_api {
   template<hierarchy_type Hierarchy, fragment Syntax>
   using concrete_hierarchy_type_t = 
     typename concrete_hierarchy_type<Hierarchy, Syntax>::type;
+
+  //
+  // Similar thing for `storage_type`. Specialized later.
+  //
+  template<storage_type Storage, fragment Syntax>
+  struct concrete_storage_type;
+  
+  template<storage_type Storage, fragment Syntax>
+  using concrete_storage_type_t = 
+    typename concrete_storage_type<Storage, Syntax>::type;
 
   //
   // Similarly to `hierarchy_type_of` and `storage_type_of`, we can obtain the
@@ -1553,6 +1579,62 @@ namespace black::internal::new_api {
     };
 
   } namespace black::internal::new_api {
+
+  //
+  // Before going into the implementation of the pattern matching
+  // infrastructure, we implement the facility that it will use to compute the
+  // return type of the `match()` function when the cases lambdas return
+  // hierarchy types. We reuse the `std::common_type` trait, and we specialize
+  // it for our types. The actual `std` specializations are in the preprocessed
+  // source, since we have to provide it for actual user-defined types.
+  //
+  // The common type between two hierarchy types only exists of course if the
+  // hierarchy is the same (e.g. formulas to formulas). The common type is the
+  // hierarchy type with the combined fragment. Note that by the way
+  // `make_combined_fragment_t` works, this handles the case where one of the
+  // two fragments is subsumed by the other, returning directly the more general
+  // one. Thus, `std::common_type_t<formula<LTL>, formula<Boolean>>` is
+  // `formula<LTL>`, while `std::common_type_t<formula<LTL>, formula<FO>>` is
+  // equivalent to `formula<LTLFO>`.
+  template<typename T, typename U>
+  struct common_type_helper { };
+
+  //
+  // Little helper template used later
+  //
+  template<typename T, typename H>
+  struct have_same_storage : std::false_type { };
+  
+  template<storage_kind T, storage_kind H>
+    requires (T::storage == H::storage)
+  struct have_same_storage<T,H> : std::true_type { };
+
+  template<typename T, typename H>
+  inline constexpr bool have_same_storage_v = have_same_storage<T,H>::value;
+
+  //
+  // This is the common type of two hierarchies that are not storage kinds of
+  // the same storage type.
+  //
+  template<hierarchy T, hierarchy U>
+    requires (T::hierarchy == U::hierarchy && !have_same_storage_v<T, U>)
+  struct common_type_helper<T, U> 
+    : std::type_identity<
+        concrete_hierarchy_type_t<
+          T::hierarchy, 
+          make_combined_fragment_t<typename T::syntax, typename U::syntax>
+        >
+      > { };
+  
+  template<storage_kind T, storage_kind U>
+    requires (T::storage == U::storage)
+  struct common_type_helper<T, U> 
+    : std::type_identity<
+        concrete_storage_type_t<
+          T::storage, 
+          make_combined_fragment_t<typename T::syntax, typename U::syntax>
+        >
+      > { };
 
 }
 
