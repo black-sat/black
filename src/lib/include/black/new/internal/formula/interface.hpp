@@ -196,7 +196,10 @@ namespace black::internal::new_api
   template<fragment Syntax> \
   struct concrete_hierarchy_type<hierarchy_type::Base, Syntax> { \
     using type = Base<Syntax>; \
-  };
+  }; \
+  \
+  template<typename T> \
+  concept is_##Base = hierarchy<T> && T::hierarchy == hierarchy_type::Base;
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
@@ -453,6 +456,12 @@ namespace black::internal::new_api
               } \
             ) \
           }; \
+      } \
+      \
+      template<syntax_element Element, typename ...Args> \
+        requires (Element == syntax_element::Storage) \
+      auto element(Args ...args) -> decltype(Storage(args...)) { \
+        return Storage(args...); \
       }
 
     #define declare_leaf_hierarchy_element(Base, Storage, Element) \
@@ -468,6 +477,12 @@ namespace black::internal::new_api
               } \
             ) \
           }; \
+      } \
+      \
+      template<syntax_element E, typename ...Args> \
+        requires (E == syntax_element::Element) \
+      auto element(Args ...args) -> decltype(Element(args...)) { \
+        return Element(args...); \
       }
 
     #include <black/new/internal/formula/hierarchy.hpp>
