@@ -28,6 +28,8 @@
 #include <string>
 #include <type_traits>
 
+#include <iostream>
+
 using namespace std::literals;
 using namespace black::new_api::syntax;
 using black::internal::identifier;
@@ -421,4 +423,20 @@ TEST_CASE("New API") {
     REQUIRE(complex.is<conjunction<LTLFO>>());
   }
   
+  SECTION("Iteration over associative operators") {
+    using namespace black::internal::new_api;
+
+    boolean b = sigma.boolean(true);
+    proposition p = sigma.proposition("p");
+
+    conjunction<LTL> c = b && ((p && (b && p)) && b);
+
+    std::vector<formula<LTL>> v1 = {b, p, b, p, b};
+    std::vector<formula<LTL>> v2;
+
+    for(auto f : c.operands())
+      v2.push_back(f);
+
+    REQUIRE(v1 == v2);
+  }
 }

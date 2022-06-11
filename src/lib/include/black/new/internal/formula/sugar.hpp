@@ -25,6 +25,9 @@
 #define BLACK_LOGIC_SUGAR_HPP_
 
 #include <ranges>
+#include <stack>
+
+#include <iostream>
 
 //
 // This file contains helper classes and functions that provide useful syntactic
@@ -342,6 +345,125 @@ namespace black::internal::new_api {
   #undef declare_unary_formula_op
   #undef declare_binary_formula_op
 
+  //
+  // Here we define a utility class that helps to pattern match associative
+  // operators such as conjunctions and disjunctions. It is a range view that
+  // iterates over all the left and right children of descending nodes as long
+  // as they continue to be conjunctions or disjunctions. This type is not
+  // intended to be used directly but only as a return type of the `arguments()`
+  // member function of `conjunction<>` and `disjunction<>`.
+  //
+  // The view type is just a thin wrapper over the conjunction/disjunction, 
+  // that returns its iterator on `begin()`.
+  // 
+  template<typename E>
+  class associative_op_view
+  {
+  public:
+    class const_iterator;
+
+    associative_op_view(E e) : _element{e} { }
+
+    const_iterator begin() const { return const_iterator{_element}; }
+    std::default_sentinel_t end() const { return std::default_sentinel; }
+
+  private:
+    E _element;
+  };
+
+  //
+  // The iterator does the hard job. We do a depth-first descent of the formula
+  // tree stopping at nodes that are not conjunctions/disjunctions.
+  //
+  template<typename E>
+  class associative_op_view<E>::const_iterator 
+  {
+  public:
+    using formula_t = formula<typename E::syntax>;
+
+    const_iterator() = default;
+    const_iterator(const_iterator const&) = default;
+    const_iterator(const_iterator &&) = default;
+
+    //
+    // the constructor called by the view. We setup `_current` to the first
+    // element with `go_left()` starting from `e`, so that `operator*()` is
+    // ready.
+    //
+    const_iterator(E e) : _stack{}, _current{go_left(e)} { }
+
+    const_iterator &operator=(const_iterator const&) = default;
+    const_iterator &operator=(const_iterator &&) = default;
+
+    // We are the end iterator if there is no current element
+    bool operator==(std::default_sentinel_t) const {
+      return !_current.has_value();
+    }
+
+    //
+    // operator++ advances the iterator. If the stack is empty we are at the
+    // last element, so we set `_current` to `nullopt` and we become the `end()`
+    // iterator. Otherwise, we get the next element from the stack and go left
+    // as deep as possible with `go_left()` to find the new current element.
+    //
+    const_iterator &operator++() {
+      if(_stack.empty()) {
+        _current = std::nullopt;
+        return *this;
+      }
+
+      formula_t f = _stack.top();
+      _stack.pop();
+      _current = go_left(f);
+
+      return *this;
+    }
+
+    // post-increment.
+    const_iterator operator++(int) {
+      auto o = *this;
+      operator++();
+      return *this;
+    }
+
+    // the dereference just returns `_current`
+    formula_t operator*() const {
+      black_assert(_current.has_value());
+      return *_current;
+    }
+
+  private:
+    //
+    // Here we go left in the tree rooted at `f` as deep as possible until we
+    // find a node which is not an `E`. While going to the left we push on the
+    // stack the `right()` children.
+    //
+    formula_t go_left(formula_t f) {
+      while(f.template is<E>()) {
+        auto e = *f.template to<E>();
+        _stack.push(e.right());
+        f = e.left();
+      }
+      return f;
+    }
+
+    std::stack<formula_t> _stack;
+    std::optional<formula_t> _current;
+  };
+
+  //
+  // Now that everything is ready we add a member to `storage_base` returning
+  // the above view.
+  //
+  template<syntax_element Element, typename Derived>
+    requires (Element == syntax_element::conjunction || 
+              Element == syntax_element::disjunction)
+  struct hierarchy_element_custom_members<Element, Derived> 
+  { 
+    associative_op_view<Derived> operands() const { 
+      return {static_cast<Derived const&>(*this)};
+    }
+  };
 }
 
 #endif // BLACK_LOGIC_SUGAR_HPP_

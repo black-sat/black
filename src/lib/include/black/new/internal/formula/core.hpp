@@ -980,6 +980,13 @@ namespace black::internal::new_api {
   struct storage_children_base { };
 
   //
+  // Similar to `hierarchy_custom_members`, we declare a little empty CRTP class
+  // to let anybody add custom members to `storage_base`.
+  //
+  template<storage_type Storage, typename Derived>
+  struct storage_custom_members { };
+
+  //
   // To define hierarchy types for storage kinds is more complex because they
   // have to call back to the alphabet to allocate the underlying nodes. Hence
   // we have to also consider the definition of the `alphabet` class. Thus, the
@@ -997,7 +1004,8 @@ namespace black::internal::new_api {
   class storage_base 
     : public hierarchy_base<hierarchy_of_storage_v<Storage>, Syntax>,
       public storage_fields_base<Storage, Derived>,
-      public storage_children_base<Storage, Syntax, Derived>
+      public storage_children_base<Storage, Syntax, Derived>,
+      public storage_custom_members<Storage, Derived>
   {
     using node_t = storage_node<Storage>;
     using base_t = hierarchy_base<hierarchy_of_storage_v<Storage>, Syntax>;
@@ -1162,6 +1170,13 @@ namespace black::internal::new_api {
     typename deduce_fragment_for_storage<Element, Args...>::type;
 
   //
+  // Similar to `hierarchy_custom_members`, we declare a little empty CRTP class
+  // to let anybody add custom members to `storage_base`.
+  //
+  template<syntax_element Element, typename Derived>
+  struct hierarchy_element_custom_members { };
+
+  //
   // The following is the last of the three kinds of hierarchy types. Hierarchy
   // elements are the leaves of the hierarchy tree. They are associated to a
   // single `syntax_element` with no more uncertainty. This is a CRTP class as
@@ -1169,7 +1184,8 @@ namespace black::internal::new_api {
   //
   template<syntax_element Element, fragment Syntax, typename Derived>
   class hierarchy_element_base
-    : public storage_base<storage_of_element_v<Element>, Syntax, Derived>
+    : public storage_base<storage_of_element_v<Element>, Syntax, Derived>,
+      public hierarchy_element_custom_members<Element, Derived>
   {
     using node_t = storage_node<storage_of_element_v<Element>>;
     using base_t = 
