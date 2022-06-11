@@ -36,23 +36,6 @@ namespace black::internal::new_api {
 
   class alphabet;
 
-  template<typename Derived>
-  struct function_call_operator_t {
-    template<typename Arg, typename ...Args>
-    auto operator()(Arg, Args ...) const;
-
-    template<typename T>
-    auto operator()(std::vector<T> const& v) const;
-  };
-
-  template<typename Derived>
-  struct relation_call_operator_t {
-    template<typename Arg, typename ...Args>
-    auto operator()(Arg, Args ...) const;
-
-    template<typename T>
-    auto operator()(std::vector<T> const& v) const;
-  };
 }
 
 #include <black/new/internal/formula/interface.hpp>
@@ -83,62 +66,8 @@ namespace black::internal::new_api {
   }
 }
 
-#include <black/new/internal/formula/namespaces.hpp>
 #include <black/new/internal/formula/sugar.hpp>
+#include <black/new/internal/formula/namespaces.hpp>
 
-namespace black::internal::new_api {
-
-  template<typename Derived>
-  template<typename Arg, typename ...Args>
-  auto 
-  function_call_operator_t<Derived>::operator()(Arg arg, Args ...args) const 
-  {
-    using Syntax = 
-      make_combined_fragment_t<
-        typename Derived::syntax, typename Arg::syntax, typename Args::syntax...
-      >;
-    using Hierarchy = hierarchy_type_of_t<Syntax, Arg::hierarchy>;
-
-    std::vector<Hierarchy> v{Hierarchy(arg), Hierarchy(args)...};
-    return application<Syntax>(static_cast<Derived const&>(*this), v);
-  }
-
-  template<typename Derived>
-  template<typename T>
-  auto 
-  function_call_operator_t<Derived>::operator()(std::vector<T> const& v) const {
-    using Syntax = make_combined_fragment_t<
-      typename Derived::syntax, typename T::syntax
-    >;
-
-    return application<Syntax>(static_cast<Derived const&>(*this), v);
-  }
-  
-  template<typename Derived>
-  template<typename Arg, typename ...Args>
-  auto 
-  relation_call_operator_t<Derived>::operator()(Arg arg, Args ...args) const 
-  {
-    using Syntax = 
-      make_combined_fragment_t<
-        typename Derived::syntax, typename Arg::syntax, typename Args::syntax...
-      >;
-    using Hierarchy = hierarchy_type_of_t<Syntax, Arg::hierarchy>;
-
-    std::vector<Hierarchy> v{Hierarchy(arg), Hierarchy(args)...};
-    return atom<Syntax>(static_cast<Derived const&>(*this), v);
-  }
-
-  template<typename Derived>
-  template<typename T>
-  auto 
-  relation_call_operator_t<Derived>::operator()(std::vector<T> const& v) const {
-    using Syntax = make_combined_fragment_t<
-      typename Derived::syntax, typename T::syntax
-    >;
-
-    return atom<Syntax>(static_cast<Derived const&>(*this), v);
-  }
-}
 
 #endif // BLACK_LOGIC_FORMULA_HPP

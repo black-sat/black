@@ -181,24 +181,11 @@ namespace black::internal::new_api
   
   #include <black/new/internal/formula/hierarchy.hpp>
   
-  struct dummy_t {};
-
-  #define declare_hierarchy(Base) \
-    template<typename Derived> \
-    struct Base##_custom_members_t :
-  
-  #define declare_custom_members(Base, Class) Class<Derived>, 
-
-  #define end_hierarchy(Base) \
-    dummy_t { };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
   #define declare_hierarchy(Base) \
     template<fragment Syntax> \
     struct Base \
       : hierarchy_base<hierarchy_type::Base, Syntax>, \
-        Base##_custom_members_t<Base<Syntax>> \
+        hierarchy_custom_members<hierarchy_type::Base, Base<Syntax>> \
     { \
       using hierarchy_base<hierarchy_type::Base, Syntax>::hierarchy_base; \
     }; \
@@ -283,8 +270,7 @@ namespace black::internal::new_api
     template<fragment Syntax> \
     class Storage : \
       public \
-        storage_base<storage_type::Storage, Syntax, Storage<Syntax>>, \
-      public Base##_custom_members_t<Storage<Syntax>> \
+        storage_base<storage_type::Storage, Syntax, Storage<Syntax>> \
     { \
       using base_t = \
         storage_base<storage_type::Storage, Syntax, Storage<Syntax>>; \
@@ -309,8 +295,7 @@ namespace black::internal::new_api
       public hierarchy_element_base< \
         syntax_element::Storage, make_fragment_t<syntax_element::Storage>, \
         Storage \
-      >, \
-      public Base##_custom_members_t<Storage> \
+      > \
     { \
     public: \
       using hierarchy_element_base< \
@@ -341,8 +326,7 @@ namespace black::internal::new_api
     class Element : \
       public hierarchy_element_base< \
         syntax_element::Element, Syntax, Element<Syntax> \
-      >, \
-      public Base##_custom_members_t<Element<Syntax>> \
+      > \
     { \
       static_assert( \
         is_subfragment_of_v<make_fragment_t<syntax_element::Element>, Syntax>, \
@@ -369,8 +353,7 @@ namespace black::internal::new_api
       public hierarchy_element_base< \
         syntax_element::Element, make_fragment_t<syntax_element::Element>, \
         Element \
-      >, \
-      public Base##_custom_members_t<Element> \
+      > \
     { \
     public: \
       using hierarchy_element_base< \

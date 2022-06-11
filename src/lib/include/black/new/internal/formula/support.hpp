@@ -823,6 +823,13 @@ namespace black::internal::new_api {
   struct matcher;
 
   //
+  // We also forward declare an empty CRTP class that can be specialized by user
+  // code to provide custom members to `hierarchy_base` defined below.
+  //
+  template<hierarchy_type Hierarchy, typename Derived>
+  struct hierarchy_custom_members { };
+
+  //
   // We can now declare the base class for all the hierarchy types. This class
   // provides all the necessary infrastructure to obtain a complete hierarchy
   // type. Concrete hierarchy types are obtained by preprocessing the hierarchy

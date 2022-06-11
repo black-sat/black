@@ -26,6 +26,82 @@
 
 namespace black::internal::new_api {
 
+  template<typename Derived>
+  struct hierarchy_custom_members<hierarchy_type::function, Derived> {
+    template<hierarchy Arg, hierarchy ...Args>
+    auto operator()(Arg, Args ...) const;
+
+    template<hierarchy T>
+    auto operator()(std::vector<T> const& v) const;
+  };
+
+  template<typename Derived>
+  struct hierarchy_custom_members<hierarchy_type::relation, Derived> {
+    template<hierarchy Arg, hierarchy ...Args>
+    auto operator()(Arg, Args ...) const;
+
+    template<hierarchy T>
+    auto operator()(std::vector<T> const& v) const;
+  };
+
+  template<typename Derived>
+  template<hierarchy Arg, hierarchy ...Args>
+  auto 
+  hierarchy_custom_members<hierarchy_type::function, Derived>::operator()(
+    Arg arg, Args ...args
+  ) const {
+    using Syntax = 
+      make_combined_fragment_t<
+        typename Derived::syntax, typename Arg::syntax, typename Args::syntax...
+      >;
+    using Hierarchy = hierarchy_type_of_t<Syntax, Arg::hierarchy>;
+
+    std::vector<Hierarchy> v{Hierarchy(arg), Hierarchy(args)...};
+    return application<Syntax>(static_cast<Derived const&>(*this), v);
+  }
+
+  template<typename Derived>
+  template<hierarchy T>
+  auto 
+  hierarchy_custom_members<hierarchy_type::function, Derived>::operator()(
+    std::vector<T> const& v
+  ) const {
+    using Syntax = make_combined_fragment_t<
+      typename Derived::syntax, typename T::syntax
+    >;
+
+    return application<Syntax>(static_cast<Derived const&>(*this), v);
+  }
+  
+  template<typename Derived>
+  template<hierarchy Arg, hierarchy ...Args>
+  auto 
+  hierarchy_custom_members<hierarchy_type::relation, Derived>::operator()(
+    Arg arg, Args ...args
+  ) const {
+    using Syntax = 
+      make_combined_fragment_t<
+        typename Derived::syntax, typename Arg::syntax, typename Args::syntax...
+      >;
+    using Hierarchy = hierarchy_type_of_t<Syntax, Arg::hierarchy>;
+
+    std::vector<Hierarchy> v{Hierarchy(arg), Hierarchy(args)...};
+    return atom<Syntax>(static_cast<Derived const&>(*this), v);
+  }
+
+  template<typename Derived>
+  template<hierarchy T>
+  auto 
+  hierarchy_custom_members<hierarchy_type::relation, Derived>::operator()(
+    std::vector<T> const& v
+  ) const {
+    using Syntax = make_combined_fragment_t<
+      typename Derived::syntax, typename T::syntax
+    >;
+
+    return atom<Syntax>(static_cast<Derived const&>(*this), v);
+  }
+
   #define declare_term_sugar(Kind, Op, Rel) \
     template< \
       typename T1, typename T2, \

@@ -100,6 +100,8 @@ namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  struct dummy_t {};
+  
   struct alphabet::alphabet_impl : 
   #define declare_storage_kind(Base, Storage) Storage##_allocator,
   #include <black/new/internal/formula/hierarchy.hpp>
