@@ -1426,6 +1426,7 @@ namespace black::internal::new_api {
   }
 
   template<fragment Syntax, storage_type Storage>
+    requires (!storage_has_hierarchy_elements_v<Storage>)
   storage_node<Storage> args_to_node(
     storage_alloc_args_t<Syntax, Storage> const&args
   ) {
