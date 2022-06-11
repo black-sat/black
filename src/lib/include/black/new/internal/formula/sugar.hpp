@@ -308,39 +308,39 @@ namespace black::internal::new_api {
   //
   // Unary and binary operators for formulas are much simpler.
   //
-  #define declare_unary_formula_sugar(Func, Op) \
+  #define declare_unary_formula_op(Func, Op) \
     template<is_formula T> \
     auto Func(T f) { \
       return Op(f); \
     }
 
-  #define declare_binary_formula_sugar(Func, Op) \
+  #define declare_binary_formula_op(Func, Op) \
     template<is_formula F1, is_formula F2> \
     auto Func(F1 f1, F2 f2) { \
       return Op(f1, f2); \
     }
   
-  declare_unary_formula_sugar(operator!, negation)
-  declare_unary_formula_sugar(X, tomorrow)
-  declare_unary_formula_sugar(wX, w_tomorrow)
-  declare_unary_formula_sugar(Y, yesterday)
-  declare_unary_formula_sugar(Z, w_yesterday)
-  declare_unary_formula_sugar(G, always)
-  declare_unary_formula_sugar(F, eventually)
-  declare_unary_formula_sugar(O, once)
-  declare_unary_formula_sugar(H, historically)
-  declare_binary_formula_sugar(operator&&, conjunction)
-  declare_binary_formula_sugar(operator||, disjunction)
-  declare_binary_formula_sugar(implies, implication)
-  declare_binary_formula_sugar(U, until)
-  declare_binary_formula_sugar(R, release)
-  declare_binary_formula_sugar(wU, w_until)
-  declare_binary_formula_sugar(sR, s_release)
-  declare_binary_formula_sugar(S, since)
-  declare_binary_formula_sugar(T, triggered)
+  declare_unary_formula_op(operator!, negation)
+  declare_unary_formula_op(X, tomorrow)
+  declare_unary_formula_op(wX, w_tomorrow)
+  declare_unary_formula_op(Y, yesterday)
+  declare_unary_formula_op(Z, w_yesterday)
+  declare_unary_formula_op(G, always)
+  declare_unary_formula_op(F, eventually)
+  declare_unary_formula_op(O, once)
+  declare_unary_formula_op(H, historically)
+  declare_binary_formula_op(operator&&, conjunction)
+  declare_binary_formula_op(operator||, disjunction)
+  declare_binary_formula_op(implies, implication)
+  declare_binary_formula_op(U, until)
+  declare_binary_formula_op(R, release)
+  declare_binary_formula_op(wU, w_until)
+  declare_binary_formula_op(sR, s_release)
+  declare_binary_formula_op(S, since)
+  declare_binary_formula_op(T, triggered)
 
-  #undef declare_unary_formula_sugar
-  #undef declare_binary_formula_sugar
+  #undef declare_unary_formula_op
+  #undef declare_binary_formula_op
 
 }
 
