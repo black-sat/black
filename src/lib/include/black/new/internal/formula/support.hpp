@@ -254,20 +254,24 @@ namespace black::internal::new_api {
   // the preprocessor, we provide also a version with a first dummy parameter in
   // order to avoid to deal with trailing commas.
   //
+  template<typename List>
+  struct make_syntax_predicate_t;
+
   template<syntax_element ...Elements>
-  struct make_syntax_predicate_t { 
+  struct make_syntax_predicate_t<syntax_list<Elements...>> { 
     static constexpr bool doesit(syntax_element e) {
       return ((e == Elements) || ...);
     }
   };
 
-  template<syntax_element ...Elements>
+  template<typename List>
   struct make_syntax_predicate {
-    using type = make_syntax_predicate_t<Elements...>;
+    using type = make_syntax_predicate_t<List>;
   };
 
   template<int dummy, syntax_element ...Elements>
-  using make_syntax_predicate_cpp = make_syntax_predicate<Elements...>;
+  using make_syntax_predicate_cpp = 
+    make_syntax_predicate<syntax_list<Elements...>>;
 
   //
   // These are the templates that will be specialized using the preprocessor for
@@ -897,10 +901,10 @@ namespace black::internal::new_api {
   // We can obtain the hierarchy type from the `hierarchy_type` value with the
   // following trait, which will be specialized in the preprocessing code.
   //
-  template<typename Syntax, hierarchy_type H>
+  template<fragment Syntax, hierarchy_type H>
   struct hierarchy_type_of;
 
-  template<typename Syntax, hierarchy_type H>
+  template<fragment Syntax, hierarchy_type H>
   using hierarchy_type_of_t = 
     typename hierarchy_type_of<Syntax, H>::type;
 
@@ -1166,7 +1170,7 @@ namespace black::internal::new_api {
 
   public:
     // these members from the base have to be overriden and specialized
-    using accepts_type = make_syntax_predicate_t<Element>;
+    using accepts_type = make_syntax_predicate_t<syntax_list<Element>>;
     using type = typename base_t::syntax::template type<accepts_type>;
     static constexpr syntax_element element = Element;
 
@@ -1335,12 +1339,12 @@ namespace black::internal::new_api {
   // To declare the allocating constructor, we need a trait to check whether a
   // given invocation is well formed. 
   //
-  template<storage_type Storage, typename Syntax, typename ...Args>
+  template<storage_type Storage, fragment Syntax, typename ...Args>
   inline constexpr bool is_storage_constructible_v = requires { 
     storage_alloc_args_t<Syntax, Storage>{std::declval<Args>()...}; 
   };
 
-  template<storage_type Storage, typename Syntax, typename ...Args>
+  template<storage_type Storage, fragment Syntax, typename ...Args>
   struct is_storage_constructible : std::bool_constant<
     is_storage_constructible_v<Storage, Syntax, Args...>
   > { };
@@ -1349,14 +1353,14 @@ namespace black::internal::new_api {
   // Similar thing for hierarchy elements, but a bit different because we need
   // to pass the type which does not come from the arguments.
   //
-  template<syntax_element Element, typename Syntax, typename ...Args>
+  template<syntax_element Element, fragment Syntax, typename ...Args>
   struct is_hierarchy_element_constructible
     : is_storage_constructible<
         storage_of_element_v<Element>, Syntax,
         pseudo_enum_value<Element>, Args...
       > { };
 
-  template<syntax_element Element, typename Syntax, typename ...Args>
+  template<syntax_element Element, fragment Syntax, typename ...Args>
   inline constexpr auto is_hierarchy_element_constructible_v = 
     is_hierarchy_element_constructible<Element, Syntax, Args...>::value;
   
@@ -1411,7 +1415,7 @@ namespace black::internal::new_api {
   // `children_wrapper`, which have the right conversion operators, the
   // conversion is automatic, we just have to unpack the tuples correctly.
   //
-  template<typename Syntax, storage_type Storage>
+  template<fragment Syntax, storage_type Storage>
     requires storage_has_hierarchy_elements_v<Storage>
   storage_node<Storage> args_to_node(
     storage_alloc_args_t<Syntax, Storage> const&args
@@ -1421,7 +1425,7 @@ namespace black::internal::new_api {
     }, args);
   }
 
-  template<typename Syntax, storage_type Storage>
+  template<fragment Syntax, storage_type Storage>
   storage_node<Storage> args_to_node(
     storage_alloc_args_t<Syntax, Storage> const&args
   ) {
@@ -1809,28 +1813,46 @@ namespace black::internal::new_api {
   inline constexpr bool are_uniform_elements_v =
     are_uniform_elements<List>::value;
 
+  template<typename Syntax>
+  concept uniform_fragment = 
+    fragment<Syntax> && are_uniform_elements_v<typename Syntax::list>;
   //
-  // Then, the `only<>` class. The first argument is the fragment to which
-  // `only<>` will restrict its matching. `Syntax` is the general fragment we
-  // are considering, i.e. those of the children of the matched object.
+  // The following is the base hierarchy type that will be derived by `only`,
+  // i.e. the hierarchy type that corresponds to the syntax elemnts in the
+  // `TopLevel` fragment
   //
-  // For example, `only<Future, formula<LTLP>` matches all the formulas of LTLP
-  // which happens to have a future operator as the top level operator.
-  //
-  template<fragment TopLevel, fragment Syntax>
-    requires are_uniform_elements_v<typename TopLevel::list>
-  struct only
-  {
-    // This is the hierarchy type that corresponds to the syntax elemnts in the
-    // `TopLevel` fragment.
-    using Base = 
-      hierarchy_type_of_t<Syntax, 
+  template<uniform_fragment TopLevel, fragment Syntax>
+  struct only_base 
+    : hierarchy_type_of<Syntax, 
         hierarchy_of_storage_v<
           storage_of_element_v<
             syntax_list_head_v<typename TopLevel::list>
           >
         >
-      >;
+      > { };
+
+  template<uniform_fragment TopLevel, fragment Syntax>
+  using only_base_t = typename only_base<TopLevel, Syntax>::type;
+
+  //
+  // Then, the `only<>` class. The first argument is the fragment to which
+  // `only<>` will restrict its matching. `Syntax` is the general fragment we
+  // are considering, i.e. that of the children of the matched object.
+  //
+  // For example, `only<Future, formula<LTLP>` matches all the formulas of LTLP
+  // which happens to have a future operator as the top level operator.
+  // 
+  template<uniform_fragment TopLevel, fragment Syntax>
+  struct only : only_base_t<TopLevel, Syntax>
+  {
+    using base_t = only_base_t<TopLevel, Syntax>;
+
+    only() = delete;
+    only(only const&) = default;
+    only(only &&) = default;
+
+    only &operator=(only const&) = default;
+    only &operator=(only &&) = default;
 
     //
     // Converting constructor. Remember that this will be called in the
@@ -1841,28 +1863,20 @@ namespace black::internal::new_api {
     // tell whether we are compatible.
     //
     template<hierarchy H>
-      requires (H::hierarchy == Base::hierarchy && 
+      requires (H::hierarchy == base_t::hierarchy && 
         syntax_list_includes_v<
           typename TopLevel::list, 
           typename hierarchy_traits<H>::accepted_elements
-        > && is_subfragment_of_v<typename H::syntax, typename Base::syntax>)
-    only(H h) : _base{h} { }
+        > && is_subfragment_of_v<typename H::syntax, Syntax>)
+    only(H h) : base_t{h} { }
+
 
     //
-    // Here we have some member functions to mimic the interface of hierarchy
-    // types.
+    // Here we have some members to model the `hierarchy` concept
     //
-    operator Base() const { return _base; }
-
-    template<typename H>
-    bool is() const {
-      return _base.template is<H>();
-    }
-
-    template<typename H>
-    std::optional<H> to() const {
-      return _base.template to<H>();
-    }
+    using syntax = Syntax;
+    using accepts_type = make_syntax_predicate_t<typename TopLevel::list>;
+    using type = typename Syntax::template type<accepts_type>;
 
     //
     // We did all of this to come to this point: we call the `matcher` class but
@@ -1872,13 +1886,10 @@ namespace black::internal::new_api {
     template<typename ...Handlers>
     auto match(Handlers ...handlers) const {
       return 
-        matcher<Base, typename Base::syntax, typename TopLevel::list>{}.match(
-          _base, handlers...
+        matcher<base_t, Syntax, typename TopLevel::list>{}.match(
+          *this, handlers...
         );
     }
-
-  private:
-    Base _base;
   };
 }
 

@@ -119,12 +119,12 @@ namespace black::internal::new_api
   #include <black/new/internal/formula/hierarchy.hpp>
 
   #define declare_hierarchy_element(Base, Storage, Element) \
-    template<typename Syntax> \
+    template<fragment Syntax> \
     struct element_type_of<Syntax, syntax_element::Element> { \
       using type = Element<Syntax>; \
     };
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    template<typename Syntax> \
+    template<fragment Syntax> \
     struct element_type_of<Syntax, syntax_element::Element> { \
       using type = Element; \
     };
@@ -175,7 +175,7 @@ namespace black::internal::new_api
   #define declare_leaf_storage_kind(Base, Storage) \
     template<> \
     struct storage_syntax_predicate<storage_type::Storage> \
-      : make_syntax_predicate<syntax_element::Storage> { };
+      : make_syntax_predicate<syntax_list<syntax_element::Storage>> { };
 
   #define end_leaf_storage_kind(Base, Storage)
   
@@ -421,20 +421,6 @@ namespace black::internal::new_api
     template<> \
     struct storage_has_children_vector<storage_type::Storage> \
       : std::true_type { };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-  #define declare_leaf_storage_kind(Base, Storage)
-  #define declare_storage_kind(Base, Storage) \
-    template<typename Syntax> \
-    using Storage##_unpack_t = std::tuple<
-  
-  #define declare_child(Base, Storage, Hierarchy, Child) Hierarchy<Syntax>,
-  #define declare_children(Base, Storage, Hierarchy, Child) \
-    std::vector<Hierarchy<Syntax>>,
-  
-  #define end_storage_kind(Base, Storage) void *>;
-  #define end_leaf_storage_kind(Base, Storage)
 
   #include <black/new/internal/formula/hierarchy.hpp>
 }
