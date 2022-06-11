@@ -24,15 +24,32 @@
 #ifndef BLACK_LOGIC_SUGAR_HPP_
 #define BLACK_LOGIC_SUGAR_HPP_
 
+#include <ranges>
+
+//
+// This file contains helper classes and functions that provide useful syntactic
+// sugar on top of the hierarchy types defined in `core.hpp`. Since this stuff
+// is specific to the hierarchy defined in `hierarchy.hpp`, and not potentially
+// reusable for other hierarchies, is declared in this file separate from
+// `core.hpp`.
+//
 namespace black::internal::new_api {
 
+  //
+  // relations and functions support creating the associated atom or application
+  // (respectively) with a simple call-like syntax such as f(x, y).
+  //
+  // Here we declare the needed specialization of `hierarchy_custom_members` for
+  // the purpose. We have both a vararg version and one taking a range.
+  //
   template<typename Derived>
   struct hierarchy_custom_members<hierarchy_type::function, Derived> {
     template<hierarchy Arg, hierarchy ...Args>
     auto operator()(Arg, Args ...) const;
 
-    template<hierarchy T>
-    auto operator()(std::vector<T> const& v) const;
+    template<std::ranges::range R>
+      requires hierarchy<std::ranges::range_value_t<R>>
+    auto operator()(R const& v) const;
   };
 
   template<typename Derived>
@@ -40,10 +57,15 @@ namespace black::internal::new_api {
     template<hierarchy Arg, hierarchy ...Args>
     auto operator()(Arg, Args ...) const;
 
-    template<hierarchy T>
-    auto operator()(std::vector<T> const& v) const;
+    template<std::ranges::range R>
+      requires hierarchy<std::ranges::range_value_t<R>>
+    auto operator()(R const& v) const;
   };
 
+  //
+  // Then the implementation of the two versions of operator() for both
+  // functions and relations.
+  //
   template<typename Derived>
   template<hierarchy Arg, hierarchy ...Args>
   auto 
@@ -61,13 +83,13 @@ namespace black::internal::new_api {
   }
 
   template<typename Derived>
-  template<hierarchy T>
-  auto 
-  hierarchy_custom_members<hierarchy_type::function, Derived>::operator()(
-    std::vector<T> const& v
+  template<std::ranges::range R>
+    requires hierarchy<std::ranges::range_value_t<R>>
+  auto hierarchy_custom_members<hierarchy_type::function, Derived>::operator()(
+    R const& v
   ) const {
     using Syntax = make_combined_fragment_t<
-      typename Derived::syntax, typename T::syntax
+      typename Derived::syntax, typename std::ranges::range_value_t<R>::syntax
     >;
 
     return application<Syntax>(static_cast<Derived const&>(*this), v);
@@ -90,13 +112,13 @@ namespace black::internal::new_api {
   }
 
   template<typename Derived>
-  template<hierarchy T>
-  auto 
-  hierarchy_custom_members<hierarchy_type::relation, Derived>::operator()(
-    std::vector<T> const& v
+  template<std::ranges::range R>
+    requires hierarchy<std::ranges::range_value_t<R>>
+  auto hierarchy_custom_members<hierarchy_type::relation, Derived>::operator()(
+    R const& v
   ) const {
     using Syntax = make_combined_fragment_t<
-      typename Derived::syntax, typename T::syntax
+      typename Derived::syntax, typename std::ranges::range_value_t<R>::syntax
     >;
 
     return atom<Syntax>(static_cast<Derived const&>(*this), v);

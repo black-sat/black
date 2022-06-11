@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/new/formula.hpp>
+#include <black/new/logic.hpp>
 
 #include <vector>
 
@@ -101,7 +101,7 @@ namespace black::internal::new_api {
   #include <black/new/internal/formula/hierarchy.hpp>
 
   struct dummy_t {};
-  
+
   struct alphabet::alphabet_impl : 
   #define declare_storage_kind(Base, Storage) Storage##_allocator,
   #include <black/new/internal/formula/hierarchy.hpp>

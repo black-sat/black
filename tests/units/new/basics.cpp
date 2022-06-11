@@ -23,7 +23,8 @@
 
 #include <catch.hpp>
 
-#include <black/new/formula.hpp>
+#include <black/new/logic.hpp>
+
 #include <string>
 #include <type_traits>
 

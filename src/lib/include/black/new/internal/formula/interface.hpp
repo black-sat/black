@@ -406,6 +406,201 @@ namespace black::internal::new_api
       : std::true_type { };
 
   #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    struct storage_alloc_args<Syntax, storage_type::Storage> \
+      : make_storage_alloc_args<Syntax, storage_type::Storage \
+  
+  #define declare_field(Base, Storage, Type, Field) , Type
+
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+    , child_wrapper<hierarchy_type::Hierarchy, Syntax>
+
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    , children_wrapper<hierarchy_type::Hierarchy, Syntax>
+
+  #define end_storage_kind(Base, Storage) \
+      > { };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  //
+  // class alphabet
+  //
+  class alphabet
+  {
+  public:
+    alphabet();
+    ~alphabet();
+
+    alphabet(alphabet const&) = delete;
+    alphabet(alphabet &&);
+
+    alphabet &operator=(alphabet const&) = delete;
+    alphabet &operator=(alphabet &&);
+
+    #define declare_leaf_storage_kind(Base, Storage) \
+      template<typename ...Args> \
+        requires is_leaf_storage_constructible_v<Storage, Args...> \
+      class Storage Storage(Args ...args) { \
+        return \
+          ::black::internal::new_api::Storage{ \
+            this, \
+            allocate_##Storage( \
+              storage_node<storage_type::Storage>{ \
+                syntax_element::Storage, args... \
+              } \
+            ) \
+          }; \
+      }
+
+    #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+      template<typename ...Args> \
+        requires is_leaf_storage_constructible_v<Element, Args...> \
+      class Element Element(Args ...args) { \
+        return \
+          ::black::internal::new_api::Element{ \
+            this, \
+            allocate_##Storage( \
+              storage_node<storage_type::Storage>{ \
+                syntax_element::Element, args... \
+              } \
+            ) \
+          }; \
+      }
+
+    #include <black/new/internal/formula/hierarchy.hpp>
+
+    #define declare_storage_kind(Base, Storage) \
+      template<fragment Syntax> \
+      friend class Storage;
+    #define declare_leaf_storage_kind(Base, Storage) \
+      friend class Storage;
+    #define declare_hierarchy_element(Base, Storage, Element) \
+      template<fragment Syntax> \
+      friend class Element;
+    #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+      friend class Element;
+    #include <black/new/internal/formula/hierarchy.hpp>
+
+  private:
+    #define declare_storage_kind(Base, Storage) \
+      storage_node<storage_type::Storage> *allocate_##Storage( \
+        storage_node<storage_type::Storage> node \
+      );
+
+    #include <black/new/internal/formula/hierarchy.hpp>
+
+    struct alphabet_impl;
+    std::unique_ptr<alphabet_impl> _impl;
+  };  
+
+  #define declare_field(Base, Storage, Type, Field) \
+    inline constexpr const char Storage##_##Field##_field[] = #Field;
+
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+    declare_field(Base, Storage, Hierarchy, Child)
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    declare_field(Base, Storage, Hierarchy, Children)
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_storage_kind(Base, Storage) \
+    inline constexpr std::string_view Storage##_fields[] = {
+  
+  #define declare_field(Base, Storage, Type, Field) #Field, 
+  #define declare_child(Base, Storage, Hierarchy, Child) #Child, 
+  #define declare_children(Base, Storage, Hierarchy, Children) #Children,
+
+  #define end_storage_kind(Base, Storage) \
+      "LAST" \
+    };
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+  template<> \
+  struct hierarchy_of_storage_child< \
+    index_of_field_v<Storage##_fields, Storage##_##Child##_field>, \
+    storage_type::Storage \
+  > { \
+    static constexpr auto value = hierarchy_type::Hierarchy; \
+  };
+
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    declare_child(Base, Storage, Hierarchy, Children)
+  
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+
+  #define declare_field(Base, Storage, Type, Field) \
+    template<typename H> \
+    Type storage_fields_base<storage_type::Storage, H>::Field() const { \
+      constexpr size_t I = \
+        index_of_field_v<Storage##_fields, Storage##_##Field##_field>; \
+      return get_field<I>(static_cast<H const&>(*this)); \
+    }
+
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+    template<typename H, fragment Syntax> \
+    Hierarchy<Syntax> \
+    storage_children_base<storage_type::Storage, Syntax, H>::Child() const { \
+      constexpr size_t I = \
+        index_of_field_v<Storage##_fields, Storage##_##Child##_field>;\
+      return get_child<I, Syntax>(static_cast<H const&>(*this)); \
+    }
+
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    template<typename H, fragment Syntax> \
+    std::vector<Hierarchy<Syntax>> \
+    storage_children_base<storage_type::Storage, Syntax, H>::Children() const {\
+      constexpr size_t I = \
+        index_of_field_v<Storage##_fields, Storage##_##Children##_field>;\
+      return get_children<I, Syntax>(static_cast<H const&>(*this)); \
+    }
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+
+  #define declare_leaf_storage_kind(Base, Storage)
+  #define declare_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    template<typename ...Args> \
+      requires is_storage_constructible_v< \
+        storage_type::Storage, Syntax, Args... \
+      > \
+    Storage<Syntax>::Storage(Args ...args) \
+      : Storage{ \
+          get_sigma(args...), \
+          get_sigma(args...)->allocate_##Storage( \
+            args_to_node<Syntax, storage_type::Storage>( \
+              storage_alloc_args_t<Syntax, storage_type::Storage>{args...} \
+            ) \
+          ) \
+        } { }
+
+  #define declare_leaf_hierarchy_element(Base, Storage, Element)
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    template<fragment Syntax> \
+    template<typename ...Args> \
+      requires is_hierarchy_element_constructible_v< \
+        syntax_element::Element, Syntax, Args... \
+      > \
+    Element<Syntax>::Element(Args ...args) \
+      : Element{ \
+          get_sigma(args...), \
+          get_sigma(args...)->allocate_##Storage( \
+            args_to_node<Syntax, storage_type::Storage>( \
+              storage_alloc_args_t<Syntax, storage_type::Storage>{ \
+                Storage<Syntax>::type::Element, \
+                args... \
+              } \
+            ) \
+          ) \
+        } { }
+
+  #include <black/new/internal/formula/hierarchy.hpp>
 }
 
 #endif // BLACK_INTERNAL_FORMULA_INTERFACE_HPP

@@ -30,42 +30,8 @@
 #include <type_traits>
 #include <variant>
 
-#include <black/new/internal/formula/support.hpp>
-
-namespace black::internal::new_api {
-
-  class alphabet;
-
-}
-
+#include <black/new/internal/formula/core.hpp>
 #include <black/new/internal/formula/interface.hpp>
-#include <black/new/internal/formula/alphabet.hpp>
-#include <black/new/internal/formula/impl.hpp>
-
-namespace black::internal::new_api {
-  namespace matching_fragments {
-    struct Future : make_fragment_t<
-      syntax_element::tomorrow,
-      syntax_element::w_tomorrow,
-      syntax_element::always,
-      syntax_element::eventually,
-      syntax_element::until,
-      syntax_element::release
-    > { };
-
-    struct Past : make_fragment_t<
-      syntax_element::yesterday,
-      syntax_element::w_yesterday,
-      syntax_element::once,
-      syntax_element::historically,
-      syntax_element::since,
-      syntax_element::triggered
-    > { };
-
-    struct Temporal : make_combined_fragment_t<Future, Past> { };
-  }
-}
-
 #include <black/new/internal/formula/sugar.hpp>
 #include <black/new/internal/formula/namespaces.hpp>
 

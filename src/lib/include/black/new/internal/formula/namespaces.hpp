@@ -29,6 +29,30 @@ namespace black::internal::new_api {
   using make_fragment_t_helper = make_fragment_t<Elements...>;
 }
 
+namespace black::internal::new_api {
+  namespace matching_fragments {
+    struct Future : make_fragment_t<
+      syntax_element::tomorrow,
+      syntax_element::w_tomorrow,
+      syntax_element::always,
+      syntax_element::eventually,
+      syntax_element::until,
+      syntax_element::release
+    > { };
+
+    struct Past : make_fragment_t<
+      syntax_element::yesterday,
+      syntax_element::w_yesterday,
+      syntax_element::once,
+      syntax_element::historically,
+      syntax_element::since,
+      syntax_element::triggered
+    > { };
+
+    struct Temporal : make_combined_fragment_t<Future, Past> { };
+  }
+}
+
 namespace black::new_api {
 
   namespace syntax {
