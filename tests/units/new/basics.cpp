@@ -439,4 +439,66 @@ TEST_CASE("New API") {
 
     REQUIRE(v1 == v2);
   }
+
+  SECTION("Quantifier blocks") {
+    using namespace black::internal::new_api;
+
+    variable x = sigma.variable("x");
+    variable y = sigma.variable("y");
+    variable z = sigma.variable("z");
+    variable w = sigma.variable("w");
+
+    formula<FO> f = x == y && y == z && z == w;
+
+    std::vector<variable> v = {x, y, z, w};
+
+    static_assert(storage_kind<quantifier_block<FO>>);
+
+    auto qb = quantifier_block<FO>(quantifier<FO>::type::exists, v, f);
+
+    REQUIRE(qb.matrix() == f);
+
+    quantifier<FO> q = qb;
+
+    quantifier<FO> q2 = exists(x, exists(y, (exists(z, exists(w, f)))));
+
+    REQUIRE(q == q2);
+
+    exists<FO> eb = exists_block<FO>(v, f);
+    
+    REQUIRE(eb == q2);
+
+    std::vector<variable> vars;
+    for(auto var : q.block().variables()) {
+      vars.push_back(var);
+    }
+
+    REQUIRE(v == vars);
+    REQUIRE(q.block().matrix() == f);
+
+    formula<FO> qf = q;
+    qf.match(
+      [&](quantifier_block<FO> b) {
+        std::vector<variable> bvars;
+        for(auto var : q.block().variables()) {
+          bvars.push_back(var);
+        }
+        REQUIRE(bvars == v);
+        REQUIRE(b.matrix() == f);
+      },
+      [](otherwise) { REQUIRE(false); }
+    );
+
+    qf.match(
+      [&](exists_block<FO> b) {
+        std::vector<variable> bvars;
+        for(auto var : q.block().variables()) {
+          bvars.push_back(var);
+        }
+        REQUIRE(bvars == v);
+        REQUIRE(b.matrix() == f);
+      },
+      [](otherwise) { REQUIRE(false); }
+    );
+  }
 }

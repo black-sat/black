@@ -578,6 +578,7 @@ namespace black::internal::new_api {
       std::convertible_to<hierarchy_unique_id_t<T::hierarchy>>;
     { t.sigma() } -> std::convertible_to<alphabet *>;
     { t.hash() } -> std::convertible_to<size_t>;
+    { t.syntax_element() } -> std::convertible_to<syntax_element>;
 
     // we should constrain the return type of `node()`, but then checking this
     // concept would force the instantiation of `hierarchy_node<>`, which is
@@ -898,6 +899,7 @@ namespace black::internal::new_api {
     
     alphabet *sigma() const { return _sigma; }
     auto node() const { return _node; }
+    enum syntax_element syntax_element() const { return _node->type; }
 
   private:
     alphabet *_sigma;
