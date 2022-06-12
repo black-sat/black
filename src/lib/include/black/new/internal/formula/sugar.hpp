@@ -575,8 +575,8 @@ namespace black::internal::new_api {
     R const&vars, formula<typename Q::syntax> matrix
   ) {
     black_assert(!vars.empty());
-    for(variable v : std::views::reverse(vars)) {
-      matrix = quantifier<typename Q::syntax>(t, v, matrix);
+    for(auto it = rbegin(vars); it != rend(vars); ++it) {
+      matrix = quantifier<typename Q::syntax>(t, *it, matrix);
     }
     return *matrix.template to<Q>();
   }
@@ -623,7 +623,7 @@ namespace black::internal::new_api {
     //
     template<std::ranges::range R>
     quantifier_block(
-      quantifier<Syntax>::type t,
+      typename quantifier<Syntax>::type t,
       R const&vars, 
       formula<Syntax> matrix
     ) : quantifier_block{create_block<quantifier<Syntax>>(t, vars, matrix)} 
