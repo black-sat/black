@@ -105,6 +105,21 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  #define declare_hierarchy(Base) \
+    template<> \
+    struct hierarchy_whole_fragment<hierarchy_type::Base> \
+      : make_fragment_cpp<0
+
+  #define declare_leaf_storage_kind(Base, Storage) , syntax_element::Storage
+  #define has_no_hierarchy_elements(Base, Storage) , syntax_element::Storage
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    , syntax_element::Element
+
+  #define end_hierarchy(Base) \
+    > { };
+  
+  #include <black/new/internal/formula/hierarchy.hpp>
+
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<fragment Syntax> \
     class Element;
@@ -200,6 +215,28 @@ namespace black::internal::new_api
   \
   template<typename T> \
   concept is_##Base = hierarchy<T> && T::hierarchy == hierarchy_type::Base;
+  
+  #define declare_nonfragmented_hierarchy(Base) \
+    struct Base \
+      : hierarchy_base< \
+          hierarchy_type::Base, \
+          hierarchy_whole_fragment_t<hierarchy_type::Base> \
+        >, \
+        hierarchy_custom_members<hierarchy_type::Base, Base> \
+    { \
+      using hierarchy_base< \
+        hierarchy_type::Base, \
+        hierarchy_whole_fragment_t<hierarchy_type::Base> \
+      >::hierarchy_base; \
+    }; \
+  \
+  template<fragment Syntax> \
+  struct concrete_hierarchy_type<hierarchy_type::Base, Syntax> { \
+    using type = Base; \
+  }; \
+  \
+  template<typename T> \
+  concept is_##Base = hierarchy<T> && T::hierarchy == hierarchy_type::Base;
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
@@ -214,6 +251,12 @@ namespace black::internal::new_api
     template<fragment Syntax> \
     struct hierarchy_type_of<Syntax, hierarchy_type::Base> { \
       using type = Base<Syntax>; \
+    };
+
+  #define declare_nonfragmented_hierarchy(Base) \
+    template<fragment Syntax> \
+    struct hierarchy_type_of<Syntax, hierarchy_type::Base> { \
+      using type = Base; \
     };
   
   #define declare_storage_kind(Base, Storage) \

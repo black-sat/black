@@ -28,6 +28,9 @@
 #ifndef declare_hierarchy
   #define declare_hierarchy(Base)
 #endif
+#ifndef declare_nonfragmented_hierarchy
+  #define declare_nonfragmented_hierarchy declare_hierarchy
+#endif
 #ifndef has_no_standard_equality
   #define has_no_standard_equality(Base)
 #endif
@@ -63,6 +66,9 @@
 #endif
 #ifndef end_hierarchy
   #define end_hierarchy(Element)
+#endif
+#ifndef end_nonfragmented_hierarchy
+  #define end_nonfragmented_hierarchy end_hierarchy
 #endif
 #ifndef escape_commas
 #define escape_commas(...) __VA_ARGS__
@@ -183,7 +189,14 @@ declare_hierarchy(formula)
 
 end_hierarchy(formula)
 
+declare_nonfragmented_hierarchy(sort)
+  declare_leaf_storage_kind(sort, custom_sort)
+    declare_field(sort, custom_sort, identifier, name)
+  end_leaf_storage_kind(sort, custom_sort)
+end_nonfragmented_hierarchy(sort)
+
 #undef declare_hierarchy
+#undef declare_nonfragmented_hierarchy
 #undef has_no_standard_equality
 #undef declare_storage_kind
 #undef declare_leaf_storage_kind
@@ -197,4 +210,5 @@ end_hierarchy(formula)
 #undef end_storage_kind
 #undef end_leaf_storage_kind
 #undef end_hierarchy
+#undef end_nonfragmented_hierarchy
 #undef escape_commas

@@ -198,7 +198,7 @@ namespace black::new_api {
 
   enum_fragments(declare_fragment, Dummy)
 
-
+  #define declare_nonfragmented_hierarchy(Base)
   #define declare_hierarchy(Base) \
     enum_fragments(export_in_fragment_namespace, Base)
 
