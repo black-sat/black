@@ -444,6 +444,13 @@ namespace black::internal::new_api {
   };
 
   //
+  // This is a helper trait that calls `make_fragment_t` but can be used in
+  // preprocessed code to handle trailing commas well.
+  //
+  template<int Dummy, syntax_element ...Elements>
+  using make_fragment_cpp_t = make_fragment_t<Elements...>;
+
+  //
   // Trait to tell whether a fragment is subsumed by another. This trait is used
   // in every place where a conversion between different syntaxes is requested,
   // e.g. from formula<Boolean> to formula<LTL>.
@@ -901,7 +908,7 @@ namespace black::internal::new_api {
     
     // we make `sigma()` a function template because `alphabet` is still
     // incomplete at this point, otherwise the static_cast would be invalid.
-    template<std::derived_from<alphabet_base> A = alphabet>
+    template<typename A = alphabet>
     A *sigma() const { return static_cast<A *>(_sigma); }
 
 

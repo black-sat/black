@@ -41,8 +41,9 @@ namespace black::internal::new_api {
   // addition over the `alphabet_base` class defined before, which does the
   // heavy lifting.
   //
-  struct alphabet : alphabet_base {
-
+  class alphabet : public alphabet_base 
+  {
+  public:
     alphabet() = default;
     alphabet(alphabet const&) = delete;
     alphabet(alphabet &&) = default;
@@ -50,11 +51,11 @@ namespace black::internal::new_api {
     alphabet &operator=(alphabet const&) = delete;
     alphabet &operator=(alphabet &&) = default;
 
-    struct boolean top() {
+    class boolean top() {
       return this->boolean(true);
     }
 
-    struct boolean bottom() {
+    class boolean bottom() {
       return this->boolean(false);
     }
   };

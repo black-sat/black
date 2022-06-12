@@ -491,16 +491,6 @@ TEST_CASE("New API") {
     STATIC_REQUIRE(std::ranges::view<view_t>);
     STATIC_REQUIRE(std::ranges::viewable_range<view_t>);
 
-    std::vector<term<FO>> multv = {w*w, z*z, y*y, x*x};
-    std::vector<term<FO>> multvars;
-    for(auto var : q.block().variables() | std::views::transform([](auto v) {
-      return v * v;
-    })) {
-      multvars.push_back(var);
-    }
-
-    REQUIRE(multv == multvars);
-
     formula<FO> qf = q;
     qf.match(
       [&](quantifier_block<FO> b) {
