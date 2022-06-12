@@ -433,6 +433,14 @@ TEST_CASE("New API") {
     std::vector<formula<LTL>> v1 = {b, p, b, p, b};
     std::vector<formula<LTL>> v2;
 
+    using view_t = decltype(c.operands());
+    STATIC_REQUIRE(std::input_or_output_iterator<view_t::const_iterator>);
+    STATIC_REQUIRE(std::input_iterator<view_t::const_iterator>);
+    STATIC_REQUIRE(std::forward_iterator<view_t::const_iterator>);
+    STATIC_REQUIRE(std::ranges::range<view_t>);
+    STATIC_REQUIRE(std::ranges::view<view_t>);
+    STATIC_REQUIRE(std::ranges::viewable_range<view_t>);
+
     for(auto f : c.operands())
       v2.push_back(f);
 
@@ -475,23 +483,23 @@ TEST_CASE("New API") {
     REQUIRE(v == vars);
     REQUIRE(q.block().matrix() == f);
 
-    // using view_t = decltype(qb.variables());
-    // STATIC_REQUIRE(std::input_or_output_iterator<view_t::const_iterator>);
-    // STATIC_REQUIRE(std::input_iterator<view_t::const_iterator>);
-    // STATIC_REQUIRE(std::forward_iterator<view_t::const_iterator>);
-    // STATIC_REQUIRE(std::ranges::range<view_t>);
-    // STATIC_REQUIRE(std::ranges::view<view_t>);
-    // STATIC_REQUIRE(std::ranges::viewable_range<view_t>);
+    using view_t = decltype(qb.variables());
+    STATIC_REQUIRE(std::input_or_output_iterator<view_t::const_iterator>);
+    STATIC_REQUIRE(std::input_iterator<view_t::const_iterator>);
+    STATIC_REQUIRE(std::forward_iterator<view_t::const_iterator>);
+    STATIC_REQUIRE(std::ranges::range<view_t>);
+    STATIC_REQUIRE(std::ranges::view<view_t>);
+    STATIC_REQUIRE(std::ranges::viewable_range<view_t>);
 
-    // std::vector<term<FO>> multv = {w*w, z*z, y*y, x*x};
-    // std::vector<term<FO>> multvars;
-    // for(auto var : q.block().variables() | std::views::transform([](auto v) {
-    //   return v * v;
-    // })) {
-    //   multvars.push_back(var);
-    // }
+    std::vector<term<FO>> multv = {w*w, z*z, y*y, x*x};
+    std::vector<term<FO>> multvars;
+    for(auto var : q.block().variables() | std::views::transform([](auto v) {
+      return v * v;
+    })) {
+      multvars.push_back(var);
+    }
 
-    // REQUIRE(multv == multvars);
+    REQUIRE(multv == multvars);
 
     formula<FO> qf = q;
     qf.match(

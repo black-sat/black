@@ -355,18 +355,23 @@ namespace black::internal::new_api {
   // that returns its iterator on `begin()`.
   // 
   template<typename E>
-  class associative_op_view
+  class associative_op_view : public std::ranges::view_base
   {
   public:
     class const_iterator;
+    using iterator = const_iterator;
 
+    associative_op_view() = default;
     associative_op_view(E e) : _element{e} { }
 
-    const_iterator begin() const { return const_iterator{_element}; }
-    std::default_sentinel_t end() const { return std::default_sentinel; }
+    const_iterator begin() const { 
+      black_assert(_element.has_value());
+      return const_iterator{*_element}; 
+    }
+    const_iterator end() const { return const_iterator{}; }
 
   private:
-    E _element;
+    std::optional<E> _element;
   };
 
   //
@@ -377,7 +382,8 @@ namespace black::internal::new_api {
   class associative_op_view<E>::const_iterator 
   {
   public:
-    using formula_t = formula<typename E::syntax>;
+    using difference_type = ssize_t;
+    using value_type = formula<typename E::syntax>;
 
     const_iterator() = default;
     const_iterator(const_iterator const&) = default;
@@ -394,9 +400,7 @@ namespace black::internal::new_api {
     const_iterator &operator=(const_iterator &&) = default;
 
     // We are the end iterator if there is no current element
-    bool operator==(std::default_sentinel_t) const {
-      return !_current.has_value();
-    }
+    bool operator==(const_iterator const&) const  = default;
 
     //
     // operator++ advances the iterator. If the stack is empty we are at the
@@ -410,7 +414,7 @@ namespace black::internal::new_api {
         return *this;
       }
 
-      formula_t f = _stack.top();
+      value_type f = _stack.top();
       _stack.pop();
       _current = go_left(f);
 
@@ -425,7 +429,7 @@ namespace black::internal::new_api {
     }
 
     // the dereference just returns `_current`
-    formula_t operator*() const {
+    value_type operator*() const {
       black_assert(_current.has_value());
       return *_current;
     }
@@ -436,7 +440,7 @@ namespace black::internal::new_api {
     // find a node which is not an `E`. While going to the left we push on the
     // stack the `right()` children.
     //
-    formula_t go_left(formula_t f) {
+    value_type go_left(value_type f) {
       while(f.template is<E>()) {
         auto e = *f.template to<E>();
         _stack.push(e.right());
@@ -445,8 +449,8 @@ namespace black::internal::new_api {
       return f;
     }
 
-    std::stack<formula_t> _stack;
-    std::optional<formula_t> _current;
+    std::stack<value_type> _stack;
+    std::optional<value_type> _current;
   };
 
   //
