@@ -27,6 +27,7 @@
 #include <deque>
 #include <string_view>
 #include <functional>
+#include <ranges>
 
 //
 // This file contains all the declarations that do not depend on including the
