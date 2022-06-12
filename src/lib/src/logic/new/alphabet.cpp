@@ -102,19 +102,19 @@ namespace black::internal::new_api {
 
   struct dummy_t {};
 
-  struct alphabet::alphabet_impl : 
+  struct alphabet_base::alphabet_impl : 
   #define declare_storage_kind(Base, Storage) Storage##_allocator,
   #include <black/new/internal/formula/hierarchy.hpp>
     dummy_t { };
 
-  alphabet::alphabet() : _impl{std::make_unique<alphabet_impl>()} { }
-  alphabet::alphabet(alphabet &&) = default;
-  alphabet &alphabet::operator=(alphabet &&) = default;
-  alphabet::~alphabet() = default;
+  alphabet_base::alphabet_base() : _impl{std::make_unique<alphabet_impl>()} { }
+  alphabet_base::alphabet_base(alphabet_base &&) = default;
+  alphabet_base &alphabet_base::operator=(alphabet_base &&) = default;
+  alphabet_base::~alphabet_base() = default;
 
   #define declare_storage_kind(Base, Storage) \
     storage_node<storage_type::Storage> * \
-    alphabet::allocate_##Storage(storage_node<storage_type::Storage> node)\
+    alphabet_base::allocate_##Storage(storage_node<storage_type::Storage> node)\
     { \
       return _impl->allocate_##Storage(std::move(node)); \
     }

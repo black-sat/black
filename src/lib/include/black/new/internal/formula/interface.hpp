@@ -428,20 +428,17 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  //
-  // class alphabet
-  //
-  class alphabet
+  class alphabet_base
   {
   public:
-    alphabet();
-    ~alphabet();
+    alphabet_base();
+    ~alphabet_base();
 
-    alphabet(alphabet const&) = delete;
-    alphabet(alphabet &&);
+    alphabet_base(alphabet_base const&) = delete;
+    alphabet_base(alphabet_base &&);
 
-    alphabet &operator=(alphabet const&) = delete;
-    alphabet &operator=(alphabet &&);
+    alphabet_base &operator=(alphabet_base const&) = delete;
+    alphabet_base &operator=(alphabet_base &&);
 
     #define declare_leaf_storage_kind(Base, Storage) \
       template<typename ...Args> \

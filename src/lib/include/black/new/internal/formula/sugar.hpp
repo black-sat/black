@@ -37,6 +37,29 @@
 namespace black::internal::new_api {
 
   //
+  // As a first thing we define the real `alphabet` class, which is just a thin
+  // addition over the `alphabet_base` class defined before, which does the
+  // heavy lifting.
+  //
+  struct alphabet : alphabet_base {
+
+    alphabet() = default;
+    alphabet(alphabet const&) = delete;
+    alphabet(alphabet &&) = default;
+
+    alphabet &operator=(alphabet const&) = delete;
+    alphabet &operator=(alphabet &&) = default;
+
+    struct boolean top() {
+      return this->boolean(true);
+    }
+
+    struct boolean bottom() {
+      return this->boolean(false);
+    }
+  };
+
+  //
   // relations and functions support creating the associated atom or application
   // (respectively) with a simple call-like syntax such as f(x, y).
   //
@@ -342,6 +365,58 @@ namespace black::internal::new_api {
 
   #undef declare_unary_formula_op
   #undef declare_binary_formula_op
+
+  //
+  // The following are two useful functions to create long conjunctions and
+  // disjunctions by putting together the results of applying a lambda to a
+  // range.
+  //
+  template<fragment Syntax, typename Iterator, typename EndIterator, typename F>
+  formula<Syntax> big_and(alphabet &sigma, Iterator b, EndIterator e, F&& f) {
+    formula<Syntax> acc = sigma.top();
+
+    while(b != e) {
+      formula<Syntax> elem = std::forward<F>(f)(*b++);
+      if(elem == sigma.top())
+        continue;
+      else if(acc == sigma.top())
+        acc = elem;
+      else
+        acc = acc && elem;
+    }
+
+    return acc;
+  }
+
+  template<fragment Syntax, std::ranges::range Range, typename F>
+  formula<Syntax> big_and(alphabet &sigma, Range const& r, F&& f) {
+    return big_and(sigma, begin(r), end(r), std::forward<F>(f));
+  }
+   
+  // Disjunct multiple formulas generated from a range,
+  // avoiding useless true formulas at the beginning of the fold
+  template<fragment Syntax, typename Iterator, typename EndIterator, typename F>
+  formula<Syntax> big_or(alphabet &sigma, Iterator b, EndIterator e, F&& f) 
+  {
+    formula<Syntax> acc = sigma.bottom();
+
+    while(b != e) {
+      formula<Syntax> elem = std::forward<F>(f)(*b++);
+      if(elem == sigma.bottom())
+        continue;
+      else if(acc == sigma.bottom())
+        acc = elem;
+      else
+        acc = acc || elem;
+    }
+
+    return acc;
+  }
+
+  template<fragment Syntax, std::ranges::range Range, typename F>
+  formula<Syntax> big_or(alphabet &sigma, Range r, F&& f) {
+    return big_or(sigma, begin(r), end(r), std::forward<F>(f));
+  }
 
   //
   // Here we define a utility class that helps to pattern match associative

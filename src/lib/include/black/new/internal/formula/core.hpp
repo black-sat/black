@@ -42,6 +42,7 @@ namespace black::internal::new_api {
   // definition for more details.
   //
   class alphabet;
+  class alphabet_base;
   
   //
   // This type enums the base hierarchy types like `formula`, `term`, etc...
@@ -859,7 +860,7 @@ namespace black::internal::new_api {
     hierarchy_base &operator=(hierarchy_base &&) = default;
 
     // this constructor is for internal use but has to be public (for now)
-    hierarchy_base(alphabet *sigma, node_t const*node)
+    hierarchy_base(alphabet_base *sigma, node_t const*node)
       : _sigma{sigma}, _node{node} { }
 
     // converting constructor from other hierarchy types
@@ -898,12 +899,17 @@ namespace black::internal::new_api {
       return std::hash<hierarchy_node<hierarchy> const*>{}(_node);
     }
     
-    alphabet *sigma() const { return _sigma; }
+    // we make `sigma()` a function template because `alphabet` is still
+    // incomplete at this point, otherwise the static_cast would be invalid.
+    template<std::derived_from<alphabet_base> A = alphabet>
+    A *sigma() const { return static_cast<A *>(_sigma); }
+
+
     auto node() const { return _node; }
     enum syntax_element syntax_element() const { return _node->type; }
 
   private:
-    alphabet *_sigma;
+    alphabet_base *_sigma;
     node_t const*_node;
   };
 
@@ -1026,7 +1032,7 @@ namespace black::internal::new_api {
     storage_base &operator=(storage_base &&) = default;
 
     // the wrapping constructor delegates to the base's one
-    storage_base(alphabet *sigma, node_t const*node) 
+    storage_base(alphabet_base *sigma, node_t const*node) 
       : base_t{sigma, node} { 
       black_assert(accepts_type::doesit(node->type));
     }
@@ -1208,7 +1214,7 @@ namespace black::internal::new_api {
     hierarchy_element_base &operator=(hierarchy_element_base &&) = default;
 
     // the wrapping constructor delegates to the base's one
-    hierarchy_element_base(alphabet *sigma, node_t const*node) 
+    hierarchy_element_base(alphabet_base *sigma, node_t const*node) 
       : base_t{sigma, node} {
       black_assert(accepts_type::doesit(node->type));
     }
