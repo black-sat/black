@@ -1,4 +1,4 @@
-//
+  //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
 // (C) 2022 Nicola Gigante
@@ -26,8 +26,6 @@
 
 #include <ranges>
 #include <stack>
-
-#include <iostream>
 
 //
 // This file contains helper classes and functions that provide useful syntactic
@@ -478,17 +476,22 @@ namespace black::internal::new_api {
   // iterators at begin() and end().
   //
   template<fragment Syntax>
-  class quantifier_block_view {
+  class quantifier_block_view : public std::ranges::view_base {
   public:
     class const_iterator;
+    using iterator = const_iterator;
 
+    quantifier_block_view() = default;
     quantifier_block_view(quantifier<Syntax> q) : _quantifier{q} { }
 
-    const_iterator begin() const { return const_iterator{_quantifier}; }
+    const_iterator begin() const { 
+      black_assert(_quantifier.has_value());
+      return const_iterator{*_quantifier}; 
+    }
     const_iterator end() const { return const_iterator{}; }
 
   private:
-    quantifier<Syntax> _quantifier;
+    std::optional<quantifier<Syntax>> _quantifier;
   };
 
   // forward declaration
@@ -502,6 +505,9 @@ namespace black::internal::new_api {
   template<fragment Syntax>
   class quantifier_block_view<Syntax>::const_iterator {
   public:
+    using difference_type = ssize_t;
+    using value_type = variable;
+
     // All due constructors. A default-constructed iterator equals to end()
     // because `_quantifier` is empty.
     const_iterator() = default;
@@ -518,7 +524,7 @@ namespace black::internal::new_api {
 
     // the increment just goes down a level into the `matrix()` of the current
     // quantifier. If we reach something that is not a quantifier or not a
-    // quantifier or the right type, we set `_quantifier` to `nullopt` so we
+    // quantifier of the right type, we set `_quantifier` to `nullopt` so we
     // become the end() iterator.
     const_iterator &operator++() {
       black_assert(_quantifier.has_value());

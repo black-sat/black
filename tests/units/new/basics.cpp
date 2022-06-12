@@ -27,8 +27,7 @@
 
 #include <string>
 #include <type_traits>
-
-#include <iostream>
+#include <ranges>
 
 using namespace std::literals;
 using namespace black::new_api::syntax;
@@ -475,6 +474,24 @@ TEST_CASE("New API") {
 
     REQUIRE(v == vars);
     REQUIRE(q.block().matrix() == f);
+
+    // using view_t = decltype(qb.variables());
+    // STATIC_REQUIRE(std::input_or_output_iterator<view_t::const_iterator>);
+    // STATIC_REQUIRE(std::input_iterator<view_t::const_iterator>);
+    // STATIC_REQUIRE(std::forward_iterator<view_t::const_iterator>);
+    // STATIC_REQUIRE(std::ranges::range<view_t>);
+    // STATIC_REQUIRE(std::ranges::view<view_t>);
+    // STATIC_REQUIRE(std::ranges::viewable_range<view_t>);
+
+    // std::vector<term<FO>> multv = {w*w, z*z, y*y, x*x};
+    // std::vector<term<FO>> multvars;
+    // for(auto var : q.block().variables() | std::views::transform([](auto v) {
+    //   return v * v;
+    // })) {
+    //   multvars.push_back(var);
+    // }
+
+    // REQUIRE(multv == multvars);
 
     formula<FO> qf = q;
     qf.match(
