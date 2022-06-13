@@ -313,55 +313,111 @@ namespace black::internal::new_api {
   #undef declare_binary_formula_op
 
   //
-  // The following are two useful functions to create long conjunctions and
-  // disjunctions by putting together the results of applying a lambda to a
-  // range.
+  // Here we add an `identity()` static member function to some operators such
+  // as conjunctions and additions. This is not terribly useful by itself but
+  // comes handy in a generic context. The `operands()` function is another
+  // addition to the interface of those elements, see below.
   //
-  template<fragment Syntax, typename Iterator, typename EndIterator, typename F>
-  formula<Syntax> big_and(alphabet &sigma, Iterator b, EndIterator e, F&& f) {
-    formula<Syntax> acc = sigma.top();
+  template<typename Derived>
+  struct hierarchy_element_custom_members<syntax_element::conjunction, Derived>
+  {
+    auto operands() const;
 
-    while(b != e) {
-      formula<Syntax> elem = std::forward<F>(f)(*b++);
-      if(elem == sigma.top())
+    static auto identity(alphabet *sigma) {
+      return sigma->boolean(true);
+    }
+  };
+  
+  template<typename Derived>
+  struct hierarchy_element_custom_members<syntax_element::disjunction, Derived>
+  { 
+    auto operands() const;
+
+    static auto identity(alphabet *sigma) {
+      return sigma->boolean(false);
+    }
+  };
+  
+  template<typename Derived>
+  struct hierarchy_element_custom_members<syntax_element::addition, Derived>
+  { 
+    auto operands() const;
+
+    static auto identity(alphabet *sigma) {
+      return constant{sigma->zero()};
+    }
+  };
+  
+  template<typename Derived>
+  struct hierarchy_element_custom_members<
+    syntax_element::multiplication, Derived
+  > { 
+    auto operands() const;
+
+    static auto identity(alphabet *sigma) {
+      return constant{sigma->one()};
+    }
+  };
+
+  //
+  // The following is the generic version of the `big_and`, `big_or`, `sum` and
+  // `product` functions defined below.
+  //
+  template<
+    fragment Syntax, syntax_element Op, std::ranges::range Range, typename F
+  > 
+  auto fold_op(alphabet &sigma, Range const& r, F&& f) {
+    using H = hierarchy_type_of_t<Syntax,
+      hierarchy_of_storage_v<storage_of_element_v<Op>>
+    >;
+    using E = element_type_of_t<Syntax, Op>;
+
+    auto id = E::identity(&sigma);
+    H acc = id;
+    for(auto x : r) {
+      H elem = std::forward<F>(f)(x);
+      if(elem == id)
         continue;
-      else if(acc == sigma.top())
+      else if(acc == id)
         acc = elem;
       else
-        acc = acc && elem;
+        acc = E(acc, elem);
     }
 
     return acc;
   }
 
+  //
+  // The following are instances of `fold_op`, useful functions to create long
+  // conjunctions/disjunctions/sums/products by putting together the results of
+  // applying a lambda to a range.
+  //
   template<fragment Syntax, std::ranges::range Range, typename F>
   formula<Syntax> big_and(alphabet &sigma, Range const& r, F&& f) {
-    return big_and(sigma, begin(r), end(r), std::forward<F>(f));
+    return fold_op<Syntax, syntax_element::conjunction>(
+      sigma, r, std::forward<F>(f)
+    );
   }
-   
-  // Disjunct multiple formulas generated from a range,
-  // avoiding useless true formulas at the beginning of the fold
-  template<fragment Syntax, typename Iterator, typename EndIterator, typename F>
-  formula<Syntax> big_or(alphabet &sigma, Iterator b, EndIterator e, F&& f) 
-  {
-    formula<Syntax> acc = sigma.bottom();
-
-    while(b != e) {
-      formula<Syntax> elem = std::forward<F>(f)(*b++);
-      if(elem == sigma.bottom())
-        continue;
-      else if(acc == sigma.bottom())
-        acc = elem;
-      else
-        acc = acc || elem;
-    }
-
-    return acc;
-  }
-
+  
   template<fragment Syntax, std::ranges::range Range, typename F>
-  formula<Syntax> big_or(alphabet &sigma, Range r, F&& f) {
-    return big_or(sigma, begin(r), end(r), std::forward<F>(f));
+  formula<Syntax> big_or(alphabet &sigma, Range const& r, F&& f) {
+    return fold_op<Syntax, syntax_element::disjunction>(
+      sigma, r, std::forward<F>(f)
+    );
+  }
+  
+  template<fragment Syntax, std::ranges::range Range, typename F>
+  term<Syntax> sum(alphabet &sigma, Range const& r, F&& f) {
+    return fold_op<Syntax, syntax_element::addition>(
+      sigma, r, std::forward<F>(f)
+    );
+  }
+  
+  template<fragment Syntax, std::ranges::range Range, typename F>
+  term<Syntax> product(alphabet &sigma, Range const& r, F&& f) {
+    return fold_op<Syntax, syntax_element::multiplication>(
+      sigma, r, std::forward<F>(f)
+    );
   }
 
   //
@@ -480,19 +536,36 @@ namespace black::internal::new_api {
 
   //
   // Now that everything is ready we add a member to binary elements returning
-  // the above view.
+  // the above view. These were already declared above so we just define them
+  // out-of-line.
   //
-  template<syntax_element Element, typename Derived>
-    requires (Element == syntax_element::conjunction || 
-              Element == syntax_element::disjunction ||
-              Element == syntax_element::addition ||
-              Element == syntax_element::multiplication)
-  struct hierarchy_element_custom_members<Element, Derived> 
-  { 
-    associative_op_view<Derived> operands() const { 
-      return {static_cast<Derived const&>(*this)};
-    }
-  };
+  template<typename Derived> 
+  auto 
+  hierarchy_element_custom_members<syntax_element::conjunction, Derived>::
+  operands() const { 
+    return associative_op_view<Derived>{static_cast<Derived const&>(*this)};
+  }
+  
+  template<typename Derived> 
+  auto 
+  hierarchy_element_custom_members<syntax_element::disjunction, Derived>::
+  operands() const { 
+    return associative_op_view<Derived>{static_cast<Derived const&>(*this)};
+  }
+  
+  template<typename Derived> 
+  auto 
+  hierarchy_element_custom_members<syntax_element::addition, Derived>::
+  operands() const { 
+    return associative_op_view<Derived>{static_cast<Derived const&>(*this)};
+  }
+  
+  template<typename Derived> 
+  auto 
+  hierarchy_element_custom_members<syntax_element::multiplication, Derived>::
+  operands() const { 
+    return associative_op_view<Derived>{static_cast<Derived const&>(*this)};
+  }
 
   //
   // We also provide some accessor functions to `quantifier` that help matching

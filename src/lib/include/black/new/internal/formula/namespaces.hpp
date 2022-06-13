@@ -149,6 +149,8 @@ namespace black::new_api {
     Enum(Syntax, greater_than_equal) \
     Enum(Syntax, integer) \
     Enum(Syntax, real) \
+    Enum(Syntax, zero) \
+    Enum(Syntax, one) \
     Enum(Syntax, relation) \
     Enum(Syntax, function)
 
