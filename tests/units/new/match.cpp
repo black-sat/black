@@ -156,7 +156,7 @@ TEST_CASE("Pattern matching") {
     }
     
     SECTION("Children vector") {
-      relation r = sigma.relation_symbol("r");
+      relation r = sigma.relation("r");
       std::vector<term<LTLFO>> vars = {
         sigma.variable("x"), sigma.variable("y")
       };
@@ -165,11 +165,7 @@ TEST_CASE("Pattern matching") {
 
       formula<LTLFO> f = a;
       f.match(
-        [&](
-          atom<LTLFO> at, relation<LTLFO> rel, 
-          std::vector<term<LTLFO>> const& terms
-        ) { 
-          REQUIRE(at.rel() == rel);
+        [&](atom<LTLFO> at, std::vector<term<LTLFO>> const& terms) { 
           REQUIRE(at.terms() == terms);
           REQUIRE(terms == vars);
         },

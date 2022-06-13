@@ -136,8 +136,6 @@ namespace black::new_api {
     Enum(Syntax, constant) \
     Enum(Syntax, variable) \
     Enum(Syntax, application) \
-    Enum(Syntax, function_symbol) \
-    Enum(Syntax, relation_symbol) \
     Enum(Syntax, negative) \
     Enum(Syntax, subtraction) \
     Enum(Syntax, addition) \
@@ -150,7 +148,9 @@ namespace black::new_api {
     Enum(Syntax, greater_than) \
     Enum(Syntax, greater_than_equal) \
     Enum(Syntax, integer) \
-    Enum(Syntax, real)
+    Enum(Syntax, real) \
+    Enum(Syntax, relation) \
+    Enum(Syntax, function)
 
   #define enum_elements_LTL(Syntax, Enum) \
     enum_elements_Boolean(Syntax, Enum) \
@@ -198,7 +198,7 @@ namespace black::new_api {
 
   enum_fragments(declare_fragment, Dummy)
 
-  #define declare_nonfragmented_hierarchy(Base)
+  #define declare_simple_hierarchy(Base)
   #define declare_hierarchy(Base) \
     enum_fragments(export_in_fragment_namespace, Base)
 

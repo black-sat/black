@@ -21,20 +21,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_FORMULA_HPP
-#define BLACK_LOGIC_FORMULA_HPP
+#ifndef BLACK_LOGIC_CUSTOM_HPP_
+#define BLACK_LOGIC_CUSTOM_HPP_
 
-#include <black/support/assert.hpp>
-#include <black/support/hash.hpp>
+namespace black::internal::new_api {
+  //
+  // relations and functions support creating the associated atom or application
+  // (respectively) with a simple call-like syntax such as f(x, y).
+  //
+  // Here we declare the needed specialization of `storage_custom_members` for
+  // the purpose. We have both a vararg version and one taking a range.
+  // The implementation is in `interface.hpp`
+  //
+  template<typename Derived>
+  struct relation_call_op {
+    template<hierarchy Arg, hierarchy ...Args>
+    auto operator()(Arg, Args ...) const;
 
-#include <type_traits>
-#include <variant>
+    template<std::ranges::range R>
+        requires hierarchy<std::ranges::range_value_t<R>>
+    auto operator()(R const& v) const;
+  };
 
-#include <black/new/internal/formula/core.hpp>
-#include <black/new/internal/formula/interface-fwd.hpp>
-#include <black/new/internal/formula/generation.hpp>
-#include <black/new/internal/formula/interface.hpp>
-#include <black/new/internal/formula/namespaces.hpp>
+  template<typename Derived>
+  struct function_call_op {
+    template<hierarchy Arg, hierarchy ...Args>
+    auto operator()(Arg, Args ...) const;
+
+    template<std::ranges::range R>
+        requires hierarchy<std::ranges::range_value_t<R>>
+    auto operator()(R const& v) const;
+  };
+}
 
 
-#endif // BLACK_LOGIC_FORMULA_HPP
+#endif // BLACK_LOGIC_CUSTOM_HPP_

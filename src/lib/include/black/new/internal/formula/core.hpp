@@ -450,10 +450,6 @@ namespace black::internal::new_api {
   template<int Dummy, syntax_element ...Elements>
   struct make_fragment_cpp : make_fragment<Elements...> { };
 
-  //
-  // This is a helper trait that calls `make_fragment_t` but can be used in
-  // preprocessed code to handle trailing commas well.
-  //
   template<int Dummy, syntax_element ...Elements>
   using make_fragment_cpp_t = make_fragment_t<Elements...>;
 
@@ -535,15 +531,11 @@ namespace black::internal::new_api {
     typename make_combined_fragment<Fragments...>::type;
 
   //
-  // This trait, specialized later, gives us the fragment made of all the
-  // `syntax_element`s of a hierarchy
+  // This type, defined later, gives us the fragment made of all the
+  // `syntax_element`s of all the hierarchies. It is used as a default argument
+  // for the fragment template parameter of hierarchy types.
   //
-  template<hierarchy_type H>
-  struct hierarchy_whole_fragment;
-  
-  template<hierarchy_type H>
-  using hierarchy_whole_fragment_t = 
-    typename hierarchy_whole_fragment<H>::type;
+  struct universal_fragment_t;
 
   //
   // We start to prepare for the declaration of actual hierarchy types such as

@@ -28,9 +28,6 @@
 #ifndef declare_hierarchy
   #define declare_hierarchy(Base)
 #endif
-#ifndef declare_nonfragmented_hierarchy
-  #define declare_nonfragmented_hierarchy declare_hierarchy
-#endif
 #ifndef has_no_standard_equality
   #define has_no_standard_equality(Base)
 #endif
@@ -39,6 +36,9 @@
 #endif
 #ifndef declare_leaf_storage_kind
   #define declare_leaf_storage_kind declare_storage_kind
+#endif
+#ifndef declare_storage_custom_members
+  #define declare_storage_custom_members(Base, Storage, Struct)
 #endif
 #ifndef declare_field
   #define declare_field(Base, Storage, Type, Field)
@@ -67,39 +67,20 @@
 #ifndef end_hierarchy
   #define end_hierarchy(Element)
 #endif
-#ifndef end_nonfragmented_hierarchy
-  #define end_nonfragmented_hierarchy end_hierarchy
-#endif
 #ifndef escape_commas
 #define escape_commas(...) __VA_ARGS__
 #endif 
 
-declare_hierarchy(function)
-  declare_leaf_storage_kind(function, function_symbol)
-    declare_field(function, function_symbol, identifier, label)
-  end_leaf_storage_kind(function, function_symbol)
-  declare_storage_kind(function, known_func)
-    declare_leaf_hierarchy_element(function, known_func, negative)
-    declare_leaf_hierarchy_element(function, known_func, subtraction)
-    declare_leaf_hierarchy_element(function, known_func, addition)
-    declare_leaf_hierarchy_element(function, known_func, multiplication)
-    declare_leaf_hierarchy_element(function, known_func, division)
-  end_storage_kind(function, known_func)
-end_hierarchy(function)
-
-declare_hierarchy(relation)
-  declare_leaf_storage_kind(relation, relation_symbol)
-    declare_field(relation, relation_symbol, identifier, label)
-  end_leaf_storage_kind(relation, relation_symbol)
-  declare_storage_kind(relation, known_rel)
-    declare_leaf_hierarchy_element(relation, known_rel, equal)
-    declare_leaf_hierarchy_element(relation, known_rel, not_equal)
-    declare_leaf_hierarchy_element(relation, known_rel, less_than)
-    declare_leaf_hierarchy_element(relation, known_rel, less_than_equal)
-    declare_leaf_hierarchy_element(relation, known_rel, greater_than)
-    declare_leaf_hierarchy_element(relation, known_rel, greater_than_equal)
-  end_storage_kind(relation, known_rel)
-end_hierarchy(relation)
+declare_hierarchy(symbol)
+  declare_leaf_storage_kind(symbol, relation)
+    declare_storage_custom_members(symbol, relation, relation_call_op)
+    declare_field(symbol, relation, identifier, label)
+  end_leaf_storage_kind(symbol, relation)
+  declare_leaf_storage_kind(symbol, function)
+    declare_storage_custom_members(symbol, function, function_call_op)
+    declare_field(symbol, function, identifier, label)
+  end_leaf_storage_kind(symbol, function)
+end_hierarchy(symbol)
 
 declare_hierarchy(number)
   declare_leaf_storage_kind(number, integer)
@@ -122,18 +103,28 @@ declare_hierarchy(term)
   end_leaf_storage_kind(term, variable)
 
   declare_storage_kind(term, application)
-    declare_child(term, application, function, func)
+    declare_field(term, application, function, func)
     declare_children(term, application, term, terms)
     has_no_hierarchy_elements(term, application)
   end_storage_kind(term, application)
 
-  declare_storage_kind(term, constructor)
-    declare_child(term, constructor, term, argument)
-    declare_hierarchy_element(term, constructor, next)
-    declare_hierarchy_element(term, constructor, wnext)
-    declare_hierarchy_element(term, constructor, prev)
-    declare_hierarchy_element(term, constructor, wprev)
-  end_storage_kind(term, constructor)
+  declare_storage_kind(term, unary_term)
+    declare_child(term, unary_term, term, argument)
+    declare_hierarchy_element(term, unary_term, negative)
+    declare_hierarchy_element(term, unary_term, next)
+    declare_hierarchy_element(term, unary_term, wnext)
+    declare_hierarchy_element(term, unary_term, prev)
+    declare_hierarchy_element(term, unary_term, wprev)
+  end_storage_kind(term, unary_term)
+
+  declare_storage_kind(term, binary_term)
+    declare_child(term, binary_term, term, left)
+    declare_child(term, binary_term, term, right)
+    declare_hierarchy_element(term, binary_term, subtraction)
+    declare_hierarchy_element(term, binary_term, addition)
+    declare_hierarchy_element(term, binary_term, multiplication)
+    declare_hierarchy_element(term, binary_term, division)
+  end_storage_kind(term, binary_term)
 end_hierarchy(term)
 
 declare_hierarchy(formula)
@@ -147,10 +138,21 @@ declare_hierarchy(formula)
   end_leaf_storage_kind(formula, proposition)
 
   declare_storage_kind(formula, atom)
-    declare_child(formula, atom, relation, rel)
+    declare_field(formula, atom, relation, rel)
     declare_children(formula, atom, term, terms)
     has_no_hierarchy_elements(formula, atom)
   end_storage_kind(formula, atom)
+
+  declare_storage_kind(formula, comparison)
+    declare_child(formula, comparison, term, left)
+    declare_child(formula, comparison, term, right)
+    declare_hierarchy_element(formula, comparison, equal)
+    declare_hierarchy_element(formula, comparison, not_equal)
+    declare_hierarchy_element(formula, comparison, less_than)
+    declare_hierarchy_element(formula, comparison, less_than_equal)
+    declare_hierarchy_element(formula, comparison, greater_than)
+    declare_hierarchy_element(formula, comparison, greater_than_equal)
+  end_storage_kind(formula, comparison)
 
   declare_storage_kind(formula, quantifier)
     declare_field(formula, quantifier, variable, var)
@@ -189,17 +191,32 @@ declare_hierarchy(formula)
 
 end_hierarchy(formula)
 
-declare_nonfragmented_hierarchy(sort)
+declare_hierarchy(sort)
   declare_leaf_storage_kind(sort, custom_sort)
     declare_field(sort, custom_sort, identifier, name)
   end_leaf_storage_kind(sort, custom_sort)
-end_nonfragmented_hierarchy(sort)
+  declare_storage_kind(sort, primitive_sort)
+    declare_leaf_hierarchy_element(sort, primitive_sort, integer_sort)
+    declare_leaf_hierarchy_element(sort, primitive_sort, real_sort)
+  end_storage_kind(sort, primitive_sort)
+  declare_storage_kind(sort, function_sort)
+    declare_field(sort, function_sort, identifier, name)
+    declare_child(sort, function_sort, sort, return_sort)
+    declare_children(sort, function_sort, sort, arguments)
+    has_no_hierarchy_elements(sort, function_sort)
+  end_storage_kind(sort, function_sort)
+  declare_storage_kind(sort, relation_sort)
+    declare_field(sort, relation_sort, identifier, name)
+    declare_children(sort, relation_sort, sort, arguments)
+    has_no_hierarchy_elements(sort, relation_sort)
+  end_storage_kind(sort, relation_sort)
+end_hierarchy(sort)
 
 #undef declare_hierarchy
-#undef declare_nonfragmented_hierarchy
 #undef has_no_standard_equality
 #undef declare_storage_kind
 #undef declare_leaf_storage_kind
+#undef declare_storage_custom_members
 #undef declare_field
 #undef declare_child
 #undef declare_children
@@ -210,5 +227,4 @@ end_nonfragmented_hierarchy(sort)
 #undef end_storage_kind
 #undef end_leaf_storage_kind
 #undef end_hierarchy
-#undef end_nonfragmented_hierarchy
 #undef escape_commas

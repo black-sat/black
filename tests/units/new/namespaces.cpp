@@ -41,13 +41,11 @@ TEST_CASE("Fragment namespaces") {
 
     static_assert(type_exists(formula, FO));
     static_assert(type_exists(term, FO));
-    static_assert(type_exists(function, FO));
-    static_assert(type_exists(relation, FO));
     static_assert(type_exists(unary, FO));
     static_assert(type_exists(binary, FO));
 
     [[maybe_unused]]
-    relation r = sigma.relation_symbol("r");
+    relation r = sigma.relation("r");
     variable x = sigma.variable("x");
     
     formula f = exists(x, r(x));
