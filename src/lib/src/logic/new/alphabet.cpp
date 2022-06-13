@@ -23,9 +23,18 @@
 
 #include <black/new/logic.hpp>
 
+#include <tsl/hopscotch_map.h>
+
+#include <variant>
 #include <vector>
 
-#include <iostream>
+//
+// This file contains the implementation of some components of the `alphabet`
+// class. The logic hierarchy system is for the most part a header library being
+// 99% templates, but this part is implemented in a source file mainly in order
+// to keep `tsl::hopscotch_map` as a private dependency. To understand this
+// file, be sure to read the explanations in `core.hpp` and `generation.hpp`.
+//
 
 namespace black::internal::new_api {
 
@@ -45,12 +54,11 @@ namespace black::internal::new_api {
   } namespace black::internal::new_api {
 
   //
-  // Once we got the node, we have to unique it. The `alphabet` class will keep
-  // an hash table from nodes to pointer to nodes. When we insert a node, if it
-  // already exists, we get the existing copy of it from the hash table. If it
-  // does not, we insert it in the hash table. This mechanism is implemented in
-  // the following class, which will be indirectly inherited by the pimpl class
-  // of `alphabet` in `alphabet.cpp`
+  // The `alphabet` class keeps an hash table from nodes to pointer to nodes.
+  // When we insert a node, if it already exists, we get the existing copy of it
+  // from the hash table. If it does not, we insert it in the hash table. This
+  // mechanism is implemented in the following class, which will be indirectly
+  // inherited by the pimpl class `alphabet_impl`.
   //
   template<storage_type Storage>
   struct storage_allocator {
@@ -71,7 +79,8 @@ namespace black::internal::new_api {
 
   //
   // We specialize the case of a single boolean field (i.e. the `boolean`
-  // storage kinds).
+  // storage kind). Other optimized specializations could be possible in the
+  // future.
   //
   template<storage_type Storage>
     requires (std::is_same_v<
@@ -89,7 +98,10 @@ namespace black::internal::new_api {
     }
   };
   
-
+  //
+  // Here we prepare the concrete (non-template) classes exposing the member
+  // functions allocate_Storage (e.g. allocate_boolean, allocate_unary, ...).
+  //
   #define declare_storage_kind(Base, Storage) \
     struct Storage##_allocator : storage_allocator<storage_type::Storage> { \
       template<typename T> \
@@ -100,18 +112,25 @@ namespace black::internal::new_api {
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  struct dummy_t {};
-
   struct alphabet_base::alphabet_impl : 
   #define declare_storage_kind(Base, Storage) Storage##_allocator,
   #include <black/new/internal/formula/hierarchy.hpp>
-    dummy_t { };
+    std::monostate { };
 
+  //
+  // Out-of-line definitions of constructors and assignments of `alphabet_base`,
+  // declared in `generation.hpp`
+  //
   alphabet_base::alphabet_base() : _impl{std::make_unique<alphabet_impl>()} { }
   alphabet_base::alphabet_base(alphabet_base &&) = default;
   alphabet_base &alphabet_base::operator=(alphabet_base &&) = default;
   alphabet_base::~alphabet_base() = default;
 
+  //
+  // out-of-line definitions of `alphabet_base` member functions, which will be
+  // inherited by `alphabet` and used by the constructors of storage and element
+  // classes.
+  //
   #define declare_storage_kind(Base, Storage) \
     storage_node<storage_type::Storage> * \
     alphabet_base::allocate_##Storage(storage_node<storage_type::Storage> node)\

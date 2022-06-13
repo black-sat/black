@@ -24,13 +24,7 @@
 #ifndef BLACK_INTERNAL_FORMULA_INTERFACE_HPP
 #define BLACK_INTERNAL_FORMULA_INTERFACE_HPP
 
-#include <black/support/assert.hpp>
-#include <black/support/hash.hpp>
-
-#include <tsl/hopscotch_map.h>
-
-#include <cstdint>
-#include <deque>
+#include <memory>
 
 namespace black::internal::new_api 
 {
