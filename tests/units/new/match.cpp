@@ -165,12 +165,16 @@ TEST_CASE("Pattern matching") {
 
       formula<LTLFO> f = a;
       f.match(
-        [&](atom<LTLFO> at, std::vector<term<LTLFO>> const& terms) { 
+        [&](
+          atom<LTLFO> at, relation rel,
+          std::vector<term<LTLFO>> const& terms
+        ) { 
+          REQUIRE(at.rel() == rel);
           REQUIRE(at.terms() == terms);
           REQUIRE(terms == vars);
         },
         [](otherwise) {
-          REQUIRE(false); 
+          REQUIRE(false);
         }
       );
     }

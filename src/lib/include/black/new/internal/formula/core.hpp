@@ -1562,70 +1562,45 @@ namespace black::internal::new_api {
   // and right children of a conjunction, and is also used by the pattern
   // matching infrastructure defined later.
   //
-  // First we need a trait, specialized, later, for the number of children of a
-  // given hierarchy. Note that this is different from the cardinality of the
-  // `storage_node_data_t` tuple because here we do not consider fields but only
-  // children.
+  // First, we need to know if the last child is a vector of children.
+  // Specialized later.
   //
-  template<storage_type Storage>
-  struct storage_arity { };
+  template<size_t I, storage_type Storage>
+  struct storage_ith_data_is_field : std::false_type { };
   
-  template<storage_type Storage>
-  inline constexpr size_t storage_arity_v = storage_arity<Storage>::value;
-
-  //
-  // We also need to know if the last child is a vector of children. Specialized
-  // later.
-  //
-  template<storage_type Storage>
-  struct storage_has_children_vector : std::false_type { };
+  template<size_t I, storage_type Storage>
+  inline constexpr bool storage_ith_data_is_field_v =
+    storage_ith_data_is_field<I, Storage>::value;
   
-  template<storage_type Storage>
-  inline constexpr bool storage_has_children_vector_v =
-    storage_has_children_vector<Storage>::value;
+  template<size_t I, storage_type Storage>
+  struct storage_ith_data_is_child : std::false_type { };
+  
+  template<size_t I, storage_type Storage>
+  inline constexpr bool storage_ith_data_is_child_v =
+    storage_ith_data_is_child<I, Storage>::value;
 
   //
-  // From the arity, given that children are always declared after fields, we
-  // can compute the index of the first child in the `storage_data_t` tuple by
-  // subtracting the arity defined above from the size of the whole tuple.
-  //
-  template<storage_type Storage>
-  struct storage_index_of_first_child 
-    : std::integral_constant<size_t, 
-        (std::tuple_size_v<typename storage_data_t<Storage>::tuple_type> - 
-          storage_arity_v<Storage>)
-      > { };
-
-  template<storage_type Storage>
-  inline constexpr size_t storage_index_of_first_child_v =
-    storage_index_of_first_child<Storage>::value;
- 
-  //
-  // The implementation of get<> calls get_child() or get_children() depending
-  // on whether the requested index is the last and the storage kind has the
-  // children vector.
+  // The implementation of get<> calls get_field(), get_child() or
+  // get_children() depending on the index requested.
   //
   template<size_t I, storage_kind S>
   auto get(S s) {
-    constexpr size_t Idx = storage_index_of_first_child_v<S::storage> + I;
-    
-    if constexpr(
-      storage_has_children_vector_v<S::storage> &&
-      I == storage_arity_v<S::storage> - 1
-    )
-      return get_children<Idx, typename S::syntax>(s);
+    if constexpr(storage_ith_data_is_field_v<I, S::storage>)
+      return get_field<I>(s);
+    else if constexpr(storage_ith_data_is_child_v<I, S::storage>)
+      return get_child<I, typename S::syntax>(s);
     else 
-      return get_child<Idx, typename S::syntax>(s);
+      return get_children<I, typename S::syntax>(s);
   }
 
   //
-  // Then we can declare the actual specializations.
+  // Then we can declare the specializations.
   //
   } namespace std {
 
     template<black::internal::new_api::storage_kind S>
     struct tuple_size<S> 
-      : black::internal::new_api::storage_arity<S::storage> { };
+      : tuple_size<black::internal::new_api::storage_data_t<S::storage>> { };
 
     template<size_t I, black::internal::new_api::storage_kind S>
     struct tuple_element<I, S> {

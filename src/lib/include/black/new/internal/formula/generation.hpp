@@ -404,31 +404,6 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-  //
-  // tuple-like access
-  //
-  #define declare_storage_kind(Base, Storage) \
-    template<> \
-    struct storage_arity<storage_type::Storage> \
-      : std::integral_constant<size_t, 
-
-  #define declare_child(Base, Storage, Hierarchy, Child) 1 +
-
-  #define declare_children(Base, Storage, Hierarchy, Children) 1 +
-
-  #define end_storage_kind(Base, Storage) \
-      0> { };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
-
-  #define declare_children(Base, Storage, Hierarchy, Children) \
-    template<> \
-    struct storage_has_children_vector<storage_type::Storage> \
-      : std::true_type { };
-
-  #include <black/new/internal/formula/hierarchy.hpp>
-
   #define declare_storage_kind(Base, Storage) \
     template<fragment Syntax> \
     struct storage_alloc_args<Syntax, storage_type::Storage> \
@@ -590,6 +565,25 @@ namespace black::internal::new_api
         index_of_field_v<Storage##_fields, Storage##_##Children##_field>;\
       return get_children<I, Syntax>(static_cast<H const&>(*this)); \
     }
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  //
+  // tuple-like access
+  //
+  #define declare_field(Base, Storage, Type, Field) \
+    template<> \
+    struct storage_ith_data_is_field< \
+      index_of_field_v<Storage##_fields, Storage##_##Field##_field>, \
+      storage_type::Storage \
+    > : std::true_type { };
+  
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+    template<> \
+    struct storage_ith_data_is_child< \
+      index_of_field_v<Storage##_fields, Storage##_##Child##_field>, \
+      storage_type::Storage \
+    > : std::true_type { };
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
