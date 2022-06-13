@@ -59,7 +59,7 @@ TEST_CASE("Fragment namespaces") {
     proposition p = sigma.proposition("p");
     boolean b = sigma.boolean(true);
 
-    formula f = G(p && b);
+    formula f = always(p && b);
 
     STATIC_REQUIRE(black::internal::new_api::hierarchy<only<Future>>);
 

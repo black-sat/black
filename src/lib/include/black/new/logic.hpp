@@ -24,12 +24,6 @@
 #ifndef BLACK_LOGIC_FORMULA_HPP
 #define BLACK_LOGIC_FORMULA_HPP
 
-#include <black/support/assert.hpp>
-#include <black/support/hash.hpp>
-
-#include <type_traits>
-#include <variant>
-
 #include <black/new/internal/formula/core.hpp>
 #include <black/new/internal/formula/interface-fwd.hpp>
 #include <black/new/internal/formula/generation.hpp>

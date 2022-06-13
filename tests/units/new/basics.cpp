@@ -427,11 +427,11 @@ TEST_CASE("New API") {
 
     boolean b = sigma.boolean(true);
     proposition p = sigma.proposition("p");
+    variable x = sigma.variable("x");
+    variable y = sigma.variable("y");
 
     conjunction<LTL> c = b && ((p && (b && p)) && b);
-
-    std::vector<formula<LTL>> v1 = {b, p, b, p, b};
-    std::vector<formula<LTL>> v2;
+    addition<FO> sum = x + ((y + (x + y)) + x);
 
     using view_t = decltype(c.operands());
     STATIC_REQUIRE(std::input_or_output_iterator<view_t::const_iterator>);
@@ -441,10 +441,21 @@ TEST_CASE("New API") {
     STATIC_REQUIRE(std::ranges::view<view_t>);
     STATIC_REQUIRE(std::ranges::viewable_range<view_t>);
 
+    std::vector<formula<LTL>> v1 = {b, p, b, p, b};
+    std::vector<formula<LTL>> v2;
+
     for(auto f : c.operands())
       v2.push_back(f);
 
     REQUIRE(v1 == v2);
+    
+    std::vector<term<FO>> tv1 = {x, y, x, y, x};
+    std::vector<term<FO>> tv2;
+
+    for(auto f : sum.operands())
+      tv2.push_back(f);
+
+    REQUIRE(tv1 == tv2);
   }
 
   SECTION("Quantifier blocks") {

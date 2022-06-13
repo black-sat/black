@@ -41,10 +41,10 @@ namespace black::internal::new_api {
   // addition over the `alphabet_base` class defined before, which does the
   // heavy lifting.
   //
-  class alphabet : public alphabet_base 
+  class alphabet : public alphabet_base
   {
   public:
-    alphabet() = default; //: _default_sort{custom_sort("default")} { }
+    alphabet() = default;
     alphabet(alphabet const&) = delete;
     alphabet(alphabet &&) = default;
 
@@ -58,12 +58,6 @@ namespace black::internal::new_api {
     class boolean bottom() {
       return this->boolean(false);
     }
-
-  //   sort<> default_sort() const { return _default_sort; }
-  //   void set_default_sort(sort<> s) { _default_sort = s; }
-
-  // private:
-  //   sort<> _default_sort;
   };
  
   //
@@ -133,40 +127,6 @@ namespace black::internal::new_api {
     is_term<T> || std::integral<T> || std::floating_point<T>;
 
   //
-  // Then we define a trait to find the fragment associated with an argument
-  //
-  template<term_op_arg T>
-  struct term_op_arg_fragment;
-
-  template<is_term T>
-  struct term_op_arg_fragment<T> : std::type_identity<typename T::syntax> { };
-
-  template<std::integral T>
-  struct term_op_arg_fragment<T> 
-    : make_fragment<syntax_element::constant, syntax_element::integer> { };
-  
-  template<std::floating_point T>
-  struct term_op_arg_fragment<T> 
-    : make_fragment<syntax_element::constant, syntax_element::real> { };
-
-  template<term_op_arg T>
-  using term_op_arg_fragment_t = typename term_op_arg_fragment<T>::type;
-
-  //
-  // And then a trait to compute the resulting fragment given an operator and
-  // two arguments.
-  //
-  template<syntax_element Op, term_op_arg Arg1, term_op_arg Arg2>
-  struct term_op_fragment
-    : make_combined_fragment<
-        make_fragment_t<Op>, 
-        term_op_arg_fragment_t<Arg1>, term_op_arg_fragment_t<Arg2>
-      > { };
-
-  template<syntax_element Op, term_op_arg Arg1, term_op_arg Arg2>
-  using term_op_fragment_t = typename term_op_fragment<Op, Arg1, Arg2>::type;
-
-  //
   // Then, since numeric literals have to be wrapped into `constant`s, we need a
   // function to wrap arguments if needed.
   //
@@ -184,45 +144,27 @@ namespace black::internal::new_api {
   }
 
   //
-  // Finally, we can define a generic function that applies the given operator
-  // to the operands in the correct way. We implicitly assume that at least one
-  // argument is a term and not an integral or floating point. This will be
-  // required explicitly in the actual operators.
+  // Finally, we can define the operators that apply the given element to the
+  // operands after wrapping them. We can assume that at least one of the two
+  // operands is a hierarchy type and not an integral ora floating point,
+  // because overloaded operators are not looked up for primitive types.
   //
-  template<
-    storage_type Storage, syntax_element Op, term_op_arg Arg1, term_op_arg Arg2
-  >
-  auto term_op(Arg1 arg1, Arg2 arg2) {
-    using syntax = term_op_fragment_t<Op, Arg1, Arg2>;
-    using storage = storage_type_of_t<syntax, Storage>;
-
-    alphabet *sigma = get_sigma(arg1, arg2);
-    term<syntax> warg1 = wrap_term_op_arg(sigma, arg1);
-    term<syntax> warg2 = wrap_term_op_arg(sigma, arg2);
-
-    return storage(pseudo_enum_value<Op>{}, warg1, warg2);
-  }
-
-  //
-  // Now we need a macro to wrap `term_op` into the actual operators but it's
-  // very thin.
-  //
-  #define declare_term_op(Storage, Op, Element) \
+  #define declare_term_op(Op, Element) \
     template<term_op_arg Arg1, term_op_arg Arg2> \
-      requires (std::is_class_v<Arg1> || std::is_class_v<Arg2>) \
     auto operator Op(Arg1 arg1, Arg2 arg2) { \
+      alphabet *sigma = get_sigma(arg1, arg2); \
       return \
-        term_op<storage_type::Storage, syntax_element::Element>(arg1, arg2); \
+        Element(wrap_term_op_arg(sigma, arg1), wrap_term_op_arg(sigma, arg2)); \
     }
 
-  declare_term_op(comparison, <, less_than)
-  declare_term_op(comparison, <=, less_than_equal)
-  declare_term_op(comparison, >, greater_than)
-  declare_term_op(comparison, >=, greater_than_equal)
-  declare_term_op(binary_term, -, subtraction)
-  declare_term_op(binary_term, +, addition)
-  declare_term_op(binary_term, *, multiplication)
-  declare_term_op(binary_term, /, division)
+  declare_term_op(<, less_than)
+  declare_term_op(<=, less_than_equal)
+  declare_term_op(>, greater_than)
+  declare_term_op(>=, greater_than_equal)
+  declare_term_op(-, subtraction)
+  declare_term_op(+, addition)
+  declare_term_op(*, multiplication)
+  declare_term_op(/, division)
 
   #undef declare_term_op
 
@@ -238,19 +180,38 @@ namespace black::internal::new_api {
   //
   // The last operators we still need to provide for terms are == and !=. This
   // is delicate because `operator==` is also usually used to compare hierarchy
-  // types. So we need to make a special `operator==` that returns a wrapper
-  // type which is either convertible to `bool` or to a formula depending on
-  // what is needed. This is achieved by just inheriting from atom<Syntax>,
-  // which also gives us all the benefits of being a `hierarchy` and a
-  // `storage_kind`, so we can use `term_equality_wrapper` resulting from
-  // `operator==` everywhere a `hierarchy` is expected.
+  // types for equality. So we need to make a special `operator==` that returns
+  // a wrapper type which is either convertible to `bool` or to a formula
+  // depending on what is needed. This is achieved by just inheriting from
+  // equal<Syntax> or not_equal<Syntax>, which also gives us all the benefits of
+  // being a `hierarchy` and a `storage_kind`, so we can use
+  // `term_equality_wrapper` resulting from `operator==` everywhere a
+  // `hierarchy` is expected.
   //
-  template<typename Syntax>
-  struct term_equality_wrapper : comparison<Syntax> {
+  // The only complication here is that we have to overload logical operators
+  // for them to take priority over the && and || operators declared below for
+  // formulas. In other words, `f && true` is a formula (a `conjunction<>`)for
+  // any formula `f`, but `x == y && true` is a `bool`.
+  //
+  template<typename Syntax, syntax_element Element>
+  struct term_equality_wrapper : element_type_of_t<Syntax, Element> {
+    using base_t = element_type_of_t<Syntax, Element>;
     bool _eq;
 
-    term_equality_wrapper(bool eq, comparison<Syntax> a) 
-      : comparison<Syntax>{a}, _eq{eq} { }
+    term_equality_wrapper(bool eq, base_t b) : base_t{b}, _eq{eq} { }
+
+    friend bool operator&&(bool b, term_equality_wrapper const& w) {
+      return b && bool(w);
+    }
+    friend bool operator&&(term_equality_wrapper const& w, bool b) {
+      return bool(w) && b;
+    }
+    friend bool operator||(bool b, term_equality_wrapper const& w) {
+      return b || bool(w);
+    }
+    friend bool operator||(term_equality_wrapper const& w, bool b) {
+      return bool(w) || b;
+    }
 
     bool operator!() const { return !_eq; }
     operator bool() const { return _eq; }
@@ -264,9 +225,8 @@ namespace black::internal::new_api {
   auto operator==(T1 t1, T2 t2) {
     using S = deduce_fragment_for_storage_t<syntax_element::equal, T1, T2>;
 
-    return term_equality_wrapper<S>{
-      t1.unique_id() == t1.unique_id(),
-      comparison<S>(pseudo_enum_value<syntax_element::equal>{}, t1, t2)
+    return term_equality_wrapper<S, syntax_element::equal>{
+      t1.unique_id() == t1.unique_id(), equal<S>(t1, t2)
     };
   }
 
@@ -274,34 +234,48 @@ namespace black::internal::new_api {
   auto operator!=(T1 t1, T2 t2) {
     using S = deduce_fragment_for_storage_t<syntax_element::not_equal, T1, T2>;
 
-    return term_equality_wrapper<S>{
-      t1.unique_id() != t1.unique_id(),
-      comparison<S>(pseudo_enum_value<syntax_element::not_equal>{}, t1, t2)
+    return term_equality_wrapper<S, syntax_element::not_equal>{
+      t1.unique_id() != t1.unique_id(), not_equal<S>(t1, t2)
     };
   }
 
   //
   // For the other applications of `operator==` to mixed types (e.g. term and
   // double) we call again `term_op` defined above. Note the `requires` clause
-  // which is different from the one used above.
+  // that excludes the case where both arguments are terms, which is handled
+  // with the wrapper above.
   //
   template<term_op_arg Arg1, term_op_arg Arg2>
     requires (!std::is_class_v<Arg1> || !std::is_class_v<Arg2>)
   auto operator ==(Arg1 arg1, Arg2 arg2) {
-    return
-      term_op<storage_type::comparison, syntax_element::equal>(arg1, arg2);
+    alphabet *sigma = get_sigma(arg1, arg2);
+    return equal(wrap_term_op_arg(sigma, arg1), wrap_term_op_arg(sigma, arg2));
   }
   
   template<term_op_arg Arg1, term_op_arg Arg2>
     requires (!std::is_class_v<Arg1> || !std::is_class_v<Arg2>)
   auto operator !=(Arg1 arg1, Arg2 arg2) {
-    return
-      term_op<storage_type::comparison, syntax_element::not_equal>(arg1, arg2);
+    alphabet *sigma = get_sigma(arg1, arg2);
+    return 
+      not_equal(wrap_term_op_arg(sigma, arg1), wrap_term_op_arg(sigma, arg2));
   }
 
   //
-  // Unary and binary operators for formulas are much simpler.
+  // Unary and binary operators for formulas are similar. Here we allow
+  // combining formulas with `bool` values. To avoid coding multiple
+  // combinations we employ a mechanism similar to the one used above for term
+  // operators.
   //
+  template<typename T>
+  concept formula_op_arg = is_formula<T> || std::is_same_v<T, bool>;
+
+  template<is_formula T1>
+  auto wrap_formula_arg(alphabet *, T1 t) { return t; }
+
+  inline boolean wrap_formula_arg(alphabet *sigma, bool b) { 
+    return sigma->boolean(b);
+  }
+
   #define declare_unary_formula_op(Func, Op) \
     template<is_formula T> \
     auto Func(T f) { \
@@ -309,9 +283,11 @@ namespace black::internal::new_api {
     }
 
   #define declare_binary_formula_op(Func, Op) \
-    template<is_formula F1, is_formula F2> \
+    template<formula_op_arg F1, formula_op_arg F2> \
+      requires (std::is_class_v<F1> || std::is_class_v<F2>) \
     auto Func(F1 f1, F2 f2) { \
-      return Op(f1, f2); \
+      alphabet *sigma = get_sigma(f1, f2); \
+      return Op(wrap_formula_arg(sigma, f1), wrap_formula_arg(sigma, f2)); \
     }
   
   declare_unary_formula_op(operator!, negation)
@@ -390,15 +366,16 @@ namespace black::internal::new_api {
 
   //
   // Here we define a utility class that helps to pattern match associative
-  // operators such as conjunctions and disjunctions. It is a range view that
-  // iterates over all the left and right children of descending nodes as long
-  // as they continue to be conjunctions or disjunctions. This type is not
-  // intended to be used directly but only as a return type of the `arguments()`
-  // member function of `conjunction<>` and `disjunction<>`.
+  // binary elements such as conjunctions and disjunctions or sums and products.
+  // It is a range view that iterates over all the left and right children of
+  // descending nodes as long as they continue to be conjunctions or
+  // disjunctions. This type is not intended to be used directly but only as a
+  // return type of the `arguments()` member function of `conjunction<>`,
+  // `disjunction<>` etc...
   //
-  // The view type is just a thin wrapper over the conjunction/disjunction, 
-  // that returns its iterator on `begin()`.
-  // 
+  // The view type is just a thin wrapper over the conjunction/disjunction, that
+  // returns its iterator on `begin()`.
+  //
   template<typename E>
   class associative_op_view : public std::ranges::view_base
   {
@@ -428,7 +405,10 @@ namespace black::internal::new_api {
   {
   public:
     using difference_type = ssize_t;
-    using value_type = formula<typename E::syntax>;
+    using value_type = 
+      hierarchy_type_of_t<typename E::syntax, 
+        hierarchy_of_storage_v<storage_of_element_v<E::element>>
+      >;
 
     const_iterator() = default;
     const_iterator(const_iterator const&) = default;
@@ -445,7 +425,7 @@ namespace black::internal::new_api {
     const_iterator &operator=(const_iterator &&) = default;
 
     // We are the end iterator if there is no current element
-    bool operator==(const_iterator const&) const  = default;
+    bool operator==(const_iterator const&it) const = default;
 
     //
     // operator++ advances the iterator. If the stack is empty we are at the
@@ -499,12 +479,14 @@ namespace black::internal::new_api {
   };
 
   //
-  // Now that everything is ready we add a member to `hierarchy_element`
-  // returning the above view.
+  // Now that everything is ready we add a member to binary elements returning
+  // the above view.
   //
   template<syntax_element Element, typename Derived>
     requires (Element == syntax_element::conjunction || 
-              Element == syntax_element::disjunction)
+              Element == syntax_element::disjunction ||
+              Element == syntax_element::addition ||
+              Element == syntax_element::multiplication)
   struct hierarchy_element_custom_members<Element, Derived> 
   { 
     associative_op_view<Derived> operands() const { 

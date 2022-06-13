@@ -24,6 +24,9 @@
 #ifndef BLACK_LOGIC_SUPPORT_HPP_
 #define BLACK_LOGIC_SUPPORT_HPP_
 
+#include <black/support/assert.hpp>
+#include <black/support/hash.hpp>
+
 #include <deque>
 #include <string_view>
 #include <functional>
