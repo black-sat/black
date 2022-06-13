@@ -30,7 +30,7 @@
 #include <ranges>
 
 using namespace std::literals;
-using namespace black::new_api::syntax;
+using namespace black::new_api::logic;
 using black::internal::identifier;
 
 static_assert(black::internal::new_api::hierarchy<formula<LTL>>);
@@ -51,7 +51,7 @@ static_assert(
 
 TEST_CASE("New API") {
 
-  black::new_api::syntax::alphabet sigma;
+  black::new_api::logic::alphabet sigma;
 
   SECTION("Formula deduplication") {
     REQUIRE(sigma.boolean(true) == sigma.boolean(true));

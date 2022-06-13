@@ -29,10 +29,10 @@
 
 using namespace std::literals;
 
-using namespace black::new_api::syntax;
+using namespace black::new_api::logic;
 
 TEST_CASE("Pattern matching") {
-  black::new_api::syntax::alphabet sigma;
+  black::new_api::logic::alphabet sigma;
 
   SECTION("Matching on formulas") {
     boolean b = sigma.boolean(true);

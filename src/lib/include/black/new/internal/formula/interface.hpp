@@ -1,4 +1,4 @@
-  //
+//
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
 // (C) 2022 Nicola Gigante

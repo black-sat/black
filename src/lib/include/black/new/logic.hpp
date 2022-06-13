@@ -28,7 +28,7 @@
 #include <black/new/internal/formula/interface-fwd.hpp>
 #include <black/new/internal/formula/generation.hpp>
 #include <black/new/internal/formula/interface.hpp>
-#include <black/new/internal/formula/namespaces.hpp>
+#include <black/new/internal/formula/fragments.hpp>
 
 
 #endif // BLACK_LOGIC_FORMULA_HPP

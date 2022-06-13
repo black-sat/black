@@ -29,12 +29,12 @@
 
 #define type_exists(Type, Syntax) \
   std::is_same_v< \
-    Type, black::new_api::syntax::Type<black::new_api::syntax::Syntax> \
+    Type, black::new_api::logic::Type<black::new_api::logic::Syntax> \
   >
 
 TEST_CASE("Fragment namespaces") {
 
-  black::new_api::syntax::alphabet sigma;
+  black::new_api::logic::alphabet sigma;
 
   SECTION("Specific fragments") {
     using namespace black::new_api::FO;
