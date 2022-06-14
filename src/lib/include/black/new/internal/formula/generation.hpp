@@ -256,7 +256,7 @@ namespace black::internal::new_api
       Hierarchy<Syntax> Child() const;
 
     #define declare_children(Base, Storage, Hierarchy, Children) \
-      std::vector<Hierarchy<Syntax>> Children() const;
+      auto Children() const;
 
   #define end_storage_kind(Base, Storage) \
     };
@@ -344,10 +344,6 @@ namespace black::internal::new_api
         syntax_element::Element, Syntax, Element<Syntax> \
       > \
     { \
-      static_assert( \
-        is_subfragment_of_v<make_fragment_t<syntax_element::Element>, Syntax>, \
-        "'" #Element "' instance not allowed in its own syntax" \
-      ); \
     public: \
       using hierarchy_element_base< \
         syntax_element::Element, Syntax, Element<Syntax> \
@@ -553,7 +549,7 @@ namespace black::internal::new_api
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
     template<typename H, fragment Syntax> \
-    std::vector<Hierarchy<Syntax>> \
+    auto \
     storage_children_base<storage_type::Storage, Syntax, H>::Children() const {\
       constexpr size_t I = \
         index_of_field_v<Storage##_fields, Storage##_##Children##_field>;\

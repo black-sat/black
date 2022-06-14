@@ -165,19 +165,29 @@ TEST_CASE("Pattern matching") {
 
       formula<LTLFO> f = a;
       f.match(
-        [&](
-          atom<LTLFO> at, relation rel,
-          std::vector<term<LTLFO>> const& terms
-        ) { 
+        [&](atom<LTLFO> at, relation rel, auto const& terms) { 
           REQUIRE(at.rel() == rel);
-          REQUIRE(at.terms() == terms);
-          REQUIRE(terms == vars);
+          REQUIRE(std::ranges::equal(terms, at.terms()));
+          REQUIRE(std::ranges::equal(terms, vars));
         },
         [](otherwise) {
           REQUIRE(false);
         }
       );
     }
+  }
+
+  SECTION("Generic lambdas as handlers") {
+    formula f = sigma.top() && sigma.bottom();
+
+    f.match(
+      [](conjunction<Boolean>, auto ...args) {
+        REQUIRE(sizeof...(args) == 2);
+      },
+      [](otherwise) {
+        REQUIRE(false);
+      }
+    );
   }
 
   SECTION("Common type") {

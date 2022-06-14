@@ -185,23 +185,24 @@ TEST_CASE("New API") {
 
     variable x = sigma.variable("x");
     variable y = sigma.variable("y");
+    std::vector<term<FO>> variables = {x,y};
 
-    application<FO> app = application<FO>(f, std::vector{x,y});
+    application<FO> app = application<FO>(f, variables);
     REQUIRE(app.func() == f);
-    REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
+    REQUIRE(std::ranges::equal(variables, app.terms()));
 
-    application<FO> app2 = f(x, y);
+    // application<FO> app2 = f(x, y);
 
-    REQUIRE(app.func() == f);
-    REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
+    // REQUIRE(app.func() == f);
+    // REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
 
-    application<FO> app3 = f(std::vector{x, y});
+    // application<FO> app3 = f(std::vector{x, y});
 
-    REQUIRE(app.func() == f);
-    REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
+    // REQUIRE(app.func() == f);
+    // REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
 
-    REQUIRE(bool(app == app2));
-    REQUIRE(bool(app == app3));
+    // REQUIRE(bool(app == app2));
+    // REQUIRE(bool(app == app3));
   }
 
   SECTION("Quantifiers") {

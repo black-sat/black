@@ -1549,14 +1549,12 @@ namespace black::internal::new_api {
       concrete_hierarchy_type_t<
         hierarchy_of_storage_child_v<I, H::storage>, Syntax
       >;
-    std::vector<ChildH> result;
     alphabet *sigma = h.sigma();
     auto children = std::get<I>(h.node()->data.values);
    
-    for(auto child : children)
-      result.push_back(ChildH{sigma, child});
-   
-    return result;
+    return std::views::transform(children, [&](auto child) {
+      return ChildH{sigma, child};
+    });
   }
 
   //
@@ -1733,15 +1731,17 @@ namespace black::internal::new_api {
   //
   // The `dispatch()` function takes a hierarchy object and the list of handlers
   // and calls the first handler that can be called either directly or by
-  // unpacking.
+  // unpacking. Note that we check the unpacked case before to give it priority,
+  // so that e.g. a lambda such as `[](conjunction, auto ...args) { }` picks up
+  // the unpacked children in `args`.
   //
   template<hierarchy Hierarchy, typename Handler, typename ... Handlers>
   auto dispatch(Hierarchy f, Handler&& handler, Handlers&& ...handlers) 
   {
-    if constexpr(std::is_invocable_v<Handler, Hierarchy>)
-      return std::invoke(std::forward<Handler>(handler), f);
-    else if constexpr(can_be_unpacked_v<Hierarchy, Handler>) 
+    if constexpr(can_be_unpacked_v<Hierarchy, Handler>) 
       return unpack(std::forward<Handler>(handler), f);
+    else if constexpr(std::is_invocable_v<Handler, Hierarchy>)
+      return std::invoke(std::forward<Handler>(handler), f);
     else 
       return dispatch(f, std::forward<Handlers>(handlers)...);
   }
