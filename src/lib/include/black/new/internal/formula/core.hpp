@@ -1551,10 +1551,12 @@ namespace black::internal::new_api {
       >;
     alphabet *sigma = h.sigma();
     auto children = std::get<I>(h.node()->data.values);
-   
-    return std::views::transform(children, [&](auto child) {
-      return ChildH{sigma, child};
-    });
+
+    std::vector<ChildH> result;
+    for(auto child : children)
+      result.push_back(ChildH{sigma, child});
+
+    return result;
   }
 
   //

@@ -189,7 +189,7 @@ TEST_CASE("New API") {
 
     application<FO> app = application<FO>(f, variables);
     REQUIRE(app.func() == f);
-    REQUIRE(std::ranges::equal(variables, app.terms()));
+    REQUIRE(variables == app.terms());
 
     // application<FO> app2 = f(x, y);
 

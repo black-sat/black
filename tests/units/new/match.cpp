@@ -167,8 +167,8 @@ TEST_CASE("Pattern matching") {
       f.match(
         [&](atom<LTLFO> at, relation rel, auto const& terms) { 
           REQUIRE(at.rel() == rel);
-          REQUIRE(std::ranges::equal(terms, at.terms()));
-          REQUIRE(std::ranges::equal(terms, vars));
+          REQUIRE(at.terms() == terms);
+          REQUIRE(terms == vars);
         },
         [](otherwise) {
           REQUIRE(false);
