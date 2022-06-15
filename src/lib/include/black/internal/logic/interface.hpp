@@ -632,10 +632,10 @@ namespace black::internal {
     // become the end() iterator.
     const_iterator &operator++() {
       black_assert(_quantifier.has_value());
-      syntax_element e = _quantifier->syntax_element();
+      auto t = _quantifier->node_type();
 
       auto child = _quantifier->matrix().template to<quantifier<Syntax>>();
-      if(child.has_value() && child->syntax_element() == e)
+      if(child.has_value() && child->node_type() == t)
         _quantifier = child;
       else
         _quantifier = std::nullopt;
@@ -788,7 +788,7 @@ namespace black::internal {
       R const&vars, 
       formula<Syntax> matrix
     ) : specific_quantifier_block{
-      create_block<element_t>(pseudo_enum_value<E>{}, vars, matrix)
+      create_block<element_t>(fragment_enum_value<E>{}, vars, matrix)
     } { 
       black_assert(!empty(vars));
       _last = element_t(*rbegin(vars), matrix);

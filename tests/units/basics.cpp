@@ -128,6 +128,20 @@ TEST_CASE("New API") {
     REQUIRE(u == a);    
   }
 
+  SECTION("Use of fragment type enums values") {
+    unary<LTL>::type t1 = unary<LTL>::type::always;
+    unary<LTL>::type t2 = unary<LTL>::type::negation;
+
+    REQUIRE(t1 != t2);
+
+    std::vector<unary<LTL>::type> v = {
+      unary<LTL>::type::always, unary<LTL>::type::negation, 
+      unary<LTL>::type::eventually
+    };
+
+    REQUIRE(v[0] == t1);
+  }
+
   SECTION("Conversions between different syntaxes") {
     static_assert(!std::is_constructible_v<unary<FO>, until<LTL>>);
     static_assert(!std::is_assignable_v<unary<FO>, until<LTL>>);

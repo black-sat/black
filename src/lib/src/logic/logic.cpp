@@ -244,11 +244,10 @@ namespace black::logic {
       [](boolean b)     -> formula<FO> { return b; },
       [](proposition p) -> formula<FO> { return p; },
       [](atom<FO> a)    -> formula<FO> { return a; },
-      [](exists<FO> q)  -> formula<FO> { 
-        return exists<FO>(q.var(), remove_booleans(q.matrix())); 
-      },
-      [](forall<FO> q)  -> formula<FO> { 
-        return forall<FO>(q.var(), remove_booleans(q.matrix())); 
+      [](quantifier<FO> q)  -> formula<FO> { 
+        return quantifier<FO>(
+          q.node_type(), q.var(), remove_booleans(q.matrix())
+        ); 
       },
       [](comparison<FO> c) -> formula<FO> {
         return c;

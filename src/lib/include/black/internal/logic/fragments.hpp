@@ -230,6 +230,5 @@ namespace black {
 #undef enum_elements_LTLP
 #undef enum_elements_LTLFO
 #undef enum_elements_LTLPFO
-#undef enum_fragments
 
 #endif // BLACK_LOGIC_FRAGMENTS_HPP_

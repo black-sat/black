@@ -326,85 +326,23 @@ namespace black::internal {
       >
     { };
 
+  // this empty class is used as a base class of `fragment_type` later, to mark
+  // fragment types in the following concept definition.
+  struct fragment_type_marker_base { };
+
   //
-  // `fragment_pseudo_enum` models types used as pseudo-enum types for
-  // enumerating hierarchy elements of storage kinds, e.g. `unary<LTL>::type`.
-  // We can only just model the fact that the type holds a value of type
-  // `syntax_element`. It tries to mimic being an actual enum class by being
-  // explicitly convertible to its underlyng type.
+  // `fragment_enum` models types used as pseudo-enum types for enumerating
+  // hierarchy elements of storage kinds, e.g. `unary<LTL>::type`. We can only
+  // just model the fact that the type holds a value of type `syntax_element`,
+  // and that it derives from `fragment_type_marker_base`. It tries to mimic
+  // being an actual enum class by being explicitly convertible to its underlyng
+  // type.
   //
   template<typename T>
-  concept fragment_pseudo_enum = requires(T t) {
+  concept fragment_enum = requires(T t) {
+    requires std::derived_from<T, fragment_type_marker_base>;
     { syntax_element(t) };
     { uint8_t(t) };
-  };
-  
-  //
-  // The `fragment_type` class will provide the concrete instances of the
-  // `fragment_pseudo_enum` concept. For a given `syntax_predicate` `P` and a
-  // `syntax_list` `S`, `fragment_type<P, S>` will have one constexpr member
-  // named exactly `Element` for each syntax element from `S` allowed by `P`.
-  // For example, `unary<LTL>::type` has members `unary<LTL>::type::negation`,
-  // `unary<LTL>::type::always`, etc... The concrete names will be injected by
-  // the preprocessor later. Here, we define the needed types. That is why we
-  // call it `pseudo enum`.
-  //
-  // We first declare a struct whose only purpose is to encapsulate a statically
-  // known `syntax_element`.
-  template<syntax_element Element>
-  struct pseudo_enum_value {
-    static constexpr syntax_element value = Element;
-  };
-
-  //
-  // Then, an incomplete template class that will be specialized by the
-  // preprocessor with the concrete names of the pseudo-enum values, e.g. we
-  // will have:
-  //
-  // template<> 
-  // struct pseudo_enum_element<syntax_element::conjunction> {
-  //   static constexpr 
-  //   pseudo_enum_value<syntax_element::conjunction> conjunction;
-  // };
-  template<syntax_element Element>
-  struct pseudo_enum_element;
-
-  //
-  // Then, a class that derives from all the `pseudo_enum_element`s of a given
-  // syntax list, used as a base class for `fragment_type`.
-  //
-  template<typename List>
-  struct fragment_type_base;
-
-  template<syntax_element ...Elements>
-  struct fragment_type_base<syntax_list<Elements...>>
-    : pseudo_enum_element<Elements>... { };
-
-  //
-  // Now we can define `fragment_type`, which derives from `fragment_type_base`
-  // after filtering the list by the given predicate.
-  //
-  // The type itself is simple, and it only carries over the currently assigned
-  // `syntax_element`. It can be only constructed by `pseudo_enum_value`s
-  // corresponding to syntax elements included in its list.
-  //
-  template<syntax_predicate AcceptsType, typename List>
-  struct fragment_type
-    : fragment_type_base<syntax_list_filter_t<List, AcceptsType>> 
-  {
-    using list = syntax_list_filter_t<List, AcceptsType>;
-
-    fragment_type() = delete;
-
-    template<syntax_element Element>
-      requires syntax_list_contains_v<list, Element>
-    fragment_type(pseudo_enum_value<Element>) : _element{Element} { }
-
-    operator syntax_element() const { return _element; }
-    explicit operator uint8_t() const { return uint8_t(_element); }
-
-  private:
-    syntax_element _element;
   };
 
   //
@@ -420,14 +358,104 @@ namespace black::internal {
   // 1. a `syntax_list` called `list`, providing the list of `syntax_element`s
   //    allowed in this fragment.
   // 2. a template accepting an `syntax_predicate` type that, when
-  //    instantiated,will give a `fragment_pseudo_enum`.
+  //    instantiated, will give a `fragment_enum`.
   //
   template<typename T>
   concept fragment = requires {
     requires is_syntax_list_v<typename T::list>;
-    requires fragment_pseudo_enum<
-      typename T::template type<false_syntax_predicate>
+    requires fragment_enum<
+      typename T::template type<T, false_syntax_predicate>
     >;
+  };
+
+  //
+  // The `fragment_type` class will provide the concrete instances of the
+  // `fragment_enum` concept. For a given `syntax_predicate` `P` and a
+  // `syntax_list` `S`, `fragment_type<P, S>` will have one constexpr member
+  // named exactly `Element` for each syntax element from `S` allowed by `P`.
+  // For example, `unary<LTL>::type` has members `unary<LTL>::type::negation`,
+  // `unary<LTL>::type::always`, etc... The concrete names will be injected by
+  // the preprocessor later. Here, we define the needed types.
+  //
+  // We first declare a struct whose only purpose is to encapsulate a statically
+  // known `syntax_element`.
+  template<syntax_element Element>
+  struct fragment_enum_value {
+    static constexpr syntax_element value = Element;
+
+    explicit operator syntax_element() const { return Element; }
+  };
+
+  //
+  // Then, an incomplete template class that will be specialized by the
+  // preprocessor with the concrete names of the pseudo-enum values, e.g. we
+  // will have:
+  //
+  // template<> 
+  // struct fragment_enum_element<syntax_element::conjunction> {
+  //   static constexpr 
+  //   fragment_enum_value<syntax_element::conjunction> conjunction;
+  // };
+  template<syntax_element Element>
+  struct fragment_enum_element;
+
+  //
+  // Then, a class that derives from all the `fragment_enum_element`s of a given
+  // syntax list, used as a base class for `fragment_type`. It also derives from
+  // a particular empty base class used in the definition of the `fragment_enum`
+  // concept.
+  //
+  template<typename List>
+  struct fragment_type_base;
+
+  template<syntax_element ...Elements>
+  struct fragment_type_base<syntax_list<Elements...>>
+    : fragment_type_marker_base, fragment_enum_element<Elements>... { };
+
+  //
+  // Now we can define `fragment_type`, which derives from `fragment_type_base`
+  // after filtering the list by the given predicate.
+  //
+  // The type itself is simple, and it only carries over the currently assigned
+  // `syntax_element`. Publicly, it can be only constructed by
+  // `fragment_enum_value`s corresponding to syntax elements included in its
+  // list. A private constructor constructs from `syntax_element` directly, and
+  // is accessible only by the type `Owner` specified by the template parameter.
+  //
+  template<typename Owner, syntax_predicate AcceptsType, typename List>
+  struct fragment_type
+    : fragment_type_base<syntax_list_filter_t<List, AcceptsType>> 
+  {
+    using list = syntax_list_filter_t<List, AcceptsType>;
+
+    fragment_type() = delete;
+
+    fragment_type(fragment_type const&) = default;
+    fragment_type(fragment_type &&) = default;
+
+    fragment_type &operator=(fragment_type const&) = default;
+    fragment_type &operator=(fragment_type &&) = default;
+
+    template<syntax_element Element>
+      requires syntax_list_contains_v<list, Element>
+    fragment_type(fragment_enum_value<Element>) : _element{Element} { }
+
+    template<typename O, syntax_predicate AT2, typename L2>
+    bool operator==(fragment_type<O, AT2, L2> const& t) const {
+      return _element == syntax_element{t};
+    }
+
+    operator syntax_element() const { return _element; }
+    explicit operator uint8_t() const { return uint8_t(_element); }
+
+  private:
+    friend Owner;
+
+    explicit fragment_type(syntax_element e) : _element{e} { 
+      black_assert(AcceptsType::doesit(e));
+    }
+
+    syntax_element _element;
   };
 
   //
@@ -438,8 +466,8 @@ namespace black::internal {
   struct make_fragment_t {
     using list = syntax_list_unique_t<syntax_list<Elements...>>;
     
-    template<syntax_predicate AcceptsType>
-    using type = fragment_type<AcceptsType, list>;
+    template<typename Owner, syntax_predicate AcceptsType>
+    using type = fragment_type<Owner, AcceptsType, list>;
   };
 
   template<syntax_element ...Elements>
@@ -490,8 +518,8 @@ namespace black::internal {
       syntax_list_concat_t<typename Fragment1::list, typename Fragment2::list>
     >;
 
-    template<syntax_predicate AcceptsType>
-    using type = fragment_type<AcceptsType, list>;
+    template<typename Owner, syntax_predicate AcceptsType>
+    using type = fragment_type<Owner, AcceptsType, list>;
   };
 
   //
@@ -594,14 +622,14 @@ namespace black::internal {
   concept hierarchy = requires(T t) {
     requires fragment<typename T::syntax>;
     requires syntax_predicate<typename T::accepts_type>;
-    requires fragment_pseudo_enum<typename T::type>;
+    requires fragment_enum<typename T::type>;
     { T::hierarchy } -> std::convertible_to<hierarchy_type>;
 
     { t.unique_id() } -> 
       std::convertible_to<hierarchy_unique_id_t<T::hierarchy>>;
     { t.sigma() } -> std::convertible_to<alphabet *>;
     { t.hash() } -> std::convertible_to<size_t>;
-    { t.syntax_element() } -> std::convertible_to<syntax_element>;
+    { t.node_type() } -> std::convertible_to<typename T::type>;
 
     // we should constrain the return type of `node()`, but then checking this
     // concept would force the instantiation of `hierarchy_node<>`, which is
@@ -872,7 +900,7 @@ namespace black::internal {
     // members required by the `hierarchy` concept
     using syntax = Syntax;
     using accepts_type = hierarchy_syntax_predicate_t<Hierarchy>;
-    using type = typename Syntax::template type<accepts_type>;
+    using type = typename Syntax::template type<hierarchy_base, accepts_type>;
     static constexpr auto hierarchy = Hierarchy;
 
     // hierarchy types are not default constructible but are
@@ -923,15 +951,17 @@ namespace black::internal {
     size_t hash() const {
       return std::hash<hierarchy_node<hierarchy> const*>{}(_node);
     }
+
+    type node_type() const {
+      return type{_node->type};
+    }
     
     // we make `sigma()` a function template because `alphabet` is still
     // incomplete at this point, otherwise the static_cast would be invalid.
     template<typename A = alphabet>
     A *sigma() const { return static_cast<A *>(_sigma); }
 
-
     auto node() const { return _node; }
-    enum syntax_element syntax_element() const { return _node->type; }
 
   private:
     alphabet_base *_sigma;
@@ -1046,7 +1076,7 @@ namespace black::internal {
   public:
     // these members from the base have to be overriden and specialized
     using accepts_type = storage_syntax_predicate_t<Storage>;
-    using type = typename Syntax::template type<accepts_type>;
+    using type = typename Syntax::template type<storage_base, accepts_type>;
     static constexpr storage_type storage = Storage;
 
     storage_base() = default;
@@ -1081,6 +1111,11 @@ namespace black::internal {
       return matcher<storage_base>{}.match(*this, handlers...);
     }
     
+    // we override `type()` from `hierarchy_base` to use our `type`.
+    type node_type() const {
+      return type{node()->type};
+    }
+
     // this static member function does the job of the `to<>` and `is<>` members
     // of `hierarchy_base`. The conversion takes place if the fragments agree,
     // and the actual `syntax_element` of the node at runtime is the correct
@@ -1229,7 +1264,9 @@ namespace black::internal {
   public:
     // these members from the base have to be overriden and specialized
     using accepts_type = make_syntax_predicate_t<syntax_list<Element>>;
-    using type = typename base_t::syntax::template type<accepts_type>;
+    using type = typename base_t::syntax::template type<
+      hierarchy_element_base, accepts_type
+    >;
     static constexpr syntax_element element = Element;
 
     hierarchy_element_base() = delete;
@@ -1260,6 +1297,11 @@ namespace black::internal {
     template<typename ...Handlers>
     auto match(Handlers ...handlers) const {
       return matcher<hierarchy_element_base>{}.match(*this, handlers...);
+    }
+
+    // we override `type()` from `hierarchy_base` to use our `type`.
+    type node_type() const {
+      return type{this->node()->type};
     }
   };
 
@@ -1393,7 +1435,7 @@ namespace black::internal {
   struct is_hierarchy_element_constructible
     : is_storage_constructible<
         storage_of_element_v<Element>, Syntax,
-        pseudo_enum_value<Element>, Args...
+        fragment_enum_value<Element>, Args...
       > { };
 
   template<syntax_element Element, fragment Syntax, typename ...Args>
@@ -1902,7 +1944,11 @@ namespace black::internal {
     //
     using syntax = Syntax;
     using accepts_type = make_syntax_predicate_t<typename TopLevel::list>;
-    using type = typename Syntax::template type<accepts_type>;
+    using type = typename Syntax::template type<only, accepts_type>;
+
+    type node_type() {
+      return type{this->node()->type};
+    }
 
     //
     // We did all of this to come to this point: we call the `matcher` class but
@@ -2025,7 +2071,7 @@ namespace black::internal {
   //
   template<fragment Syntax, hierarchy H>
   auto can_fragment_cast(H h) {
-    if(!is_syntax_element_allowed(h.syntax_element(), typename Syntax::list{}))
+    if(!is_syntax_element_allowed(h.node_type(), typename Syntax::list{}))
       return false;
 
     bool can_cast = true;

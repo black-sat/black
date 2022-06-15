@@ -167,16 +167,16 @@ namespace black::internal
   #include <black/internal/logic/hierarchy.hpp>
 
   //
-  // Specialization of `pseudo_enum_element` for each `syntax_element`. Each
+  // Specialization of `fragment_enum_element` for each `syntax_element`. Each
   // specialization provides a static member of type
-  // `pseudo_enum_value<Element>` named exactly `Element`. The result is that,
+  // `fragment_enum_value<Element>` named exactly `Element`. The result is that,
   // e.g. `unary<LTL>::type` has members such as `unary<LTL>::type::always` and
   // `unary<LTL>::type::eventually`.
   //
   #define declare_enum_element(Element) \
     template<> \
-    struct pseudo_enum_element<syntax_element::Element> { \
-      static constexpr pseudo_enum_value<syntax_element::Element> Element{}; \
+    struct fragment_enum_element<syntax_element::Element> { \
+      static constexpr fragment_enum_value<syntax_element::Element> Element{}; \
     };
 
   #define declare_leaf_storage_kind(Base, Storage) declare_enum_element(Storage)

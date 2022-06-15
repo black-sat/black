@@ -39,9 +39,9 @@ TEST_CASE("Utility functions in the `black::logic` namespace")
   boolean bot = sigma.bottom();
 
   SECTION("has_element") {
-    REQUIRE(has_any_elements_of(
+    REQUIRE(has_any_element_of(
       p && (!p && (x > x && (exists(x, x > x) && top))),
-      syntax_element::boolean, syntax_element::forall
+      syntax_element::boolean, quantifier<FO>::type::forall
     ));
   }
   

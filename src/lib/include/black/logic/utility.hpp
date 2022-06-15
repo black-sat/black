@@ -32,19 +32,19 @@ namespace black::logic
   //
   // This function tells whether a hierarchy object `h` contains any element
   // among those given as arguments. For example, if `f` is a formula,
-  // `has_any_elements_of(f, syntax_element::boolean, syntax_element::iff)`
+  // `has_any_element_of(f, syntax_element::boolean, syntax_element::iff)`
   // tells whether there is any boolean constant in the formula or any double
   // implication.
   //
   template<hierarchy H, typename ...Args>
-    requires (std::is_same_v<Args, syntax_element> && ...)
-  bool has_any_elements_of(H h, Args ...args) {
-    if(((h.syntax_element() == args) || ...))
+    requires (std::is_constructible_v<syntax_element, Args> && ...)
+  bool has_any_element_of(H h, Args ...args) {
+    if(((h.node_type() == syntax_element{args}) || ...))
       return true;
     
     bool has = false;
     for_each_child(h, [&](auto child) {
-      if(has_any_elements_of(child, args...))
+      if(has_any_element_of(child, args...))
         has = true;
     });
 
