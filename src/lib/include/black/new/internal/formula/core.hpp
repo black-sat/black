@@ -677,12 +677,16 @@ namespace black::internal::new_api {
 
   //
   // The trait has a dummy `int` template parameter in order to ease the
-  // handling of trailing commas in the macros.
+  // handling of trailing commas in the macros. We also provide a
+  // preprocessor-friendly version to handle trailing commas properly.
   //
-  template<int Dummy, typename ...Types>
+  template<typename ...Types>
   struct make_storage_data {
     using type = make_storage_data_t<Types...>;
   };
+
+  template<int Dummy, typename ...Types>
+  struct make_storage_data_cpp : make_storage_data<Types...> { };
 
   //
   // Here we define the traits for the tuple-like access to `storage_data_t`
@@ -736,7 +740,7 @@ namespace black::internal::new_api {
   } namespace black::internal::new_api {
 
   //
-  // Last thing is to make `storage_data_t` hashable is a proper `operator==`
+  // Last thing to make `storage_data_t` hashable is a proper `operator==`
   //
   // However, the standard `operator==` of tuples is not enough. Some hierarchy
   // types, which may end up as types of fields of `make_storage_data_t` (think
@@ -780,7 +784,7 @@ namespace black::internal::new_api {
   }
 
   //
-  // Now we can finally declare the actuals `storage_node` type, which inherits
+  // Now we can finally declare the actual `storage_node` type, which inherits
   // from `hierarchy_node` and wraps the corresponding `storage_data_t`.
   //
   template<storage_type Storage>
@@ -1076,9 +1080,10 @@ namespace black::internal::new_api {
       return matcher<storage_base>{}.match(*this, handlers...);
     }
     
-    // this member function does the job of the `to<>` and `is<>` members of
-    // `hierarchy_base`. The conversion takes place if the fragments agree, and
-    // the actual `syntax_element` of the node at runtime is the correct one.
+    // this static member function does the job of the `to<>` and `is<>` members
+    // of `hierarchy_base`. The conversion takes place if the fragments agree,
+    // and the actual `syntax_element` of the node at runtime is the correct
+    // one.
     //
     // The fragment of the original type (`F`) must be a subfragment of ours.
     // But this does not holds for leaves, which always have a singleton
@@ -1272,28 +1277,6 @@ namespace black::internal::new_api {
   template<hierarchy T, hierarchy U>
   inline constexpr bool are_same_hierarchy_types_v = 
     are_same_hierarchy_types<T,U>::value;
-
-  //
-  // The preprocessed definition file will define concrete instances of
-  // `hierarchy_base` for each `hierarchy_type`. This trait will give us those
-  // types. Specialized later.
-  //
-  template<hierarchy_type Hierarchy, fragment Syntax>
-  struct concrete_hierarchy_type;
-  
-  template<hierarchy_type Hierarchy, fragment Syntax>
-  using concrete_hierarchy_type_t = 
-    typename concrete_hierarchy_type<Hierarchy, Syntax>::type;
-
-  //
-  // Similar thing for `storage_type`. Specialized later.
-  //
-  template<storage_type Storage, fragment Syntax>
-  struct concrete_storage_type;
-  
-  template<storage_type Storage, fragment Syntax>
-  using concrete_storage_type_t = 
-    typename concrete_storage_type<Storage, Syntax>::type;
 
   //
   // Similarly to `hierarchy_type_of` and `storage_type_of`, we can obtain the
@@ -1537,8 +1520,8 @@ namespace black::internal::new_api {
   template<size_t I, fragment Syntax, storage_kind H>
   auto get_child(H h) {
     using ChildH = 
-      concrete_hierarchy_type_t<
-        hierarchy_of_storage_child_v<I, H::storage>, Syntax
+      hierarchy_type_of_t<
+        Syntax, hierarchy_of_storage_child_v<I, H::storage>
       >;
     return ChildH{h.sigma(), std::get<I>(h.node()->data.values)};
   }
@@ -1546,8 +1529,8 @@ namespace black::internal::new_api {
   template<size_t I, fragment Syntax, storage_kind H>
   auto get_children(H h) {
     using ChildH = 
-      concrete_hierarchy_type_t<
-        hierarchy_of_storage_child_v<I, H::storage>, Syntax
+      hierarchy_type_of_t<
+        Syntax, hierarchy_of_storage_child_v<I, H::storage>
       >;
     alphabet *sigma = h.sigma();
     auto children = std::get<I>(h.node()->data.values);
@@ -1651,21 +1634,17 @@ namespace black::internal::new_api {
   template<hierarchy T, hierarchy U>
     requires (T::hierarchy == U::hierarchy && !have_same_storage_v<T, U>)
   struct common_type_helper<T, U> 
-    : std::type_identity<
-        concrete_hierarchy_type_t<
-          T::hierarchy, 
-          make_combined_fragment_t<typename T::syntax, typename U::syntax>
-        >
+    : hierarchy_type_of<
+        make_combined_fragment_t<typename T::syntax, typename U::syntax>,
+        T::hierarchy
       > { };
   
   template<storage_kind T, storage_kind U>
     requires (T::storage == U::storage)
   struct common_type_helper<T, U> 
-    : std::type_identity<
-        concrete_storage_type_t<
-          T::storage, 
-          make_combined_fragment_t<typename T::syntax, typename U::syntax>
-        >
+    : storage_type_of<
+        make_combined_fragment_t<typename T::syntax, typename U::syntax>,
+        T::storage
       > { };
 
   //

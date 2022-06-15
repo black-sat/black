@@ -24,6 +24,23 @@
 #ifndef BLACK_LOGIC_FORMULA_HPP
 #define BLACK_LOGIC_FORMULA_HPP
 
+//
+// The files included here define BLACK's logic API: handling of logic formulas
+// and everything around formulas.
+//
+// WARNING: the following files are thoroughly commented, but please *do not*
+// read them to understand how to *use* BLACK's logic API. Refer to the
+// documentation instead for that (and ping me if the documentation does not yet
+// exists when you are reading this comment). After that, come here to
+// understand how the API works under the hood.
+//
+// Read the comments of the files in this order:
+// - hierarchy.hpp (which is not included from here)
+// - core.hpp
+// - generation.hpp
+// - interface.hpp (interface-fwd.hpp are just needed forward declarations)
+// - fragments.hpp
+//
 #include <black/new/internal/formula/core.hpp>
 #include <black/new/internal/formula/interface-fwd.hpp>
 #include <black/new/internal/formula/generation.hpp>

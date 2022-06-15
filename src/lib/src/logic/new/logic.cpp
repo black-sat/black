@@ -100,12 +100,12 @@ namespace black::internal::new_api {
   
   //
   // Here we prepare the concrete (non-template) classes exposing the member
-  // functions allocate_Storage (e.g. allocate_boolean, allocate_unary, ...).
+  // functions unique_Storage (e.g. unique_boolean, unique_unary, ...).
   //
   #define declare_storage_kind(Base, Storage) \
     struct Storage##_allocator : storage_allocator<storage_type::Storage> { \
       template<typename T> \
-      auto allocate_##Storage(T t) { \
+      auto unique_##Storage(T t) { \
         return allocate(t); \
       } \
     };
@@ -133,9 +133,9 @@ namespace black::internal::new_api {
   //
   #define declare_storage_kind(Base, Storage) \
     storage_node<storage_type::Storage> * \
-    alphabet_base::allocate_##Storage(storage_node<storage_type::Storage> node)\
+    alphabet_base::unique_##Storage(storage_node<storage_type::Storage> node)\
     { \
-      return _impl->allocate_##Storage(std::move(node)); \
+      return _impl->unique_##Storage(std::move(node)); \
     }
 
   #include <black/new/internal/formula/hierarchy.hpp>
