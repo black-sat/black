@@ -27,7 +27,7 @@
 
 #include <iostream>
 
-TEST_CASE("remove_booleans()")
+TEST_CASE("Utility functions in the `black::new_api::logic` namespace")
 {
   using namespace black::new_api::logic;
   alphabet sigma;
@@ -37,29 +37,34 @@ TEST_CASE("remove_booleans()")
   boolean top = sigma.top();
   boolean bot = sigma.bottom();
 
-  REQUIRE(has_element(syntax_element::boolean,
-    p && (!p && (x > x && (exists(x, x > x) && top)))
-  ));
-
-  REQUIRE(remove_booleans(!top) == bot);
-  REQUIRE(remove_booleans(!bot) == top);
-  REQUIRE(remove_booleans(!!top) == top);
-  REQUIRE(remove_booleans(!!bot) == bot);
-  REQUIRE(remove_booleans(!!p) == p);
-
-  REQUIRE(remove_booleans(top && p) == p);
-  REQUIRE(remove_booleans(bot && p) == bot);
-
-  REQUIRE(remove_booleans(top || p) == top);
-  REQUIRE(remove_booleans(bot || p) == p);
-
-  REQUIRE(remove_booleans(implies(top, p)) == p);
-  REQUIRE(remove_booleans(implies(bot, p)) == top);
-  REQUIRE(remove_booleans(implies(p, top)) == top);
-  REQUIRE(remove_booleans(implies(p, bot)) == !p);
-  REQUIRE(remove_booleans(implies(top,bot)) == bot);
+  SECTION("has_element") {
+    REQUIRE(has_any_elements_of(
+      p && (!p && (x > x && (exists(x, x > x) && top))),
+      syntax_element::boolean, syntax_element::forall
+    ));
+  }
   
-  REQUIRE(remove_booleans(iff(p, top)) == p);
-  REQUIRE(remove_booleans(iff(p, bot)) == !p);
+  SECTION("remove_booleans()") {
+    REQUIRE(remove_booleans(!top) == bot);
+    REQUIRE(remove_booleans(!bot) == top);
+    REQUIRE(remove_booleans(!!top) == top);
+    REQUIRE(remove_booleans(!!bot) == bot);
+    REQUIRE(remove_booleans(!!p) == p);
+
+    REQUIRE(remove_booleans(top && p) == p);
+    REQUIRE(remove_booleans(bot && p) == bot);
+
+    REQUIRE(remove_booleans(top || p) == top);
+    REQUIRE(remove_booleans(bot || p) == p);
+
+    REQUIRE(remove_booleans(implies(top, p)) == p);
+    REQUIRE(remove_booleans(implies(bot, p)) == top);
+    REQUIRE(remove_booleans(implies(p, top)) == top);
+    REQUIRE(remove_booleans(implies(p, bot)) == !p);
+    REQUIRE(remove_booleans(implies(top,bot)) == bot);
+    
+    REQUIRE(remove_booleans(iff(p, top)) == p);
+    REQUIRE(remove_booleans(iff(p, bot)) == !p);
+  }
   
 }
