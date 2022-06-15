@@ -27,15 +27,15 @@
 #include <black/support/assert.hpp>
 #include <black/support/hash.hpp>
 
-#include <deque>
-#include <string_view>
 #include <functional>
 #include <ranges>
 
 //
 // This file contains all the declarations that do not depend on including the
 // hierarchy definition file, i.e. everything that does not need the
-// preprocessor.
+// preprocessor. To understand what is happening here, please be sure to know
+// how the logic API is used, and then read the comments in `hierarchy.hpp`
+// first.
 //
 
 namespace black::internal::new_api {
