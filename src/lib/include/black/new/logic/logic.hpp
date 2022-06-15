@@ -41,11 +41,16 @@
 // - interface.hpp (interface-fwd.hpp are just needed forward declarations)
 // - fragments.hpp
 //
-#include <black/new/internal/formula/core.hpp>
-#include <black/new/internal/formula/interface-fwd.hpp>
-#include <black/new/internal/formula/generation.hpp>
-#include <black/new/internal/formula/interface.hpp>
-#include <black/new/internal/formula/fragments.hpp>
+#include <black/new/internal/logic/core.hpp>
+#include <black/new/internal/logic/interface-fwd.hpp>
+#include <black/new/internal/logic/generation.hpp>
+#include <black/new/internal/logic/interface.hpp>
+#include <black/new/internal/logic/fragments.hpp>
 
+//
+// Here we include other members of the `logic` namespace based on the logic
+// API.
+//
+#include <black/new/logic/utility.hpp>
 
 #endif // BLACK_LOGIC_FORMULA_HPP

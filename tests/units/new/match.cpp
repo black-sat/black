@@ -23,7 +23,7 @@
 
 #include <catch.hpp>
 
-#include <black/new/logic.hpp>
+#include <black/new/logic/logic.hpp>
 
 #include <string>
 

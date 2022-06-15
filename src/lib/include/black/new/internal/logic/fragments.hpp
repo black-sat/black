@@ -81,7 +81,7 @@ namespace black::new_api {
     #define declare_hierarchy_element(Base, Storage, Element) \
       using black::internal::new_api::Element;
 
-    #include <black/new/internal/formula/hierarchy.hpp>
+    #include <black/new/internal/logic/hierarchy.hpp>
   }
 
   //
@@ -189,22 +189,22 @@ namespace black::new_api {
 // fragments and their namespaces
 //
 #define FRAGMENT Boolean
-#include <black/new/internal/formula/declare_fragment.hpp>
+#include <black/new/internal/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT FO
-#include <black/new/internal/formula/declare_fragment.hpp>
+#include <black/new/internal/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT LTL
-#include <black/new/internal/formula/declare_fragment.hpp>
+#include <black/new/internal/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT LTLP
-#include <black/new/internal/formula/declare_fragment.hpp>
+#include <black/new/internal/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT LTLFO
-#include <black/new/internal/formula/declare_fragment.hpp>
+#include <black/new/internal/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT LTLPFO
-#include <black/new/internal/formula/declare_fragment.hpp>
+#include <black/new/internal/logic/declare_fragment.hpp>
 #undef FRAGMENT
 
 #undef enum_elements_Boolean
