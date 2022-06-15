@@ -35,7 +35,7 @@ namespace black::new_api::logic
     
     bool has = false;
     for_each_child(h, [&](auto child) {
-      if(has_element(e, h))
+      if(has_element(e, child))
         has = true;
     });
 
@@ -48,7 +48,5 @@ namespace black::new_api::logic
 
   // true if there is any true/false constant in the formula
 }
-
-
 
 #endif // BLACK_LOGIC_UTILITY_HPP_
