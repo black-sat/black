@@ -26,8 +26,8 @@
 #ifndef BLACK_SOLVER_ENCODING_HPP
 #define BLACK_SOLVER_ENCODING_HPP
 
-#include <black/logic/alphabet.hpp>
-#include <black/logic/formula.hpp>
+#include <black/logic//alphabet.hpp>
+#include <black/logic//formula.hpp>
 
 #include <vector>
 

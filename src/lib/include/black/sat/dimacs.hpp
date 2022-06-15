@@ -25,10 +25,10 @@
 #define BLACK_SAT_DIMACS_HPP
 
 #include <black/support/common.hpp>
-#include <black/logic/formula.hpp>
-#include <black/logic/alphabet.hpp>
+#include <black/logic//formula.hpp>
+#include <black/logic//alphabet.hpp>
 #include <black/sat/solver.hpp>
-#include <black/logic/cnf.hpp>
+#include <black/logic//cnf.hpp>
 
 #include <istream>
 #include <string>

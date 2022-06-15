@@ -25,8 +25,8 @@
 #define BLACK_SOLVER_HPP
 
 #include <black/support/common.hpp>
-#include <black/logic/formula.hpp>
-#include <black/logic/alphabet.hpp>
+#include <black/logic//formula.hpp>
+#include <black/logic//alphabet.hpp>
 #include <black/support/tribool.hpp>
 
 #include <vector>

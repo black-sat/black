@@ -24,7 +24,7 @@
 #ifndef BLACK_SOLVER_CORE_HPP
 #define BLACK_SOLVER_CORE_HPP
 
-#include <black/logic/formula.hpp>
+#include <black/logic//formula.hpp>
 
 #include <string>
 

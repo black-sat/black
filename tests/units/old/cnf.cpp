@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2021 Nicola Gigante
+// (C) 2020 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,21 +21,58 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_FRONTEND_SOLVE_HPP
-#define BLACK_FRONTEND_SOLVE_HPP
+#include <catch.hpp>
 
 #include <black/logic//formula.hpp>
+#include <black/logic//parser.hpp>
+#include <black/logic//prettyprint.hpp>
 #include <black/solver/solver.hpp>
+#include <black/logic//cnf.hpp>
+#include <black/internal/debug/random_formula.hpp>
 
-#include <functional>
+using namespace black;
 
-namespace black::frontend 
+TEST_CASE("CNF Translation")
 {
-  //
-  // Main entry point of the tool in LTL solving mode
-  //
-  int solve();
+  alphabet sigma;
+  std::mt19937 gen((std::random_device())());
 
+  std::vector<std::string> symbols = {
+    "p1", "p2", "p3", "p4", "p5", "p6",
+    "p7", "p8", "p9", "p10",
+  };
+
+
+  std::vector<formula> tests;
+  for(int i = 0 ; i <= 30; ++i) {
+    tests.push_back(black::random_boolean_formula(gen, sigma, 10, symbols));
+  }
+
+  solver s;
+
+  SECTION("Simplification of random formulas") {
+    for(formula f : tests)
+    { 
+      formula fc = simplify_deep(f);
+      s.set_formula(!iff(fc,f));
+
+      INFO("Formula: " << f);
+      INFO("Simplification: " << fc);
+      REQUIRE(!s.solve());
+    }
+  }
+
+  SECTION("CNF of random formulas") {
+    for(formula f : tests) 
+    { 
+      INFO("Formula: " << f);
+      INFO("Simplification: " << simplify_deep(f));
+
+      formula fc = to_formula(sigma, to_cnf(f));
+      s.set_formula(!implies(fc,f));
+
+      INFO("CNF: " << fc);
+      REQUIRE(!s.solve());
+    }
+  }
 }
-
-#endif // BLACK_FRONTEND_SOLVE_HPP

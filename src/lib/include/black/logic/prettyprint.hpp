@@ -24,7 +24,7 @@
 #ifndef BLACK_LOGIC_PRETTY_PRINT_HPP
 #define BLACK_LOGIC_PRETTY_PRINT_HPP
 
-#include <black/logic/parser.hpp>
+#include <black/logic//parser.hpp>
 
 namespace black::internal 
 {

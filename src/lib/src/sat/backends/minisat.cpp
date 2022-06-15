@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 #include <black/sat/backends/minisat.hpp>
-#include <black/logic/cnf.hpp>
+#include <black/logic//cnf.hpp>
 
 #include <minisat/simp/SimpSolver.h>
 #include <tsl/hopscotch_map.h>

@@ -25,9 +25,9 @@
 
 #include <black/sat/backends/mathsat.hpp>
 
-#include <black/logic/alphabet.hpp>
-#include <black/logic/formula.hpp>
-#include <black/logic/prettyprint.hpp>
+#include <black/logic//alphabet.hpp>
+#include <black/logic//formula.hpp>
+#include <black/logic//prettyprint.hpp>
 
 #include <mathsat.h>
 #include <fmt/format.h>

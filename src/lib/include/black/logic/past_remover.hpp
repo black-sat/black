@@ -24,9 +24,9 @@
 #ifndef BLACK_PAST_REMOVER_HPP
 #define BLACK_PAST_REMOVER_HPP
 
-#include <black/logic/alphabet.hpp>
-#include <black/logic/parser.hpp>
-#include <black/logic/prettyprint.hpp>
+#include <black/logic//alphabet.hpp>
+#include <black/logic//parser.hpp>
+#include <black/logic//prettyprint.hpp>
 
 #include <vector>
 #include <string_view>
