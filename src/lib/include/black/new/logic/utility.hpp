@@ -24,6 +24,31 @@
 #ifndef BLACK_LOGIC_UTILITY_HPP_
 #define BLACK_LOGIC_UTILITY_HPP_
 
+#include <black/new/logic/logic.hpp>
+
+namespace black::new_api::logic 
+{
+  template<hierarchy H>
+  bool has_element(syntax_element e, H h) {
+    if(h.syntax_element() == e)
+      return true;
+    
+    bool has = false;
+    for_each_child(h, [&](auto child) {
+      if(has_element(e, h))
+        has = true;
+    });
+
+    return has;
+  }
+
+  // formula simplify(formula f);
+
+  // formula simplify_deep(formula f);
+
+  // true if there is any true/false constant in the formula
+}
+
 
 
 #endif // BLACK_LOGIC_UTILITY_HPP_
