@@ -29,11 +29,13 @@
 #include <vector>
 
 //
-// This file contains the implementation of some components of the `alphabet`
-// class. The logic hierarchy system is for the most part a header library being
-// 99% templates, but this part is implemented in a source file mainly in order
-// to keep `tsl::hopscotch_map` as a private dependency. To understand this
-// file, be sure to read the explanations in `core.hpp` and `generation.hpp`.
+// This file contains the implementation of some components declared in
+// `logic.hpp` and subfiles. In particular, here we declare some components of
+// the `alphabet` class. BLACK's logic API is for the most part a header library
+// being 99% templates, but this part is implemented in a source file mainly in
+// order to keep `tsl::hopscotch_map` as a private dependency. To understand
+// what follows, be sure to read the explanations in `core.hpp` and
+// `generation.hpp`.
 //
 
 namespace black::internal::new_api {
@@ -139,5 +141,122 @@ namespace black::internal::new_api {
     }
 
   #include <black/new/internal/logic/hierarchy.hpp>
+
+}
+
+//
+// Here we implement the remove_booleans() function declared in `utility.hpp`.
+// The implementation is split into several overloads that account for the
+// different cases, which are then put together by a call to the `match()`
+// function in the main function.
+//
+namespace black::new_api::logic {
+  
+  static
+  formula<FO> remove_booleans(negation<FO> n, auto op) 
+  {
+    // !true -> false, !false -> true
+    if(auto b = op.template to<boolean>(); b)
+      return n.sigma()->boolean(!b->value()); 
+    
+    // !!p -> p
+    if(auto nop = op.template to<negation<FO>>(); nop) 
+      return remove_booleans(nop->argument());
+
+    return !remove_booleans(op);
+  }
+
+  static
+  formula<FO> remove_booleans(conjunction<FO> c, auto l, auto r) {
+    alphabet &sigma = *c.sigma();
+    std::optional<boolean> bl = l.template to<boolean>(); 
+    std::optional<boolean> br = r.template to<boolean>();
+
+    if(!bl && !br)
+      return c;
+
+    if(bl && !br) {
+      return bl->value() ? remove_booleans(r) : sigma.bottom();
+    }
+    
+    if(!bl && br)
+      return br->value() ? remove_booleans(l) : sigma.bottom();
+
+    return sigma.boolean(bl->value() && br->value());
+  }
+
+  static
+  formula<FO> remove_booleans(disjunction<FO> d, auto l, auto r) {
+    alphabet &sigma = *d.sigma();
+    std::optional<boolean> bl = l.template to<boolean>();
+    std::optional<boolean> br = r.template to<boolean>();
+
+    if(!bl && !br)
+      return d;
+
+    if(bl && !br)
+      return bl->value() ? sigma.top() : remove_booleans(r);
+    
+    if(!bl && br)
+      return br->value() ? sigma.top() : remove_booleans(l);
+      
+    return sigma.boolean(bl->value() || br->value());
+  }
+
+  static
+  formula<FO> remove_booleans(implication<FO> t, auto l, auto r) {
+    alphabet &sigma = *t.sigma();
+    std::optional<boolean> bl = l.template to<boolean>();
+    std::optional<boolean> br = r.template to<boolean>();
+
+    if(!bl && !br)
+      return t;
+
+    if(bl && !br)
+      return bl->value() ? r : sigma.top();
+    
+    if(!bl && br)
+      return br->value() ? formula{sigma.top()} : remove_booleans(!l);
+
+    return sigma.boolean(!bl->value() || br->value());
+  }
+
+  static
+  formula<FO> remove_booleans(iff<FO> f, auto l, auto r) {
+    alphabet &sigma = *f.sigma();
+    std::optional<boolean> bl = l.template to<boolean>();
+    std::optional<boolean> br = r.template to<boolean>();
+
+    if(!bl && !br)
+      return f;
+
+    if(bl && !br)
+      return bl->value() ? remove_booleans(r) : remove_booleans(!r);
+    
+    if(!bl && br)
+      return br->value() ? remove_booleans(l) : remove_booleans(!l);
+
+    return sigma.boolean(bl->value() == br->value());
+  }
+
+  formula<FO> remove_booleans(formula<FO> f) {
+    return f.match( // LCOV_EXCL_LINE
+      [](boolean b)     -> formula<FO> { return b; },
+      [](proposition p) -> formula<FO> { return p; },
+      [](atom<FO> a)    -> formula<FO> { return a; },
+      [](exists<FO> q)  -> formula<FO> { 
+        return exists<FO>(q.var(), remove_booleans(q.matrix())); 
+      },
+      [](forall<FO> q)  -> formula<FO> { 
+        return forall<FO>(q.var(), remove_booleans(q.matrix())); 
+      },
+      [](comparison<FO> c) -> formula<FO> {
+        return c;
+      },
+      [](auto ...args) -> formula<FO> {
+        return remove_booleans(args...);
+      }
+    );
+}
 
 }

@@ -28,7 +28,7 @@
 // This file defines the fragments and the namespaces exposed by the library.
 // Everything declared before this file in `logic.hpp` have been declared in
 // `black::internal::new_api`, while here we re-export a selected number of
-// names into the user-facing `black::new_api` namespace
+// names into the user-facing `black::new_api::logic` namespace
 //
 //
 

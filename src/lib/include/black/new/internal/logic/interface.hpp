@@ -174,7 +174,7 @@ namespace black::internal::new_api {
   //
   template<is_term T>
   auto operator-(T t) {
-    return negative(t);
+    return negative(term{t});
   }
 
   //
@@ -279,7 +279,7 @@ namespace black::internal::new_api {
   #define declare_unary_formula_op(Func, Op) \
     template<is_formula T> \
     auto Func(T f) { \
-      return Op(f); \
+      return Op(formula{f}); \
     }
 
   #define declare_binary_formula_op(Func, Op) \

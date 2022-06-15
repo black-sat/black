@@ -81,6 +81,7 @@ if(Catch2_FOUND)
     units/new/basics.cpp
     units/new/match.cpp
     units/new/namespaces.cpp
+    units/new/utility.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)

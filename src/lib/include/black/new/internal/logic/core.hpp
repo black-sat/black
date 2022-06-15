@@ -1946,11 +1946,14 @@ namespace black::internal::new_api {
   {
     if constexpr(storage_ith_data_is_field_v<I, S>)
       for_each_child_aux<I+1, S>(f, args...);
-    else if constexpr(storage_ith_data_is_child_v<I, S>)
+    else if constexpr(storage_ith_data_is_child_v<I, S>) {
       f(arg);
-    else
+      for_each_child_aux<I+1, S>(f, args...);
+    } else {
       for(auto child : arg)
         f(child);
+      for_each_child_aux<I+1, S>(f, args...);
+    }
   }
 
   template<storage_kind S, typename F>

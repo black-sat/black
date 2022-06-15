@@ -21,42 +21,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_UTILITY_HPP_
-#define BLACK_LOGIC_UTILITY_HPP_
+#include <catch.hpp>
 
-#include <black/support/common.hpp>
 #include <black/new/logic/logic.hpp>
 
-namespace black::new_api::logic 
+#include <iostream>
+
+TEST_CASE("remove_booleans()")
 {
-  //
-  // This function tells whether a hierarchy object `h` contains any element of
-  // type `e`. For example, if `f` is a formula,
-  // `has_element(syntax_element::bolean, f)` tells whether there is any boolean
-  // constant in the formula.
-  //
-  template<hierarchy H>
-  bool has_element(syntax_element e, H h) {
-    if(h.syntax_element() == e)
-      return true;
-    
-    bool has = false;
-    for_each_child(h, [&](auto child) {
-      if(has_element(e, child))
-        has = true;
-    });
+  using namespace black::new_api::logic;
+  alphabet sigma;
 
-    return has;
-  }
+  proposition p = sigma.proposition("p");
+  variable x = sigma.variable("x");
+  boolean top = sigma.top();
+  boolean bot = sigma.bottom();
 
-  //
-  // The `remove_booleans` function remove boolean constants from a first-order
-  // formula. This can only be done reliably for propositional and first-order
-  // formulas because in temporal formulas the way to perform such removal would
-  // depend on the finite/infinite-trace semantics. Implemented in logic.cpp.
-  //
-  BLACK_EXPORT
-  formula<FO> remove_booleans(formula<FO> f);
+  REQUIRE(has_element(syntax_element::boolean,
+    p && (!p && (x > x && (exists(x, x > x) && top)))
+  ));
+
+  REQUIRE(remove_booleans(!top) == bot);
+  REQUIRE(remove_booleans(!bot) == top);
+  REQUIRE(remove_booleans(!!top) == top);
+  REQUIRE(remove_booleans(!!bot) == bot);
+  REQUIRE(remove_booleans(!!p) == p);
+
+  REQUIRE(remove_booleans(top && p) == p);
+  REQUIRE(remove_booleans(bot && p) == bot);
+
+  REQUIRE(remove_booleans(top || p) == top);
+  REQUIRE(remove_booleans(bot || p) == p);
+
+  REQUIRE(remove_booleans(implies(top, p)) == p);
+  REQUIRE(remove_booleans(implies(bot, p)) == top);
+  REQUIRE(remove_booleans(implies(p, top)) == top);
+  REQUIRE(remove_booleans(implies(p, bot)) == !p);
+  REQUIRE(remove_booleans(implies(top,bot)) == bot);
+  
+  REQUIRE(remove_booleans(iff(p, top)) == p);
+  REQUIRE(remove_booleans(iff(p, bot)) == !p);
+  
 }
-
-#endif // BLACK_LOGIC_UTILITY_HPP_
