@@ -310,7 +310,8 @@ namespace black::internal::new_api
 
   //
   // This is the base class of `storage_base` that exposes the member functions
-  // named after the fields of the storage kind.
+  // named after the fields of the storage kind. Here we only declare the
+  // accessor functions, which are defined later.
   //
   #define declare_storage_kind(Base, Storage) \
     template<typename Derived> \
@@ -326,7 +327,8 @@ namespace black::internal::new_api
 
   //
   // And this is the base class exposing the member functions named after the
-  // children and children vectors of the storage kind.
+  // children and children vectors of the storage kind. Here we only declare the
+  // accessor functions, which are defined later.
   //
   #define declare_storage_kind(Base, Storage) \
     template<typename Derived, fragment Syntax> \
@@ -646,6 +648,67 @@ namespace black::internal::new_api
     std::unique_ptr<alphabet_impl> _impl;
   };  
 
+  //
+  // Now that we have the `alphabet_base` class, we can define the allocating
+  // constructors declared above of storage kinds and hierarchy elements. We get
+  // a pointer to the aphabet by one of the arguments using `get_sigma()`. Then,
+  // we construct an object of type `storage_alloc_args_t<>` from the arguments
+  // of the function, which is passed to `args_to_node` which creates a
+  // temporary node object from those arguments (with the due unwrapping, e.g.
+  // from `formula<Syntax>` to `hierarchy_node<hierarchy_type::formula>
+  // const*`). Then, the `unique_<storage>` member function of `alphabet_base`
+  // (e.g. `unique_boolean`) is used to get the address of the uniqued copy of
+  // the node.
+  //
+  #define declare_leaf_storage_kind(Base, Storage)
+  #define declare_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    template<typename ...Args> \
+      requires is_storage_constructible_v< \
+        storage_type::Storage, Syntax, Args... \
+      > \
+    Storage<Syntax>::Storage(Args ...args) \
+      : Storage{ \
+          get_sigma(args...), \
+          get_sigma(args...)->unique_##Storage( \
+            args_to_node<Syntax, storage_type::Storage>( \
+              storage_alloc_args_t<Syntax, storage_type::Storage>{args...} \
+            ) \
+          ) \
+        } { }
+
+  //
+  // Same thing as above for hierarchy elements.
+  //
+  #define declare_leaf_hierarchy_element(Base, Storage, Element)
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    template<fragment Syntax> \
+    template<typename ...Args> \
+      requires is_hierarchy_element_constructible_v< \
+        syntax_element::Element, Syntax, Args... \
+      > \
+    Element<Syntax>::Element(Args ...args) \
+      : Element{ \
+          get_sigma(args...), \
+          get_sigma(args...)->unique_##Storage( \
+            args_to_node<Syntax, storage_type::Storage>( \
+              storage_alloc_args_t<Syntax, storage_type::Storage>{ \
+                Storage<Syntax>::type::Element, \
+                args... \
+              } \
+            ) \
+          ) \
+        } { }
+
+  #include <black/new/internal/formula/hierarchy.hpp>
+
+  //
+  // Here we start to account for the other elements of the interface of
+  // hierarchy types. See especially the comments for the `index_of_field` trait
+  // in `core.hpp`. Here we declare a numbero f of `const char *` constants, one
+  // for each possible field/child/children vector of all the storage kinds of
+  // all the hierarchies.
+  //
   #define declare_field(Base, Storage, Type, Field) \
     inline constexpr const char Storage##_##Field##_field[] = #Field;
 
@@ -656,6 +719,12 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  //
+  // Here we generate an array of string literals that maps the index of a
+  // field/child/child vector to its name (as a string). The last literal of the
+  // array is there to avoid declaring an empty array, for storage kinds without
+  // fields nor children (e.g. `primitive_sort`).
+  //
   #define declare_storage_kind(Base, Storage) \
     inline constexpr std::string_view Storage##_fields[] = {
   
@@ -664,11 +733,15 @@ namespace black::internal::new_api
   #define declare_children(Base, Storage, Hierarchy, Children) #Children,
 
   #define end_storage_kind(Base, Storage) \
-      "LAST" \
+      "__THIS_SHOULD_NOT_SHOW_UP_ANYWHERE__" \
     };
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
+  //
+  // This trait returns the declare hierarchy type of a children or children
+  // vector. 
+  //
   #define declare_child(Base, Storage, Hierarchy, Child) \
   template<> \
   struct hierarchy_of_storage_child< \
@@ -683,7 +756,13 @@ namespace black::internal::new_api
   
   #include <black/new/internal/formula/hierarchy.hpp>
 
-
+  //
+  // Here we define the actual accessor member functions of
+  // `storage_fields_base` and `storage_children_base` declared above. Here we
+  // have the name of the field, but we need the index to get it from
+  // `storage_data_t` which is a tuple, so we map names to indexes using the
+  // arrays of string literals defined above.
+  //
   #define declare_field(Base, Storage, Type, Field) \
     template<typename H> \
     Type storage_fields_base<storage_type::Storage, H>::Field() const { \
@@ -713,7 +792,8 @@ namespace black::internal::new_api
   #include <black/new/internal/formula/hierarchy.hpp>
 
   //
-  // tuple-like access
+  // Lastly, two traits used by the get<>() function to know whether a given
+  // index refer to a field, a child, or a children vector.
   //
   #define declare_field(Base, Storage, Type, Field) \
     template<> \
@@ -731,45 +811,6 @@ namespace black::internal::new_api
 
   #include <black/new/internal/formula/hierarchy.hpp>
 
-
-  #define declare_leaf_storage_kind(Base, Storage)
-  #define declare_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    template<typename ...Args> \
-      requires is_storage_constructible_v< \
-        storage_type::Storage, Syntax, Args... \
-      > \
-    Storage<Syntax>::Storage(Args ...args) \
-      : Storage{ \
-          get_sigma(args...), \
-          get_sigma(args...)->unique_##Storage( \
-            args_to_node<Syntax, storage_type::Storage>( \
-              storage_alloc_args_t<Syntax, storage_type::Storage>{args...} \
-            ) \
-          ) \
-        } { }
-
-  #define declare_leaf_hierarchy_element(Base, Storage, Element)
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    template<fragment Syntax> \
-    template<typename ...Args> \
-      requires is_hierarchy_element_constructible_v< \
-        syntax_element::Element, Syntax, Args... \
-      > \
-    Element<Syntax>::Element(Args ...args) \
-      : Element{ \
-          get_sigma(args...), \
-          get_sigma(args...)->unique_##Storage( \
-            args_to_node<Syntax, storage_type::Storage>( \
-              storage_alloc_args_t<Syntax, storage_type::Storage>{ \
-                Storage<Syntax>::type::Element, \
-                args... \
-              } \
-            ) \
-          ) \
-        } { }
-
-  #include <black/new/internal/formula/hierarchy.hpp>
 }
 
 #endif // BLACK_INTERNAL_FORMULA_INTERFACE_HPP
