@@ -42,9 +42,13 @@ namespace black::new_api {
     using black::internal::new_api::alphabet;
     using black::internal::new_api::otherwise;
     using black::internal::new_api::syntax_element;
+    using black::internal::new_api::fragment;
     using black::internal::new_api::make_fragment_t;
     using black::internal::new_api::make_combined_fragment_t;
     using black::internal::new_api::only;
+    using black::internal::new_api::fragment_cast;
+    using black::internal::new_api::can_fragment_cast;
+    using black::internal::new_api::fragment_unsafe_cast;
     
     //
     // These are three fragments useful for use with `only`

@@ -528,4 +528,13 @@ TEST_CASE("New API") {
       [](otherwise) { REQUIRE(false); }
     );
   }
+
+  SECTION("fragment_cast<>") {
+    proposition p = sigma.proposition("p");
+    formula<LTLP> u1 = G(p);
+    formula<LTLP> u2 = Y(sigma.proposition("p"));
+
+    REQUIRE(fragment_cast<LTL>(u1).has_value());
+    REQUIRE(!fragment_cast<LTL>(u2).has_value());
+  }
 }

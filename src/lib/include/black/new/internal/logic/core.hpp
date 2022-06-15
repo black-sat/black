@@ -28,6 +28,7 @@
 #include <black/support/hash.hpp>
 
 #include <functional>
+#include <numeric>
 #include <ranges>
 
 //
@@ -1596,6 +1597,22 @@ namespace black::internal::new_api {
   } namespace black::internal::new_api {
 
   //
+  // We also declare a function that, based on get<> above, makes a tuple of all
+  // the fields of a hierarchy object. This is useful in combination with
+  // `std::apply` which currently does not support Tuple-like user-defined
+  // types.
+  //
+  template<storage_kind S, size_t ...I>
+  auto as_tuple(S s, std::index_sequence<I...>) {
+    return std::tuple{get<I>(s)...};
+  }
+
+  template<storage_kind S>
+  auto as_tuple(S s) {
+    return as_tuple(s, std::make_index_sequence<std::tuple_size_v<S>>{});
+  }
+
+  //
   // Before going into the implementation of the pattern matching
   // infrastructure, we implement the facility that it will use to compute the
   // return type of the `match()` function when the cases lambdas return
@@ -1900,6 +1917,138 @@ namespace black::internal::new_api {
         );
     }
   };
+
+  //
+  // Here we start defining a set of utilities to work with hierarchy types and
+  // objects.
+  //
+  // The first is a function to orchestrate a generic recursion over all the
+  // children of a hierarchy. When the concrete hierarchy is known this is
+  // trivial, with a recursive function and the `match()` function, but when the
+  // hierarchy type is generic, traversing all the children can be cumbersome.
+  // With this function, it's easier. We apply a function to each child of the
+  // hierarchy object, and that's it. We do not record the return value of the
+  // function, because there is no way to return it back: in case of a known
+  // storage kind, we know in particular which children are there and we could
+  // return a tuple of the results, but when called on a generic hierarchy
+  // object, there is no way to know which type to return. So the called
+  // function must imperatively do something on its captured variables, but this
+  // is not an heavy limitation.
+  //
+  // At first we define the overload of the function that takes a
+  // `storage_kind`, since we know exactly which children there are in this
+  // case. 
+  template<size_t I, storage_type S, typename F>
+  void for_each_child_aux(F) { }
+  
+  template<size_t I, storage_type S, typename Arg, typename ...Args, typename F>
+  void for_each_child_aux(F f, Arg arg, Args...args) 
+  {
+    if constexpr(storage_ith_data_is_field_v<I, S>)
+      for_each_child_aux<I+1, S>(f, args...);
+    else if constexpr(storage_ith_data_is_child_v<I, S>)
+      f(arg);
+    else
+      for(auto child : arg)
+        f(child);
+  }
+
+  template<storage_kind S, typename F>
+  void for_each_child(S s, F f) {
+    std::apply([&](auto ...fields) {
+      for_each_child_aux<0, S::storage>(f, fields...);
+    }, as_tuple(s));
+  }
+
+  //
+  // Then, we declare the overload that takes a `hierarchy`, which has to look
+  // at which storage kind the hierarchy is in particular and call the
+  // `storage_kind` overload consequently. This is done simply by reusing the
+  // `match()` function. The lambda cases are called with the hierarchy
+  // downcasted to the single hierarchy elements, so inside a generic lambda we
+  // have the concrete type to call the `storage_kind` overload of the function.
+  //
+  template<hierarchy H, typename F>
+  void for_each_child(H h, F f) {
+    h.match(
+      [&](auto s) {
+        for_each_child(s, f);
+      }
+    );
+  }
+
+  //
+  // The following function performs a cast between hierarchy types of the same
+  // type but different fragments. It does no checks whatsoever to ensure the
+  // conversion is legit, so it has to be used sparingly and only when the
+  // programmer knows from other facts that the conversion is safe. Think of it
+  // as a `static_cast` from base to derived: if you know that your Base *
+  // pointer actually points to a Derived, then everything's ok, otherwise,
+  // undefined behavior.
+  //
+  template<fragment Syntax, hierarchy H>
+  auto fragment_unsafe_cast(H h) {
+    return hierarchy_type_of_t<Syntax, H::hierarchy>{h.sigma(), h.node()};
+  }
+  
+  template<fragment Syntax, storage_kind S>
+  auto fragment_unsafe_cast(S s) {
+    return storage_type_of_t<Syntax, S::storage>{s.sigma(), s.node()};
+  }
+  
+  template<fragment Syntax, hierarchy_element E>
+  auto fragment_unsafe_cast(E e) {
+    return element_type_of_t<Syntax, E::element>{e.sigma(), e.node()};
+  }
+
+  //
+  // `can_fragment_cast` checks whether `fragment_unsafe_cast` can be safely
+  // called, by traversing the hierarchy object recursively to all the children.
+  // So after a positive call of this function, `fragment_unsafe_cast` is safe
+  // to use, but beware that this requires a complete traversal of the whole
+  // hierarchy object, which for large formulas can be quite expensive.
+  //
+  // At first we need a function to check *at runtime* if a syntax element is
+  // allowed by the element list of a fragment.
+  template<syntax_element ...Elements>
+  bool is_syntax_element_allowed(syntax_element e, syntax_list<Elements...>)
+  {
+    return ((e == Elements) || ...);
+  }
+
+  //
+  // Then the function itself. This is a prototypical application of
+  // `for_each_child`.
+  //
+  template<fragment Syntax, hierarchy H>
+  auto can_fragment_cast(H h) {
+    if(!is_syntax_element_allowed(h.syntax_element(), typename Syntax::list{}))
+      return false;
+
+    bool can_cast = true;
+
+    for_each_child(h, [&](auto child) {
+      if(!can_fragment_cast<Syntax>(child))
+        can_cast = false;
+    });
+
+    return can_cast;
+  }
+
+  //
+  // This function is a checked version of `fragment_unsafe_cast` that returns
+  // an empty optional if `can_fragment_cast` returns false. So this is safe to
+  // use everywhere but beware of the same performance implications of
+  // `can_fragment_cast`.
+  //
+  template<fragment Syntax, hierarchy H>
+  auto fragment_cast(H h)
+    -> std::optional<decltype(fragment_unsafe_cast<Syntax>(h))> 
+  {
+    if(can_fragment_cast<Syntax>(h))
+      return {fragment_unsafe_cast<Syntax>(h)};
+    return std::nullopt;
+  }
 }
 
 #endif // BLACK_LOGIC_SUPPORT_HPP_
