@@ -234,7 +234,7 @@ TEST_CASE("Pattern matching") {
 
     #define REQUIRE_CT(x, y, ...) \
       STATIC_REQUIRE( \
-        black::internal::are_same_hierarchy_types_v< \
+        black::internal::logic::are_same_hierarchy_types_v< \
           std::common_type_t<decltype(x),decltype(y)>, \
           __VA_ARGS__ \
         > \

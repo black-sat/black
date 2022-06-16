@@ -39,7 +39,7 @@
 // first.
 //
 
-namespace black::internal {
+namespace black::internal::logic {
   
   //
   // `alphabet` is the main factory class for all the formulas. See its
@@ -402,10 +402,10 @@ namespace black::internal {
   // field to unpack.
   //
   } namespace std {
-    template<black::internal::syntax_element Element>
-    struct tuple_size<black::internal::type_value<Element>> 
+    template<black::internal::logic::syntax_element Element>
+    struct tuple_size<black::internal::logic::type_value<Element>> 
       : integral_constant<size_t, 0> { };
-  } namespace black::internal {
+  } namespace black::internal::logic {
 
   //
   // Then, an incomplete template class that will be specialized by the
@@ -725,13 +725,13 @@ namespace black::internal {
   // hierarchy types are hashable
   //
   } namespace std {
-    template<black::internal::hierarchy H>
+    template<black::internal::logic::hierarchy H>
     struct hash<H> {
       size_t operator()(H h) const {
         return h.hash();
       }
     };
-  } namespace black::internal {
+  } namespace black::internal::logic {
 
   //
   // Similarly to hierarchy_node<>, we have storage_node<> as a concrete node
@@ -784,15 +784,15 @@ namespace black::internal {
 
     template<typename ...Types>
     struct tuple_size<
-      black::internal::make_storage_data_t<Types...>
+      black::internal::logic::make_storage_data_t<Types...>
     > : std::integral_constant<size_t, sizeof...(Types)> { };
 
     template<size_t I, typename ...Types>
     struct tuple_element<I, 
-      black::internal::make_storage_data_t<Types...>
+      black::internal::logic::make_storage_data_t<Types...>
     > : tuple_element<I, tuple<Types...>> { };
 
-  } namespace black::internal {
+  } namespace black::internal::logic {
 
   //
   // And the function get<> to access the elements
@@ -810,11 +810,12 @@ namespace black::internal {
   } namespace std {
 
     template<typename ...Types>
-    struct hash<black::internal::make_storage_data_t<Types...>> 
+    struct hash<black::internal::logic::make_storage_data_t<Types...>> 
     {
       size_t operator()(
-        black::internal::make_storage_data_t<Types...> const& data
+        black::internal::logic::make_storage_data_t<Types...> const& data
       ) {
+        using namespace black::internal::logic;
         using namespace black::internal;
 
         size_t h = 0;
@@ -826,7 +827,7 @@ namespace black::internal {
       }
     };
 
-  } namespace black::internal {
+  } namespace black::internal::logic {
 
   //
   // Last thing to make `storage_data_t` hashable is a proper `operator==`
@@ -896,12 +897,12 @@ namespace black::internal {
   // defined above.
   //
   } namespace std {
-    template<black::internal::storage_type Storage>
-    struct hash<black::internal::storage_node<Storage>> {
+    template<black::internal::logic::storage_type Storage>
+    struct hash<black::internal::logic::storage_node<Storage>> {
       size_t operator()(
-        black::internal::storage_node<Storage> const&n
+        black::internal::logic::storage_node<Storage> const&n
       ) const {
-        using namespace black::internal;
+        using namespace black::internal::logic;
         using namespace black::internal;
         
         size_t type_hash = std::hash<syntax_element>{}(n.type);
@@ -909,7 +910,7 @@ namespace black::internal {
         return hash_combine(type_hash, data_hash);
       }
     };
-  } namespace black::internal {
+  } namespace black::internal::logic {
 
   //
   // This concept refines `hierarchy` for storage kinds.
@@ -968,7 +969,7 @@ namespace black::internal {
     // converting constructor from other hierarchy types
     // the conversion only happen for the same kind of hierarchy (e.g. formulas)
     // and only if the argument's syntax is a subfragment of our syntax
-    template<::black::internal::hierarchy H>
+    template<::black::internal::logic::hierarchy H>
       requires (H::hierarchy == Hierarchy && 
                 is_subfragment_of_v<typename H::syntax, syntax>)
     hierarchy_base(H h) : hierarchy_base{h.sigma(), h.node()} { }
@@ -976,12 +977,12 @@ namespace black::internal {
     //
     // other member functions
     //
-    template<::black::internal::hierarchy H>
+    template<::black::internal::logic::hierarchy H>
     std::optional<H> to() const {
       return H::from(*this);
     }
 
-    template<::black::internal::hierarchy H>
+    template<::black::internal::logic::hierarchy H>
     bool is() const {
       return to<H>().has_value();
     }
@@ -1672,16 +1673,16 @@ namespace black::internal {
   //
   } namespace std {
 
-    template<black::internal::storage_kind S>
+    template<black::internal::logic::storage_kind S>
     struct tuple_size<S> 
-      : tuple_size<black::internal::storage_data_t<S::storage>> { };
+      : tuple_size<black::internal::logic::storage_data_t<S::storage>> { };
 
-    template<size_t I, black::internal::storage_kind S>
+    template<size_t I, black::internal::logic::storage_kind S>
     struct tuple_element<I, S> {
       using type = decltype(get<I>(std::declval<S>()));
     };
 
-  } namespace black::internal {
+  } namespace black::internal::logic {
 
   //
   // We also declare a function that, based on get<> above, makes a tuple of all
@@ -1757,12 +1758,12 @@ namespace black::internal {
   } namespace std {
 
     template<
-      black::internal::hierarchy T, 
-      black::internal::hierarchy U
+      black::internal::logic::hierarchy T, 
+      black::internal::logic::hierarchy U
     > struct common_type<T, U>
-      : black::internal::common_type_helper<T, U> { };
+      : black::internal::logic::common_type_helper<T, U> { };
 
-  } namespace black::internal {
+  } namespace black::internal::logic {
 
   //
   // Since `fragment_type` is designed as well to be used in pattern matching,
@@ -1774,41 +1775,46 @@ namespace black::internal {
   } namespace std {
 
     template<
-      black::internal::syntax_element E1, black::internal::syntax_element E2
+      black::internal::logic::syntax_element E1, 
+      black::internal::logic::syntax_element E2
     >
     struct common_type<
-      black::internal::type_value<E1>, 
-      black::internal::type_value<E2>
+      black::internal::logic::type_value<E1>, 
+      black::internal::logic::type_value<E2>
     > {
-      using type = black::internal::fragment_type<
-        black::internal::dummy_owner_t,
-        black::internal::syntax_list<E1, E2>
+      using type = black::internal::logic::fragment_type<
+        black::internal::logic::dummy_owner_t,
+        black::internal::logic::syntax_list<E1, E2>
       >;
     };
 
-    template<typename O, typename List, black::internal::syntax_element E>
+    template<
+      typename O, typename List, black::internal::logic::syntax_element E
+    >
     struct common_type<
-      black::internal::fragment_type<O, List>,
-      black::internal::type_value<E>
+      black::internal::logic::fragment_type<O, List>,
+      black::internal::logic::type_value<E>
     > {
-      using type = black::internal::fragment_type<O, 
-        black::internal::syntax_list_unique_t<
-          black::internal::syntax_list_concat_t<
-            List, black::internal::syntax_list<E>
+      using type = black::internal::logic::fragment_type<O, 
+        black::internal::logic::syntax_list_unique_t<
+          black::internal::logic::syntax_list_concat_t<
+            List, black::internal::logic::syntax_list<E>
           >
         >
       >;
     };
 
-    template<typename O, typename List, black::internal::syntax_element E>
+    template<
+      typename O, typename List, black::internal::logic::syntax_element E
+    >
     struct common_type<
-      black::internal::type_value<E>,
-      black::internal::fragment_type<O, List>
+      black::internal::logic::type_value<E>,
+      black::internal::logic::fragment_type<O, List>
     > {
-      using type = black::internal::fragment_type<O, 
-        black::internal::syntax_list_unique_t<
-          black::internal::syntax_list_concat_t<
-            List, black::internal::syntax_list<E>
+      using type = black::internal::logic::fragment_type<O, 
+        black::internal::logic::syntax_list_unique_t<
+          black::internal::logic::syntax_list_concat_t<
+            List, black::internal::logic::syntax_list<E>
           >
         >
       >;
@@ -1816,18 +1822,18 @@ namespace black::internal {
 
     template<typename O1, typename L1,typename O2, typename L2>
     struct common_type<
-      black::internal::fragment_type<O1, L1>,
-      black::internal::fragment_type<O2, L2>
+      black::internal::logic::fragment_type<O1, L1>,
+      black::internal::logic::fragment_type<O2, L2>
     > {
-      using type = black::internal::fragment_type<
-        black::internal::dummy_owner_t,
-        black::internal::syntax_list_unique_t<
-          black::internal::syntax_list_concat_t<L1, L2>
+      using type = black::internal::logic::fragment_type<
+        black::internal::logic::dummy_owner_t,
+        black::internal::logic::syntax_list_unique_t<
+          black::internal::logic::syntax_list_concat_t<L1, L2>
         >
       >;
     };
 
-  } namespace black::internal {
+  } namespace black::internal::logic {
 
   //
   // Here we declare the infrastructure for pattern matching. The machinery is

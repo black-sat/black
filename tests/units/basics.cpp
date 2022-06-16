@@ -33,19 +33,19 @@ using namespace std::literals;
 using namespace black::logic;
 using black::internal::identifier;
 
-static_assert(black::internal::hierarchy<formula<LTL>>);
-static_assert(black::internal::hierarchy<proposition>);
-static_assert(black::internal::hierarchy<unary<LTL>>);
-static_assert(black::internal::hierarchy<conjunction<LTL>>);
-static_assert(black::internal::hierarchy<equal<FO>>);
-static_assert(black::internal::storage_kind<proposition>);
-static_assert(black::internal::storage_kind<unary<LTL>>);
-static_assert(black::internal::storage_kind<conjunction<LTL>>);
-static_assert(black::internal::hierarchy_element<conjunction<LTL>>);
-static_assert(black::internal::hierarchy_element<equal<FO>>);
+static_assert(black::logic::hierarchy<formula<LTL>>);
+static_assert(black::logic::hierarchy<proposition>);
+static_assert(black::logic::hierarchy<unary<LTL>>);
+static_assert(black::logic::hierarchy<conjunction<LTL>>);
+static_assert(black::logic::hierarchy<equal<FO>>);
+static_assert(black::logic::storage_kind<proposition>);
+static_assert(black::logic::storage_kind<unary<LTL>>);
+static_assert(black::logic::storage_kind<conjunction<LTL>>);
+static_assert(black::logic::hierarchy_element<conjunction<LTL>>);
+static_assert(black::logic::hierarchy_element<equal<FO>>);
 
 static_assert(
-  std::is_same_v<black::internal::make_combined_fragment_t<LTL>, LTL>
+  std::is_same_v<black::logic::make_combined_fragment_t<LTL>, LTL>
 );
 
 

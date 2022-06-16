@@ -29,7 +29,7 @@
 
 #include <string>
 
-namespace black::internal 
+namespace black
 {
   
   BLACK_EXPORT

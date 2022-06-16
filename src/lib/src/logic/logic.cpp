@@ -39,7 +39,7 @@
 // `generation.hpp`.
 //
 
-namespace black::internal {
+namespace black::internal::logic {
 
   } namespace std {
     template<typename T>
@@ -54,7 +54,7 @@ namespace black::internal {
         return result;
       }
     };
-  } namespace black::internal {
+  } namespace black::internal::logic {
 
   //
   // The `alphabet` class keeps an hash table from nodes to pointer to nodes.

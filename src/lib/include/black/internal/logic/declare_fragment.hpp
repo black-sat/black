@@ -48,7 +48,7 @@
   , syntax_element::Element
 
 namespace black::logic {
-  struct FRAGMENT : black::internal::make_fragment_cpp_t<0
+  struct FRAGMENT : black::internal::logic::make_fragment_cpp_t<0
     concat(enum_elements_, FRAGMENT) (append_syntax_element)
   > { };
 }
@@ -60,13 +60,17 @@ namespace black::logic {
 //
 namespace black::FRAGMENT {
 
-  using black::logic::alphabet;
-  using black::logic::otherwise;
+  using namespace black::logic::common;
   
   template<typename Only>
   using only = black::logic::only<
     Only, black::logic::FRAGMENT
   >;
+
+  using quantifier_block = 
+    black::logic::quantifier_block<black::logic::FRAGMENT>;
+  using exists_block = black::logic::exists_block<black::logic::FRAGMENT>;
+  using forall_block = black::logic::forall_block<black::logic::FRAGMENT>;
 
   #define declare_hierarchy(Base) \
     using Base = black::logic::Base< \
