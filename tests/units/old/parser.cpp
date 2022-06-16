@@ -23,9 +23,9 @@
 
 #include <ostream>
 
-#include <black/logic//alphabet.hpp>
-#include <black/logic//parser.hpp>
-#include <black/logic//prettyprint.hpp>
+#include <black/logic/alphabet.hpp>
+#include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <catch.hpp>
 

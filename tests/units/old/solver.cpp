@@ -24,9 +24,9 @@
 #include <catch.hpp>
 
 #include <black/support/config.hpp>
-#include <black/logic//formula.hpp>
-#include <black/logic//parser.hpp>
-#include <black/logic//prettyprint.hpp>
+#include <black/logic/formula.hpp>
+#include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/solver/solver.hpp>
 #include <black/sat/solver.hpp>
 

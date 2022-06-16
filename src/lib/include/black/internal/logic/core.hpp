@@ -380,11 +380,23 @@ namespace black::internal {
   // We first declare a struct whose only purpose is to encapsulate a statically
   // known `syntax_element`.
   template<syntax_element Element>
-  struct fragment_enum_value {
+  struct type_value {
     static constexpr syntax_element value = Element;
 
     explicit operator syntax_element() const { return Element; }
   };
+
+  //
+  // Because `type_value` is supposed to be used in pattern matching expressions
+  // against `fragment_type` objects (see below), we need to define the
+  // Tuple-like interface. In this case, only `tuple_size` since there is no
+  // field to unpack.
+  //
+  } namespace std {
+    template<black::internal::syntax_element Element>
+    struct tuple_size<black::internal::type_value<Element>> 
+      : integral_constant<size_t, 0> { };
+  } namespace black::internal {
 
   //
   // Then, an incomplete template class that will be specialized by the
@@ -394,7 +406,7 @@ namespace black::internal {
   // template<> 
   // struct fragment_enum_element<syntax_element::conjunction> {
   //   static constexpr 
-  //   fragment_enum_value<syntax_element::conjunction> conjunction;
+  //   type_value<syntax_element::conjunction> conjunction;
   // };
   template<syntax_element Element>
   struct fragment_enum_element;
@@ -418,14 +430,22 @@ namespace black::internal {
   //
   // The type itself is simple, and it only carries over the currently assigned
   // `syntax_element`. Publicly, it can be only constructed by
-  // `fragment_enum_value`s corresponding to syntax elements included in its
+  // `type_value`s corresponding to syntax elements included in its
   // list. A private constructor constructs from `syntax_element` directly, and
   // is accessible only by the type `Owner` specified by the template parameter.
   //
+  // Since this is not a real enum, it is not usable in common `switch()`
+  // statements. However, we can expose the `match()` function, similar to the
+  // one exposed by hierarchy types. Here, we only have to expose a `to<>()`
+  // member function template for downcasting to `type_value`s. The
+  // `match()` function is implemented later, after the machinery for the
+  // pattern matching functionality.
+  //
   template<typename Owner, syntax_predicate AcceptsType, typename List>
-  struct fragment_type
-    : fragment_type_base<syntax_list_filter_t<List, AcceptsType>> 
+  class fragment_type
+    : public fragment_type_base<syntax_list_filter_t<List, AcceptsType>> 
   {
+  public:
     using list = syntax_list_filter_t<List, AcceptsType>;
 
     fragment_type() = delete;
@@ -438,12 +458,28 @@ namespace black::internal {
 
     template<syntax_element Element>
       requires syntax_list_contains_v<list, Element>
-    fragment_type(fragment_enum_value<Element>) : _element{Element} { }
+    fragment_type(type_value<Element>) : _element{Element} { }
 
     template<typename O, syntax_predicate AT2, typename L2>
     bool operator==(fragment_type<O, AT2, L2> const& t) const {
       return _element == syntax_element{t};
     }
+    
+    template<typename T>
+    std::optional<T> to() const {
+      if constexpr(syntax_list_contains_v<list, T::value>)
+        return {T{}};
+      else
+        return {};
+    }
+
+    template<typename T>
+    bool is() const { 
+      return to<T>().has_value();
+    }
+
+    template<typename ...Handlers>
+    auto match(Handlers ...) const;
 
     operator syntax_element() const { return _element; }
     explicit operator uint8_t() const { return uint8_t(_element); }
@@ -455,8 +491,25 @@ namespace black::internal {
       black_assert(AcceptsType::doesit(e));
     }
 
+  private:
     syntax_element _element;
   };
+
+  template<typename O, syntax_predicate AT2, typename L2, syntax_element E>
+  bool operator==(
+    fragment_type<O, AT2, L2> const& t,
+    type_value<E>
+  ) {
+    return syntax_element{t} == E;
+  }
+  
+  template<typename O, syntax_predicate AT2, typename L2, syntax_element E>
+  bool operator==(
+    type_value<E>,
+    fragment_type<O, AT2, L2> const& t
+  ) {
+    return E == syntax_element{t};
+  }
 
   //
   // Now we can define actual fragments. To make a fragment made of some given
@@ -868,17 +921,6 @@ namespace black::internal {
   };
 
   //
-  // We need to forward-declare the `matcher` template class used for pattern 
-  // matching, defined later.
-  //
-  template<
-    hierarchy H, 
-    fragment Syntax = typename H::syntax, 
-    typename Cases = typename hierarchy_traits<H>::accepted_elements
-  >
-  struct matcher;
-
-  //
   // We also forward declare an empty CRTP class that can be specialized by user
   // code to provide custom members to `hierarchy_base` defined below.
   //
@@ -937,10 +979,9 @@ namespace black::internal {
       return to<H>().has_value();
     }
 
+    // implemented later
     template<typename ...Handlers>
-    auto match(Handlers ...handlers) const {
-      return matcher<hierarchy_base>{}.match(*this, handlers...);
-    }
+    auto match(Handlers ...handlers) const;
 
     auto unique_id() const {
       return hierarchy_unique_id_t<hierarchy>{
@@ -1105,11 +1146,10 @@ namespace black::internal {
       return static_cast<node_t const*>(base_t::node()); 
     }
 
-    // we override match() to be more specific in the list of possible cases
+    // we override match() to be more specific in the list of possible cases. 
+    // Implemented later.
     template<typename ...Handlers>
-    auto match(Handlers ...handlers) const {
-      return matcher<storage_base>{}.match(*this, handlers...);
-    }
+    auto match(Handlers ...handlers) const;
     
     // we override `type()` from `hierarchy_base` to use our `type`.
     type node_type() const {
@@ -1293,11 +1333,9 @@ namespace black::internal {
       : hierarchy_element_base{e.sigma(), e.node()} { }
 
     // match() is useless on hierarchy elements but we keep it for generic
-    // code. It is specialized to only need the only sensible case to match.
+    // code. Implemented later.
     template<typename ...Handlers>
-    auto match(Handlers ...handlers) const {
-      return matcher<hierarchy_element_base>{}.match(*this, handlers...);
-    }
+    auto match(Handlers ...handlers) const;
 
     // we override `type()` from `hierarchy_base` to use our `type`.
     type node_type() const {
@@ -1435,7 +1473,7 @@ namespace black::internal {
   struct is_hierarchy_element_constructible
     : is_storage_constructible<
         storage_of_element_v<Element>, Syntax,
-        fragment_enum_value<Element>, Args...
+        type_value<Element>, Args...
       > { };
 
   template<syntax_element Element, fragment Syntax, typename ...Args>
@@ -1731,12 +1769,10 @@ namespace black::internal {
   // The first thing we need is a function to do this std::apply-like unpacking
   // of the hierarchy to the called lambda. 
 
-  template<typename Handler, hierarchy Hierarchy, size_t ...I>
-    requires std::invocable<
-      Handler, Hierarchy, std::tuple_element_t<I, Hierarchy>...
-    >
+  template<typename Handler, typename T, size_t ...I>
+    requires std::invocable<Handler, T, std::tuple_element_t<I, T>...>
   auto unpack(
-    Handler&& handler, Hierarchy h, std::index_sequence<I...>
+    Handler&& handler, T h, std::index_sequence<I...>
   ) {
     return std::invoke(std::forward<Handler>(handler), h, get<I>(h)...);
   }
@@ -1746,17 +1782,17 @@ namespace black::internal {
   // but we need to remove the function from overload resolution if the handler
   // is not callable.
   //
-  template<typename Handler, hierarchy Hierarchy>
-  auto unpack(Handler&& handler, Hierarchy h)
+  template<typename Handler, typename T>
+  auto unpack(Handler&& handler, T h)
   -> decltype(
     unpack(
       std::forward<Handler>(handler), h, 
-      std::make_index_sequence<std::tuple_size_v<Hierarchy>>{}
+      std::make_index_sequence<std::tuple_size_v<T>>{}
     )
   ) {
     return unpack(
       std::forward<Handler>(handler), h, 
-      std::make_index_sequence<std::tuple_size_v<Hierarchy>>{}
+      std::make_index_sequence<std::tuple_size_v<T>>{}
     );
   }
 
@@ -1764,7 +1800,7 @@ namespace black::internal {
   // This trait holds if the call to `unpack` is well-formed
   //
   template<typename H, typename Handler>
-  inline constexpr bool can_be_unpacked_v = hierarchy<H> && requires { 
+  inline constexpr bool can_be_unpacked_v = requires { 
     unpack(std::declval<Handler>(), std::declval<H>()); 
   };
 
@@ -1775,30 +1811,68 @@ namespace black::internal {
   // so that e.g. a lambda such as `[](conjunction, auto ...args) { }` picks up
   // the unpacked children in `args`.
   //
-  template<hierarchy Hierarchy, typename Handler, typename ... Handlers>
-  auto dispatch(Hierarchy f, Handler&& handler, Handlers&& ...handlers) 
+  template<typename T, typename Handler, typename ... Handlers>
+  auto dispatch(T obj, Handler&& handler, Handlers&& ...handlers) 
   {
-    if constexpr(can_be_unpacked_v<Hierarchy, Handler>) 
-      return unpack(std::forward<Handler>(handler), f);
-    else if constexpr(std::is_invocable_v<Handler, Hierarchy>)
-      return std::invoke(std::forward<Handler>(handler), f);
+    if constexpr(can_be_unpacked_v<T, Handler>) 
+      return unpack(std::forward<Handler>(handler), obj);
+    else if constexpr(std::is_invocable_v<Handler, T>)
+      return std::invoke(std::forward<Handler>(handler), obj);
     else 
-      return dispatch(f, std::forward<Handlers>(handlers)...);
+      return dispatch(obj, std::forward<Handlers>(handlers)...);
   }
 
   //
   // Finally, the `matcher` class, which calls the machinery above to do the
-  // trick. The list of syntax elements in the given fragment is traversed
-  // one-by-one trying to cast the hierarchy type with `to<>()`
+  // trick. This is generic and works not only for hierarchy types but for any
+  // type that expose `to<>` and `is<>` functions (e.g. `fragment_type` above).
+  //
+  // At first we need a concept to test the usability of such functions
+  //
+  template<typename H, typename Case>
+  concept can_cast_to = requires(H h) {
+    { h.template to<Case>() } -> std::convertible_to<std::optional<Case>>;
+    { h.template is<Case>() } -> std::convertible_to<bool>;
+  };
+
+  //
+  // Then, this utility trait is useful in the usage of the `matcher` class in
+  // the common case of hierarchy types: it transform a `syntax_list` and a
+  // fragment into a tuple of concrete hierarchy element types to pass to the
+  // `matcher` class.
+  //
+  template<fragment Syntax, typename List>
+  struct element_types_of_syntax_list;
+  
+  template<fragment Syntax, syntax_element ...Elements>
+  struct element_types_of_syntax_list<Syntax, syntax_list<Elements...>> {
+    using type = std::tuple<element_type_of_t<Syntax, Elements>...>;
+  };
+
+  template<fragment Syntax, typename List>
+  using element_types_of_syntax_list_t = 
+    typename element_types_of_syntax_list<Syntax, List>::type;
+
+  //
+  // Now the matcher class itself. The `H` paremeter is the main class from
+  // which one wants to match (e.g. `formula<Syntax>`). The `Cases` parameter is
+  // a tuple of types to try to match the matched object to. The default value
+  // for `Cases` is the correct one to use in the common case of `H` being a
+  // hierarchy type.
   //
   template<
-    hierarchy H, fragment Syntax, 
-    syntax_element Case, syntax_element ...Cases
+    typename H,
+    typename Cases = element_types_of_syntax_list_t<
+      typename H::syntax,
+      typename hierarchy_traits<H>::accepted_elements
+    >
   >
-  struct matcher<H, Syntax, syntax_list<Case, Cases...>>
-  {
-    using case_t = element_type_of_t<Syntax, Case>;
+  struct matcher;
 
+  template<typename H, typename Case, typename ...Cases>
+    //requires can_cast_to<H, Case>
+  struct matcher<H, std::tuple<Case, Cases...>>
+  {
     //
     // The return type of `match()` is computed with `std::common_type`, which
     // has been specialized for hierarchies above. Again, it is cumbersome to
@@ -1808,48 +1882,92 @@ namespace black::internal {
     static auto match(H h, Handlers&& ...handlers) 
       -> std::common_type_t<
         decltype(dispatch(
-          *h.template to<case_t>(), std::forward<Handlers>(handlers)...
+          *h.template to<Case>(), std::forward<Handlers>(handlers)...
         )),
-        decltype(matcher<H, Syntax, syntax_list<Cases...>>::match(
+        decltype(matcher<H, std::tuple<Cases...>>::match(
           h, std::forward<Handlers>(handlers)...
         ))
       >
     {
-      if(h.template is<case_t>())
+      if(h.template is<Case>())
         return dispatch(
-          *h.template to<case_t>(), std::forward<Handlers>(handlers)...
+          *h.template to<Case>(), std::forward<Handlers>(handlers)...
         );
-      else
-        return matcher<H, Syntax, syntax_list<Cases...>>::match(
-          h, std::forward<Handlers>(handlers)...
-        );
+      
+      return matcher<H, std::tuple<Cases...>>::match(
+        h, std::forward<Handlers>(handlers)...
+      );
     }
   };
 
   //
-  // The base case of the recursion above is the singleton syntax list. If we
-  // reach this, and the hierarchy type cannot be casted to this last syntax
-  // element, it means it could not have been casted to any of the elements
-  // included in its fragment, which is clearly a bug, so we raise an assertion.
+  // The base case of the recursion above is the singleton list of cases. If we
+  // reach this, and the main type cannot be casted to this last case, it means
+  // it could not have been casted to any of the elements included in the list
+  // of cases, which is clearly a bug, so we raise an assertion.
   //
-  template<hierarchy H, fragment Syntax, syntax_element Case>
-  struct matcher<H, Syntax, syntax_list<Case>>
+  template<typename H, typename Case>
+    //requires can_cast_to<H, Case>
+  struct matcher<H, std::tuple<Case>>
   {
-    using case_t = element_type_of_t<Syntax, Case>;
-
     template<typename ...Handlers>
     static auto match(H h, Handlers&& ...handlers) 
       -> decltype(dispatch(
-        *h.template to<case_t>(), std::forward<Handlers>(handlers)...
+        *h.template to<Case>(), std::forward<Handlers>(handlers)...
       )) 
     {
-      if(h.template is<case_t>())
+      if(h.template is<Case>())
         return dispatch(
-          *h.template to<case_t>(), std::forward<Handlers>(handlers)...
+          *h.template to<Case>(), std::forward<Handlers>(handlers)...
         );
       black_unreachable();
     }
   };
+
+  //
+  // Now we can implement the various `match()` functions declared until now.
+  //
+  // The first is for `fragment_type`.
+  template<typename Elements>
+  struct type_values_of_elements;
+
+  template<syntax_element ...Elements>
+  struct type_values_of_elements<syntax_list<Elements...>> {
+    using type = std::tuple<type_value<Elements>...>;
+  };
+
+  template<typename Elements>
+  using type_values_of_elements_t =
+    typename type_values_of_elements<Elements>::type;
+
+  template<typename Owner, syntax_predicate AcceptsType, typename List>
+  template<typename ...Handlers>
+  auto fragment_type<Owner, AcceptsType, List>::match(Handlers ...hs) const {
+    return matcher<fragment_type,
+      type_values_of_elements_t<fragment_type::list>
+    >{}.match(*this, hs...);
+  }
+
+  //
+  // Then for hierarchy types
+  //
+  template<hierarchy_type H, fragment Syntax>
+  template<typename ...Handlers>
+  auto hierarchy_base<H, Syntax>::match(Handlers ...handlers) const {
+    return matcher<hierarchy_base>{}.match(*this, handlers...);
+  }
+
+  template<storage_type S, fragment F, typename D>
+  template<typename ...Handlers>
+  auto storage_base<S, F, D>::match(Handlers ...handlers) const {
+    return matcher<storage_base>{}.match(*this, handlers...);
+  }
+
+  template<syntax_element E, fragment S, typename D>
+  template<typename ...Handlers>
+  auto hierarchy_element_base<E, S, D>::match(Handlers ...handlers) const {
+    return matcher<hierarchy_element_base>{}.match(*this, handlers...);
+  }
 
   //
   // Little catch-all type used as a wildcard in patter matching 
@@ -1958,9 +2076,9 @@ namespace black::internal {
     template<typename ...Handlers>
     auto match(Handlers ...handlers) const {
       return 
-        matcher<base_t, Syntax, typename TopLevel::list>{}.match(
-          *this, handlers...
-        );
+        matcher<base_t, 
+          element_types_of_syntax_list_t<Syntax, typename TopLevel::list>
+        >{}.match(*this, handlers...);
     }
   };
 

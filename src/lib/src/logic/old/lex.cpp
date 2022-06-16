@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 
-#include "black/logic//lex.hpp"
+#include "black/logic/lex.hpp"
 
 #include <map>
 #include <algorithm>

@@ -21,8 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic//parser.hpp>
-#include <black/logic//prettyprint.hpp>
+#include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/internal/debug/random_formula.hpp>
 
 #include <iostream>

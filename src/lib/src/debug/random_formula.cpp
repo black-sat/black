@@ -32,7 +32,7 @@
 
 #include <black/internal/debug/random_formula.hpp>
 
-#include <black/logic//alphabet.hpp>
+#include <black/logic/alphabet.hpp>
 
 #include <variant>
 #include <random>

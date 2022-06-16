@@ -48,6 +48,7 @@ namespace black {
     using black::internal::hierarchy_element;
     using black::internal::make_fragment_t;
     using black::internal::make_combined_fragment_t;
+    using black::internal::type_value;
     using black::internal::only;
     using black::internal::for_each_child;
     using black::internal::fragment_cast;

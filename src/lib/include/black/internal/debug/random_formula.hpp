@@ -25,7 +25,7 @@
 #define BLACK_DEBUG_RANDOM_FORMULA_HPP
 
 #include <black/support/common.hpp>
-#include <black/logic//formula.hpp>
+#include <black/logic/formula.hpp>
 #include <random>
 
 namespace black::internal {

@@ -21,7 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic//logic.hpp>
+#include <black/logic/logic.hpp>
+#include <black/logic/utility.hpp>
 
 #include <tsl/hopscotch_map.h>
 

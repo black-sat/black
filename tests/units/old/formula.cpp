@@ -23,9 +23,9 @@
 
 #include <catch.hpp>
 
-#include <black/logic//formula.hpp>
-#include <black/logic//alphabet.hpp>
-#include <black/logic//parser.hpp>
+#include <black/logic/formula.hpp>
+#include <black/logic/alphabet.hpp>
+#include <black/logic/parser.hpp>
 
 #include <string>
 #include <string_view>

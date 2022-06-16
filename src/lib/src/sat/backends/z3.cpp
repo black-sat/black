@@ -23,8 +23,8 @@
 
 
 #include <black/sat/backends/z3.hpp>
-#include <black/logic//alphabet.hpp>
-#include <black/logic//parser.hpp>
+#include <black/logic/alphabet.hpp>
+#include <black/logic/parser.hpp>
 
 #include <black/sat/backends/fractionals.hpp>
 

@@ -167,11 +167,11 @@ configure_file(include/black/support/config.hpp.in ${CMAKE_BINARY_DIR}/include/b
 set (
   LIB_SRC
   src/logic/logic.cpp
+  # src/logic/prettyprint.cpp
   # src/logic/alphabet.cpp
   # src/logic/formula.cpp
   # src/logic/lex.cpp
   # src/logic/parser.cpp
-  # src/logic/prettyprint.cpp
   # src/logic/past_remover.cpp
   # src/logic/cnf.cpp
   # src/sat/solver.cpp
@@ -209,12 +209,12 @@ endif()
 
 set (
   LIB_HEADERS
-  # include/black/logic//parser.hpp
-  # include/black/logic//formula.hpp
-  # include/black/logic//lex.hpp
-  # include/black/logic//cnf.hpp
-  # include/black/logic//alphabet.hpp
-  # include/black/logic//past_remover.hpp
+  # include/black/logic/parser.hpp
+  # include/black/logic/formula.hpp
+  # include/black/logic/lex.hpp
+  # include/black/logic/cnf.hpp
+  # include/black/logic/alphabet.hpp
+  # include/black/logic/past_remover.hpp
   # include/black/internal/formula/match.hpp
   # include/black/internal/formula/base.hpp
   # include/black/internal/formula/impl.hpp

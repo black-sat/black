@@ -21,8 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic//cnf.hpp>
-#include <black/logic//alphabet.hpp>
+#include <black/logic/cnf.hpp>
+#include <black/logic/alphabet.hpp>
 
 #include <tsl/hopscotch_set.h>
 

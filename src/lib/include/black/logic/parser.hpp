@@ -25,8 +25,8 @@
 #define BLACK_PARSER_H_
 
 #include <black/support/common.hpp>
-#include <black/logic//alphabet.hpp>
-#include <black/logic//lex.hpp>
+#include <black/logic/alphabet.hpp>
+#include <black/logic/lex.hpp>
 
 #include <istream>
 #include <ostream>

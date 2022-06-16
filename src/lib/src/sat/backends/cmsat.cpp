@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 #include <black/sat/backends/cmsat.hpp>
-#include <black/logic//cnf.hpp>
+#include <black/logic/cnf.hpp>
 
 #include <cryptominisat5/cryptominisat.h>
 

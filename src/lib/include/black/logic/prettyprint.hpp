@@ -24,20 +24,19 @@
 #ifndef BLACK_LOGIC_PRETTY_PRINT_HPP
 #define BLACK_LOGIC_PRETTY_PRINT_HPP
 
-#include <black/logic//parser.hpp>
+#include <black/support/common.hpp>
+#include <black/logic/logic.hpp>
+
+#include <string>
 
 namespace black::internal 
 {
   
   BLACK_EXPORT
-  std::string to_string(formula f);
+  std::string to_string(LTLPFO::formula f);
   
   BLACK_EXPORT
-  std::string to_string(term t);
-
-  inline std::ostream &operator<<(std::ostream &stream, formula const&f) {
-    return (stream << to_string(f));
-  }
+  std::string to_string(LTLPFO::term t);
 
 }
 

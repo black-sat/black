@@ -21,10 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic//alphabet.hpp>
-#include <black/logic//parser.hpp>
-#include <black/logic//lex.hpp>
-#include <black/logic//past_remover.hpp>
+#include <black/logic/alphabet.hpp>
+#include <black/logic/parser.hpp>
+#include <black/logic/lex.hpp>
+#include <black/logic/past_remover.hpp>
 
 #include <tsl/hopscotch_map.h>
 

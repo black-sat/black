@@ -24,7 +24,7 @@
 #ifndef BLACK_FRONTEND_SOLVE_HPP
 #define BLACK_FRONTEND_SOLVE_HPP
 
-#include <black/logic//formula.hpp>
+#include <black/logic/formula.hpp>
 #include <black/solver/solver.hpp>
 
 #include <functional>

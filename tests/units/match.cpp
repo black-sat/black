@@ -190,6 +190,40 @@ TEST_CASE("Pattern matching") {
     );
   }
 
+  SECTION("Matching on `fragment_type`") {
+    using namespace black::internal;
+
+    proposition p = sigma.proposition("p");
+    unary<LTL> u = !p;
+
+    REQUIRE(u.node_type() == unary<LTL>::type::negation);
+
+    auto t = u.node_type().to<type_value<syntax_element::negation>>();
+    REQUIRE(t.has_value());
+
+    REQUIRE(u.node_type().is<type_value<syntax_element::negation>>());
+
+    std::string s = u.node_type().match(
+      [](type_value<syntax_element::negation>) {
+        return "negation";
+      },
+      [](type_value<syntax_element::always>) {
+        return "always";
+      },
+      [](type_value<syntax_element::eventually>) {
+        return "eventually";
+      },
+      [](type_value<syntax_element::tomorrow>) {
+        return "tomorrow";
+      },
+      [](type_value<syntax_element::w_tomorrow>) {
+        return "weak tomorrow";
+      }
+    );
+
+    REQUIRE(s == "negation");
+  }
+
   SECTION("Common type") {
 
     #define REQUIRE_CT(x, y, ...) \

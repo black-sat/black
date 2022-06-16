@@ -25,8 +25,8 @@
 #define BLACK_CNF_HPP_
 
 #include <black/support/common.hpp>
-#include <black/logic//formula.hpp>
-#include <black/logic//alphabet.hpp>
+#include <black/logic/formula.hpp>
+#include <black/logic/alphabet.hpp>
 
 #include <vector>
 #include <initializer_list>

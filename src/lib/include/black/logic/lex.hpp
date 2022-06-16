@@ -25,7 +25,7 @@
 #define BLACK_LEX_H_
 
 #include <black/support/common.hpp>
-#include <black/logic//formula.hpp>
+#include <black/logic/formula.hpp>
 
 #include <cassert>
 #include <cctype>

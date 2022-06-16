@@ -23,8 +23,8 @@
 
 #include <black/solver/core.hpp>
 
-#include <black/logic//formula.hpp>
-#include <black/logic//prettyprint.hpp>
+#include <black/logic/formula.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/solver/solver.hpp>
 
 #include <tsl/hopscotch_map.h>
