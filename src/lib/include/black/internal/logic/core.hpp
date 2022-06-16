@@ -496,18 +496,12 @@ namespace black::internal {
   };
 
   template<typename O, syntax_predicate AT2, typename L2, syntax_element E>
-  bool operator==(
-    fragment_type<O, AT2, L2> const& t,
-    type_value<E>
-  ) {
+  bool operator==(fragment_type<O, AT2, L2> const& t, type_value<E>) {
     return syntax_element{t} == E;
   }
   
   template<typename O, syntax_predicate AT2, typename L2, syntax_element E>
-  bool operator==(
-    type_value<E>,
-    fragment_type<O, AT2, L2> const& t
-  ) {
+  bool operator==(type_value<E>, fragment_type<O, AT2, L2> const& t) {
     return E == syntax_element{t};
   }
 
