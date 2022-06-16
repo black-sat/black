@@ -196,32 +196,38 @@ TEST_CASE("Pattern matching") {
     proposition p = sigma.proposition("p");
     unary<LTL> u = !p;
 
+    unary<LTLP>::type t = u.node_type();
+
+    REQUIRE(t == unary<LTL>::type::negation);
+
     REQUIRE(u.node_type() == unary<LTL>::type::negation);
 
-    auto t = u.node_type().to<type_value<syntax_element::negation>>();
-    REQUIRE(t.has_value());
+    auto tn = u.node_type().to<type_value<syntax_element::negation>>();
+    REQUIRE(tn.has_value());
 
     REQUIRE(u.node_type().is<type_value<syntax_element::negation>>());
 
-    std::string s = u.node_type().match(
+    u = F(p);
+
+    unary<LTL>::type result = u.node_type().match(
       [](type_value<syntax_element::negation>) {
-        return "negation";
+        return type_value<syntax_element::negation>{};
       },
       [](type_value<syntax_element::always>) {
-        return "always";
+        return type_value<syntax_element::eventually>{};
       },
       [](type_value<syntax_element::eventually>) {
-        return "eventually";
+        return type_value<syntax_element::always>{};
       },
       [](type_value<syntax_element::tomorrow>) {
-        return "tomorrow";
+        return type_value<syntax_element::w_tomorrow>{};
       },
       [](type_value<syntax_element::w_tomorrow>) {
-        return "weak tomorrow";
+        return type_value<syntax_element::tomorrow>{};
       }
     );
 
-    REQUIRE(s == "negation");
+    REQUIRE(result == unary<LTL>::type::always);
   }
 
   SECTION("Common type") {

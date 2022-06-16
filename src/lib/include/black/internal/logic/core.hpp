@@ -326,6 +326,15 @@ namespace black::internal {
       >
     { };
 
+  //
+  // Function to check *at runtime* if a syntax element is allowed by the
+  // element list of a fragment.
+  //
+  template<syntax_element ...Elements>
+  bool is_syntax_element_allowed(syntax_element e, syntax_list<Elements...>) {
+    return ((e == Elements) || ...);
+  }
+
   // this empty class is used as a base class of `fragment_type` later, to mark
   // fragment types in the following concept definition.
   struct fragment_type_marker_base { };
@@ -441,12 +450,11 @@ namespace black::internal {
   // `match()` function is implemented later, after the machinery for the
   // pattern matching functionality.
   //
-  template<typename Owner, syntax_predicate AcceptsType, typename List>
-  class fragment_type
-    : public fragment_type_base<syntax_list_filter_t<List, AcceptsType>> 
+  template<typename Owner, typename List>
+  class fragment_type : public fragment_type_base<List> 
   {
   public:
-    using list = syntax_list_filter_t<List, AcceptsType>;
+    using list = List;
 
     fragment_type() = delete;
 
@@ -460,14 +468,19 @@ namespace black::internal {
       requires syntax_list_contains_v<list, Element>
     fragment_type(type_value<Element>) : _element{Element} { }
 
-    template<typename O, syntax_predicate AT2, typename L2>
-    bool operator==(fragment_type<O, AT2, L2> const& t) const {
+    template<typename O, typename L2>
+      requires syntax_list_includes_v<list, L2>
+    fragment_type(fragment_type<O, L2> const&t) 
+      : _element{syntax_element{t}} { }
+
+    template<typename O, typename L2>
+    bool operator==(fragment_type<O, L2> const& t) const {
       return _element == syntax_element{t};
     }
     
     template<typename T>
     std::optional<T> to() const {
-      if constexpr(syntax_list_contains_v<list, T::value>)
+      if(_element == T::value)
         return {T{}};
       else
         return {};
@@ -488,20 +501,20 @@ namespace black::internal {
     friend Owner;
 
     explicit fragment_type(syntax_element e) : _element{e} { 
-      black_assert(AcceptsType::doesit(e));
+      black_assert(is_syntax_element_allowed(e, list{}));
     }
 
   private:
     syntax_element _element;
   };
 
-  template<typename O, syntax_predicate AT2, typename L2, syntax_element E>
-  bool operator==(fragment_type<O, AT2, L2> const& t, type_value<E>) {
+  template<typename O, typename L2, syntax_element E>
+  bool operator==(fragment_type<O, L2> const& t, type_value<E>) {
     return syntax_element{t} == E;
   }
   
-  template<typename O, syntax_predicate AT2, typename L2, syntax_element E>
-  bool operator==(type_value<E>, fragment_type<O, AT2, L2> const& t) {
+  template<typename O, typename L2, syntax_element E>
+  bool operator==(type_value<E>, fragment_type<O, L2> const& t) {
     return E == syntax_element{t};
   }
 
@@ -514,7 +527,7 @@ namespace black::internal {
     using list = syntax_list_unique_t<syntax_list<Elements...>>;
     
     template<typename Owner, syntax_predicate AcceptsType>
-    using type = fragment_type<Owner, AcceptsType, list>;
+    using type = fragment_type<Owner, syntax_list_filter_t<list, AcceptsType>>;
   };
 
   template<syntax_element ...Elements>
@@ -566,7 +579,7 @@ namespace black::internal {
     >;
 
     template<typename Owner, syntax_predicate AcceptsType>
-    using type = fragment_type<Owner, AcceptsType, list>;
+    using type = fragment_type<Owner, syntax_list_filter_t<list, AcceptsType>>;
   };
 
   //
@@ -1752,6 +1765,71 @@ namespace black::internal {
   } namespace black::internal {
 
   //
+  // Since `fragment_type` is designed as well to be used in pattern matching,
+  // we need to implement `common_type` for it and for `type_value` as well, so
+  // to ease their use in pattern matching structures.
+  //
+  struct dummy_owner_t { }; 
+
+  } namespace std {
+
+    template<
+      black::internal::syntax_element E1, black::internal::syntax_element E2
+    >
+    struct common_type<
+      black::internal::type_value<E1>, 
+      black::internal::type_value<E2>
+    > {
+      using type = black::internal::fragment_type<
+        black::internal::dummy_owner_t,
+        black::internal::syntax_list<E1, E2>
+      >;
+    };
+
+    template<typename O, typename List, black::internal::syntax_element E>
+    struct common_type<
+      black::internal::fragment_type<O, List>,
+      black::internal::type_value<E>
+    > {
+      using type = black::internal::fragment_type<O, 
+        black::internal::syntax_list_unique_t<
+          black::internal::syntax_list_concat_t<
+            List, black::internal::syntax_list<E>
+          >
+        >
+      >;
+    };
+
+    template<typename O, typename List, black::internal::syntax_element E>
+    struct common_type<
+      black::internal::type_value<E>,
+      black::internal::fragment_type<O, List>
+    > {
+      using type = black::internal::fragment_type<O, 
+        black::internal::syntax_list_unique_t<
+          black::internal::syntax_list_concat_t<
+            List, black::internal::syntax_list<E>
+          >
+        >
+      >;
+    };
+
+    template<typename O1, typename L1,typename O2, typename L2>
+    struct common_type<
+      black::internal::fragment_type<O1, L1>,
+      black::internal::fragment_type<O2, L2>
+    > {
+      using type = black::internal::fragment_type<
+        black::internal::dummy_owner_t,
+        black::internal::syntax_list_unique_t<
+          black::internal::syntax_list_concat_t<L1, L2>
+        >
+      >;
+    };
+
+  } namespace black::internal {
+
+  //
   // Here we declare the infrastructure for pattern matching. The machinery is
   // based on the to<> function of hierarchy types, and on the list of
   // `syntax_element`s provided by the hierarchy's fragment. For each syntax
@@ -1934,9 +2012,9 @@ namespace black::internal {
   using type_values_of_elements_t =
     typename type_values_of_elements<Elements>::type;
 
-  template<typename Owner, syntax_predicate AcceptsType, typename List>
+  template<typename Owner, typename List>
   template<typename ...Handlers>
-  auto fragment_type<Owner, AcceptsType, List>::match(Handlers ...hs) const {
+  auto fragment_type<Owner, List>::match(Handlers ...hs) const {
     return matcher<fragment_type,
       type_values_of_elements_t<fragment_type::list>
     >{}.match(*this, hs...);
@@ -2167,19 +2245,8 @@ namespace black::internal {
   // called, by traversing the hierarchy object recursively to all the children.
   // So after a positive call of this function, `fragment_unsafe_cast` is safe
   // to use, but beware that this requires a complete traversal of the whole
-  // hierarchy object, which for large formulas can be quite expensive.
-  //
-  // At first we need a function to check *at runtime* if a syntax element is
-  // allowed by the element list of a fragment.
-  template<syntax_element ...Elements>
-  bool is_syntax_element_allowed(syntax_element e, syntax_list<Elements...>)
-  {
-    return ((e == Elements) || ...);
-  }
-
-  //
-  // Then the function itself. This is a prototypical application of
-  // `for_each_child`.
+  // hierarchy object, which for large formulas can be quite expensive. This is
+  // a prototypical application of `for_each_child`.
   //
   template<fragment Syntax, hierarchy H>
   auto can_fragment_cast(H h) {
