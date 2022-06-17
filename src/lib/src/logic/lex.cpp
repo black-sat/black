@@ -32,6 +32,111 @@
 
 namespace black::internal
 {
+  static
+  std::string to_string(quantifier::type t) {
+    return t.match(
+      [](type_value<syntax_element::exists>) { return "exists"; },
+      [](type_value<syntax_element::forall>) { return "forall"; }
+    );
+  }
+  
+  static
+  std::string to_string(comparison::type t) {
+    return t.match(
+      [](type_value<syntax_element::equal>)              { return "=";  },
+      [](type_value<syntax_element::not_equal>)          { return "!="; },
+      [](type_value<syntax_element::less_than>)          { return "<";  },
+      [](type_value<syntax_element::less_than_equal>)    { return "<="; },
+      [](type_value<syntax_element::greater_than>)       { return ">="; },
+      [](type_value<syntax_element::greater_than_equal>) { return ">="; }
+    );
+  }
+  
+  static
+  std::string to_string(unary_term::type t) {
+    return t.match(
+      [](type_value<syntax_element::negative>) { return "-";     },
+      [](type_value<syntax_element::next>)     { return "next";  },
+      [](type_value<syntax_element::wnext>)    { return "wnext"; },
+      [](type_value<syntax_element::prev>)     { return "prev";  },
+      [](type_value<syntax_element::wprev>)    { return "wprev"; }
+    );
+  }
+  
+  static
+  std::string to_string(binary_term::type t) {
+    return t.match(
+      [](type_value<syntax_element::addition>)       { return "-";     },
+      [](type_value<syntax_element::subtraction>)    { return "next";  },
+      [](type_value<syntax_element::multiplication>) { return "wnext"; },
+      [](type_value<syntax_element::division>)       { return "prev";  }
+    );
+  }
+  
+  static
+  std::string to_string(unary::type t) {
+    return t.match(
+      [](type_value<syntax_element::negation>)     { return "!";  },
+      [](type_value<syntax_element::tomorrow>)     { return "X";  },
+      [](type_value<syntax_element::w_tomorrow>)   { return "wX"; },
+      [](type_value<syntax_element::yesterday>)    { return "Y";  },
+      [](type_value<syntax_element::w_yesterday>)  { return "Z";  },
+      [](type_value<syntax_element::always>)       { return "G";  },
+      [](type_value<syntax_element::eventually>)   { return "F";  },
+      [](type_value<syntax_element::once>)         { return "O";  },
+      [](type_value<syntax_element::historically>) { return "H";  }
+    );
+  }
+  
+  static
+  std::string to_string(binary::type t) {
+    return t.match(
+      [](type_value<syntax_element::conjunction>) { return "&&";  },
+      [](type_value<syntax_element::disjunction>) { return "||";  },
+      [](type_value<syntax_element::implication>) { return "->";  },
+      [](type_value<syntax_element::iff>)         { return "<->"; },
+      [](type_value<syntax_element::until>)       { return "U";   },
+      [](type_value<syntax_element::release>)     { return "R";   },
+      [](type_value<syntax_element::w_until>)     { return "W";   },
+      [](type_value<syntax_element::s_release>)   { return "M";   },
+      [](type_value<syntax_element::since>)       { return "S";   },
+      [](type_value<syntax_element::triggered>)   { return "T";   }
+    );
+  }
+  
+  std::string to_string(token::punctuation p) {
+    switch(p) {
+      case token::punctuation::left_paren:  return "(";
+      case token::punctuation::right_paren: return ")";
+      case token::punctuation::comma:       return ",";
+      case token::punctuation::dot:         return ".";
+      default:
+        black_unreachable();
+    }
+  }
+
+  std::string to_string(token const &tok)
+  {
+    using namespace std::literals;
+
+    std::string stok = std::visit( overloaded {
+      [](std::monostate)       { return "<invalid>"s; },
+      [](bool b)               { return b ? "True"s : "False"s; },
+      [](int64_t c)            { return std::to_string(c); },
+      [](double d)             { return std::to_string(d); },
+      [](std::string s)        { return s; },
+      [](quantifier::type k)   { return to_string(k); },
+      [](comparison::type t)   { return to_string(t); },
+      [](unary_term::type t)   { return to_string(t); },
+      [](binary_term::type t)  { return to_string(t); },
+      [](unary::type t)        { return to_string(t); },
+      [](binary::type t)       { return to_string(t); },
+      [](token::punctuation p) { return to_string(p); }
+    }, tok._data);
+
+    return "token(" + stok + ")";
+  }
+
   namespace {
 
     std::optional<token> digits(std::istream &s, lexer::error_handler error)
@@ -109,7 +214,7 @@ namespace black::internal
           s.get();
           if(s.peek() == '=') {
             s.get();
-            return token{relation::type::not_equal};
+            return token{comparison::type::not_equal};
           }
           return token{unary::type::negation};
         case '~':
@@ -136,22 +241,22 @@ namespace black::internal
             s.get();
             return token{binary::type::implication};
           }
-          return token{function::type::subtraction};
+          return token{binary_term::type::subtraction};
         case '=':
           s.get();
           if (s.peek() == '>') {
             s.get();
             return token{binary::type::implication};
           }
-          return token{relation::type::equal};
+          return token{comparison::type::equal};
         
         case '>':
           s.get();
           if(s.peek() == '=') {
             s.get();
-            return token{relation::type::greater_than_equal};
+            return token{comparison::type::greater_than_equal};
           }
-          return token{relation::type::greater_than};
+          return token{comparison::type::greater_than};
 
         // '<->' or '<=>' or '<>'
         case '<':
@@ -159,23 +264,23 @@ namespace black::internal
           if (s.peek() == '-' || s.peek() == '=')
             s.get();
           else
-            return token{relation::type::less_than};
+            return token{comparison::type::less_than};
 
           if (s.peek() == '>') {
             s.get();
             return token{binary::type::iff};
           }
-          return token{relation::type::less_than_equal};
+          return token{comparison::type::less_than_equal};
 
         case '+':
           s.get();
-          return token{function::type::addition};
+          return token{binary_term::type::addition};
         case '*':
           s.get();
-          return token{function::type::multiplication};
+          return token{binary_term::type::multiplication};
         case '/':
           s.get();
-          return token{function::type::division};
+          return token{binary_term::type::division};
       }
 
       // TODO: garantire che se restituiamo nullopt, lo stream non è avanzato
@@ -194,12 +299,12 @@ namespace black::internal
   std::pair<std::string_view, token> lexer::_keywords[28] = {
     {"True",   token{true}},
     {"False",  token{false}},
-    {"next",   token{constructor::type::next}},
-    {"wnext",  token{constructor::type::wnext}},
-    {"prev",   token{constructor::type::prev}},
-    {"wprev",  token{constructor::type::wprev}},
-    {"exists", token{token::keyword::exists}},
-    {"forall", token{token::keyword::forall}},
+    {"next",   token{unary_term::type::next}},
+    {"wnext",  token{unary_term::type::wnext}},
+    {"prev",   token{unary_term::type::prev}},
+    {"wprev",  token{unary_term::type::wprev}},
+    {"exists", token{quantifier::type::exists}},
+    {"forall", token{quantifier::type::forall}},
     {"NOT",    token{unary::type::negation}},
     {"X",      token{unary::type::tomorrow}},
     {"wX",     token{unary::type::w_tomorrow}},

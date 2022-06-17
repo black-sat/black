@@ -74,6 +74,12 @@ namespace black::internal::logic {
   enum class syntax_element : uint8_t;
 
   //
+  // For debugging purposes it is useful to be able to print `syntax_element`
+  // values. Implemented later in the preprocessed code.
+  //
+  std::string to_string(syntax_element);
+
+  //
   // A trait to get the base hierarchy_type of a given storage_type. This is
   // only forward-declared here, and specialized later by preprocessing the
   // definitions file.

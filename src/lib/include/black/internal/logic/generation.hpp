@@ -74,6 +74,24 @@ namespace black::internal::logic
     #include <black/internal/logic/hierarchy.hpp>
   };
 
+  //
+  // Printing of `syntax_element` values. This is just for debugging.
+  //
+  inline std::string to_string(syntax_element e) {
+    switch(e) {
+
+    #define declare_leaf_storage_kind(Base, Storage) \
+      case syntax_element::Storage: return #Storage;
+    #define has_no_hierarchy_elements(Base, Storage) \
+      case syntax_element::Storage: return #Storage;
+    #define declare_hierarchy_element(Base, Storage, Element) \
+      case syntax_element::Element: return #Element;
+
+    #include <black/internal/logic/hierarchy.hpp>
+
+    }
+  }
+
   // Specializations of the trait to associate to each storage kind its
   // hierarchy
   #define declare_storage_kind(Base, Storage) \

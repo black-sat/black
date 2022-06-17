@@ -168,9 +168,9 @@ set (
   LIB_SRC
   src/logic/logic.cpp
   src/logic/prettyprint.cpp
-  # src/logic/lex.cpp
-  # src/logic/formula.cpp
+  src/logic/lex.cpp
   # src/logic/parser.cpp
+  # src/logic/formula.cpp
   # src/logic/past_remover.cpp
   # src/logic/cnf.cpp
   # src/sat/solver.cpp
