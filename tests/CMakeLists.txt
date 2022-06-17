@@ -76,8 +76,8 @@ if(Catch2_FOUND)
     # units/old/parser.cpp
     # units/old/solver.cpp
     # units/old/past_remover.cpp
-    # units/old/support.cpp
     # units/old/sat.cpp
+    units/support.cpp
     units/basics.cpp
     units/match.cpp
     units/namespaces.cpp

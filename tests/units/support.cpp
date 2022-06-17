@@ -24,7 +24,7 @@
 #include <catch.hpp>
 
 #include <black/support/meta.hpp>
-#include <black/support/hash.hpp>
+#include <black/support/identifier.hpp>
 #include <black/support/tribool.hpp>
 
 #include <string>
@@ -79,29 +79,6 @@ TEST_CASE("Testing black::tribool")
   }
 }
 
-TEST_CASE("Hashing functions for tuples")
-{
-  using key_type = std::tuple<int, char, char>;
-
-  std::unordered_map<key_type, int> map;
-
-  key_type key = {42, 'a', 'z'};
-  map.insert({key, 42});
-
-  SECTION("Lookup of an existent key") {
-    auto it = map.find(key);
-    REQUIRE(it != map.end());
-    REQUIRE(it->second == 42);
-  }
-
-  SECTION("Lookup of a non-existent key") {
-    key_type nkey = {0, 'A', 'Z'};
-    auto it = map.find(nkey);
-
-    REQUIRE(it == map.end());
-  }
-}
-
 struct NonStringable {
   bool operator==(NonStringable) const { return true; }
 };
@@ -119,7 +96,7 @@ TEST_CASE("identifier class")
 {
   using namespace black::internal;
 
-  static_assert(is_hashable<int&>);
+  STATIC_REQUIRE(stringable<int>);
 
   SECTION("Base types") {
     int i = 42;
@@ -169,6 +146,21 @@ TEST_CASE("identifier class")
 
     REQUIRE(opt.has_value());
     REQUIRE((*opt == view));
+  }
+
+  SECTION("Tuples") {
+    using namespace black::internal;
+
+    std::tuple<int, double> t = {42, 3.14};
+
+    identifier h1{t};
+    identifier h2{t};
+
+    std::optional opt = h1.to<std::tuple<int, double>>();
+
+    REQUIRE(opt.has_value());
+    REQUIRE((*opt == t));
+    REQUIRE(h1 == h2);
   }
 
   SECTION("Class types") {

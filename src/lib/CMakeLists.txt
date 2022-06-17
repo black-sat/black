@@ -221,7 +221,7 @@ set (
   # include/black/internal/formula/alphabet.hpp
   # include/black/internal/debug/random_formula.hpp
   # include/black/solver/solver.hpp
-  # include/black/support/hash.hpp
+  # include/black/support/identifier.hpp
   # include/black/support/meta.hpp
   # include/black/support/license.hpp
   # include/black/support/assert.hpp

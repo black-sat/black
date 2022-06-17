@@ -33,12 +33,15 @@
 
 namespace black::internal {
 
-  template<typename T, REQUIRES(std::is_integral_v<T>)>
-  inline std::string to_string(T v) {
-    return std::to_string(v);
-  }
+  using std::to_string;
 
-  template<typename T, REQUIRES(std::is_floating_point_v<T>)>
+  template<typename T>
+  concept stringable = requires(T t) {
+    { to_string(t) } -> std::convertible_to<std::string>;
+  };
+
+  template<typename T>
+    requires (std::integral<T> || std::floating_point<T>)
   inline std::string to_string(T v) {
     return std::to_string(v);
   }
@@ -51,17 +54,7 @@ namespace black::internal {
     return std::string{sv};
   }
 
-  template<typename T, typename = void>
-  struct is_stringable_t : std::false_type { };
-
-  template<typename T>
-  constexpr bool is_stringable = is_stringable_t<T>::value;
-
-  template<
-    typename T, typename U,
-    REQUIRES(is_stringable<T>),
-    REQUIRES(is_stringable<U>)
-  >
+  template<stringable T, stringable U>
   std::string to_string(std::pair<T, U> const&p) {
     return to_string(p.first) + ", " + to_string(p.second);
   }
@@ -70,20 +63,17 @@ namespace black::internal {
     return "";
   }
 
-  template<typename T>
-  std::string to_string(std::tuple<T> const & t) {
+  template<stringable T>
+  std::string to_string(std::tuple<T> const& t) {
     return to_string(std::get<0>(t));
   }
 
-  template<typename T, typename ...Args, REQUIRES(sizeof...(Args) > 0)>
+  template<stringable T, typename ...Args>
   std::string to_string(std::tuple<T, Args...> const & t) {
-    return to_string(std::get<0>(t)) + ", " + to_string(tuple_tail(t));
+    return std::apply([](auto v, auto ...vs) {
+      return v + ((", " + to_string(vs)) + ...);
+    }, t);
   }
-
-  template<typename T>
-  struct is_stringable_t<T,
-    std::void_t<decltype(to_string(std::declval<T>()))>
-  > : std::true_type { };
 }
 
 namespace black {

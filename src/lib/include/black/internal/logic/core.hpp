@@ -25,7 +25,7 @@
 #define BLACK_LOGIC_SUPPORT_HPP_
 
 #include <black/support/assert.hpp>
-#include <black/support/hash.hpp>
+#include <black/support/identifier.hpp>
 
 #include <functional>
 #include <numeric>
