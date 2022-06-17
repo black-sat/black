@@ -21,10 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic/alphabet.hpp>
 #include <black/logic/parser.hpp>
 #include <black/logic/lex.hpp>
-#include <black/logic/past_remover.hpp>
+//#include <black/logic/past_remover.hpp>
 
 #include <tsl/hopscotch_map.h>
 
@@ -235,17 +234,17 @@ namespace black::internal
     if(!lhs)
       return {};
 
-    if(!peek() || peek()->token_type() != token::type::relation)
+    if(!peek() || peek()->token_type() != token::type::comparison)
       return {};
 
-    relation::type rel = *peek()->data<relation::type>();
+    comparison::type rel = *peek()->data<comparison::type>();
     consume();
 
     std::optional<term> rhs = parse_term();
     if(!rhs)
       return {};
 
-    return atom{rel, {*lhs, *rhs}};
+    return comparison(rel, *lhs, *rhs);
   }
 
   std::optional<formula> parser::_parser_t::parse_atom()
@@ -266,7 +265,7 @@ namespace black::internal
     // if there is no open paren this is a simple proposition
     if(!peek() || 
         peek()->data<token::punctuation>() != token::punctuation::left_paren)
-      return _alphabet.prop(id);
+      return _alphabet.proposition(id);
 
     // otherwise it is a relational atom
     std::vector<term> terms;
@@ -284,19 +283,16 @@ namespace black::internal
     if(!consume(token::punctuation::right_paren))
       return {};
 
-    return atom(relation{id}, terms);
+    return atom(_alphabet.relation(id), terms);
   }
 
   std::optional<formula> parser::_parser_t::parse_quantifier() {
     black_assert(peek());
-    black_assert(  // LCOV_EXCL_LINE
-      peek()->data<token::keyword>() == token::keyword::exists ||
-      peek()->data<token::keyword>() == token::keyword::forall
-    );
+    black_assert(peek()->data<quantifier::type>());
 
-    quantifier::type q = 
-      consume()->data<token::keyword>() == token::keyword::exists ? 
-      quantifier::type::exists : quantifier::type::forall;
+    quantifier::type q = quantifier::type::forall;
+    if(consume()->data<quantifier::type>() == quantifier::type::exists) 
+      q = quantifier::type::exists;
 
     std::vector<token> vartoks;
     while(peek() && peek()->token_type() == token::type::identifier) {
@@ -317,12 +313,12 @@ namespace black::internal
 
     std::vector<variable> vars;
     for(token tok : vartoks)
-      vars.push_back(_alphabet.var(*tok.data<std::string>()));
+      vars.push_back(_alphabet.variable(*tok.data<std::string>()));
 
     if(q == quantifier::type::exists)
-      return exists(vars, *matrix);
+      return exists_block(vars, *matrix);
 
-    return forall(vars, *matrix);
+    return forall_block(vars, *matrix);
   }
 
   std::optional<formula> parser::_parser_t::parse_unary()
@@ -366,15 +362,15 @@ namespace black::internal
     if(peek()->token_type() == token::type::boolean)
       return parse_boolean();
     if(peek()->token_type() == token::type::integer ||
-       peek()->data<function::type>() == function::type::subtraction ||
+       peek()->data<unary_term::type>() == unary_term::type::negative ||
        peek()->token_type() == token::type::identifier ||
-       peek()->data<constructor::type>() == constructor::type::next ||
-       peek()->data<constructor::type>() == constructor::type::wnext ||
-       peek()->data<constructor::type>() == constructor::type::prev ||
-       peek()->data<constructor::type>() == constructor::type::wprev)
+       peek()->data<unary_term::type>() == unary_term::type::next ||
+       peek()->data<unary_term::type>() == unary_term::type::wnext ||
+       peek()->data<unary_term::type>() == unary_term::type::prev ||
+       peek()->data<unary_term::type>() == unary_term::type::wprev)
       return parse_atom();
-    if(peek()->data<token::keyword>() == token::keyword::exists ||
-       peek()->data<token::keyword>() == token::keyword::forall)
+    if(peek()->data<quantifier::type>() == quantifier::type::exists ||
+       peek()->data<quantifier::type>() == quantifier::type::forall)
       return parse_quantifier();
     if(peek()->is<unary::type>())
       return parse_unary();
@@ -403,13 +399,13 @@ namespace black::internal
        peek()->token_type() == token::type::real)
       return parse_term_constant();
 
-    if(peek()->data<function::type>() == function::type::subtraction)
+    if(peek()->data<binary_term::type>() == binary_term::type::subtraction)
       return parse_term_unary_minus();
 
-    if(peek()->data<constructor::type>() == constructor::type::next ||
-       peek()->data<constructor::type>() == constructor::type::wnext ||
-       peek()->data<constructor::type>() == constructor::type::prev ||
-       peek()->data<constructor::type>() == constructor::type::wprev)
+    if(peek()->data<unary_term::type>() == unary_term::type::next ||
+       peek()->data<unary_term::type>() == unary_term::type::wnext ||
+       peek()->data<unary_term::type>() == unary_term::type::prev ||
+       peek()->data<unary_term::type>() == unary_term::type::wprev)
        return parse_term_ctor();
 
     if(peek()->token_type() == token::type::identifier)
@@ -439,8 +435,8 @@ namespace black::internal
           return error("Expected right operand to binary function symbol");
       }
       
-      black_assert(op.is<function::type>());
-      lhs = application(function{*op.data<function::type>()}, {lhs, *rhs});
+      black_assert(op.is<binary_term::type>());
+      lhs = binary_term(*op.data<binary_term::type>(), lhs, *rhs);
     }
   }
 
@@ -455,28 +451,30 @@ namespace black::internal
     consume();
 
     if(tok.token_type() == token::type::integer)
-      return _alphabet.constant(*tok.data<int64_t>());
+      return constant(_alphabet.integer(*tok.data<int64_t>()));
     else
-      return _alphabet.constant(*tok.data<double>());
+      return constant(_alphabet.real(*tok.data<double>()));
   }
 
   std::optional<term> parser::_parser_t::parse_term_unary_minus() {
     black_assert(peek());
-    black_assert(peek()->data<function::type>() == function::type::subtraction);
+    black_assert(
+      peek()->data<binary_term::type>() == binary_term::type::subtraction
+    );
 
     consume();
     std::optional<term> t = parse_term();
     if(!t)
       return {};
-    return application(function{function::type::negation}, {*t});
+    return negative(*t);
   }
 
   std::optional<term> parser::_parser_t::parse_term_ctor() {
     black_assert(
-      peek()->data<constructor::type>() == constructor::type::next ||
-      peek()->data<constructor::type>() == constructor::type::wnext ||
-      peek()->data<constructor::type>() == constructor::type::prev ||
-      peek()->data<constructor::type>() == constructor::type::wprev
+      peek()->data<unary_term::type>() == unary_term::type::next ||
+      peek()->data<unary_term::type>() == unary_term::type::wnext ||
+      peek()->data<unary_term::type>() == unary_term::type::prev ||
+      peek()->data<unary_term::type>() == unary_term::type::wprev
     );
 
     token op = *consume();
@@ -491,7 +489,7 @@ namespace black::internal
     if(!consume(token::punctuation::right_paren))
       return {};
 
-    return constructor(*op.data<constructor::type>(), *t);
+    return unary_term(*op.data<unary_term::type>(), *t);
   }
 
   std::optional<term> 
@@ -505,7 +503,7 @@ namespace black::internal
     // if there is no open paren this is a simple variable
     if(!peek() || 
         peek()->data<token::punctuation>() != token::punctuation::left_paren)
-      return _alphabet.var(id);
+      return _alphabet.variable(id);
 
     // otherwise it is a function application
     std::vector<term> terms;
@@ -523,7 +521,7 @@ namespace black::internal
     if(!consume(token::punctuation::right_paren))
       return {};
 
-    return application(function{id}, terms);
+    return application(_alphabet.function(id), terms);
   }
 
   std::optional<term> parser::_parser_t::parse_term_parens() {

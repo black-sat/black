@@ -33,17 +33,6 @@ namespace black::internal {
 
   using std::to_string;
 
-  template<typename T>
-  concept stringable = requires(T t) {
-    { to_string(t) } -> std::convertible_to<std::string>;
-  };
-
-  template<typename T>
-    requires (std::integral<T> || std::floating_point<T>)
-  inline std::string to_string(T v) {
-    return std::to_string(v);
-  }
-
   inline std::string to_string(std::string const&s) {
     return s;
   }
@@ -52,7 +41,7 @@ namespace black::internal {
     return std::string{sv};
   }
 
-  template<stringable T, stringable U>
+  template<typename T, typename U>
   std::string to_string(std::pair<T, U> const&p) {
     return to_string(p.first) + ", " + to_string(p.second);
   }
@@ -61,17 +50,22 @@ namespace black::internal {
     return "";
   }
 
-  template<stringable T>
+  template<typename T>
   std::string to_string(std::tuple<T> const& t) {
     return to_string(std::get<0>(t));
   }
 
-  template<stringable T, typename ...Args>
+  template<typename T, typename ...Args>
   std::string to_string(std::tuple<T, Args...> const & t) {
     return std::apply([](auto v, auto ...vs) {
-      return v + ((", " + to_string(vs)) + ...);
+      return to_string(v) + ((", " + to_string(vs)) + ...);
     }, t);
   }
+
+  template<typename T>
+  concept stringable = requires(T t) {
+    { to_string(t) } -> std::convertible_to<std::string>;
+  };
 }
 
 namespace black {

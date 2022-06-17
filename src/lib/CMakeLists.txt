@@ -169,7 +169,7 @@ set (
   src/logic/logic.cpp
   src/logic/prettyprint.cpp
   src/logic/lex.cpp
-  # src/logic/parser.cpp
+  src/logic/parser.cpp
   # src/logic/formula.cpp
   # src/logic/past_remover.cpp
   # src/logic/cnf.cpp

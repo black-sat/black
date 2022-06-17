@@ -684,7 +684,7 @@ namespace black::internal::logic {
     typename quantifier<typename Q::syntax>::type t, 
     R const&vars, formula<typename Q::syntax> matrix
   ) {
-    black_assert(!vars.empty());
+    black_assert(begin(vars) != end(vars));
     for(auto it = rbegin(vars); it != rend(vars); ++it) {
       matrix = quantifier<typename Q::syntax>(t, *it, matrix);
     }
@@ -786,6 +786,16 @@ namespace black::internal::logic {
     template<std::ranges::range R>
     specific_quantifier_block(
       R const&vars, 
+      formula<Syntax> matrix
+    ) : specific_quantifier_block{
+      create_block<element_t>(type_value<E>{}, vars, matrix)
+    } { 
+      black_assert(!empty(vars));
+      _last = element_t(*rbegin(vars), matrix);
+    }
+    
+    specific_quantifier_block(
+      std::initializer_list<variable> const&vars,
       formula<Syntax> matrix
     ) : specific_quantifier_block{
       create_block<element_t>(type_value<E>{}, vars, matrix)

@@ -23,7 +23,7 @@
 
 #include <ostream>
 
-#include <black/logic/alphabet.hpp>
+#include <black/logic/logic.hpp>
 #include <black/logic/parser.hpp>
 #include <black/logic/prettyprint.hpp>
 
@@ -67,29 +67,29 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
 {
   alphabet sigma;
 
-  proposition p = sigma.prop("p{}");
-  proposition q = sigma.prop("");
-  variable x = sigma.var("x\\");
-  variable y = sigma.var("Y");
-  variable z = sigma.var("z");
+  proposition p = sigma.proposition("p{}");
+  proposition q = sigma.proposition("");
+  variable x = sigma.variable("x\\");
+  variable y = sigma.variable("Y");
+  variable z = sigma.variable("z");
 
-  function g{"g"};
-  relation r{"r"};
+  function g = sigma.function("g");
+  relation r = sigma.relation("r");
 
   std::vector<formula> tests = {
-    p, !p, X(p), F(p), G(p), O(p), H(p), XF(p), GF(p), XG(p),
+    p, !p, X(p), F(p), G(p), O(p), H(p), X(F(p)), G(F(p)), X(G(p)),
     p && q, p || q, U(p,q), S(p,q), R(p,q), T(p,q),
-    p && (X(U(p,q)) || XF(!q)),
-    p && implies(Y(S(p,q)), GF(!p)),
-    U(p, !(GF(q))),
+    p && (X(U(p,q)) || X(F(!q))),
+    p && implies(Y(S(p,q)), G(F(!p))),
+    U(p, !(G(F(q)))),
     !(iff(p || q, !q && p)),
-    exists({x,y,z}, g(x + 2, y) + 2 >= (y * sigma.constant(1.5)) && y == z),
-    forall({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) && r(x,y),
+    exists_block({x,y,z}, g(x + 2, y) + 2 >= (y * 1.5) && y == z),
+    forall_block({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) && r(x,y),
     (x + y) * z > 0
   };
 
   for(formula f : tests) {
-    DYNAMIC_SECTION("Roundtrip for formula: " << f) {
+    DYNAMIC_SECTION("Roundtrip for formula: " << to_string(f)) {
       auto result = parse_formula(sigma, to_string(f));
 
       REQUIRE(result.has_value());

@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 #include <black/logic/prettyprint.hpp>
+#include <black/logic/lex.hpp>
 #include <black/support/to_string.hpp>
 
 #include <fmt/format.h>
@@ -100,35 +101,35 @@ namespace black::internal
 
   static
   std::string escape(std::string s) {
-    // TODO: after migrating the lexer
-    // if(s.empty())
-    //   return "{}";
+    if(s.empty())
+      return "{}";
 
-    // if(lexer::is_keyword(s)) {
-    //   return "{" + s + "}";
-    // }
+    if(lexer::is_keyword(s)) {
+      return "{" + s + "}";
+    }
     
-    // bool escaped = false;
-    // if(!lexer::is_initial_identifier_char(s[0]))
-    //   escaped = true;
-    // size_t i = 0;
-    // if(s[0] == '}' || s[0] == '\\') {
-    //   s.insert(0, 1, '\\');
-    //   i = 1;
-    // }
+    bool escaped = false;
+    if(!lexer::is_initial_identifier_char(s[0]))
+      escaped = true;
+    size_t i = 0;
+    if(s[0] == '}' || s[0] == '\\') {
+      s.insert(0, 1, '\\');
+      i = 1;
+    }
 
-    // while(i < s.size()) {
-    //   if(!lexer::is_identifier_char(s[i]))
-    //     escaped = true;
-    //   if(s[i] == '}' || s[i] == '\\') {
-    //     s.insert(i, 1, '\\');
-    //     i++;
-    //   }
-    //   i++;
-    // }
+    while(i < s.size()) {
+      if(!lexer::is_identifier_char(s[i]))
+        escaped = true;
+      if(s[i] == '}' || s[i] == '\\') {
+        s.insert(i, 1, '\\');
+        i++;
+      }
+      i++;
+    }
 
-    // if(escaped)
-    //   return "{" + s + "}";
+    if(escaped)
+      return "{" + s + "}";
+
     return s;
   }
 

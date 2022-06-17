@@ -25,7 +25,7 @@
 #define BLACK_PARSER_H_
 
 #include <black/support/common.hpp>
-#include <black/logic/alphabet.hpp>
+#include <black/logic/logic.hpp>
 #include <black/logic/lex.hpp>
 
 #include <istream>
@@ -78,40 +78,34 @@ namespace black::internal
 
   inline std::optional<int> precedence(token const&tok)
   {
-    // Attention: this must remain in sync with token::token_type
-    constexpr std::optional<int> ops[] = {
-      {30}, // conjunction
-      {20}, // disjunction
-      {40}, // implication
-      {40}, // iff
-      {50}, // until
-      {50}, // release
-      {50}, // weak until
-      {50}, // strong release
-      {50}, // since
-      {50}, // triggered
-    };
-
-    if(auto t = tok.data<binary::type>(); t)
-      return ops[to_underlying(*t) - to_underlying(binary::type::conjunction)];
-
-    return {};
+    if(!tok.data<binary::type>())
+      return {};
+    
+    return tok.data<binary::type>()->match(
+      [](type_value<syntax_element::conjunction>) { return 30; },
+      [](type_value<syntax_element::disjunction>) { return 20; },
+      [](type_value<syntax_element::implication>) { return 40; },
+      [](type_value<syntax_element::iff>)         { return 40; },
+      [](type_value<syntax_element::until>)       { return 50; },
+      [](type_value<syntax_element::release>)     { return 50; },
+      [](type_value<syntax_element::w_until>)     { return 50; },
+      [](type_value<syntax_element::s_release>)   { return 50; },
+      [](type_value<syntax_element::since>)       { return 50; },
+      [](type_value<syntax_element::triggered>)   { return 50; }
+    );
   }
 
   inline std::optional<int> func_precedence(token const&tok)
   {
-    constexpr std::optional<int> fops[] = {
-      {},   // negation
-      {20}, // subtraction
-      {20}, // addition
-      {30}, // multiplication
-      {30}  // division
-    };
+    if(!tok.data<binary_term::type>())
+      return {};
 
-    if(auto t = tok.data<function::type>(); t)
-      return fops[to_underlying(*t)];
-
-    return std::optional<int>{};
+    return tok.data<binary_term::type>()->match(
+      [](type_value<syntax_element::addition>)       { return 20; },
+      [](type_value<syntax_element::subtraction>)    { return 20; },
+      [](type_value<syntax_element::multiplication>) { return 30; },
+      [](type_value<syntax_element::division>)       { return 30; }
+    );
   }
 
 } // namespace black::internal

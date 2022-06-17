@@ -73,7 +73,6 @@ if(Catch2_FOUND)
     # units/old/formula.cpp
     # units/old/term.cpp
     # units/old/match.cpp
-    # units/old/parser.cpp
     # units/old/solver.cpp
     # units/old/past_remover.cpp
     # units/old/sat.cpp
@@ -82,6 +81,7 @@ if(Catch2_FOUND)
     units/match.cpp
     units/namespaces.cpp
     units/utility.cpp
+    units/parser.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)
