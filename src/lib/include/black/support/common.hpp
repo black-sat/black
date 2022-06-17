@@ -24,6 +24,8 @@
 #ifndef BLACK_COMMON_H
 #define BLACK_COMMON_H
 
+#include <type_traits>
+
 #ifdef _MSC_VER
   #define BLACK_EXPORT __declspec(dllexport)
 #else
