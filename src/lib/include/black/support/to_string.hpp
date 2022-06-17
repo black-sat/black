@@ -29,8 +29,6 @@
 #include <string_view>
 #include <tuple>
 
-#include <black/support/meta.hpp>
-
 namespace black::internal {
 
   using std::to_string;

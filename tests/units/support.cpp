@@ -23,7 +23,6 @@
 
 #include <catch.hpp>
 
-#include <black/support/meta.hpp>
 #include <black/support/identifier.hpp>
 #include <black/support/tribool.hpp>
 

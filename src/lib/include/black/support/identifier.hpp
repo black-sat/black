@@ -24,7 +24,6 @@
 #ifndef BLACK_SUPPORT_HASH_HPP
 #define BLACK_SUPPORT_HASH_HPP
 
-#include <black/support/meta.hpp>
 #include <black/support/assert.hpp>
 #include <black/support/to_string.hpp>
 

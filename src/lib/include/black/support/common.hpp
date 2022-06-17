@@ -30,4 +30,29 @@
   #define BLACK_EXPORT
 #endif
 
+namespace black::internal 
+{
+  // Simple utility to get the overloading of multiple lambdas (for example)
+  // not used for formula::match but useful to work with std::visit
+  template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+  template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+  //
+  // Useful utilities to work with strongly-typed enums
+  //
+  // GCOV false negatives
+  template <typename E>
+    requires std::is_enum_v<E>
+  constexpr auto to_underlying(E e) noexcept // LCOV_EXCL_LINE
+  {
+      return static_cast<std::underlying_type_t<E>>(e); // LCOV_EXCL_LINE
+  }
+
+  template<typename E>
+    requires std::is_enum_v<E>
+  constexpr E from_underlying(std::underlying_type_t<E> v) noexcept {
+    return static_cast<E>(v);
+  }
+}
+
 #endif // BLACK_COMMON_H
