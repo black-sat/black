@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 #include <black/logic/prettyprint.hpp>
+#include <black/support/to_string.hpp>
 
 #include <fmt/format.h>
 
@@ -80,6 +81,18 @@ namespace black::internal
     );
   }
 
+  static
+  std::string to_string(comparison::type t) {
+    return t.match(
+      [](type_value<syntax_element::equal>)              { return "="; },
+      [](type_value<syntax_element::not_equal>)          { return "!="; },
+      [](type_value<syntax_element::less_than>)          { return "<"; },
+      [](type_value<syntax_element::less_than_equal>)    { return "<="; },
+      [](type_value<syntax_element::greater_than>)       { return ">"; },
+      [](type_value<syntax_element::greater_than_equal>) { return ">="; }
+    );
+  }
+
   template<typename T>
   std::string parens_if_needed(T t, bool needs_parens) {
     return needs_parens ? "(" + to_string(t) + ")" : to_string(t);
@@ -118,10 +131,7 @@ namespace black::internal
     //   return "{" + s + "}";
     return s;
   }
-}
 
-namespace black
-{
   std::string to_string(term t)
   {
     using namespace std::literals;
@@ -202,6 +212,12 @@ namespace black
 
         return result;
       }, // LCOV_EXCL_LINE
+      [](comparison c, term left, term right) {
+        return fmt::format(
+          "{} {} {}", 
+          to_string(left), to_string(c.node_type()), to_string(right)
+        );
+      },
       [](quantifier_block q) {
         std::string qs = q.node_type() == quantifier::type::exists ?
           "exists " : "forall ";

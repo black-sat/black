@@ -29,7 +29,7 @@
 
 #include <string>
 
-namespace black
+namespace black::internal
 {
   
   BLACK_EXPORT
@@ -38,6 +38,10 @@ namespace black
   BLACK_EXPORT
   std::string to_string(LTLPFO::term t);
 
+}
+
+namespace black {
+  using internal::to_string;
 }
 
 #endif // BLACK_LOGIC_PRETTY_PRINT_HPP

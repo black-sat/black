@@ -167,9 +167,9 @@ configure_file(include/black/support/config.hpp.in ${CMAKE_BINARY_DIR}/include/b
 set (
   LIB_SRC
   src/logic/logic.cpp
-  # src/logic/prettyprint.cpp
-  # src/logic/formula.cpp
+  src/logic/prettyprint.cpp
   # src/logic/lex.cpp
+  # src/logic/formula.cpp
   # src/logic/parser.cpp
   # src/logic/past_remover.cpp
   # src/logic/cnf.cpp
