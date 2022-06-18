@@ -85,12 +85,16 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
     !(iff(p || q, !q && p)),
     exists_block({x,y,z}, g(x + 2, y) + 2 >= (y * 1.5) && y == z),
     forall_block({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) && r(x,y),
-    (x + y) * z > 0
+    (x + y) * z > 0, -x == y
   };
 
   for(formula f : tests) {
     DYNAMIC_SECTION("Roundtrip for formula: " << to_string(f)) {
-      auto result = parse_formula(sigma, to_string(f));
+      auto result = parse_formula(sigma, to_string(f), [](auto error){
+        INFO(error);
+      });
+
+      INFO(to_string(f));
 
       REQUIRE(result.has_value());
       CHECK(*result == f);

@@ -362,7 +362,7 @@ namespace black::internal
     if(peek()->token_type() == token::type::boolean)
       return parse_boolean();
     if(peek()->token_type() == token::type::integer ||
-       peek()->data<unary_term::type>() == unary_term::type::negative ||
+       peek()->data<binary_term::type>() == binary_term::type::subtraction ||
        peek()->token_type() == token::type::identifier ||
        peek()->data<unary_term::type>() == unary_term::type::next ||
        peek()->data<unary_term::type>() == unary_term::type::wnext ||
