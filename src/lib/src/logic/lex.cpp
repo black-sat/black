@@ -30,8 +30,10 @@
 #include <charconv>
 #include <limits>
 
-namespace black::internal
+namespace black::internal::lexer_details
 {
+  using namespace black::logic::fragments::LTLPFO;
+
   static
   std::string to_string(quantifier::type t) {
     return t.match(
@@ -110,9 +112,8 @@ namespace black::internal
       case token::punctuation::right_paren: return ")";
       case token::punctuation::comma:       return ",";
       case token::punctuation::dot:         return ".";
-      default:
-        black_unreachable();
     }
+    black_unreachable();
   }
 
   std::string to_string(token const &tok)

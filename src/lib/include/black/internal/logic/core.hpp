@@ -234,6 +234,35 @@ namespace black::internal::logic {
     syntax_list_contains<List, Element>::value;
 
   //
+  // Trait to compute the intersection of two syntax lists.
+  //
+  template<typename List1, typename List2>
+  struct syntax_list_intersect;
+
+  template<typename List1, typename List2>
+  using syntax_list_intersect_t = 
+    typename syntax_list_intersect<List1, List2>::type;
+
+  template<typename List2>
+  struct syntax_list_intersect<syntax_list<>, List2> 
+    : std::type_identity<syntax_list<>> { };
+
+  template<syntax_element E, syntax_element ...E1, typename List2>
+  struct syntax_list_intersect<
+    syntax_list<E, E1...>, List2
+  > : syntax_list_unique<
+        std::conditional_t<
+          syntax_list_contains_v<List2, E>,
+          syntax_list_concat_t<
+            syntax_list<E>, 
+            syntax_list_intersect_t<syntax_list<E1...>, List2>
+          >,
+          syntax_list_intersect_t<syntax_list<E1...>, List2>
+        > 
+      >{ };
+
+
+  //
   // Trait to check whether a syntax list in included in another
   //
   template<typename List, typename SubList>
@@ -505,6 +534,9 @@ namespace black::internal::logic {
 
   private:
     friend Owner;
+
+    template<fragment Syntax, typename O, typename L>
+    friend auto fragment_cast(fragment_type<O, L> t);
 
     explicit fragment_type(syntax_element e) : _element{e} { 
       black_assert(is_syntax_element_allowed(e, list{}));
@@ -908,8 +940,8 @@ namespace black::internal::logic {
       size_t operator()(
         black::internal::logic::storage_node<Storage> const&n
       ) const {
-        using namespace black::internal::logic;
         using namespace black::internal;
+        using namespace black::internal::logic;
         
         size_t type_hash = std::hash<syntax_element>{}(n.type);
         size_t data_hash = std::hash<storage_data_t<Storage>>{}(n.data);
@@ -2288,6 +2320,22 @@ namespace black::internal::logic {
     if(can_fragment_cast<Syntax>(h))
       return {fragment_unsafe_cast<Syntax>(h)};
     return std::nullopt;
+  }
+  
+  //
+  // Sometimes it is useful to perform a similar cast on fragment types. For
+  // this overload there is no `unsafe` version since this cast is very cheap,
+  // unlike those for hierarchy objects.
+  //
+  template<fragment Syntax, typename O, typename List>
+  auto fragment_cast(fragment_type<O, List> t) {
+    using new_list = syntax_list_intersect_t<typename Syntax::list, List>;
+    using new_type = fragment_type<O, new_list>;
+
+    if(is_syntax_element_allowed(syntax_element{t}, new_list{}))
+      return std::optional<new_type>{new_type{syntax_element{t}}};
+    
+    return std::optional<new_type>{};
   }
 }
 

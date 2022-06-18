@@ -52,16 +52,16 @@ namespace black::internal {
 
     return lhs;
   }
-}
 
-namespace black::internal
-{
   template<typename T>
   concept hashable = requires(T t1, T t2) {
     std::hash<std::remove_cvref_t<T>>{}(t1);
     t1 == t2;
   };
+}
 
+namespace black::internal::identifier_details
+{
   //
   // Type-erased hashable value
   //
@@ -231,6 +231,9 @@ namespace black::internal
   };
 }
 
+namespace black::internal {
+  using identifier_details::identifier;
+}
 namespace black {
   using internal::identifier;
 }
@@ -238,8 +241,8 @@ namespace black {
 // std::hash specialization for identifier
 namespace std {
   template<>
-  struct hash<black::internal::identifier> {
-    size_t operator()(black::internal::identifier const&h) const {
+  struct hash<black::identifier> {
+    size_t operator()(black::identifier const&h) const {
       return h.hash();
     }
   };

@@ -29,19 +29,15 @@
 
 #include <string>
 
-namespace black::internal
+namespace black::internal::logic
 {
   
   BLACK_EXPORT
-  std::string to_string(LTLPFO::formula f);
+  std::string to_string(formula<LTLPFO> f);
   
   BLACK_EXPORT
-  std::string to_string(LTLPFO::term t);
+  std::string to_string(term<LTLPFO> t);
 
-}
-
-namespace black {
-  using internal::to_string;
 }
 
 #endif // BLACK_LOGIC_PRETTY_PRINT_HPP

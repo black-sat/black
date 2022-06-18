@@ -103,22 +103,22 @@ namespace black {
   // The `Future`, `Past` and `Temporal` fragments make sense only in a few
   // namespaces.
   //
-  namespace LTL {
+  namespace logic::fragments::LTL {
     using black::logic::Future;
     using black::logic::Past;
     using black::logic::Temporal;
   }
-  namespace LTLP {
+  namespace logic::fragments::LTLP {
     using black::logic::Future;
     using black::logic::Past;
     using black::logic::Temporal;
   }
-  namespace LTLFO {
+  namespace logic::fragments::LTLFO {
     using black::logic::Future;
     using black::logic::Past;
     using black::logic::Temporal;
   }
-  namespace LTLPFO {
+  namespace logic::fragments::LTLPFO {
     using black::logic::Future;
     using black::logic::Past;
     using black::logic::Temporal;
@@ -228,7 +228,7 @@ namespace black {
 // `black::formula` etc. refer to the most general fragment available.
 //
 namespace black {
-  using namespace LTLPFO;
+  using namespace logic::fragments::LTLPFO;
 }
 
 #undef enum_elements_Boolean

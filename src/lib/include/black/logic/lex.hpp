@@ -34,7 +34,7 @@
 #include <variant>
 #include <vector>
 
-namespace black::internal
+namespace black::internal::lexer_details
 {
   // Type representing tokens generated from the lexer.
   struct token
@@ -63,18 +63,18 @@ namespace black::internal
       dot
     };
 
-             token()                     : _data{std::monostate{}} { }
-    explicit token(bool b)               : _data{b} { }
-    explicit token(int64_t c)            : _data{c} { }
-    explicit token(double d)             : _data{d} { }
-    explicit token(std::string s)        : _data{std::move(s)} { }
-    explicit token(quantifier::type k)   : _data{k} { }
-    explicit token(comparison::type t)   : _data{t} { }
-    explicit token(unary_term::type t)   : _data{t} { }
-    explicit token(binary_term::type t)  : _data{t} { }
-    explicit token(unary::type t)        : _data{t} { }
-    explicit token(binary::type t)       : _data{t} { }
-    explicit token(punctuation s) : _data{s} { }
+             token()                    : _data{std::monostate{}} { }
+    explicit token(bool b)              : _data{b} { }
+    explicit token(int64_t c)           : _data{c} { }
+    explicit token(double d)            : _data{d} { }
+    explicit token(std::string s)       : _data{std::move(s)} { }
+    explicit token(quantifier::type k)  : _data{k} { }
+    explicit token(comparison::type t)  : _data{t} { }
+    explicit token(unary_term::type t)  : _data{t} { }
+    explicit token(binary_term::type t) : _data{t} { }
+    explicit token(unary::type t)       : _data{t} { }
+    explicit token(binary::type t)      : _data{t} { }
+    explicit token(punctuation s)       : _data{s} { }
 
     template<typename T>
     bool is() const {
@@ -140,6 +140,11 @@ namespace black::internal
   };
 
   std::ostream &operator<<(std::ostream &s, token const &t);
+}
+
+namespace black::internal {
+  using lexer_details::lexer;
+  using lexer_details::token;
 }
 
 #endif // LEX_H_

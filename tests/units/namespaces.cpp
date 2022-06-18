@@ -37,7 +37,7 @@ TEST_CASE("Fragment namespaces") {
   black::logic::alphabet sigma;
 
   SECTION("Specific fragments") {
-    using namespace black::FO;
+    using namespace black::logic::fragments::FO;
 
     static_assert(type_exists(formula, FO));
     static_assert(type_exists(term, FO));
@@ -54,7 +54,7 @@ TEST_CASE("Fragment namespaces") {
   }
 
   SECTION("Only") {
-    using namespace black::LTL;
+    using namespace black::logic::fragments::LTL;
 
     proposition p = sigma.proposition("p");
     boolean b = sigma.boolean(true);

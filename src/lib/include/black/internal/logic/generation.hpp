@@ -44,7 +44,7 @@
 //
 
 
-namespace black::internal::logic 
+namespace black::internal::logic
 {
   class alphabet;
 

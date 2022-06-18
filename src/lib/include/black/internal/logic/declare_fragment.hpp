@@ -47,10 +47,14 @@
 #define append_syntax_element(Element) \
   , syntax_element::Element
 
-namespace black::logic {
+namespace black::internal::logic {
   struct FRAGMENT : black::internal::logic::make_fragment_cpp_t<0
     concat(enum_elements_, FRAGMENT) (append_syntax_element)
   > { };
+}
+
+namespace black::logic {
+  using black::internal::logic::FRAGMENT;
 }
 
 //
@@ -58,7 +62,7 @@ namespace black::logic {
 // something from the `logic` namespace, and we specialize many things passing
 // the fragment at hand to their template parameters.
 //
-namespace black::FRAGMENT {
+namespace black::logic::fragments::FRAGMENT {
 
   using namespace black::logic::common;
   
