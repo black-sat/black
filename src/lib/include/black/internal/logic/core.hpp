@@ -449,8 +449,7 @@ namespace black::internal::logic {
   //
   // template<> 
   // struct fragment_enum_element<syntax_element::conjunction> {
-  //   static constexpr 
-  //   type_value<syntax_element::conjunction> conjunction;
+  //   using conjunction = type_value<syntax_element::conjunction>;
   // };
   template<syntax_element Element>
   struct fragment_enum_element;
