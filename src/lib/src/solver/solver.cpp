@@ -29,6 +29,8 @@
 #include <black/solver/encoding.hpp>
 #include <black/sat/solver.hpp>
 
+#include <numeric>
+
 namespace black::internal
 {
   /*
@@ -326,15 +328,29 @@ namespace black::internal
       [&](negation, formula arg) {
         return _check_syntax(arg, err, scope, !positive, rels, funcs);
       },
-      [&](disjunction, formula left, formula right) {
+      [&](big_disjunction o) {
         check_result_t r{false, false, positive};
-        return r || _check_syntax(left, err, scope, positive, rels, funcs) ||
-                    _check_syntax(right, err, scope, positive, rels, funcs);
+        std::vector<check_result_t> results;
+        for(auto op : o.operands()) {
+          results.push_back(
+            _check_syntax(op, err, scope, positive, rels, funcs)
+          );
+        }
+        return std::accumulate(
+          begin(results), end(results), r, std::logical_or<>{}
+        );
       },
-      [&](conjunction, formula left, formula right) {
+      [&](big_conjunction c) {
         check_result_t r{false, false, !positive};
-        return r || _check_syntax(left, err, scope, positive, rels, funcs) ||
-                    _check_syntax(right, err, scope, positive, rels, funcs);
+        std::vector<check_result_t> results;
+        for(auto op : c.operands()) {
+          results.push_back(
+            _check_syntax(op, err, scope, positive, rels, funcs)
+          );
+        }
+        return std::accumulate(
+          begin(results), end(results), r, std::logical_or<>{}
+        );
       },
       [&](implication, formula left, formula right) {
         return _check_syntax(!left || right, err, scope, positive, rels, funcs);

@@ -30,7 +30,16 @@ images() {
 }
 
 launch() {
-  docker run -it --rm -v $SRC_DIR:/black -w /black/build -u $(id -u) "$@"
+  image=$1
+  shift
+  if [ "$1" = "root" ]; then
+    user=''
+    shift
+  else
+    user="-u $(id -u)"
+  fi
+
+  docker run -it --rm -v $SRC_DIR:/black -w /black/build $user $image "$@"
 }
 
 ubuntu() {
@@ -56,13 +65,27 @@ build() {
 
   rm -rf "$SRC_DIR/build"
   mkdir build
-  $env cmake -DENABLE_CMSAT=NO .. || die
+  $env cmake -DENABLE_CMSAT=NO -DENABLE_CVC5=NO .. || die
   $env make -j || die
   $env cpack -G $gen || die
 
   mkdir -p "$SRC_DIR/packages"
   mv "$SRC_DIR/build/black-sat-$VERSION-Linux.$ext" \
      "$SRC_DIR/packages/black-sat-$VERSION-1.$(uname -m).$ext" 
+}
+
+test_pkg() {
+  env=$1
+  case $1 in
+    ubuntu)
+      cmd="apt update && apt install /black/packages/black-sat-$VERSION-1.$(uname -m).deb && black --help"
+    ;;
+    fedora)
+      cmd="yum -y install /black/packages/black-sat-$VERSION-1.$(uname -m).rpm && black --help"
+    ;;
+  esac
+
+  $env root bash -c "$cmd" || die
 }
 
 appveyor() {
@@ -146,7 +169,9 @@ main () {
   setup
   images
   build ubuntu 
+  test_pkg ubuntu
   build fedora
+  test_pkg fedora
   appveyor
   release
   homebrew

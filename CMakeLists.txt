@@ -25,7 +25,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(
   black 
-  VERSION 0.8.0
+  VERSION 0.8.2
   LANGUAGES C CXX
   DESCRIPTION "BLACK (Bounded Lᴛʟ sAtisfiability ChecKer)"
 )
@@ -72,6 +72,17 @@ update_git_submodules(FATAL) # Fetch git submodules
 find_package(Sanitizers) # Sanitizers
 
 #
+# Fix the RPATH for the installation 
+#
+if(APPLE)
+  set(CMAKE_MACOSX_RPATH 1)
+  list(
+    APPEND CMAKE_INSTALL_RPATH 
+    ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
+  )
+endif()
+
+#
 # External dependencies
 #
 find_package(tsl-hopscotch-map REQUIRED)
@@ -116,6 +127,8 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 
 set(CPACK_DEBIAN_PACKAGE_SECTION "science")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6,libgcc1,libstdc++6,zlib1g,libz3-4")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS 
+  "libc6,libgcc1,libstdc++6,zlib1g,libz3-4,libfmt8"
+)
 
 include(CPack)
