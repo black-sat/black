@@ -53,43 +53,43 @@ namespace black::internal::logic
   static
   std::string to_string(unary<LTLPFO>::type t) {
     return t.match(
-      [](type_value<syntax_element::negation>)     { return "!"; },
-      [](type_value<syntax_element::tomorrow>)     { return "X"; },
-      [](type_value<syntax_element::w_tomorrow>)   { return "wX"; },
-      [](type_value<syntax_element::yesterday>)    { return "Y"; },
-      [](type_value<syntax_element::w_yesterday>)  { return "Z"; },
-      [](type_value<syntax_element::always>)       { return "G"; },
-      [](type_value<syntax_element::eventually>)   { return "F"; },
-      [](type_value<syntax_element::once>)         { return "O"; },
-      [](type_value<syntax_element::historically>) { return "H"; }
+      [](unary<LTLPFO>::type::negation)     { return "!"; },
+      [](unary<LTLPFO>::type::tomorrow)     { return "X"; },
+      [](unary<LTLPFO>::type::w_tomorrow)   { return "wX"; },
+      [](unary<LTLPFO>::type::yesterday)    { return "Y"; },
+      [](unary<LTLPFO>::type::w_yesterday)  { return "Z"; },
+      [](unary<LTLPFO>::type::always)       { return "G"; },
+      [](unary<LTLPFO>::type::eventually)   { return "F"; },
+      [](unary<LTLPFO>::type::once)         { return "O"; },
+      [](unary<LTLPFO>::type::historically) { return "H"; }
     );
   }
 
   static
   std::string to_string(binary<LTLPFO>::type t) {
     return t.match(
-      [](type_value<syntax_element::conjunction>) { return "&&"; },
-      [](type_value<syntax_element::disjunction>) { return "||"; },
-      [](type_value<syntax_element::implication>) { return "->"; },
-      [](type_value<syntax_element::iff>)         { return "<->"; },
-      [](type_value<syntax_element::until>)       { return "U"; },
-      [](type_value<syntax_element::release>)     { return "R"; },
-      [](type_value<syntax_element::w_until>)     { return "W"; },
-      [](type_value<syntax_element::s_release>)   { return "M"; },
-      [](type_value<syntax_element::since>)       { return "S"; },
-      [](type_value<syntax_element::triggered>)   { return "T"; }
+      [](binary<LTLPFO>::type::conjunction) { return "&&"; },
+      [](binary<LTLPFO>::type::disjunction) { return "||"; },
+      [](binary<LTLPFO>::type::implication) { return "->"; },
+      [](binary<LTLPFO>::type::iff)         { return "<->"; },
+      [](binary<LTLPFO>::type::until)       { return "U"; },
+      [](binary<LTLPFO>::type::release)     { return "R"; },
+      [](binary<LTLPFO>::type::w_until)     { return "W"; },
+      [](binary<LTLPFO>::type::s_release)   { return "M"; },
+      [](binary<LTLPFO>::type::since)       { return "S"; },
+      [](binary<LTLPFO>::type::triggered)   { return "T"; }
     );
   }
 
   static
   std::string to_string(comparison<LTLPFO>::type t) {
     return t.match(
-      [](type_value<syntax_element::equal>)              { return "="; },
-      [](type_value<syntax_element::not_equal>)          { return "!="; },
-      [](type_value<syntax_element::less_than>)          { return "<"; },
-      [](type_value<syntax_element::less_than_equal>)    { return "<="; },
-      [](type_value<syntax_element::greater_than>)       { return ">"; },
-      [](type_value<syntax_element::greater_than_equal>) { return ">="; }
+      [](comparison<LTLPFO>::type::equal)              { return "="; },
+      [](comparison<LTLPFO>::type::not_equal)          { return "!="; },
+      [](comparison<LTLPFO>::type::less_than)          { return "<"; },
+      [](comparison<LTLPFO>::type::less_than_equal)    { return "<="; },
+      [](comparison<LTLPFO>::type::greater_than)       { return ">"; },
+      [](comparison<LTLPFO>::type::greater_than_equal) { return ">="; }
     );
   }
 
@@ -219,7 +219,7 @@ namespace black::internal::logic
         );
       },
       [](quantifier_block<LTLPFO> q) {
-        std::string qs = q.node_type() == quantifier<LTLPFO>::type::exists ?
+        std::string qs = q.node_type() == quantifier<LTLPFO>::type::exists{} ?
           "exists " : "forall ";
 
         bool parens = q.matrix().is<binary<LTLPFO>>();

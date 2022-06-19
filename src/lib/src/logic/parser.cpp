@@ -290,9 +290,9 @@ namespace black::internal
     black_assert(peek());
     black_assert(peek()->data<quantifier::type>());
 
-    quantifier::type q = quantifier::type::forall;
-    if(consume()->data<quantifier::type>() == quantifier::type::exists) 
-      q = quantifier::type::exists;
+    quantifier::type q = quantifier::type::forall{};
+    if(consume()->data<quantifier::type>() == quantifier::type::exists{}) 
+      q = quantifier::type::exists{};
 
     std::vector<token> vartoks;
     while(peek() && peek()->token_type() == token::type::identifier) {
@@ -315,7 +315,7 @@ namespace black::internal
     for(token tok : vartoks)
       vars.push_back(_alphabet.variable(*tok.data<std::string>()));
 
-    if(q == quantifier::type::exists)
+    if(q == quantifier::type::exists{})
       return exists_block(vars, *matrix);
 
     return forall_block(vars, *matrix);
@@ -362,15 +362,15 @@ namespace black::internal
     if(peek()->token_type() == token::type::boolean)
       return parse_boolean();
     if(peek()->token_type() == token::type::integer ||
-       peek()->data<binary_term::type>() == binary_term::type::subtraction ||
+       peek()->data<binary_term::type>() == binary_term::type::subtraction{} ||
        peek()->token_type() == token::type::identifier ||
-       peek()->data<unary_term::type>() == unary_term::type::next ||
-       peek()->data<unary_term::type>() == unary_term::type::wnext ||
-       peek()->data<unary_term::type>() == unary_term::type::prev ||
-       peek()->data<unary_term::type>() == unary_term::type::wprev)
+       peek()->data<unary_term::type>() == unary_term::type::next{} ||
+       peek()->data<unary_term::type>() == unary_term::type::wnext{} ||
+       peek()->data<unary_term::type>() == unary_term::type::prev{} ||
+       peek()->data<unary_term::type>() == unary_term::type::wprev{})
       return parse_atom();
-    if(peek()->data<quantifier::type>() == quantifier::type::exists ||
-       peek()->data<quantifier::type>() == quantifier::type::forall)
+    if(peek()->data<quantifier::type>() == quantifier::type::exists{} ||
+       peek()->data<quantifier::type>() == quantifier::type::forall{})
       return parse_quantifier();
     if(peek()->is<unary::type>())
       return parse_unary();
@@ -399,13 +399,13 @@ namespace black::internal
        peek()->token_type() == token::type::real)
       return parse_term_constant();
 
-    if(peek()->data<binary_term::type>() == binary_term::type::subtraction)
+    if(peek()->data<binary_term::type>() == binary_term::type::subtraction{})
       return parse_term_unary_minus();
 
-    if(peek()->data<unary_term::type>() == unary_term::type::next ||
-       peek()->data<unary_term::type>() == unary_term::type::wnext ||
-       peek()->data<unary_term::type>() == unary_term::type::prev ||
-       peek()->data<unary_term::type>() == unary_term::type::wprev)
+    if(peek()->data<unary_term::type>() == unary_term::type::next{} ||
+       peek()->data<unary_term::type>() == unary_term::type::wnext{} ||
+       peek()->data<unary_term::type>() == unary_term::type::prev{} ||
+       peek()->data<unary_term::type>() == unary_term::type::wprev{})
        return parse_term_ctor();
 
     if(peek()->token_type() == token::type::identifier)
@@ -459,7 +459,7 @@ namespace black::internal
   std::optional<term> parser::_parser_t::parse_term_unary_minus() {
     black_assert(peek());
     black_assert(
-      peek()->data<binary_term::type>() == binary_term::type::subtraction
+      peek()->data<binary_term::type>() == binary_term::type::subtraction{}
     );
 
     consume();
@@ -471,10 +471,10 @@ namespace black::internal
 
   std::optional<term> parser::_parser_t::parse_term_ctor() {
     black_assert(
-      peek()->data<unary_term::type>() == unary_term::type::next ||
-      peek()->data<unary_term::type>() == unary_term::type::wnext ||
-      peek()->data<unary_term::type>() == unary_term::type::prev ||
-      peek()->data<unary_term::type>() == unary_term::type::wprev
+      peek()->data<unary_term::type>() == unary_term::type::next{} ||
+      peek()->data<unary_term::type>() == unary_term::type::wnext{} ||
+      peek()->data<unary_term::type>() == unary_term::type::prev{} ||
+      peek()->data<unary_term::type>() == unary_term::type::wprev{}
     );
 
     token op = *consume();

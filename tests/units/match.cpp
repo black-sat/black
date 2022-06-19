@@ -198,36 +198,36 @@ TEST_CASE("Pattern matching") {
 
     unary<LTLP>::type t = u.node_type();
 
-    REQUIRE(t == unary<LTL>::type::negation);
+    REQUIRE(t == unary<LTL>::type::negation{});
 
-    REQUIRE(u.node_type() == unary<LTL>::type::negation);
+    REQUIRE(u.node_type() == unary<LTL>::type::negation{});
 
-    auto tn = u.node_type().to<type_value<syntax_element::negation>>();
+    auto tn = u.node_type().to<unary<LTL>::type::negation>();
     REQUIRE(tn.has_value());
 
-    REQUIRE(u.node_type().is<type_value<syntax_element::negation>>());
+    REQUIRE(u.node_type().is<unary<LTL>::type::negation>());
 
     u = F(p);
 
     unary<LTL>::type result = u.node_type().match(
-      [](type_value<syntax_element::negation>) {
-        return type_value<syntax_element::negation>{};
+      [](unary<LTL>::type::negation) {
+        return unary<LTL>::type::negation{};
       },
-      [](type_value<syntax_element::always>) {
-        return type_value<syntax_element::eventually>{};
+      [](unary<LTL>::type::always) {
+        return unary<LTL>::type::eventually{};
       },
-      [](type_value<syntax_element::eventually>) {
-        return type_value<syntax_element::always>{};
+      [](unary<LTL>::type::eventually) {
+        return unary<LTL>::type::always{};
       },
-      [](type_value<syntax_element::tomorrow>) {
-        return type_value<syntax_element::w_tomorrow>{};
+      [](unary<LTL>::type::tomorrow) {
+        return unary<LTL>::type::w_tomorrow{};
       },
-      [](type_value<syntax_element::w_tomorrow>) {
-        return type_value<syntax_element::tomorrow>{};
+      [](unary<LTL>::type::w_tomorrow) {
+        return unary<LTL>::type::tomorrow{};
       }
     );
 
-    REQUIRE(result == unary<LTL>::type::always);
+    REQUIRE(result == unary<LTL>::type::always{});
   }
 
   SECTION("Common type") {

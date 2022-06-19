@@ -82,16 +82,16 @@ namespace black::internal
       return {};
     
     return tok.data<binary::type>()->match(
-      [](type_value<syntax_element::conjunction>) { return 30; },
-      [](type_value<syntax_element::disjunction>) { return 20; },
-      [](type_value<syntax_element::implication>) { return 40; },
-      [](type_value<syntax_element::iff>)         { return 40; },
-      [](type_value<syntax_element::until>)       { return 50; },
-      [](type_value<syntax_element::release>)     { return 50; },
-      [](type_value<syntax_element::w_until>)     { return 50; },
-      [](type_value<syntax_element::s_release>)   { return 50; },
-      [](type_value<syntax_element::since>)       { return 50; },
-      [](type_value<syntax_element::triggered>)   { return 50; }
+      [](binary::type::conjunction) { return 30; },
+      [](binary::type::disjunction) { return 20; },
+      [](binary::type::implication) { return 40; },
+      [](binary::type::iff)         { return 40; },
+      [](binary::type::until)       { return 50; },
+      [](binary::type::release)     { return 50; },
+      [](binary::type::w_until)     { return 50; },
+      [](binary::type::s_release)   { return 50; },
+      [](binary::type::since)       { return 50; },
+      [](binary::type::triggered)   { return 50; }
     );
   }
 
@@ -101,10 +101,10 @@ namespace black::internal
       return {};
 
     return tok.data<binary_term::type>()->match(
-      [](type_value<syntax_element::addition>)       { return 20; },
-      [](type_value<syntax_element::subtraction>)    { return 20; },
-      [](type_value<syntax_element::multiplication>) { return 30; },
-      [](type_value<syntax_element::division>)       { return 30; }
+      [](binary_term::type::addition)       { return 20; },
+      [](binary_term::type::subtraction)    { return 20; },
+      [](binary_term::type::multiplication) { return 30; },
+      [](binary_term::type::division)       { return 30; }
     );
   }
 

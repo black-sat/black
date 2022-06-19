@@ -91,7 +91,7 @@ TEST_CASE("New API") {
   SECTION("Storage kinds") {
     boolean b = sigma.boolean(true);
 
-    unary<LTL> u = unary<LTL>(unary<LTL>::type::eventually, b);
+    unary<LTL> u = unary<LTL>(unary<LTL>::type::eventually{}, b);
 
     REQUIRE(u.argument() == b);
 
@@ -129,14 +129,14 @@ TEST_CASE("New API") {
   }
 
   SECTION("Use of fragment type enums values") {
-    unary<LTL>::type t1 = unary<LTL>::type::always;
-    unary<LTL>::type t2 = unary<LTL>::type::negation;
+    unary<LTL>::type t1 = unary<LTL>::type::always{};
+    unary<LTL>::type t2 = unary<LTL>::type::negation{};
 
     REQUIRE(t1 != t2);
 
     std::vector<unary<LTL>::type> v = {
-      unary<LTL>::type::always, unary<LTL>::type::negation, 
-      unary<LTL>::type::eventually
+      unary<LTL>::type::always{}, unary<LTL>::type::negation{}, 
+      unary<LTL>::type::eventually{}
     };
 
     REQUIRE(v[0] == t1);
@@ -151,8 +151,8 @@ TEST_CASE("New API") {
     boolean b = sigma.boolean(true);
     
     SECTION("Storage kinds") {
-      unary<LTL> n = unary<LTL>(unary<LTL>::type::negation, b);
-      unary<LTL> a = unary<LTL>(unary<LTL>::type::always, b);
+      unary<LTL> n = unary<LTL>(unary<LTL>::type::negation{}, b);
+      unary<LTL> a = unary<LTL>(unary<LTL>::type::always{}, b);
     
       formula<LTLP> f = n;
       REQUIRE(f == n);
@@ -221,8 +221,8 @@ TEST_CASE("New API") {
 
   SECTION("Quantifiers") {
     variable x = sigma.variable("x");
-    comparison<FO> e = comparison<FO>(comparison<FO>::type::equal, x, x);
-    quantifier<FO> f = quantifier<FO>(quantifier<FO>::type::forall, x, e);
+    comparison<FO> e = comparison<FO>(comparison<FO>::type::equal{}, x, x);
+    quantifier<FO> f = quantifier<FO>(quantifier<FO>::type::forall{}, x, e);
 
     REQUIRE(e.left() == x);
     REQUIRE(e.right() == x);
@@ -235,7 +235,7 @@ TEST_CASE("New API") {
     formula b = sigma.boolean(true);
     formula p = sigma.proposition("p");
     variable x = sigma.variable("x");
-    unary u = unary<Boolean>(unary<Boolean>::type::negation, b);
+    unary u = unary<Boolean>(unary<Boolean>::type::negation{}, b);
     conjunction c = conjunction(p, b);
     binary c2 = conjunction(u, b);
     equal eq = equal(x, x);
@@ -487,7 +487,7 @@ TEST_CASE("New API") {
 
     static_assert(storage_kind<quantifier_block<FO>>);
 
-    auto qb = quantifier_block<FO>(quantifier<FO>::type::exists, v, f);
+    auto qb = quantifier_block<FO>(quantifier<FO>::type::exists{}, v, f);
 
     REQUIRE(qb.matrix() == f);
 
@@ -563,7 +563,7 @@ TEST_CASE("New API") {
 
     REQUIRE(has_any_element_of(
       p && (!p && (x > x && (exists(x, x > x) && top))),
-      syntax_element::boolean, quantifier<FO>::type::forall
+      syntax_element::boolean, quantifier<FO>::type::forall{}
     ));
   }
 }

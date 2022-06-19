@@ -194,7 +194,7 @@ namespace black::internal::logic
   #define declare_enum_element(Element) \
     template<> \
     struct fragment_enum_element<syntax_element::Element> { \
-      static constexpr type_value<syntax_element::Element> Element{}; \
+      using Element = type_value<syntax_element::Element>; \
     };
 
   #define declare_leaf_storage_kind(Base, Storage) declare_enum_element(Storage)
@@ -711,7 +711,7 @@ namespace black::internal::logic
           get_sigma(args...)->unique_##Storage( \
             args_to_node<Syntax, storage_type::Storage>( \
               storage_alloc_args_t<Syntax, storage_type::Storage>{ \
-                Storage<Syntax>::type::Element, \
+                typename Storage<Syntax>::type::Element{}, \
                 args... \
               } \
             ) \

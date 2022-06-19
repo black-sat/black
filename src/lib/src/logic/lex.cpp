@@ -37,72 +37,72 @@ namespace black::internal::lexer_details
   static
   std::string to_string(quantifier::type t) {
     return t.match(
-      [](type_value<syntax_element::exists>) { return "exists"; },
-      [](type_value<syntax_element::forall>) { return "forall"; }
+      [](quantifier::type::exists) { return "exists"; },
+      [](quantifier::type::forall) { return "forall"; }
     );
   }
   
   static
   std::string to_string(comparison::type t) {
     return t.match(
-      [](type_value<syntax_element::equal>)              { return "=";  },
-      [](type_value<syntax_element::not_equal>)          { return "!="; },
-      [](type_value<syntax_element::less_than>)          { return "<";  },
-      [](type_value<syntax_element::less_than_equal>)    { return "<="; },
-      [](type_value<syntax_element::greater_than>)       { return ">="; },
-      [](type_value<syntax_element::greater_than_equal>) { return ">="; }
+      [](comparison::type::equal)              { return "=";  },
+      [](comparison::type::not_equal)          { return "!="; },
+      [](comparison::type::less_than)          { return "<";  },
+      [](comparison::type::less_than_equal)    { return "<="; },
+      [](comparison::type::greater_than)       { return ">="; },
+      [](comparison::type::greater_than_equal) { return ">="; }
     );
   }
   
   static
   std::string to_string(unary_term::type t) {
     return t.match(
-      [](type_value<syntax_element::negative>) { return "-";     },
-      [](type_value<syntax_element::next>)     { return "next";  },
-      [](type_value<syntax_element::wnext>)    { return "wnext"; },
-      [](type_value<syntax_element::prev>)     { return "prev";  },
-      [](type_value<syntax_element::wprev>)    { return "wprev"; }
+      [](unary_term::type::negative) { return "-";     },
+      [](unary_term::type::next)     { return "next";  },
+      [](unary_term::type::wnext)    { return "wnext"; },
+      [](unary_term::type::prev)     { return "prev";  },
+      [](unary_term::type::wprev)    { return "wprev"; }
     );
   }
   
   static
   std::string to_string(binary_term::type t) {
     return t.match(
-      [](type_value<syntax_element::addition>)       { return "-";     },
-      [](type_value<syntax_element::subtraction>)    { return "next";  },
-      [](type_value<syntax_element::multiplication>) { return "wnext"; },
-      [](type_value<syntax_element::division>)       { return "prev";  }
+      [](binary_term::type::addition)       { return "-";     },
+      [](binary_term::type::subtraction)    { return "next";  },
+      [](binary_term::type::multiplication) { return "wnext"; },
+      [](binary_term::type::division)       { return "prev";  }
     );
   }
   
   static
   std::string to_string(unary::type t) {
     return t.match(
-      [](type_value<syntax_element::negation>)     { return "!";  },
-      [](type_value<syntax_element::tomorrow>)     { return "X";  },
-      [](type_value<syntax_element::w_tomorrow>)   { return "wX"; },
-      [](type_value<syntax_element::yesterday>)    { return "Y";  },
-      [](type_value<syntax_element::w_yesterday>)  { return "Z";  },
-      [](type_value<syntax_element::always>)       { return "G";  },
-      [](type_value<syntax_element::eventually>)   { return "F";  },
-      [](type_value<syntax_element::once>)         { return "O";  },
-      [](type_value<syntax_element::historically>) { return "H";  }
+      [](unary::type::negation)     { return "!";  },
+      [](unary::type::tomorrow)     { return "X";  },
+      [](unary::type::w_tomorrow)   { return "wX"; },
+      [](unary::type::yesterday)    { return "Y";  },
+      [](unary::type::w_yesterday)  { return "Z";  },
+      [](unary::type::always)       { return "G";  },
+      [](unary::type::eventually)   { return "F";  },
+      [](unary::type::once)         { return "O";  },
+      [](unary::type::historically) { return "H";  }
     );
   }
   
   static
   std::string to_string(binary::type t) {
     return t.match(
-      [](type_value<syntax_element::conjunction>) { return "&&";  },
-      [](type_value<syntax_element::disjunction>) { return "||";  },
-      [](type_value<syntax_element::implication>) { return "->";  },
-      [](type_value<syntax_element::iff>)         { return "<->"; },
-      [](type_value<syntax_element::until>)       { return "U";   },
-      [](type_value<syntax_element::release>)     { return "R";   },
-      [](type_value<syntax_element::w_until>)     { return "W";   },
-      [](type_value<syntax_element::s_release>)   { return "M";   },
-      [](type_value<syntax_element::since>)       { return "S";   },
-      [](type_value<syntax_element::triggered>)   { return "T";   }
+      [](binary::type::conjunction) { return "&&";  },
+      [](binary::type::disjunction) { return "||";  },
+      [](binary::type::implication) { return "->";  },
+      [](binary::type::iff)         { return "<->"; },
+      [](binary::type::until)       { return "U";   },
+      [](binary::type::release)     { return "R";   },
+      [](binary::type::w_until)     { return "W";   },
+      [](binary::type::s_release)   { return "M";   },
+      [](binary::type::since)       { return "S";   },
+      [](binary::type::triggered)   { return "T";   }
     );
   }
   
@@ -215,49 +215,49 @@ namespace black::internal::lexer_details
           s.get();
           if(s.peek() == '=') {
             s.get();
-            return token{comparison::type::not_equal};
+            return token{comparison::type::not_equal{}};
           }
-          return token{unary::type::negation};
+          return token{unary::type::negation{}};
         case '~':
           s.get();
-          return token{unary::type::negation};
+          return token{unary::type::negation{}};
         // '&' or '&&'
         case '&':
           s.get();
           if (s.peek() == '&')
             s.get();
-          return token{binary::type::conjunction};
+          return token{binary::type::conjunction{}};
 
         // '|' or '||'
         case '|':
           s.get();
           if (s.peek() == '|')
             s.get();
-          return token{binary::type::disjunction};
+          return token{binary::type::disjunction{}};
 
         // '->' and '=>'
         case '-':
           s.get();
           if (s.peek() == '>') {
             s.get();
-            return token{binary::type::implication};
+            return token{binary::type::implication{}};
           }
-          return token{binary_term::type::subtraction};
+          return token{binary_term::type::subtraction{}};
         case '=':
           s.get();
           if (s.peek() == '>') {
             s.get();
-            return token{binary::type::implication};
+            return token{binary::type::implication{}};
           }
-          return token{comparison::type::equal};
+          return token{comparison::type::equal{}};
         
         case '>':
           s.get();
           if(s.peek() == '=') {
             s.get();
-            return token{comparison::type::greater_than_equal};
+            return token{comparison::type::greater_than_equal{}};
           }
-          return token{comparison::type::greater_than};
+          return token{comparison::type::greater_than{}};
 
         // '<->' or '<=>' or '<>'
         case '<':
@@ -265,23 +265,23 @@ namespace black::internal::lexer_details
           if (s.peek() == '-' || s.peek() == '=')
             s.get();
           else
-            return token{comparison::type::less_than};
+            return token{comparison::type::less_than{}};
 
           if (s.peek() == '>') {
             s.get();
-            return token{binary::type::iff};
+            return token{binary::type::iff{}};
           }
-          return token{comparison::type::less_than_equal};
+          return token{comparison::type::less_than_equal{}};
 
         case '+':
           s.get();
-          return token{binary_term::type::addition};
+          return token{binary_term::type::addition{}};
         case '*':
           s.get();
-          return token{binary_term::type::multiplication};
+          return token{binary_term::type::multiplication{}};
         case '/':
           s.get();
-          return token{binary_term::type::division};
+          return token{binary_term::type::division{}};
       }
 
       // TODO: garantire che se restituiamo nullopt, lo stream non è avanzato
@@ -300,32 +300,32 @@ namespace black::internal::lexer_details
   std::pair<std::string_view, token> lexer::_keywords[28] = {
     {"True",   token{true}},
     {"False",  token{false}},
-    {"next",   token{unary_term::type::next}},
-    {"wnext",  token{unary_term::type::wnext}},
-    {"prev",   token{unary_term::type::prev}},
-    {"wprev",  token{unary_term::type::wprev}},
-    {"exists", token{quantifier::type::exists}},
-    {"forall", token{quantifier::type::forall}},
-    {"NOT",    token{unary::type::negation}},
-    {"X",      token{unary::type::tomorrow}},
-    {"wX",     token{unary::type::w_tomorrow}},
-    {"Y",      token{unary::type::yesterday}},
-    {"Z",      token{unary::type::w_yesterday}},
-    {"F",      token{unary::type::eventually}},
-    {"G",      token{unary::type::always}},
-    {"O",      token{unary::type::once}},
-    {"H",      token{unary::type::historically}},
-    {"AND",    token{binary::type::conjunction}},
-    {"OR",     token{binary::type::disjunction}},
-    {"THEN",   token{binary::type::implication}},
-    {"IFF",    token{binary::type::iff}},
-    {"U",      token{binary::type::until}},
-    {"R",      token{binary::type::release}},
-    {"V",      token{binary::type::release}},
-    {"W",      token{binary::type::w_until}},
-    {"M",      token{binary::type::s_release}},
-    {"S",      token{binary::type::since}},
-    {"T",      token{binary::type::triggered}}
+    {"next",   token{unary_term::type::next{}}},
+    {"wnext",  token{unary_term::type::wnext{}}},
+    {"prev",   token{unary_term::type::prev{}}},
+    {"wprev",  token{unary_term::type::wprev{}}},
+    {"exists", token{quantifier::type::exists{}}},
+    {"forall", token{quantifier::type::forall{}}},
+    {"NOT",    token{unary::type::negation{}}},
+    {"X",      token{unary::type::tomorrow{}}},
+    {"wX",     token{unary::type::w_tomorrow{}}},
+    {"Y",      token{unary::type::yesterday{}}},
+    {"Z",      token{unary::type::w_yesterday{}}},
+    {"F",      token{unary::type::eventually{}}},
+    {"G",      token{unary::type::always{}}},
+    {"O",      token{unary::type::once{}}},
+    {"H",      token{unary::type::historically{}}},
+    {"AND",    token{binary::type::conjunction{}}},
+    {"OR",     token{binary::type::disjunction{}}},
+    {"THEN",   token{binary::type::implication{}}},
+    {"IFF",    token{binary::type::iff{}}},
+    {"U",      token{binary::type::until{}}},
+    {"R",      token{binary::type::release{}}},
+    {"V",      token{binary::type::release{}}},
+    {"W",      token{binary::type::w_until{}}},
+    {"M",      token{binary::type::s_release{}}},
+    {"S",      token{binary::type::since{}}},
+    {"T",      token{binary::type::triggered{}}}
   };
 
   bool lexer::is_keyword(std::string_view s) {
