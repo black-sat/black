@@ -109,9 +109,10 @@ namespace black::frontend
             nextvar = (uint8_t)feature_t::nextvar;
         return nextvar | (uint8_t)feature_t::first_order;
       },
-      [](quantifier) -> uint8_t { // LCOV_EXCL_LINE
+      [](quantifier q) -> uint8_t { // LCOV_EXCL_LINE
         return (uint8_t)feature_t::first_order |
-               (uint8_t)feature_t::quantifiers;
+               (uint8_t)feature_t::quantifiers |
+               formula_features(q.matrix());
       },
       [](temporal t) -> uint8_t {
         return (uint8_t)feature_t::temporal |
@@ -129,6 +130,20 @@ namespace black::frontend
       },
       [](unary, formula arg) -> uint8_t { 
         return formula_features(arg);
+      },
+      [](big_disjunction d) {
+        uint8_t features = 0;
+        for(formula op : d.operands())
+          features = features | formula_features(op);
+        
+        return features;
+      },
+      [](big_conjunction d) {
+        uint8_t features = 0;
+        for(formula op : d.operands())
+          features = features | formula_features(op);
+        
+        return features;
       },
       [](binary, formula left, formula right) -> uint8_t {
         return formula_features(left) | formula_features(right);
