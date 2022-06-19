@@ -2337,6 +2337,28 @@ namespace black::internal::logic {
     
     return std::optional<new_type>{};
   }
+
+  //
+  // Another good application for `for_each_child`. This function tells whether
+  // a hierarchy object `h` contains any element among those given as arguments.
+  // For example, if `f` is a formula, `has_any_element_of(f,
+  // syntax_element::boolean, syntax_element::iff)` tells whether there is any
+  // boolean constant in the formula or any double implication.
+  //
+  template<hierarchy H, typename ...Args>
+    requires (std::is_constructible_v<syntax_element, Args> && ...)
+  bool has_any_element_of(H h, Args ...args) {
+    if(((h.node_type() == syntax_element{args}) || ...))
+      return true;
+    
+    bool has = false;
+    for_each_child(h, [&](auto child) {
+      if(has_any_element_of(child, args...))
+        has = true;
+    });
+
+    return has;
+  }
 }
 
 #endif // BLACK_LOGIC_SUPPORT_HPP_

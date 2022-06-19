@@ -551,4 +551,19 @@ TEST_CASE("New API") {
     REQUIRE(fragment_cast<LTL>(u1).has_value());
     REQUIRE(!fragment_cast<LTL>(u2).has_value());
   }
+
+  SECTION("has_any_element_of()")
+  {
+    using namespace black::logic;
+    alphabet sigma;
+
+    proposition p = sigma.proposition("p");
+    variable x = sigma.variable("x");
+    boolean top = sigma.top();
+
+    REQUIRE(has_any_element_of(
+      p && (!p && (x > x && (exists(x, x > x) && top))),
+      syntax_element::boolean, quantifier<FO>::type::forall
+    ));
+  }
 }

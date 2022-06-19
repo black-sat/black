@@ -78,10 +78,9 @@ if(Catch2_FOUND)
     units/basics.cpp
     units/match.cpp
     units/namespaces.cpp
-    units/utility.cpp
     units/parser.cpp
     units/past_remover.cpp
-    units/cnf.cpp
+    # units/cnf.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)

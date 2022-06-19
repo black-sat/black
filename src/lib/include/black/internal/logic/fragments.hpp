@@ -54,6 +54,7 @@ namespace black {
       using black::internal::logic::fragment_cast;
       using black::internal::logic::can_fragment_cast;
       using black::internal::logic::fragment_unsafe_cast;
+      using black::internal::logic::has_any_element_of;
     }
     
     using black::internal::logic::only;

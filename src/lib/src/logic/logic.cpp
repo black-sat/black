@@ -22,7 +22,6 @@
 // SOFTWARE.
 
 #include <black/logic/logic.hpp>
-#include <black/logic/utility.hpp>
 
 #include <tsl/hopscotch_map.h>
 
