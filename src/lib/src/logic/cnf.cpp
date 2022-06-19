@@ -29,6 +29,8 @@ namespace black::internal::cnf
 { 
   using namespace black::internal::logic;
 
+  formula<Boolean> remove_booleans(formula<Boolean> f);
+
   static
   formula<Boolean> remove_booleans(negation<Boolean> n, auto op) 
   {
@@ -127,21 +129,21 @@ namespace black::internal::cnf
   }
 
   static void tseitin(
-    formula f, 
+    formula<Boolean> f, 
     std::vector<clause> &clauses, 
-    tsl::hopscotch_set<formula> &memo
+    tsl::hopscotch_set<formula<Boolean>> &memo
   );
 
   // TODO: disambiguate fresh propositions
-  inline proposition fresh(formula f) {
+  inline proposition fresh(formula<Boolean> f) {
     if(f.is<proposition>())
       return *f.to<proposition>();
     return f.sigma()->proposition(f);
   }
 
-  cnf to_cnf(formula f) {
+  cnf to_cnf(formula<Boolean> f) {
     std::vector<clause> result;
-    tsl::hopscotch_set<formula> memo;
+    tsl::hopscotch_set<formula<Boolean>> memo;
     
     formula<Boolean> simple = remove_booleans(f);
     black_assert(
@@ -175,7 +177,7 @@ namespace black::internal::cnf
     memo.insert(f);
     f.match(
       [](boolean)     { }, // LCOV_EXCL_LINE
-      [](proposition) { }
+      [](proposition) { },
       [&](conjunction<Boolean>, auto l, auto r) 
       {
         tseitin(l, clauses, memo);
@@ -302,18 +304,18 @@ namespace black::internal::cnf
     );
   }
 
-  formula to_formula(literal lit) {
+  formula<Boolean> to_formula(literal lit) {
     return lit.sign ? formula<Boolean>{lit.prop} : formula<Boolean>{!lit.prop};
   }
 
-  formula to_formula(alphabet &sigma, clause c) {
-    return big_or(sigma, c.literals, [](literal lit){
+  formula<Boolean> to_formula(alphabet &sigma, clause c) {
+    return big_or<Boolean>(sigma, c.literals, [](literal lit){
       return to_formula(lit);
     });
   }
 
-  formula to_formula(alphabet &sigma, cnf c) {
-    return big_and(sigma, c.clauses, [&](clause cl) {
+  formula<Boolean> to_formula(alphabet &sigma, cnf c) {
+    return big_and<Boolean>(sigma, c.clauses, [&](clause cl) {
       return to_formula(sigma, cl);
     });
   }
