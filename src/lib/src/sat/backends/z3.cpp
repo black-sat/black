@@ -23,7 +23,7 @@
 
 
 #include <black/sat/backends/z3.hpp>
-#include <black/logic/alphabet.hpp>
+#include <black/logic/logic.hpp>
 #include <black/logic/parser.hpp>
 
 #include <black/sat/backends/fractionals.hpp>
@@ -42,8 +42,10 @@ BLACK_REGISTER_SAT_BACKEND(z3, {
 
 namespace black::sat::backends 
 {
-  inline proposition fresh(formula f) {
-    return f.sigma()->prop(f);
+  using namespace black::logic;
+
+  inline proposition fresh(formula<FO> f) {
+    return f.sigma()->proposition(f);
   }
 
   struct z3::_z3_t {
@@ -78,6 +80,7 @@ namespace black::sat::backends
     void Z3_get_error_msg(Z3_context, Z3_error_code, T = T{}) { }
   }
 
+  template<typename T>
   constexpr bool z3_is_old() {
     using namespace z3_compat;
     using type = decltype(Z3_get_error_msg(nullptr,Z3_error_code{}));
@@ -86,12 +89,14 @@ namespace black::sat::backends
   }
 
   namespace z3_compat_wrap {
-    template<REQUIRES(!z3_is_old())>
+    template<typename T>
+      requires (!z3_is_old<T>())
     Z3_string Z3_get_error_msg(Z3_error_code) {
       black_unreachable(); // LCOV_EXCL_LINE
     }
 
-    template<REQUIRES(z3_is_old())>
+    template<typename T>
+      requires (z3_is_old<T>())
     Z3_string Z3_get_error_msg(Z3_context, Z3_error_code) {
       black_unreachable(); // LCOV_EXCL_LINE
     }
@@ -130,12 +135,12 @@ namespace black::sat::backends
     Z3_del_context(_data->context);
   }
 
-  void z3::assert_formula(formula f) { 
+  void z3::assert_formula(formula<FO> f) { 
     Z3_ast ast = _data->to_z3(f); // this call must stay on its own line
     Z3_solver_assert(_data->context, _data->solver, ast);
   }
   
-  tribool z3::is_sat_with(formula f) {
+  tribool z3::is_sat_with(formula<FO> f) {
     Z3_solver_push(_data->context, _data->solver);
     assert_formula(iff(fresh(f), f));
     Z3_ast term = _data->to_z3(fresh(f));

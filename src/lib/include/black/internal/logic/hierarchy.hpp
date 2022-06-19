@@ -201,11 +201,17 @@
 #ifndef declare_hierarchy
   #define declare_hierarchy(Base)
 #endif
+#ifndef declare_simple_hierarchy
+  #define declare_simple_hierarchy declare_hierarchy
+#endif
 #ifndef has_no_standard_equality
   #define has_no_standard_equality(Base)
 #endif
 #ifndef declare_storage_kind
   #define declare_storage_kind(Base, Storage)
+#endif
+#ifndef declare_simple_storage_kind
+  #define declare_simple_storage_kind declare_storage_kind
 #endif
 #ifndef declare_leaf_storage_kind
   #define declare_leaf_storage_kind declare_storage_kind
@@ -234,11 +240,17 @@
 #ifndef end_storage_kind
   #define end_storage_kind(Base, Storage)
 #endif
+#ifndef end_simple_storage_kind
+  #define end_simple_storage_kind end_storage_kind
+#endif
 #ifndef end_leaf_storage_kind
   #define end_leaf_storage_kind end_storage_kind
 #endif
 #ifndef end_hierarchy
   #define end_hierarchy(Element)
+#endif
+#ifndef end_simple_hierarchy
+  #define end_simple_hierarchy end_hierarchy
 #endif
 #ifndef escape_commas
 #define escape_commas(...) __VA_ARGS__
@@ -368,30 +380,30 @@ declare_hierarchy(formula)
 
 end_hierarchy(formula)
 
-declare_hierarchy(sort)
+declare_simple_hierarchy(sort)
   declare_leaf_storage_kind(sort, custom_sort)
     declare_field(sort, custom_sort, identifier, name)
   end_leaf_storage_kind(sort, custom_sort)
-  declare_storage_kind(sort, primitive_sort)
+  declare_simple_storage_kind(sort, primitive_sort)
     declare_leaf_hierarchy_element(sort, primitive_sort, integer_sort)
     declare_leaf_hierarchy_element(sort, primitive_sort, real_sort)
-  end_storage_kind(sort, primitive_sort)
-  declare_storage_kind(sort, function_sort)
+  end_simple_storage_kind(sort, primitive_sort)
+  declare_leaf_storage_kind(sort, function_sort)
     declare_field(sort, function_sort, identifier, name)
-    declare_child(sort, function_sort, sort, return_sort)
-    declare_children(sort, function_sort, sort, arguments)
-    has_no_hierarchy_elements(sort, function_sort)
-  end_storage_kind(sort, function_sort)
-  declare_storage_kind(sort, relation_sort)
+    declare_field(sort, function_sort, sort, return_sort)
+    declare_field(sort, function_sort, std::vector<sort>, arguments)
+  end_leaf_storage_kind(sort, function_sort)
+  declare_leaf_storage_kind(sort, relation_sort)
     declare_field(sort, relation_sort, identifier, name)
-    declare_children(sort, relation_sort, sort, arguments)
-    has_no_hierarchy_elements(sort, relation_sort)
-  end_storage_kind(sort, relation_sort)
-end_hierarchy(sort)
+    declare_field(sort, relation_sort, std::vector<sort>, arguments)
+  end_leaf_storage_kind(sort, relation_sort)
+end_simple_hierarchy(sort)
 
 #undef declare_hierarchy
+#undef declare_simple_hierarchy
 #undef has_no_standard_equality
 #undef declare_storage_kind
+#undef declare_simple_storage_kind
 #undef declare_leaf_storage_kind
 #undef declare_storage_custom_members
 #undef declare_field
@@ -402,6 +414,8 @@ end_hierarchy(sort)
 #undef declare_leaf_hierarchy_element
 #undef declare_hierarchy_element
 #undef end_storage_kind
+#undef end_simple_storage_kind
 #undef end_leaf_storage_kind
 #undef end_hierarchy
+#undef end_simple_hierarchy
 #undef escape_commas

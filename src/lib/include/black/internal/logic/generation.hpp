@@ -226,11 +226,18 @@ namespace black::internal::logic
   // `storage_data` below may refer to a specific type (e.g. the field of type
   // `variable` of `quantifier`).
   //
+  #define declare_hierarchy(Base) \
+    template<fragment Syntax> \
+    struct Base;
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<fragment Syntax> \
     class Element;
   #define declare_storage_kind(Base, Storage) \
     template<fragment Syntax> \
+    class Storage;
+  #define declare_simple_hierarchy(Base) \
+    struct Base;
+  #define declare_simple_storage_kind(Base, Storage) \
     class Storage;
   #define declare_leaf_storage_kind(Base, Storage) \
     class Storage;
@@ -283,6 +290,19 @@ namespace black::internal::logic
     template<typename T> \
     concept is_##Base = hierarchy<T> && T::hierarchy == hierarchy_type::Base;
 
+  #define declare_simple_hierarchy(Base) \
+    struct Base \
+      : hierarchy_base<hierarchy_type::Base, universal_fragment_t>, \
+        hierarchy_custom_members<hierarchy_type::Base, Base> \
+    { \
+      using hierarchy_base< \
+        hierarchy_type::Base, universal_fragment_t \
+      >::hierarchy_base; \
+    }; \
+    \
+    template<typename T> \
+    concept is_##Base = hierarchy<T> && T::hierarchy == hierarchy_type::Base;
+
   #include <black/internal/logic/hierarchy.hpp>
 
   //
@@ -294,6 +314,12 @@ namespace black::internal::logic
     template<fragment Syntax> \
     struct hierarchy_type_of<Syntax, hierarchy_type::Base> { \
       using type = Base<Syntax>; \
+    };
+  
+  #define declare_simple_hierarchy(Base) \
+    template<fragment Syntax> \
+    struct hierarchy_type_of<Syntax, hierarchy_type::Base> { \
+      using type = Base; \
     };
 
   #include <black/internal/logic/hierarchy.hpp>
@@ -402,6 +428,23 @@ namespace black::internal::logic
     \
     template<typename H> \
     Storage(H const&) -> Storage<typename H::syntax>;
+  
+  #define declare_simple_storage_kind(Base, Storage) \
+    class Storage : \
+      public \
+        storage_base<storage_type::Storage, universal_fragment_t, Storage> \
+    { \
+      using base_t = \
+        storage_base<storage_type::Storage, universal_fragment_t, Storage>; \
+    public: \
+      using base_t::base_t; \
+      \
+      template<typename ...Args> \
+        requires is_storage_constructible_v< \
+          storage_type::Storage, universal_fragment_t, Args... \
+        > \
+      explicit Storage(Args ...args); \
+    };
 
   //
   // This is a deduction guide for use with the allocating constructor. This is
@@ -448,6 +491,12 @@ namespace black::internal::logic
       using type = Storage<Syntax>; \
     };
   
+  #define declare_simple_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    struct storage_type_of<Syntax, storage_type::Storage> { \
+      using type = Storage; \
+    };
+
   #define declare_leaf_storage_kind(Base, Storage) \
     template<fragment Syntax> \
     struct storage_type_of<Syntax, storage_type::Storage> { \
@@ -643,6 +692,9 @@ namespace black::internal::logic
       template<fragment Syntax> \
       friend class Storage;
     
+    #define declare_simple_storage_kind(Base, Storage) \
+      friend class Storage;
+    
     #define declare_leaf_hierarchy_element(Base, Storage, Element)
     #define declare_hierarchy_element(Base, Storage, Element) \
       template<fragment Syntax> \
@@ -691,6 +743,23 @@ namespace black::internal::logic
           get_sigma(args...)->unique_##Storage( \
             args_to_node<Syntax, storage_type::Storage>( \
               storage_alloc_args_t<Syntax, storage_type::Storage>{args...} \
+            ) \
+          ) \
+        } { }
+  
+  #define declare_simple_storage_kind(Base, Storage) \
+    template<typename ...Args> \
+      requires is_storage_constructible_v< \
+        storage_type::Storage, universal_fragment_t, Args... \
+      > \
+    Storage::Storage(Args ...args) \
+      : Storage{ \
+          get_sigma(args...), \
+          get_sigma(args...)->unique_##Storage( \
+            args_to_node<universal_fragment_t, storage_type::Storage>( \
+              storage_alloc_args_t< \
+                universal_fragment_t, storage_type::Storage \
+              >{args...} \
             ) \
           ) \
         } { }

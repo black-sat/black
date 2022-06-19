@@ -44,7 +44,7 @@ namespace black::internal::logic {
   class alphabet : public alphabet_base
   {
   public:
-    alphabet() = default;
+    alphabet() : _default_sort{this->custom_sort("default")} { }
     alphabet(alphabet const&) = delete;
     alphabet(alphabet &&) = default;
 
@@ -58,6 +58,12 @@ namespace black::internal::logic {
     class boolean bottom() {
       return this->boolean(false);
     }
+
+    sort default_sort() const { return _default_sort; }
+    void set_default_sort(sort s) { _default_sort = s; }
+
+  private:
+    sort _default_sort;
   };
  
   //

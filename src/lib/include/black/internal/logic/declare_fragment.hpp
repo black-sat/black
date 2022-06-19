@@ -80,11 +80,17 @@ namespace black::logic::fragments::FRAGMENT {
     using Base = black::logic::Base< \
       black::logic::FRAGMENT \
     >;
+  
+  #define declare_simple_hierarchy(Base) \
+    using Base = black::logic::Base;
 
   #define declare_storage_kind(Base, Storage) \
     using Storage = black::logic::Storage< \
       black::logic::FRAGMENT \
     >;
+  
+  #define declare_simple_storage_kind(Base, Storage) \
+    using Storage = black::logic::Storage;
   
   #define declare_leaf_storage_kind(Base, Storage) \
     using Storage = black::logic::Storage;
