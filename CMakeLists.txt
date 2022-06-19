@@ -74,8 +74,13 @@ find_package(Sanitizers) # Sanitizers
 #
 # Fix the RPATH for the installation 
 #
-set(CMAKE_MACOSX_RPATH 1)
-list(APPEND CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+if(APPLE)
+  set(CMAKE_MACOSX_RPATH 1)
+  list(
+    APPEND CMAKE_INSTALL_RPATH 
+    ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
+  )
+endif()
 
 #
 # External dependencies
