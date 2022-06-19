@@ -50,15 +50,6 @@ namespace black::logic
 
     return has;
   }
-
-  //
-  // The `remove_booleans` function remove boolean constants from a first-order
-  // formula. This can only be done reliably for propositional and first-order
-  // formulas because in temporal formulas the way to perform such removal would
-  // depend on the finite/infinite-trace semantics. Implemented in logic.cpp.
-  //
-  BLACK_EXPORT
-  formula<FO> remove_booleans(formula<FO> f);
 }
 
 #endif // BLACK_LOGIC_UTILITY_HPP_

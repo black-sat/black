@@ -69,7 +69,6 @@ if(Catch2_FOUND)
   #
   set(
     UNIT_TESTS
-    # units/old/cnf.cpp
     # units/old/formula.cpp
     # units/old/term.cpp
     # units/old/match.cpp
@@ -82,6 +81,7 @@ if(Catch2_FOUND)
     units/utility.cpp
     units/parser.cpp
     units/past_remover.cpp
+    units/cnf.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)
