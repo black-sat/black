@@ -583,34 +583,26 @@ namespace black::internal::logic {
   //
   template<fragment Syntax, typename F>
   void for_each_child(conjunction<Syntax> c, F f) {
-    for(auto child : c.operands()) {
+    for(auto child : c.operands())
       f(child);
-      for_each_child(child, f);
-    }
   }
   
   template<fragment Syntax, typename F>
   void for_each_child(disjunction<Syntax> c, F f) {
-    for(auto child : c.operands()) {
+    for(auto child : c.operands())
       f(child);
-      for_each_child(child, f);
-    }
   }
   
   template<fragment Syntax, typename F>
   void for_each_child(addition<Syntax> c, F f) {
-    for(auto child : c.operands()) {
+    for(auto child : c.operands())
       f(child);
-      for_each_child(child, f);
-    }
   }
   
   template<fragment Syntax, typename F>
   void for_each_child(multiplication<Syntax> c, F f) {
-    for(auto child : c.operands()) {
+    for(auto child : c.operands())
       f(child);
-      for_each_child(child, f);
-    }
   }
 
   //
