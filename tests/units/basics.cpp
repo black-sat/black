@@ -555,7 +555,6 @@ TEST_CASE("New API") {
   SECTION("has_any_element_of()")
   {
     using namespace black::logic;
-    alphabet sigma;
 
     proposition p = sigma.proposition("p");
     variable x = sigma.variable("x");
@@ -565,5 +564,18 @@ TEST_CASE("New API") {
       p && !p && x > x && exists(x, x > x) && F(F(top)),
       syntax_element::boolean, quantifier<FO>::type::forall{}
     ));
+  }
+
+  SECTION("big_and, big_or, etc...") {
+    using namespace black::logic;
+
+    std::vector<int> v = {1, 2, 3, 4};
+    auto t = sum(sigma, v, [&](int i) {
+      return constant{sigma.integer(i)};
+    });
+
+    auto one = constant{sigma.integer(1)};
+
+    REQUIRE(t == (((one + 2) + 3) + 4));
   }
 }

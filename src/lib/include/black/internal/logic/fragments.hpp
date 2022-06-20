@@ -54,6 +54,10 @@ namespace black {
       using black_internal::logic::can_fragment_cast;
       using black_internal::logic::fragment_unsafe_cast;
       using black_internal::logic::has_any_element_of;
+      using black_internal::logic::big_and;
+      using black_internal::logic::big_or;
+      using black_internal::logic::sum;
+      using black_internal::logic::product;
     }
     
     using black_internal::logic::only;

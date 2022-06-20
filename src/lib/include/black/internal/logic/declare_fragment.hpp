@@ -105,26 +105,6 @@ namespace black::logic::fragments::FRAGMENT {
 
   #include <black/internal/logic/hierarchy.hpp>
 
-  template<std::ranges::range Range, typename F>
-  formula big_and(alphabet &sigma, Range const& r, F&& f) {
-    return big_and<black::logic::FRAGMENT>(sigma, r, std::forward<F>(f));
-  }
-
-  template<std::ranges::range Range, typename F>
-  formula big_or(alphabet &sigma, Range const& r, F&& f) {
-    return big_or<black::logic::FRAGMENT>(sigma, r, std::forward<F>(f));
-  }
-
-  template<std::ranges::range Range, typename F>
-  formula sum(alphabet &sigma, Range const& r, F&& f) {
-    return sum<black::logic::FRAGMENT>(sigma, r, std::forward<F>(f));
-  }
-
-  template<std::ranges::range Range, typename F>
-  formula product(alphabet &sigma, Range const& r, F&& f) {
-    return product<black::logic::FRAGMENT>(sigma, r, std::forward<F>(f));
-  }
-
 }
 
 #undef append_syntax_element

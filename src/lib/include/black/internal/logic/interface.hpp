@@ -27,8 +27,6 @@
 #include <ranges>
 #include <stack>
 
-#include <iostream>
-
 //
 // This file contains helper classes and functions that integrate the interface
 // provided by the API beyond what has been automatically generated in
@@ -234,7 +232,7 @@ namespace black_internal::logic {
     using S = deduce_fragment_for_storage_t<syntax_element::equal, T1, T2>;
 
     return term_equality_wrapper<S, syntax_element::equal>{
-      t1.unique_id() == t1.unique_id(), equal<S>(t1, t2)
+      t1.unique_id() == t2.unique_id(), equal<S>(t1, t2)
     };
   }
 
@@ -243,7 +241,7 @@ namespace black_internal::logic {
     using S = deduce_fragment_for_storage_t<syntax_element::not_equal, T1, T2>;
 
     return term_equality_wrapper<S, syntax_element::not_equal>{
-      t1.unique_id() != t1.unique_id(), not_equal<S>(t1, t2)
+      t1.unique_id() != t2.unique_id(), not_equal<S>(t1, t2)
     };
   }
 
@@ -372,15 +370,21 @@ namespace black_internal::logic {
   // `product` functions defined below.
   //
   template<
-    fragment Syntax, syntax_element Op, std::ranges::range Range, typename F
-  > 
-  auto fold_op(alphabet &sigma, Range const& r, F&& f) {
-    using H = hierarchy_type_of_t<Syntax,
-      hierarchy_of_storage_v<storage_of_element_v<Op>>
+    syntax_element Op, std::ranges::range Range, typename F,
+    typename T = std::ranges::range_value_t<Range>, 
+    hierarchy R = std::invoke_result_t<F, T>
+  >
+  auto fold_op(alphabet &sigma, Range const& r, F&& f)
+  {
+    auto id = element_type_of_t<typename R::syntax, Op>::identity(&sigma);
+    
+    using H = hierarchy_type_of_t<
+      make_combined_fragment_t<
+        typename R::syntax, make_fragment_t<Op>, typename decltype(id)::syntax
+      >,
+      R::hierarchy
     >;
-    using E = element_type_of_t<Syntax, Op>;
 
-    auto id = E::identity(&sigma);
     H acc = id;
     for(auto x : r) {
       H elem = std::forward<F>(f)(x);
@@ -389,7 +393,7 @@ namespace black_internal::logic {
       else if(acc == id)
         acc = elem;
       else
-        acc = E(acc, elem);
+        acc = element_type_of_t<typename H::syntax, Op>(acc, elem);
     }
 
     return acc;
@@ -400,30 +404,30 @@ namespace black_internal::logic {
   // conjunctions/disjunctions/sums/products by putting together the results of
   // applying a lambda to a range.
   //
-  template<fragment Syntax, std::ranges::range Range, typename F>
-  formula<Syntax> big_and(alphabet &sigma, Range const& r, F&& f) {
-    return fold_op<Syntax, syntax_element::conjunction>(
+  template<std::ranges::range Range, typename F>
+  auto big_and(alphabet &sigma, Range const& r, F&& f) {
+    return fold_op<syntax_element::conjunction>(
       sigma, r, std::forward<F>(f)
     );
   }
   
-  template<fragment Syntax, std::ranges::range Range, typename F>
-  formula<Syntax> big_or(alphabet &sigma, Range const& r, F&& f) {
-    return fold_op<Syntax, syntax_element::disjunction>(
+  template<std::ranges::range Range, typename F>
+  auto big_or(alphabet &sigma, Range const& r, F&& f) {
+    return fold_op<syntax_element::disjunction>(
       sigma, r, std::forward<F>(f)
     );
   }
   
-  template<fragment Syntax, std::ranges::range Range, typename F>
-  term<Syntax> sum(alphabet &sigma, Range const& r, F&& f) {
-    return fold_op<Syntax, syntax_element::addition>(
+  template<std::ranges::range Range, typename F>
+  auto sum(alphabet &sigma, Range const& r, F&& f) {
+    return fold_op<syntax_element::addition>(
       sigma, r, std::forward<F>(f)
     );
   }
   
-  template<fragment Syntax, std::ranges::range Range, typename F>
-  term<Syntax> product(alphabet &sigma, Range const& r, F&& f) {
-    return fold_op<Syntax, syntax_element::multiplication>(
+  template<std::ranges::range Range, typename F>
+  auto product(alphabet &sigma, Range const& r, F&& f) {
+    return fold_op<syntax_element::multiplication>(
       sigma, r, std::forward<F>(f)
     );
   }

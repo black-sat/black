@@ -90,6 +90,7 @@ namespace black_internal::logic
     #include <black/internal/logic/hierarchy.hpp>
 
     }
+    black_unreachable();
   }
 
   // Specializations of the trait to associate to each storage kind its
@@ -422,12 +423,14 @@ namespace black_internal::logic
       using base_t::base_t; \
       \
       template<typename ...Args> \
-        requires is_storage_constructible_v<storage_type::Storage, Syntax, Args...> \
+        requires \
+          is_storage_constructible_v<storage_type::Storage, Syntax, Args...> \
       explicit Storage(Args ...args); \
-    };\
+    }; \
     \
-    template<typename H> \
-    Storage(H const&) -> Storage<typename H::syntax>;
+    template<storage_kind S> \
+      requires (S::storage == storage_type::Storage) \
+    Storage(S const&) -> Storage<typename S::syntax>;
   
   #define declare_simple_storage_kind(Base, Storage) \
     class Storage : \
@@ -449,13 +452,13 @@ namespace black_internal::logic
   //
   // This is a deduction guide for use with the allocating constructor. This is
   // only declared for storage kinds without hierarchy elements (e.g. `atom<>`)
-  // since in case of hierarchy elements, in ordert o pass the `type` parameter
+  // since in case of hierarchy elements, in order to pass the `type` parameter
   // one would need to spell the fragment anyway (e.g.
   // `unary<LTL>(unary<LTL>::type::always, p, q)`).
   //
   #define has_no_hierarchy_elements(Base, Storage) \
     template<typename ...Args> \
-    explicit Storage(Args ...args) -> \
+    Storage(Args ...args) -> \
       Storage<deduce_fragment_for_storage_t<syntax_element::Storage, Args...>>;
 
   //
