@@ -29,24 +29,24 @@ namespace black::internal::cnf
 { 
   using namespace black::internal::logic;
 
-  formula<Boolean> remove_booleans(formula<Boolean> f);
+  formula<propositional> remove_booleans(formula<propositional> f);
 
   static
-  formula<Boolean> remove_booleans(negation<Boolean> n, auto op) 
+  formula<propositional> remove_booleans(negation<propositional> n, auto op) 
   {
     // !true -> false, !false -> true
     if(auto b = op.template to<boolean>(); b)
       return n.sigma()->boolean(!b->value()); 
     
     // !!p -> p
-    if(auto nop = op.template to<negation<Boolean>>(); nop) 
+    if(auto nop = op.template to<negation<propositional>>(); nop) 
       return remove_booleans(nop->argument());
 
     return !remove_booleans(op);
   }
 
   static
-  formula<Boolean> remove_booleans(conjunction<Boolean> c, auto l, auto r) {
+  formula<propositional> remove_booleans(conjunction<propositional> c, auto l, auto r) {
     alphabet &sigma = *c.sigma();
     std::optional<boolean> bl = l.template to<boolean>(); 
     std::optional<boolean> br = r.template to<boolean>();
@@ -65,7 +65,7 @@ namespace black::internal::cnf
   }
 
   static
-  formula<Boolean> remove_booleans(disjunction<Boolean> d, auto l, auto r) {
+  formula<propositional> remove_booleans(disjunction<propositional> d, auto l, auto r) {
     alphabet &sigma = *d.sigma();
     std::optional<boolean> bl = l.template to<boolean>();
     std::optional<boolean> br = r.template to<boolean>();
@@ -83,7 +83,7 @@ namespace black::internal::cnf
   }
 
   static
-  formula<Boolean> remove_booleans(implication<Boolean> t, auto l, auto r) {
+  formula<propositional> remove_booleans(implication<propositional> t, auto l, auto r) {
     alphabet &sigma = *t.sigma();
     std::optional<boolean> bl = l.template to<boolean>();
     std::optional<boolean> br = r.template to<boolean>();
@@ -101,7 +101,7 @@ namespace black::internal::cnf
   }
 
   static
-  formula<Boolean> remove_booleans(iff<Boolean> f, auto l, auto r) {
+  formula<propositional> remove_booleans(iff<propositional> f, auto l, auto r) {
     alphabet &sigma = *f.sigma();
     std::optional<boolean> bl = l.template to<boolean>();
     std::optional<boolean> br = r.template to<boolean>();
@@ -118,34 +118,34 @@ namespace black::internal::cnf
     return sigma.boolean(bl->value() == br->value());
   }
 
-  formula<Boolean> remove_booleans(formula<Boolean> f) {
+  formula<propositional> remove_booleans(formula<propositional> f) {
     return f.match( // LCOV_EXCL_LINE
-      [](boolean b)     -> formula<Boolean> { return b; },
-      [](proposition p) -> formula<Boolean> { return p; },
-      [](auto ...args) -> formula<Boolean> {
+      [](boolean b)     -> formula<propositional> { return b; },
+      [](proposition p) -> formula<propositional> { return p; },
+      [](auto ...args) -> formula<propositional> {
         return remove_booleans(args...);
       }
     );
   }
 
   static void tseitin(
-    formula<Boolean> f, 
+    formula<propositional> f, 
     std::vector<clause> &clauses, 
-    tsl::hopscotch_set<formula<Boolean>> &memo
+    tsl::hopscotch_set<formula<propositional>> &memo
   );
 
   // TODO: disambiguate fresh propositions
-  inline proposition fresh(formula<Boolean> f) {
+  inline proposition fresh(formula<propositional> f) {
     if(f.is<proposition>())
       return *f.to<proposition>();
     return f.sigma()->proposition(f);
   }
 
-  cnf to_cnf(formula<Boolean> f) {
+  cnf to_cnf(formula<propositional> f) {
     std::vector<clause> result;
-    tsl::hopscotch_set<formula<Boolean>> memo;
+    tsl::hopscotch_set<formula<propositional>> memo;
     
-    formula<Boolean> simple = remove_booleans(f);
+    formula<propositional> simple = remove_booleans(f);
     black_assert(
       simple.is<boolean>() || 
       !has_any_element_of(simple, syntax_element::boolean)
@@ -167,9 +167,9 @@ namespace black::internal::cnf
   }
 
   static void tseitin(
-    formula<Boolean> f, 
+    formula<propositional> f, 
     std::vector<clause> &clauses, 
-    tsl::hopscotch_set<formula<Boolean>> &memo
+    tsl::hopscotch_set<formula<propositional>> &memo
   ) {
     if(memo.find(f) != memo.end())
       return;
@@ -178,7 +178,7 @@ namespace black::internal::cnf
     f.match(
       [](boolean)     { }, // LCOV_EXCL_LINE
       [](proposition) { },
-      [&](conjunction<Boolean>, auto l, auto r) 
+      [&](conjunction<propositional>, auto l, auto r) 
       {
         tseitin(l, clauses, memo);
         tseitin(r, clauses, memo);
@@ -191,7 +191,7 @@ namespace black::internal::cnf
           {{false, fresh(l)}, {false, fresh(r)}, {true, fresh(f)}}
         });
       },
-      [&](disjunction<Boolean>, auto l, auto r) 
+      [&](disjunction<propositional>, auto l, auto r) 
       {
         tseitin(l, clauses, memo);
         tseitin(r, clauses, memo);
@@ -204,7 +204,7 @@ namespace black::internal::cnf
           {{true, fresh(l)}, {true, fresh(r)}, {false, fresh(f)}}
         });
       },
-      [&](implication<Boolean>, auto l, auto r) 
+      [&](implication<propositional>, auto l, auto r) 
       {
         tseitin(l, clauses, memo);
         tseitin(r, clauses, memo);
@@ -217,7 +217,7 @@ namespace black::internal::cnf
           {{true,  fresh(f)}, {false, fresh(r)}}
         });     
       },
-      [&](iff<Boolean>, auto l, auto r) 
+      [&](iff<propositional>, auto l, auto r) 
       {
         tseitin(l, clauses, memo);
         tseitin(r, clauses, memo);
@@ -232,7 +232,7 @@ namespace black::internal::cnf
           {{true,  fresh(f)}, {true,  fresh(l)}, {true,  fresh(r)}}
         });
       },
-      [&](negation<Boolean>, auto arg) {
+      [&](negation<propositional>, auto arg) {
         return arg.match(  // LCOV_EXCL_LINE
           [](boolean)    { black_unreachable(); }, // LCOV_EXCL_LINE
           [&](proposition a) {
@@ -243,12 +243,12 @@ namespace black::internal::cnf
               {{true,  fresh(f)}, {true,  fresh(a)}}
             });
           },
-          [&](negation<Boolean>) { // LCOV_EXCL_LINE
+          [&](negation<propositional>) { // LCOV_EXCL_LINE
             // NOTE: this case should never be invoked because 
             //       remove_booleans() removes double negations
             black_unreachable(); // LCOV_EXCL_LINE
           },
-          [&](conjunction<Boolean>, auto l, auto r) {
+          [&](conjunction<propositional>, auto l, auto r) {
             tseitin(l, clauses, memo);
             tseitin(r, clauses, memo);
 
@@ -260,7 +260,7 @@ namespace black::internal::cnf
               {{true,  fresh(f)}, {true, fresh(r)}},
             });
           },
-          [&](disjunction<Boolean>, auto l, auto r) {
+          [&](disjunction<propositional>, auto l, auto r) {
             tseitin(l, clauses, memo);
             tseitin(r, clauses, memo);
 
@@ -272,7 +272,7 @@ namespace black::internal::cnf
               {{false, fresh(f)}, {false, fresh(r)}},
             });
           },
-          [&](implication<Boolean>, auto l, auto r) 
+          [&](implication<propositional>, auto l, auto r) 
           {
             tseitin(l, clauses, memo);
             tseitin(r, clauses, memo);
@@ -285,7 +285,7 @@ namespace black::internal::cnf
               {{false, fresh(l)}, {true, fresh(r)}, {true, fresh(f)}}
             });
           },
-          [&](iff<Boolean>, auto l, auto r) {
+          [&](iff<propositional>, auto l, auto r) {
             tseitin(l, clauses, memo);
             tseitin(r, clauses, memo);
 
@@ -304,18 +304,18 @@ namespace black::internal::cnf
     );
   }
 
-  formula<Boolean> to_formula(literal lit) {
-    return lit.sign ? formula<Boolean>{lit.prop} : formula<Boolean>{!lit.prop};
+  formula<propositional> to_formula(literal lit) {
+    return lit.sign ? formula<propositional>{lit.prop} : formula<propositional>{!lit.prop};
   }
 
-  formula<Boolean> to_formula(alphabet &sigma, clause c) {
-    return big_or<Boolean>(sigma, c.literals, [](literal lit){
+  formula<propositional> to_formula(alphabet &sigma, clause c) {
+    return big_or<propositional>(sigma, c.literals, [](literal lit){
       return to_formula(lit);
     });
   }
 
-  formula<Boolean> to_formula(alphabet &sigma, cnf c) {
-    return big_and<Boolean>(sigma, c.clauses, [&](clause cl) {
+  formula<propositional> to_formula(alphabet &sigma, cnf c) {
+    return big_and<propositional>(sigma, c.clauses, [&](clause cl) {
       return to_formula(sigma, cl);
     });
   }

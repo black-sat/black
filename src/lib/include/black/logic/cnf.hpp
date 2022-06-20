@@ -58,17 +58,17 @@ namespace black::internal::cnf
 
   // Tseitin conversion to CNF
   BLACK_EXPORT
-  cnf to_cnf(logic::formula<logic::Boolean> f);
+  cnf to_cnf(logic::formula<logic::propositional> f);
 
   // Conversion of literals, clauses and cnfs to formulas
   BLACK_EXPORT
-  logic::formula<logic::Boolean> to_formula(literal lit);
+  logic::formula<logic::propositional> to_formula(literal lit);
 
   BLACK_EXPORT
-  logic::formula<logic::Boolean> to_formula(alphabet &sigma, clause c);
+  logic::formula<logic::propositional> to_formula(alphabet &sigma, clause c);
 
   BLACK_EXPORT
-  logic::formula<logic::Boolean> to_formula(alphabet &sigma, cnf c);
+  logic::formula<logic::propositional> to_formula(alphabet &sigma, cnf c);
 }
 
 namespace black {

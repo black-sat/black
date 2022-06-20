@@ -61,12 +61,12 @@ TEST_CASE("Fragment namespaces") {
 
     formula f = always(p && b);
 
-    STATIC_REQUIRE(black::logic::hierarchy<only<Future>>);
+    STATIC_REQUIRE(black::logic::hierarchy<only<future>>);
 
     std::string s = f.match(
       [](boolean) { return "boolean"; },
       [](proposition) { return "proposition"; },
-      [](only<Future> o) { 
+      [](only<future> o) { 
         return o.match(
           [](tomorrow) { return "tomorrow"; },
           [](w_tomorrow) { return "w_tomorrow"; },

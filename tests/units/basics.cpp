@@ -173,7 +173,7 @@ TEST_CASE("New API") {
     }
 
     SECTION("Storage kinds and hierarchy elements") {
-      negation<LTL> n = negation<Boolean>(b);
+      negation<LTL> n = negation<propositional>(b);
       always<LTLP> a = always<LTL>(b);
 
       unary<LTLP> u = n;
@@ -188,7 +188,7 @@ TEST_CASE("New API") {
 
       REQUIRE(n.is<negation<LTL>>());
       REQUIRE(n.is<negation<LTLP>>());
-      REQUIRE(!n.is<negation<Boolean>>());
+      REQUIRE(!n.is<negation<propositional>>());
     }
   }
 
@@ -235,18 +235,18 @@ TEST_CASE("New API") {
     formula b = sigma.boolean(true);
     formula p = sigma.proposition("p");
     variable x = sigma.variable("x");
-    unary u = unary<Boolean>(unary<Boolean>::type::negation{}, b);
+    unary u = unary<propositional>(unary<propositional>::type::negation{}, b);
     conjunction c = conjunction(p, b);
     binary c2 = conjunction(u, b);
     equal eq = equal(x, x);
 
-    static_assert(std::is_same_v<decltype(c2), binary<Boolean>>);
+    static_assert(std::is_same_v<decltype(c2), binary<propositional>>);
 
     REQUIRE(b.is<boolean>());
     REQUIRE(p.is<proposition>());
-    REQUIRE(u.is<negation<Boolean>>());
-    REQUIRE(c.is<conjunction<Boolean>>());
-    REQUIRE(c2.is<conjunction<Boolean>>());
+    REQUIRE(u.is<negation<propositional>>());
+    REQUIRE(c.is<conjunction<propositional>>());
+    REQUIRE(c2.is<conjunction<propositional>>());
     REQUIRE(eq.is<equal<FO>>());
   }
 

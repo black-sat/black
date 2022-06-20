@@ -36,24 +36,24 @@ TEST_CASE("Pattern matching") {
 
   SECTION("Matching on formulas") {
     boolean b = sigma.boolean(true);
-    formula<Boolean> n = negation<Boolean>(b);
+    formula<propositional> n = negation<propositional>(b);
 
     std::string s = n.match(
       [](boolean) { return "boolean"s; },
       [](proposition) { return "proposition"s; },
-      [](unary<Boolean>, formula<Boolean> arg) { 
-        return "unary<Boolean>("s + 
+      [](unary<propositional>, formula<propositional> arg) { 
+        return "unary<propositional>("s + 
           arg.match(
             [](boolean) { return "boolean"; },
             [](proposition) { return "proposition"; },
-            [](unary<Boolean>) { return "unary<Boolean>"; },
-            [](binary<Boolean>) { return "binary<Boolean>"; } 
+            [](unary<propositional>) { return "unary<propositional>"; },
+            [](binary<propositional>) { return "binary<propositional>"; } 
           ) + ")"; 
       },
-      [](binary<Boolean>) { return "binary<Boolean>"s; }
+      [](binary<propositional>) { return "binary<propositional>"s; }
     );
 
-    REQUIRE(s == "unary<Boolean>(boolean)");
+    REQUIRE(s == "unary<propositional>(boolean)");
   }
 
   SECTION("Matching on storage kinds") {
@@ -93,7 +93,7 @@ TEST_CASE("Pattern matching") {
 
     std::string s = f.match(
       [](yesterday<LTLP>) { return "yesterday"; },
-      [](only<Boolean, LTLP> o) {
+      [](only<propositional, LTLP> o) {
         return o.match(
           [](boolean) { return "boolean"; },
           [](proposition) { return "proposition"; },
@@ -181,7 +181,7 @@ TEST_CASE("Pattern matching") {
     formula f = sigma.top() && sigma.bottom();
 
     f.match(
-      [](conjunction<Boolean>, auto ...args) {
+      [](conjunction<propositional>, auto ...args) {
         REQUIRE(sizeof...(args) == 2);
       },
       [](otherwise) {

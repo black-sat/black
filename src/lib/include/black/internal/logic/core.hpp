@@ -585,7 +585,7 @@ namespace black::internal::logic {
   //
   // Trait to tell whether a fragment is subsumed by another. This trait is used
   // in every place where a conversion between different syntaxes is requested,
-  // e.g. from formula<Boolean> to formula<LTL>.
+  // e.g. from formula<propositional> to formula<LTL>.
   //
   template<fragment Fragment, fragment Allowed>
   struct is_subfragment_of : syntax_list_includes<
@@ -604,7 +604,7 @@ namespace black::internal::logic {
   // times, and we also want to short-circuit common cases like combining a
   // fragment with a proper subfragment of itself.
   //
-  // For example, `make_combined_fragment_t<Boolean, LTL>` should be exactly
+  // For example, `make_combined_fragment_t<propositional, LTL>` should be exactly
   // `LTL`, not some more complex type leading to an equivalent fragment.
   //
   // So first we declare the type doing the actual combination of two fragments.
@@ -1209,8 +1209,8 @@ namespace black::internal::logic {
     // The fragment of the original type (`F`) must be a subfragment of ours.
     // But this does not holds for leaves, which always have a singleton
     // fragment. So for example, if `f` is a `formula<LTL>` which concretely is
-    // a `negation<LTL>`, `f.to<negation<Boolean>>()` is `false` because `LTL`
-    // is not a subfragment of `Boolean`. However, if `f` is a `proposition`
+    // a `negation<LTL>`, `f.to<negation<propositional>>()` is `false` because `LTL`
+    // is not a subfragment of `propositional`. However, if `f` is a `proposition`
     // (whose fragment always contains only `syntax_element::proposition`), we
     // cannot make `f.to<proposition>()` fail for the same reason. On the other
     // hand, `proposition` does not have any children (it's a leaf), so we do
@@ -1750,7 +1750,7 @@ namespace black::internal::logic {
   // hierarchy type with the combined fragment. Note that by the way
   // `make_combined_fragment_t` works, this handles the case where one of the
   // two fragments is subsumed by the other, returning directly the more general
-  // one. Thus, `std::common_type_t<formula<LTL>, formula<Boolean>>` is
+  // one. Thus, `std::common_type_t<formula<LTL>, formula<propositional>>` is
   // `formula<LTL>`, while `std::common_type_t<formula<LTL>, formula<FO>>` is
   // equivalent to `formula<LTLFO>`.
   template<typename T, typename U>
@@ -2140,7 +2140,7 @@ namespace black::internal::logic {
   // `only<>` will restrict its matching. `Syntax` is the general fragment we
   // are considering, i.e. that of the children of the matched object.
   //
-  // For example, `only<Future, formula<LTLP>` matches all the formulas of LTLP
+  // For example, `only<future, formula<LTLP>` matches all the formulas of LTLP
   // which happens to have a future operator as the top level operator.
   // 
   template<uniform_fragment TopLevel, fragment Syntax>
