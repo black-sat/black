@@ -27,8 +27,9 @@
 
 #include <fmt/format.h>
 
-namespace black::internal::logic
+namespace black_internal::logic
 {
+
   static
   bool does_need_parens(formula<LTLPFO> parent, formula<LTLPFO> arg) {
     bool parens = false;
@@ -135,7 +136,7 @@ namespace black::internal::logic
   std::string to_string(term<LTLPFO> t)
   {
     using namespace std::literals;
-    using namespace black::internal;
+    using namespace black_internal;
 
     return t.match(
       [&](constant<LTLPFO> c) {
@@ -151,11 +152,11 @@ namespace black::internal::logic
         );        
       },
       [&](variable x) {
-        return escape(to_string(x.label()));
+        return escape(to_string(x.name()));
       },
       [&](application<LTLPFO> a) {
         std::string result = 
-          escape(to_string(a.func().label())) + "(" + to_string(a.terms()[0]);
+          escape(to_string(a.func().name())) + "(" + to_string(a.terms()[0]);
         for(size_t i = 1; i < a.terms().size(); ++i) {
           result += ", " + to_string(a.terms()[i]);
         }
@@ -196,15 +197,15 @@ namespace black::internal::logic
   std::string to_string(formula<LTLPFO> f)
   {
     using namespace std::literals;
-    using namespace ::black::internal;
+    using namespace ::black_internal;
 
     return f.match(
       [&](proposition p) {
-        return escape(to_string(p.label()));
+        return escape(to_string(p.name()));
       },
       [&](atom<LTLPFO> a) {
         std::string result = 
-          escape(to_string(a.rel().label())) + "(" + to_string(a.terms()[0]);
+          escape(to_string(a.rel().name())) + "(" + to_string(a.terms()[0]);
         for(size_t i = 1; i < a.terms().size(); ++i) {
           result += ", " + to_string(a.terms()[i]);
         }
@@ -232,18 +233,18 @@ namespace black::internal::logic
       [](boolean, bool b) {
         return b ? "True" : "False";
       },
-      [](negation<LTLPFO> n, formula<LTLPFO> arg) {
+      [](negation<LTLPFO> n, auto arg) {
         bool needs_parens = does_need_parens(n, arg);
         return fmt::format("!{}", parens_if_needed(arg, needs_parens));
       },
-      [](unary<LTLPFO> u, formula<LTLPFO> arg) {
+      [](unary<LTLPFO> u, auto arg) {
         bool needs_parens = does_need_parens(u, arg);
         return fmt::format("{}{}{}",
                             to_string(u.node_type()),
                             needs_parens ? "" : " ",
                             parens_if_needed(arg, needs_parens));
       },
-      [](binary<LTLPFO> b, formula<LTLPFO> left, formula<LTLPFO> right) {
+      [](binary<LTLPFO> b, auto left, auto right) {
         return
           fmt::format("{} {} {}",
                       parens_if_needed(left, does_need_parens(b, left)),

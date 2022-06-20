@@ -29,7 +29,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace black::internal {
+namespace black_internal {
   //
   // Thanks to Leonardo Taglialegne
   //

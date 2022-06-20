@@ -28,7 +28,7 @@
 
 #include <string>
 
-namespace black::internal {
+namespace black_internal {
   
   BLACK_EXPORT
   formula unsat_core(formula f, bool finite);
@@ -48,8 +48,8 @@ namespace black::internal {
 }
 
 namespace black {
-  using internal::unsat_core;
-  using internal::core_placeholder_t;
+  using black_internal::unsat_core;
+  using black_internal::core_placeholder_t;
 }
 
 namespace std {

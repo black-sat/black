@@ -26,9 +26,9 @@
 
 #include <numeric>
 
-namespace black::internal::remove_past {
+namespace black_internal::remove_past {
 
-  using namespace black::internal::logic;
+  using namespace black_internal::logic;
 
   // Label data type for substituting past propositional letters
   static
@@ -121,4 +121,4 @@ namespace black::internal::remove_past {
         [](auto f1, auto f2) { return f1 && f2; }
     );
   }
-} // namespace black::internal
+} // namespace black_internal

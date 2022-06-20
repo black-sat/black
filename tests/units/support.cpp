@@ -93,7 +93,7 @@ namespace std {
 
 TEST_CASE("identifier class")
 {
-  using namespace black::internal;
+  using namespace black_internal;
 
   STATIC_REQUIRE(stringable<int>);
 
@@ -148,7 +148,7 @@ TEST_CASE("identifier class")
   }
 
   SECTION("Tuples") {
-    using namespace black::internal;
+    using namespace black_internal;
 
     std::tuple<int, double> t = {42, 3.14};
 

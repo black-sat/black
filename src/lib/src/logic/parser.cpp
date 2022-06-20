@@ -31,8 +31,10 @@
 #include <vector>
 #include <sstream>
 
-namespace black::internal
+namespace black_internal
 {
+  using namespace black::logic::fragments::LTLPFO;
+
   // Easy entry-point for parsing formulas
   std::optional<formula>
   parse_formula(alphabet &sigma, std::string const&s,
@@ -190,6 +192,25 @@ namespace black::internal
       return error("Expected formula");
 
     return parse_binary_rhs(0, *lhs);
+  }
+
+  static std::optional<int> precedence(token const&tok)
+  {
+    if(!tok.data<binary::type>())
+      return {};
+    
+    return tok.data<binary::type>()->match(
+      [](binary::type::conjunction) { return 30; },
+      [](binary::type::disjunction) { return 20; },
+      [](binary::type::implication) { return 40; },
+      [](binary::type::iff)         { return 40; },
+      [](binary::type::until)       { return 50; },
+      [](binary::type::release)     { return 50; },
+      [](binary::type::w_until)     { return 50; },
+      [](binary::type::s_release)   { return 50; },
+      [](binary::type::since)       { return 50; },
+      [](binary::type::triggered)   { return 50; }
+    );
   }
 
   std::optional<formula> 
@@ -417,6 +438,19 @@ namespace black::internal
     return error("2, Expected term, found '" + to_string(*peek()) + "'");
   }
 
+  static std::optional<int> func_precedence(token const&tok)
+  {
+    if(!tok.data<binary_term::type>())
+      return {};
+
+    return tok.data<binary_term::type>()->match(
+      [](binary_term::type::addition)       { return 20; },
+      [](binary_term::type::subtraction)    { return 20; },
+      [](binary_term::type::multiplication) { return 30; },
+      [](binary_term::type::division)       { return 30; }
+    );
+  }
+
   std::optional<term> 
   parser::_parser_t::parse_term_binary_rhs(int prec, term lhs) {
     while(1) {
@@ -541,4 +575,4 @@ namespace black::internal
     return t;
   }
 
-} // namespace black::internal
+} // namespace black_internal

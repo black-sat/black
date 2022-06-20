@@ -36,7 +36,7 @@
 #include <string>
 #include <numeric>
 
-namespace black::internal {
+namespace black_internal {
 
   // main solver class
   class BLACK_EXPORT solver 
@@ -124,11 +124,11 @@ namespace black::internal {
       solver const&_solver;
   };
 
-} // end namespace black::internal
+} // end namespace black_internal
 
 // Names exported to the user
 namespace black {
-  using internal::solver;
+  using black_internal::solver;
 }
 
 #endif // SOLVER_HPP

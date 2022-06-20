@@ -28,7 +28,7 @@
 #include <black/logic/formula.hpp>
 #include <random>
 
-namespace black::internal {
+namespace black_internal {
 
   BLACK_EXPORT
   formula random_ltl_formula(
@@ -48,9 +48,9 @@ namespace black::internal {
 }
 
 namespace black {
-  using internal::random_ltl_formula;
-  using internal::random_ltlp_formula;
-  using internal::random_boolean_formula;
+  using black_internal::random_ltl_formula;
+  using black_internal::random_ltlp_formula;
+  using black_internal::random_boolean_formula;
 }
 
 #endif // BLACK_DEBUG_RANDOM_FORMULA_HPP

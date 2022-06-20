@@ -44,7 +44,7 @@
 //
 
 
-namespace black::internal::logic
+namespace black_internal::logic
 {
   class alphabet;
 
@@ -640,7 +640,7 @@ namespace black::internal::logic
         requires is_leaf_storage_constructible_v<Storage, Args...> \
       class Storage Storage(Args ...args) { \
         return \
-          ::black::internal::logic::Storage{ \
+          ::black_internal::logic::Storage{ \
             this, \
             unique_##Storage( \
               storage_node<storage_type::Storage>{ \
@@ -664,7 +664,7 @@ namespace black::internal::logic
         requires is_leaf_storage_constructible_v<Element, Args...> \
       class Element Element(Args ...args) { \
         return \
-          ::black::internal::logic::Element{ \
+          ::black_internal::logic::Element{ \
             this, \
             unique_##Storage( \
               storage_node<storage_type::Storage>{ \

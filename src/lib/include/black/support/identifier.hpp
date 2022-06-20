@@ -40,7 +40,7 @@
 // and https://stackoverflow.com/questions/35985960
 // for an explanation of the algorithm
 //
-namespace black::internal {
+namespace black_internal {
   inline size_t hash_combine(size_t lhs, size_t rhs) {
     static_assert(sizeof(size_t) == 4 || sizeof(size_t) == 8);
 
@@ -60,7 +60,7 @@ namespace black::internal {
   };
 }
 
-namespace black::internal::identifier_details
+namespace black_internal::identifier_details
 {
   //
   // Type-erased hashable value
@@ -231,11 +231,11 @@ namespace black::internal::identifier_details
   };
 }
 
-namespace black::internal {
+namespace black_internal {
   using identifier_details::identifier;
 }
 namespace black {
-  using internal::identifier;
+  using black_internal::identifier;
 }
 
 // std::hash specialization for identifier

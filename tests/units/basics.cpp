@@ -31,7 +31,7 @@
 
 using namespace std::literals;
 using namespace black::logic;
-using black::internal::identifier;
+using black_internal::identifier;
 
 static_assert(black::logic::hierarchy<formula<LTL>>);
 static_assert(black::logic::hierarchy<proposition>);
@@ -72,10 +72,10 @@ TEST_CASE("New API") {
     REQUIRE(b.value() == true);
 
     proposition p = sigma.proposition("p");
-    REQUIRE(p.label() == "p");
+    REQUIRE(p.name() == "p");
 
     variable x = sigma.variable("x");
-    REQUIRE(x.label() == "x");
+    REQUIRE(x.name() == "x");
 
     formula<LTL> f = p;
 
@@ -438,7 +438,7 @@ TEST_CASE("New API") {
   }
   
   SECTION("Iteration over associative operators") {
-    using namespace black::internal;
+    using namespace black_internal;
 
     boolean b = sigma.boolean(true);
     proposition p = sigma.proposition("p");
@@ -474,7 +474,7 @@ TEST_CASE("New API") {
   }
 
   SECTION("Quantifier blocks") {
-    using namespace black::internal;
+    using namespace black_internal;
 
     variable x = sigma.variable("x");
     variable y = sigma.variable("y");

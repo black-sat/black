@@ -30,7 +30,7 @@
 
 using namespace std::literals;
 
-namespace black::internal 
+namespace black_internal 
 {
   // Generates the PRUNE encoding
   formula encoder::prune(size_t k)

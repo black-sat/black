@@ -182,7 +182,7 @@ set (
 )
 
 if(Z3_FOUND)
-  # set(LIB_SRC ${LIB_SRC} src/sat/backends/z3.cpp)
+  set(LIB_SRC ${LIB_SRC} src/sat/backends/z3.cpp)
 endif()
 
 if(CVC5_FOUND)

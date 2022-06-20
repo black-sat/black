@@ -33,7 +33,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace black::internal {
+namespace black_internal {
 
   template<typename Expr>
   constexpr void assert_handler(
@@ -66,12 +66,12 @@ namespace black::internal {
 #ifndef BLACK_ASSERT_DISABLE
 
   #define BLACK_ASSERT(Expr)                            \
-    black::internal::assert_handler(                    \
+    black_internal::assert_handler(                    \
       [&]() { return static_cast<bool>(Expr); }, #Expr, __FILE__, __LINE__ \
     )
 
   #define BLACK_UNREACHABLE()                                        \
-    black::internal::unreachable_handler(false, __FILE__, __LINE__); \
+    black_internal::unreachable_handler(false, __FILE__, __LINE__); \
     BLACK_MARK_UNREACHABLE
 
 #else 

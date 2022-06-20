@@ -33,7 +33,7 @@
 
 #include <tsl/hopscotch_map.h>
 
-namespace black::internal {
+namespace black_internal {
   
   //
   // Functions that implement the SAT encoding. 

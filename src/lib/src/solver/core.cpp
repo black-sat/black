@@ -30,7 +30,7 @@
 #include <tsl/hopscotch_map.h>
 #include <tsl/hopscotch_set.h>
 
-namespace black::internal {
+namespace black_internal {
 
   struct K_data_t {
     size_t size;

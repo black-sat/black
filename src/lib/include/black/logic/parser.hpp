@@ -33,7 +33,7 @@
 #include <functional>
 #include <memory>
 
-namespace black::internal
+namespace black_internal
 {
   //
   // Class to parse LTL formulas
@@ -43,10 +43,10 @@ namespace black::internal
   public:
     using error_handler = std::function<void(std::string)>;
 
-    parser(alphabet &sigma, std::istream &stream, error_handler error);
+    parser(logic::alphabet &sigma, std::istream &stream, error_handler error);
     ~parser();
 
-    std::optional<formula> parse();
+    std::optional<logic::formula<logic::LTLPFO>> parse();
 
   private:
     struct _parser_t;
@@ -55,66 +55,34 @@ namespace black::internal
 
   // Easy entry-point for parsing formulas
   BLACK_EXPORT
-  std::optional<formula>
-  parse_formula(alphabet &sigma, std::string const&s,
+  std::optional<logic::formula<logic::LTLPFO>>
+  parse_formula(logic::alphabet &sigma, std::string const&s,
                 parser::error_handler error);
 
   BLACK_EXPORT
-  std::optional<formula>
-  parse_formula(alphabet &sigma, std::istream &s,
+  std::optional<logic::formula<logic::LTLPFO>>
+  parse_formula(logic::alphabet &sigma, std::istream &s,
                 parser::error_handler error);
 
   BLACK_EXPORT
-  inline std::optional<formula>
-  parse_formula(alphabet &sigma, std::string const&s) {
+  inline std::optional<logic::formula<logic::LTLPFO>>
+  parse_formula(logic::alphabet &sigma, std::string const&s) {
     return parse_formula(sigma, s, [](auto){});
   }
 
   BLACK_EXPORT
-  inline std::optional<formula>
-  parse_formula(alphabet &sigma, std::istream &s) {
+  inline std::optional<logic::formula<logic::LTLPFO>>
+  parse_formula(logic::alphabet &sigma, std::istream &s) {
     return parse_formula(sigma, s, [](auto){});
   }
 
-  inline std::optional<int> precedence(token const&tok)
-  {
-    if(!tok.data<binary::type>())
-      return {};
-    
-    return tok.data<binary::type>()->match(
-      [](binary::type::conjunction) { return 30; },
-      [](binary::type::disjunction) { return 20; },
-      [](binary::type::implication) { return 40; },
-      [](binary::type::iff)         { return 40; },
-      [](binary::type::until)       { return 50; },
-      [](binary::type::release)     { return 50; },
-      [](binary::type::w_until)     { return 50; },
-      [](binary::type::s_release)   { return 50; },
-      [](binary::type::since)       { return 50; },
-      [](binary::type::triggered)   { return 50; }
-    );
-  }
-
-  inline std::optional<int> func_precedence(token const&tok)
-  {
-    if(!tok.data<binary_term::type>())
-      return {};
-
-    return tok.data<binary_term::type>()->match(
-      [](binary_term::type::addition)       { return 20; },
-      [](binary_term::type::subtraction)    { return 20; },
-      [](binary_term::type::multiplication) { return 30; },
-      [](binary_term::type::division)       { return 30; }
-    );
-  }
-
-} // namespace black::internal
+} // namespace black_internal
 
 // Exported names
 namespace black {
-  using internal::parser;
-  using internal::parse_formula;
-  using internal::to_string;
+  using black_internal::parser;
+  using black_internal::parse_formula;
+  using black_internal::to_string;
 }
 
 #endif // PARSER_H_

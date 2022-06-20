@@ -31,11 +31,11 @@
 #include <initializer_list>
 #include <memory>
 
-namespace black::internal::cnf
+namespace black_internal::cnf
 {
   struct literal {
     bool sign;
-    proposition prop;
+    logic::proposition prop;
   };
 
   struct clause {
@@ -65,18 +65,22 @@ namespace black::internal::cnf
   logic::formula<logic::propositional> to_formula(literal lit);
 
   BLACK_EXPORT
-  logic::formula<logic::propositional> to_formula(alphabet &sigma, clause c);
+  logic::formula<logic::propositional> to_formula(
+    logic::alphabet &sigma, clause c
+  );
 
   BLACK_EXPORT
-  logic::formula<logic::propositional> to_formula(alphabet &sigma, cnf c);
+  logic::formula<logic::propositional> to_formula(
+    logic::alphabet &sigma, cnf c
+  );
 }
 
 namespace black {
-  using internal::cnf::literal;
-  using internal::cnf::clause;
-  using internal::cnf::cnf;
-  using internal::cnf::to_cnf;
-  using internal::cnf::to_formula;
+  using black_internal::cnf::literal;
+  using black_internal::cnf::clause;
+  using black_internal::cnf::cnf;
+  using black_internal::cnf::to_cnf;
+  using black_internal::cnf::to_formula;
 }
 
 #endif // BLACK_CNF_HPP_

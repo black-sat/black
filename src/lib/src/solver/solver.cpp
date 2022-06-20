@@ -31,7 +31,7 @@
 
 #include <numeric>
 
-namespace black::internal
+namespace black_internal
 {
   /*
    * Private implementation of the solver class.

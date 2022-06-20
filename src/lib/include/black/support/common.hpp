@@ -32,7 +32,7 @@
   #define BLACK_EXPORT
 #endif
 
-namespace black::internal 
+namespace black_internal 
 {
   // Simple utility to get the overloading of multiple lambdas (for example)
   // not used for formula::match but useful to work with std::visit

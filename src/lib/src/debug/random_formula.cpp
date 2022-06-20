@@ -37,7 +37,7 @@
 #include <variant>
 #include <random>
 
-namespace black::internal {
+namespace black_internal {
   
   enum class logic_t { 
     boolean,

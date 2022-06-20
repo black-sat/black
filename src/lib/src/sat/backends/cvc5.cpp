@@ -267,7 +267,7 @@ namespace black::sat::backends
           return solver.mkReal(std::get<int64_t>(c.value()));
         } else {
           auto [num,denum] = 
-            black::internal::double_to_fraction(std::get<double>(c.value()));
+            black_internal::double_to_fraction(std::get<double>(c.value()));
           return solver.mkReal(num, denum);
         }
       },

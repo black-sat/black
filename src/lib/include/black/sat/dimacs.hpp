@@ -129,15 +129,15 @@ namespace black::sat::dimacs::internal
 }
 
 namespace black::sat::dimacs {
-  using internal::literal;
-  using internal::clause;
-  using internal::problem;
-  using internal::solution;
-  using internal::parse;
-  using internal::to_string;
-  using internal::print;
-  using internal::solve;
-  using internal::solver;
+  using black_internal::literal;
+  using black_internal::clause;
+  using black_internal::problem;
+  using black_internal::solution;
+  using black_internal::parse;
+  using black_internal::to_string;
+  using black_internal::print;
+  using black_internal::solve;
+  using black_internal::solver;
 }
 
 #endif // BLACK_SAT_DIMACS_HPP

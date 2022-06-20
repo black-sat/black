@@ -26,7 +26,7 @@
 
 #include <black/support/assert.hpp>
 
-namespace black::internal 
+namespace black_internal 
 {
   class range_iterator;
   class range_end_iterator;
@@ -130,10 +130,10 @@ namespace black::internal
   inline range_end_iterator range::end() const { 
     return range_end_iterator{_end};
   }
-} // namespace black::internal
+} // namespace black_internal
 
 namespace black {
-  using internal::range;
+  using black_internal::range;
 }
 
 #endif // BLACK_RANGE_HPP

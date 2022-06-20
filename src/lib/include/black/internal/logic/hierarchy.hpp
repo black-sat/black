@@ -282,11 +282,11 @@
 declare_hierarchy(symbol)
   declare_leaf_storage_kind(symbol, relation)
     declare_storage_custom_members(symbol, relation, relation_call_op)
-    declare_field(symbol, relation, identifier, label)
+    declare_field(symbol, relation, identifier, name)
   end_leaf_storage_kind(symbol, relation)
   declare_leaf_storage_kind(symbol, function)
     declare_storage_custom_members(symbol, function, function_call_op)
-    declare_field(symbol, function, identifier, label)
+    declare_field(symbol, function, identifier, name)
   end_leaf_storage_kind(symbol, function)
 end_hierarchy(symbol)
 
@@ -311,7 +311,7 @@ declare_hierarchy(term)
   end_storage_kind(term, constant)
 
   declare_leaf_storage_kind(term, variable)
-    declare_field(term, variable, identifier, label)
+    declare_field(term, variable, identifier, name)
   end_leaf_storage_kind(term, variable)
 
   declare_storage_kind(term, application)
@@ -346,7 +346,7 @@ declare_hierarchy(formula)
   end_leaf_storage_kind(formula, boolean)
 
   declare_leaf_storage_kind(formula, proposition)
-    declare_field(formula, proposition, identifier, label)
+    declare_field(formula, proposition, identifier, name)
   end_leaf_storage_kind(formula, proposition)
 
   declare_storage_kind(formula, atom)

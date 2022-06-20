@@ -32,17 +32,17 @@
 #include <string_view>
 #include <tuple>
 
-namespace black::internal::remove_past {
+namespace black_internal::remove_past {
 
   // Exposed procedure which puts together everything
   BLACK_EXPORT
   logic::formula<logic::LTL> remove_past(logic::formula<logic::LTLP>);
 
-} // end namespace black::internal
+} // end namespace black_internal
 
 // Names exported to the user
 namespace black {
-  using internal::remove_past::remove_past;
+  using black_internal::remove_past::remove_past;
 }
 
 #endif //BLACK_PAST_REMOVER_HPP

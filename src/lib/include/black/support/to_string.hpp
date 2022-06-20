@@ -29,7 +29,7 @@
 #include <string_view>
 #include <tuple>
 
-namespace black::internal {
+namespace black_internal {
 
   namespace to_string_details {
     using std::to_string;
@@ -79,8 +79,8 @@ namespace black::internal {
 
     template<typename T, typename U>
     std::string to_string(std::pair<T, U> const&p) {
-      return black::internal::to_string(p.first) + ", " + 
-             black::internal::to_string(p.second);
+      return black_internal::to_string(p.first) + ", " + 
+             black_internal::to_string(p.second);
     }
 
     inline std::string to_string(std::tuple<> const&) {
@@ -89,15 +89,15 @@ namespace black::internal {
 
     template<typename T>
     std::string to_string(std::tuple<T> const& t) {
-      return black::internal::to_string(std::get<0>(t));
+      return black_internal::to_string(std::get<0>(t));
     }
 
     template<typename T, typename ...Args>
     std::string to_string(std::tuple<T, Args...> const & t) {
       return std::apply([](auto v, auto ...vs) {
         return 
-          black::internal::to_string(v) + 
-            ((", " + black::internal::to_string(vs)) + ...);
+          black_internal::to_string(v) + 
+            ((", " + black_internal::to_string(vs)) + ...);
       }, t);
     }
   }
@@ -105,7 +105,7 @@ namespace black::internal {
 }
 
 namespace black {
-  using internal::to_string;
+  using black_internal::to_string;
 }
 
 #endif

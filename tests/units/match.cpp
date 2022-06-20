@@ -191,7 +191,7 @@ TEST_CASE("Pattern matching") {
   }
 
   SECTION("Matching on `fragment_type`") {
-    using namespace black::internal;
+    using namespace black_internal;
 
     proposition p = sigma.proposition("p");
     unary<LTL> u = !p;
@@ -234,7 +234,7 @@ TEST_CASE("Pattern matching") {
 
     #define REQUIRE_CT(x, y, ...) \
       STATIC_REQUIRE( \
-        black::internal::logic::are_same_hierarchy_types_v< \
+        black_internal::logic::are_same_hierarchy_types_v< \
           std::common_type_t<decltype(x),decltype(y)>, \
           __VA_ARGS__ \
         > \

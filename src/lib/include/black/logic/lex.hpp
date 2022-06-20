@@ -34,7 +34,7 @@
 #include <variant>
 #include <vector>
 
-namespace black::internal::lexer_details
+namespace black_internal::lexer_details
 {
   // Type representing tokens generated from the lexer.
   struct token
@@ -63,18 +63,18 @@ namespace black::internal::lexer_details
       dot
     };
 
-             token()                    : _data{std::monostate{}} { }
-    explicit token(bool b)              : _data{b} { }
-    explicit token(int64_t c)           : _data{c} { }
-    explicit token(double d)            : _data{d} { }
-    explicit token(std::string s)       : _data{std::move(s)} { }
-    explicit token(quantifier::type k)  : _data{k} { }
-    explicit token(comparison::type t)  : _data{t} { }
-    explicit token(unary_term::type t)  : _data{t} { }
-    explicit token(binary_term::type t) : _data{t} { }
-    explicit token(unary::type t)       : _data{t} { }
-    explicit token(binary::type t)      : _data{t} { }
-    explicit token(punctuation s)       : _data{s} { }
+             token()              : _data{std::monostate{}} { }
+    explicit token(bool b)        : _data{b} { }
+    explicit token(int64_t c)     : _data{c} { }
+    explicit token(double d)      : _data{d} { }
+    explicit token(std::string s) : _data{std::move(s)} { }
+    explicit token(logic::quantifier<logic::LTLPFO>::type k)  : _data{k} { }
+    explicit token(logic::comparison<logic::LTLPFO>::type t)  : _data{t} { }
+    explicit token(logic::unary_term<logic::LTLPFO>::type t)  : _data{t} { }
+    explicit token(logic::binary_term<logic::LTLPFO>::type t) : _data{t} { }
+    explicit token(logic::unary<logic::LTLPFO>::type t)       : _data{t} { }
+    explicit token(logic::binary<logic::LTLPFO>::type t)      : _data{t} { }
+    explicit token(punctuation s) : _data{s} { }
 
     template<typename T>
     bool is() const {
@@ -95,18 +95,18 @@ namespace black::internal::lexer_details
   private:
     // data related to recognized tokens
     std::variant<
-      std::monostate,    // invalid tokens
-      bool,              // booleans
-      int64_t,           // integers
-      double,            // reals
-      std::string,       // identifiers
-      quantifier::type,  // exists/forall
-      comparison::type,  // =, !=, <=, etc...
-      unary_term::type,  // unary minus, next, wnext, prev, wprev
-      binary_term::type, // +, -, *, /
-      unary::type,       // unary operator
-      binary::type,      // binary operator
-      punctuation        // any non-logical token
+      std::monostate,            // invalid tokens
+      bool,                      // booleans
+      int64_t,                   // integers
+      double,                    // reals
+      std::string,               // identifiers
+      logic::quantifier<logic::LTLPFO>::type,  // exists/forall
+      logic::comparison<logic::LTLPFO>::type,  // =, !=, <logic::=, etc...
+      logic::unary_term<logic::LTLPFO>::type,  // unary minus, next, wnext, ...
+      logic::binary_term<logic::LTLPFO>::type, // +, -, *, /
+      logic::unary<logic::LTLPFO>::type,       // unary operator
+      logic::binary<logic::LTLPFO>::type,      // binary operator
+      punctuation                // any non-logical token
     > _data;
   };
 
@@ -142,7 +142,7 @@ namespace black::internal::lexer_details
   std::ostream &operator<<(std::ostream &s, token const &t);
 }
 
-namespace black::internal {
+namespace black_internal {
   using lexer_details::lexer;
   using lexer_details::token;
 }

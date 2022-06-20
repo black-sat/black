@@ -30,7 +30,7 @@
 #include <charconv>
 #include <limits>
 
-namespace black::internal::lexer_details
+namespace black_internal::lexer_details
 {
   using namespace black::logic::fragments::LTLPFO;
 
@@ -422,4 +422,4 @@ namespace black::internal::lexer_details
     return _identifier();
   }
 
-}  // namespace black::internal
+}  // namespace black_internal
