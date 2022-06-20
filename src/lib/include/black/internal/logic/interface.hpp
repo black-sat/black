@@ -826,7 +826,7 @@ namespace black::internal::logic {
       R const&vars, 
       formula<Syntax> matrix
     ) : specific_quantifier_block{
-      create_block<element_t>(type_value<E>{}, vars, matrix)
+      create_block<element_t>(fragment_enum_value<E>{}, vars, matrix)
     } { 
       black_assert(!empty(vars));
       _last = element_t(*rbegin(vars), matrix);
@@ -836,7 +836,7 @@ namespace black::internal::logic {
       std::initializer_list<variable> const&vars,
       formula<Syntax> matrix
     ) : specific_quantifier_block{
-      create_block<element_t>(type_value<E>{}, vars, matrix)
+      create_block<element_t>(fragment_enum_value<E>{}, vars, matrix)
     } { 
       black_assert(!empty(vars));
       _last = element_t(*rbegin(vars), matrix);

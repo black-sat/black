@@ -49,7 +49,6 @@ namespace black {
       using black::internal::logic::hierarchy_element;
       using black::internal::logic::make_fragment_t;
       using black::internal::logic::make_combined_fragment_t;
-      using black::internal::logic::type_value;
       using black::internal::logic::for_each_child;
       using black::internal::logic::fragment_cast;
       using black::internal::logic::can_fragment_cast;

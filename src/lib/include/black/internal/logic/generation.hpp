@@ -187,14 +187,14 @@ namespace black::internal::logic
   //
   // Specialization of `fragment_enum_element` for each `syntax_element`. Each
   // specialization provides a static member of type
-  // `type_value<Element>` named exactly `Element`. The result is that,
+  // `fragment_enum_value<Element>` named exactly `Element`. The result is that,
   // e.g. `unary<LTL>::type` has members such as `unary<LTL>::type::always` and
   // `unary<LTL>::type::eventually`.
   //
   #define declare_enum_element(Element) \
     template<> \
     struct fragment_enum_element<syntax_element::Element> { \
-      using Element = type_value<syntax_element::Element>; \
+      using Element = fragment_enum_value<syntax_element::Element>; \
     };
 
   #define declare_leaf_storage_kind(Base, Storage) declare_enum_element(Storage)

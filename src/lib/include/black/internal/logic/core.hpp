@@ -424,21 +424,21 @@ namespace black::internal::logic {
   // We first declare a struct whose only purpose is to encapsulate a statically
   // known `syntax_element`.
   template<syntax_element Element>
-  struct type_value {
+  struct fragment_enum_value {
     static constexpr syntax_element value = Element;
 
     explicit operator syntax_element() const { return Element; }
   };
 
   //
-  // Because `type_value` is supposed to be used in pattern matching expressions
+  // Because `fragment_enum_value` is supposed to be used in pattern matching expressions
   // against `fragment_type` objects (see below), we need to define the
   // Tuple-like interface. In this case, only `tuple_size` since there is no
   // field to unpack.
   //
   } namespace std {
     template<black::internal::logic::syntax_element Element>
-    struct tuple_size<black::internal::logic::type_value<Element>> 
+    struct tuple_size<black::internal::logic::fragment_enum_value<Element>> 
       : integral_constant<size_t, 0> { };
   } namespace black::internal::logic {
 
@@ -449,7 +449,7 @@ namespace black::internal::logic {
   //
   // template<> 
   // struct fragment_enum_element<syntax_element::conjunction> {
-  //   using conjunction = type_value<syntax_element::conjunction>;
+  //   using conjunction = fragment_enum_value<syntax_element::conjunction>;
   // };
   template<syntax_element Element>
   struct fragment_enum_element;
@@ -473,14 +473,14 @@ namespace black::internal::logic {
   //
   // The type itself is simple, and it only carries over the currently assigned
   // `syntax_element`. Publicly, it can be only constructed by
-  // `type_value`s corresponding to syntax elements included in its
+  // `fragment_enum_value`s corresponding to syntax elements included in its
   // list. A private constructor constructs from `syntax_element` directly, and
   // is accessible only by the type `Owner` specified by the template parameter.
   //
   // Since this is not a real enum, it is not usable in common `switch()`
   // statements. However, we can expose the `match()` function, similar to the
   // one exposed by hierarchy types. Here, we only have to expose a `to<>()`
-  // member function template for downcasting to `type_value`s. The
+  // member function template for downcasting to `fragment_enum_value`s. The
   // `match()` function is implemented later, after the machinery for the
   // pattern matching functionality.
   //
@@ -500,7 +500,7 @@ namespace black::internal::logic {
 
     template<syntax_element Element>
       requires syntax_list_contains_v<list, Element>
-    fragment_type(type_value<Element>) : _element{Element} { }
+    fragment_type(fragment_enum_value<Element>) : _element{Element} { }
 
     template<typename O, typename L2>
       requires syntax_list_includes_v<list, L2>
@@ -546,12 +546,12 @@ namespace black::internal::logic {
   };
 
   template<typename O, typename L2, syntax_element E>
-  bool operator==(fragment_type<O, L2> const& t, type_value<E>) {
+  bool operator==(fragment_type<O, L2> const& t, fragment_enum_value<E>) {
     return syntax_element{t} == E;
   }
   
   template<typename O, typename L2, syntax_element E>
-  bool operator==(type_value<E>, fragment_type<O, L2> const& t) {
+  bool operator==(fragment_enum_value<E>, fragment_type<O, L2> const& t) {
     return E == syntax_element{t};
   }
 
@@ -1518,7 +1518,7 @@ namespace black::internal::logic {
   struct is_hierarchy_element_constructible
     : is_storage_constructible<
         storage_of_element_v<Element>, Syntax,
-        type_value<Element>, Args...
+        fragment_enum_value<Element>, Args...
       > { };
 
   template<syntax_element Element, fragment Syntax, typename ...Args>
@@ -1804,7 +1804,7 @@ namespace black::internal::logic {
 
   //
   // Since `fragment_type` is designed as well to be used in pattern matching,
-  // we need to implement `common_type` for it and for `type_value` as well, so
+  // we need to implement `common_type` for it and for `fragment_enum_value` as well, so
   // to ease their use in pattern matching structures.
   //
   struct dummy_owner_t { }; 
@@ -1816,8 +1816,8 @@ namespace black::internal::logic {
       black::internal::logic::syntax_element E2
     >
     struct common_type<
-      black::internal::logic::type_value<E1>, 
-      black::internal::logic::type_value<E2>
+      black::internal::logic::fragment_enum_value<E1>, 
+      black::internal::logic::fragment_enum_value<E2>
     > {
       using type = black::internal::logic::fragment_type<
         black::internal::logic::dummy_owner_t,
@@ -1830,7 +1830,7 @@ namespace black::internal::logic {
     >
     struct common_type<
       black::internal::logic::fragment_type<O, List>,
-      black::internal::logic::type_value<E>
+      black::internal::logic::fragment_enum_value<E>
     > {
       using type = black::internal::logic::fragment_type<O, 
         black::internal::logic::syntax_list_unique_t<
@@ -1845,7 +1845,7 @@ namespace black::internal::logic {
       typename O, typename List, black::internal::logic::syntax_element E
     >
     struct common_type<
-      black::internal::logic::type_value<E>,
+      black::internal::logic::fragment_enum_value<E>,
       black::internal::logic::fragment_type<O, List>
     > {
       using type = black::internal::logic::fragment_type<O, 
@@ -2044,22 +2044,22 @@ namespace black::internal::logic {
   //
   // The first is for `fragment_type`.
   template<typename Elements>
-  struct type_values_of_elements;
+  struct fragment_enum_values_of_elements;
 
   template<syntax_element ...Elements>
-  struct type_values_of_elements<syntax_list<Elements...>> {
-    using type = std::tuple<type_value<Elements>...>;
+  struct fragment_enum_values_of_elements<syntax_list<Elements...>> {
+    using type = std::tuple<fragment_enum_value<Elements>...>;
   };
 
   template<typename Elements>
-  using type_values_of_elements_t =
-    typename type_values_of_elements<Elements>::type;
+  using fragment_enum_values_of_elements_t =
+    typename fragment_enum_values_of_elements<Elements>::type;
 
   template<typename Owner, typename List>
   template<typename ...Handlers>
   auto fragment_type<Owner, List>::match(Handlers ...hs) const {
     return matcher<fragment_type,
-      type_values_of_elements_t<fragment_type::list>
+      fragment_enum_values_of_elements_t<fragment_type::list>
     >{}.match(*this, hs...);
   }
 
