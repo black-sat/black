@@ -85,11 +85,18 @@
 //   such, the corresponding type will be non-templated. For example, `boolean`
 //   is a leaf storage kind, since it only has a field `bool value` but no
 //   children and no hierarchy elements. The class `boolean` is concrete, not a
-//   template, since there are no children to constrain the fragment of.
-//   `zero` is a leaf hierarchy element of the storage kind `identity` 
-//   (hierarchy `number`). It has to be, because its parent storage kind
-//   defines no children.
-//
+//   template, since there are no children to constrain the fragment of. `zero`
+//   is a leaf hierarchy element of the storage kind `identity` (hierarchy
+//   `number`). It has to be, because its parent storage kind defines no
+//   children.
+// - `simple` hierarchies and `simple` storage kinds are entities that are not
+//   parameterized over the fragment, but are always used with the universal
+//   fragment. An example is the `sort` hierarchy type and its storage kinds.
+//   Simple hierarchies are limited in their use. They cannot appear as children
+//   of other hierarchy types (but they can appear as fields). They cannot have
+//   children, but only fields, and consequently they cannot have hierarchy
+//   elements but only leaf hierarchy elements.
+
 // The macros used to define the entities listed above have a certain common
 // structure. Each macro, excepting for the top-level `declare_hierarchy`, has
 // to be put inside the pair `declare`/`end` of its parent macro, e.g.
@@ -111,6 +118,11 @@
 //     - Arguments:
 //       - `Base` is the name of the hierarchy (e.g. `formula`).
 //
+// - declare_simple_hierarch(Base)/end_simple_hierarchy
+//     Declare a simple hierarchy. 
+//     - Arguments:
+//       - `Base` is the name of the simple hierarchy (e.g. `sort`).
+//
 // - declare_storage_kind(Base, Storage)/end_storage_kind 
 //     Declare a storage kind. 
 //     - Parent macro: `declare_hierarchy` 
@@ -118,9 +130,16 @@
 //       - `Base` is the name of the parent hierarchy
 //       - `Storage` is the name of the storage kind 
 //
+// - declare_simple_storage_kind(Base, Storage)/end_simple_storage_kind 
+//     Declare a simple storage kind. 
+//     - Parent macro: `declare_simple_hierarchy` 
+//     - Arguments:
+//       - `Base` is the name of the parent simple hierarchy
+//       - `Storage` is the name of the simple storage kind 
+//
 // - declare_leaf_storage_kind(Base, Storage)/end_leaf_storage_kind 
 //     Declare a leaf storage kind. 
-//     - Parent macro: `declare_hierarchy` 
+//     - Parent macro: `declare_hierarchy` or `declare_simple_hierarchy`
 //     - Arguments:
 //       - `Base` is the name of the parent hierarchy
 //       - `Storage` is the name of the storage kind 
@@ -131,7 +150,9 @@
 //     type template parameter. This template class will be used as a CRTP base
 //     class for `storage_base` in `core.hpp`, thus providing additional custom
 //     members for all storage types and hierarchy elements of that type. 
-//     - Parent macro: `declare_storage_kind` or `declare_leaf_storage_kind` 
+//     - Parent macro: 
+//        `declare_storage_kind`, `declare_leaf_storage_kind` or 
+//        `declare_leaf_storage_kind`
 //     - Arguments:
 //       - `Base` is the name of the parent hierarchy
 //       - `Storage` is the name of the parent storage kind 
@@ -139,7 +160,9 @@
 //
 // - declare_field(Base, Storage, Type, Field) 
 //     Declare a member field of a storage kind. 
-//     - Parent macro: `declare_storage_kind` or `declare_leaf_storage_kind` 
+//     - Parent macro: 
+//        `declare_storage_kind`, `declare_leaf_storage_kind` or 
+//        `declare_leaf_storage_kind`
 //     - Arguments:
 //       - `Base` is the name of the parent hierarchy
 //       - `Storage` is the name of the parent storage kind 
