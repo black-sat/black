@@ -27,6 +27,8 @@
 #include <ranges>
 #include <stack>
 
+#include <iostream>
+
 //
 // This file contains helper classes and functions that integrate the interface
 // provided by the API beyond what has been automatically generated in
@@ -571,6 +573,44 @@ namespace black::internal::logic {
   hierarchy_element_custom_members<syntax_element::multiplication, Derived>::
   operands() const { 
     return associative_op_view<Derived>{static_cast<Derived const&>(*this)};
+  }
+
+  //
+  // Using operands() instead of left() and right() is essential to handle big
+  // specifications, because going recursively for hundreds of elements can lead
+  // easily to stack overflow. So here we specialize `for_each_child` to account
+  // for this issue for the types that support `operands()`.
+  //
+  template<fragment Syntax, typename F>
+  void for_each_child(conjunction<Syntax> c, F f) {
+    for(auto child : c.operands()) {
+      f(child);
+      for_each_child(child, f);
+    }
+  }
+  
+  template<fragment Syntax, typename F>
+  void for_each_child(disjunction<Syntax> c, F f) {
+    for(auto child : c.operands()) {
+      f(child);
+      for_each_child(child, f);
+    }
+  }
+  
+  template<fragment Syntax, typename F>
+  void for_each_child(addition<Syntax> c, F f) {
+    for(auto child : c.operands()) {
+      f(child);
+      for_each_child(child, f);
+    }
+  }
+  
+  template<fragment Syntax, typename F>
+  void for_each_child(multiplication<Syntax> c, F f) {
+    for(auto child : c.operands()) {
+      f(child);
+      for_each_child(child, f);
+    }
   }
 
   //

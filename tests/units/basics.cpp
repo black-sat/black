@@ -562,7 +562,7 @@ TEST_CASE("New API") {
     boolean top = sigma.top();
 
     REQUIRE(has_any_element_of(
-      p && (!p && (x > x && (exists(x, x > x) && top))),
+      p && !p && x > x && exists(x, x > x) && top,
       syntax_element::boolean, quantifier<FO>::type::forall{}
     ));
   }
