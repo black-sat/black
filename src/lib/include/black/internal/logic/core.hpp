@@ -697,7 +697,7 @@ namespace black_internal::logic {
     friend std::string to_string(type h) {
       constexpr size_t size = sizeof(uintptr_t) * 2 + 1;
       char buf[size];
-      snprintf(buf, size, PRIxPTR, static_cast<uintptr_t>(h));
+      snprintf(buf, size, "%" PRIxPTR, static_cast<uintptr_t>(h));
       return buf;
     }
   };

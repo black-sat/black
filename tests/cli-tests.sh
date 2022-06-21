@@ -8,6 +8,24 @@ should_fail() {
   fi
 }
 
+# 
+# The following is a trick to have bash print the line of the first command that
+# fails.
+# See https://unix.stackexchange.com/a/298927/196591
+#
+
+cur_command=
+first_err_command=
+first_err_lineno=
+trap 'cur_command=$BASH_COMMAND;
+      if [[ -z "$first_err_command" ]]; then
+          first_err_command=$cur_command;
+          first_err_lineno=$LINENO;
+      fi' ERR
+trap 'if [[ ! -z "$first_err_command" ]]; then
+          echo "ERROR: Aborting at line: $first_err_lineno on command: $first_err_command";
+      fi' EXIT
+
 ./black --help
 ./black --version
 ./black --sat-backends
@@ -159,9 +177,6 @@ cat <<END | should_fail ./black check -t - -f 'p & !p'
     "muc": "p & {0}"
 }
 END
-
-./black dimacs ../tests/test-dimacs-sat.cnf | grep -w SATISFIABLE 
-./black dimacs ../tests/test-dimacs-unsat.cnf | grep -w UNSATISFIABLE 
 
 cat /dev/null | should_fail ./black dimacs -
 

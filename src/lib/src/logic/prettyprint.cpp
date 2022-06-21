@@ -69,8 +69,8 @@ namespace black_internal::logic
   static
   std::string to_string(binary<LTLPFO>::type t) {
     return t.match(
-      [](binary<LTLPFO>::type::conjunction) { return "&&"; },
-      [](binary<LTLPFO>::type::disjunction) { return "||"; },
+      [](binary<LTLPFO>::type::conjunction) { return "&"; },
+      [](binary<LTLPFO>::type::disjunction) { return "|"; },
       [](binary<LTLPFO>::type::implication) { return "->"; },
       [](binary<LTLPFO>::type::iff)         { return "<->"; },
       [](binary<LTLPFO>::type::until)       { return "U"; },
