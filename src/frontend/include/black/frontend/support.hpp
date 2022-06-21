@@ -24,7 +24,7 @@
 #ifndef BLACK_FRONTEND_SUPPORT_HPP
 #define BLACK_FRONTEND_SUPPORT_HPP
 
-#include <black/logic/formula.hpp>
+#include <black/logic/logic.hpp>
 
 #include <black/frontend/cli.hpp>
 #include <black/frontend/io.hpp>

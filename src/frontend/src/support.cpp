@@ -82,19 +82,9 @@ namespace black::frontend
 
 
   static bool has_next(term t) {
-    return t.match(
-      [](constant) { return false; },
-      [](variable) { return false; },
-      [](application a) {
-        for(term t2 : a.arguments())
-          if(has_next(t2))
-            return true; // LCOV_EXCL_LINE
-        return false;
-      },
-      [](next) { return true; },
-      [](wnext) { return true; },
-      [](prev) { return true; },
-      [](wprev) { return true; }
+    return has_any_element_of(t, 
+      syntax_element::next, syntax_element::wnext,
+      syntax_element::prev, syntax_element::wprev
     );
   }
 
@@ -109,15 +99,20 @@ namespace black::frontend
             nextvar = (uint8_t)feature_t::nextvar;
         return nextvar | (uint8_t)feature_t::first_order;
       },
+      [](comparison, term left, term right) -> uint8_t {
+        if(has_next(left) || has_next(right))
+          return (uint8_t)feature_t::nextvar | (uint8_t)feature_t::first_order;
+        return 0;
+      },
       [](quantifier q) -> uint8_t { // LCOV_EXCL_LINE
         return (uint8_t)feature_t::first_order |
                (uint8_t)feature_t::quantifiers |
                formula_features(q.matrix());
       },
-      [](temporal t) -> uint8_t {
+      [](only<temporal> t) -> uint8_t {
         return (uint8_t)feature_t::temporal |
           t.match(
-            [](past) -> uint8_t { return (int8_t)feature_t::past; },
+            [](only<past>) -> uint8_t { return (int8_t)feature_t::past; },
             [](otherwise) -> uint8_t { return 0; }
           ) | t.match(
             [](unary, formula arg) -> uint8_t {
@@ -131,14 +126,14 @@ namespace black::frontend
       [](unary, formula arg) -> uint8_t { 
         return formula_features(arg);
       },
-      [](big_disjunction d) {
+      [](disjunction d) {
         uint8_t features = 0;
         for(formula op : d.operands())
           features = features | formula_features(op);
         
         return features;
       },
-      [](big_conjunction d) {
+      [](conjunction d) {
         uint8_t features = 0;
         for(formula op : d.operands())
           features = features | formula_features(op);

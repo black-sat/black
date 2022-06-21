@@ -23,7 +23,6 @@
 
 #include <black/frontend/cli.hpp>
 #include <black/frontend/solve.hpp>
-#include <black/frontend/dimacs.hpp>
 #include <black/frontend/tracecheck.hpp>
 
 using namespace black::frontend;
@@ -31,9 +30,6 @@ using namespace black::frontend;
 int main(int argc, char **argv)
 {
   parse_command_line(argc, argv);
-  
-  if(cli::dimacs)
-    return dimacs();
   
   if(cli::trace_checking)
     return trace_check();

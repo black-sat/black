@@ -310,8 +310,8 @@ namespace black_internal::logic {
   declare_binary_formula_op(implies, implication)
   declare_binary_formula_op(U, until)
   declare_binary_formula_op(R, release)
-  declare_binary_formula_op(wU, w_until)
-  declare_binary_formula_op(sR, s_release)
+  declare_binary_formula_op(W, w_until)
+  declare_binary_formula_op(M, s_release)
   declare_binary_formula_op(S, since)
   declare_binary_formula_op(T, triggered)
 

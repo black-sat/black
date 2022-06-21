@@ -279,8 +279,8 @@ TEST_CASE("New API") {
     implication i = implies(b, p);
     until u = U(b, p);
     release r = R(b, p);
-    w_until wu = wU(b, p);
-    s_release sr = sR(b, p);
+    w_until wu = W(b, p);
+    s_release sr = M(b, p);
     since s = S(b, p);
     triggered t = T(b, p);
 

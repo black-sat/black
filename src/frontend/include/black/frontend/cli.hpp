@@ -85,9 +85,6 @@ namespace black::frontend
     // set whether formulas are to be interpreted as LTLf
     inline bool finite = false;
 
-    // the input file is a DIMACS file
-    inline bool dimacs = false;
-
     // whether we are in trace checking mode
     inline bool trace_checking = false;
 

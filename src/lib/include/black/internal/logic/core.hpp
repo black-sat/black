@@ -2271,36 +2271,13 @@ namespace black_internal::logic {
   }
 
   //
-  // The following function performs a cast between hierarchy types of the same
-  // type but different fragments. It does no checks whatsoever to ensure the
-  // conversion is legit, so it has to be used sparingly and only when the
-  // programmer knows from other facts that the conversion is safe. Think of it
-  // as a `static_cast` from base to derived: if you know that your Base *
-  // pointer actually points to a Derived, then everything's ok, otherwise,
-  // undefined behavior.
-  //
-  template<fragment Syntax, hierarchy H>
-  auto fragment_unsafe_cast(H h) {
-    return hierarchy_type_of_t<Syntax, H::hierarchy>{h.sigma(), h.node()};
-  }
-  
-  template<fragment Syntax, storage_kind S>
-  auto fragment_unsafe_cast(S s) {
-    return storage_type_of_t<Syntax, S::storage>{s.sigma(), s.node()};
-  }
-  
-  template<fragment Syntax, hierarchy_element E>
-  auto fragment_unsafe_cast(E e) {
-    return element_type_of_t<Syntax, E::element>{e.sigma(), e.node()};
-  }
-
-  //
-  // `can_fragment_cast` checks whether `fragment_unsafe_cast` can be safely
-  // called, by traversing the hierarchy object recursively to all the children.
-  // So after a positive call of this function, `fragment_unsafe_cast` is safe
-  // to use, but beware that this requires a complete traversal of the whole
-  // hierarchy object, which for large formulas can be quite expensive. This is
-  // a prototypical application of `for_each_child`.
+  // `can_fragment_cast` checks whether `fragment_unsafe_cast`, defined below,
+  // can be safely called, by traversing the hierarchy object recursively to all
+  // the children. So after a positive call of this function,
+  // `fragment_unsafe_cast` is safe to use, but beware that this requires a
+  // complete traversal of the whole hierarchy object, which for large formulas
+  // can be quite expensive. This is a prototypical application of
+  // `for_each_child`.
   //
   template<fragment Syntax, hierarchy H>
   auto can_fragment_cast(H h) {
@@ -2315,6 +2292,33 @@ namespace black_internal::logic {
     });
 
     return can_cast;
+  }
+
+  //
+  // The following function performs a cast between hierarchy types of the same
+  // type but different fragments. It does no checks whatsoever to ensure the
+  // conversion is legit, so it has to be used sparingly and only when the
+  // programmer knows from other facts that the conversion is safe. Think of it
+  // as a `static_cast` from base to derived: if you know that your Base *
+  // pointer actually points to a Derived, then everything's ok, otherwise,
+  // undefined behavior.
+  //
+  template<fragment Syntax, hierarchy H>
+  auto fragment_unsafe_cast(H h) {
+    black_assert(can_fragment_cast<Syntax>(h));
+    return hierarchy_type_of_t<Syntax, H::hierarchy>{h.sigma(), h.node()};
+  }
+  
+  template<fragment Syntax, storage_kind S>
+  auto fragment_unsafe_cast(S s) {
+    black_assert(can_fragment_cast<Syntax>(s));
+    return storage_type_of_t<Syntax, S::storage>{s.sigma(), s.node()};
+  }
+  
+  template<fragment Syntax, hierarchy_element E>
+  auto fragment_unsafe_cast(E e) {
+    black_assert(can_fragment_cast<Syntax>(e));
+    return element_type_of_t<Syntax, E::element>{e.sigma(), e.node()};
   }
 
   //

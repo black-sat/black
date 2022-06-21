@@ -25,8 +25,7 @@
 #include <black/frontend/io.hpp>
 #include <black/frontend/support.hpp>
 
-#include <black/logic/alphabet.hpp>
-#include <black/logic/formula.hpp>
+#include <black/logic/logic.hpp>
 #include <black/logic/parser.hpp>
 #include <black/logic/prettyprint.hpp>
 #include <black/logic/past_remover.hpp>
@@ -71,8 +70,8 @@ namespace black::frontend
 
   static
   bool check_proposition(trace_t trace, proposition a, size_t t) {
-    black_assert(a.label<std::string>().has_value());
-    std::string p = *a.label<std::string>();
+    black_assert(a.name().to<std::string>().has_value());
+    std::string p = *a.name().to<std::string>();
 
     std::optional<state_t> state = state_at(trace, t);
     
@@ -128,6 +127,7 @@ namespace black::frontend
       [](proposition) -> size_t { return 1; },
       [](atom) -> size_t { black_unreachable(); }, // LCOV_EXCL_LINE
       [](quantifier) -> size_t { black_unreachable(); }, // LCOV_EXCL_LINE
+      [](comparison) -> size_t { black_unreachable(); }, // LCOV_EXCL_LINE
       [](yesterday, formula op) { return 1 + depth(op); },
       [](w_yesterday, formula op) { return 1 + depth(op); },
       [](once, formula op) { return 1 + depth(op); },
@@ -188,10 +188,33 @@ namespace black::frontend
     return !cli::finite || t < trace.states.size();
   }
 
+  struct check_lookup {
+    formula f;
+    size_t t;
+
+    friend bool operator==(check_lookup const&, check_lookup const&) = default;
+  };
+
+  } namespace std {
+
+    template<>
+    struct hash<black::frontend::check_lookup> {
+      size_t operator()(black::frontend::check_lookup l) const {
+        using namespace black_internal;
+        using namespace black;
+        size_t h1 = std::hash<formula>{}(l.f);
+        size_t h2 = std::hash<size_t>{}(l.t);
+
+        return hash_combine(h1, h2);
+      }
+    };
+
+  } namespace black::frontend {
+
   static
   bool check(trace_t trace, formula f, size_t t) 
   {
-    static std::unordered_map<std::tuple<formula, size_t>, bool> memo;
+    static std::unordered_map<check_lookup, bool> memo;
     if(auto it = memo.find({f, t}); it != memo.end())
       return it->second;
 
@@ -204,6 +227,7 @@ namespace black::frontend
       },
       [&](atom) -> bool { black_unreachable(); }, // LCOV_EXCL_LINE
       [&](quantifier) -> bool { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](comparison) -> bool { black_unreachable(); }, // LCOV_EXCL_LINE
       [&](tomorrow, formula op) {
         return state_exists(trace, t + 1) && check(trace, op, t + 1);
       },

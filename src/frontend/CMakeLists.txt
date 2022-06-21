@@ -31,7 +31,6 @@ set(
   src/main.cpp
   src/cli.cpp
   src/solve.cpp
-  src/dimacs.cpp
   src/tracecheck.cpp
   src/support.cpp
 )
@@ -43,7 +42,7 @@ set(
   include/black/frontend/support.hpp
 )
 
-add_executable(frontend EXCLUDE_FROM_ALL ${FRONTEND_SRC} ${FRONTEND_HEADERS})
+add_executable(frontend ${FRONTEND_SRC} ${FRONTEND_HEADERS})
 
 target_compile_features(frontend PRIVATE cxx_std_20)
 target_include_directories(frontend PRIVATE include)
