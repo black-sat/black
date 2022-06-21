@@ -49,12 +49,12 @@ task:
     image: ghcr.io/cirruslabs/macos-monterey-xcode:13.4
   download_dependencies_script:
     - brew update
-    - brew install cmake fmt catch2 z3 cryptominisat nlohmann-json
+    - brew install llvm cmake fmt catch2 z3 cryptominisat nlohmann-json
     - brew install black-sat/black/hopscotch-map
     - ./download-mathsat.sh
   release_build_script:
     - mkdir -p build && cd build
-    - cmake -DCMAKE_BUILD_TYPE=Release ..
+    - ./config-brew-llvm.sh -DCMAKE_BUILD_TYPE=Release ..
     - make
   test_script:
     - cd build 
