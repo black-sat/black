@@ -2,28 +2,17 @@ task:
   environment:
     CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
   matrix:
-    - name: Fedora 29 (g++ 8)
-      container:
-        dockerfile: docker/Dockerfile.fedora
-        docker_arguments:
-          VERSION: 29
     - name: Fedora 36 (g++ 12)
       container:
         dockerfile: docker/Dockerfile.fedora
         docker_arguments:
           VERSION: 36
-    # - name: Ubuntu 20.04 (g++ 9)
-    #   container:
-    #     dockerfile: docker/Dockerfile.ubuntu
-    #     docker_arguments:
-    #       VERSION: 20.04
-    #       GCC_VERSION: 9
-    # - name: Ubuntu 22.04 (g++ 10)
-    #   container:
-    #     dockerfile: docker/Dockerfile.ubuntu
-    #     docker_arguments:
-    #       VERSION: 20.04
-    #       GCC_VERSION: 10
+    - name: Ubuntu 22.04 (g++ 10)
+      container:
+        dockerfile: docker/Dockerfile.ubuntu
+        docker_arguments:
+          VERSION: 22.04
+          GCC_VERSION: 10
     - name: Ubuntu 22.04 (g++ 11)
       container:
         dockerfile: docker/Dockerfile.ubuntu
@@ -57,13 +46,13 @@ task:
 task:
   name: macOS (Apple clang)
   osx_instance:
-    image: big-sur-xcode-12.5
+    image: ghcr.io/cirruslabs/macos-monterey-xcode:13.4
   download_dependencies_script:
     - brew update
     - brew install cmake fmt catch2 z3 cryptominisat nlohmann-json
     - brew install black-sat/black/hopscotch-map
     - ./download-mathsat.sh
-  debug_build_script:
+  release_build_script:
     - mkdir -p build && cd build
     - cmake -DCMAKE_BUILD_TYPE=Release ..
     - make
