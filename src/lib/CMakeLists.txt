@@ -173,11 +173,9 @@ set (
   src/logic/past_remover.cpp
   src/logic/cnf.cpp
   src/sat/solver.cpp
-  # src/sat/dimacs/solver.cpp
-  # src/sat/dimacs/parser.cpp
   src/solver/encoding.cpp
   src/solver/solver.cpp
-  # src/solver/core.cpp
+  src/solver/core.cpp
   # src/debug/random_formula.cpp
 )
 
