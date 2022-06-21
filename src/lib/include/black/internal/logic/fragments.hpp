@@ -74,7 +74,9 @@ namespace black {
       syntax_element::always,
       syntax_element::eventually,
       syntax_element::until,
-      syntax_element::release
+      syntax_element::release,
+      syntax_element::w_until,
+      syntax_element::s_release
     > { };
 
     struct past : make_fragment_t<

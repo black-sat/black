@@ -73,7 +73,9 @@ TEST_CASE("Fragment namespaces") {
           [](always) { return "always"; },
           [](eventually) { return "eventually"; },
           [](until) { return "until"; },
-          [](release) { return "release"; }
+          [](release) { return "release"; },
+          [](w_until) { return "w_until"; },
+          [](s_release) { return "s_release"; }
         );
       },
       [](otherwise) { return "other"; }

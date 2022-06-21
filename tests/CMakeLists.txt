@@ -72,14 +72,14 @@ if(Catch2_FOUND)
     # units/old/formula.cpp
     # units/old/term.cpp
     # units/old/match.cpp
-    # units/old/solver.cpp
-    # units/old/sat.cpp
     units/support.cpp
     units/basics.cpp
     units/match.cpp
     units/namespaces.cpp
     units/parser.cpp
     units/past_remover.cpp
+    units/solver.cpp
+    units/sat.cpp
     # units/cnf.cpp
   )
 

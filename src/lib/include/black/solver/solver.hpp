@@ -25,18 +25,20 @@
 #define BLACK_SOLVER_HPP
 
 #include <black/support/common.hpp>
-#include <black/logic/formula.hpp>
-#include <black/logic/alphabet.hpp>
+#include <black/logic/logic.hpp>
 #include <black/support/tribool.hpp>
 
 #include <vector>
+#include <variant>
 #include <utility>
 #include <limits>
 #include <unordered_set>
 #include <string>
 #include <numeric>
 
-namespace black_internal {
+namespace black_internal::solver {
+
+  using namespace black::logic::fragments::LTLPFO;
 
   // main solver class
   class BLACK_EXPORT solver 
@@ -56,7 +58,7 @@ namespace black_internal {
 
       // Sets the formula to solve.
       // If `finite` is true, it is interpreted over finite models
-      // If the alphabet of the formula is set to any SMT logic,
+      // If the formula contains any first-order element,
       // the `finite` argument is ignored and always treated as `true`.
       void set_formula(formula f, bool finite = false);
 
@@ -128,7 +130,7 @@ namespace black_internal {
 
 // Names exported to the user
 namespace black {
-  using black_internal::solver;
+  using black_internal::solver::solver;
 }
 
 #endif // SOLVER_HPP

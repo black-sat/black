@@ -24,7 +24,6 @@
 #include <catch.hpp>
 #include <black/solver/solver.hpp>
 #include <black/sat/solver.hpp>
-#include <black/sat/dimacs.hpp>
 
 TEST_CASE("SAT backends") {
 
@@ -33,8 +32,8 @@ TEST_CASE("SAT backends") {
   };
 
   black::alphabet sigma;
-  auto p = sigma.prop("p");
-  auto q = sigma.prop("q");
+  auto p = sigma.proposition("p");
+  auto q = sigma.proposition("q");
 
   for(auto backend : backends) {
     DYNAMIC_SECTION("SAT backend: " << backend) {

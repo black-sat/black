@@ -25,13 +25,14 @@
 
 #include <black/logic/past_remover.hpp>
 #include <black/logic/prettyprint.hpp>
-//#include <black/solver/solver.hpp>
+#include <black/solver/solver.hpp>
 
 #include <catch.hpp>
 
 #include <string_view>
 
 using namespace black::logic::fragments::LTLP;
+using black::remove_past;
 
 struct test {
   formula f;
@@ -104,17 +105,16 @@ TEST_CASE("Translation for basic past formulas")
     }
   }
 
-  // TODO: after migrating the solver
-  // SECTION("Translation produces an equisatisfiable formula") {
-  //   black::solver slv;
+  SECTION("Translation produces an equisatisfiable formula") {
+    black::solver slv;
 
-  //   for(test t : tests) {
-  //     DYNAMIC_SECTION("Check for formula: " << t.formula) {
-  //       slv.set_formula(
-  //         formula{!implies(remove_past(t.formula), t.formula)}
-  //       );
-  //       CHECK(!slv.solve()); // check validity
-  //     }
-  //   }
-  // }
+    for(test t : tests) {
+      DYNAMIC_SECTION("Check for formula: " << to_string(t.f)) {
+        slv.set_formula(
+          formula{!implies(remove_past(t.f), t.f)}
+        );
+        CHECK(!slv.solve()); // check validity
+      }
+    }
+  }
 }

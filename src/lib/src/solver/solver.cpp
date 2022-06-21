@@ -31,14 +31,14 @@
 
 #include <numeric>
 
-namespace black_internal
+namespace black_internal::solver
 {
   /*
    * Private implementation of the solver class.
    */
   struct solver::_solver_t 
   {
-    std::optional<struct encoder> encoder;
+    std::optional<encoder::encoder> encoder;
 
     // whether a model has been found 
     // i.e., whether solve() has been called and returned true
@@ -51,7 +51,7 @@ namespace black_internal
     size_t last_bound = 0;
 
     // current SAT solver instance
-    std::unique_ptr<sat::solver> sat;
+    std::unique_ptr<black::sat::solver> sat;
 
     // the name of the currently chosen sat backend
     std::string sat_backend = BLACK_DEFAULT_BACKEND; // sensible default
@@ -59,7 +59,7 @@ namespace black_internal
     std::function<void(trace_t)> tracer = [](trace_t){};
 
     void trace(size_t k);
-    void trace(trace_t::type type, formula);
+    void trace(trace_t::type_t type, formula);
 
     // Main algorithm
     tribool solve(size_t k_max, bool semi_decision);
@@ -72,7 +72,7 @@ namespace black_internal
     _data->model = false;
     _data->model_size = 0;
     _data->last_bound = 0;
-    _data->encoder = encoder{f, finite};
+    _data->encoder = encoder::encoder{f, finite};
   }
 
   tribool solver::solve(size_t k_max, bool semi_decision) {
@@ -137,7 +137,7 @@ namespace black_internal
     tracer({trace_t::stage, {k}});
   }
 
-  void solver::_solver_t::trace(trace_t::type type, formula f){
+  void solver::_solver_t::trace(trace_t::type_t type, formula f){
     black_assert(type != trace_t::stage);
     tracer({type, {f}});
   }
@@ -152,7 +152,7 @@ namespace black_internal
     
     trace(trace_t::nnf, encoder->get_formula());
 
-    sat = sat::solver::get_solver(sat_backend);
+    sat = black::sat::solver::get_solver(sat_backend);
 
     model = false;
     last_bound = 0;
@@ -161,7 +161,7 @@ namespace black_internal
       trace(k);
       // Generating the k-unraveling.
       // If it is UNSAT, then stop with UNSAT
-      formula unrav = encoder->k_unraveling(k);
+      auto unrav = encoder->k_unraveling(k);
       trace(trace_t::unrav, unrav);
       sat->assert_formula(unrav);
       if(tribool res = sat->is_sat(); !res)
@@ -169,8 +169,8 @@ namespace black_internal
 
       // else, continue to check EMPTY and LOOP.
       // If the k-unrav is SAT assuming EMPTY or LOOP, then stop with SAT
-      formula empty = encoder->k_empty(k);
-      formula loop = encoder->k_loop(k);
+      auto empty = encoder->k_empty(k);
+      auto loop = encoder->k_loop(k);
       trace(trace_t::empty, empty);
       trace(trace_t::loop, loop);
       if(sat->is_sat_with(empty || loop)) {
@@ -183,7 +183,7 @@ namespace black_internal
       // else, generate the PRUNE
       // If the PRUNE is UNSAT, the formula is UNSAT
       if(!semi_decision) {
-        formula prune = encoder->prune(k);
+        auto prune = encoder->prune(k);
         trace(trace_t::prune, prune);
         sat->assert_formula(!prune);
         if(tribool res = sat->is_sat(); !res)
@@ -224,7 +224,7 @@ namespace black_internal
       [](variable) -> check_result_t { return false; },
       [&](application a) -> check_result_t {
         identifier id = a.func().name();
-        size_t size = a.arguments().size();
+        size_t size = a.terms().size();
         
         if(auto it = funcs.find(id); it != funcs.end() && it->second != size) {
           err(
@@ -243,15 +243,20 @@ namespace black_internal
         }
 
         check_result_t res;
-        for(term arg : a.arguments())
+        for(term arg : a.terms())
           res = res || _check_syntax(arg, err, scope, rels, funcs);
 
-        if(!a.func().known_type())
-          funcs.insert({id, size});
+        funcs.insert({id, size});
         return res;
       }, // LCOV_EXCL_LINE
-      [&](constructor c) -> check_result_t {
-        term arg = c.argument();
+      [&](negative, auto arg) -> check_result_t {
+        return _check_syntax(arg, err, scope, rels, funcs);
+      },
+      [&](binary_term, auto left, auto right) {
+        return _check_syntax(left, err, scope, rels, funcs) ||
+               _check_syntax(right, err, scope, rels, funcs);
+      },
+      [&](unary_term, term arg) -> check_result_t {
         if(!arg.is<variable>()) {
           err(
             "next()/wnext()/prev()/wprev() terms can only be applied "
@@ -311,24 +316,20 @@ namespace black_internal
         rels.insert({id, size});
         return res;  
       }, // LCOV_EXCL_LINE
+      [&](comparison, auto left, auto right) {
+        return _check_syntax(left, err, scope, rels, funcs) ||
+               _check_syntax(right, err, scope, rels, funcs);
+      },
       [&](quantifier q) -> check_result_t {
-        std::vector<variable> s = scope;
-        s.push_back(q.var());
-        check_result_t res =
-          _check_syntax(q.matrix(), err, s, positive, rels, funcs); // LCOV_EXCL_LINE
-        if(res.has_next && res.has_disjunctions) { // LCOV_EXCL_LINE
-          err( // LCOV_EXCL_LINE
-            "next() terms and disjunctions cannot be mixed inside quantifiers"
-          );
-          return true; // LCOV_EXCL_LINE
-        }
-
-        return res;
+        std::vector<variable> new_scope = scope;
+        new_scope.push_back(q.var());
+        
+        return _check_syntax(q.matrix(), err, new_scope, positive, rels, funcs);
       }, // LCOV_EXCL_LINE
-      [&](negation, formula arg) {
+      [&](negation, auto arg) {
         return _check_syntax(arg, err, scope, !positive, rels, funcs);
       },
-      [&](big_disjunction o) {
+      [&](disjunction o) {
         check_result_t r{false, false, positive};
         std::vector<check_result_t> results;
         for(auto op : o.operands()) {
@@ -340,7 +341,7 @@ namespace black_internal
           begin(results), end(results), r, std::logical_or<>{}
         );
       },
-      [&](big_conjunction c) {
+      [&](conjunction c) {
         check_result_t r{false, false, !positive};
         std::vector<check_result_t> results;
         for(auto op : c.operands()) {
@@ -361,19 +362,19 @@ namespace black_internal
           err, scope, positive, rels, funcs
         );
       },
-      [&](tomorrow, formula arg) {
+      [&](tomorrow, auto arg) {
         return _check_syntax(arg, err, scope, positive, rels, funcs);
       },
-      [&](w_tomorrow, formula arg) {
+      [&](w_tomorrow, auto arg) {
         return _check_syntax(arg, err, scope, positive, rels, funcs);
       },
-      [&](yesterday, formula arg) {
+      [&](yesterday, auto arg) {
         return _check_syntax(arg, err, scope, positive, rels, funcs);
       },
-      [&](w_yesterday, formula arg) {
+      [&](w_yesterday, auto arg) {
         return _check_syntax(arg, err, scope, positive, rels, funcs);
       },
-      [&](temporal t) -> check_result_t {
+      [&](only<temporal> t) -> check_result_t {
         if(!scope.empty()) {
           err(
             "Temporal operators (excepting X/wX/Y/Z) cannot appear "

@@ -24,7 +24,7 @@
 #include <catch.hpp>
 
 #include <black/support/config.hpp>
-#include <black/logic/formula.hpp>
+#include <black/logic/logic.hpp>
 #include <black/logic/parser.hpp>
 #include <black/logic/prettyprint.hpp>
 #include <black/solver/solver.hpp>
@@ -41,9 +41,9 @@ TEST_CASE("Testing solver")
     REQUIRE(slv.sat_backend() == BLACK_DEFAULT_BACKEND);
     REQUIRE(slv.solve() == true);
 
-    auto p = sigma.prop("p");
+    auto p = sigma.proposition("p");
     
-    formula f1 = !p && iff(!X(p), FG(p)) && implies(p, !p);
+    formula f1 = !p && iff(!X(p), F(G(p))) && implies(p, !p);
     formula f2 = p && !p;
 
     slv.set_formula(f1);
@@ -66,19 +66,19 @@ TEST_CASE("Quantified formulas") {
     DYNAMIC_SECTION("Backend: " << backend) {
       if(black::sat::solver::backend_exists(backend)) {
         alphabet sigma;
-        sigma.set_domain(sort::Int);
+        sigma.set_default_sort(sigma.integer_sort());
 
-        variable x = sigma.var("x");
-        variable y = sigma.var("y");
-        variable z = sigma.var("z");
-        proposition p = sigma.prop("p");
+        variable x = sigma.variable("x");
+        variable y = sigma.variable("y");
+        variable z = sigma.variable("z");
+        proposition p = sigma.proposition("p");
         
         std::vector<formula> tests = {
           forall(x, x == x),
-          exists({x,y}, next(z) + 2 != y),
-          exists({x,y}, sigma.top()),
-          exists({x,y}, !p),
-          !forall({x,y}, x != y),
+          exists_block({x,y}, next(z) + 2 != y),
+          exists_block({x,y}, sigma.top()),
+          exists_block({x,y}, !p),
+          !forall_block({x,y}, x != y),
           exists(x, X(x == y)),
           exists(x, wX(x == y)),
           exists(x, X(Y(x == 0))),
@@ -86,7 +86,7 @@ TEST_CASE("Quantified formulas") {
         };
 
         for(formula f : tests) {
-          DYNAMIC_SECTION("Test formula: " << f) {
+          DYNAMIC_SECTION("Test formula: " << to_string(f)) {
             solver slv;
             slv.set_sat_backend(backend);
             slv.set_formula(f);

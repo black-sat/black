@@ -32,7 +32,7 @@
 
 #include <tsl/hopscotch_map.h>
 
-namespace black_internal::solver {
+namespace black_internal::encoder {
   
   using namespace black_internal::logic;
 
