@@ -185,7 +185,7 @@ if(Z3_FOUND)
 endif()
 
 if(CVC5_FOUND)
-  # set(LIB_SRC ${LIB_SRC} src/sat/backends/cvc5.cpp)
+  set(LIB_SRC ${LIB_SRC} src/sat/backends/cvc5.cpp)
 endif()
 
 if(MathSAT_FOUND)

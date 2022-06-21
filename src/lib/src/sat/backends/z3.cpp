@@ -37,14 +37,14 @@
 #include <string>
 #include <memory>
 
+#include <iostream>
+
 BLACK_REGISTER_SAT_BACKEND(z3, {
   black::sat::feature::smt, black::sat::feature::quantifiers
 })
 
-namespace black_internal
+namespace black_internal::z3
 {
-  using namespace black::logic::fragments::FO;
-
   inline proposition fresh(formula f) {
     return f.sigma()->proposition(f);
   }

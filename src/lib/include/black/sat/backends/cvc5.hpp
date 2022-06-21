@@ -26,8 +26,10 @@
 
 #include <memory>
 
-namespace black::sat::backends 
+namespace black_internal::cvc5
 {
+  using namespace black::logic::fragments::FO;
+
   class BLACK_EXPORT cvc5 : public ::black::sat::solver
   {
   public:
@@ -45,4 +47,8 @@ namespace black::sat::backends
     struct _cvc5_t;
     std::unique_ptr<_cvc5_t> _data;
   };
+}
+
+namespace black::sat::backends {
+  using black_internal::cvc5::cvc5;
 }

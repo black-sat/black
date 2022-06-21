@@ -26,17 +26,19 @@
 
 #include <memory>
 
-namespace black_internal
+namespace black_internal::z3
 {
+  using namespace black::logic::fragments::FO;
+
   class BLACK_EXPORT z3 : public ::black::sat::solver
   {
   public:
     z3();
     ~z3() override;
 
-    virtual void assert_formula(logic::formula<logic::FO> f) override;
+    virtual void assert_formula(formula f) override;
     virtual tribool is_sat() override;
-    virtual tribool is_sat_with(logic::formula<logic::FO> assumption) override;
+    virtual tribool is_sat_with(formula assumption) override;
     virtual tribool value(logic::proposition a) const override;
     virtual void clear() override;
     virtual std::optional<std::string> license() const override;
@@ -49,5 +51,5 @@ namespace black_internal
 }
 
 namespace black::sat::backends {
-  using black_internal::z3;
+  using black_internal::z3::z3;
 }
