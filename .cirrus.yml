@@ -54,7 +54,7 @@ task:
     - ./download-mathsat.sh
   release_build_script:
     - mkdir -p build && cd build
-    - ./config-brew-llvm.sh -DCMAKE_BUILD_TYPE=Release ..
+    - ../config-brew-llvm.sh -DCMAKE_BUILD_TYPE=Release ..
     - make
   test_script:
     - cd build 
