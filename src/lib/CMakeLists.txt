@@ -173,6 +173,7 @@ set (
   src/logic/past_remover.cpp
   src/logic/cnf.cpp
   src/sat/solver.cpp
+  src/sat/dimacs.cpp
   src/solver/encoding.cpp
   src/solver/solver.cpp
   src/solver/core.cpp
@@ -224,7 +225,6 @@ set (
   # include/black/support/common.hpp
   # include/black/support/range.hpp
   # include/black/support/tribool.hpp
-  # include/black/sat/dimacs.hpp
   # include/black/sat/solver.hpp
   # include/black/sat/backends/cmsat.hpp
   # include/black/sat/backends/minisat.hpp
