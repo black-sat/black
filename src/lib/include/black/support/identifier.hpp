@@ -32,7 +32,6 @@
 #include <optional>
 #include <vector>
 #include <string_view>
-#include <typeinfo>
 
 //
 // Function to combine different hashe values into one.
@@ -62,8 +61,12 @@ namespace black_internal {
 
 namespace black_internal::identifier_details
 {
+  template<typename T>
+  concept identifier_label = 
+    hashable<T> && stringable<T> && std::equality_comparable<T>;
+
   //
-  // Type-erased hashable value
+  // Type-erased hashable, comparable and printable value
   //
   class identifier
   {
@@ -72,7 +75,7 @@ namespace black_internal::identifier_details
     identifier(identifier const&) = default;
     identifier(identifier&&) = default;
 
-    template<hashable T>
+    template<identifier_label T>
       requires (!std::is_same_v<std::remove_cvref_t<T>, identifier>)
     identifier(T&& value)
       : _any(std::forward<T>(value)),
@@ -80,14 +83,14 @@ namespace black_internal::identifier_details
         _cmp(make_cmp(value)),
         _printer(make_printer(value)) { }
 
-    template<typename ...T>
+    template<identifier_label ...T>
     identifier(std::tuple<T...> const& t) 
       : _any(t),
         _hash(make_tuple_hasher(t)),
         _cmp(make_cmp(t)),
         _printer(make_printer(t)) { }
 
-    template<typename T, typename U>
+    template<identifier_label T, identifier_label U>
     identifier(std::pair<T, U> const& t) 
       : _any(t),
         _hash(make_pair_hasher(t)),
@@ -112,12 +115,9 @@ namespace black_internal::identifier_details
       return _cmp(_any, other);
     }
 
-    template<hashable T>
+    template<identifier_label T>
     identifier &operator=(T&& value) {
-      _any = std::forward<T>(value);
-      _hash = make_hasher(value);
-      _cmp = make_cmp(value);
-      _printer = make_printer(value);
+      *this = identifier{std::forward<T>(value)};
       return *this;
     }
 
@@ -212,20 +212,13 @@ namespace black_internal::identifier_details
       };
     }
 
-    template<stringable T>
+    template<typename T>
     printer_t make_printer(T const&) {
       return [](std::any const&me) -> std::string {
         T const *v = std::any_cast<T>(&me);
         black_assert(v != nullptr);
 
         return to_string(*v);
-      };
-    }
-    
-    template<typename T>
-    printer_t make_printer(T const&) {
-      return [](std::any const&) -> std::string {
-        return std::string{typeid(T).name()};
       };
     }
   };

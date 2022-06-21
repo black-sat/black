@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 #include <black/logic/cnf.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <tsl/hopscotch_set.h>
 

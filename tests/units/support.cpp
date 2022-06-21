@@ -78,19 +78,6 @@ TEST_CASE("Testing black::tribool")
   }
 }
 
-struct NonStringable {
-  bool operator==(NonStringable) const { return true; }
-};
-
-namespace std {
-  template<>
-  struct hash<NonStringable> {
-    size_t operator()(NonStringable) const {
-      return 1;
-    }
-  };
-}
-
 TEST_CASE("identifier class")
 {
   using namespace black_internal;
@@ -115,14 +102,11 @@ TEST_CASE("identifier class")
     REQUIRE(!c.has_value());
     REQUIRE(*opt == 42);
 
-    h = &i; // reassign with different type
-    std::optional opt2 = h.to<int*>();
+    h = 3.14f; // reassign with different type
+    std::optional opt2 = h.to<float>();
 
     REQUIRE(opt2.has_value());
-    REQUIRE(*opt2 == &i);
-
-    h = NonStringable{};
-    REQUIRE(to_string(h) == typeid(NonStringable).name());
+    REQUIRE(*opt2 == 3.14f);
   }
 
   SECTION("C strings") {
@@ -163,37 +147,37 @@ TEST_CASE("identifier class")
   }
 
   SECTION("Class types") {
-    std::string s = "hello";
-    std::vector<bool> v = {true,false,true,false};
+    std::string s1 = "hello";
+    std::string s2 = "goodbye";
 
     SECTION("By value") {
-      identifier h{s};
+      identifier h{s1};
 
       std::optional opt = h.to<std::string>();
 
       REQUIRE(opt.has_value());
-      REQUIRE(*opt == s);
+      REQUIRE(*opt == s1);
 
-      h = v; // reassignment
-      std::optional opt2 = h.to<std::vector<bool>>();
+      h = s2; // reassignment
+      std::optional opt2 = h.to<std::string>();
 
       REQUIRE(opt2.has_value());
-      REQUIRE(*opt2 == std::vector<bool>{true,false,true,false});
+      REQUIRE(*opt2 == s2);
     }
 
     SECTION("By move") {
-      identifier h{std::move(s)};
+      identifier h{std::move(s1)};
 
       std::optional opt = h.to<std::string>();
 
       REQUIRE(opt.has_value());
       REQUIRE(*opt == "hello");
 
-      h = std::move(v); // reassignment
-      std::optional opt2 = h.to<std::vector<bool>>();
+      h = std::move(s2); // reassignment
+      std::optional opt2 = h.to<std::string>();
 
       REQUIRE(opt2.has_value());
-      REQUIRE(*opt2 == std::vector<bool>{true,false,true,false});
+      REQUIRE(*opt2 == "goodbye");
     }
   }
 }
