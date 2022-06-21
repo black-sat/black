@@ -44,7 +44,7 @@ task:
 
 
 task:
-  name: macOS (Apple clang)
+  name: macOS (Homebrew clang 13)
   osx_instance:
     image: ghcr.io/cirruslabs/macos-monterey-xcode:13.4
   download_dependencies_script:
