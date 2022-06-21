@@ -46,32 +46,6 @@ namespace black_internal::dimacs
     std::vector<literal> literals;
   };
 
-  struct problem {
-    std::vector<clause> clauses;
-  };
-
-  BLACK_EXPORT
-  std::string to_string(literal l);
-
-  BLACK_EXPORT
-  void print(std::ostream &out, problem p);
-
-  struct solution {
-    std::vector<literal> assignments;
-  };
-
-  BLACK_EXPORT
-  formula<propositional> to_formula(alphabet &sigma, clause const& c);
-
-  BLACK_EXPORT
-  formula<propositional> to_formula(alphabet &sigma, problem const& p);
-
-  BLACK_EXPORT
-  std::optional<solution> solve(problem const& p, std::string backend);
-
-  BLACK_EXPORT
-  void print(std::ostream &out, std::optional<solution> const& s);
-
   //
   // A specialized instance of sat::solver for backends with 
   // DIMACS-based interfaces (e.g. MiniSAT and CryptoMiniSAT)
@@ -129,11 +103,6 @@ namespace black_internal::dimacs
 namespace black::sat::dimacs {
   using black_internal::dimacs::literal;
   using black_internal::dimacs::clause;
-  using black_internal::dimacs::problem;
-  using black_internal::dimacs::solution;
-  using black_internal::dimacs::to_string;
-  using black_internal::dimacs::print;
-  using black_internal::dimacs::solve;
   using black_internal::dimacs::solver;
 }
 

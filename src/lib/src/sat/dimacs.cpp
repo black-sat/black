@@ -105,44 +105,4 @@ namespace black_internal::dimacs
     _data = std::make_unique<_solver_t>();
   }
 
-  formula<propositional> to_formula(alphabet &sigma, dimacs::clause const& c) {
-    return big_or(sigma, c.literals, [&](literal l) {
-      proposition a = sigma.proposition(l.var);
-      return l.sign ? formula{a} : formula{!a};
-    });
-  }
-
-  formula<propositional> to_formula(alphabet &sigma, dimacs::problem const& p) {
-    return big_and(sigma, p.clauses, [&](clause c) {
-      return to_formula(sigma, c);
-    });
-  }
-
-  std::optional<solution> solve(dimacs::problem const &p, std::string backend) {
-    alphabet sigma;
-
-    auto solver = black::sat::solver::get_solver(backend);
-    solver->assert_formula(to_formula(sigma, p));
-
-    if(!solver->is_sat())
-      return {};
-
-    uint32_t nvars = 0;
-    for(dimacs::clause c : p.clauses)
-      for(dimacs::literal l : c.literals)
-        nvars = l.var > nvars ? l.var : nvars;
-
-    solution s;
-    for(uint32_t i = 1; i <= nvars; ++i) {
-      proposition a = sigma.proposition(i);
-      tribool v = solver->value(a);
-      if(v == tribool::undef)
-        continue;
-      
-      s.assignments.push_back(literal{(bool)v, i});
-    }
-
-    return s;
-  }
-
 }
