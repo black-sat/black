@@ -287,8 +287,8 @@ namespace black_internal::cvc5
   ) {
     alphabet *sigma = t.sigma();
     return t.match(
-      [&](constant, auto num) { // LCOV_EXCL_LINE
-        return num.match(
+      [&](constant, auto n) { // LCOV_EXCL_LINE
+        return n.match(
           [&](zero) { return to_cvc5(constant(sigma->integer(0)), env); },
           [&](one)  { return to_cvc5(constant(sigma->integer(1)), env); },
           [&](integer, int64_t value) {

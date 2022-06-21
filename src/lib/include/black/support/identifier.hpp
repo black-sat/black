@@ -115,9 +115,10 @@ namespace black_internal::identifier_details
       return _cmp(_any, other);
     }
 
-    template<identifier_label T>
-    identifier &operator=(T&& value) {
-      *this = identifier{std::forward<T>(value)};
+    template<typename T>
+    identifier &operator=(T&& value)
+    {
+      *this = identifier(std::forward<T>(value));
       return *this;
     }
 

@@ -313,8 +313,8 @@ namespace black_internal::z3
             return Z3_mk_eq(context, to_z3(left), to_z3(right));
           },
           [&](not_equal) {
-            Z3_ast terms[] = { to_z3(left), to_z3(right) };
-            return Z3_mk_distinct(context, 2, terms);
+            Z3_ast z3_terms[] = { to_z3(left), to_z3(right) };
+            return Z3_mk_distinct(context, 2, z3_terms);
           },
           [&](less_than) {
             return Z3_mk_lt(context, to_z3(left), to_z3(right));
@@ -382,8 +382,8 @@ namespace black_internal::z3
   Z3_ast z3::_z3_t::to_z3_inner(term t) {
     alphabet *sigma = t.sigma();
     return t.match(
-      [&](constant, auto num) {
-        return num.match(
+      [&](constant, auto n) {
+        return n.match(
           [&](zero) { return to_z3_inner(constant(sigma->integer(0))); },
           [&](one)  { return to_z3_inner(constant(sigma->integer(1))); },
           [&](integer, int64_t value) {
@@ -431,22 +431,26 @@ namespace black_internal::z3
       [&](binary_term b) {
         return b.match(
           [&](subtraction, auto left, auto right) {
-            Z3_ast terms[2] = { to_z3(left), to_z3(right) };
-            return Z3_mk_sub(context, 2, terms);
+            Z3_ast z3_terms[2] = { to_z3(left), to_z3(right) };
+            return Z3_mk_sub(context, 2, z3_terms);
           },
           [&](addition a) {
-            std::vector<Z3_ast> terms;
+            std::vector<Z3_ast> z3_terms;
             for(auto child : a.operands()) {
-              terms.push_back(to_z3(child));
+              z3_terms.push_back(to_z3(child));
             }
-            return Z3_mk_add(context, unsigned(terms.size()), terms.data());
+            return Z3_mk_add(
+              context, unsigned(z3_terms.size()), z3_terms.data()
+            );
           },
           [&](multiplication m) {
-            std::vector<Z3_ast> terms;
+            std::vector<Z3_ast> z3_terms;
             for(auto child : m.operands()) {
-              terms.push_back(to_z3(child));
+              z3_terms.push_back(to_z3(child));
             }
-            return Z3_mk_mul(context, unsigned(terms.size()), terms.data());
+            return Z3_mk_mul(
+              context, unsigned(z3_terms.size()), z3_terms.data()
+            );
           },
           [&](division, auto left, auto right) {
             return Z3_mk_div(context, to_z3(left), to_z3(right));
