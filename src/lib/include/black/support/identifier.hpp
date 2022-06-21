@@ -195,7 +195,7 @@ namespace black_internal::identifier_details
         black_assert(p != nullptr);
 
         size_t h1 = std::hash<T>{}(p->first);
-        size_t h2 = std::hash<T>{}(p->second);
+        size_t h2 = std::hash<U>{}(p->second);
         return hash_combine(h1, h2);
       };
     }

@@ -253,5 +253,13 @@ namespace black_internal::logic
       }
     );
   }
+
+  std::string to_string(relation r) {
+    return to_string(r.name());
+  }
+  
+  std::string to_string(function f) {
+    return to_string(f.name());
+  }
 }
 

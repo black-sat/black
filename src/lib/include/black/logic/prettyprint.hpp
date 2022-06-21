@@ -37,6 +37,12 @@ namespace black_internal::logic
   
   BLACK_EXPORT
   std::string to_string(term<LTLPFO> t);
+  
+  BLACK_EXPORT
+  std::string to_string(relation t);
+  
+  BLACK_EXPORT
+  std::string to_string(function t);
 
 }
 
