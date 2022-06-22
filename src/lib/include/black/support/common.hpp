@@ -32,6 +32,11 @@
   #define BLACK_EXPORT
 #endif
 
+#if defined(_MSC_VER)
+  #include <BaseTsd.h>
+  using ssize_t = SSIZE_T;
+#endif
+
 namespace black_internal 
 {
   // Simple utility to get the overloading of multiple lambdas (for example)
