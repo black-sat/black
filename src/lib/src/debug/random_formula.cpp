@@ -40,6 +40,7 @@
 
 namespace black_internal::random {
   
+  static
   auto unary_ops(propositional) {
     std::vector<unary<propositional>::type> a = {
       unary<propositional>::type::negation{}
@@ -47,6 +48,7 @@ namespace black_internal::random {
     return a;
   }
 
+  static
   auto unary_ops(LTL) {
     std::vector<unary<LTL>::type> a = {
       unary<LTL>::type::negation{},
@@ -58,6 +60,7 @@ namespace black_internal::random {
     return a;
   }
 
+  static
   auto unary_ops(LTLP) {
     std::vector<unary<LTLP>::type> a = {
       unary<LTLP>::type::negation{},
@@ -73,6 +76,7 @@ namespace black_internal::random {
     return a;
   }
 
+  static
   auto binary_ops(propositional) {
     std::vector<binary<propositional>::type> a = {
       binary<propositional>::type::conjunction{},
@@ -83,6 +87,7 @@ namespace black_internal::random {
     return a;
   }
 
+  static
   auto binary_ops(LTL) {
     std::vector<binary<LTL>::type> a = {
       binary<LTL>::type::conjunction{},
@@ -97,6 +102,7 @@ namespace black_internal::random {
     return a;
   }
 
+  static
   auto binary_ops(LTLP) {
     std::vector<binary<LTLP>::type> a = {
       binary<LTLP>::type::conjunction{},
@@ -144,12 +150,12 @@ namespace black_internal::random {
       return _ap[dist(_gen)];
     }
 
-    unary<Syntax>::type random_unary_operator() {
+    typename unary<Syntax>::type random_unary_operator() {
       std::uniform_int_distribution<size_t> dist(0, _unary_ops.size()-1);
       return _unary_ops[dist(_gen)];
     }
    
-    binary<Syntax>::type random_binary_operator() {
+    typename binary<Syntax>::type random_binary_operator() {
       std::uniform_int_distribution<size_t> dist(0, _binary_ops.size()-1);
       return _binary_ops[dist(_gen)];
     }
@@ -170,8 +176,8 @@ namespace black_internal::random {
         if (is_unary) {
           return unary<Syntax>(random_unary_operator(), random_formula(n-1));
         } else {
-          std::uniform_int_distribution<> dist(1, n-2);
-          int x = dist(_gen);
+          std::uniform_int_distribution<> bindist(1, n-2);
+          int x = bindist(_gen);
           formula phi = random_formula(x);
           formula psi = random_formula(n-x-1);
           return binary<Syntax>(random_binary_operator(), phi, psi);
