@@ -24,6 +24,8 @@
 #ifndef BLACK_LOGIC_SUGAR_HPP_
 #define BLACK_LOGIC_SUGAR_HPP_
 
+#include <black/support/common.hpp>
+
 #include <ranges>
 #include <stack>
 
