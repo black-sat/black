@@ -30,7 +30,7 @@ init:
 clone_folder: c:\projects\black
 
 install:
-  - call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
   - cd C:\Projects
   - mkdir dependencies
   - git clone https://github.com/Tessil/hopscotch-map.git
