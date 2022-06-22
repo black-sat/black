@@ -24,6 +24,8 @@
 #ifndef BLACK_INTERNAL_FORMULA_INTERFACE_HPP
 #define BLACK_INTERNAL_FORMULA_INTERFACE_HPP
 
+#include <black/support/common.hpp>
+
 #include <memory>
 
 //
@@ -614,7 +616,7 @@ namespace black_internal::logic
   // constructible and movable, but not copyable. We generate a lot of members,
   // see later for each inclusion.
   //
-  class alphabet_base
+  class BLACK_EXPORT alphabet_base
   {
   public:
     alphabet_base();
