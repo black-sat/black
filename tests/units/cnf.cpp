@@ -23,14 +23,15 @@
 
 #include <catch.hpp>
 
-#include <black/logic/formula.hpp>
+#include <black/logic/logic.hpp>
 #include <black/logic/parser.hpp>
 #include <black/logic/prettyprint.hpp>
 #include <black/solver/solver.hpp>
 #include <black/logic/cnf.hpp>
 #include <black/internal/debug/random_formula.hpp>
 
-using namespace black;
+using namespace black::logic;
+
 
 TEST_CASE("CNF Translation")
 {
@@ -43,35 +44,21 @@ TEST_CASE("CNF Translation")
   };
 
 
-  std::vector<formula> tests;
-  for(int i = 0 ; i <= 30; ++i) {
+  std::vector<formula<propositional>> tests;
+  for(int i = 0 ; i < 30; ++i) {
     tests.push_back(black::random_boolean_formula(gen, sigma, 10, symbols));
   }
 
-  solver s;
+  black::solver s;
 
-  SECTION("Simplification of random formulas") {
-    for(formula f : tests)
-    { 
-      formula fc = simplify_deep(f);
-      s.set_formula(!iff(fc,f));
-
-      INFO("Formula: " << f);
-      INFO("Simplification: " << fc);
-      REQUIRE(!s.solve());
-    }
-  }
-
-  SECTION("CNF of random formulas") {
-    for(formula f : tests) 
-    { 
-      INFO("Formula: " << f);
-      INFO("Simplification: " << simplify_deep(f));
-
-      formula fc = to_formula(sigma, to_cnf(f));
+  for(formula f : tests) 
+  { 
+    SECTION("CNF of random formula: ") {
+      formula<propositional> fc = to_formula(sigma, black::to_cnf(f));
       s.set_formula(!implies(fc,f));
 
-      INFO("CNF: " << fc);
+      INFO("Formula: " << to_string(f));
+      INFO("CNF: " << to_string(fc));
       REQUIRE(!s.solve());
     }
   }

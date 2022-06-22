@@ -128,6 +128,12 @@ namespace black_internal::cnf
       [](auto op, auto ...args) -> formula {
         return remove_booleans(op, remove_booleans(args)...);
       }
+    ).match(
+      [](boolean b)     -> formula { return b; },
+      [](proposition p) -> formula { return p; },
+      [](auto op, auto ...args) -> formula {
+        return remove_booleans(op, args...);
+      }
     );
   }
 
@@ -149,8 +155,6 @@ namespace black_internal::cnf
     tsl::hopscotch_set<formula> memo;
     
     formula simple = remove_booleans(f);
-    std::cerr << "f: " << to_string(f) << "\n"
-              << "simple: " << to_string(simple) << "\n";
     black_assert(
       simple.is<boolean>() || 
       !has_any_element_of(simple, syntax_element::boolean)

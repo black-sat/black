@@ -32,148 +32,172 @@
 
 #include <black/internal/debug/random_formula.hpp>
 
-#include <black/logic/alphabet.hpp>
+#include <black/logic/logic.hpp>
 
 #include <variant>
 #include <random>
+#include <array>
 
-namespace black_internal {
+namespace black_internal::random {
   
-  enum class logic_t { 
-    boolean,
-    ltl, 
-    ltlp 
-  };
+  auto unary_ops(propositional) {
+    std::vector<unary<propositional>::type> a = {
+      unary<propositional>::type::negation{}
+    };
+    return a;
+  }
 
+  auto unary_ops(LTL) {
+    std::vector<unary<LTL>::type> a = {
+      unary<LTL>::type::negation{},
+      unary<LTL>::type::tomorrow{},
+      unary<LTL>::type::w_tomorrow{},
+      unary<LTL>::type::always{},
+      unary<LTL>::type::eventually{}
+    };
+    return a;
+  }
+
+  auto unary_ops(LTLP) {
+    std::vector<unary<LTLP>::type> a = {
+      unary<LTLP>::type::negation{},
+      unary<LTLP>::type::tomorrow{},
+      unary<LTLP>::type::w_tomorrow{},
+      unary<LTLP>::type::always{},
+      unary<LTLP>::type::eventually{},
+      unary<LTLP>::type::yesterday{},
+      unary<LTLP>::type::w_yesterday{},
+      unary<LTLP>::type::once{},
+      unary<LTLP>::type::historically{}
+    };
+    return a;
+  }
+
+  auto binary_ops(propositional) {
+    std::vector<binary<propositional>::type> a = {
+      binary<propositional>::type::conjunction{},
+      binary<propositional>::type::disjunction{},
+      binary<propositional>::type::implication{},
+      binary<propositional>::type::iff{}
+    };
+    return a;
+  }
+
+  auto binary_ops(LTL) {
+    std::vector<binary<LTL>::type> a = {
+      binary<LTL>::type::conjunction{},
+      binary<LTL>::type::disjunction{},
+      binary<LTL>::type::implication{},
+      binary<LTL>::type::iff{},
+      binary<LTL>::type::until{},
+      binary<LTL>::type::release{},
+      binary<LTL>::type::w_until{},
+      binary<LTL>::type::s_release{}
+    };
+    return a;
+  }
+
+  auto binary_ops(LTLP) {
+    std::vector<binary<LTLP>::type> a = {
+      binary<LTLP>::type::conjunction{},
+      binary<LTLP>::type::disjunction{},
+      binary<LTLP>::type::implication{},
+      binary<LTLP>::type::iff{},
+      binary<LTLP>::type::until{},
+      binary<LTLP>::type::release{},
+      binary<LTLP>::type::w_until{},
+      binary<LTLP>::type::s_release{},
+      binary<LTLP>::type::since{},
+      binary<LTLP>::type::triggered{}
+    };
+
+    return a;
+  }
+
+  template<fragment Syntax>
   class rand_formula_gen
   {
-    using op_t = std::variant<unary::type, binary::type>;
-
   public:
     rand_formula_gen(
-        std::mt19937& gen, alphabet& sigma, logic_t l,
+        std::mt19937& gen, alphabet& sigma,
         const std::vector<std::string>& symbols
-    ) : _gen{gen}, _logic{l}, _sigma{sigma}
+    ) : _gen{gen}, _sigma{sigma},
+        _binary_ops(binary_ops(Syntax{})), _unary_ops(unary_ops(Syntax{}))
     {
-      // base boolean operators
-      _ops = {
-        unary::type::negation,
-        binary::type::conjunction,
-        binary::type::disjunction,
-        binary::type::implication,
-        binary::type::iff
-      };
-
-      // LTL operators
-      if(_logic != logic_t::boolean) {
-        _ops.insert(_ops.end(), {
-          unary::type::tomorrow,
-          unary::type::w_tomorrow,
-          unary::type::always,
-          unary::type::eventually,
-          binary::type::until,
-          binary::type::release,
-          binary::type::w_until,
-          binary::type::s_release
-        });
-      }
-
-      // LTL+Past operators
-      if (_logic == logic_t::ltlp) {
-        _ops.insert(_ops.end(), {
-          unary::type::yesterday,
-          unary::type::w_yesterday,
-          unary::type::once,
-          unary::type::historically,
-          binary::type::since,
-          binary::type::triggered
-        });
-      }
-
-      // Retrieve unary operators
-      for (const op_t& op : _ops) {
-        if (std::holds_alternative<unary::type>(op)) {
-          _unary_ops.push_back(std::get<unary::type>(op));
-        }
-      }
-
       _ap = {_sigma.top(), _sigma.bottom()};
       for (const std::string& s : symbols) {
-        _ap.push_back(_sigma.prop("(" + s + ")"));
+        _ap.push_back(_sigma.proposition(s));
       }
     }
 
-    formula random_formula(int n);
+    formula<Syntax> random_formula(int n);
 
   private:
     std::mt19937& _gen;
-    logic_t _logic;
     alphabet& _sigma;
-    std::vector<op_t> _ops;
-    std::vector<unary::type> _unary_ops; // subset of _ops
-    std::vector<formula> _ap;            // AP U {True,False}
+    std::vector<typename binary<Syntax>::type> _binary_ops;
+    std::vector<typename unary<Syntax>::type> _unary_ops;
+    std::vector<formula<Syntax>> _ap;            // AP U {True,False}
 
-    formula random_proposition();
-    unary::type random_unary_operator();
-    op_t random_operator();
+    formula<Syntax> random_proposition() {
+      std::uniform_int_distribution<size_t> dist(0, _ap.size()-1);
+      return _ap[dist(_gen)];
+    }
+
+    unary<Syntax>::type random_unary_operator() {
+      std::uniform_int_distribution<size_t> dist(0, _unary_ops.size()-1);
+      return _unary_ops[dist(_gen)];
+    }
+   
+    binary<Syntax>::type random_binary_operator() {
+      std::uniform_int_distribution<size_t> dist(0, _binary_ops.size()-1);
+      return _binary_ops[dist(_gen)];
+    }
 
   }; // class rand_formula_gen
 
-  formula rand_formula_gen::random_proposition() {
-    std::uniform_int_distribution<size_t> dist(0, _ap.size()-1);
-    return _ap[dist(_gen)];
-  }
-
-  auto rand_formula_gen::random_operator() -> op_t {
-    std::uniform_int_distribution<size_t> dist(0, _ops.size()-1);
-    return _ops[dist(_gen)];
-  }
-
-  unary::type rand_formula_gen::random_unary_operator() {
-    std::uniform_int_distribution<size_t> dist(0, _unary_ops.size()-1);
-    return _unary_ops[dist(_gen)];
-  }
-
-  formula rand_formula_gen::random_formula(int n) { // must be n >= 1
+  template<fragment Syntax>
+  formula<Syntax> rand_formula_gen<Syntax>::random_formula(int n) { 
     if (n == 1) {
       return random_proposition();
     } else {
       if (n == 2) {
-        unary::type op = random_unary_operator();
-        return unary(op, random_formula(n-1));
+        return unary<Syntax>(random_unary_operator(), random_formula(n-1));
       } else {
-        op_t op = random_operator();
-        if (std::holds_alternative<unary::type>(op)) {  // if unary
-          return unary(std::get<unary::type>(op), random_formula(n-1));
-        } else {  // if binary
+        std::uniform_int_distribution<> dist(0,1);
+        bool is_unary = dist(_gen);
+        
+        if (is_unary) {
+          return unary<Syntax>(random_unary_operator(), random_formula(n-1));
+        } else {
           std::uniform_int_distribution<> dist(1, n-2);
           int x = dist(_gen);
           formula phi = random_formula(x);
           formula psi = random_formula(n-x-1);
-          return binary(std::get<binary::type>(op), phi, psi);
+          return binary<Syntax>(random_binary_operator(), phi, psi);
         }
       }
     }
   }
 
-  formula random_boolean_formula(
+  formula<propositional> random_boolean_formula(
       std::mt19937& gen, alphabet& sigma, int n,
       std::vector<std::string> const& symbols) {
-    return rand_formula_gen{gen, sigma, logic_t::boolean, symbols}
+    return rand_formula_gen<propositional>{gen, sigma, symbols}
       .random_formula(n);
   }
 
-  formula random_ltl_formula(
+  formula<LTL> random_ltl_formula(
       std::mt19937& gen, alphabet& sigma, int n,
       std::vector<std::string> const& symbols) {
-    return rand_formula_gen{gen, sigma, logic_t::ltl, symbols}
+    return rand_formula_gen<LTL>{gen, sigma, symbols}
       .random_formula(n);
   }
 
-  formula random_ltlp_formula(
+  formula<LTLP> random_ltlp_formula(
       std::mt19937& gen, alphabet& sigma, int n,
       std::vector<std::string> const& symbols) {
-    return rand_formula_gen{gen, sigma, logic_t::ltlp, symbols}
+    return rand_formula_gen<LTLP>{gen, sigma, symbols}
       .random_formula(n);
   }
 

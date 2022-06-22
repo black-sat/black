@@ -177,7 +177,7 @@ set (
   src/solver/encoding.cpp
   src/solver/solver.cpp
   src/solver/core.cpp
-  # src/debug/random_formula.cpp
+  src/debug/random_formula.cpp
 )
 
 if(Z3_FOUND)
@@ -206,31 +206,36 @@ endif()
 
 set (
   LIB_HEADERS
-  # include/black/logic/parser.hpp
-  # include/black/logic/formula.hpp
-  # include/black/logic/lex.hpp
-  # include/black/logic/cnf.hpp
-  # include/black/logic/alphabet.hpp
-  # include/black/logic/past_remover.hpp
-  # include/black/internal/formula/match.hpp
-  # include/black/internal/formula/base.hpp
-  # include/black/internal/formula/impl.hpp
-  # include/black/internal/formula/alphabet.hpp
-  # include/black/internal/debug/random_formula.hpp
-  # include/black/solver/solver.hpp
-  # include/black/support/identifier.hpp
-  # include/black/support/meta.hpp
-  # include/black/support/license.hpp
-  # include/black/support/assert.hpp
-  # include/black/support/common.hpp
-  # include/black/support/range.hpp
-  # include/black/support/tribool.hpp
-  # include/black/sat/solver.hpp
-  # include/black/sat/backends/cmsat.hpp
-  # include/black/sat/backends/minisat.hpp
-  # include/black/sat/backends/z3.hpp
-  # include/black/sat/backends/mathsat.hpp
-  # src/include/black/solver/encoding.hpp
+  include/black/internal/debug/random_formula.hpp
+  include/black/internal/logic/core.hpp
+  include/black/internal/logic/declare_fragment.hpp
+  include/black/internal/logic/fragments.hpp
+  include/black/internal/logic/generation.hpp
+  include/black/internal/logic/hierarchy.hpp
+  include/black/internal/logic/interface-fwd.hpp
+  include/black/internal/logic/interface.hpp
+  include/black/logic/cnf.hpp
+  include/black/logic/lex.hpp
+  include/black/logic/logic.hpp
+  include/black/logic/parser.hpp
+  include/black/logic/past_remover.hpp
+  include/black/logic/prettyprint.hpp
+  include/black/sat/backends/cmsat.hpp
+  include/black/sat/backends/cvc5.hpp
+  include/black/sat/backends/mathsat.hpp
+  include/black/sat/backends/minisat.hpp
+  include/black/sat/backends/z3.hpp
+  include/black/sat/dimacs.hpp
+  include/black/sat/solver.hpp
+  include/black/solver/core.hpp
+  include/black/solver/solver.hpp
+  include/black/support/assert.hpp
+  include/black/support/common.hpp
+  include/black/support/identifier.hpp
+  include/black/support/license.hpp
+  include/black/support/range.hpp
+  include/black/support/to_string.hpp
+  include/black/support/tribool.hpp
 )
 
 #
