@@ -177,28 +177,3 @@ cat <<END | should_fail ./black check -t - -f 'p & !p'
     "muc": "p & {0}"
 }
 END
-
-cat /dev/null | should_fail ./black dimacs -
-
-if ./black --sat-backends | grep mathsat; then
-  ./black dimacs -B mathsat ../tests/test-dimacs-sat.cnf | grep -w SATISFIABLE 
-fi
-
-cat <<END | should_fail ./black dimacs -
-p cnf
-END
-
-cat <<END | should_fail ./black dimacs -
-c missing header
-1 2 3 0
-END
-
-cat <<END | should_fail ./black dimacs -
-p cnf 1 3
-1 2 3 
-END
-
-cat <<END | should_fail ./black dimacs -
-p cnf 1 3
-1 2 a 0
-END

@@ -189,7 +189,7 @@ if(CVC5_FOUND)
 endif()
 
 if(MathSAT_FOUND)
-  # set(LIB_SRC ${LIB_SRC} src/sat/backends/mathsat.cpp)
+  set(LIB_SRC ${LIB_SRC} src/sat/backends/mathsat.cpp)
 endif()
 
 if(MiniSAT_FOUND)
