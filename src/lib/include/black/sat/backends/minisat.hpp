@@ -25,7 +25,7 @@
 #include <black/sat/solver.hpp>
 #include <black/sat/dimacs.hpp>
 
-namespace black::sat::backends 
+namespace black_internal::minisat
 {
   class BLACK_EXPORT minisat : public ::black::sat::dimacs::solver
   {
@@ -47,4 +47,8 @@ namespace black::sat::backends
     struct _minisat_t;
     std::unique_ptr<_minisat_t> _data;
   };
+}
+
+namespace black::sat::backends {
+  using black_internal::minisat::minisat;
 }

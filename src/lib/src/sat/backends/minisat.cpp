@@ -29,7 +29,7 @@
 
 BLACK_REGISTER_SAT_BACKEND(minisat, {})
 
-namespace black::sat::backends
+namespace black_internal::minisat
 {
 
   struct minisat::_minisat_t {

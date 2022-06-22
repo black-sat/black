@@ -193,11 +193,11 @@ if(MathSAT_FOUND)
 endif()
 
 if(MiniSAT_FOUND)
-  # set(LIB_SRC ${LIB_SRC} src/sat/backends/minisat.cpp)
-  # set_source_files_properties(
-  #   src/sat/backends/minisat.cpp 
-  #   PROPERTIES COMPILE_FLAGS -fpermissive
-  # )
+  set(LIB_SRC ${LIB_SRC} src/sat/backends/minisat.cpp)
+  set_source_files_properties(
+    src/sat/backends/minisat.cpp 
+    PROPERTIES COMPILE_FLAGS -fpermissive
+  )
 endif()
 
 if(CryptoMiniSAT_FOUND)
