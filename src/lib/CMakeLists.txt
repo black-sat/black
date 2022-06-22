@@ -201,7 +201,7 @@ if(MiniSAT_FOUND)
 endif()
 
 if(CryptoMiniSAT_FOUND)
-  # set(LIB_SRC ${LIB_SRC} src/sat/backends/cmsat.cpp)
+  set(LIB_SRC ${LIB_SRC} src/sat/backends/cmsat.cpp)
 endif()
 
 set (

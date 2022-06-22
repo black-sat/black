@@ -26,6 +26,8 @@
 
 #include <tsl/hopscotch_set.h>
 
+#include <iostream>
+
 namespace black_internal::cnf
 { 
   using namespace black::logic::fragments::propositional;
@@ -33,88 +35,88 @@ namespace black_internal::cnf
   formula remove_booleans(formula f);
 
   static
-  formula remove_booleans(negation n, auto op) 
+  formula remove_booleans(negation, formula op) 
   {
     // !true -> false, !false -> true
-    if(auto b = op.template to<boolean>(); b)
-      return n.sigma()->boolean(!b->value()); 
+    if(auto b = op.to<boolean>(); b)
+      return op.sigma()->boolean(!b->value()); 
     
     // !!p -> p
-    if(auto nop = op.template to<negation>(); nop) 
-      return remove_booleans(nop->argument());
+    if(auto nop = op.to<negation>(); nop) 
+      return nop->argument();
 
-    return !remove_booleans(op);
+    return !op;
   }
 
   static
-  formula remove_booleans(conjunction c, auto l, auto r) {
-    alphabet &sigma = *c.sigma();
-    std::optional<boolean> bl = l.template to<boolean>(); 
-    std::optional<boolean> br = r.template to<boolean>();
+  formula remove_booleans(conjunction, formula l, formula r) {
+    alphabet &sigma = *l.sigma();
+    std::optional<boolean> bl = l.to<boolean>(); 
+    std::optional<boolean> br = r.to<boolean>();
 
     if(!bl && !br)
-      return c;
+      return l && r;
 
     if(bl && !br) {
-      return bl->value() ? remove_booleans(r) : sigma.bottom();
+      return bl->value() ? r : sigma.bottom();
     }
     
     if(!bl && br)
-      return br->value() ? remove_booleans(l) : sigma.bottom();
+      return br->value() ? l : sigma.bottom();
 
     return sigma.boolean(bl->value() && br->value());
   }
 
   static
-  formula remove_booleans(disjunction d, auto l, auto r) {
-    alphabet &sigma = *d.sigma();
-    std::optional<boolean> bl = l.template to<boolean>();
-    std::optional<boolean> br = r.template to<boolean>();
+  formula remove_booleans(disjunction, formula l, formula r) {
+    alphabet &sigma = *l.sigma();
+    std::optional<boolean> bl = l.to<boolean>();
+    std::optional<boolean> br = r.to<boolean>();
 
     if(!bl && !br)
-      return d;
+      return l || r;
 
     if(bl && !br)
-      return bl->value() ? sigma.top() : remove_booleans(r);
+      return bl->value() ? sigma.top() : r;
     
     if(!bl && br)
-      return br->value() ? sigma.top() : remove_booleans(l);
+      return br->value() ? sigma.top() : l;
       
     return sigma.boolean(bl->value() || br->value());
   }
 
   static
-  formula remove_booleans(implication t, auto l, auto r) {
-    alphabet &sigma = *t.sigma();
-    std::optional<boolean> bl = l.template to<boolean>();
-    std::optional<boolean> br = r.template to<boolean>();
+  formula remove_booleans(implication, formula l, formula r) {
+    alphabet &sigma = *l.sigma();
+    std::optional<boolean> bl = l.to<boolean>();
+    std::optional<boolean> br = r.to<boolean>();
 
     if(!bl && !br)
-      return t;
+      return implies(l, r);
 
     if(bl && !br)
       return bl->value() ? r : sigma.top();
     
     if(!bl && br)
-      return br->value() ? formula{sigma.top()} : remove_booleans(!l);
+      return br->value() ? formula{sigma.top()} : !l;
 
     return sigma.boolean(!bl->value() || br->value());
   }
 
   static
-  formula remove_booleans(iff f, auto l, auto r) {
-    alphabet &sigma = *f.sigma();
-    std::optional<boolean> bl = l.template to<boolean>();
-    std::optional<boolean> br = r.template to<boolean>();
+  formula remove_booleans(iff, formula l, formula r) {
+    alphabet &sigma = *l.sigma();
+    std::optional<boolean> bl = l.to<boolean>();
+    std::optional<boolean> br = r.to<boolean>();
 
     if(!bl && !br)
-      return f;
+      return iff(l, r);
 
     if(bl && !br)
-      return bl->value() ? remove_booleans(r) : remove_booleans(!r);
+      return bl->value() ? r : !r;
     
     if(!bl && br)
-      return br->value() ? remove_booleans(l) : remove_booleans(!l);
+      return br->value() ? l : !l;
 
     return sigma.boolean(bl->value() == br->value());
   }
@@ -123,8 +125,8 @@ namespace black_internal::cnf
     return f.match( // LCOV_EXCL_LINE
       [](boolean b)     -> formula { return b; },
       [](proposition p) -> formula { return p; },
-      [](auto ...args) -> formula {
-        return remove_booleans(args...);
+      [](auto op, auto ...args) -> formula {
+        return remove_booleans(op, remove_booleans(args)...);
       }
     );
   }
@@ -147,6 +149,8 @@ namespace black_internal::cnf
     tsl::hopscotch_set<formula> memo;
     
     formula simple = remove_booleans(f);
+    std::cerr << "f: " << to_string(f) << "\n"
+              << "simple: " << to_string(simple) << "\n";
     black_assert(
       simple.is<boolean>() || 
       !has_any_element_of(simple, syntax_element::boolean)

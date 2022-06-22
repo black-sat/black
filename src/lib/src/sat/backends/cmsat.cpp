@@ -30,7 +30,7 @@
 
 BLACK_REGISTER_SAT_BACKEND(cmsat, {})
 
-namespace black::sat::backends
+namespace black_internal::cmsat
 {
   struct cmsat::_cmsat_t {
     std::unique_ptr<CMSat::SATSolver> solver;
