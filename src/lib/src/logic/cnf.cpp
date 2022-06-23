@@ -26,13 +26,9 @@
 
 #include <tsl/hopscotch_set.h>
 
-#include <iostream>
-
 namespace black_internal::cnf
 { 
   using namespace black::logic::fragments::propositional;
-
-  formula remove_booleans(formula f);
 
   static
   formula remove_booleans(negation, formula op) 
