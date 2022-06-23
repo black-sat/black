@@ -265,5 +265,4 @@ TEST_CASE("Pattern matching") {
     REQUIRE_CT(u, u, unary<LTL>);
     REQUIRE_CT(f, f, formula<LTL>);
   }
-  
 }

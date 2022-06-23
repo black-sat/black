@@ -141,13 +141,24 @@ namespace black_internal::logic
     return t.match(
       [&](constant<LTLPFO> c) {
         return c.value().match(
-          [](zero) { return "0"s; },
-          [](one) { return "1"s; },
+          [](zero z) { 
+            if(z.sigma()->default_sort().is<integer_sort>())
+              return "0"s; 
+            return "0.0"s;
+          },
+          [](one o) { 
+            if(o.sigma()->default_sort().is<integer_sort>())
+              return "1"s; 
+            return "1.0"s;
+          },
           [](integer, int64_t value) {
             return fmt::format("{}", value);
           },
           [](real, double value) {
-            return fmt::format("{}", value);
+            std::string s = fmt::format("{}", value);
+            if(s.find('.') == std::string::npos)
+              s += ".0";
+            return s;
           }
         );        
       },
@@ -263,6 +274,14 @@ namespace black_internal::logic
   
   std::string to_string(function f) {
     return to_string(f.name());
+  }
+
+  std::string to_string(sort s) {
+    return s.match(
+      [](integer_sort) { return "integers"; },
+      [](real_sort)    { return "reals"; },
+      [](otherwise)    -> const char *{ black_unreachable(); } // LCOV_EXCL_LINE
+    );
   }
 }
 

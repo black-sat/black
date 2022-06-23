@@ -57,7 +57,7 @@ namespace black_internal::lexer_details
   static
   std::string to_string(unary_term::type t) {
     return t.match(
-      [](unary_term::type::negative) { return "-";     },
+      [](unary_term::type::negative) { return "-";     }, // LCOV_EXCL_LINE
       [](unary_term::type::next)     { return "next";  },
       [](unary_term::type::wnext)    { return "wnext"; },
       [](unary_term::type::prev)     { return "prev";  },
@@ -68,10 +68,10 @@ namespace black_internal::lexer_details
   static
   std::string to_string(binary_term::type t) {
     return t.match(
-      [](binary_term::type::addition)       { return "-";     },
-      [](binary_term::type::subtraction)    { return "next";  },
-      [](binary_term::type::multiplication) { return "wnext"; },
-      [](binary_term::type::division)       { return "prev";  }
+      [](binary_term::type::addition)       { return "+"; },
+      [](binary_term::type::subtraction)    { return "-"; },
+      [](binary_term::type::multiplication) { return "*"; },
+      [](binary_term::type::division)       { return "/"; }
     );
   }
   
@@ -113,14 +113,14 @@ namespace black_internal::lexer_details
       case token::punctuation::comma:       return ",";
       case token::punctuation::dot:         return ".";
     }
-    black_unreachable();
+    black_unreachable(); // LCOV_EXCL_LINE
   }
 
   std::string to_string(token const &tok)
   {
     using namespace std::literals;
 
-    std::string stok = std::visit( overloaded {
+    std::string stok = std::visit( overloaded { // LCOV_EXCL_LINE
       [](std::monostate)       { return "<invalid>"s; },
       [](bool b)               { return b ? "True"s : "False"s; },
       [](int64_t c)            { return std::to_string(c); },
@@ -135,7 +135,7 @@ namespace black_internal::lexer_details
       [](token::punctuation p) { return to_string(p); }
     }, tok._data);
 
-    return "token(" + stok + ")";
+    return stok;
   }
 
   namespace {

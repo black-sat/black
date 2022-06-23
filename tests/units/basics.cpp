@@ -323,12 +323,12 @@ TEST_CASE("New API") {
     comparison ne0p = 0 != x;
     formula feq0p = 0 == x;
     formula fne0p = 0 != x;
-    comparison lt0f = x < 0.0;
-    comparison le0f = x <= 0.0;
-    comparison gt0f = x > 0.0;
-    comparison ge0f = x >= 0.0;
-    comparison eq0f = x == 0.0;
-    comparison ne0f = x != 0.0;
+    comparison lt0f = x < 1.0;
+    comparison le0f = x <= 1.0;
+    comparison gt0f = x > 1.0;
+    comparison ge0f = x >= 1.0;
+    comparison eq0f = x == 1.0;
+    comparison ne0f = x != 1.0;
     formula feq0f = x == 0.0;
     formula fne0f = x != 0.0;
     comparison lt0fp = 0.0 < x;
@@ -395,10 +395,10 @@ TEST_CASE("New API") {
     binary_term minus0p = 0 - x;
     binary_term mult0p = 0 * x;
     binary_term div0p = 0 / x;
-    binary_term plus0f = x + 0.0;
-    binary_term minus0f = x - 0.0;
-    binary_term mult0f = x * 0.0;
-    binary_term div0f = x / 0.0;
+    binary_term plus0f = x + 1.0;
+    binary_term minus0f = x - 1.0;
+    binary_term mult0f = x * 1.0;
+    binary_term div0f = x / 1.0;
     binary_term plus0fp = 0.0 + x;
     binary_term minus0fp = 0.0 - x;
     binary_term mult0fp = 0.0 * x;
@@ -490,6 +490,7 @@ TEST_CASE("New API") {
     auto qb = quantifier_block<FO>(quantifier<FO>::type::exists{}, v, f);
 
     REQUIRE(qb.matrix() == f);
+    REQUIRE(qb.matrix() == f); // testing caching
 
     quantifier<FO> q = qb;
 
@@ -547,9 +548,14 @@ TEST_CASE("New API") {
     proposition p = sigma.proposition("p");
     formula<LTLP> u1 = G(p);
     formula<LTLP> u2 = Y(sigma.proposition("p"));
+    formula<LTLP> u3 = G(Y(sigma.proposition("p")));
 
     REQUIRE(fragment_cast<LTL>(u1).has_value());
     REQUIRE(!fragment_cast<LTL>(u2).has_value());
+    REQUIRE(!fragment_cast<LTL>(u3).has_value());
+
+    REQUIRE(fragment_cast<LTL>(u1.node_type()));
+    REQUIRE(!fragment_cast<LTL>(u2.node_type()));
   }
 
   SECTION("has_any_element_of()")

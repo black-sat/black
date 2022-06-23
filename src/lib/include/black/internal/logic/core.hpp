@@ -867,7 +867,7 @@ namespace black_internal::logic {
         using namespace black_internal;
 
         size_t h = 0;
-        std::apply([&]<typename ...Ts>(Ts const& ...values) {
+        std::apply([&]<typename ...Ts>(Ts const& ...values) { // LCOV_EXCL_LINE
           ((h = hash_combine(h, std::hash<Ts>{}(values))), ...);
         }, data.values);
 
@@ -2046,7 +2046,7 @@ namespace black_internal::logic {
         return dispatch(
           *h.template to<Case>(), std::forward<Handlers>(handlers)...
         );
-      black_unreachable();
+      black_unreachable(); // LCOV_EXCL_LINE
     }
   };
 

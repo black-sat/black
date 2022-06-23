@@ -47,6 +47,7 @@ TEST_CASE("CNF Translation")
 
     REQUIRE(remove_booleans(!top) == bot);
     REQUIRE(remove_booleans(!!top) == top);
+    REQUIRE(remove_booleans(!!p) == p);
     
     REQUIRE(remove_booleans(top && p) == p);
     REQUIRE(remove_booleans(bot && p) == bot);

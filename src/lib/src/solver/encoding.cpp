@@ -112,7 +112,8 @@ namespace black_internal::encoder
     });
     
 
-    return axioms && big_or(*_sigma, range(0, k), [&](size_t l) {
+    return // LCOV_EXCL_LINE
+      axioms && big_or(*_sigma, range(0, k), [&](size_t l) { // LCOV_EXCL_LINE
       return loop_prop(l, k);
     });
   }
@@ -357,8 +358,8 @@ namespace black_internal::encoder
   // Duals for temporal operators used in to_nnf()
   static unary<LTLPFO>::type dual(unary<LTLPFO>::type t) {
     return t.match(
-      [&](unary<LTLPFO>::type::negation) {
-        return unary<LTLPFO>::type::negation{};
+      [&](unary<LTLPFO>::type::negation) { // LCOV_EXCL_LINE
+        return unary<LTLPFO>::type::negation{}; // LCOV_EXCL_LINE
       },
       [&](unary<LTLPFO>::type::tomorrow) {
         return unary<LTLPFO>::type::w_tomorrow{};
@@ -408,8 +409,8 @@ namespace black_internal::encoder
       [](binary<LTLPFO>::type::triggered) {
         return binary<LTLPFO>::type::since{};
       },
-      [](otherwise) -> binary<LTLPFO>::type {
-        black_unreachable();
+      [](otherwise) -> binary<LTLPFO>::type { // LCOV_EXCL_LINE
+        black_unreachable(); // LCOV_EXCL_LINE
       }
     );
   }

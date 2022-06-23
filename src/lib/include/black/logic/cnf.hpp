@@ -56,7 +56,8 @@ namespace black_internal::cnf
 
   };
 
-  // Removal of booleans. Internal use, exposed here for testing.
+  // Removal of booleans from a formula. Internal use, exposed here for testing.
+  BLACK_EXPORT
   logic::formula<logic::propositional> 
   remove_booleans(logic::formula<logic::propositional> f);
 

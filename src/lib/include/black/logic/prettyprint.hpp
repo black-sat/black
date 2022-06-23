@@ -43,6 +43,9 @@ namespace black_internal::logic
   
   BLACK_EXPORT
   std::string to_string(function t);
+  
+  BLACK_EXPORT
+  std::string to_string(sort s);
 
 }
 

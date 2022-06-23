@@ -405,7 +405,7 @@ namespace black_internal
     std::optional<term> lhs = parse_term_primary();
     if(!lhs) {
       if(peek())
-        return error("1, Expected term, found '" + to_string(*peek()) + "'");
+        return error("Expected term, found '" + to_string(*peek()) + "'");
       return error("Expected term, found end of input");
     }
     
@@ -435,7 +435,7 @@ namespace black_internal
     if(peek()->data<token::punctuation>() == token::punctuation::left_paren)
       return parse_term_parens();
 
-    return error("2, Expected term, found '" + to_string(*peek()) + "'");
+    return error("Expected term, found '" + to_string(*peek()) + "'");
   }
 
   static std::optional<int> func_precedence(token const&tok)
