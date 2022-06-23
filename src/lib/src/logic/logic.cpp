@@ -123,10 +123,17 @@ namespace black_internal::logic {
   // Out-of-line definitions of constructors and assignments of `alphabet_base`,
   // declared in `generation.hpp`
   //
-  alphabet_base::alphabet_base() : _impl{std::make_unique<alphabet_impl>()} { }
+  alphabet_base::alphabet_base() : _impl{nullptr} { }
   alphabet_base::alphabet_base(alphabet_base &&) = default;
   alphabet_base &alphabet_base::operator=(alphabet_base &&) = default;
   alphabet_base::~alphabet_base() = default;
+
+  alphabet_base::alphabet_impl *alphabet_base::impl() {
+    if(!_impl)
+      _impl = std::make_unique<alphabet_impl>();
+      
+    return _impl.get();
+  }
 
   //
   // out-of-line definitions of `alphabet_base` member functions, which will be
@@ -137,7 +144,7 @@ namespace black_internal::logic {
     storage_node<storage_type::Storage> * \
     alphabet_base::unique_##Storage(storage_node<storage_type::Storage> node)\
     { \
-      return _impl->unique_##Storage(std::move(node)); \
+      return impl()->unique_##Storage(std::move(node)); \
     }
 
   #include <black/internal/logic/hierarchy.hpp>

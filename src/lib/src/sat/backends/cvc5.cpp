@@ -46,7 +46,7 @@ namespace black_internal::cvc5
     bool is_relation;
 
     friend 
-    bool operator==(cvc5_decl_key const&, cvc5_decl_key const&) = default;
+    bool operator==(cvc5_decl_key const&, cvc5_decl_key const&) = default; // LCOV_EXCL_LINE
   };
 
   } namespace std {
@@ -137,7 +137,7 @@ namespace black_internal::cvc5
     cvc::Term res = _data->solver.getValue(term);
 
     if(res.isNull())
-      return tribool::undef;
+      return tribool::undef; // LCOV_EXCL_LINE
 
     return res.getBooleanValue();
   }
@@ -154,9 +154,7 @@ namespace black_internal::cvc5
       [&](real_sort) {
         return solver.getRealSort();
       },
-      [](otherwise) -> cvc::Sort {
-        black_unreachable();
-      }
+      [](otherwise) -> cvc::Sort { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 
@@ -189,7 +187,7 @@ namespace black_internal::cvc5
           [&](equal) { 
             return solver.mkTerm(cvc::EQUAL, terms);
           },
-          [&](not_equal) { 
+          [&](not_equal) { // LCOV_EXCL_LINE
             return solver.mkTerm(cvc::NOT,
               {solver.mkTerm(cvc::EQUAL, terms)}
             );

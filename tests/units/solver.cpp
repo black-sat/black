@@ -34,7 +34,11 @@ using namespace black;
 
 TEST_CASE("Solver")
 {
-  alphabet sigma;
+  alphabet sigma; // testing move constructor and assignment
+  alphabet sigma_{std::move(sigma)};
+
+  sigma = std::move(sigma_);
+
   sigma.set_default_sort(sigma.integer_sort());
 
   SECTION("Propositional formulas") {

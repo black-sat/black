@@ -447,7 +447,7 @@ namespace black_internal::encoder
         return stepped(arg, k - 1, scope);
       },
       [&](negative<LTLPFO>, auto arg) {
-        return stepped(arg, k, scope);
+        return negative<FO>(stepped(arg, k, scope));
       },
       [&](binary_term<LTLPFO> b, auto left, auto right) {
         return binary_term<FO>(

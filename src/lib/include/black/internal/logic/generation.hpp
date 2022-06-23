@@ -718,8 +718,11 @@ namespace black_internal::logic
 
     #include <black/internal/logic/hierarchy.hpp>
 
-    // pimpl pointer to `alphabet_impl`, defined in `logic.cpp`.
     struct alphabet_impl;
+    
+    alphabet_impl *impl();
+
+    // pimpl pointer to `alphabet_impl`, defined in `logic.cpp`.
     std::unique_ptr<alphabet_impl> _impl;
   };  
 
