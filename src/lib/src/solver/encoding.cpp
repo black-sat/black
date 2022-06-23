@@ -29,6 +29,8 @@
 
 #include <string_view>
 
+#include <iostream>
+
 using namespace std::literals;
 
 namespace black_internal::encoder
@@ -213,15 +215,18 @@ namespace black_internal::encoder
     return _sigma->proposition(std::tuple{"_end_of_trace_prop"sv, i});
   }
 
-  formula<FO> encoder::end_of_trace_semantics(formula<FO> f, size_t k) {
+  formula<FO> encoder::end_of_trace_semantics(
+    formula<LTLPFO> f, formula<FO> stepped_f, size_t k
+  ) {
     black_assert(!(is_strong(f) && is_weak(f)));
 
-    if(is_weak(f))
-      return !end_of_trace_prop(k) || f;
+    if(is_weak(f)) {
+      return !end_of_trace_prop(k) || stepped_f;
+    }
     if(is_strong(f))
-      return end_of_trace_prop(k) && f;
+      return end_of_trace_prop(k) && stepped_f;
 
-    return f;
+    return stepped_f;
   }
 
   std::optional<formula<FO>>
@@ -255,7 +260,7 @@ namespace black_internal::encoder
           terms.push_back(stepped(t, k, scope));
 
         relation stepped_rel = stepped(a.rel(), k);
-        return end_of_trace_semantics(atom(stepped_rel, terms), k);
+        return end_of_trace_semantics(a, atom(stepped_rel, terms), k);
       }, // LCOV_EXCL_LINE
       [&](comparison<LTLPFO> c, auto left, auto right) -> formula<FO> {
         if(auto s = start_of_trace_semantics(c, k); s)
@@ -265,7 +270,7 @@ namespace black_internal::encoder
         term<FO> stepright = stepped(right, k, scope);
 
         return end_of_trace_semantics(
-          comparison<FO>(c.node_type(), stepleft, stepright), k
+          c, comparison<FO>(c.node_type(), stepleft, stepright), k
         );
       },
       [&](quantifier<LTLPFO> q) {

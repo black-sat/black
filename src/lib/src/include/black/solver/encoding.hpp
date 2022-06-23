@@ -121,7 +121,9 @@ namespace black_internal::encoder {
     bool is_strong(formula<LTLPFO> a);
     bool is_weak(formula<LTLPFO> a);
     formula<FO> end_of_trace_prop(size_t i);
-    formula<FO> end_of_trace_semantics(formula<FO> f, size_t k);
+    formula<FO> end_of_trace_semantics(
+      formula<LTLPFO> f, formula<FO> s, size_t k
+    );
     
     std::optional<formula<FO>>
     start_of_trace_semantics(formula<LTLPFO> f, size_t k);

@@ -235,16 +235,16 @@ namespace black_internal::logic {
     term_equality_wrapper(bool eq, base_t b) : base_t{b}, _eq{eq} { }
 
     friend bool operator&&(bool b, term_equality_wrapper const& w) {
-      return b && bool(w);
+      return b && bool(w); // LCOV_EXCL_LINE
     }
     friend bool operator&&(term_equality_wrapper const& w, bool b) {
-      return bool(w) && b;
+      return bool(w) && b; // LCOV_EXCL_LINE
     }
     friend bool operator||(bool b, term_equality_wrapper const& w) {
-      return b || bool(w);
+      return b || bool(w); // LCOV_EXCL_LINE
     }
     friend bool operator||(term_equality_wrapper const& w, bool b) {
-      return bool(w) || b;
+      return bool(w) || b; // LCOV_EXCL_LINE
     }
 
     bool operator!() const { return !_eq; }
@@ -880,7 +880,7 @@ namespace black_internal::logic {
 
     formula<Syntax> matrix() const {
       if(_last)
-        return _last->matrix();
+        return _last->matrix(); // LCOV_EXCL_LINE
       _last = innermost_quantifier<Syntax>(*this);
       return _last->matrix();
     }

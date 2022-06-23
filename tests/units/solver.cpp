@@ -100,7 +100,7 @@ TEST_CASE("Solver")
 
           std::vector<formula> tests = {
             G(x > 0), F(x == 1), F(-x == -x), !rel(prev(x)), rel(wprev(x)),
-            next(x) == x, wnext(x) == x, X(prev(x) == x), X(wprev(x) == x)
+            rel(next(x)), rel(wnext(x)), X(prev(x) == x), X(wprev(x) == x)
           };
 
           for(auto f : tests) {
