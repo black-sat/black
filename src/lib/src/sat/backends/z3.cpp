@@ -242,9 +242,7 @@ namespace black_internal::z3
       [&](real_sort) {
         return Z3_mk_real_sort(context);
       },
-      [](otherwise) -> Z3_sort {
-        black_unreachable(); // TODO: other sorts
-      }
+      [](otherwise) -> Z3_sort { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 

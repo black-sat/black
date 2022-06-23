@@ -61,7 +61,7 @@ task:
     - ctest -j2 -R black --output-on-failure
 
 task:
-  name: FreeBSD 13 (Clang 11)
+  name: FreeBSD 13.1 (Clang 13)
   freebsd_instance:
     image_family: freebsd-13-1
   download_dependencies_script:

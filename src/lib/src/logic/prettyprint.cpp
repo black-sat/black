@@ -114,7 +114,7 @@ namespace black_internal::logic
     size_t i = 0;
     if(s[0] == '}' || s[0] == '\\') {
       s.insert(0, 1, '\\');
-      i = 1;
+      i = 2;
     }
 
     while(i < s.size()) {
@@ -163,7 +163,7 @@ namespace black_internal::logic
         result += ")";
 
         return result;
-      },
+      }, // LCOV_EXCL_LINE
       [&](negative<LTLPFO>, auto arg) {
         return fmt::format("-({})", to_string(arg));
       },
@@ -235,7 +235,10 @@ namespace black_internal::logic
       },
       [](negation<LTLPFO> n, auto arg) {
         bool needs_parens = does_need_parens(n, arg);
-        return fmt::format("!{}", parens_if_needed(arg, needs_parens));
+        return fmt::format("{}{}", 
+          to_string(unary<LTLPFO>::type::negation{}), 
+          parens_if_needed(arg, needs_parens)
+        );
       },
       [](unary<LTLPFO> u, auto arg) {
         bool needs_parens = does_need_parens(u, arg);

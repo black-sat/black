@@ -141,14 +141,40 @@ namespace black_internal::logic {
   template<is_term T>
   T wrap_term_op_arg(alphabet *, T t) { return t; }
 
+  using wrapped_int = make_fragment_t< 
+    syntax_element::constant,
+    syntax_element::zero,
+    syntax_element::one,
+    syntax_element::integer
+  >;
+  
+  using wrapped_real = make_fragment_t< 
+    syntax_element::constant,
+    syntax_element::zero,
+    syntax_element::one,
+    syntax_element::real
+  >;
+
   template<std::integral T>
-  auto wrap_term_op_arg(alphabet *sigma, T t) { 
-    return constant{sigma->integer(int64_t{t})};
+  constant<wrapped_int> wrap_term_op_arg(alphabet *sigma, T t) {
+    int64_t value = int64_t{t};
+    if(value == 0)
+      return constant{sigma->zero()};
+    if(value == 1)
+      return constant{sigma->one()};
+
+    return constant{sigma->integer(value)};
   }
 
   template<std::floating_point T>
-  auto wrap_term_op_arg(alphabet *sigma, T t) { 
-    return constant{sigma->real(double{t})};
+  constant<wrapped_real> wrap_term_op_arg(alphabet *sigma, T t) { 
+    double value = double{t};
+    if(value == 0.0)
+      return constant{sigma->zero()};
+    if(value == 1.0)
+      return constant{sigma->one()};
+
+    return constant{sigma->real(value)};
   }
 
   //

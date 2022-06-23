@@ -32,99 +32,150 @@
 
 using namespace black;
 
-TEST_CASE("Testing solver")
+TEST_CASE("Solver")
 {
   alphabet sigma;
-  black::solver slv;
+  sigma.set_default_sort(sigma.integer_sort());
 
-  SECTION("Basic solver usage") {
-    REQUIRE(slv.sat_backend() == BLACK_DEFAULT_BACKEND);
-    REQUIRE(slv.solve() == true);
+  SECTION("Propositional formulas") {
 
-    auto p = sigma.proposition("p");
-    
-    formula f1 = !p && iff(!X(p), F(G(p))) && implies(p, !p);
-    formula f2 = p && !p;
+    std::vector<std::string> backends = {
+      "z3", "mathsat", "cmsat", "minisat", "cvc5"
+    };
 
-    slv.set_formula(f1);
-    
-    auto model = slv.model();
-    REQUIRE(!model.has_value());
+    for(auto backend : backends) {
+      DYNAMIC_SECTION("Backend: " << backend) {
+        if(black::sat::solver::backend_exists(backend)) {
+          black::solver slv;
+          REQUIRE(slv.sat_backend() == BLACK_DEFAULT_BACKEND);
+          REQUIRE(slv.solve() == true);
+          
+          slv.set_sat_backend(backend);
 
-    REQUIRE(slv.solve());
+          auto p = sigma.proposition("p");
+          auto q = sigma.proposition("q");
 
-    slv.set_formula(f2);
-    REQUIRE(!slv.model().has_value());
-  }
-}
+          std::vector<formula> tests = {
+            !p && iff(!X(p), F(G(p))) && implies(p, q), p || !p,
+            iff(p, q), iff(sigma.top(), p), 
+            iff(p, sigma.top()), iff(sigma.top(), sigma.top()),
+            implies(sigma.top(), p), 
+            implies(sigma.top(), sigma.top())
+          };
 
-TEST_CASE("Quantified formulas") {
+          for(auto f : tests) {
+            DYNAMIC_SECTION("Formula: " << to_string(f)) {
+              slv.set_formula(f);
+              REQUIRE(!slv.model().has_value());
 
-  std::vector<std::string> backends = { "z3", "cvc5" };
-
-  for(auto backend : backends) {
-    DYNAMIC_SECTION("Backend: " << backend) {
-      if(black::sat::solver::backend_exists(backend)) {
-        alphabet sigma;
-        sigma.set_default_sort(sigma.integer_sort());
-
-        variable x = sigma.variable("x");
-        variable y = sigma.variable("y");
-        variable z = sigma.variable("z");
-        proposition p = sigma.proposition("p");
-        
-        std::vector<formula> tests = {
-          forall(x, x == x),
-          exists_block({x,y}, next(z) + 2 != y),
-          exists_block({x,y}, sigma.top()),
-          exists_block({x,y}, !p),
-          !forall_block({x,y}, x != y),
-          exists(x, X(x == y)),
-          exists(x, wX(x == y)),
-          exists(x, X(Y(x == 0))),
-          exists(x, X(Z(x == 0)))
-        };
-
-        for(formula f : tests) {
-          DYNAMIC_SECTION("Test formula: " << to_string(f)) {
-            solver slv;
-            slv.set_sat_backend(backend);
-            slv.set_formula(f);
-
-            REQUIRE(slv.solve());
+              REQUIRE(slv.solve());
+            }
           }
         }
       }
     }
   }
-}
 
-TEST_CASE("Solver syntax errors") {
+  SECTION("First-order formulas") {
 
-  alphabet sigma;
-  std::vector<std::string> tests = {
-    "f(x) & f(x,y)", "f(x) = 2 & f(x)", "f(x) & f(x) = 2",
-    "f(x) = 2 & f(x,y) = 2", "f(x) + 2 = 2 & f(x)", "f(x) & f(x) + 2 = 2",
-    "next(x + y) = 2", "exists x . next(x) = x", 
-    "wnext(x + y) = 2", "exists x . wnext(x) = x",
-    "exists x . (wnext(x) = x || x = 0)", "exists x . F(x = 0)"
-  };
+    std::vector<std::string> backends = {
+      "z3", "mathsat", "cvc5"
+    };
 
-  for(std::string s : tests) {
-    DYNAMIC_SECTION("Test formula: " << s) 
-    {
-      auto result = parse_formula(sigma, s);
+    for(auto backend : backends) {
+      DYNAMIC_SECTION("Backend: " << backend) {
+        if(black::sat::solver::backend_exists(backend)) {
+          black::solver slv;
+          REQUIRE(slv.sat_backend() == BLACK_DEFAULT_BACKEND);
+          REQUIRE(slv.solve() == true);
+          
+          slv.set_sat_backend(backend);
 
-      REQUIRE(result.has_value());
+          auto x = sigma.variable("x");
 
-      bool error = false;
-      bool ok = solver::check_syntax(*result, [&](std::string){ 
-        error = true;
-      });
+          std::vector<formula> tests = {
+            G(x > 0), F(x == 1), F(-x == -x)
+          };
 
-      REQUIRE(!ok);
-      REQUIRE(error);
+          for(auto f : tests) {
+            DYNAMIC_SECTION("Formula: " << to_string(f)) {
+              slv.set_formula(f);
+              REQUIRE(!slv.model().has_value());
+
+              REQUIRE(slv.solve());
+            }
+          }
+        }
+      }
     }
+  }
+
+  SECTION("Quantified formulas") {
+
+    std::vector<std::string> backends = { "z3", "cvc5" };
+
+    for(auto backend : backends) {
+      DYNAMIC_SECTION("Backend: " << backend) {
+        if(black::sat::solver::backend_exists(backend)) {
+          variable x = sigma.variable("x");
+          variable y = sigma.variable("y");
+          variable z = sigma.variable("z");
+          proposition p = sigma.proposition("p");
+          
+          std::vector<formula> tests = {
+            forall(x, x == x),
+            X(forall(x, x == x)),
+            exists_block({x,y}, next(z) + 2 != y),
+            exists_block({x,y}, sigma.top()),
+            exists_block({x,y}, !p),
+            !forall_block({x,y}, x != y),
+            exists(x, X(x == y)),
+            exists(x, wX(x == y)),
+            exists(x, X(Y(x == 0))),
+            exists(x, X(Z(x == 0)))
+          };
+
+          for(formula f : tests) {
+            DYNAMIC_SECTION("Test formula: " << to_string(f)) {
+              solver slv;
+              slv.set_sat_backend(backend);
+              slv.set_formula(f);
+
+              REQUIRE(slv.solve());
+            }
+          }
+        }
+      }
+    }
+  }
+
+  SECTION("Solver syntax errors") {
+
+    std::vector<std::string> tests = {
+      "f(x) & f(x,y)", "f(x) = 2 & f(x)", "f(x) & f(x) = 2",
+      "f(x) = 2 & f(x,y) = 2", "f(x) + 2 = 2 & f(x)", "f(x) & f(x) + 2 = 2",
+      "next(x + y) = 2", "exists x . next(x) = x", 
+      "wnext(x + y) = 2", "exists x . wnext(x) = x",
+      "exists x . (wnext(x) = x || x = 0)", "exists x . F(x = 0)"
+    };
+
+    for(std::string s : tests) {
+      DYNAMIC_SECTION("Test formula: " << s) 
+      {
+        auto result = parse_formula(sigma, s);
+
+        REQUIRE(result.has_value());
+
+        bool error = false;
+        bool ok = solver::check_syntax(*result, [&](std::string){ 
+          error = true;
+        });
+
+        REQUIRE(!ok);
+        REQUIRE(error);
+      }
+    }
+
   }
 
 }

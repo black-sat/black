@@ -484,10 +484,25 @@ namespace black_internal
     token tok = *peek();
     consume();
 
-    if(tok.token_type() == token::type::integer)
-      return constant(_alphabet.integer(*tok.data<int64_t>()));
-    else
-      return constant(_alphabet.real(*tok.data<double>()));
+    if(tok.token_type() == token::type::integer) {
+      int64_t value = *tok.data<int64_t>();
+      if(value == 0)
+        return constant(_alphabet.zero());
+      else if(value == 1)
+        return constant(_alphabet.one());
+      
+      return constant(_alphabet.integer(value));
+    }
+    
+    black_assert(tok.token_type() == token::type::real);
+
+    double value = *tok.data<double>();
+    if(value == 0.0)
+      return constant(_alphabet.zero());
+    else if(value == 1.0)
+      return constant(_alphabet.one());
+    
+    return constant(_alphabet.real(value));
   }
 
   std::optional<term> parser::_parser_t::parse_term_unary_minus() {

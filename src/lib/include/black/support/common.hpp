@@ -62,4 +62,8 @@ namespace black_internal
   }
 }
 
+namespace black {
+  using black_internal::overloaded;
+}
+
 #endif // BLACK_COMMON_H

@@ -69,9 +69,6 @@ namespace black_internal::dimacs
     // allocate `n' new variables for the solver
     virtual void new_vars(size_t n) = 0;
 
-    // returns the number of variables allocated for the solver
-    virtual size_t nvars() const = 0;
-
     // assert a new clause
     virtual void assert_clause(clause c) = 0;
 

@@ -102,7 +102,7 @@ namespace black::frontend
       [](comparison, term left, term right) -> uint8_t {
         if(has_next(left) || has_next(right))
           return (uint8_t)feature_t::nextvar | (uint8_t)feature_t::first_order;
-        return 0;
+        return (uint8_t)feature_t::first_order;
       },
       [](quantifier q) -> uint8_t { // LCOV_EXCL_LINE
         return (uint8_t)feature_t::first_order |

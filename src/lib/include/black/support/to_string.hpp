@@ -92,14 +92,15 @@ namespace black_internal {
       return black_internal::to_string(std::get<0>(t));
     }
 
+    // gcov false negatives
     template<typename T, typename ...Args>
-    std::string to_string(std::tuple<T, Args...> const & t) {
-      return std::apply([](auto v, auto ...vs) {
-        return 
-          black_internal::to_string(v) + 
-            ((", " + black_internal::to_string(vs)) + ...);
-      }, t);
-    }
+    std::string to_string(std::tuple<T, Args...> const & t) { // LCOV_EXCL_LINE
+      return std::apply([](auto v, auto ...vs) { // LCOV_EXCL_LINE
+        return // LCOV_EXCL_LINE
+          black_internal::to_string(v) + // LCOV_EXCL_LINE
+            ((", " + black_internal::to_string(vs)) + ...); // LCOV_EXCL_LINE
+      }, t); // LCOV_EXCL_LINE
+    } // LCOV_EXCL_LINE
   }
 
 }

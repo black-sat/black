@@ -88,7 +88,7 @@ namespace black_internal::mathsat
 
     return res == MSAT_SAT ? tribool{true} :
            res == MSAT_UNSAT ? tribool{false} :
-           tribool::undef;
+           tribool::undef; // LCOV_EXCL_LINE
   }
 
   tribool mathsat::is_sat_with(formula f) 
@@ -109,7 +109,7 @@ namespace black_internal::mathsat
     msat_pop_backtrack_point(_data->env);
     return res == MSAT_SAT ? tribool{true} :
            res == MSAT_UNSAT ? tribool{false} :
-           tribool::undef;
+           tribool::undef; // LCOV_EXCL_LINE
   }
 
   tribool mathsat::value(proposition a) const {
@@ -127,7 +127,7 @@ namespace black_internal::mathsat
     if(msat_term_is_false(_data->env, result))
       return false;
 
-    return tribool::undef;
+    return tribool::undef; // LCOV_EXCL_LINE 
   }
 
   void mathsat::clear() {
@@ -245,9 +245,7 @@ namespace black_internal::mathsat
       [&](real_sort) {
         return msat_get_rational_type(env);
       },
-      [](otherwise) -> msat_type {
-        black_unreachable();
-      }
+      [](otherwise) -> msat_type { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 
@@ -255,7 +253,7 @@ namespace black_internal::mathsat
     alphabet *sigma, std::string const&name, int arity, bool is_relation
   ) {
     if(auto it = functions.find(name); it != functions.end())
-      return it->second;
+      return it->second; // LCOV_EXCL_LINE
 
     msat_type type = to_mathsat(sigma->default_sort());
     msat_type bool_type = msat_get_bool_type(env);
@@ -264,7 +262,7 @@ namespace black_internal::mathsat
 
     msat_type functype = msat_get_function_type(
       env, types.data(), (size_t)arity, is_relation ? bool_type : type
-    );
+    ); // LCOV_EXCL_LINE
     msat_decl d = msat_declare_function(env, name.c_str(), functype);
 
     functions.insert({name, d});
@@ -274,7 +272,7 @@ namespace black_internal::mathsat
 
   msat_decl mathsat::_mathsat_t::to_mathsat(variable x) {
     if(auto it = variables.find(x); it != variables.end())
-      return it->second;
+      return it->second; // LCOV_EXCL_LINE
 
     msat_type t = to_mathsat(x.sigma()->default_sort());
 
@@ -328,7 +326,7 @@ namespace black_internal::mathsat
           (int)args.size(), false
         );
         return msat_make_uf(env, func, args.data());
-      },
+      }, // LCOV_EXCL_LINE
       [&](unary_term u, auto arg) {
         return u.match(
           [&](negative) {

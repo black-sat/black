@@ -56,10 +56,6 @@ namespace black_internal::minisat
     }
   }
 
-  size_t minisat::nvars() const {
-    return _data->nvars;
-  }
-
   void minisat::assert_clause(dimacs::clause cl) { 
     Minisat::vec<Minisat::Lit> lits;
     for(dimacs::literal lit : cl.literals) {

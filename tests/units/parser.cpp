@@ -71,7 +71,7 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
   proposition q = sigma.proposition("");
   variable x = sigma.variable("x\\");
   variable y = sigma.variable("Y");
-  variable z = sigma.variable("z");
+  variable z = sigma.variable("\\z");
 
   function g = sigma.function("g");
   relation r = sigma.relation("r");
@@ -83,20 +83,24 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
     p && implies(Y(S(p,q)), G(F(!p))),
     U(p, !(G(F(q)))),
     !(iff(p || q, !q && p)),
-    exists_block({x,y,z}, g(x + 2, y) + 2 >= (y * 1.5) && y == z),
+    exists_block({x,y,z}, g(x + 2, y) - 2 >= (y * 1.5) && y == z / 2),
     forall_block({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) && r(x,y),
-    (x + y) * z > 0, -x == y
+    (x + y) * z > 0, -x == y,
+    W(p, q), M(p, q), x < y, x <= y, 
+    x + constant{sigma.zero()} == x, x * constant{sigma.one()} == x,
+    next(prev(x)) == x, next(wprev(x)) == x
   };
 
   for(formula f : tests) {
     DYNAMIC_SECTION("Roundtrip for formula: " << to_string(f)) {
       auto result = parse_formula(sigma, to_string(f), [](auto error){
-        INFO(error);
+        INFO("parsing error: " << error);
       });
-
-      INFO(to_string(f));
-
+      
       REQUIRE(result.has_value());
+
+      INFO("parsed: " << to_string(*result));
+      
       CHECK(*result == f);
     }
   }

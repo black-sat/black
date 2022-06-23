@@ -210,22 +210,16 @@ namespace black::frontend {
   void relevant_props(formula f, std::unordered_set<proposition> &props) 
   {
     using namespace black;
-    f.match(
-      [&](boolean) {},
-      [&](atom) { black_unreachable(); }, // LCOV_EXCL_LINE
-      [&](quantifier) { black_unreachable(); }, // LCOV_EXCL_LINE
-      [&](comparison) { black_unreachable(); },
-      [&](proposition p) {
-        props.insert(p);
+
+    logic::for_each_child(f, overloaded {
+      [&](formula child) { 
+        child.match(
+          [&](proposition p) { props.insert(p); },
+          [&](otherwise) { relevant_props(child, props); }
+        );
       },
-      [&](unary, formula f1) {
-        relevant_props(f1, props);
-      },
-      [&](binary, formula f1, formula f2) {
-        relevant_props(f1, props);
-        relevant_props(f2, props);
-      }
-    );
+      [](otherwise) { }
+    });
   }
 
   static 

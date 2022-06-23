@@ -33,7 +33,6 @@ namespace black_internal::cmsat
     virtual ~cmsat() override;
 
     virtual void new_vars(size_t n) override;
-    virtual size_t nvars() const override;
     virtual void assert_clause(dimacs::clause f) override;
     virtual tribool is_sat() override;
     virtual tribool 

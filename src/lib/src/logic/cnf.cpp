@@ -155,7 +155,7 @@ namespace black_internal::cnf
     tsl::hopscotch_set<formula> memo;
     
     formula simple = remove_booleans(f);
-    black_assert(
+    black_assert( // LCOV_EXCL_LINE 
       simple.is<boolean>() || 
       !has_any_element_of(simple, syntax_element::boolean)
     ); // LCOV_EXCL_LINE
