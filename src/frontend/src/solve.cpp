@@ -110,7 +110,7 @@ namespace black::frontend {
       io::errorln(
         "{}: the `{}` backend does not support first-order formulas.",
         cli::command_name, backend
-      );
+      ); // LCOV_EXCL_LINE
       quit(status_code::failure);
     }
 
@@ -122,7 +122,7 @@ namespace black::frontend {
         "{}: the `{}` backend does not support "
         "quantified first-order formulas.",
         cli::command_name, backend
-      );
+      ); // LCOV_EXCL_LINE
       quit(status_code::failure);
     }
 
@@ -218,7 +218,7 @@ namespace black::frontend {
           [&](otherwise) { relevant_props(child, props); }
         );
       },
-      [](otherwise) { }
+      [](otherwise) { black_unreachable(); } // LCOV_EXCL_LINE
     });
   }
 

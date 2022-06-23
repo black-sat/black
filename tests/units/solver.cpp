@@ -61,7 +61,7 @@ TEST_CASE("Solver")
 
           std::vector<formula> tests = {
             !p && iff(!X(p), F(G(p))) && implies(p, q), p || !p,
-            iff(p, q), iff(sigma.top(), p), 
+            iff(p, q), iff(sigma.top(), p), !W(p, q),
             iff(p, sigma.top()), iff(sigma.top(), sigma.top()),
             implies(sigma.top(), p), 
             implies(sigma.top(), sigma.top())
@@ -96,9 +96,11 @@ TEST_CASE("Solver")
           slv.set_sat_backend(backend);
 
           auto x = sigma.variable("x");
+          auto rel = sigma.relation("r");
 
           std::vector<formula> tests = {
-            G(x > 0), F(x == 1), F(-x == -x)
+            G(x > 0), F(x == 1), F(-x == -x), !rel(prev(x)), rel(wprev(x)),
+            next(x) == x, wnext(x) == x, X(prev(x) == x), X(wprev(x) == x)
           };
 
           for(auto f : tests) {
@@ -125,6 +127,7 @@ TEST_CASE("Solver")
           variable y = sigma.variable("y");
           variable z = sigma.variable("z");
           proposition p = sigma.proposition("p");
+          function func = sigma.function("f");
           
           std::vector<formula> tests = {
             forall(x, x == x),
@@ -133,6 +136,7 @@ TEST_CASE("Solver")
             exists_block({x,y}, sigma.top()),
             exists_block({x,y}, !p),
             !forall_block({x,y}, x != y),
+            !exists(x, func(x) == x),
             exists(x, X(x == y)),
             exists(x, wX(x == y)),
             exists(x, X(Y(x == 0))),

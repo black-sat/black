@@ -486,10 +486,10 @@ namespace black_internal::encoder
       // Push the negation down to literals
       [&](negation<LTLPFO> n) {
         return n.argument().match(
-          [](boolean b)             { return !b; },
-          [](proposition p)         { return !p; },
-          [](atom<LTLPFO> a)        { return !a; },
-          [](comparison<LTLPFO> c)  { return !c; },
+          [&](boolean)             { return n; },
+          [&](proposition)         { return n; },
+          [&](atom<LTLPFO>)        { return n; },
+          [&](comparison<LTLPFO>)  { return n; },
           [&](quantifier<LTLPFO> q) {
             quantifier<LTLPFO>::type dual = quantifier<LTLPFO>::type::exists{};
             if(q.node_type() == quantifier<LTLPFO>::type::exists{})

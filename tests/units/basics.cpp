@@ -381,6 +381,11 @@ TEST_CASE("New API") {
     REQUIRE(feq0fp.is<comparison<FO>>());
     REQUIRE(fne0fp.is<comparison<FO>>());
 
+    REQUIRE((x == x && true) == true);
+    REQUIRE((true && x == x) == true);
+    REQUIRE((x == x || true) == true);
+    REQUIRE((true || x == x) == true);
+
 
     binary_term plus = x + c;
     binary_term minus = x - c;
@@ -487,7 +492,12 @@ TEST_CASE("New API") {
 
     static_assert(storage_kind<quantifier_block<FO>>);
 
-    auto qb = quantifier_block<FO>(quantifier<FO>::type::exists{}, v, f);
+    auto qb = quantifier_block<FO>(quantifier<FO>::type::forall{}, v, f);
+
+    REQUIRE(qb.matrix() == f);
+    REQUIRE(qb.matrix() == f); // testing caching
+    
+    qb = quantifier_block<FO>(quantifier<FO>::type::exists{}, v, f);
 
     REQUIRE(qb.matrix() == f);
     REQUIRE(qb.matrix() == f); // testing caching
