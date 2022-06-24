@@ -6,3 +6,4 @@ build:
   jobs:
     pre_build:
       - pip install furo
+      - pip install sphinxcontrib-bibtex

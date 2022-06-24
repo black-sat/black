@@ -8,26 +8,35 @@ BLACK
 =====================================
 **Bounded Lᴛʟ Satisfiability Checker**
 
+Welcome to **BLACK**'s website.
 
+BLACK is a tool for testing the satisfiability of formulas in Linear
+Temporal Logic (LTL) and related logics. 
 
+LTL is a very popular specification language in the fields of *formal
+verification* and *artificial intelligence*. In these fields, it is important to
+be able to understand whether a given specification is satisfiable,
+unsatisfiable, or vacuously true. BLACK helps with this task.
+
+BLACK consists of two components:
+
+1. ``libblack``, a C++ library with a well-defined API that can be linked by  
+any client application; and
+
+2. ``black``, a command-line tool that interfaces the library with the user.
+
+This website documents the usage of both.
+
+BLACK is open-source and released under the MIT license. For its source code,
+look at its `GitHub repository <https://github.com/black-sat/black>`_. 
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
+
+   cli
+   api
+   publications
 
 
-.. cpp:class:: formula;
-
-   .. cpp:function:: template<typename ...Handles> auto match(Handles ...);
-      
-      Matching function used to match over matchable matches.
-
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+:ref:`genindex`
