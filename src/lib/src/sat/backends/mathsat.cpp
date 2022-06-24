@@ -25,8 +25,7 @@
 
 #include <black/sat/backends/mathsat.hpp>
 
-#include <black/logic/alphabet.hpp>
-#include <black/logic/formula.hpp>
+#include <black/logic/logic.hpp>
 #include <black/logic/prettyprint.hpp>
 
 #include <mathsat.h>
@@ -37,7 +36,7 @@
 
 BLACK_REGISTER_SAT_BACKEND(mathsat, {black::sat::feature::smt})
 
-namespace black::sat::backends
+namespace black_internal::mathsat
 {
   struct mathsat::_mathsat_t {
     msat_env env;
@@ -89,7 +88,7 @@ namespace black::sat::backends
 
     return res == MSAT_SAT ? tribool{true} :
            res == MSAT_UNSAT ? tribool{false} :
-           tribool::undef;
+           tribool::undef; // LCOV_EXCL_LINE
   }
 
   tribool mathsat::is_sat_with(formula f) 
@@ -110,7 +109,7 @@ namespace black::sat::backends
     msat_pop_backtrack_point(_data->env);
     return res == MSAT_SAT ? tribool{true} :
            res == MSAT_UNSAT ? tribool{false} :
-           tribool::undef;
+           tribool::undef; // LCOV_EXCL_LINE
   }
 
   tribool mathsat::value(proposition a) const {
@@ -128,7 +127,7 @@ namespace black::sat::backends
     if(msat_term_is_false(_data->env, result))
       return false;
 
-    return tribool::undef;
+    return tribool::undef; // LCOV_EXCL_LINE 
   }
 
   void mathsat::clear() {
@@ -158,36 +157,43 @@ namespace black::sat::backends
         for(term t : a.terms())
           args.push_back(to_mathsat(t));
         
-        // we know how to encode known relations
-        if(auto k = a.rel().known_type(); k) {
-          black_assert(args.size() == 2);
-          switch(*k) {
-            case relation::equal:
-              return msat_make_eq(env, args[0], args[1]);
-            case relation::not_equal:
-              return msat_make_not(env, msat_make_eq(env, args[0], args[1]));
-            case relation::less_than:
-              return msat_make_and(env,
-                msat_make_leq(env, args[0], args[1]),
-                msat_make_not(env, msat_make_eq(env, args[0], args[1]))
-              );
-            case relation::less_than_equal: 
-              return msat_make_leq(env, args[0], args[1]);
-            case relation::greater_than:
-              return msat_make_not(env, msat_make_leq(env, args[0], args[1]));
-            case relation::greater_than_equal:
-              return msat_make_or(env,
-                msat_make_eq(env, args[0], args[1]),
-                msat_make_not(env, msat_make_leq(env, args[0], args[1]))
-              );
-          }
-        }
-
         msat_decl rel = 
           to_mathsat(a.sigma(), to_string(a.rel().name()), 
           (int)args.size(), true);
 
         return msat_make_term(env, rel, args.data());
+      },
+      [&](comparison c, auto left, auto right) {
+        return c.match(
+          [&](equal) {
+            return msat_make_eq(env, to_mathsat(left), to_mathsat(right));
+          },
+          [&](not_equal) {
+            return msat_make_not(env, 
+              msat_make_eq(env, to_mathsat(left), to_mathsat(right)));
+          },
+          [&](less_than) {
+            return msat_make_and(env,
+              msat_make_leq(env, to_mathsat(left), to_mathsat(right)),
+              msat_make_not(env, 
+                msat_make_eq(env, to_mathsat(left), to_mathsat(right)))
+            );
+          },
+          [&](less_than_equal) {
+            return msat_make_leq(env, to_mathsat(left), to_mathsat(right));
+          },
+          [&](greater_than) {
+            return msat_make_not(env, 
+              msat_make_leq(env, to_mathsat(left), to_mathsat(right)));
+          },
+          [&](greater_than_equal) {
+            return msat_make_or(env,
+              msat_make_eq(env, to_mathsat(left), to_mathsat(right)),
+              msat_make_not(env,
+                 msat_make_leq(env, to_mathsat(left), to_mathsat(right)))
+            );
+          }
+        );
       },
       // mathsat does not support quantifiers
       [](quantifier) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
@@ -199,9 +205,9 @@ namespace black::sat::backends
         return msat_make_constant(env, msat_prop);
       },
       [this](negation n) { // LCOV_EXCL_LINE
-        return msat_make_not(env, to_mathsat(n.operand()));
+        return msat_make_not(env, to_mathsat(n.argument()));
       },
-      [this](big_conjunction c) { // LCOV_EXCL_LINE
+      [this](conjunction c) { // LCOV_EXCL_LINE
         msat_term acc = msat_make_true(env);
 
         for(formula op : c.operands())
@@ -209,7 +215,7 @@ namespace black::sat::backends
 
         return acc;
       },
-      [this](big_disjunction c) { // LCOV_EXCL_LINE
+      [this](disjunction c) { // LCOV_EXCL_LINE
         msat_term acc = msat_make_false(env);
 
         for(formula op : c.operands())
@@ -227,35 +233,36 @@ namespace black::sat::backends
       [this](iff i) {
         return msat_make_iff(env, 
           to_mathsat(i.left()), to_mathsat(i.right()));
-      },
-      [](temporal) -> msat_term { // LCOV_EXCL_LINE
-        black_unreachable(); // LCOV_EXCL_LINE
       }
     );
   }
 
   msat_type mathsat::_mathsat_t::to_mathsat(sort s) {
-    if(s == sort::Int)
-      return msat_get_integer_type(env);
-    
-    return msat_get_rational_type(env);
+    return s.match(
+      [&](integer_sort) {
+        return msat_get_integer_type(env);
+      },
+      [&](real_sort) {
+        return msat_get_rational_type(env);
+      },
+      [](otherwise) -> msat_type { black_unreachable(); } // LCOV_EXCL_LINE
+    );
   }
 
   msat_decl mathsat::_mathsat_t::to_mathsat(
     alphabet *sigma, std::string const&name, int arity, bool is_relation
   ) {
     if(auto it = functions.find(name); it != functions.end())
-      return it->second;
+      return it->second; // LCOV_EXCL_LINE
 
-    black_assert(sigma->domain());
-    msat_type type = to_mathsat(*sigma->domain());
+    msat_type type = to_mathsat(sigma->default_sort());
     msat_type bool_type = msat_get_bool_type(env);
 
     std::vector<msat_type> types((size_t)arity, type);
 
     msat_type functype = msat_get_function_type(
       env, types.data(), (size_t)arity, is_relation ? bool_type : type
-    );
+    ); // LCOV_EXCL_LINE
     msat_decl d = msat_declare_function(env, name.c_str(), functype);
 
     functions.insert({name, d});
@@ -265,10 +272,9 @@ namespace black::sat::backends
 
   msat_decl mathsat::_mathsat_t::to_mathsat(variable x) {
     if(auto it = variables.find(x); it != variables.end())
-      return it->second;
+      return it->second; // LCOV_EXCL_LINE
 
-    black_assert(x.sigma()->domain());
-    msat_type t = to_mathsat(*x.sigma()->domain());
+    msat_type t = to_mathsat(x.sigma()->default_sort());
 
     msat_decl var = 
       msat_declare_function(env, to_string(x).c_str(), t);
@@ -289,63 +295,68 @@ namespace black::sat::backends
   
   msat_term mathsat::_mathsat_t::to_mathsat_inner(term t) {
     return t.match(
-      [&](constant c) { // LCOV_EXCL_LINE
-        if(std::holds_alternative<int64_t>(c.value()))
-          return
-            msat_make_number(env, 
-              std::to_string(std::get<int64_t>(c.value())).c_str());
-        else
-          return
-            msat_make_number(env,
-              std::to_string(std::get<double>(c.value())).c_str());
+      [&](constant, auto num) { // LCOV_EXCL_LINE
+        return num.match(
+          [&](zero) {
+            return msat_make_number(env, "0");
+          },
+          [&](one) {
+            return msat_make_number(env, "1");
+          },
+          [&](integer, int64_t value) {
+            return msat_make_number(env, std::to_string(value).c_str());
+          },
+          [&](real, double value) {
+            return msat_make_number(env, std::to_string(value).c_str());
+          }
+        );
       },
       [&](variable x) { // LCOV_EXCL_LINE
         return msat_make_constant(env, to_mathsat(x));
       },
       [&](application a) {
         std::vector<msat_term> args;
-        for(term t2 : a.arguments())
+        for(term t2 : a.terms())
           args.push_back(to_mathsat(t2));
 
-        black_assert(a.arguments().size() > 0);
-
-        // We know how to encode known functions
-        if(auto k = a.func().known_type(); k) {
-          switch(*k) {
-            case function::negation:
-              black_assert(args.size() == 1);
-              return msat_make_times(env, msat_make_number(env, "-1"), args[0]);
-            case function::subtraction:
-              black_assert(args.size() == 2);
-              return msat_make_plus(env, 
-                args[0],
-                msat_make_times(env, msat_make_number(env, "-1"), args[1])
-              );
-            case function::addition:
-              black_assert(args.size() == 2);
-              return 
-                msat_make_plus(env, args[0], args[1]);
-            case function::multiplication:
-              black_assert(args.size() == 2);
-              return 
-                msat_make_times(env, args[0], args[1]);
-            case function::division:
-              black_assert(args.size() == 2);
-              return msat_make_divide(env, args[0], args[1]);
-          }
-          black_unreachable(); // LCOV_EXCL_LINE
-        }
+        black_assert(a.terms().size() > 0);
 
         msat_decl func = to_mathsat(
-          a.arguments()[0].sigma(), to_string(a.func().name()), 
+          a.terms()[0].sigma(), to_string(a.func().name()), 
           (int)args.size(), false
         );
         return msat_make_uf(env, func, args.data());
+      }, // LCOV_EXCL_LINE
+      [&](unary_term u, auto arg) {
+        return u.match(
+          [&](negative) {
+            return msat_make_times(env, 
+              msat_make_number(env, "-1"), to_mathsat(arg));
+          }
+        );
       },
-      [&](next) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
-      [&](wnext) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
-      [&](prev) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
-      [&](wprev) -> msat_term { black_unreachable(); } // LCOV_EXCL_LINE
+      [&](binary_term b, auto left, auto right) {
+        return b.match(
+          [&](subtraction) {
+            return msat_make_plus(env, 
+              to_mathsat(left),
+              msat_make_times(env, 
+                msat_make_number(env, "-1"), to_mathsat(right))
+            );
+          },
+          [&](addition) {
+            return 
+              msat_make_plus(env, to_mathsat(left), to_mathsat(right));
+          },
+          [&](multiplication) {
+            return 
+              msat_make_times(env, to_mathsat(left), to_mathsat(right));
+          },
+          [&](division) {
+            return msat_make_divide(env, to_mathsat(left), to_mathsat(right));
+          }
+        );
+      }
     );
   }
 

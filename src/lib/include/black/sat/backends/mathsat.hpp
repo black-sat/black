@@ -29,8 +29,10 @@
 
 #include <memory>
 
-namespace black::sat::backends
+namespace black_internal::mathsat
 {
+  using namespace black::logic::fragments::FO;
+
   class BLACK_EXPORT mathsat : public ::black::sat::solver
   {
   public:
@@ -48,7 +50,10 @@ namespace black::sat::backends
     struct _mathsat_t;
     std::unique_ptr<_mathsat_t> _data;
   };
+}
 
+namespace black::sat::backends {
+  using black_internal::mathsat::mathsat;
 }
 
 #endif // BLACK_SAT_MATHSAT_HPP

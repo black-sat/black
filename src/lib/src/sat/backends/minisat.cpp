@@ -29,7 +29,7 @@
 
 BLACK_REGISTER_SAT_BACKEND(minisat, {})
 
-namespace black::sat::backends
+namespace black_internal::minisat
 {
 
   struct minisat::_minisat_t {
@@ -54,10 +54,6 @@ namespace black::sat::backends
       _data->solver->newVar();
       _data->nvars++;
     }
-  }
-
-  size_t minisat::nvars() const {
-    return _data->nvars;
   }
 
   void minisat::assert_clause(dimacs::clause cl) { 

@@ -23,14 +23,15 @@
 
 #include <black/solver/core.hpp>
 
-#include <black/logic/formula.hpp>
+#include <black/support/common.hpp>
+#include <black/logic/logic.hpp>
 #include <black/logic/prettyprint.hpp>
 #include <black/solver/solver.hpp>
 
 #include <tsl/hopscotch_map.h>
 #include <tsl/hopscotch_set.h>
 
-namespace black::internal {
+namespace black_internal::core {
 
   struct K_data_t {
     size_t size;
@@ -44,7 +45,7 @@ namespace black::internal {
     return f.match(
       [](boolean) -> size_t { return 1; },
       [&](proposition p) -> size_t {
-        if(auto l = p.label<core_placeholder_t>(); l.has_value()) {
+        if(auto l = p.name().to<core_placeholder_t>(); l.has_value()) {
           if(l->n >= next_placeholder)
             next_placeholder = l->n + 1;
         }
@@ -69,7 +70,8 @@ namespace black::internal {
 
         return data.size;
       },
-      [](first_order) -> size_t { black_unreachable(); } // LCOV_EXCL_LINE
+      // TODO: restrict types adequately
+      [](otherwise) -> size_t { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 
@@ -146,7 +148,7 @@ namespace black::internal {
       size_t index = indexes.contains(f) ? indexes[f] : next_index++;
       indexes.insert_or_assign(f, index);
 
-      return f.sigma()->prop(core_placeholder_t{index, f});
+      return f.sigma()->proposition(core_placeholder_t{index, f});
     }
     
     return f.match(
@@ -154,18 +156,17 @@ namespace black::internal {
       [&](proposition) { return f; },
       [&](unary u, formula arg) {
         return unary(
-          u.formula_type(), 
-          replace_impl(arg, dontcares, indexes, next_index)
+          u.node_type(), replace_impl(arg, dontcares, indexes, next_index)
         );
       },
       [&](binary b, formula left, formula right) {
         return binary(
-          b.formula_type(), 
+          b.node_type(), 
           replace_impl(left, dontcares, indexes, next_index), 
           replace_impl(right, dontcares, indexes, next_index)
         );
       },
-      [](first_order) -> formula { black_unreachable(); } // LCOV_EXCL_LINE
+      [](otherwise) -> formula { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 
@@ -200,7 +201,7 @@ namespace black::internal {
     return f.match(
       [](boolean) { return true; },
       [&](proposition p) {
-        if(auto l = p.label<core_placeholder_t>(); l.has_value()) {
+        if(auto l = p.name().to<core_placeholder_t>(); l.has_value()) {
           if(formulas.contains(l->n) && formulas.at(l->n) != l->f)
             return false; // LCOV_EXCL_LINE
           formulas.insert({l->n, l->f});
@@ -214,7 +215,7 @@ namespace black::internal {
         return check_replacements_impl(left, formulas) && 
                check_replacements_impl(right, formulas);
       },
-      [](first_order) -> bool { black_unreachable(); } // LCOV_EXCL_LINE
+      [](otherwise) -> bool { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 
@@ -237,7 +238,7 @@ namespace black::internal {
         auto subset = build_subset(group, bitset);
         formula candidate = replace(f, subset, next_placeholder);
 
-        solver slv;
+        black::solver slv;
         slv.set_formula(candidate, finite);
         
         if(slv.solve() == false)

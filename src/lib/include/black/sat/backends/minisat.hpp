@@ -25,7 +25,7 @@
 #include <black/sat/solver.hpp>
 #include <black/sat/dimacs.hpp>
 
-namespace black::sat::backends 
+namespace black_internal::minisat
 {
   class BLACK_EXPORT minisat : public ::black::sat::dimacs::solver
   {
@@ -34,7 +34,6 @@ namespace black::sat::backends
     virtual ~minisat() override;
 
     virtual void new_vars(size_t n) override;
-    virtual size_t nvars() const override;
     virtual void assert_clause(dimacs::clause f) override;
     virtual tribool is_sat() override;
     virtual tribool 
@@ -47,4 +46,8 @@ namespace black::sat::backends
     struct _minisat_t;
     std::unique_ptr<_minisat_t> _data;
   };
+}
+
+namespace black::sat::backends {
+  using black_internal::minisat::minisat;
 }

@@ -24,23 +24,27 @@
 #ifndef BLACK_SOLVER_CORE_HPP
 #define BLACK_SOLVER_CORE_HPP
 
-#include <black/logic/formula.hpp>
+#include <black/logic/logic.hpp>
+#include <black/support/common.hpp>
 
 #include <string>
 
-namespace black::internal {
+namespace black_internal::core {
   
+  using namespace black::logic::fragments::LTLPFO;
+
   BLACK_EXPORT
   formula unsat_core(formula f, bool finite);
 
   struct core_placeholder_t {
     size_t n;
     formula f;
-  };
 
-  inline bool operator==(core_placeholder_t p1, core_placeholder_t p2) {
-    return p1.n == p2.n && p1.f == p2.f;
-  }
+    friend 
+    bool operator==(
+      core_placeholder_t const&p1, core_placeholder_t const&p2
+    ) = default;
+  };
 
   inline std::string to_string(core_placeholder_t p) {
     return std::to_string(p.n);
@@ -48,15 +52,21 @@ namespace black::internal {
 }
 
 namespace black {
-  using internal::unsat_core;
-  using internal::core_placeholder_t;
+  using black_internal::core::unsat_core;
+  using black_internal::core::core_placeholder_t;
 }
 
 namespace std {
   template<>
   struct hash<::black::core_placeholder_t> {
     size_t operator()(::black::core_placeholder_t const& p) const {
-      return std::hash<std::tuple<size_t, ::black::formula>>{}({p.n, p.f});
+      using namespace black_internal;
+      using namespace black::logic::fragments::LTLPFO;
+
+      size_t h1 = std::hash<size_t>{}(p.n);
+      size_t h2 = std::hash<formula>{}(p.f);
+
+      return hash_combine(h1, h2);
     }                                                       
   };
 }

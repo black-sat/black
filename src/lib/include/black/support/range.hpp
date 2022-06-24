@@ -25,11 +25,13 @@
 #define BLACK_RANGE_HPP
 
 #include <black/support/assert.hpp>
+#include <black/support/common.hpp>
 
-namespace black::internal 
+#include <ranges>
+
+namespace black_internal 
 {
   class range_iterator;
-  class range_end_iterator;
 
   class range 
   {
@@ -43,22 +45,23 @@ namespace black::internal
     range(size_t begin, size_t end) : _begin{begin}, _end{end} { }
 
     range_iterator begin() const;
-    range_end_iterator end() const;
+    std::default_sentinel_t end() const { return std::default_sentinel; }
 
   private:
     size_t _begin;
     size_t _end;
   };
 
-  class range_iterator {
+  class range_iterator 
+  {
   public:
-    friend class range_end_iterator;
-
     using value_type = size_t;
+    using difference_type = ssize_t;
     using reference = size_t const&;
     using const_reference = size_t const&;
 
-    range_iterator(size_t value) : _value{value} { }
+    range_iterator() = default;
+    range_iterator(size_t value, size_t end) : _value{value}, _end{end} { }
 
     // ForwardIterator requirements
     reference operator*() const {
@@ -76,64 +79,34 @@ namespace black::internal
       return tmp;
     }
 
-    bool operator==(range_iterator other) const {
-      return _value == other._value;
+    bool operator==(range_iterator const&other) const = default;
+
+    friend bool operator==(range_iterator it, std::default_sentinel_t) {
+      return it._value == it._end;
     }
-
-    bool operator!=(range_iterator other) const {
-      return _value != other._value;
+    
+    friend bool operator==(std::default_sentinel_t, range_iterator it) {
+      return it._value == it._end;
     }
-
-    bool operator==(range_end_iterator end);
-    bool operator!=(range_end_iterator end);
-
+    
   private:
-    size_t _value;
+    size_t _value = 0;
+    size_t _end = 0;
   };
 
-  class range_end_iterator 
-  {
-    friend class range_iterator;
-  public:
-    range_end_iterator(size_t end) : _end{end} { }
-
-    bool operator==(range_iterator it);
-    bool operator!=(range_iterator it);
-
-  private:
-    size_t _end;
-  };
-
-  inline bool range_iterator::operator==(range_end_iterator end) {
-    return _value == end._end;
-  }
-
-  inline bool range_iterator::operator!=(range_end_iterator end) {
-    return _value != end._end;
-  }
-
-  inline bool range_end_iterator::operator==(range_iterator it) {
-    return _end == it._value;
-  }
-
-  inline bool range_end_iterator::operator!=(range_iterator it) {
-    return _end != it._value;
-  }
-
-  inline range_iterator begin(range r) { return r.begin(); } 
-  inline range_end_iterator end(range r) { return r.end(); } 
+  inline auto begin(range r) { return r.begin(); } 
+  inline auto end(range r) { return r.end(); } 
 
   inline range_iterator range::begin() const { 
-    return range_iterator{_begin}; 
+    return range_iterator{_begin, _end}; 
   }
 
-  inline range_end_iterator range::end() const { 
-    return range_end_iterator{_end};
-  }
-} // namespace black::internal
+  static_assert(std::input_or_output_iterator<range::iterator>);
+  static_assert(std::ranges::range<range>);
+} // namespace black_internal
 
 namespace black {
-  using internal::range;
+  using black_internal::range;
 }
 
 #endif // BLACK_RANGE_HPP

@@ -123,7 +123,7 @@ namespace black::frontend
 
     auto cli = "solving mode: " % (
       command("solve"),
-      (option("-k", "--bound") & integer("bound", cli::bound))
+      (option("-k", "--bound") & clipp::integer("bound", cli::bound))
         % "maximum bound for BMC procedures",
       (option("-B", "--sat-backend") 
         & value(is_backend, "backend", cli::sat_backend))
@@ -175,13 +175,6 @@ namespace black::frontend
         % "formula against which to check the trace",
       value("file", cli::filename).required(false)
         % "formula file against which to check the trace"
-    ) | "DIMACS mode: " % (
-      command("dimacs").set(cli::dimacs),
-      (option("-B", "--sat-backend")
-        & value(is_backend, "backend", cli::sat_backend))
-        % "select the SAT backend to use",
-      value("file", cli::filename)
-        % "DIMACS file to solve"
     ) | command("--sat-backends").set(show_backends) 
           % "print the list of available SAT backends"
       | command("-v", "--version").set(version)

@@ -30,7 +30,7 @@
 
 BLACK_REGISTER_SAT_BACKEND(cmsat, {})
 
-namespace black::sat::backends
+namespace black_internal::cmsat
 {
   struct cmsat::_cmsat_t {
     std::unique_ptr<CMSat::SATSolver> solver;
@@ -50,10 +50,6 @@ namespace black::sat::backends
     _data->solver->new_vars(n);
   }
   
-  size_t cmsat::nvars() const { 
-    return _data->solver->nVars();
-  }
-
   void cmsat::assert_clause(dimacs::clause cl) {
     std::vector<CMSat::Lit> lits;
     for(dimacs::literal lit : cl.literals) {
@@ -70,7 +66,7 @@ namespace black::sat::backends
 
     return ret == CMSat::l_True ? tribool{true} :
            ret == CMSat::l_False ? tribool{false} :
-           tribool::undef;
+           tribool::undef; // LCOV_EXCL_LINE
   }
 
   tribool cmsat::is_sat_with(std::vector<dimacs::literal> const& assumptions) {
@@ -85,7 +81,7 @@ namespace black::sat::backends
 
     return ret == CMSat::l_True ? tribool{true} :
            ret == CMSat::l_False ? tribool{false} :
-           tribool::undef;
+           tribool::undef;  // LCOV_EXCL_LINE
   }
 
   tribool cmsat::value(uint32_t v) const {
@@ -94,11 +90,12 @@ namespace black::sat::backends
 
     std::vector<CMSat::lbool> const& model = _data->solver->get_model();
     if(v >= model.size())
-      return tribool::undef;
+      return tribool::undef;  // LCOV_EXCL_LINE
 
     return 
       model[v] == CMSat::l_True ? tribool{true} : 
-      model[v] == CMSat::l_False ? tribool{false} : tribool::undef;
+      model[v] == CMSat::l_False ? tribool{false} : 
+      tribool::undef; // LCOV_EXCL_LINE
   }
 
   void cmsat::clear() {

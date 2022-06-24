@@ -24,7 +24,7 @@
 #ifndef BLACK_PAST_REMOVER_HPP
 #define BLACK_PAST_REMOVER_HPP
 
-#include <black/logic/alphabet.hpp>
+#include <black/logic/logic.hpp>
 #include <black/logic/parser.hpp>
 #include <black/logic/prettyprint.hpp>
 
@@ -32,44 +32,17 @@
 #include <string_view>
 #include <tuple>
 
-namespace black::internal {
-
-  // Label data type for substituting past propositional letters
-  inline proposition past_label(formula f) {
-    using namespace std::literals;
-    return f.sigma()->prop(std::tuple{"_past_label"sv, f});
-  }
-
-  // Substitute past operators with new propositional letters
-  formula sub_past(formula);
-
-  // Generate semantics for each new propositional letter (from substitute_past)
-  void gen_semantics(formula, std::vector<formula>&);
-
-  // Obtain semantics for yesterday propositional letter
-  inline formula yesterday_semantics(proposition a, yesterday y) {
-    return !a && G(iff(X(a), y.operand()));
-  }
-
-  // Obtain semantics for weak-yesterday propositional letter
-  inline formula w_yesterday_semantics(proposition a, w_yesterday y) {
-    return a && G(iff(X(a), y.operand()));
-  }
-
-  // Obtain semantics for since propositional letter
-  inline formula since_semantics(proposition a, since s, proposition y) {
-    return G(iff(a, s.right() || (s.left() && y)));
-  }
+namespace black_internal::remove_past {
 
   // Exposed procedure which puts together everything
   BLACK_EXPORT
-  formula remove_past(formula);
+  logic::formula<logic::LTL> remove_past(logic::formula<logic::LTLP>);
 
-} // end namespace black::internal
+} // end namespace black_internal
 
 // Names exported to the user
 namespace black {
-  using internal::remove_past;
+  using black_internal::remove_past::remove_past;
 }
 
 #endif //BLACK_PAST_REMOVER_HPP

@@ -8,6 +8,24 @@ should_fail() {
   fi
 }
 
+# 
+# The following is a trick to have bash print the line of the first command that
+# fails.
+# See https://unix.stackexchange.com/a/298927/196591
+#
+
+cur_command=
+first_err_command=
+first_err_lineno=
+trap 'cur_command=$BASH_COMMAND;
+      if [[ -z "$first_err_command" ]]; then
+          first_err_command=$cur_command;
+          first_err_lineno=$LINENO;
+      fi' ERR
+trap 'if [[ ! -z "$first_err_command" ]]; then
+          echo "ERROR: Aborting at line: $first_err_lineno on command: $first_err_command";
+      fi' EXIT
+
 ./black --help
 ./black --version
 ./black --sat-backends
@@ -44,6 +62,10 @@ should_fail ./black solve -s -f 'x = 0'
 ./black solve -d integers -f 'wnext(x) = 0' 2>&1 | grep -- '--semi-decision'
 ./black solve -d integers -f 'prev(x) = 0' 2>&1 | grep -- '--semi-decision'
 ./black solve -d integers -f 'wprev(x) = 0' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'r(next(x))' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'r(wnext(x))' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'r(prev(x))' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'r(wprev(x))' 2>&1 | grep -- '--semi-decision'
 
 ./black solve -f 'p & q' --debug print
 ./black solve -f 'X p & X X q & F(q)' --debug trace
@@ -158,32 +180,4 @@ cat <<END | should_fail ./black check -t - -f 'p & !p'
     "k": 1,
     "muc": "p & {0}"
 }
-END
-
-./black dimacs ../tests/test-dimacs-sat.cnf | grep -w SATISFIABLE 
-./black dimacs ../tests/test-dimacs-unsat.cnf | grep -w UNSATISFIABLE 
-
-cat /dev/null | should_fail ./black dimacs -
-
-if ./black --sat-backends | grep mathsat; then
-  ./black dimacs -B mathsat ../tests/test-dimacs-sat.cnf | grep -w SATISFIABLE 
-fi
-
-cat <<END | should_fail ./black dimacs -
-p cnf
-END
-
-cat <<END | should_fail ./black dimacs -
-c missing header
-1 2 3 0
-END
-
-cat <<END | should_fail ./black dimacs -
-p cnf 1 3
-1 2 3 
-END
-
-cat <<END | should_fail ./black dimacs -
-p cnf 1 3
-1 2 a 0
 END

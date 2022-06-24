@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # MATHSAT_VERSION=5.5.4
-MATHSAT_VERSION=5.6.6
+MATHSAT_VERSION=5.6.7
 
 die() {
   echo $1 >&2
@@ -20,14 +20,14 @@ detect_downloader() {
 }
 
 detect_system() {
-  [ "$(uname -m)" == "x86_64" ] || \
+  [ "$(uname -m)" == "x86_64" -o "$(uname -m)" == "arm64" ] || \
     die "MathSAT 5 is available for download only for 64bit systems."
 
   SYSTEM="$(uname -s)-$(uname -m)"
   if [ "$(uname -s)" == "Linux" ]; then
     MATHSAT_DIR=mathsat-$MATHSAT_VERSION-linux-x86_64
   elif [ "$(uname -s)" == "Darwin" ]; then
-    MATHSAT_DIR=mathsat-$MATHSAT_VERSION-darwin-libcxx-x86_64
+    MATHSAT_DIR=mathsat-$MATHSAT_VERSION-osx
   else
     die "There is no MathSAT 5 pre-compiled distribution for your platform."
   fi

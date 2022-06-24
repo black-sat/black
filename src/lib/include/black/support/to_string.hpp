@@ -29,65 +29,84 @@
 #include <string_view>
 #include <tuple>
 
-#include <black/support/meta.hpp>
+namespace black_internal {
 
-namespace black::internal {
+  namespace to_string_details {
+    using std::to_string;
+    std::string to_string(std::string const&s);
+    std::string to_string(std::string_view const&sv);
 
-  template<typename T, REQUIRES(std::is_integral_v<T>)>
-  inline std::string to_string(T v) {
-    return std::to_string(v);
+    template<typename T, typename U>
+    std::string to_string(std::pair<T, U> const&p);
+
+    std::string to_string(std::tuple<> const&);
+
+    template<typename T>
+    std::string to_string(std::tuple<T> const& t);
+
+    template<typename T, typename ...Args>
+    std::string to_string(std::tuple<T, Args...> const & t);
+
+    struct to_string_niebloid {
+      constexpr to_string_niebloid() = default;
+
+      template<typename T>
+      auto operator()(T&& v) const -> decltype(to_string(std::forward<T>(v))) {
+        //using std::to_string;
+        return to_string(std::forward<T>(v));
+      }
+    };
+
   }
 
-  template<typename T, REQUIRES(std::is_floating_point_v<T>)>
-  inline std::string to_string(T v) {
-    return std::to_string(v);
-  }
-
-  inline std::string to_string(std::string const&s) {
-    return s;
-  }
-
-  inline std::string to_string(std::string_view const&sv) {
-    return std::string{sv};
-  }
-
-  template<typename T, typename = void>
-  struct is_stringable_t : std::false_type { };
+  static constexpr to_string_details::to_string_niebloid to_string;
 
   template<typename T>
-  constexpr bool is_stringable = is_stringable_t<T>::value;
+  concept stringable = requires(T t) {
+    { to_string(t) } -> std::convertible_to<std::string>;
+  };
 
-  template<
-    typename T, typename U,
-    REQUIRES(is_stringable<T>),
-    REQUIRES(is_stringable<U>)
-  >
-  std::string to_string(std::pair<T, U> const&p) {
-    return to_string(p.first) + ", " + to_string(p.second);
+
+  namespace to_string_details {
+
+    inline std::string to_string(std::string const&s) {
+      return s;
+    }
+
+    inline std::string to_string(std::string_view const&sv) {
+      return std::string{sv};
+    }
+
+    template<typename T, typename U>
+    std::string to_string(std::pair<T, U> const&p) {
+      return black_internal::to_string(p.first) + ", " + 
+             black_internal::to_string(p.second);
+    }
+
+    inline std::string to_string(std::tuple<> const&) {
+      return "";
+    }
+
+    template<typename T>
+    std::string to_string(std::tuple<T> const& t) {
+      return black_internal::to_string(std::get<0>(t));
+    }
+
+    // gcov false negatives
+    template<typename T, typename ...Args>
+    std::string to_string(std::tuple<T, Args...> const & t) { // LCOV_EXCL_LINE
+      return std::apply([](auto v, auto ...vs) { // LCOV_EXCL_LINE
+        return // LCOV_EXCL_LINE
+          black_internal::to_string(v) + // LCOV_EXCL_LINE
+            ((", " + black_internal::to_string(vs)) + ...); // LCOV_EXCL_LINE
+      }, t); // LCOV_EXCL_LINE
+    } // LCOV_EXCL_LINE
   }
 
-  inline std::string to_string(std::tuple<> const&) {
-    return "";
-  }
-
-  template<typename T>
-  std::string to_string(std::tuple<T> const & t) {
-    return to_string(std::get<0>(t));
-  }
-
-  template<typename T, typename ...Args, REQUIRES(sizeof...(Args) > 0)>
-  std::string to_string(std::tuple<T, Args...> const & t) {
-    return to_string(std::get<0>(t)) + ", " + to_string(tuple_tail(t));
-  }
-
-  template<typename T>
-  struct is_stringable_t<T,
-    std::void_t<decltype(to_string(std::declval<T>()))>
-  > : std::true_type { };
 }
 
 namespace black {
-  using internal::to_string;
+  using black_internal::to_string;
 }
 
 #endif

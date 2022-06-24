@@ -23,6 +23,7 @@
 
 
 #include <black/sat/backends/cvc5.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <black/sat/backends/fractionals.hpp>
 
@@ -33,11 +34,37 @@ BLACK_REGISTER_SAT_BACKEND(cvc5, {
   black::sat::feature::smt, black::sat::feature::quantifiers
 })
 
-namespace black::sat::backends
+namespace black_internal::cvc5
 {
   inline proposition fresh(formula f) {
-    return f.sigma()->prop(f);
+    return f.sigma()->proposition(f);
   }
+
+  struct cvc5_decl_key {
+    std::string name;
+    unsigned arity;
+    bool is_relation;
+
+    friend 
+    bool operator==(cvc5_decl_key const&, cvc5_decl_key const&) = default; // LCOV_EXCL_LINE
+  };
+
+  } namespace std {
+  
+    template<>
+    struct hash<black_internal::cvc5::cvc5_decl_key> {
+      size_t operator()(black_internal::cvc5::cvc5_decl_key const& k) const {
+        using namespace black_internal;
+
+        size_t h1 = std::hash<std::string>{}(k.name);
+        size_t h2 = std::hash<unsigned>{}(k.arity);
+        size_t h3 = std::hash<bool>{}(k.is_relation);
+
+        return hash_combine(h1, hash_combine(h2, h3));
+      }
+    };
+
+  } namespace black_internal::cvc5 {
 
   namespace cvc = ::cvc5;
   struct cvc5::_cvc5_t {
@@ -46,10 +73,7 @@ namespace black::sat::backends
 
     tsl::hopscotch_map<variable, cvc::Term> vars;
     tsl::hopscotch_map<proposition, cvc::Term> props;
-    tsl::hopscotch_map<
-      std::tuple<std::string, unsigned, bool>, 
-      cvc::Term
-    > decls;
+    tsl::hopscotch_map<cvc5_decl_key, cvc::Term> decls;
 
     cvc::Term to_cvc5(
       formula, tsl::hopscotch_map<variable, cvc::Term> const&env
@@ -113,7 +137,7 @@ namespace black::sat::backends
     cvc::Term res = _data->solver.getValue(term);
 
     if(res.isNull())
-      return tribool::undef;
+      return tribool::undef; // LCOV_EXCL_LINE
 
     return res.getBooleanValue();
   }
@@ -123,13 +147,15 @@ namespace black::sat::backends
   }
 
   cvc::Sort cvc5::_cvc5_t::to_cvc5(sort s) {
-    switch(s){ 
-      case sort::Int:
+    return s.match(
+      [&](integer_sort) {
         return solver.getIntegerSort();
-      case sort::Real:
+      },
+      [&](real_sort) {
         return solver.getRealSort();
-    }
-    black_unreachable(); // LCOV_EXCL_LINE
+      },
+      [](otherwise) -> cvc::Sort { black_unreachable(); } // LCOV_EXCL_LINE
+    );
   }
 
   cvc::Term cvc5::_cvc5_t::to_cvc5(
@@ -144,28 +170,6 @@ namespace black::sat::backends
         for(term t : a.terms())
           cvc_terms.push_back(to_cvc5(t, env));
 
-        // we know how to encode known relations
-        if(auto k = a.rel().known_type(); k) {
-          black_assert(cvc_terms.size() == 2);
-          switch(*k) {
-            case relation::equal:
-              return solver.mkTerm(cvc::EQUAL, cvc_terms);
-            case relation::not_equal:
-              return solver.mkTerm(cvc::NOT,
-                {solver.mkTerm(cvc::EQUAL, cvc_terms)}
-              );
-            case relation::less_than:
-              return solver.mkTerm(cvc::LT, cvc_terms);
-            case relation::less_than_equal:
-              return solver.mkTerm(cvc::LEQ, cvc_terms);
-            case relation::greater_than:
-              return solver.mkTerm(cvc::GT, cvc_terms);
-            case relation::greater_than_equal:
-              return solver.mkTerm(cvc::GEQ, cvc_terms);
-          }
-        }
-
-        // Otherwise we go for uninterpreted relations
         cvc::Term rel = 
           to_cvc5_func_decl(
             a.sigma(), to_string(a.rel().name()), 
@@ -174,22 +178,48 @@ namespace black::sat::backends
         cvc_terms.insert(cvc_terms.begin(), rel);
         return solver.mkTerm(cvc::APPLY_UF, cvc_terms);
       },
+      [&](comparison c, auto left, auto right) {
+        std::vector<cvc::Term> terms = { 
+          to_cvc5(left, env), to_cvc5(right, env) 
+        };
+        
+        return c.match(
+          [&](equal) { 
+            return solver.mkTerm(cvc::EQUAL, terms);
+          },
+          [&](not_equal) { // LCOV_EXCL_LINE
+            return solver.mkTerm(cvc::NOT,
+              {solver.mkTerm(cvc::EQUAL, terms)}
+            );
+          },
+          [&](less_than) { 
+            return solver.mkTerm(cvc::LT, terms);
+          },
+          [&](less_than_equal) { 
+            return solver.mkTerm(cvc::LEQ, terms);
+          },
+          [&](greater_than) { 
+            return solver.mkTerm(cvc::GT, terms);
+          },
+          [&](greater_than_equal) { 
+            return solver.mkTerm(cvc::GEQ, terms);
+          }
+        );
+      },
       [&](quantifier q) { // LCOV_EXCL_LINE
-        black_assert(q.sigma()->domain());
-        cvc::Term var = 
-          solver.mkVar(
-              to_cvc5(*q.sigma()->domain()), to_string(q.var().unique_id()));
+        cvc::Term var = solver.mkVar(
+          to_cvc5(q.sigma()->default_sort()), to_string(q.var().unique_id())
+        );
         
         cvc::Term varlist = solver.mkTerm(cvc::VARIABLE_LIST, {var});
 
         tsl::hopscotch_map<variable, cvc::Term> new_env = env;
         new_env.insert({q.var(), var});
 
-        if(q.quantifier_type() == quantifier::type::forall)
+        if(q.node_type() == quantifier::type::forall{})
           return 
             solver.mkTerm(cvc::FORALL, {varlist, to_cvc5(q.matrix(), new_env)});
-        else
-          return 
+        return 
             solver.mkTerm(cvc::EXISTS, {varlist, to_cvc5(q.matrix(), new_env)});
       },
       [&](proposition p) {
@@ -205,14 +235,14 @@ namespace black::sat::backends
       [&](negation, formula n) {
         return solver.mkTerm(cvc::NOT, {to_cvc5(n, env)});
       },
-      [&](big_conjunction c) { // LCOV_EXCL_LINE
+      [&](conjunction c) { // LCOV_EXCL_LINE
         std::vector<cvc::Term> args;
         for(formula op : c.operands())
           args.push_back(to_cvc5(op, env));
 
         return solver.mkTerm(cvc::AND, args);
       },
-      [&](big_disjunction c) { // LCOV_EXCL_LINE
+      [&](disjunction c) { // LCOV_EXCL_LINE
         std::vector<cvc::Term> args;
         for(formula op : c.operands())
           args.push_back(to_cvc5(op, env));
@@ -226,9 +256,6 @@ namespace black::sat::backends
       [&](iff, formula left, formula right) { // LCOV_EXCL_LINE
         return 
           solver.mkTerm(cvc::EQUAL, {to_cvc5(left, env), to_cvc5(right, env)});
-      },
-      [](temporal) -> cvc::Term { // LCOV_EXCL_LINE
-        black_unreachable(); // LCOV_EXCL_LINE
       }
     );
   }
@@ -237,13 +264,12 @@ namespace black::sat::backends
     alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
   ) {
     black_assert(arity > 0);
-    black_assert(sigma->domain().has_value());
 
     if(auto it = decls.find({name, arity, is_relation}); it != decls.end())
       return it->second;
 
     std::vector<cvc::Sort> sorts{arity};
-    std::fill(sorts.begin(), sorts.end(), to_cvc5(*sigma->domain()));
+    std::fill(sorts.begin(), sorts.end(), to_cvc5(sigma->default_sort()));
 
     cvc::Sort range = is_relation ? solver.getBooleanSort() : sorts[0];
 
@@ -257,19 +283,23 @@ namespace black::sat::backends
   cvc::Term cvc5::_cvc5_t::to_cvc5(
     term t, tsl::hopscotch_map<variable, cvc::Term> const&env
   ) {
+    alphabet *sigma = t.sigma();
     return t.match(
-      [&](constant c) { // LCOV_EXCL_LINE
-        if(std::holds_alternative<int64_t>(c.value())) {
-          black_assert(c.sigma()->domain().has_value());
-
-          if(c.sigma()->domain() == sort::Int)
-            return solver.mkInteger(std::get<int64_t>(c.value()));
-          return solver.mkReal(std::get<int64_t>(c.value()));
-        } else {
-          auto [num,denum] = 
-            black::internal::double_to_fraction(std::get<double>(c.value()));
-          return solver.mkReal(num, denum);
-        }
+      [&](constant, auto n) { // LCOV_EXCL_LINE
+        return n.match(
+          [&](zero) { return to_cvc5(constant(sigma->integer(0)), env); },
+          [&](one)  { return to_cvc5(constant(sigma->integer(1)), env); },
+          [&](integer, int64_t value) {
+            if(sigma->default_sort().is<integer_sort>())
+              return solver.mkInteger(value);
+            return solver.mkReal(value);
+          },
+          [&](real, double value) {
+            auto [num,denum] = 
+              black_internal::double_to_fraction(value);
+            return solver.mkReal(num, denum);
+          }
+        );
       },
       [&](variable v) { // LCOV_EXCL_LINE
         if(auto it = env.find(v); it != env.end())
@@ -278,39 +308,16 @@ namespace black::sat::backends
         if(auto it = vars.find(v); it != vars.end())
           return it->second;
 
-        std::optional<sort> s = t.sigma()->domain();
-        black_assert(s.has_value());
-        cvc::Term term = solver.mkConst(to_cvc5(*s), to_string(v.unique_id()));
+        sort s = t.sigma()->default_sort();
+        cvc::Term term = solver.mkConst(to_cvc5(s), to_string(v.unique_id()));
         vars.insert({v, term});
         return term;
       },
       [&](application a) { // LCOV_EXCL_LINE
-        black_assert(a.sigma()->domain().has_value());
-
         std::vector<cvc::Term> cvc_terms;
-        for(term t2 : a.arguments())
+        for(term t2 : a.terms())
           cvc_terms.push_back(to_cvc5(t2, env));
 
-        // We know how to encode known functions
-        if(auto k = a.func().known_type(); k) {
-          switch(*k) {
-            case function::negation:
-              black_assert(cvc_terms.size() == 1);
-              return solver.mkTerm(cvc::NEG, cvc_terms);
-            case function::subtraction:
-              return solver.mkTerm(cvc::SUB, cvc_terms);
-            case function::addition:
-              return solver.mkTerm(cvc::ADD, cvc_terms);
-            case function::multiplication:
-              return solver.mkTerm(cvc::MULT, cvc_terms);
-            case function::division:
-              black_assert(cvc_terms.size() == 2);
-              return solver.mkTerm(cvc::DIVISION, cvc_terms);
-          }
-          black_unreachable(); // LCOV_EXCL_LINE
-        }
-
-        // Otherwise we go for uninterpreted functions
         cvc::Term func = to_cvc5_func_decl(
           a.sigma(), to_string(a.func().name()), 
           unsigned(cvc_terms.size()), false);
@@ -318,11 +325,33 @@ namespace black::sat::backends
         cvc_terms.insert(cvc_terms.begin(), func);
         return solver.mkTerm(cvc::APPLY_UF, cvc_terms);
       },
-      // We should not have any next(var) term at this point
-      [](next) -> cvc::Term { black_unreachable(); }, // LCOV_EXCL_LINE
-      [](wnext) -> cvc::Term { black_unreachable(); }, // LCOV_EXCL_LINE
-      [](prev) -> cvc::Term { black_unreachable(); }, // LCOV_EXCL_LINE
-      [](wprev) -> cvc::Term { black_unreachable(); } // LCOV_EXCL_LINE
+      [&](unary_term u) {
+        return u.match(
+          [&](negative, auto arg) {
+            return solver.mkTerm(cvc::NEG, {to_cvc5(arg, env)});
+          }
+        );
+      },
+      [&](binary_term b, auto left, auto right) {
+        std::vector<cvc::Term> terms = { 
+          to_cvc5(left, env), to_cvc5(right, env)
+        };
+
+        return b.match(
+          [&](subtraction) {
+            return solver.mkTerm(cvc::SUB, terms);
+          },
+          [&](addition) {
+            return solver.mkTerm(cvc::ADD, terms);
+          },
+          [&](multiplication) {
+            return solver.mkTerm(cvc::MULT, terms);
+          },
+          [&](division) {
+            return solver.mkTerm(cvc::DIVISION, terms);
+          }
+        );
+      }
     );
   }
 

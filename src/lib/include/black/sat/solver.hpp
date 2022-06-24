@@ -25,7 +25,7 @@
 #define BLACK_SAT_SOLVER_HPP
 
 #include <black/support/common.hpp>
-#include <black/logic/alphabet.hpp>
+#include <black/logic/logic.hpp>
 #include <black/support/tribool.hpp>
 
 #include <memory>
@@ -62,14 +62,14 @@ namespace black::sat
     virtual ~solver() = default;
 
     // assert a formula, adding it to the current context
-    virtual void assert_formula(formula f) = 0;
+    virtual void assert_formula(logic::formula<logic::FO> f) = 0;
 
     // tell if the current set of assertions is satisfiable
     virtual tribool is_sat() = 0;
     
     // tell if the current set of assertions is satisfiable, 
     // under the given assumption
-    virtual tribool is_sat_with(formula assumption) = 0;
+    virtual tribool is_sat_with(logic::formula<logic::FO> assumption) = 0;
     
     // gets the value of a proposition from the solver.
     // The result is tribool::undef if the variable has not been decided

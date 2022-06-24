@@ -22,12 +22,117 @@
 // SOFTWARE.
 
 #include <black/logic/cnf.hpp>
-#include <black/logic/alphabet.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <tsl/hopscotch_set.h>
 
-namespace black::internal 
+namespace black_internal::cnf
 { 
+  using namespace black::logic::fragments::propositional;
+
+  static
+  formula remove_booleans(negation, formula op) 
+  {
+    // !true -> false, !false -> true
+    if(auto b = op.to<boolean>(); b)
+      return op.sigma()->boolean(!b->value()); 
+    
+    // !!p -> p
+    if(auto nop = op.to<negation>(); nop) 
+      return nop->argument();
+
+    return !op;
+  }
+
+  static
+  formula remove_booleans(conjunction, formula l, formula r) {
+    alphabet &sigma = *l.sigma();
+    std::optional<boolean> bl = l.to<boolean>(); 
+    std::optional<boolean> br = r.to<boolean>();
+
+    if(!bl && !br)
+      return l && r;
+
+    if(bl && !br) {
+      return bl->value() ? r : sigma.bottom();
+    }
+    
+    if(!bl && br)
+      return br->value() ? l : sigma.bottom();
+
+    return sigma.boolean(bl->value() && br->value());
+  }
+
+  static
+  formula remove_booleans(disjunction, formula l, formula r) {
+    alphabet &sigma = *l.sigma();
+    std::optional<boolean> bl = l.to<boolean>();
+    std::optional<boolean> br = r.to<boolean>();
+
+    if(!bl && !br)
+      return l || r;
+
+    if(bl && !br)
+      return bl->value() ? sigma.top() : r;
+    
+    if(!bl && br)
+      return br->value() ? sigma.top() : l;
+      
+    return sigma.boolean(bl->value() || br->value());
+  }
+
+  static
+  formula remove_booleans(implication, formula l, formula r) {
+    alphabet &sigma = *l.sigma();
+    std::optional<boolean> bl = l.to<boolean>();
+    std::optional<boolean> br = r.to<boolean>();
+
+    if(!bl && !br)
+      return implies(l, r);
+
+    if(bl && !br)
+      return bl->value() ? r : sigma.top();
+    
+    if(!bl && br)
+      return br->value() ? formula{sigma.top()} : !l;
+
+    return sigma.boolean(!bl->value() || br->value());
+  }
+
+  static
+  formula remove_booleans(iff, formula l, formula r) {
+    alphabet &sigma = *l.sigma();
+    std::optional<boolean> bl = l.to<boolean>();
+    std::optional<boolean> br = r.to<boolean>();
+
+    if(!bl && !br)
+      return iff(l, r);
+
+    if(bl && !br)
+      return bl->value() ? r : !r;
+    
+    if(!bl && br)
+      return br->value() ? l : !l;
+
+    return sigma.boolean(bl->value() == br->value());
+  }
+
+  formula remove_booleans(formula f) {
+    return f.match( // LCOV_EXCL_LINE
+      [](boolean b)     -> formula { return b; },
+      [](proposition p) -> formula { return p; },
+      [](auto op, auto ...args) -> formula {
+        return remove_booleans(op, remove_booleans(args)...);
+      }
+    ).match(
+      [](boolean b)     -> formula { return b; },
+      [](proposition p) -> formula { return p; },
+      [](auto op, auto ...args) -> formula {
+        return remove_booleans(op, args...);
+      }
+    );
+  }
+
   static void tseitin(
     formula f, 
     std::vector<clause> &clauses, 
@@ -38,16 +143,18 @@ namespace black::internal
   inline proposition fresh(formula f) {
     if(f.is<proposition>())
       return *f.to<proposition>();
-    proposition a = f.sigma()->prop(f);
-    return a;
+    return f.sigma()->proposition(f);
   }
 
   cnf to_cnf(formula f) {
     std::vector<clause> result;
     tsl::hopscotch_set<formula> memo;
     
-    formula simple = simplify_deep(f);
-    black_assert(simple.is<boolean>() || !has_constants(simple)); // LCOV_EXCL_LINE
+    formula simple = remove_booleans(f);
+    black_assert( // LCOV_EXCL_LINE 
+      simple.is<boolean>() || 
+      !has_any_element_of(simple, syntax_element::boolean)
+    ); // LCOV_EXCL_LINE
 
     tseitin(simple, result, memo);
     if(auto b = simple.to<boolean>(); b) {
@@ -76,9 +183,7 @@ namespace black::internal
     f.match(
       [](boolean)     { }, // LCOV_EXCL_LINE
       [](proposition) { },
-      [](atom)        { black_unreachable(); }, // LCOV_EXCL_LINE
-      [](quantifier)  { black_unreachable(); }, // LCOV_EXCL_LINE
-      [&](conjunction, formula l, formula r) 
+      [&](conjunction, auto l, auto r) 
       {
         tseitin(l, clauses, memo);
         tseitin(r, clauses, memo);
@@ -91,7 +196,7 @@ namespace black::internal
           {{false, fresh(l)}, {false, fresh(r)}, {true, fresh(f)}}
         });
       },
-      [&](disjunction, formula l, formula r) 
+      [&](disjunction, auto l, auto r) 
       {
         tseitin(l, clauses, memo);
         tseitin(r, clauses, memo);
@@ -104,7 +209,7 @@ namespace black::internal
           {{true, fresh(l)}, {true, fresh(r)}, {false, fresh(f)}}
         });
       },
-      [&](implication, formula l, formula r) 
+      [&](implication, auto l, auto r) 
       {
         tseitin(l, clauses, memo);
         tseitin(r, clauses, memo);
@@ -117,7 +222,7 @@ namespace black::internal
           {{true,  fresh(f)}, {false, fresh(r)}}
         });     
       },
-      [&](iff, formula l, formula r) 
+      [&](iff, auto l, auto r) 
       {
         tseitin(l, clauses, memo);
         tseitin(r, clauses, memo);
@@ -132,11 +237,9 @@ namespace black::internal
           {{true,  fresh(f)}, {true,  fresh(l)}, {true,  fresh(r)}}
         });
       },
-      [&](negation, formula arg) {
+      [&](negation, auto arg) {
         return arg.match(  // LCOV_EXCL_LINE
           [](boolean)    { black_unreachable(); }, // LCOV_EXCL_LINE
-          [](atom)       { black_unreachable(); }, // LCOV_EXCL_LINE
-          [](quantifier) { black_unreachable(); }, // LCOV_EXCL_LINE
           [&](proposition a) {
             // clausal form for negations:
             // f <-> !p == (!f ∨ !p) ∧ (f ∨ p)
@@ -147,10 +250,10 @@ namespace black::internal
           },
           [&](negation) { // LCOV_EXCL_LINE
             // NOTE: this case should never be invoked because 
-            //       simplify_deep() removes double negations
+            //       remove_booleans() removes double negations
             black_unreachable(); // LCOV_EXCL_LINE
           },
-          [&](conjunction, formula l, formula r) {
+          [&](conjunction, auto l, auto r) {
             tseitin(l, clauses, memo);
             tseitin(r, clauses, memo);
 
@@ -162,7 +265,7 @@ namespace black::internal
               {{true,  fresh(f)}, {true, fresh(r)}},
             });
           },
-          [&](disjunction, formula l, formula r) {
+          [&](disjunction, auto l, auto r) {
             tseitin(l, clauses, memo);
             tseitin(r, clauses, memo);
 
@@ -174,7 +277,7 @@ namespace black::internal
               {{false, fresh(f)}, {false, fresh(r)}},
             });
           },
-          [&](implication, formula l, formula r) 
+          [&](implication, auto l, auto r) 
           {
             tseitin(l, clauses, memo);
             tseitin(r, clauses, memo);
@@ -187,7 +290,7 @@ namespace black::internal
               {{false, fresh(l)}, {true, fresh(r)}, {true, fresh(f)}}
             });
           },
-          [&](iff, formula l, formula r) {
+          [&](iff, auto l, auto r) {
             tseitin(l, clauses, memo);
             tseitin(r, clauses, memo);
 
@@ -200,17 +303,14 @@ namespace black::internal
               {{true,  fresh(f)}, {true,  fresh(l)}, {false, fresh(r)}},
               {{true,  fresh(f)}, {false, fresh(l)}, {true,  fresh(r)}}
             });
-          },
-          [](temporal) { black_unreachable(); } // LCOV_EXCL_LINE
+          }
         );
-      },
-      [](atom)     { black_unreachable(); }, // LCOV_EXCL_LINE
-      [](temporal) { black_unreachable(); } // LCOV_EXCL_LINE
+      }
     );
   }
 
   formula to_formula(literal lit) {
-    return lit.sign ? formula{lit.proposition} : formula{!lit.proposition};
+    return lit.sign ? formula{lit.prop} : formula{!lit.prop};
   }
 
   formula to_formula(alphabet &sigma, clause c) {

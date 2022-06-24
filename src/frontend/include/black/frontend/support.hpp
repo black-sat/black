@@ -24,7 +24,8 @@
 #ifndef BLACK_FRONTEND_SUPPORT_HPP
 #define BLACK_FRONTEND_SUPPORT_HPP
 
-#include <black/logic/formula.hpp>
+#include <black/support/common.hpp>
+#include <black/logic/logic.hpp>
 
 #include <black/frontend/cli.hpp>
 #include <black/frontend/io.hpp>
@@ -35,11 +36,6 @@
 #include <cstdio>
 #include <cstring>
 #include <functional>
-
-#if defined(_MSC_VER)
-  #include <BaseTsd.h>
-  using ssize_t = SSIZE_T;
-#endif
 
 namespace black::frontend
 {

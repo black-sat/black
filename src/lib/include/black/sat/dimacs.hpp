@@ -25,8 +25,7 @@
 #define BLACK_SAT_DIMACS_HPP
 
 #include <black/support/common.hpp>
-#include <black/logic/formula.hpp>
-#include <black/logic/alphabet.hpp>
+#include <black/logic/logic.hpp>
 #include <black/sat/solver.hpp>
 #include <black/logic/cnf.hpp>
 
@@ -34,8 +33,10 @@
 #include <string>
 #include <cstdint>
 
-namespace black::sat::dimacs::internal
+namespace black_internal::dimacs
 {
+  using namespace logic;
+
   struct literal {
     bool sign; // true = positive, false = negative
     uint32_t var;
@@ -45,42 +46,11 @@ namespace black::sat::dimacs::internal
     std::vector<literal> literals;
   };
 
-  struct problem {
-    std::vector<clause> clauses;
-  };
-
-  BLACK_EXPORT
-  std::optional<problem> parse(
-    std::istream &in, std::function<void(std::string)> error_handler
-  );
-
-  BLACK_EXPORT
-  std::string to_string(literal l);
-
-  BLACK_EXPORT
-  void print(std::ostream &out, problem p);
-
-  struct solution {
-    std::vector<literal> assignments;
-  };
-
-  BLACK_EXPORT
-  formula to_formula(alphabet &sigma, clause const& c);
-
-  BLACK_EXPORT
-  formula to_formula(alphabet &sigma, problem const& p);
-
-  BLACK_EXPORT
-  std::optional<solution> solve(problem const& p, std::string backend);
-
-  BLACK_EXPORT
-  void print(std::ostream &out, std::optional<solution> const& s);
-
   //
   // A specialized instance of sat::solver for backends with 
   // DIMACS-based interfaces (e.g. MiniSAT and CryptoMiniSAT)
   //
-  class BLACK_EXPORT solver : public sat::solver 
+  class BLACK_EXPORT solver : public black::sat::solver 
   {
   public:
     solver();
@@ -88,17 +58,16 @@ namespace black::sat::dimacs::internal
     virtual ~solver() override;
 
     // sat::solver interface
-    virtual void assert_formula(formula f) override;
-    virtual tribool is_sat_with(formula assumption) override;
-    virtual tribool value(proposition a) const override;
+    virtual void assert_formula(logic::formula<logic::FO> f) override;
+    
+    virtual tribool is_sat_with(logic::formula<logic::FO> assumption) override;
+    
+    virtual tribool value(logic::proposition a) const override;
     
     // specialized DIMACS interface
 
     // allocate `n' new variables for the solver
     virtual void new_vars(size_t n) = 0;
-
-    // returns the number of variables allocated for the solver
-    virtual size_t nvars() const = 0;
 
     // assert a new clause
     virtual void assert_clause(clause c) = 0;
@@ -129,15 +98,9 @@ namespace black::sat::dimacs::internal
 }
 
 namespace black::sat::dimacs {
-  using internal::literal;
-  using internal::clause;
-  using internal::problem;
-  using internal::solution;
-  using internal::parse;
-  using internal::to_string;
-  using internal::print;
-  using internal::solve;
-  using internal::solver;
+  using black_internal::dimacs::literal;
+  using black_internal::dimacs::clause;
+  using black_internal::dimacs::solver;
 }
 
 #endif // BLACK_SAT_DIMACS_HPP

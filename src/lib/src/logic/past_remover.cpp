@@ -22,97 +22,103 @@
 // SOFTWARE.
 
 #include <black/logic/past_remover.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <numeric>
 
-namespace black::internal {
-  formula sub_past(formula f) {
-    return f.match( // LCOV_EXCL_LINE
-        [&](yesterday, formula op) {
-          return past_label(Y(sub_past(op)));
-        },
-        [&](w_yesterday, formula op) {
-          return past_label(Z(sub_past(op)));
-        },
-        [&](since, formula left, formula right) {
-          return past_label(S(sub_past(left), sub_past(right)));
-        },
-        [](triggered, formula left, formula right) {
-          return sub_past(!S(!left, !right));
-        },
-        [](once p, formula op) { return sub_past(S(p.sigma()->top(), op)); },
-        [](historically, formula op) { return sub_past(!O(!op)); },
-        [](boolean b) { return b; },
-        [](proposition p) { return p; },
-        [](atom) -> formula { black_unreachable(); }, // LCOV_EXCL_LINE
-        [](quantifier) -> formula { black_unreachable(); }, // LCOV_EXCL_LINE
-        [](unary u, formula op) {
-          return unary(u.formula_type(), sub_past(op));
-        },
-        [](binary b, formula left, formula right) {
-          return binary(b.formula_type(), sub_past(left), sub_past(right));
-        }
-    );
+namespace black_internal::remove_past {
+
+  using namespace black_internal::logic;
+
+  // Label data type for substituting past propositional letters
+  static
+  proposition past_label(formula<LTLP> f) {
+    using namespace std::literals;
+    return f.sigma()->proposition(std::tuple{"_past_label"sv, f});
   }
 
-  void gen_semantics(formula f, std::vector<formula> &sem) {
-    return f.match(
-        [](boolean) {},
-        [](atom) { black_unreachable(); }, // LCOV_EXCL_LINE
-        [](quantifier) { black_unreachable(); }, // LCOV_EXCL_LINE
-        [&](proposition a) {
-          auto label = a.label<std::tuple<std::string_view, formula>>();
+  // Obtain semantics for yesterday propositional letter
+  static
+  formula<LTL> yesterday_semantics(proposition a, formula<LTL> f) {
+    return !a && G(iff(X(a), f));
+  }
 
-          if (!label) return; // not a translator proposition
+  // Obtain semantics for weak-yesterday propositional letter
+  static
+  formula<LTL> w_yesterday_semantics(proposition a, formula<LTL> f) {
+    return a && G(iff(X(a), f));
+  }
 
-          formula psi = std::get<1>(*label);
-          return psi.match( // LCOV_EXCL_LINE
-              [&](yesterday y, formula op) {
-                formula sem_y = yesterday_semantics(a, y);
+  // Obtain semantics for since propositional letter
+  static
+  formula<LTL> since_semantics(
+    proposition since, formula<LTL> l, formula<LTL> r, proposition y
+  ) {
+    return G(iff(since, r || (l && y))) && yesterday_semantics(y, since);
+  }
 
-                sem.push_back(sem_y);
+  static
+  formula<LTL> sub_past(formula<LTLP> f, std::vector<formula<LTL>> &sem) {
+    return f.match( // LCOV_EXCL_LINE
+        [&](boolean b) { return b; },
+        [&](proposition p) { return p; },
+        
+        [&](yesterday<LTLP>, auto op) {
+          auto sub = sub_past(op, sem);
+          auto prop = past_label(Y(sub));
+          sem.push_back(yesterday_semantics(prop, sub));
 
-                gen_semantics(op, sem);
-              },
-              [&](w_yesterday z, formula op) {
-                formula sem_z = w_yesterday_semantics(a, z);
+          return prop;
+        },
+        [&](w_yesterday<LTLP>, auto op) {
+          auto sub = sub_past(op, sem);
+          auto prop = past_label(Z(op));
+          sem.push_back(w_yesterday_semantics(prop, sub));
 
-                sem.push_back(sem_z);
+          return prop;
+        },
+        [&](since<LTLP>, auto left, auto right) {
+          auto lsub = sub_past(left, sem);
+          auto rsub = sub_past(right, sem);
+          auto prop = past_label(S(lsub, rsub));
+          auto yprop = past_label(Y(prop));
 
-                gen_semantics(op, sem);
-              },
-              [&](since s, formula left, formula right) {
-                proposition y = past_label(Y(a));
-                formula sem_s = since_semantics(a, s, y);
-                formula sem_y = yesterday_semantics(y, Y(a));
+          sem.push_back(since_semantics(prop, lsub, rsub, yprop));
 
-                sem.push_back(sem_s);
-                sem.push_back(sem_y);
-
-                gen_semantics(left, sem);
-                gen_semantics(right, sem);
-              },
-              [](otherwise) { black_unreachable(); } // LCOV_EXCL_LINE
+          return prop;
+        },
+        [&](triggered<LTLP>, auto left, auto right) {
+          return sub_past(!S(!left, !right), sem);
+        },
+        [&](once<LTLP> p, auto op) { 
+          return sub_past(S(p.sigma()->top(), op), sem); 
+        },
+        [&](historically<LTLP>, auto op) { 
+          return sub_past(!O(!op), sem); 
+        },
+        [&](unary<LTLP> u, auto arg) {
+          return unary<LTL>(
+            *fragment_cast<LTL>(u.node_type()), sub_past(arg, sem)
           );
         },
-        [&](unary, formula op) { gen_semantics(op, sem); },
-        [&](binary, formula left, formula right) {
-          gen_semantics(left, sem);
-          gen_semantics(right, sem);
+        [&](binary<LTLP> b, auto left, auto right) {
+          return binary<LTL>(
+            *fragment_cast<LTL>(b.node_type()),
+            sub_past(left, sem), sub_past(right, sem)
+          );
         }
     );
   }
 
-  formula remove_past(formula f) {
-    formula ltl = sub_past(f);
-
-    std::vector<formula> semantics;
-    gen_semantics(ltl, semantics);
+  formula<LTL> remove_past(formula<LTLP> f) {
+    
+    std::vector<formula<LTL>> semantics;
+    formula<LTL> ltl = sub_past(f, semantics);
 
     // Conjoin the ltl formula with its semantics formulas
     return // LCOV_EXCL_LINE
       std::accumulate(semantics.begin(), semantics.end(), ltl, // LCOV_EXCL_LINE
-        [](formula f1, formula f2) { return f1 && f2; }
+        [](auto f1, auto f2) { return f1 && f2; }
     );
   }
-} // namespace black::internal
+} // namespace black_internal

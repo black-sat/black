@@ -22,10 +22,11 @@
 // SOFTWARE.
 
 #include <black/sat/dimacs.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <tsl/hopscotch_map.h>
 
-namespace black::sat::dimacs::internal
+namespace black_internal::dimacs
 {
   struct solver::_solver_t {
     tsl::hopscotch_map<proposition, uint32_t> vars;
@@ -49,16 +50,17 @@ namespace black::sat::dimacs::internal
 
   solver::~solver() = default;
 
-  void solver::assert_formula(formula f) 
+  void solver::assert_formula(formula<FO> f) 
   {
+    black_assert(can_fragment_cast<propositional>(f));
     // conversion of the formula to CNF
-    cnf c = to_cnf(f);
+    cnf::cnf c = cnf::to_cnf(fragment_unsafe_cast<propositional>(f));
 
     // census of new variables
     size_t old_size = _data->vars.size();
     for(black::clause cl : c.clauses) {
       for(black::literal lit : cl.literals) {
-        _data->var(lit.proposition);
+        _data->var(lit.prop);
       }
     }
     
@@ -71,7 +73,7 @@ namespace black::sat::dimacs::internal
     for(black::clause cl : c.clauses) {
       dimacs::clause dcl;
       for(black::literal lit : cl.literals) {
-        dcl.literals.push_back({ lit.sign, _data->var(lit.proposition) });
+        dcl.literals.push_back({ lit.sign, _data->var(lit.prop) });
       }
 
       // assert the clause
@@ -80,9 +82,9 @@ namespace black::sat::dimacs::internal
   }
 
   // TODO: optimize corner cases (e.g. if assumption is already a literal)
-  tribool solver::is_sat_with(formula assumption) 
+  tribool solver::is_sat_with(logic::formula<logic::FO> assumption) 
   { 
-    proposition fresh = assumption.sigma()->prop(assumption);
+    proposition fresh = assumption.sigma()->proposition(assumption);
 
     this->assert_formula(iff(fresh, assumption));
 
@@ -101,46 +103,6 @@ namespace black::sat::dimacs::internal
 
   void solver::clear_vars() {
     _data = std::make_unique<_solver_t>();
-  }
-
-  formula to_formula(alphabet &sigma, dimacs::clause const& c) {
-    return big_or(sigma, c.literals, [&](literal l) {
-      proposition a = sigma.prop(l.var);
-      return l.sign ? formula{a} : formula{!a};
-    });
-  }
-
-  formula to_formula(alphabet &sigma, dimacs::problem const& p) {
-    return big_and(sigma, p.clauses, [&](clause c) {
-      return to_formula(sigma, c);
-    });
-  }
-
-  std::optional<solution> solve(dimacs::problem const &p, std::string backend) {
-    alphabet sigma;
-
-    auto solver = sat::solver::get_solver(backend);
-    solver->assert_formula(to_formula(sigma, p));
-
-    if(!solver->is_sat())
-      return {};
-
-    uint32_t nvars = 0;
-    for(dimacs::clause c : p.clauses)
-      for(dimacs::literal l : c.literals)
-        nvars = l.var > nvars ? l.var : nvars;
-
-    solution s;
-    for(uint32_t i = 1; i <= nvars; ++i) {
-      proposition a = sigma.prop(i);
-      tribool v = solver->value(a);
-      if(v == tribool::undef)
-        continue;
-      
-      s.assignments.push_back(literal{(bool)v, i});
-    }
-
-    return s;
   }
 
 }

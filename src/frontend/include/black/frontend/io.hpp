@@ -32,6 +32,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <string_view>
 
 //
 // Functions in this file should be used as the only way to output anything
@@ -50,20 +51,18 @@ namespace black::frontend::io
   // io::print(format, args...)
   //
   template<typename... Args>
-  auto print(Args&&... args)
-    -> std::void_t<decltype(fmt::print(stdout, std::forward<Args>(args)...))>
+  void print(std::string_view f, Args&&... args)
   {
-    fmt::print(stdout, std::forward<Args>(args)...);
+    fmt::vprint(stdout, f, fmt::make_format_args(std::forward<Args>(args)...));
   }
 
   //
   // println() is just as print(), but prints a newline
   //
   template<typename... Args>
-  auto println(Args&&... args)
-    -> std::void_t<decltype(fmt::print(std::forward<Args>(args)...))>
+  void println(std::string_view fmt, Args&&... args)
   {
-    print(std::forward<Args>(args)...);
+    print(fmt, std::forward<Args>(args)...);
     print("\n");
   }
 
@@ -71,20 +70,18 @@ namespace black::frontend::io
   // io::error(format, args...)
   //
   template<typename... Args>
-  auto error(Args&&... args)
-    -> std::void_t<decltype(fmt::print(stderr, std::forward<Args>(args)...))>
+  void error(std::string_view f, Args&&... args)
   {
-    fmt::print(stderr, std::forward<Args>(args)...);
+    fmt::vprint(stderr, f, fmt::make_format_args(std::forward<Args>(args)...));
   }
 
   //
   // io:errorln() is just as error(), but prints a newline
   //
   template<typename... Args>
-  auto errorln(Args&&... args)
-    -> std::void_t<decltype(error(std::forward<Args>(args)...))>
+  void errorln(std::string_view fmt, Args&&... args)
   {
-    error(std::forward<Args>(args)...);
+    error(fmt, std::forward<Args>(args)...);
     error("\n");
   }
 
@@ -97,11 +94,10 @@ namespace black::frontend::io
   //
   template<typename... Args>
   [[ noreturn ]]
-  auto fatal(status_code v, Args&&... args) // LCOV_EXCL_LINE
-    -> decltype(print(std::forward<Args>(args)...))
+  void fatal(status_code v, std::string_view fmt, Args&&... args) // LCOV_EXCL_LINE
   {
     error("{}: ", cli::command_name); // LCOV_EXCL_LINE
-    errorln(std::forward<Args>(args)...); // LCOV_EXCL_LINE
+    errorln(fmt, std::forward<Args>(args)...); // LCOV_EXCL_LINE
 
     quit(v); // LCOV_EXCL_LINE
   }

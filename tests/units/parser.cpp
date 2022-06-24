@@ -23,7 +23,7 @@
 
 #include <ostream>
 
-#include <black/logic/alphabet.hpp>
+#include <black/logic/logic.hpp>
 #include <black/logic/parser.hpp>
 #include <black/logic/prettyprint.hpp>
 
@@ -40,7 +40,8 @@ TEST_CASE("Syntax errors") {
     "F(p(x,))", "x = 1000000000000000000000", "x = 1.", "x x", "x % 1",
     "exists . p", "exists x y z +", "exists x . (x =)", "p(x",
     "x + y * = x", "F(-)", "next x", "next(x x", "wnext x", "wnext(x x",
-    "next(next(x +)) = x", "wnext(next(x +)) = x", "p 42", "p 0.1",
+    "prev x", "wprev(x x", "next(next(x +)) = x", "wnext(next(x +)) = x", 
+    "p 42", "p 0.1", ",", ".", "x +", "x *", "x -", "x /",
     "x = 0.0000000000000000000000000000000000000000000000000000000000000000"
     "0000000000000000000000000000000000000000000000000000000000000000000000"
     "0000000000000000000000000000000000000000000000000000000000000000000000"
@@ -67,33 +68,55 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
 {
   alphabet sigma;
 
-  proposition p = sigma.prop("p{}");
-  proposition q = sigma.prop("");
-  variable x = sigma.var("x\\");
-  variable y = sigma.var("Y");
-  variable z = sigma.var("z");
+  proposition p = sigma.proposition("p{}");
+  proposition q = sigma.proposition("");
+  variable x = sigma.variable("x\\");
+  variable y = sigma.variable("Y");
+  variable z = sigma.variable("\\z");
 
-  function g{"g"};
-  relation r{"r"};
+  function g = sigma.function("g");
+  relation r = sigma.relation("r");
 
-  std::vector<formula> tests = {
-    p, !p, X(p), F(p), G(p), O(p), H(p), XF(p), GF(p), XG(p),
-    p && q, p || q, U(p,q), S(p,q), R(p,q), T(p,q),
-    p && (X(U(p,q)) || XF(!q)),
-    p && implies(Y(S(p,q)), GF(!p)),
-    U(p, !(GF(q))),
-    !(iff(p || q, !q && p)),
-    exists({x,y,z}, g(x + 2, y) + 2 >= (y * sigma.constant(1.5)) && y == z),
-    forall({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) && r(x,y),
-    (x + y) * z > 0
-  };
+  std::vector<sort> sorts = {sigma.integer_sort(), sigma.real_sort()};
 
-  for(formula f : tests) {
-    DYNAMIC_SECTION("Roundtrip for formula: " << f) {
-      auto result = parse_formula(sigma, to_string(f));
+  for(auto s : sorts) {
+    DYNAMIC_SECTION("Sort: " << to_string(s)) {
+      sigma.set_default_sort(s);
 
-      REQUIRE(result.has_value());
-      CHECK(*result == f);
+      std::vector<formula> tests = {
+        p, !p, X(p), F(p), G(p), O(p), H(p), X(F(p)), G(F(p)), X(G(p)),
+        p && q, p || q, U(p,q), S(p,q), R(p,q), T(p,q),
+        p && (X(U(p,q)) || X(F(!q))),
+        p && implies(Y(S(p,q)), G(F(!p))),
+        U(p, !(G(F(q)))),
+        !(iff(p || q, !q && p)),
+        (forall(x, x == x)) && p,
+        (exists(x, x == x)) && p,
+        exists_block({x,y,z}, g(x + 1.0, y) - 2.0 >= (y * 0.0) && y == z / 2),
+        forall_block({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) &&
+          r(x,y),
+        (x + y) * z > 0, -x == y,
+        W(p, q), M(p, q), x < y, x <= y, 
+        x + constant{sigma.zero()} == x, x * constant{sigma.one()} == x,
+        next(prev(x)) == x, next(wprev(x)) == x
+      };
+
+      for(formula f : tests) {
+        DYNAMIC_SECTION("Roundtrip for formula: " << to_string(f)) {
+          auto result = parse_formula(sigma, to_string(f), [](auto error){
+            INFO("parsing error: " << error);
+            REQUIRE(false);
+          });
+          
+          REQUIRE(result.has_value());
+
+          INFO("parsed: " << to_string(*result));
+          
+          CHECK(*result == f);
+        }
+      }
     }
+    
   }
+  
 }

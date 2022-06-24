@@ -69,15 +69,15 @@ if(Catch2_FOUND)
   #
   set(
     UNIT_TESTS
-    units/cnf.cpp
-    units/formula.cpp
-    units/term.cpp
-    units/match.cpp
-    units/parser.cpp
-    units/solver.cpp
-    units/past_remover.cpp
     units/support.cpp
+    units/basics.cpp
+    units/match.cpp
+    units/namespaces.cpp
+    units/parser.cpp
+    units/past_remover.cpp
+    units/solver.cpp
     units/sat.cpp
+    units/cnf.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)

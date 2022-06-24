@@ -29,70 +29,79 @@
 
 #include <catch.hpp>
 
-using namespace black;
+#include <string_view>
+
+using namespace black::logic::fragments::LTLP;
+using black::remove_past;
 
 struct test {
-  class formula formula;
-  class formula result;
+  formula f;
+  formula result;
 };
 
 TEST_CASE("Translation idempotency on future only formulas")
 {
   alphabet sigma;
 
-  proposition p = sigma.prop("p");
-  proposition q = sigma.prop("q");
+  proposition p = sigma.proposition("p");
+  proposition q = sigma.proposition("q");
 
   std::vector<formula> tests = {
-      p, !p, X(p), F(p), G(p), XF(p), GF(p), XG(p),
+      p, !p, X(p), F(p), G(p), X(F(p)), G(F(p)), X(G(p)),
       p && q, p || q, U(p,q), R(p,q),
-      p && (X(U(p,q)) || XF(!q)),
-      p && implies(X(R(p,q)), GF(!p)),
-      U(p, !(GF(q))),
+      p && (X(U(p,q)) || X(F(!q))),
+      p && implies(X(R(p,q)), G(F(!p))),
+      U(p, !(G(F(q)))),
       !(iff(p || q, !q && p))
   };
 
   for(formula f : tests) {
-    DYNAMIC_SECTION("Idempotency for formula: " << f) {
-      CHECK(remove_past(f) == f);
+    DYNAMIC_SECTION("Idempotency for formula: " << to_string(f)) {
+      CHECK(black::remove_past(f) == f);
     }
   }
+}
+
+static
+proposition past_label(formula f) {
+  using namespace std::literals;
+  return f.sigma()->proposition(std::tuple{"_past_label"sv, f});
 }
 
 TEST_CASE("Translation for basic past formulas")
 {
   alphabet sigma;
 
-  proposition p = sigma.prop("p");
-  proposition q = sigma.prop("q");
+  proposition p = sigma.proposition("p");
+  proposition q = sigma.proposition("q");
 
-  proposition p_Y  = internal::past_label(Y(p));
-  proposition p_Z  = internal::past_label(Z(p));
-  proposition p_S  = internal::past_label(S(p,q));
-  proposition p_YS = internal::past_label(Y(p_S));
-  proposition p_T  = internal::past_label(S(!p,!q));
-  proposition p_YT = internal::past_label(Y(p_T));
-  proposition p_P  = internal::past_label(S(sigma.top(),p));
-  proposition p_YP = internal::past_label(Y(p_P));
-  proposition p_H  = internal::past_label(S(sigma.top(),!p));
-  proposition p_YH = internal::past_label(Y(p_H));
+  proposition p_Y  = past_label(Y(p));
+  proposition p_Z  = past_label(Z(p));
+  proposition p_S  = past_label(S(p,q));
+  proposition p_YS = past_label(Y(p_S));
+  proposition p_T  = past_label(S(!p,!q));
+  proposition p_YT = past_label(Y(p_T));
+  proposition p_P  = past_label(S(sigma.top(),p));
+  proposition p_YP = past_label(Y(p_P));
+  proposition p_H  = past_label(S(sigma.top(),!p));
+  proposition p_YH = past_label(Y(p_H));
 
   std::vector<test> tests = {
       {Y(p),    p_Y && (!p_Y && G(iff(X(p_Y), p)))},
       {Z(p),    p_Z && (p_Z && G(iff(X(p_Z), p)))},
-      {S(p,q),  (p_S && G(iff(p_S, q || (p && p_YS))))
-                && (!p_YS && G(iff(X(p_YS), p_S)))},
-      {T(p,q),  (!p_T && G(iff(p_T, !q || (!p && p_YT))))
-                && (!p_YT && G(iff(X(p_YT), p_T)))},
-      {O(p),    (p_P && G(iff(p_P, p || (sigma.top() && p_YP))))
-                && (!p_YP && G(iff(X(p_YP), p_P)))},
-      {H(p),    (!p_H && G(iff(p_H, !p || (sigma.top() && p_YH))))
-                && (!p_YH && G(iff(X(p_YH), p_H)))}
+      {S(p,q),  (p_S && (G(iff(p_S, q || (p && p_YS)))
+                && (!p_YS && G(iff(X(p_YS), p_S)))))},
+      {T(p,q),  (!p_T && (G(iff(p_T, !q || (!p && p_YT)))
+                && (!p_YT && G(iff(X(p_YT), p_T)))))},
+      {O(p),    (p_P && (G(iff(p_P, p || (sigma.top() && p_YP)))
+                && (!p_YP && G(iff(X(p_YP), p_P)))))},
+      {H(p),    (!p_H && (G(iff(p_H, !p || (sigma.top() && p_YH)))
+                && (!p_YH && G(iff(X(p_YH), p_H)))))}
   };
 
   for(test t : tests) {
-    DYNAMIC_SECTION("Translation for formula: " << t.formula) {
-      CHECK(remove_past(t.formula) == t.result);
+    DYNAMIC_SECTION("Translation for formula: " << to_string(t.f)) {
+      CHECK(black::remove_past(t.f) == t.result);
     }
   }
 
@@ -100,9 +109,9 @@ TEST_CASE("Translation for basic past formulas")
     black::solver slv;
 
     for(test t : tests) {
-      DYNAMIC_SECTION("Check for formula: " << t.formula) {
+      DYNAMIC_SECTION("Check for formula: " << to_string(t.f)) {
         slv.set_formula(
-          formula{!implies(remove_past(t.formula), t.formula)}
+          formula{!implies(remove_past(t.f), t.f)}
         );
         CHECK(!slv.solve()); // check validity
       }

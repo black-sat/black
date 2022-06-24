@@ -25,32 +25,34 @@
 #define BLACK_DEBUG_RANDOM_FORMULA_HPP
 
 #include <black/support/common.hpp>
-#include <black/logic/formula.hpp>
+#include <black/logic/logic.hpp>
 #include <random>
 
-namespace black::internal {
+namespace black_internal::random {
+
+  using namespace logic;
 
   BLACK_EXPORT
-  formula random_ltl_formula(
+  formula<LTL> random_ltl_formula(
       std::mt19937& gen, alphabet& sigma, int n,
       std::vector<std::string> const& symbols);
 
   BLACK_EXPORT
-  formula random_ltlp_formula(
+  formula<LTLP> random_ltlp_formula(
       std::mt19937& gen, alphabet& sigma, int n,
       std::vector<std::string> const& symbols);
 
   BLACK_EXPORT
-  formula random_boolean_formula(
+  formula<propositional> random_boolean_formula(
       std::mt19937& gen, alphabet& sigma, int n,
       std::vector<std::string> const& symbols);
 
 }
 
 namespace black {
-  using internal::random_ltl_formula;
-  using internal::random_ltlp_formula;
-  using internal::random_boolean_formula;
+  using black_internal::random::random_ltl_formula;
+  using black_internal::random::random_ltlp_formula;
+  using black_internal::random::random_boolean_formula;
 }
 
 #endif // BLACK_DEBUG_RANDOM_FORMULA_HPP

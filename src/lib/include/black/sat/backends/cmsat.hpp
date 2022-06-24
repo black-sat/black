@@ -24,7 +24,7 @@
 #include <black/support/common.hpp>
 #include <black/sat/dimacs.hpp>
 
-namespace black::sat::backends 
+namespace black_internal::cmsat 
 {
   class BLACK_EXPORT cmsat : public ::black::sat::dimacs::solver
   {
@@ -33,7 +33,6 @@ namespace black::sat::backends
     virtual ~cmsat() override;
 
     virtual void new_vars(size_t n) override;
-    virtual size_t nvars() const override;
     virtual void assert_clause(dimacs::clause f) override;
     virtual tribool is_sat() override;
     virtual tribool 
@@ -46,4 +45,8 @@ namespace black::sat::backends
     struct _cmsat_t;
     std::unique_ptr<_cmsat_t> _data;
   };
+}
+
+namespace black::sat::backends {
+  using black_internal::cmsat::cmsat;
 }

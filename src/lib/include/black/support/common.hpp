@@ -24,10 +24,46 @@
 #ifndef BLACK_COMMON_H
 #define BLACK_COMMON_H
 
+#include <type_traits>
+
 #ifdef _MSC_VER
   #define BLACK_EXPORT __declspec(dllexport)
 #else
   #define BLACK_EXPORT
 #endif
+
+#if defined(_MSC_VER)
+  #include <BaseTsd.h>
+  using ssize_t = SSIZE_T;
+#endif
+
+namespace black_internal 
+{
+  // Simple utility to get the overloading of multiple lambdas (for example)
+  // not used for formula::match but useful to work with std::visit
+  template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+  template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+  //
+  // Useful utilities to work with strongly-typed enums
+  //
+  // GCOV false negatives
+  template <typename E>
+    requires std::is_enum_v<E>
+  constexpr auto to_underlying(E e) noexcept // LCOV_EXCL_LINE
+  {
+      return static_cast<std::underlying_type_t<E>>(e); // LCOV_EXCL_LINE
+  }
+
+  template<typename E>
+    requires std::is_enum_v<E>
+  constexpr E from_underlying(std::underlying_type_t<E> v) noexcept {
+    return static_cast<E>(v);
+  }
+}
+
+namespace black {
+  using black_internal::overloaded;
+}
 
 #endif // BLACK_COMMON_H

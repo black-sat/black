@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2021 Nicola Gigante
+// (C) 2022 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,19 +21,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_FRONTEND_DIMACS_HPP
-#define BLACK_FRONTEND_DIMACS_HPP
+#ifndef BLACK_LOGIC_FORMULA_HPP
+#define BLACK_LOGIC_FORMULA_HPP
 
-#include <optional>
-#include <string>
-#include <istream>
+//
+// The files included here define BLACK's logic API: handling of logic formulas
+// and everything around formulas.
+//
+// WARNING: the following files are thoroughly commented, but please *do not*
+// read them to understand how to *use* BLACK's logic API. Refer to the
+// documentation instead for that (and ping me if the documentation does not yet
+// exists when you are reading this comment). After that, come here to
+// understand how the API works under the hood.
+//
+// Read the comments of the files in this order:
+// - hierarchy.hpp (which is not included from here)
+// - core.hpp
+// - generation.hpp
+// - interface.hpp (interface-fwd.hpp are just needed forward declarations)
+// - fragments.hpp
+//
+#include <black/internal/logic/core.hpp>
+#include <black/internal/logic/interface-fwd.hpp>
+#include <black/internal/logic/generation.hpp>
+#include <black/internal/logic/interface.hpp>
+#include <black/internal/logic/fragments.hpp>
 
-namespace black::frontend 
-{
-  //
-  // Main entry point of the tool when in DIMACS mode
-  //
-  int dimacs();
-}
-
-#endif // BLACK_FRONTEND_DIMACS_HPP
+#endif // BLACK_LOGIC_FORMULA_HPP

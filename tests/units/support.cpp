@@ -23,11 +23,11 @@
 
 #include <catch.hpp>
 
-#include <black/support/meta.hpp>
-#include <black/support/hash.hpp>
+#include <black/support/identifier.hpp>
 #include <black/support/tribool.hpp>
 
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -78,47 +78,11 @@ TEST_CASE("Testing black::tribool")
   }
 }
 
-TEST_CASE("Hashing functions for tuples")
-{
-  using key_type = std::tuple<int, char, char>;
-
-  std::unordered_map<key_type, int> map;
-
-  key_type key = {42, 'a', 'z'};
-  map.insert({key, 42});
-
-  SECTION("Lookup of an existent key") {
-    auto it = map.find(key);
-    REQUIRE(it != map.end());
-    REQUIRE(it->second == 42);
-  }
-
-  SECTION("Lookup of a non-existent key") {
-    key_type nkey = {0, 'A', 'Z'};
-    auto it = map.find(nkey);
-
-    REQUIRE(it == map.end());
-  }
-}
-
-struct NonStringable {
-  bool operator==(NonStringable) const { return true; }
-};
-
-namespace std {
-  template<>
-  struct hash<NonStringable> {
-    size_t operator()(NonStringable) const {
-      return 1;
-    }
-  };
-}
-
 TEST_CASE("identifier class")
 {
-  using namespace black::internal;
+  using namespace black_internal;
 
-  static_assert(is_hashable<int&>);
+  STATIC_REQUIRE(stringable<int>);
 
   SECTION("Base types") {
     int i = 42;
@@ -138,14 +102,11 @@ TEST_CASE("identifier class")
     REQUIRE(!c.has_value());
     REQUIRE(*opt == 42);
 
-    h = &i; // reassign with different type
-    std::optional opt2 = h.to<int*>();
+    h = 3.14f; // reassign with different type
+    std::optional opt2 = h.to<float>();
 
     REQUIRE(opt2.has_value());
-    REQUIRE(*opt2 == &i);
-
-    h = NonStringable{};
-    REQUIRE(to_string(h) == typeid(NonStringable).name());
+    REQUIRE(*opt2 == 3.14f);
   }
 
   SECTION("C strings") {
@@ -153,45 +114,70 @@ TEST_CASE("identifier class")
 
     identifier h{str};
 
-    std::optional opt = h.to<char const*>();
+    std::optional opt = h.to<std::string>();
 
     REQUIRE(opt.has_value());
-    REQUIRE(std::strcmp(*opt, "hello") == 0);
     REQUIRE(*opt == str);
   }
 
+  SECTION("String views") {
+    std::string_view view = "hello";
+
+    identifier h{view};
+
+    std::optional opt = h.to<std::string>();
+
+    REQUIRE(opt.has_value());
+    REQUIRE((*opt == view));
+  }
+
+  SECTION("Tuples") {
+    using namespace black_internal;
+
+    std::tuple<int, double> t = {42, 3.14};
+
+    identifier h1{t};
+    identifier h2{t};
+
+    std::optional opt = h1.to<std::tuple<int, double>>();
+
+    REQUIRE(opt.has_value());
+    REQUIRE((*opt == t));
+    REQUIRE(h1 == h2);
+  }
+
   SECTION("Class types") {
-    std::string s = "hello";
-    std::vector<bool> v = {true,false,true,false};
+    std::string s1 = "hello";
+    std::string s2 = "goodbye";
 
     SECTION("By value") {
-      identifier h{s};
+      identifier h{s1};
 
       std::optional opt = h.to<std::string>();
 
       REQUIRE(opt.has_value());
-      REQUIRE(*opt == s);
+      REQUIRE(*opt == s1);
 
-      h = v; // reassignment
-      std::optional opt2 = h.to<std::vector<bool>>();
+      h = s2; // reassignment
+      std::optional opt2 = h.to<std::string>();
 
       REQUIRE(opt2.has_value());
-      REQUIRE(*opt2 == std::vector<bool>{true,false,true,false});
+      REQUIRE(*opt2 == s2);
     }
 
     SECTION("By move") {
-      identifier h{std::move(s)};
+      identifier h{std::move(s1)};
 
       std::optional opt = h.to<std::string>();
 
       REQUIRE(opt.has_value());
       REQUIRE(*opt == "hello");
 
-      h = std::move(v); // reassignment
-      std::optional opt2 = h.to<std::vector<bool>>();
+      h = std::move(s2); // reassignment
+      std::optional opt2 = h.to<std::string>();
 
       REQUIRE(opt2.has_value());
-      REQUIRE(*opt2 == std::vector<bool>{true,false,true,false});
+      REQUIRE(*opt2 == "goodbye");
     }
   }
 }

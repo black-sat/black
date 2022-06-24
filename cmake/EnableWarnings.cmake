@@ -51,6 +51,9 @@ set(
   -Wno-unknown-warning-option
   -Wno-poison-system-directories # fix for macOS Big Sur
   -Wno-float-equal
+  -Wno-extra-semi-stmt
+  -Wno-missing-braces
+  -Wno-zero-as-null-pointer-constant
 )
 
 # GCC

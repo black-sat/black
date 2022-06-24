@@ -25,20 +25,17 @@
 #define BLACK_CNF_HPP_
 
 #include <black/support/common.hpp>
-#include <black/logic/formula.hpp>
-#include <black/logic/alphabet.hpp>
+#include <black/logic/logic.hpp>
 
 #include <vector>
 #include <initializer_list>
 #include <memory>
 
-namespace black::internal
+namespace black_internal::cnf
 {
-
-  // TODO: Compress the boolean into the pointer to the proposition
   struct literal {
     bool sign;
-    struct proposition proposition;
+    logic::proposition prop;
   };
 
   struct clause {
@@ -59,27 +56,36 @@ namespace black::internal
 
   };
 
+  // Removal of booleans from a formula. Internal use, exposed here for testing.
+  BLACK_EXPORT
+  logic::formula<logic::propositional> 
+  remove_booleans(logic::formula<logic::propositional> f);
+
   // Tseitin conversion to CNF
   BLACK_EXPORT
-  cnf to_cnf(formula f);
+  cnf to_cnf(logic::formula<logic::propositional> f);
 
   // Conversion of literals, clauses and cnfs to formulas
   BLACK_EXPORT
-  formula to_formula(literal lit);
+  logic::formula<logic::propositional> to_formula(literal lit);
 
   BLACK_EXPORT
-  formula to_formula(alphabet &sigma, clause c);
+  logic::formula<logic::propositional> to_formula(
+    logic::alphabet &sigma, clause c
+  );
 
   BLACK_EXPORT
-  formula to_formula(alphabet &sigma, cnf c);
+  logic::formula<logic::propositional> to_formula(
+    logic::alphabet &sigma, cnf c
+  );
 }
 
 namespace black {
-  using internal::literal;
-  using internal::clause;
-  using internal::cnf;
-  using internal::to_cnf;
-  using internal::to_formula;
+  using black_internal::cnf::literal;
+  using black_internal::cnf::clause;
+  using black_internal::cnf::cnf;
+  using black_internal::cnf::to_cnf;
+  using black_internal::cnf::to_formula;
 }
 
 #endif // BLACK_CNF_HPP_

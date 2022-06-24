@@ -211,8 +211,6 @@ benchmarks/solvers-*
 
 benchmarks/bench.status
 
-cnf.dimacs
-
 # Build directories
 build
 *-build

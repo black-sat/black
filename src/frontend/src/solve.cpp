@@ -29,7 +29,7 @@
 #include <black/frontend/cli.hpp>
 #include <black/frontend/support.hpp>
 
-#include <black/logic/formula.hpp>
+#include <black/logic/logic.hpp>
 #include <black/logic/parser.hpp>
 #include <black/logic/prettyprint.hpp>
 #include <black/logic/past_remover.hpp>
@@ -79,8 +79,12 @@ namespace black::frontend {
   {
     black::alphabet sigma;
 
-    if(cli::domain)
-      sigma.set_domain(cli::domain == "integers" ? sort::Int : sort::Real);
+    if(cli::domain) {
+      if(cli::domain == "integers")
+        sigma.set_default_sort(sigma.integer_sort());
+      else
+        sigma.set_default_sort(sigma.real_sort());
+    }
 
     std::optional<formula> f =
       black::parse_formula(sigma, file, formula_syntax_error_handler(path));
@@ -106,7 +110,7 @@ namespace black::frontend {
       io::errorln(
         "{}: the `{}` backend does not support first-order formulas.",
         cli::command_name, backend
-      );
+      ); // LCOV_EXCL_LINE
       quit(status_code::failure);
     }
 
@@ -118,7 +122,7 @@ namespace black::frontend {
         "{}: the `{}` backend does not support "
         "quantified first-order formulas.",
         cli::command_name, backend
-      );
+      ); // LCOV_EXCL_LINE
       quit(status_code::failure);
     }
 
@@ -180,7 +184,11 @@ namespace black::frontend {
       slv.set_tracer(&trace);
 
     if (cli::remove_past)
-      slv.set_formula(black::remove_past(*f), cli::finite);
+      slv.set_formula(
+        black::remove_past(
+          black::fragment_unsafe_cast<black::logic::LTLP>(*f)
+        ), cli::finite
+      );
     else
       slv.set_formula(*f, cli::finite);
 
@@ -202,21 +210,16 @@ namespace black::frontend {
   void relevant_props(formula f, std::unordered_set<proposition> &props) 
   {
     using namespace black;
-    f.match(
-      [&](boolean) {},
-      [&](atom) { black_unreachable(); }, // LCOV_EXCL_LINE
-      [&](quantifier) { black_unreachable(); }, // LCOV_EXCL_LINE
-      [&](proposition p) {
-        props.insert(p);
+
+    logic::for_each_child(f, overloaded {
+      [&](formula child) { 
+        child.match(
+          [&](proposition p) { props.insert(p); },
+          [&](otherwise) { relevant_props(child, props); }
+        );
       },
-      [&](unary, formula f1) {
-        relevant_props(f1, props);
-      },
-      [&](binary, formula f1, formula f2) {
-        relevant_props(f1, props);
-        relevant_props(f2, props);
-      }
-    );
+      [](otherwise) { black_unreachable(); } // LCOV_EXCL_LINE
+    });
   }
 
   static 
@@ -224,9 +227,9 @@ namespace black::frontend {
     f.match(
       [](boolean) { },
       [&](proposition p) {
-        if(auto l = p.label<core_placeholder_t>(); l.has_value()) {
+        if(auto l = p.name().to<core_placeholder_t>(); l.has_value()) {
           if(l->n >= last_index) {
-            io::print(" - {{{}}}: {}\n", l->n, l->f);
+            io::print(" - {{{}}}: {}\n", l->n, to_string(l->f));
             last_index++;
           }
         }
@@ -238,7 +241,7 @@ namespace black::frontend {
         print_uc_replacements(left, last_index);
         print_uc_replacements(right, last_index);
       },
-      [](first_order) { black_unreachable(); } // LCOV_EXCL_LINE
+      [](otherwise) { black_unreachable(); } // LCOV_EXCL_LINE
     );
   }
 
@@ -256,7 +259,7 @@ namespace black::frontend {
       io::println("UNSAT");
       if(cli::unsat_core) {
         black_assert(muc.has_value());
-        io::println("MUC: {}", *muc);
+        io::println("MUC: {}", to_string(*muc));
 
         if(cli::debug == "uc-replacements") {
           io::println("Replacements:");
