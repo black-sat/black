@@ -16,6 +16,11 @@ Possible backends (of which at least one must be present):
 The MathSAT and MiniSAT backends require `zlib`_ 1.x. MathSAT also requires
 `gmp`_ 6.x and its C++ wrapper.
 
+You can choose any of these backends to compile and use BLACK. Note however that
+not all the backends support the same features. In particular, Z3, cvc5 or
+MathSAT are required to handle *first-order* formulas, and only Z3 and cvc5
+support *quantified* first-order formulas.
+
 .. _CMake: https://cmake.org
 .. _libfmt: https://github.com/fmtlib/fmt
 .. _Hopscotch-map: https://github.com/Tessil/hopscotch-map

@@ -1,7 +1,8 @@
 Then, compilation and installation are easy::
 
    $ cd black
-   $ mkdir build && cd build
+   $ mkdir build 
+   $ cd build
    $ cmake ..
    $ make 
    $ sudo make install

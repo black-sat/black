@@ -7,3 +7,5 @@ BLACK should be easy to install on all the supported platforms. See the followin
    :caption: Platforms
    
    installation/linux
+   installation/macos
+   installation/windows

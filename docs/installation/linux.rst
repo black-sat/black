@@ -1,7 +1,7 @@
 .. highlight:: console
 
-Installation on Linux systems
-==============================
+Installation on Linux
+=====================
 
 Binary packages
 ----------------
@@ -129,9 +129,9 @@ For MiniSAT::
 
 Currently, there are no ``rpm`` packages for cvc5 and MathSAT. To install cvc5,
 stand-alone binary packages are available or it can be built from source. Refer
-to their website for more information. For MathSAT, we provide a script to
-download the binary package and put it in a place where BLACK's build system can
-find it.
+to their website for more information. To install MathSAT, we provide a script
+to download the binary package and put it in a place where BLACK's build system
+can find it.
 
 From BLACK's source directory, run::
 
