@@ -34,6 +34,7 @@ look at its `GitHub repository <https://github.com/black-sat/black>`_.
    :maxdepth: 2
    :caption: Contents
 
+   installation
    cli
    api
    publications
