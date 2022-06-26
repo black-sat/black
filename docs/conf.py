@@ -54,6 +54,6 @@ html_theme = 'furo'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-html_title = 'BLACK &bullet; Bounded Lᴛʟ Satisfiability Checker'
+html_title = 'BLACK &bullet; Bounded Lᴛʟ sAtisfiability ChecKer'
 
 primary_domain = 'cpp'

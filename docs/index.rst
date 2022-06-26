@@ -6,7 +6,7 @@
 =====================================
 BLACK
 =====================================
-**Bounded Lᴛʟ Satisfiability Checker**
+**Bounded Lᴛʟ sAtisfiability ChecKer**
 
 Welcome to **BLACK**'s website.
 
@@ -35,7 +35,9 @@ look at its `GitHub repository <https://github.com/black-sat/black>`_.
    :caption: Contents
 
    installation
+   logics
    cli
+   syntax
    api
    publications
 
