@@ -2,10 +2,9 @@ Supported logics
 =================
 
 Here you find a brief recap of the logics supported by BLACK and their
-properties. This presentation is not meant as a complete introduction to these
-logics, but rather as a quick reference to make sure the user and BLACK are on
-the same page. For more details we refer to 
-:doc:`the Publications page <publications>`. 
+properties. This presentation is not meant as an introduction to these logics,
+but rather as a quick reference to make sure the user and BLACK are on the same
+page. For more details we refer to :doc:`the Publications page <publications>`. 
 
 Linear Temporal Logic 
 ----------------------
@@ -102,5 +101,46 @@ that the logic is in fact *undecidable*. However, BLACK implements a
 procedure that always replies :math:`\mathsf{SAT}` for satisfiable formulas, and
 for unsatisfiable formulas may reply :math:`\mathsf{UNSAT}` or not terminate.
 
-We refer the user to :cite:`GeattiGG22` for an in-depth treatment of the logic.
+The syntax of :math:`\mathsf{LTL}_f^{\mathsf{MT}}` is, as said, that of
+:math:`\mathsf{LTL}_f` with first-order formulas in place of propositions, but a few temporal operators are supported inside first-order formulas as well.
+An :math:`\mathsf{LTL}_f^{\mathsf{MT}}` formula :math:`\phi` respects the
+following grammar:
 
+.. math::
+
+   \phi := {} & \psi \mid \neg\phi \mid \phi \lor \phi \mid \phi \land \phi \\
+    & \phantom{\psi} \mid \mathsf{X}\phi \mid \mathsf{\widetilde{X}}\phi 
+      \mid \phi\mathrel{\mathsf{U}}\phi \mid \mathsf{Y}\phi \mid \mathsf{Z}\phi 
+      \mid \phi\mathrel{\mathsf{S}}\phi \\[1ex]
+   \psi := {} & p(t_1,\ldots, t_n) \mid \neg\psi \mid \psi\lor\psi \mid
+      \psi\land\psi \mid \exists x \psi \mid \forall x \psi \mid \\
+      & \phantom{p(t_1,\ldots,t_n)} \mid \mathsf{X}\psi \mid 
+      \mathsf{\widetilde{X}}\psi \mid \mathsf{Y}\psi \mid \mathsf{Z}\psi\\
+   t := {} & f(t_1,\ldots,t_m) \mid c \mid x \mid \bigcirc x \mid 
+   \bigcirc\kern-1.2em\sim x
+
+where :math:`c` is a constant, :math:`x` is a variable, :math:`p` is an
+:math:`n`-ary predicate, and :math:`f` is an :math:`m`-ary function.
+
+Intuitively, the semantics of first-order formulas is standard, and the
+semantics of temporal operators follows that of :math:`\mathsf{LTL}`. The *term
+constructors* :math:`\bigcirc x` and :math:`\bigcirc\kern-1.2em\sim x` allow the
+formula to refer to the value of :math:`x` at the next state. However,
+:math:`\bigcirc x` (the *strong next* term constructor), similarly to the
+*tomorrow* operator, mandates the existence of such state. Instead,
+:math:`\bigcirc\kern-1.2em\sim x` (the *weak next* term constructor), similarly
+to the *weak tomorrow* operator, refers to such value only if the next state
+exists. More precisely, any atom :math:`p(t_1,\ldots,t_n)` that contains a
+*strong next* term is always false at the last state of the word, while any atom
+that contains a *weak next* term (but not strong ones) is always true at the
+last state.
+
+We refer the user to :cite:`GeattiGG22` for a formal account of the semantics of
+the logic.
+
+.. note:: 
+   :cite:`GeattiGG22` describes the :math:`\mathsf{LTL}_f^{\mathsf{MT}}` logic 
+   as was supported by BLACK in version 0.7. From v0.8, BLACK supports 
+   *tomorrow* and *yesterday* (and weak versions) temporal operators inside 
+   first-order formulas, and supports *non-rigid* functions and relations. 
+   Moreover, BLACK supports past operators, which are not covered in the paper.
