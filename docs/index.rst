@@ -40,6 +40,3 @@ look at its `GitHub repository <https://github.com/black-sat/black>`_.
    syntax
    api
    publications
-
-
-:ref:`genindex`
