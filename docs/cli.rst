@@ -254,6 +254,8 @@ Options
 ``black solve`` mode
 ++++++++++++++++++++++
 
+Check the satisfiability of a temporal logic formula.
+
 .. program:: black solve
 
 .. option:: -k, --bound <bound>         
@@ -315,6 +317,8 @@ Options
 
 ``black check`` mode
 ++++++++++++++++++++++
+
+Check the correctness of a trace (a model) against a temporal logic formula.
       
 .. option:: -t, --trace <trace>         
    
