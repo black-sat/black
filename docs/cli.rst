@@ -1,10 +1,11 @@
 .. highlight:: console
+.. |LTLfMT| replace:: LTL\ :math:`{}_f`\ :sup:`MT`
 
 Command-line interface
 ======================
 
 BLACK's main interface to the user is the command-line tool ``black``. Here we
-document its usage. For the input syntax accepted by the tool, look a the
+document its usage. For the input syntax accepted by the tool, look at the
 :doc:`syntax` page.
 
 Tutorial
@@ -22,13 +23,13 @@ Then, asking ``black`` about this formula is as easy as::
    $ black solve spec.pltl
    SAT
 
-``black`` replies ``SAT`` on the standard output, so the formula is satisfiable.
-Let us try an unsatisfiable formula::
+``black`` replies ``SAT`` on the *standard output*, so the formula is
+satisfiable. Let us try an unsatisfiable formula::
 
    $ cat unsat-spec.pltl
-   p & G(p -> q) & !q
+   G((p & q) & c) & F((w & r) & !c)
 
-   $ black solve spec.pltl
+   $ black solve unsat-spec.pltl
    UNSAT
 
 If the filename is ``-``, ``black`` reads from the *standard input*::
@@ -47,7 +48,7 @@ Alternatively, we may give the formulas on the command line with the
    $ black solve -f '!p & X !p & F p'
    SAT
 
-   $ black solve -f 'p & G(p -> q) & !q'
+   $ black solve -f 'G((p & q) & c) & F((w & r) & !c)'
    UNSAT
 
 .. tip::
@@ -127,5 +128,236 @@ lets us choose the output format. Currently supported formats are ``readable``
 .. tip:: 
 
    If you need to parse ``black``'s output from shell scripts or from the 
-   command-line, consider using the ``json`` output format and the 
+   command line, consider using the ``json`` output format and the 
    `jq <https://stedolan.github.io/jq/>`_ command-line JSON manipulation tool.
+
+BLACK supports many backends. The list of available backends can be retrieved 
+with the ``--sat-backends`` option::
+
+   $ black --sat-backends
+
+   BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
+        version 0.8.2
+
+   Available SAT backends:
+   - z3 *
+   - cmsat 
+   - cvc5
+   - mathsat
+   - minisat
+
+The one marked with ``*`` is the default used when no explicit choice is made.
+To choose the backend, use the ``-B`` option::
+
+   $ black solve -B cvc5 -f '!p & X !p & F p'
+   SAT
+
+Note that not all backends support the same features. In particular, first-order
+formulas are only supported with SMT solver backends (``z3``, ``cvc5`` and
+``mathsat``), and only ``z3`` and ``cvc5`` support *quantified* first-order
+formulas.
+
+Now, let's consider again the unsatisfiable formula above. Why is it
+unsatisfiable? ``black`` can help us answer this question by finding a *minimum
+unsatisfiable core* (MUC). This can be done by passing the ``-c`` option::
+
+   $ black solve -c -f 'G((p & q) & c) & F((w & r) & !c)'
+   UNSAT
+   MUC: G({0} & c) & F({1} & !c)
+
+Let us look at the output. ``UNSAT`` is printed because the formula is
+unsatisfiable. Then, the MUC is shown to be ``G({0} & c) & F({1} & !c)``. This
+is a reduction of the original formulas, where the subformula ``(p & q)`` has
+been replaced by ``{0}`` and the subformula ``(w & r)`` has been replaced by
+``{1}``. Let's try to give this formula back to ``black``::
+
+   $ black solve -f 'G({0} & c) & F({1} & !c)'
+   UNSAT
+
+The formula is unsatisfiable. Indeed, the MUC is the smallest *unsatisfiable*
+formula obtained by replacing some subformulas of the original one with
+propositional placeholders. It tells us that the replaced subformulas are not
+involved at all in the unsatisfiability of the formula. In this case, from the
+MUC it can be seen directly that the formula is unsatisfiable because we require
+``c`` to always hold and then we require ``!c`` to hold eventually.
+
+------------
+
+Until now, we have always given to ``black`` propositional formulas. But as you
+can see in the :doc:`logics` page, ``black`` also supports first-order formulas
+in place of propositional letters (*i.e.*, the |LTLfMT| logic).
+
+In this logic, we can use *variables* that take values over certains domains.
+Since BLACK supports the LIA and LRA theories (possibly combined with EUF),
+variables can be either *integer*- or *real*-valued. When giving a |LTLfMT|
+formula as input, we have to choose the domain using the ``-d`` option. Accepted
+values are ``integers`` and ``reals``::
+
+   $ black solve -d integers -f 'x = y + 2'
+   SAT
+
+.. note:: 
+
+   The ``-m`` option is not (yet) supported for |LTLfMT| formulas.
+
+.. note:: 
+
+   The ``--finite`` option is implied when solving |LTLfMT| formulas, since the 
+   infinite-trace semantics is not supported for such formulas.
+
+We can refer to the value of a variable at the next state using the *strong* or
+the *weak next* term constructors. For example::
+
+   $ black solve -d integers -f 'x = 0 & G(wnext(x) = x + 1) & F(x = 42)'
+   black: warning: use of `next`/`prev` terms implies the --semi-decision option.
+   black: warning: execution may not terminate.
+   black: warning: pass the --semi-decision option explicitly to silence this warning.
+   SAT
+
+As you can see, ``black`` warns you about the fact that, by using such terms,
+the solving procedure may not terminate (in the case of unsatisfiable formulas),
+hence ``black`` turns on implicitly the ``--semi-decision`` option which
+disables the termination checks. To silence the warning, you can pass the 
+option yourself (here we use the ``-s`` short option)::
+
+   $ black solve -s -d integers -f 'x = 0 & G(wnext(x) = x + 1) & F(x = 42)'
+   SAT
+
+.. note:: 
+
+   You can use the ``-s`` option on propositional formulas as well. This may
+   cause ``black`` to not terminate on unsatisfiable instances, but can
+   substantially speed up it on satisfiable ones.
+
+
+Usage reference
+----------------
+
+Synopsis
+~~~~~~~~
+::
+
+   $ black solve [-k <bound>] [-B <backend>] [--remove-past] [--finite] [-m] \
+           [-c] [-d <sort>] [-s] [-o <fmt>] [-f <formula>] [--debug <debug>] \
+           [<file>]
+
+   $ black check -t <trace> [-e <result>] [-i <state>] [--finite] [--verbose] \
+           [-f <formula>] [<file>]
+
+   $ black --sat-backends
+   $ black -v
+   $ black -h
+
+Options
+~~~~~~~
+
+``black solve`` mode
+++++++++++++++++++++++
+
+.. program:: black solve
+
+.. option:: -k, --bound <bound>         
+   
+   maximum bound for BMC procedures
+   
+.. option:: -B, --sat-backend <backend> 
+   
+   select the SAT backend to use
+
+   
+.. option:: --remove-past               
+   
+   translate LTL+Past formulas into LTL before checking satisfiability
+
+.. option:: --finite                    
+   
+   treat formulas as LTLf and look for finite models
+
+.. option:: -m, --model                 
+   
+   print the model of the formula, if any
+      
+.. option:: -c, --unsat-core            
+   
+   for unsatisfiable formulas, compute the minimum unsat core
+
+.. option:: -d, --domain <sort>         
+   
+   select the domain for first-order variables. Mandatory for first-order 
+   formulas.
+                                 
+   Accepted domains: ``integers``, ``reals``
+   
+.. option:: -s, --semi-decision         
+   
+   disable termination checks for unsatisfiable
+   formulas, speeding up the execution for satisfiable ones.
+                                 
+   *Note*: the use of ``next(x)`` and similar terms in formulas implies this 
+   option.
+
+.. option:: -o, --output-format <fmt>  
+   
+   Output format.
+   
+   Accepted formats: ``readable``, ``json``
+   
+   Default: ``readable``
+
+
+.. option:: -f, --formula <formula>     
+   
+   LTL formula to solve
+      
+.. option:: <file>                      
+   
+   input formula file name. If ``'-'``, reads from standard input.
+
+``black check`` mode
+++++++++++++++++++++++
+      
+.. option:: -t, --trace <trace>         
+   
+   trace file to check against the formula. If '-', reads from standard input.
+      
+.. option:: -e, --expected <result>     
+   
+   expected result (useful in testing).
+
+
+.. option:: -i, --initial-state <state>  
+   
+   index of the initial state over which to evaluate the formula. 
+   
+   Default: 0
+
+.. option:: --finite                    
+   
+   treat formulas as LTLf and expect a finite model
+
+.. option:: --verbose                   
+   
+   output a verbose log
+      
+.. option:: -f, --formula <formula>
+   
+   formula against which to check the trace
+     
+.. option:: <file>                      
+   
+   formula file against which to check the trace
+
+Other options
+++++++++++++++
+
+.. option:: --sat-backends                  
+   
+   print the list of available SAT backends
+
+.. option:: -v, --version
+   
+   show version and license information
+
+.. option:: -h, --help
+   
+   print this help message
