@@ -131,7 +131,7 @@ where :math:`c` is a constant, :math:`x` is a variable, :math:`p` is an
 :math:`n`-ary predicate, and :math:`f` is an :math:`m`-ary function.
 
 Intuitively, the semantics of first-order formulas is standard, and the
-semantics of temporal operators follows that of |LTL|. The *term constructors*
+semantics of temporal operators follows that of |LTLf|. The *term constructors*
 :math:`\bigcirc x` and :math:`\bigcirc\kern-1.2em\sim x` allow the formula to
 refer to the value of :math:`x` at the next state. However, :math:`\bigcirc x`
 (the *strong next* term constructor), similarly to the *tomorrow* operator,
