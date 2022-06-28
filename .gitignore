@@ -229,3 +229,5 @@ CMakeSettings.json
 # GitHub and Appveyor API tokens
 gh.token
 appveyor.token
+
+docs/_build
