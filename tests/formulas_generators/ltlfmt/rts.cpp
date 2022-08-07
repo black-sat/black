@@ -22,11 +22,44 @@
 // SOFTWARE.
 
 #include <black/logic/logic.hpp>
+#include <black/solver/solver.hpp>
+
+#include <iostream>
+#include <string_view>
 
 using namespace black;
 
 inline auto app(alphabet &sigma, int i) {
-  return sigma.relation(std::tuple{"app", i});
+  using namespace std::literals;
+  return sigma.relation(std::pair{"app"sv, i});
+}
+
+inline auto frame_axiom(
+  alphabet &sigma, relation rel, size_t arity
+) {
+  using namespace std::literals;
+
+  std::vector<variable> vars;
+  for(size_t i = 0; i < arity; ++i) {
+    vars.push_back(sigma.variable(std::pair{"x"sv, i}));
+  }
+
+  return forall_block(vars, iff(rel(vars), X(rel(vars))));
+}
+
+inline auto frame_axiom(
+  alphabet &sigma, std::vector<relation> &rels, 
+  std::optional<size_t> except, size_t arity
+) {
+  formula axiom = sigma.top();
+
+  for(size_t i = 0; i < rels.size(); ++i) {
+    if(i == except)
+      continue;
+    axiom = axiom && frame_axiom(sigma, rels[i], arity);
+  }
+
+  return axiom;
 }
 
 int main() {
@@ -63,6 +96,7 @@ int main() {
   auto x_status = sigma.variable("x_status");
   auto x_win = sigma.variable("x_win");
   auto x_score = sigma.variable("x_score");
+
   auto c_init = sigma.variable("c_init");
   auto c_undef = sigma.variable("c_undef");
   auto c_app_phase = sigma.variable("c_app_phase");
@@ -161,10 +195,12 @@ int main() {
     x_score == 0;
 
   for(size_t i = 0; i < M; ++i) {
-    init = init && forall_block({x1, x2, x3, x4}, !apps[i](x1, x2, x3 /*,x4*/));
+    init = init && 
+      forall_block({x1, x2, x3 /*, x4 */}, !apps[i](x1, x2, x3 /*,x4*/));
   }
 
-  init = init && forall_block({x1, x2, x3, x4}, !app_team(x1, x2, x3 /*,x4*/));
+  init = init && 
+    forall_block({x1, x2, x3 /*, x4 */}, !app_team(x1, x2, x3 /*,x4*/));
 
   formula goal =
     x_status == c_evaluated && x_score < 80;
@@ -180,16 +216,16 @@ int main() {
         wnext(x_status) == c_app_phase &&
         wnext(x_win) == x_win &&
         wnext(x_score) == x_score &&
+        X(apps[i](u1, c1, s1)) &&
         forall_block({x1, x2, x3},
           (
-            implies(x1 == u1 && x2 == c1 && x3 == s1, X(apps[i](x1, x2, x3))) &&
             implies(x1 != u1 && x2 != c1 && x3 != s1, 
               iff(apps[i](x1, x2, x3), X(apps[i](x1, x2, x3)) 
-              /* && frame axiom tutte le apps tranne apps[i] */
             )
           )
         )
-      )
+      ) && frame_axiom(sigma, apps, i, 3) 
+        && frame_axiom(sigma, app_team, 3)
     );
   }
 
@@ -197,9 +233,35 @@ int main() {
     implies(x_status == c_app_phase, 
       wnext(x_status) == c_apps_rcvd &&
       wnext(x_win) == x_win &&
-      wnext(x_score) == x_score
-      /* && frame axiom tutte le apps[i] */
+      wnext(x_score) == x_score &&
+      frame_axiom(sigma, apps, std::nullopt, 3) &&
+      frame_axiom(sigma, app_team, 3)
     );
 
+  for(size_t i = 0; i < M; ++i) {
+    phi_tr = phi_tr ||
+      exists_block({u1, c1, s1}, 
+        x_status == c_apps_rcvd &&
+        apps[i](u1, c1, s1) &&
+        s1 > 80 &&
+        wnext(x_status) == c_evaluated &&
+        wnext(x_win) == u1 &&
+        wnext(x_score) == s1
+      ) && frame_axiom(sigma, apps, std::nullopt, 3) 
+        && frame_axiom(sigma, app_team, 3);
+  }
   
+  sigma.set_default_sort(sigma.integer_sort());
+  solver slv;
+
+  slv.set_formula(init && phi_tr && goal);
+
+  auto res = slv.solve();
+
+  if(res)
+    std::cout << "SAT";
+  else
+    std::cout << "UNSAT";
+
+  return 0;
 }

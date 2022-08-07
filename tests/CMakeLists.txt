@@ -60,7 +60,7 @@ add_executable(rts
 target_link_libraries(rts PRIVATE black fmt::fmt)
 
 set_target_properties(
-  crscounter_generator random_formulas_generator ltlfmt lia lra euf euflia
+  crscounter_generator random_formulas_generator ltlfmt lia lra euf euflia rts
   PROPERTIES 
   EXCLUDE_FROM_ALL TRUE
 )
