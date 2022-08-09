@@ -68,22 +68,15 @@ int main() {
   alphabet sigma;
 
   auto user = sigma.relation("user");
-  auto team = sigma.relation("team");
   
-  std::vector<relation> apps;
-  const int M = 10;
-
-  for(int i = 0; i < M; ++i) {
-    apps.push_back(app(sigma, i));
-  }
-
-  auto app_team = sigma.relation("app_team");
+  auto applications = sigma.relation("applications");
+  auto winners = sigma.relation("winners");
 
   auto x1 = sigma.variable("x1");
   auto x2 = sigma.variable("x2");
   auto x3 = sigma.variable("x3");
-  auto x4 = sigma.variable("x4");
-  auto x5 = sigma.variable("x5");
+  // auto x4 = sigma.variable("x4");
+  // auto x5 = sigma.variable("x5");
   //auto x6 = sigma.variable("x6");
   // auto x7 = sigma.variable("x7");
   auto u1 = sigma.variable("u1");
@@ -95,101 +88,46 @@ int main() {
   auto c1 = sigma.variable("c1");
   auto n1 = sigma.variable("n1");
 
-  auto x_status = sigma.variable("x_status");
-  auto x_win = sigma.variable("x_win");
+  auto x_status = sigma.variable("x_status"); [[maybe_unused]]
+  auto x_winner = sigma.variable("x_winner");
   auto x_score = sigma.variable("x_score");
   auto x_evaluations = sigma.variable("x_evaluations");
 
   auto c_init = sigma.variable("c_init");
-  auto c_undef = sigma.variable("c_undef");
   auto c_app_phase = sigma.variable("c_app_phase");
   auto c_apps_rcvd = sigma.variable("c_apps_rcvd");
-  auto c_team_rcvd = sigma.variable("c_team_rcvd");
-  auto c_team_created = sigma.variable("c_team_created");
   auto c_evaluated = sigma.variable("c_evaluated");
-  auto c_programmers = sigma.variable("c_programmers");
+  auto c_final = sigma.variable("c_final");
 
   [[maybe_unused]]
   variable constants[] = {
     c_init,
-    c_undef,
     c_app_phase,
     c_apps_rcvd,
-    c_team_rcvd,
-    c_team_created,
     c_evaluated,
-    c_programmers
+    c_final
   };
 
-  [[maybe_unused]]
   formula user_primary_key = 
     forall_block({x1, x2, x3}, 
       implies(user(x1, x2) && user(x1, x3), x2 == x3)
     );
 
-  [[maybe_unused]]
+  formula winners_primary_key = 
+    forall_block({x1, x2, x3}, 
+      implies(winners(x1, x2) && winners(x1, x3), x2 == x3)
+    );
+
   formula user_rigid = 
     G(forall_block({x1, x2}, 
       implies(user(x1, x2), wX(user(x1, x2))) &&
       implies(X(user(x1, x2)), user(x1, x2))
     ));
 
-  [[maybe_unused]]
-  formula team_primary_key =
-    forall_block({x1, x2, x3, x4, x5},
-      implies(team(x1, x2, x3) && team(x1, x4, x5), 
-        x2 == x4 && x3 == x5
-      )
-    );
-
-  [[maybe_unused]]
-  formula team_rigid = 
-    G(forall_block({x1, x2, x3}, 
-      implies(X(sigma.top()), iff(team(x1, x2, x3), wX(team(x1, x2, x3))))));
-
-  [[maybe_unused]]
-  formula user_team_exclusion =
-    forall_block({x1, x2, x3, x4}, 
-      implies(user(x1, x2), !team(x1, x3, x4))
-    );
-  
-  [[maybe_unused]]
-  formula foreign_key = 
-    forall_block({x1, x2, x3},
-      implies(
-        team(x1, x2, x3), 
-        exists_block({x4, x5}, user(x2, x4) && user(x3, x5))
-      )
-    );
-
-
-  // formula apps_primary_key = sigma.top();
-
-  // for(int i = 0; i < M; ++i) {
-  //   auto key = G(forall_block({x1, x2, x3, x4, x5, x6, x7},
-  //     implies(apps[i](x1, x2, x3, x4) && apps[i](x1, x5, x6, x7),
-  //       x2 == x5 && x3 == x6 && x4 == x7
-  //     )
-  //   ));
-
-  //   apps_primary_key = apps_primary_key && key;
-  // }
-
-  // formula team_primary_key = 
-  //   G(forall_block({x1, x2, x3, x4, x5, x6, x7},
-  //     implies(team_app(x1, x2, x3, x4) && team_app(x1, x5, x6, x7),
-  //       x2 == x5 && x3 == x6 && x4 == x7
-  //     )
-  //   ));
-    
-
   formula axioms = 
     user_primary_key &&
-    user_rigid && 
-    team_primary_key &&
-    team_rigid;
-    // apps_primary_key &&
-    //team_primary_key;
+    winners_primary_key &&
+    user_rigid;
 
   for(auto c : constants) {
     axioms = axioms && G(wnext(c) == c);
@@ -205,86 +143,91 @@ int main() {
 
   formula reset =
     x_status == c_init &&
-    x_win == c_undef &&
-    x_score == 0;
+    forall_block({x1, x2, x3}, !applications(x1, x2, x3));
 
-  for(size_t i = 0; i < M; ++i) {
-    reset = reset && 
-      forall_block({x1, x2, x3 /*, x4 */}, !apps[i](x1, x2, x3 /*,x4*/));
-  }
-
-  reset = reset && 
-    forall_block({x1, x2, x3 /*, x4 */}, !app_team(x1, x2, x3 /*,x4*/));
-
-  const int N = 3;
-
-  [[maybe_unused]]
-  formula init = reset && x_evaluations == N;
+  const int N = 5;
+  formula init = reset && x_evaluations == N &&
+    forall_block({x1, x2}, !winners(x1, x2));
 
   formula phi_tr = sigma.bottom();
 
-  for(size_t i = 0; i < M; ++i) {
-    phi_tr = phi_tr || 
-      exists_block({u1, n1, c1, s1}, 
-        (x_status == c_init || x_status == c_app_phase) && 
-        user(u1, n1) && s1 >= 1 && s1 <= 100 && 
-        !apps[i](u1, c1, s1) &&
-        wnext(x_evaluations) == x_evaluations &&
-        wnext(x_status) == c_app_phase &&
-        wnext(x_win) == x_win &&
-        wnext(x_score) == x_score &&
-        wX(apps[i](u1, c1, s1)) &&
-        forall_block({x1, x2, x3},
-          (
-            implies(x1 != u1 && x2 != c1 && x3 != s1, 
-              implies(X(sigma.top()), 
-                iff(apps[i](x1, x2, x3), wX(apps[i](x1, x2, x3)))
-            )
+  phi_tr = phi_tr || 
+    exists_block({u1, n1, c1, s1}, 
+      (x_status == c_init || x_status == c_app_phase) && 
+      user(u1, n1) && s1 >= 1 && s1 <= 100 && 
+      !applications(u1, c1, s1) &&
+      wnext(x_evaluations) == x_evaluations &&
+      wnext(x_status) == c_app_phase &&
+      wX(applications(u1, c1, s1)) &&
+      forall_block({x1, x2, x3},
+        (
+          implies(x1 != u1 && x2 != c1 && x3 != s1, 
+            implies(X(sigma.top()), 
+              iff(applications(x1, x2, x3), wX(applications(x1, x2, x3)))
           )
         )
-      ) && frame_axiom(sigma, apps, i, 3) 
-        && frame_axiom(sigma, app_team, 3)
-    );
-  }
+      )
+    )// && frame_axiom(sigma, winners, 2)
+  );
 
   phi_tr = phi_tr || 
     x_status == c_app_phase &&
     wnext(x_evaluations) == x_evaluations && 
     wnext(x_status) == c_apps_rcvd &&
-    wnext(x_win) == x_win &&
-    wnext(x_score) == x_score &&
-    frame_axiom(sigma, apps, std::nullopt, 3) &&
-    frame_axiom(sigma, app_team, 3);
+    frame_axiom(sigma, applications, 3);
 
-  for(size_t i = 0; i < M; ++i) {
-    phi_tr = phi_tr ||
-      exists_block({u1, c1, s1}, 
-        x_status == c_apps_rcvd &&
-        apps[i](u1, c1, s1) &&
-        wnext(x_evaluations) == x_evaluations &&
-        //s1 > 80 &&
-        wnext(x_status) == c_evaluated &&
-        wnext(x_win) == u1 && 
-        wnext(x_score) == s1
-      ) && frame_axiom(sigma, apps, std::nullopt, 3) 
-        && frame_axiom(sigma, app_team, 3);
-  }
+  phi_tr = phi_tr ||
+    exists_block({u1, c1, s1}, 
+      x_status == c_apps_rcvd &&
+      applications(u1, c1, s1) &&
+      wnext(x_evaluations) == x_evaluations &&
+      //s1 > 80 &&
+      wnext(x_status) == c_evaluated 
+      // &&
+      // winners(u1, s1) &&
+      // forall_block({x1, x2},
+      //   implies(x1 != u1 && x2 != s1, 
+      //     implies(X(sigma.top()), 
+      //       iff(winners(x1, x2), wX(winners(x1, x2)))
+      //     )
+      //   )
+      // )
+    ) && frame_axiom(sigma, applications, 3);
 
   phi_tr = phi_tr || (
-    x_status == c_evaluated && 
+    x_status == c_evaluated && x_evaluations > 0 &&
     wX(reset) &&
-    wnext(x_evaluations) == x_evaluations - 1 
+    wnext(x_evaluations) == x_evaluations - 1
   );
-  
-  formula final = x_status == c_evaluated && x_evaluations == 0;
+
+  phi_tr = phi_tr || (
+    x_status == c_evaluated && x_evaluations == 0 && 
+    wnext(x_status) == c_final
+  );
+
+  // phi_tr = phi_tr || (
+  //   x_status == c_evaluated && x_evaluations == 0 &&
+  //   exists_block({u1, s1},
+  //     winners(u1, s1) &&
+  //     wnext(x_status) == c_final &&
+  //     wnext(x_winner) == u1 &&
+  //     wnext(x_score) == s1
+  //   )
+  // );
+
+  formula final = x_status == c_final;
 
   formula system = axioms && init && G(phi_tr) && F(final);
 
+  std::cerr << to_string(system) << "\n";
+
   // -------
 
+  [[maybe_unused]]
   formula property1 =
-    G(implies(x_status == c_evaluated, x_score > 60));
+    G(implies(x_status == c_final, x_score > 60));
   
+  [[maybe_unused]]
   formula property2 =
     G(implies(x_status == c_app_phase, F(x_status == c_evaluated)));
 
@@ -292,7 +235,7 @@ int main() {
   solver slv; 
 
   slv.set_sat_backend("z3");
-  slv.set_formula(system && !property1, true);
+  slv.set_formula(system, true);
 
   auto res = slv.solve(std::numeric_limits<size_t>::max(), true);
 
@@ -303,16 +246,16 @@ int main() {
   else
     std::cout << "UNSAT\n";
   
-  slv.set_formula(system && !property2, true);
+  // slv.set_formula(system && !property2, true);
 
-  res = slv.solve(std::numeric_limits<size_t>::max(), true);
+  // res = slv.solve(std::numeric_limits<size_t>::max(), true);
 
-  if(res == true)
-    std::cout << "SAT\n";
-  else if(res == tribool::undef)
-    std::cout << "UNKNOWN\n";
-  else
-    std::cout << "UNSAT\n";
+  // if(res == true)
+  //   std::cout << "SAT\n";
+  // else if(res == tribool::undef)
+  //   std::cout << "UNKNOWN\n";
+  // else
+  //   std::cout << "UNSAT\n";
 
   return 0;
 }
