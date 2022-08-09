@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 #include <black/logic/logic.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/solver/solver.hpp>
 
 #include <iostream>
@@ -44,7 +45,8 @@ inline auto frame_axiom(
     vars.push_back(sigma.variable(std::pair{"x"sv, i}));
   }
 
-  return forall_block(vars, iff(rel(vars), wX(rel(vars))));
+  return forall_block(vars, 
+    implies(X(sigma.top()), iff(rel(vars), wX(rel(vars)))));
 }
 
 inline auto frame_axiom(
@@ -107,6 +109,7 @@ int main() {
   auto c_evaluated = sigma.variable("c_evaluated");
   auto c_programmers = sigma.variable("c_programmers");
 
+  [[maybe_unused]]
   variable constants[] = {
     c_init,
     c_undef,
@@ -118,22 +121,31 @@ int main() {
     c_programmers
   };
 
+  [[maybe_unused]]
   formula user_primary_key = 
     forall_block({x1, x2, x3}, 
       implies(user(x1, x2) && user(x1, x3), x2 == x3)
     );
 
+  [[maybe_unused]]
   formula user_rigid = 
-    G(forall_block({x1, x2}, iff(user(x1, x2), wX(user(x1, x2)))));
+    G(forall_block({x1, x2}, 
+      implies(user(x1, x2), wX(user(x1, x2))) &&
+      implies(X(user(x1, x2)), user(x1, x2))
+    ));
 
+  [[maybe_unused]]
   formula team_primary_key =
     forall_block({x1, x2, x3, x4, x5},
       implies(team(x1, x2, x3) && team(x1, x4, x5), 
         x2 == x4 && x3 == x5
       )
     );
+
+  [[maybe_unused]]
   formula team_rigid = 
-    G(forall_block({x1, x2, x3}, iff(user(x1, x2, x3), wX(user(x1, x2, x3)))));
+    G(forall_block({x1, x2, x3}, 
+      implies(X(sigma.top()), iff(team(x1, x2, x3), wX(team(x1, x2, x3))))));
 
   [[maybe_unused]]
   formula user_team_exclusion =
@@ -172,9 +184,9 @@ int main() {
     
 
   formula axioms = 
-    user_primary_key && 
+    user_primary_key &&
     user_rigid && 
-    team_primary_key && 
+    team_primary_key &&
     team_rigid;
     // apps_primary_key &&
     //team_primary_key;
@@ -185,8 +197,9 @@ int main() {
 
   for(auto cc1 : constants) {
     for(auto cc2 : constants) {
-      if(cc1 != cc2)
-        axioms = axioms && G(cc1 != cc2);
+      if(cc1 != cc2) {
+        axioms = axioms && cc1 != cc2;
+      }
     }
   }
 
@@ -203,12 +216,10 @@ int main() {
   reset = reset && 
     forall_block({x1, x2, x3 /*, x4 */}, !app_team(x1, x2, x3 /*,x4*/));
 
-  const int N = 4;
-
-  formula init = reset && x_evaluations == N;
+  const int N = 3;
 
   [[maybe_unused]]
-  formula final = x_status == c_evaluated && x_evaluations == 0;
+  formula init = reset && x_evaluations == N;
 
   formula phi_tr = sigma.bottom();
 
@@ -226,7 +237,8 @@ int main() {
         forall_block({x1, x2, x3},
           (
             implies(x1 != u1 && x2 != c1 && x3 != s1, 
-              iff(apps[i](x1, x2, x3), wX(apps[i](x1, x2, x3)) 
+              implies(X(sigma.top()), 
+                iff(apps[i](x1, x2, x3), wX(apps[i](x1, x2, x3)))
             )
           )
         )
@@ -262,64 +274,43 @@ int main() {
     x_status == c_evaluated && 
     wX(reset) &&
     wnext(x_evaluations) == x_evaluations - 1 
-    //&& wnext(x_evaluations) > 0
   );
   
+  formula final = x_status == c_evaluated && x_evaluations == 0;
+
+  formula system = axioms && init && G(phi_tr) && F(final);
+
   // -------
 
-  // formula property1 =
-  //   G(implies(x_status == c_evaluated, x_score > 60));
-  // formula property1 =
-  //   G(implies(x_status == c_evaluated, x_score > 60));
+  formula property1 =
+    G(implies(x_status == c_evaluated, x_score > 60));
   
   formula property2 =
     G(implies(x_status == c_app_phase, F(x_status == c_evaluated)));
 
   sigma.set_default_sort(sigma.integer_sort());
-  solver slv;
+  solver slv; 
 
-  auto phase = 
-    x_status == c_init && 
-    wX(x_status == c_app_phase) &&
-    wX(wX(x_status == c_apps_rcvd)) &&
-    wX(wX(wX(x_status == c_evaluated))) &&
-    wX(wX(wX(wX(x_status == c_init))));
+  slv.set_sat_backend("z3");
+  slv.set_formula(system && !property1, true);
 
-  [[maybe_unused]]
-  auto labelling = 
-    x_evaluations == N && phase && wX(wX(wX(wX(x_evaluations == N - 1))))
-    && wX(wX(wX(wX(phase)))) && wX(wX(wX(wX(wX(wX(wX(wX(x_evaluations == N - 2))))))))
-    && wX(wX(wX(wX(wX(wX(wX(wX(phase)))))))) && 
-    wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(x_evaluations == N - 3))))))))))))))))
-    && wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(phase)))))))))))))))) && 
-    wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(wX(x_evaluations == N - 4))))))))))))))))))))))))))))))));
-  
-  formula trans = sigma.top();
-  formula trans_ = phi_tr;
+  auto res = slv.solve(std::numeric_limits<size_t>::max(), true);
 
-  for(size_t i = 0; i < 50; ++i) {
-    trans = trans && trans_;
-    trans_ = wX(trans_);
-  }
-
-  auto system = init && G(phi_tr) && F(final);
-
-  slv.set_sat_backend("cvc5");
-  slv.set_formula(system);
-
-  auto res = slv.solve();
-
-  if(res)
+  if(res == true)
     std::cout << "SAT\n";
+  else if(res == tribool::undef)
+    std::cout << "UNKNOWN\n";
   else
     std::cout << "UNSAT\n";
   
-  slv.set_formula(system && !property2);
+  slv.set_formula(system && !property2, true);
 
-  res = slv.solve();
+  res = slv.solve(std::numeric_limits<size_t>::max(), true);
 
-  if(res)
+  if(res == true)
     std::cout << "SAT\n";
+  else if(res == tribool::undef)
+    std::cout << "UNKNOWN\n";
   else
     std::cout << "UNSAT\n";
 
