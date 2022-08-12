@@ -32,12 +32,20 @@ HELP
 }
 
 CATEGORY="$1"
-BIN="../../../build-clang/tests/rts"
+BIN="../../../build/tests/rts"
 OUTDIR="../../../benchmarks/formulas/ltlf-modulo-theory/rts/apps"
 
+case "$CATEGORY" in
+  1)
+  CATEGORY_NAME=safety
+  ;;
+  2)
+  CATEGORY_NAME=liveness
+  ;;
+esac
 
 for (( i=2; i<=10; i=i+1 ))
 do
-  $BIN $i > "$OUTDIR/apps-$i.ltlfmt"
+  $BIN $CATEGORY $i > "$OUTDIR/apps-$CATEGORY_NAME-$i.ltlfmt"
   echo "Created RTS benchmark #$i"
 done

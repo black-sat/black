@@ -71,7 +71,13 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  int N = atoi(argv[1]);
+  int P = atoi(argv[1]);
+  int N = atoi(argv[2]);
+
+  if(P != 1 && P != 2) {
+    std::cerr << "Property must be 1 or 2\n";
+    return 1;
+  }
 
   alphabet sigma;
 
@@ -234,11 +240,20 @@ int main(int argc, char **argv) {
 
   // -------
 
-  [[maybe_unused]]
-  formula property =
-    G(implies(x_status == c_final, x_score > 60));
+  if(P == 1) {
+    formula property =
+      G(implies(x_status == c_final, x_score > 60));
 
-  std::cout << to_string(system && !property) << "\n";
+    std::cout << to_string(system && !property) << "\n";
+  }
+
+  if(P == 2) {
+    formula property = G(
+      implies(x_status == c_app_phase, F(x_status == c_final && x_score > 60))
+    );
+
+    std::cout << to_string(system && !property) << "\n";
+  }
 
   return 0;
 }
