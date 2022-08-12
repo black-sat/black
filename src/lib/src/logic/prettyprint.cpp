@@ -456,31 +456,6 @@ namespace black_internal::logic
     );
   }
 
-  static inline
-  void smtlib2_collect_vars(
-    auto h, tsl::hopscotch_set<variable> &vars,
-    tsl::hopscotch_set<variable> &scope
-  ) {
-    h.match(
-      [&](quantifier<FO> q) {
-        tsl::hopscotch_set<variable> new_scope;
-        for(auto var : q.block().variables()) {
-          new_scope.insert(var);
-        }
-        smtlib2_collect_vars(q.block().matrix(), vars, new_scope);
-      },
-      [&](variable x) {
-        if(scope.find(x) != scope.end())
-          vars.insert(x);
-      },
-      [&](otherwise) {
-        for_each_child(h, [&](auto child) {
-          smtlib2_collect_vars(child, vars, scope);
-        });
-      }
-    );
-  }
-
   std::string to_smtlib2(formula<FO> f) {
     tsl::hopscotch_set<proposition> props;
     tsl::hopscotch_set<variable> vars;
@@ -492,6 +467,9 @@ namespace black_internal::logic
         [&](proposition p) {
           props.insert(p);
         },
+        [&](variable x) {
+          vars.insert(x);
+        },
         [&](atom<FO> a) {
           rels.insert({a.rel(), a.terms().size()});
         },
@@ -501,9 +479,6 @@ namespace black_internal::logic
         [](otherwise) { }
       );
     });
-
-    tsl::hopscotch_set<variable> empty;
-    smtlib2_collect_vars(f, vars, empty);
 
     std::string s = f.sigma()->default_sort().match(
       [](integer_sort) { return "Int"; },
