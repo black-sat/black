@@ -25,7 +25,12 @@
 #include <black/logic/lex.hpp>
 #include <black/support/to_string.hpp>
 
+#include <tsl/hopscotch_set.h>
+#include <tsl/hopscotch_map.h>
+
 #include <fmt/format.h>
+
+#include <iostream>
 
 namespace black_internal::logic
 {
@@ -282,6 +287,296 @@ namespace black_internal::logic
       [](real_sort)    { return "reals"; },
       [](otherwise)    -> const char *{ black_unreachable(); } // LCOV_EXCL_LINE
     );
+  }
+
+  static inline std::string to_smtlib2(uintptr_t n) {
+    return "|" + std::to_string(n) + "|";
+  }
+  
+  static inline std::string to_smtlib2_inner(term<FO> t) {
+    using namespace std::literals;
+    return t.match(
+      [](constant<FO>, auto c) {
+        return c.match(
+          [](zero) { return "0"s; },
+          [](one) { return "1"s; },
+          [](integer, auto v) {
+            return std::to_string(v);
+          },
+          [](real, auto v) {
+            return std::to_string(v);
+          }
+        );
+      },
+      [](variable x) {
+        return to_smtlib2(to_underlying(x.unique_id()));
+      },
+      [](application<FO> a) {
+        std::string s = "(" + to_smtlib2(to_underlying(a.func().unique_id()));
+
+        for(auto arg : a.terms()) {
+          s += " " + to_smtlib2_inner(arg);
+        }
+
+        s += ")";
+        return s;
+      },
+      [](negative<FO>, auto arg) {
+        return fmt::format("(- {})", to_smtlib2_inner(arg));
+      },
+      [](addition<FO>, auto left, auto right) {
+        return fmt::format(
+          "(+ {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
+        );
+      },
+      [](subtraction<FO>, auto left, auto right) {
+        return fmt::format(
+          "(- {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
+        );
+      },
+      [](multiplication<FO>, auto left, auto right) {
+        return fmt::format(
+          "(* {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
+        );
+      },
+      [](division<FO>, auto left, auto right) {
+        if(left.sigma()->default_sort().template is<integer_sort>())
+          return fmt::format(
+            "(div {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
+          );
+        return fmt::format(
+          "(/ {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
+        );
+      }
+    );
+  }
+
+  static inline std::string to_smtlib2_inner(formula<FO> f) {
+    std::string type = f.sigma()->default_sort().match(
+      [](integer_sort) { return "Int"; },
+      [](real_sort) { return "Real"; },
+      [](otherwise) -> const char *{ black_unreachable(); } // LCOV_EXCL_LINE
+    );
+
+    return f.match(
+      [](boolean, bool b) {
+        return b ? "true" : "false";
+      },
+      [](proposition p) {
+        return to_smtlib2(to_underlying(p.unique_id()));
+      },
+      [](atom<FO> a) {
+        std::string s = "(" + to_smtlib2(to_underlying(a.rel().unique_id()));
+
+        for(auto t : a.terms()) {
+          s += " " + to_smtlib2_inner(t);
+        }
+
+        s += ")";
+        return s;
+      },
+      [](equal<FO> cmp) {
+        return fmt::format(
+          "(= {} {})", 
+          to_smtlib2_inner(cmp.left()), to_smtlib2_inner(cmp.right())
+        );
+      },
+      [](not_equal<FO> cmp) {
+        return fmt::format(
+          "(distinct {} {})", 
+          to_smtlib2_inner(cmp.left()), to_smtlib2_inner(cmp.right())
+        );
+      },
+      [](less_than<FO> cmp) {
+        return fmt::format(
+          "(< {} {})", 
+          to_smtlib2_inner(cmp.left()), to_smtlib2_inner(cmp.right())
+        );
+      },
+      [](less_than_equal<FO> cmp) {
+        return fmt::format(
+          "(<= {} {})", 
+          to_smtlib2_inner(cmp.left()), to_smtlib2_inner(cmp.right())
+        );
+      },
+      [](greater_than<FO> cmp) {
+        return fmt::format(
+          "(> {} {})", 
+          to_smtlib2_inner(cmp.left()), to_smtlib2_inner(cmp.right())
+        );
+      },
+      [](greater_than_equal<FO> cmp) {
+        return fmt::format(
+          "(>= {} {})", 
+          to_smtlib2_inner(cmp.left()), to_smtlib2_inner(cmp.right())
+        );
+      },
+      [&](quantifier<FO> q) {
+        std::string vars;
+        for(auto x : q.block().variables()) {
+          vars += fmt::format(
+            " ({} {})", to_smtlib2(to_underlying(x.unique_id())), type
+          );
+        }
+        vars.erase(vars.begin()); 
+
+        return fmt::format(
+          "({} ({}) {})", 
+          q.is<exists<FO>>() ? "exists" : "forall",
+          vars, to_smtlib2_inner(q.block().matrix())
+        );
+      },
+      [](negation<FO>, auto op) {
+        return fmt::format("(not {})", to_smtlib2_inner(op));
+      },
+      [](conjunction<FO> c) {
+        std::string ops;
+        for(auto op : c.operands())
+          ops += " " + to_smtlib2_inner(op);
+        ops.erase(ops.begin());
+
+        return fmt::format("(and {})", ops);        
+      },
+      [](disjunction<FO> c) {
+        std::string ops;
+        for(auto op : c.operands())
+          ops += " " + to_smtlib2_inner(op);
+        ops.erase(ops.begin());
+
+        return fmt::format("(or {})", ops);        
+      },
+      [](implication<FO>, auto left, auto right) {
+        return fmt::format(
+          "(=> {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
+        );
+      },
+      [](iff<FO>, auto left, auto right) {
+        return fmt::format(
+          "(= {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
+        );
+      }
+    );
+  }
+
+  static inline
+  void smtlib2_collect_vars(
+    auto h, tsl::hopscotch_set<variable> &vars,
+    tsl::hopscotch_set<variable> &scope
+  ) {
+    h.match(
+      [&](quantifier<FO> q) {
+        tsl::hopscotch_set<variable> new_scope;
+        for(auto var : q.block().variables()) {
+          new_scope.insert(var);
+        }
+        smtlib2_collect_vars(q.block().matrix(), vars, new_scope);
+      },
+      [&](variable x) {
+        if(scope.find(x) != scope.end())
+          vars.insert(x);
+      },
+      [&](otherwise) {
+        for_each_child(h, [&](auto child) {
+          smtlib2_collect_vars(child, vars, scope);
+        });
+      }
+    );
+  }
+
+  std::string to_smtlib2(formula<FO> f) {
+    tsl::hopscotch_set<proposition> props;
+    tsl::hopscotch_set<variable> vars;
+    tsl::hopscotch_map<relation, int> rels;
+    tsl::hopscotch_map<function, int> funs;
+
+    logic::for_each_child_deep(f, [&](auto child) {
+      child.match(
+        [&](proposition p) {
+          props.insert(p);
+        },
+        [&](atom<FO> a) {
+          rels.insert({a.rel(), a.terms().size()});
+        },
+        [&](application<FO> a) {
+          funs.insert({a.func(), a.terms().size()});
+        },
+        [](otherwise) { }
+      );
+    });
+
+    tsl::hopscotch_set<variable> empty;
+    smtlib2_collect_vars(f, vars, empty);
+
+    std::string s = f.sigma()->default_sort().match(
+      [](integer_sort) { return "Int"; },
+      [](real_sort) { return "Real"; },
+      [](otherwise) -> const char *{ black_unreachable(); } // LCOV_EXCL_LINE
+    );
+
+    std::string smtlib;
+
+    smtlib += "(set-logic ALL)\n\n";
+
+    for(auto p : props) {
+      smtlib += 
+        fmt::format(
+          "(declare-const {} Bool)\n", 
+          to_smtlib2(to_underlying(p.unique_id()))
+        );
+    }
+    
+    for(auto x : vars) {
+      smtlib += 
+        fmt::format(
+          "(declare-const {} {})\n", 
+          to_smtlib2(to_underlying(x.unique_id())), 
+          s
+        );
+    }
+    
+    for(auto [r,arity] : rels) {
+      std::string args = s;
+      for(int i = 1; i < arity; ++i) {
+        args += " " + s;
+      }
+
+      smtlib += fmt::format(
+        "(declare-fun {} ({}) Bool)\n", 
+        to_smtlib2(to_underlying(r.unique_id())), 
+        args
+      );
+    }
+    
+    for(auto [fun,arity] : funs) {
+      std::string args = s;
+      for(int i = 1; i < arity; ++i) {
+        args += " " + s;
+      }
+
+      smtlib += fmt::format(
+        "(declare-fun {} ({}) {})\n", 
+        to_smtlib2(to_underlying(fun.unique_id())), 
+        args,
+        s
+      );
+    }
+
+    smtlib += "\n";
+
+    f.match(
+      [&](conjunction<FO> c) {
+        for(auto op : c.operands()) {
+          smtlib += fmt::format("(assert {})\n\n", to_smtlib2_inner(op));
+        }
+      },
+      [&](otherwise) {
+        smtlib += fmt::format("(assert {})\n", to_smtlib2_inner(f));
+      }
+    );
+
+    smtlib += "(check-sat)\n";
+
+    return smtlib;
   }
 }
 

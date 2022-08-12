@@ -101,7 +101,11 @@ namespace black_internal::solver {
         };
 
         type_t type;
-        std::variant<size_t, formula> data;
+        std::variant<
+          size_t, 
+          logic::formula<logic::LTLPFO>,
+          logic::formula<logic::FO>
+        > data;
       };
 
       // set the debug trace callback

@@ -57,6 +57,18 @@ namespace black::frontend
     return file;
   }
 
+  std::ofstream open_out_file(std::string const&path) {
+    std::ofstream file{path, std::ios::out};
+
+    if(!file)
+      io::fatal(status_code::filesystem_error,
+        "Unable to open file `{}`: {}",
+        path, system_error_string(errno)
+      );
+
+    return file;
+  }
+
   std::function<void(std::string)> 
   formula_syntax_error_handler(std::optional<std::string> const&path)
   {

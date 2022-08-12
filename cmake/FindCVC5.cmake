@@ -29,7 +29,7 @@ find_package(PkgConfig)
 pkg_check_modules(PC_CVC5 QUIET CVC5)
 
 find_path(CVC5_INCLUDE_DIR
-  NAMES cvc5.h
+  NAMES cvc5/cvc5.h
   PATHS ${PC_CVC5_INCLUDE_DIRS}
   PATH_SUFFIXES cvc5
 )

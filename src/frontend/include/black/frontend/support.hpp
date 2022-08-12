@@ -44,6 +44,9 @@ namespace black::frontend
 
   // Opens a file and quits with an error if the file cannot be open
   std::ifstream open_file(std::string const&path);
+  
+  // Opens a file to write and quits with an error if the file cannot be open
+  std::ofstream open_out_file(std::string const&path);
 
   // common handler for syntax errors in the whole frontend
   std::function<void(std::string)> 
