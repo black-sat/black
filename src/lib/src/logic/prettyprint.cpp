@@ -30,8 +30,6 @@
 
 #include <fmt/format.h>
 
-#include <iostream>
-
 namespace black_internal::logic
 {
 
