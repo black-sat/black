@@ -430,16 +430,28 @@ namespace black::frontend {
       case black::solver::trace_t::nnf:
         break;
       case black::solver::trace_t::unrav:
-        io::errorln("  - {}-unrav: {}", k, to_string(std::get<formula>(v)));
+        io::errorln(
+          "  - {}-unrav: {}", k,
+          to_string(std::get<logic::formula<logic::FO>>(v))
+        );
         break;
       case black::solver::trace_t::empty:
-        io::errorln("  - {}-empty: {}", k, to_string(std::get<formula>(v)));
+        io::errorln(
+          "  - {}-empty: {}", k,
+            to_string(std::get<logic::formula<logic::FO>>(v))
+        );
         break;
       case black::solver::trace_t::loop:
-        io::errorln("  - {}-loop: {}", k, to_string(std::get<formula>(v)));
+        io::errorln(
+          "  - {}-loop: {}", k, 
+          to_string(std::get<logic::formula<logic::FO>>(v))
+        );
         break;
       case black::solver::trace_t::prune:
-        io::errorln("  - {}-prune: {}", k, to_string(std::get<formula>(v)));
+        io::errorln(
+          "  - {}-prune: {}", k,
+          to_string(std::get<logic::formula<logic::FO>>(v))
+        );
         break;
     }
   }
