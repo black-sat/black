@@ -318,7 +318,7 @@ namespace black_internal::logic
 
         s += ")";
         return s;
-      },
+      }, // LCOV_EXCL_LINE
       [](negative<FO>, auto arg) {
         return fmt::format("(- {})", to_smtlib2_inner(arg));
       },
@@ -344,16 +344,15 @@ namespace black_internal::logic
           );
         return fmt::format(
           "(/ {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
-        );
+        ); // LCOV_EXCL_LINE
       }
     );
   }
 
   static inline std::string to_smtlib2_inner(formula<FO> f) {
     std::string type = f.sigma()->default_sort().match(
-      [](integer_sort) { return "Int"; },
       [](real_sort) { return "Real"; },
-      [](otherwise) -> const char *{ black_unreachable(); } // LCOV_EXCL_LINE
+      [](otherwise) { return "Int"; }
     );
 
     return f.match(
@@ -372,7 +371,7 @@ namespace black_internal::logic
 
         s += ")";
         return s;
-      },
+      }, // LCOV_EXCL_LINE
       [](equal<FO> cmp) {
         return fmt::format(
           "(= {} {})", 
@@ -443,16 +442,21 @@ namespace black_internal::logic
 
         return fmt::format("(or {})", ops);        
       },
-      [](implication<FO>, auto left, auto right) {
-        return fmt::format(
-          "(=> {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
-        );
-      },
-      [](iff<FO>, auto left, auto right) {
-        return fmt::format(
-          "(= {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
-        );
-      }
+      //
+      // We exclude these two cases from code coverage because to_smtlib2() is
+      // only usually called on the encoding formulas which never contain 
+      // implications or double implications
+      //
+      [](implication<FO>, auto left, auto right) { // LCOV_EXCL_LINE
+        return fmt::format( // LCOV_EXCL_LINE
+          "(=> {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right) // LCOV_EXCL_LINE
+        ); // LCOV_EXCL_LINE
+      }, // LCOV_EXCL_LINE
+      [](iff<FO>, auto left, auto right) { // LCOV_EXCL_LINE
+        return fmt::format( // LCOV_EXCL_LINE
+          "(= {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right) // LCOV_EXCL_LINE
+        ); // LCOV_EXCL_LINE
+      } // LCOV_EXCL_LINE
     );
   }
 
@@ -481,9 +485,8 @@ namespace black_internal::logic
     });
 
     std::string s = f.sigma()->default_sort().match(
-      [](integer_sort) { return "Int"; },
       [](real_sort) { return "Real"; },
-      [](otherwise) -> const char *{ black_unreachable(); } // LCOV_EXCL_LINE
+      [](otherwise) { return "Int"; }
     );
 
     std::string smtlib;
