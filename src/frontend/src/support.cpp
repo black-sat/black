@@ -60,11 +60,14 @@ namespace black::frontend
   std::ofstream open_out_file(std::string const&path) {
     std::ofstream file{path, std::ios::out};
 
-    if(!file)
-      io::fatal(status_code::filesystem_error,
-        "Unable to open file `{}`: {}",
-        path, system_error_string(errno)
-      );
+    // Errors in opening a file for writing are difficult to test, and this
+    // function  as of now is only used in a debugging feature, so we ignore
+    // these lines. The code is identical to open_file(), which is tested.
+    if(!file) // LCOV_EXCL_LINE
+      io::fatal(status_code::filesystem_error, // LCOV_EXCL_LINE
+        "Unable to open file `{}`: {}", // LCOV_EXCL_LINE
+        path, system_error_string(errno) // LCOV_EXCL_LINE
+      ); // LCOV_EXCL_LINE
 
     return file;
   }

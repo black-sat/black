@@ -75,13 +75,6 @@ should_fail ./black solve -s -f 'x = 0'
 X ( F p & G !p)
 END
 
-touch black-trace-0-unrav.smtlib2
-chmod 400 black-trace-0-unrav.smtlib2
-should_fail ./black solve --debug trace-smtlib2 - <<END
-X ( F p & G !p)
-END
-rm -f black-trace-0-unrav.smtlib2
-
 ./black solve -s -d integers --debug trace-smtlib2 - <<END
 true & !false & p & r(x, f(x,y), 0, 1, 42, 3.14, -x, x + y, x * y, x - y, x / y) & x = y & x != y & x < y & x > y & x <= y & x >= y & forall x . x = x & exists x . x != x & (p | (q & r)) & p -> q & p <-> q
 END
