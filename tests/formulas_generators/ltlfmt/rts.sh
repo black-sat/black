@@ -1,7 +1,9 @@
+#!/bin/bash
+
 #
 # BLACK - Bounded Ltl sAtisfiability ChecKer
 #
-# (C) 2020 Nicola Gigante
+# (C) 2021 Luca Geatti
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,52 +23,29 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-##
-## Find the CVC5 SMT solver
-##
+help() {
+ cat <<HELP
+Usage ./$(basename "$0")
 
-find_package(PkgConfig)
-pkg_check_modules(PC_CVC5 QUIET CVC5)
+Generates RTS formulas
+HELP
+}
 
-find_path(CVC5_INCLUDE_DIR
-  NAMES cvc5/cvc5.h
-  PATHS ${PC_CVC5_INCLUDE_DIRS}
-  PATH_SUFFIXES cvc5
-)
-find_library(CVC5_LIBRARY
-  NAMES cvc5
-  PATHS ${PC_CVC5_LIBRARY_DIRS}
-)
+CATEGORY="$1"
+BIN="../../../build/tests/rts"
+OUTDIR="../../../benchmarks/formulas/ltlf-modulo-theory/rts/apps"
 
-set(CVC5_VERSION ${PC_CVC5_VERSION})
+case "$CATEGORY" in
+  1)
+  CATEGORY_NAME=safety
+  ;;
+  2)
+  CATEGORY_NAME=liveness
+  ;;
+esac
 
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(CVC5
-  FOUND_VAR CVC5_FOUND
-  REQUIRED_VARS
-    CVC5_LIBRARY
-    CVC5_INCLUDE_DIR
-  VERSION_VAR CVC5_VERSION
-)
-
-if(CVC5_FOUND)
-  set(CVC5_LIBRARIES ${CVC5_LIBRARY})
-  set(CVC5_INCLUDE_DIRS ${CVC5_INCLUDE_DIR})
-
-  add_library(CVC5_internal UNKNOWN IMPORTED)
-  set_target_properties(CVC5_internal PROPERTIES
-    IMPORTED_LOCATION "${CVC5_LIBRARY}"
-    INTERFACE_COMPILE_OPTIONS "${PC_CVC5_CFLAGS_OTHER}"
-    INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${CVC5_INCLUDE_DIR}"
-  )
-
-  add_library(CVC5 INTERFACE)
-  target_link_libraries(CVC5 INTERFACE CVC5_internal)
-  target_include_directories(CVC5 SYSTEM INTERFACE ${CVC5_INCLUDE_DIR})
-
-endif()
-
-mark_as_advanced(
-  CVC5_INCLUDE_DIR
-  CVC5_LIBRARY
-)
+for (( i=2; i<=10; i=i+1 ))
+do
+  $BIN $CATEGORY $i > "$OUTDIR/apps-$CATEGORY_NAME-$i.ltlfmt"
+  echo "Created RTS benchmark #$i"
+done

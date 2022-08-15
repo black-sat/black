@@ -71,6 +71,20 @@ should_fail ./black solve -s -f 'x = 0'
 ./black solve -f 'X p & X X q & F(q)' --debug trace
 ./black solve -f 'X p & X X q & F(q)' --debug trace-full
 
+./black solve --debug trace-smtlib2 - <<END
+X ( F p & G !p)
+END
+
+./black solve -s -d integers --debug trace-smtlib2 - <<END
+true & !false & p & r(x, f(x,y), 0, 1, 42, 3.14, -x, x + y, x * y, x - y, x / y) & x = y & x != y & x < y & x > y & x <= y & x >= y & forall x . x = x & exists x . x != x & (p | (q & r)) & p -> q & p <-> q
+END
+
+./black solve -s -d reals --debug trace-smtlib2 - <<END
+x = 3.14
+END
+
+rm -f black-trace-*
+
 should_fail ./black check -t ../tests/test-trace.json
 should_fail ./black check -t - -f 'p' file.pltl
 should_fail ./black check -t - -

@@ -2271,6 +2271,17 @@ namespace black_internal::logic {
   }
 
   //
+  // Recursive version of for_each_child, going all deep down the rabbit hole...
+  //
+  template<hierarchy H, typename F>
+  void for_each_child_deep(H h, F f) {
+    for_each_child(h, [&](auto child) {
+      f(child);
+      for_each_child_deep(child, f);
+    });
+  }
+
+  //
   // `can_fragment_cast` checks whether `fragment_unsafe_cast`, defined below,
   // can be safely called, by traversing the hierarchy object recursively to all
   // the children. So after a positive call of this function,

@@ -47,6 +47,9 @@ namespace black_internal::logic
   BLACK_EXPORT
   std::string to_string(sort s);
 
+  BLACK_EXPORT
+  std::string to_smtlib2(formula<FO> f);
+
 }
 
 #endif // BLACK_LOGIC_PRETTY_PRINT_HPP

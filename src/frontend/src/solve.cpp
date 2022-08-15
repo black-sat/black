@@ -39,6 +39,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <fstream>
 
 namespace black::frontend {
 
@@ -383,16 +384,42 @@ namespace black::frontend {
     if(type == black::solver::trace_t::nnf && cli::debug == "print") {
       io::println(
         "{}: debug: parsed formula in NNF: {}",
-        cli::command_name, to_string(std::get<formula>(v))
+        cli::command_name, to_string(std::get<logic::formula<logic::LTLPFO>>(v))
       );
     }
 
     static size_t k = 0;
     if(type == black::solver::trace_t::stage && 
-       (cli::debug == "trace" || cli::debug == "trace-full")
+       (cli::debug == "trace" || cli::debug == "trace-full" || 
+        cli::debug == "trace-smtlib2")
     ) {
       k = std::get<size_t>(v);
       io::errorln("- k: {}", k);
+    }
+
+    if(cli::debug == "trace-smtlib2") {
+      std::string filename;
+      
+      switch(type){
+        case black::solver::trace_t::stage:
+        case black::solver::trace_t::nnf:
+          return;
+        case black::solver::trace_t::unrav:
+          filename = "black-trace-" + to_string(k) + "-unrav.smtlib2";
+          break;
+        case black::solver::trace_t::empty:
+          filename = "black-trace-" + to_string(k) + "-empty.smtlib2";
+          break;
+        case black::solver::trace_t::loop:
+          filename = "black-trace-" + to_string(k) + "-loop.smtlib2";
+          break;
+        case black::solver::trace_t::prune:
+          filename = "black-trace-" + to_string(k) + "-prune.smtlib2";
+          break;
+      }
+      std::ofstream file = open_out_file(filename);
+
+      file << to_smtlib2(std::get<logic::formula<logic::FO>>(v)) << "\n";
     }
 
     if(cli::debug != "trace-full")
@@ -403,16 +430,28 @@ namespace black::frontend {
       case black::solver::trace_t::nnf:
         break;
       case black::solver::trace_t::unrav:
-        io::errorln("  - {}-unrav: {}", k, to_string(std::get<formula>(v)));
+        io::errorln(
+          "  - {}-unrav: {}", k,
+          to_string(std::get<logic::formula<logic::FO>>(v))
+        );
         break;
       case black::solver::trace_t::empty:
-        io::errorln("  - {}-empty: {}", k, to_string(std::get<formula>(v)));
+        io::errorln(
+          "  - {}-empty: {}", k,
+            to_string(std::get<logic::formula<logic::FO>>(v))
+        );
         break;
       case black::solver::trace_t::loop:
-        io::errorln("  - {}-loop: {}", k, to_string(std::get<formula>(v)));
+        io::errorln(
+          "  - {}-loop: {}", k, 
+          to_string(std::get<logic::formula<logic::FO>>(v))
+        );
         break;
       case black::solver::trace_t::prune:
-        io::errorln("  - {}-prune: {}", k, to_string(std::get<formula>(v)));
+        io::errorln(
+          "  - {}-prune: {}", k,
+          to_string(std::get<logic::formula<logic::FO>>(v))
+        );
         break;
     }
   }

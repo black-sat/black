@@ -55,8 +55,12 @@ add_executable(euflia
         formulas_generators/ltlfmt/euf-lia.cpp)
 target_link_libraries(euflia PRIVATE black fmt::fmt)
 
+add_executable(rts
+        formulas_generators/ltlfmt/rts.cpp)
+target_link_libraries(rts PRIVATE black fmt::fmt)
+
 set_target_properties(
-  crscounter_generator random_formulas_generator ltlfmt lia lra euf euflia
+  crscounter_generator random_formulas_generator ltlfmt lia lra euf euflia rts
   PROPERTIES 
   EXCLUDE_FROM_ALL TRUE
 )

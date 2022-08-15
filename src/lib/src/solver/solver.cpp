@@ -59,7 +59,8 @@ namespace black_internal::solver
     std::function<void(trace_t)> tracer = [](trace_t){};
 
     void trace(size_t k);
-    void trace(trace_t::type_t type, formula);
+    void trace(trace_t::type_t type, logic::formula<logic::LTLPFO>);
+    void trace(trace_t::type_t type, logic::formula<logic::FO>);
 
     // Main algorithm
     tribool solve(size_t k_max, bool semi_decision);
@@ -137,8 +138,15 @@ namespace black_internal::solver
     tracer({trace_t::stage, {k}});
   }
 
-  void solver::_solver_t::trace(trace_t::type_t type, formula f){
-    black_assert(type != trace_t::stage);
+  void solver::_solver_t::trace(
+    trace_t::type_t type, logic::formula<logic::LTLPFO> f
+  ){
+    tracer({type, {f}});
+  }
+  
+  void solver::_solver_t::trace(
+    trace_t::type_t type, logic::formula<logic::FO> f
+  ){
     tracer({type, {f}});
   }
 
