@@ -39,7 +39,11 @@ Dependencies
 
 All the dependencies are available through Homebrew::
 
-   $ brew install cmake hopscotch-map nlohmann-json fmt
+   $ brew install cmake hopscotch-map nlohmann-json fmt llvm
+
+Note that the `llvm` package is required because BLACK does not currently
+compile with the stock Apple `clang` version, which does not support enough
+C++20 features. 
 
 Now at least one backend must be chosen and installed.
 
@@ -79,5 +83,13 @@ First, clone the `GitHub`_ repository::
    $ git clone https://github.com/black-sat/black.git
 
 .. _GitHub: https://github.com/black-sat/black
+
+Now, we have to set the correct environment variables to use the `clang` 
+compiler from the Homebrew `llvm` package::
+
+   $ export CC=$(brew --prefix llvm)/bin/clang
+   $ export CXX=$(brew --prefix llvm)/bin/clang++
+   $ export LDFLAGS="-L$(brew --prefix llvm)/lib -Wl,-rpath,$(brew --prefix llvm)/lib"
+   $ export CXXFLAGS="-I$(brew --prefix llvm)/include"
 
 .. include:: compilation.inc
