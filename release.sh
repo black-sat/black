@@ -138,10 +138,11 @@ homebrew() {
   cat <<END > $SRC_DIR/packages/black-sat.rb
 class BlackSat < Formula
   desc "BLACK (Bounded Lᴛʟ sAtisfiability ChecKer)"
-  homepage ""
+  homepage "https://www.black-sat.org"
   url "https://github.com/black-sat/black/archive/v$VERSION.tar.gz"
   sha256 "$sum"
 
+  depends_on "llvm" => :build
   depends_on "cmake" => :build
   depends_on "hopscotch-map" => :build
   depends_on "catch2" => :build
@@ -151,8 +152,11 @@ class BlackSat < Formula
   depends_on "cryptominisat" => :recommended
 
   def install
-    # ENV.deparallelize  # if your formula fails when building in parallel
-    system "cmake", ".", *std_cmake_args
+    ENV["CC"] = "#{HOMEBREW_PREFIX}/opt/llvm/bin/clang"
+    ENV["CXX"] = "#{HOMEBREW_PREFIX}/opt/llvm/bin/clang++"
+    ENV["LDFLAGS"] = "-L#{HOMEBREW_PREFIX}/opt/llvm/lib -Wl,-rpath,#{HOMEBREW_PREFIX}/opt/llvm/lib"  
+    ENV["CXXFLAGS"] = "-I#{HOMEBREW_PREFIX}/opt/llvm/include"
+    system "cmake", ".", "-DENABLE_MINISAT=NO", *std_cmake_args
     system "make"
     system "make", "install"
   end
