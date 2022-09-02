@@ -27,6 +27,8 @@
 #include <black/support/config.hpp>
 #include <black/support/license.hpp>
 
+#include <sstream>
+
 #include <clipp.h>
 
 //
@@ -86,7 +88,15 @@ namespace black::frontend
     print_header();
     io::println("");
 
-    io::println("\n{}", clipp::make_man_page(cli, cli::command_name, fmt));
+    // fmt from 9.x onwards do not support ostreamable types out-of-the-box, 
+    // but requires an explicit declaration that does not work with fmt 8.x, 
+    // so to be compatible with both versions we use stringstream to convert 
+    // clipp::man_page to a string before printing.
+    std::stringstream str;
+
+    str << clipp::make_man_page(cli, cli::command_name, fmt);
+
+    io::println("\n{}", str.str());
   }
 
   static void print_sat_backends() {
