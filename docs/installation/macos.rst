@@ -37,9 +37,13 @@ Dependencies
 
 .. include:: dependencies.inc
 
-All the dependencies are available through Homebrew::
+Most of the dependencies are available through Homebrew::
 
-   $ brew install cmake hopscotch-map nlohmann-json fmt llvm
+   $ brew install cmake nlohmann-json fmt llvm
+
+One package is installable through Homebrew but using our tap::
+
+   $ brew install black-sat/black/hopscotch-map
 
 Note that the `llvm` package is required because BLACK does not currently
 compile with the stock Apple `clang` version, which does not support enough
@@ -70,10 +74,9 @@ From BLACK's source directory, run::
    $ ./download-mathsat.sh
    
 This will unpack *MathSAT* into the ``external/`` subdirectory and will not
-touch your system. The dependencies of *MathSAT* are available from the package
-repository::
+touch your system. The dependencies of *MathSAT* are available from Homebrew::
 
-   $ sudo dnf install zlib-devel gmp-devel gmp-c++
+   $ brew install zlib gmp
 
 Compilation
 ~~~~~~~~~~~~
