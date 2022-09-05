@@ -40,13 +40,13 @@ namespace black_internal::remove_past {
   // Obtain semantics for yesterday propositional letter
   static
   formula<LTL> yesterday_semantics(proposition a, formula<LTL> f) {
-    return !a && G(iff(X(a), f));
+    return !a && G(implies(X(a), f) && implies(f, wX(a)));
   }
 
   // Obtain semantics for weak-yesterday propositional letter
   static
   formula<LTL> w_yesterday_semantics(proposition a, formula<LTL> f) {
-    return a && G(iff(X(a), f));
+    return a && G(implies(X(a), f) && implies(f, wX(a)));
   }
 
   // Obtain semantics for since propositional letter

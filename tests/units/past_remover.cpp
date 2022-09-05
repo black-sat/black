@@ -87,20 +87,27 @@ TEST_CASE("Translation for basic past formulas")
   proposition p_YH = past_label(Y(p_H));
 
   std::vector<test> tests = {
-      {Y(p),    p_Y && (!p_Y && G(iff(X(p_Y), p)))},
-      {Z(p),    p_Z && (p_Z && G(iff(X(p_Z), p)))},
+      {Y(p),    p_Y && (!p_Y && G(implies(X(p_Y), p) && implies(p, wX(p_Y))))},
+      {Z(p),    p_Z && (p_Z && G(implies(X(p_Z), p) && implies(p, wX(p_Z))))},
       {S(p,q),  (p_S && (G(iff(p_S, q || (p && p_YS)))
-                && (!p_YS && G(iff(X(p_YS), p_S)))))},
+                && (!p_YS 
+                  && G(implies(X(p_YS), p_S) && implies(p_S, wX(p_YS))))))},
       {T(p,q),  (!p_T && (G(iff(p_T, !q || (!p && p_YT)))
-                && (!p_YT && G(iff(X(p_YT), p_T)))))},
+                && (!p_YT 
+                  && G(implies(X(p_YT), p_T) && implies(p_T, wX(p_YT))))))},
       {O(p),    (p_P && (G(iff(p_P, p || (sigma.top() && p_YP)))
-                && (!p_YP && G(iff(X(p_YP), p_P)))))},
+                && (!p_YP 
+                  && G(implies(X(p_YP), p_P) && implies(p_P, wX(p_YP))))))},
       {H(p),    (!p_H && (G(iff(p_H, !p || (sigma.top() && p_YH)))
-                && (!p_YH && G(iff(X(p_YH), p_H)))))}
+                && (!p_YH 
+                  && G(implies(X(p_YH), p_H) && implies(p_H, wX(p_YH))))))}
   };
 
   for(test t : tests) {
     DYNAMIC_SECTION("Translation for formula: " << to_string(t.f)) {
+      INFO("remove_past(f) = " << to_string(black::remove_past(t.f)));
+      INFO("Translated f = " << to_string(t.result));
+      
       CHECK(black::remove_past(t.f) == t.result);
     }
   }
