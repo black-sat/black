@@ -137,7 +137,7 @@ with the ``--sat-backends`` option::
    $ black --sat-backends
 
    BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
-        version 0.9.1
+        version 0.9.2
 
    Available SAT backends:
    - z3 *

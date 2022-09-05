@@ -152,10 +152,10 @@ class BlackSat < Formula
   depends_on "cryptominisat" => :recommended
 
   def install
-    ENV["CC"] = "#{HOMEBREW_PREFIX}/opt/llvm/bin/clang"
-    ENV["CXX"] = "#{HOMEBREW_PREFIX}/opt/llvm/bin/clang++"
-    ENV["LDFLAGS"] = "-L#{HOMEBREW_PREFIX}/opt/llvm/lib -Wl,-rpath,#{HOMEBREW_PREFIX}/opt/llvm/lib"  
-    ENV["CXXFLAGS"] = "-I#{HOMEBREW_PREFIX}/opt/llvm/include"
+    ENV["CC"]=Formula["llvm"].opt_bin/"clang"
+    ENV["CXX"]=Formula["llvm"].opt_bin/"clang++"
+    ENV["LDFLAGS"]="-L#{Formula["llvm"].opt_lib} -Wl,-rpath,#{Formula["llvm"].opt_lib}"
+    ENV["CXXFLAGS"]="-I#{Formula["llvm"].opt_include}"
     system "cmake", ".", "-DENABLE_MINISAT=NO", *std_cmake_args
     system "make"
     system "make", "install"
