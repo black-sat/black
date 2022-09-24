@@ -128,8 +128,9 @@ def main(argv):
                     if is_number(line[numcol_xtool]):
                         time_xtool = float(line[numcol_xtool])
                     else:
+                        time_xtool = float(args.errortime)
                         print(line)
-                        sys.exit('Error in the datafile for tool '+
+                        print('Error in the datafile for tool '+
                                  args.xtool+' : the result is '+
                                  line[numcol_xtool+1].strip()+
                                  ' but the associated time is '+
@@ -147,8 +148,9 @@ def main(argv):
                     if is_number(line[numcol_ytool]):
                         time_ytool = float(line[numcol_ytool])
                     else:
+                        time_xtool = float(args.errortime)
                         print(line)
-                        sys.exit('Error in the datafile for tool '+
+                        print('Error in the datafile for tool '+
                                  args.ytool+' : the result is '+
                                  line[numcol_ytool+1].strip()+
                                  ' but the associated time is '+
