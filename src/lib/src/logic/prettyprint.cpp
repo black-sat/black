@@ -352,7 +352,13 @@ namespace black_internal::logic
   static inline std::string to_smtlib2_inner(formula<FO> f) {
     std::string type = f.sigma()->default_sort().match(
       [](real_sort) { return "Real"; },
-      [](otherwise) { return "Int"; }
+      [](integer_sort) { return "Int"; },
+      [](finite_sort fs) {
+        return to_string(fs.unique_id());
+      },
+      [](infinite_sort i) {
+        return to_string(i.unique_id());
+      }
     );
 
     return f.match(
@@ -486,7 +492,13 @@ namespace black_internal::logic
 
     std::string s = f.sigma()->default_sort().match(
       [](real_sort) { return "Real"; },
-      [](otherwise) { return "Int"; }
+      [](integer_sort) { return "Int"; },
+      [](finite_sort fs) {
+        return to_string(fs.unique_id());
+      },
+      [](infinite_sort i) {
+        return to_string(i.unique_id());
+      }
     );
 
     std::string smtlib;

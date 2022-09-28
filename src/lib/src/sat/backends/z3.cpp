@@ -55,6 +55,7 @@ namespace black_internal::z3
 
     tsl::hopscotch_map<formula, Z3_ast> formulas;
     tsl::hopscotch_map<term, Z3_ast> terms;
+    tsl::hopscotch_map<sort, Z3_sort> sorts;
 
     Z3_ast to_z3(formula);
     Z3_ast to_z3(term);
@@ -235,15 +236,54 @@ namespace black_internal::z3
   }
 
   Z3_sort z3::_z3_t::to_z3(sort s) {
-    return s.match(
+    if(auto it = sorts.find(s); it != sorts.end()) 
+      return it->second;
+
+    Z3_sort result = s.match(
       [&](integer_sort) {
         return Z3_mk_int_sort(context);
       },
       [&](real_sort) {
         return Z3_mk_real_sort(context);
       },
-      [](otherwise) -> Z3_sort { black_unreachable(); } // LCOV_EXCL_LINE
+      [&](infinite_sort) {
+        return Z3_mk_uninterpreted_sort(
+          context, 
+          Z3_mk_string_symbol(context, to_string(s.unique_id()).c_str())
+        );
+      },
+      [&](finite_sort f) {
+        size_t size = f.elements().size();
+        auto names = std::make_unique<Z3_symbol[]>(size);
+        auto consts = std::make_unique<Z3_func_decl[]>(size);
+        auto testers = std::make_unique<Z3_func_decl[]>(size);
+
+        for(size_t i = 0; i < size; ++i) 
+          names[i] =
+            Z3_mk_string_symbol(context, to_string(s.unique_id()).c_str());
+
+        Z3_sort enum_s = Z3_mk_enumeration_sort(
+          context, 
+          Z3_mk_string_symbol(context, to_string(s.unique_id()).c_str()),
+          (unsigned)f.elements().size(),
+          names.get(),
+          consts.get(),
+          testers.get()
+        );
+
+        for(size_t i = 0; i < size; ++i) {
+          terms.insert(
+            {f.elements()[i], Z3_mk_app(context, consts[i], 0, nullptr)}
+          );
+        }
+
+        return enum_s;
+      }
     );
+
+    sorts.insert({s, result});
+
+    return result;
   }
 
   // TODO: Factor out common logic with mathsat.cpp
@@ -399,11 +439,16 @@ namespace black_internal::z3
         );
       },
       [&](variable v) {
+        Z3_sort s = to_z3(v.sort());
+
+        // to_z3 might have added the variable from a finite sort declaration
+        if(auto it = terms.find(t); it != terms.end()) 
+          return it->second;
+
         Z3_symbol symbol = 
           Z3_mk_string_symbol(context, to_string(v.unique_id()).c_str());
 
-        sort s = t.sigma()->default_sort();
-        return Z3_mk_const(context, symbol, to_z3(s));
+        return Z3_mk_const(context, symbol, s);
       },
       [&](application a) { 
         std::vector<Z3_ast> z3_terms;

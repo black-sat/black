@@ -46,7 +46,7 @@ namespace black_internal::logic {
   class alphabet : public alphabet_base
   {
   public:
-    alphabet() : _default_sort{this->custom_sort("default")} { }
+    alphabet() : _default_sort{this->infinite_sort("default")} { }
     alphabet(alphabet const&) = delete;
     alphabet(alphabet &&) = default;
 
@@ -59,6 +59,14 @@ namespace black_internal::logic {
 
     class boolean bottom() {
       return this->boolean(false);
+    }
+
+    class variable variable(identifier name) {
+      return alphabet_base::variable(name, default_sort());
+    }
+    
+    class variable variable(identifier name, sort s) {
+      return alphabet_base::variable(name, s);
     }
 
     sort default_sort() const { return _default_sort; }
@@ -936,6 +944,26 @@ namespace black_internal::logic {
   > {
     forall_block<Syntax> block() const { 
       return {static_cast<quantifier<Syntax> const&>(*this)}; 
+    }
+  };
+
+}
+
+//
+// `varset` class `std::hash` implementation.
+//
+namespace std {
+  template<typename T>
+  struct hash<black_internal::logic::seq<T>> {
+    size_t operator()(black_internal::logic::seq<T> const& s) const {
+      using namespace black_internal::logic;
+      using namespace black_internal;
+
+      size_t h = 0;
+      for(size_t i = 0; i < s.size(); ++i) 
+        h = hash_combine(h, std::hash<T>{}(s[i]));
+
+      return h;
     }
   };
 }

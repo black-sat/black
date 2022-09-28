@@ -52,6 +52,23 @@ namespace black_internal::logic {
         requires hierarchy<std::ranges::range_value_t<R>>
     auto operator()(R const& v) const;
   };
+
+  //
+  // `seq` template class used as a thin hashable
+  // wrapper over `std::vector` of hierarchy objects.
+  //
+  // `std::hash` implementation in `interface.hpp`
+  //
+  template<typename T>
+  struct seq 
+  {
+    std::vector<T> elements;
+
+    size_t size() const { return elements.size(); }
+    T operator[](size_t i) const { return elements[i]; }
+
+    friend bool operator==(seq const&, seq const&) = default;
+  };
 }
 
 

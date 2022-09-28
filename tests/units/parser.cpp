@@ -68,20 +68,20 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
 {
   alphabet sigma;
 
-  proposition p = sigma.proposition("p{}");
-  proposition q = sigma.proposition("");
-  variable x = sigma.variable("x\\");
-  variable y = sigma.variable("Y");
-  variable z = sigma.variable("\\z");
-
-  function g = sigma.function("g");
-  relation r = sigma.relation("r");
-
   std::vector<sort> sorts = {sigma.integer_sort(), sigma.real_sort()};
 
   for(auto s : sorts) {
     DYNAMIC_SECTION("Sort: " << to_string(s)) {
       sigma.set_default_sort(s);
+
+      proposition p = sigma.proposition("p{}");
+      proposition q = sigma.proposition("");
+      variable x = sigma.variable("x\\");
+      variable y = sigma.variable("Y");
+      variable z = sigma.variable("\\z");
+
+      function g = sigma.function("g");
+      relation r = sigma.relation("r");
 
       std::vector<formula> tests = {
         p, !p, X(p), F(p), G(p), O(p), H(p), X(F(p)), G(F(p)), X(G(p)),

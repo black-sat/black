@@ -59,6 +59,7 @@ namespace black {
       using black_internal::logic::big_or;
       using black_internal::logic::sum;
       using black_internal::logic::product;
+      using black_internal::logic::seq;
     }
     
     using black_internal::logic::only;
