@@ -39,8 +39,6 @@ TEST_CASE("Solver")
 
   sigma = std::move(sigma_);
 
-  sigma.set_default_sort(sigma.integer_sort());
-
   SECTION("Propositional formulas") {
 
     std::vector<std::string> backends = {
@@ -95,8 +93,8 @@ TEST_CASE("Solver")
           
           slv.set_sat_backend(backend);
 
-          auto x = sigma.variable("x");
-          auto rel = sigma.relation("r");
+          auto x = sigma.variable("x", sigma.integer_sort());
+          auto rel = sigma.relation("r", seq<sort>{{sigma.integer_sort()}});
 
           std::vector<formula> tests = {
             G(x > 0), F(x == 1), F(-x == -x), !rel(prev(x)), rel(wprev(x)),
@@ -123,11 +121,13 @@ TEST_CASE("Solver")
     for(auto backend : backends) {
       DYNAMIC_SECTION("Backend: " << backend) {
         if(black::sat::solver::backend_exists(backend)) {
-          variable x = sigma.variable("x");
-          variable y = sigma.variable("y");
-          variable z = sigma.variable("z");
+          variable x = sigma.variable("x", sigma.integer_sort());
+          variable y = sigma.variable("y", sigma.integer_sort());
+          variable z = sigma.variable("z", sigma.integer_sort());
           proposition p = sigma.proposition("p");
-          function func = sigma.function("f");
+          function func = sigma.function(
+            "f", sigma.integer_sort(), {sigma.integer_sort()}
+          );
           
           std::vector<formula> tests = {
             forall(x, x == x),
@@ -170,7 +170,7 @@ TEST_CASE("Solver")
     for(std::string s : tests) {
       DYNAMIC_SECTION("Test formula: " << s) 
       {
-        auto result = parse_formula(sigma, s);
+        auto result = parse_formula(sigma, sigma.integer_sort(), s);
 
         REQUIRE(result.has_value());
 

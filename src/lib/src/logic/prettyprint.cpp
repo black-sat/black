@@ -144,16 +144,6 @@ namespace black_internal::logic
     return t.match(
       [&](constant<LTLPFO> c) {
         return c.value().match(
-          [](zero z) { 
-            if(z.sigma()->default_sort().is<integer_sort>())
-              return "0"s; 
-            return "0.0"s;
-          },
-          [](one o) { 
-            if(o.sigma()->default_sort().is<integer_sort>())
-              return "1"s; 
-            return "1.0"s;
-          },
           [](integer, int64_t value) {
             return fmt::format("{}", value);
           },
@@ -296,8 +286,6 @@ namespace black_internal::logic
     return t.match(
       [](constant<FO>, auto c) {
         return c.match(
-          [](zero) { return "0"s; },
-          [](one) { return "1"s; },
           [](integer, auto v) {
             return std::to_string(v);
           },
@@ -338,10 +326,14 @@ namespace black_internal::logic
         );
       },
       [](division<FO>, auto left, auto right) {
-        if(left.sigma()->default_sort().template is<integer_sort>())
+        alphabet &sigma = *left.sigma();
+
+        if(sort_of(left) == sigma.integer_sort() &&
+           sort_of(right) == sigma.integer_sort())
           return fmt::format(
             "(div {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
           );
+
         return fmt::format(
           "(/ {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
         ); // LCOV_EXCL_LINE
@@ -350,17 +342,6 @@ namespace black_internal::logic
   }
 
   static inline std::string to_smtlib2_inner(formula<FO> f) {
-    std::string type = f.sigma()->default_sort().match(
-      [](real_sort) { return "Real"; },
-      [](integer_sort) { return "Int"; },
-      [](finite_sort fs) {
-        return to_string(fs.unique_id());
-      },
-      [](infinite_sort i) {
-        return to_string(i.unique_id());
-      }
-    );
-
     return f.match(
       [](boolean, bool b) {
         return b ? "true" : "false";
@@ -418,7 +399,9 @@ namespace black_internal::logic
         std::string vars;
         for(auto x : q.block().variables()) {
           vars += fmt::format(
-            " ({} {})", to_smtlib2(to_underlying(x.unique_id())), type
+            " ({} {})", 
+            to_smtlib2(to_underlying(x.unique_id())), 
+            to_string(x.sort())
           );
         }
         vars.erase(vars.begin()); 
@@ -469,8 +452,8 @@ namespace black_internal::logic
   std::string to_smtlib2(formula<FO> f) {
     tsl::hopscotch_set<proposition> props;
     tsl::hopscotch_set<variable> vars;
-    tsl::hopscotch_map<relation, int> rels;
-    tsl::hopscotch_map<function, int> funs;
+    tsl::hopscotch_set<relation> rels;
+    tsl::hopscotch_set<function> funs;
 
     logic::for_each_child_deep(f, [&](auto child) {
       child.match(
@@ -481,25 +464,14 @@ namespace black_internal::logic
           vars.insert(x);
         },
         [&](atom<FO> a) {
-          rels.insert({a.rel(), a.terms().size()});
+          rels.insert(a.rel());
         },
         [&](application<FO> a) {
-          funs.insert({a.func(), a.terms().size()});
+          funs.insert(a.func());
         },
         [](otherwise) { }
       );
     });
-
-    std::string s = f.sigma()->default_sort().match(
-      [](real_sort) { return "Real"; },
-      [](integer_sort) { return "Int"; },
-      [](finite_sort fs) {
-        return to_string(fs.unique_id());
-      },
-      [](infinite_sort i) {
-        return to_string(i.unique_id());
-      }
-    );
 
     std::string smtlib;
 
@@ -518,14 +490,14 @@ namespace black_internal::logic
         fmt::format(
           "(declare-const {} {})\n", 
           to_smtlib2(to_underlying(x.unique_id())), 
-          s
+          to_string(x.sort())
         );
     }
     
-    for(auto [r,arity] : rels) {
-      std::string args = s;
-      for(int i = 1; i < arity; ++i) {
-        args += " " + s;
+    for(auto r : rels) {
+      std::string args = to_string(r.signature()[0]);
+      for(size_t i = 1; i < r.signature().size(); ++i) {
+        args += " " + to_string(r.signature()[i]);
       }
 
       smtlib += fmt::format(
@@ -535,17 +507,17 @@ namespace black_internal::logic
       );
     }
     
-    for(auto [fun,arity] : funs) {
-      std::string args = s;
-      for(int i = 1; i < arity; ++i) {
-        args += " " + s;
+    for(auto fun : funs) {
+      std::string args = to_string(fun.signature()[0]);
+      for(size_t i = 1; i < fun.signature().size(); ++i) {
+        args += " " + to_string(fun.signature()[i]);
       }
 
       smtlib += fmt::format(
         "(declare-fun {} ({}) {})\n", 
         to_smtlib2(to_underlying(fun.unique_id())), 
         args,
-        s
+        to_string(fun.result())
       );
     }
 

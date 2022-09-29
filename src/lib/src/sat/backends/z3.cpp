@@ -57,15 +57,13 @@ namespace black_internal::z3
     tsl::hopscotch_map<term, Z3_ast> terms;
     tsl::hopscotch_map<sort, Z3_sort> sorts;
 
+    Z3_func_decl to_z3(function);
+    Z3_func_decl to_z3(relation);
     Z3_ast to_z3(formula);
     Z3_ast to_z3(term);
     Z3_sort to_z3(sort);
     Z3_ast to_z3_inner(formula);
     Z3_ast to_z3_inner(term);
-
-    Z3_func_decl to_z3_func_decl(
-      alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
-    );
 
     void upgrade_solver();
   };
@@ -308,21 +306,34 @@ namespace black_internal::z3
     return z3_t;
   }
 
-  Z3_func_decl z3::_z3_t::to_z3_func_decl(
-    alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
-  ) {
-    black_assert(arity > 0);
+  Z3_func_decl z3::_z3_t::to_z3(function f) {
+    Z3_symbol symbol = 
+      Z3_mk_string_symbol(context, to_string(f.name()).c_str());
     
-    Z3_symbol symbol = Z3_mk_string_symbol(context, name.c_str());
-    Z3_sort s = to_z3(sigma->default_sort());
+    Z3_sort result = to_z3(f.result());
+    
+    unsigned arity = unsigned(f.signature().size());
+    std::unique_ptr<Z3_sort[]> domain = std::make_unique<Z3_sort[]>(arity);
+    for(size_t i = 0; i < arity; ++i) {
+      domain[i] = to_z3(f.signature()[i]);
+    }
+    
+    return Z3_mk_func_decl(context, symbol, arity, domain.get(),result);
+  }
+  
+  Z3_func_decl z3::_z3_t::to_z3(relation r) {
+    Z3_symbol symbol = 
+      Z3_mk_string_symbol(context, to_string(r.name()).c_str());
+    
     Z3_sort bool_s = Z3_mk_bool_sort(context);
     
+    unsigned arity = unsigned(r.signature().size());
     std::unique_ptr<Z3_sort[]> domain = std::make_unique<Z3_sort[]>(arity);
-    std::fill(domain.get(), domain.get() + arity, s);
+    for(size_t i = 0; i < arity; ++i) {
+      domain[i] = to_z3(r.signature()[i]);
+    }
     
-    return Z3_mk_func_decl(
-      context, symbol, arity, domain.get(), is_relation ? bool_s : s
-    );
+    return Z3_mk_func_decl(context, symbol, arity, domain.get(), bool_s);
   }
 
   Z3_ast z3::_z3_t::to_z3_inner(formula f) 
@@ -336,10 +347,7 @@ namespace black_internal::z3
         for(term t : a.terms())
           z3_terms.push_back(to_z3(t));
 
-        Z3_func_decl rel = 
-          to_z3_func_decl(
-            a.sigma(), to_string(a.rel().name()),
-            unsigned(z3_terms.size()), true);
+        Z3_func_decl rel = to_z3(a.rel());
         
         return 
           Z3_mk_app(context, rel, unsigned(z3_terms.size()), z3_terms.data());
@@ -418,19 +426,11 @@ namespace black_internal::z3
   }
 
   Z3_ast z3::_z3_t::to_z3_inner(term t) {
-    alphabet *sigma = t.sigma();
     return t.match(
       [&](constant, auto n) {
         return n.match(
-          [&](zero) { return to_z3_inner(constant(sigma->integer(0))); },
-          [&](one)  { return to_z3_inner(constant(sigma->integer(1))); },
           [&](integer, int64_t value) {
-            Z3_ast number = 
-              Z3_mk_int64(context, value, Z3_mk_int_sort(context));
-
-            if(sigma->default_sort().is<integer_sort>())
-              return number;
-            return Z3_mk_int2real(context, number);  
+            return Z3_mk_int64(context, value, Z3_mk_int_sort(context));
           },
           [&](real, double value) {
             auto [num,denum] = black_internal::double_to_fraction(value);
@@ -456,10 +456,7 @@ namespace black_internal::z3
           z3_terms.push_back(to_z3(t2));
         
         // Otherwise we go for uninterpreted functions
-        Z3_func_decl func = 
-          to_z3_func_decl(
-            a.sigma(), to_string(a.func().name()), 
-            unsigned(z3_terms.size()), false);
+        Z3_func_decl func = to_z3(a.func());
         
         return 
           Z3_mk_app(context, func, unsigned(z3_terms.size()), z3_terms.data());

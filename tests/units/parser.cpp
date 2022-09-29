@@ -53,9 +53,10 @@ TEST_CASE("Syntax errors") {
     DYNAMIC_SECTION("Test formula: " << s) 
     {
       bool error = false;
-      auto result = parse_formula(sigma, s, [&](std::string) {
-        error = true;
-      });
+      auto result = 
+        parse_formula(sigma, sigma.integer_sort(), s, [&](std::string) {
+          error = true;
+        });
 
       REQUIRE(error);
       REQUIRE(!result.has_value());
@@ -72,16 +73,15 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
 
   for(auto s : sorts) {
     DYNAMIC_SECTION("Sort: " << to_string(s)) {
-      sigma.set_default_sort(s);
 
       proposition p = sigma.proposition("p{}");
       proposition q = sigma.proposition("");
-      variable x = sigma.variable("x\\");
-      variable y = sigma.variable("Y");
-      variable z = sigma.variable("\\z");
+      variable x = sigma.variable("x\\", s);
+      variable y = sigma.variable("Y", s);
+      variable z = sigma.variable("\\z", s);
 
-      function g = sigma.function("g");
-      relation r = sigma.relation("r");
+      function g = sigma.function("g", s, {s, s});
+      relation r = sigma.relation("r", {s, s});
 
       std::vector<formula> tests = {
         p, !p, X(p), F(p), G(p), O(p), H(p), X(F(p)), G(F(p)), X(G(p)),
@@ -92,18 +92,18 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
         !(iff(p || q, !q && p)),
         (forall(x, x == x)) && p,
         (exists(x, x == x)) && p,
-        exists_block({x,y,z}, g(x + 1.0, y) - 2.0 >= (y * 0.0) && y == z / 2),
+        exists_block({x,y,z}, g(x + 1, y) - 2 >= (y * 0) && y == z / 2),
         forall_block({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) &&
           r(x,y),
         (x + y) * z > 0, -x == y,
         W(p, q), M(p, q), x < y, x <= y, 
-        x + constant{sigma.zero()} == x, x * constant{sigma.one()} == x,
+        x + 0 == x, x * 1 == x,
         next(prev(x)) == x, next(wprev(x)) == x
       };
 
       for(formula f : tests) {
         DYNAMIC_SECTION("Roundtrip for formula: " << to_string(f)) {
-          auto result = parse_formula(sigma, to_string(f), [](auto error){
+          auto result = parse_formula(sigma, s, to_string(f), [](auto error){
             INFO("parsing error: " << error);
             REQUIRE(false);
           });

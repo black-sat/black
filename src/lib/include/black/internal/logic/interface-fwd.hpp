@@ -64,6 +64,9 @@ namespace black_internal::logic {
   {
     std::vector<T> elements;
 
+    seq(std::initializer_list<T> const& l) : elements{l} { }
+    seq(std::vector<T> const& v) : elements{v} { }
+
     size_t size() const { return elements.size(); }
     T operator[](size_t i) const { return elements[i]; }
 

@@ -80,15 +80,20 @@ namespace black::frontend {
   {
     black::alphabet sigma;
 
+    std::optional<formula> f;
+
     if(cli::domain) {
       if(cli::domain == "integers")
-        sigma.set_default_sort(sigma.integer_sort());
+        f = black::parse_formula(sigma, sigma.integer_sort(),
+          file, formula_syntax_error_handler(path)
+        );
       else
-        sigma.set_default_sort(sigma.real_sort());
+        f = black::parse_formula(sigma, sigma.real_sort(),
+          file, formula_syntax_error_handler(path)
+        );
+    } else {
+      f = black::parse_formula(sigma, file, formula_syntax_error_handler(path));
     }
-
-    std::optional<formula> f =
-      black::parse_formula(sigma, file, formula_syntax_error_handler(path));
 
     black_assert(f.has_value());
 

@@ -250,6 +250,24 @@ namespace black_internal::solver
           return true;
         }
 
+        if(a.terms().size() != a.func().signature().size()) {
+          err(
+            "Wrong arity in function application for function '" + 
+            to_string(id) + "'"
+          );
+          return true;
+        }
+
+        for(size_t i = 0; i < a.terms().size(); ++i) {
+          if(sort_of(a.terms()[i]) != a.func().signature()[i]) {
+            err(
+              "Wrong argument sort in function application for relation '" +
+              to_string(id) + "'"
+            );
+            return true;
+          }
+        }
+
         check_result_t res;
         for(term arg : a.terms())
           res = res || _check_syntax(arg, err, scope, rels, funcs);
@@ -315,6 +333,24 @@ namespace black_internal::solver
             "' already used as a function symbol"
           );
           return true;
+        }
+
+        if(a.terms().size() != a.rel().signature().size()) {
+          err(
+            "Wrong arity in relational atom for relation '" + 
+            to_string(id) + "'"
+          );
+          return true;
+        }
+
+        for(size_t i = 0; i < a.terms().size(); ++i) {
+          if(sort_of(a.terms()[i]) != a.rel().signature()[i]) {
+            err(
+              "Wrong argument sort in relation atom for relation '" +
+              to_string(id) + "'"
+            );
+            return true;
+          }
         }
 
         check_result_t res;

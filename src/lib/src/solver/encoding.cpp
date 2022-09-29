@@ -429,7 +429,7 @@ namespace black_internal::encoder
         for(variable v : scope)
           if(x == v)
             return x;
-        return _sigma->variable(std::pair(t, k)); 
+        return _sigma->variable(std::pair(t, k), x.sort()); 
       },
       [&](application<LTLPFO> a) {
         std::vector<term<FO>> terms;
@@ -464,11 +464,11 @@ namespace black_internal::encoder
   }
 
   relation encoder::stepped(relation r, size_t k) {
-    return _sigma->relation(std::pair{r, k});
+    return _sigma->relation(std::pair{r, k}, r.signature());
   }
 
   function encoder::stepped(function f, size_t k) {
-    return _sigma->function(std::pair{f, k});
+    return _sigma->function(std::pair{f, k}, f.result(), f.signature());
   }
 
   proposition encoder::ground(formula<LTLPFO> f, size_t k) {

@@ -74,7 +74,7 @@ TEST_CASE("New API") {
     proposition p = sigma.proposition("p");
     REQUIRE(p.name() == "p");
 
-    variable x = sigma.variable("x");
+    variable x = sigma.variable("x", sigma.integer_sort());
     REQUIRE(x.name() == "x");
 
     formula<LTL> f = p;
@@ -193,12 +193,14 @@ TEST_CASE("New API") {
   }
 
   SECTION("Atoms and applications") {
-    function f = sigma.function("f");
+    function f = sigma.function(
+      "f", sigma.integer_sort(), {sigma.integer_sort(), sigma.integer_sort()}
+    );
 
     REQUIRE(f.is<function>());
 
-    variable x = sigma.variable("x");
-    variable y = sigma.variable("y");
+    variable x = sigma.variable("x", sigma.integer_sort());
+    variable y = sigma.variable("y", sigma.integer_sort());
     std::vector<term<FO>> variables = {x,y};
 
     application<FO> app = application<FO>(f, variables);
@@ -220,7 +222,7 @@ TEST_CASE("New API") {
   }
 
   SECTION("Quantifiers") {
-    variable x = sigma.variable("x");
+    variable x = sigma.variable("x", sigma.integer_sort());
     comparison<FO> e = comparison<FO>(comparison<FO>::type::equal{}, x, x);
     quantifier<FO> f = quantifier<FO>(quantifier<FO>::type::forall{}, x, e);
 
@@ -234,7 +236,7 @@ TEST_CASE("New API") {
   SECTION("Deduction guides") {
     formula b = sigma.boolean(true);
     formula p = sigma.proposition("p");
-    variable x = sigma.variable("x");
+    variable x = sigma.variable("x", sigma.integer_sort());
     unary u = unary<propositional>(unary<propositional>::type::negation{}, b);
     conjunction c = conjunction(p, b);
     binary c2 = conjunction(u, b);
@@ -296,7 +298,7 @@ TEST_CASE("New API") {
   }
 
   SECTION("Sugar for terms") {
-    variable x = sigma.variable("x");
+    variable x = sigma.variable("x", sigma.integer_sort());
     constant c = constant{sigma.integer(42)};
 
     comparison lt = x < c;
@@ -434,8 +436,9 @@ TEST_CASE("New API") {
   }
 
   SECTION("Complex formula") {
-    variable x = sigma.variable("x");
-    function f = sigma.function("f");
+    variable x = sigma.variable("x", sigma.integer_sort());
+    function f = 
+      sigma.function("f", sigma.integer_sort(), {sigma.integer_sort()});
 
     formula complex = (x == 0 && G(wnext(x) == f(x) + 1) && F(x == 42));
 
@@ -447,8 +450,8 @@ TEST_CASE("New API") {
 
     boolean b = sigma.boolean(true);
     proposition p = sigma.proposition("p");
-    variable x = sigma.variable("x");
-    variable y = sigma.variable("y");
+    variable x = sigma.variable("x", sigma.integer_sort());
+    variable y = sigma.variable("y", sigma.integer_sort());
 
     conjunction<LTL> c = b && ((p && (b && p)) && b);
     addition<FO> sum = x + ((y + (x + y)) + x);
@@ -481,10 +484,10 @@ TEST_CASE("New API") {
   SECTION("Quantifier blocks") {
     using namespace black_internal;
 
-    variable x = sigma.variable("x");
-    variable y = sigma.variable("y");
-    variable z = sigma.variable("z");
-    variable w = sigma.variable("w");
+    variable x = sigma.variable("x", sigma.integer_sort());
+    variable y = sigma.variable("y", sigma.integer_sort());
+    variable z = sigma.variable("z", sigma.integer_sort());
+    variable w = sigma.variable("w", sigma.integer_sort());
 
     formula<FO> f = x == y && y == z && z == w;
 
@@ -573,7 +576,7 @@ TEST_CASE("New API") {
     using namespace black::logic;
 
     proposition p = sigma.proposition("p");
-    variable x = sigma.variable("x");
+    variable x = sigma.variable("x", sigma.integer_sort());
     boolean top = sigma.top();
 
     REQUIRE(has_any_element_of(
@@ -585,13 +588,16 @@ TEST_CASE("New API") {
   SECTION("big_and, big_or, etc...") {
     using namespace black::logic;
 
-    std::vector<int> v = {1, 2, 3, 4};
-    auto t = sum(sigma, v, [&](int i) {
-      return constant{sigma.integer(i)};
+    auto p1 = sigma.proposition("p1");
+    auto p2 = sigma.proposition("p2");
+    auto p3 = sigma.proposition("p3");
+    auto p4 = sigma.proposition("p4");
+
+    std::vector<proposition> v = {p1, p2, p3, p4};
+    auto t = big_and(sigma, v, [&](auto p) {
+      return !p;
     });
 
-    auto one = constant{sigma.integer(1)};
-
-    REQUIRE(t == (((one + 2) + 3) + 4));
+    REQUIRE(t == (((!p1 && !p2) && !p3) && !p4));
   }
 }

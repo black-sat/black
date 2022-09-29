@@ -42,7 +42,8 @@ namespace black_internal::mathsat
     msat_env env;
     tsl::hopscotch_map<formula, msat_term> formulas;
     tsl::hopscotch_map<term, msat_term> terms;
-    tsl::hopscotch_map<std::string, msat_decl> functions;
+    tsl::hopscotch_map<function, msat_decl> functions;
+    tsl::hopscotch_map<relation, msat_decl> relations;
     tsl::hopscotch_map<term, msat_decl> variables;
     std::optional<msat_model> model;
 
@@ -51,7 +52,8 @@ namespace black_internal::mathsat
     msat_term to_mathsat(term);
     msat_term to_mathsat_inner(term);
     msat_type to_mathsat(sort);
-    msat_decl to_mathsat(alphabet *, std::string const&, int, bool);
+    msat_decl to_mathsat(function);
+    msat_decl to_mathsat(relation);
     msat_decl to_mathsat(variable);
 
     ~_mathsat_t() {
@@ -157,9 +159,7 @@ namespace black_internal::mathsat
         for(term t : a.terms())
           args.push_back(to_mathsat(t));
         
-        msat_decl rel = 
-          to_mathsat(a.sigma(), to_string(a.rel().name()), 
-          (int)args.size(), true);
+        msat_decl rel = to_mathsat(a.rel());
 
         return msat_make_term(env, rel, args.data());
       },
@@ -249,23 +249,44 @@ namespace black_internal::mathsat
     );
   }
 
-  msat_decl mathsat::_mathsat_t::to_mathsat(
-    alphabet *sigma, std::string const&name, int arity, bool is_relation
-  ) {
-    if(auto it = functions.find(name); it != functions.end())
+  msat_decl mathsat::_mathsat_t::to_mathsat(function f) {
+    if(auto it = functions.find(f); it != functions.end())
       return it->second; // LCOV_EXCL_LINE
 
-    msat_type type = to_mathsat(sigma->default_sort());
-    msat_type bool_type = msat_get_bool_type(env);
-
-    std::vector<msat_type> types((size_t)arity, type);
+    size_t arity = f.signature().size();
+    std::vector<msat_type> types;
+    for(size_t i = 0; i < arity; ++i)
+      types.push_back(to_mathsat(f.signature()[i]));
 
     msat_type functype = msat_get_function_type(
-      env, types.data(), (size_t)arity, is_relation ? bool_type : type
+      env, types.data(), arity, to_mathsat(f.result())
     ); // LCOV_EXCL_LINE
-    msat_decl d = msat_declare_function(env, name.c_str(), functype);
+    msat_decl d = 
+      msat_declare_function(env, to_string(f.unique_id()).c_str(), functype);
 
-    functions.insert({name, d});
+    functions.insert({f, d});
+
+    return d;
+  }
+
+  msat_decl mathsat::_mathsat_t::to_mathsat(relation r) {
+    if(auto it = relations.find(r); it != relations.end())
+      return it->second; // LCOV_EXCL_LINE
+
+    msat_type bool_type = msat_get_bool_type(env);
+
+    size_t arity = r.signature().size();
+    std::vector<msat_type> types;
+    for(size_t i = 0; i < arity; ++i)
+      types.push_back(to_mathsat(r.signature()[i]));
+
+    msat_type functype = msat_get_function_type(
+      env, types.data(), arity, bool_type
+    ); // LCOV_EXCL_LINE
+    msat_decl d = 
+      msat_declare_function(env, to_string(r.unique_id()).c_str(), functype);
+
+    relations.insert({r, d});
 
     return d;
   }
@@ -274,10 +295,8 @@ namespace black_internal::mathsat
     if(auto it = variables.find(x); it != variables.end())
       return it->second; // LCOV_EXCL_LINE
 
-    msat_type t = to_mathsat(x.sigma()->default_sort());
-
     msat_decl var = 
-      msat_declare_function(env, to_string(x).c_str(), t);
+      msat_declare_function(env, to_string(x).c_str(), to_mathsat(x.sort()));
 
     return var;
   }
@@ -297,12 +316,6 @@ namespace black_internal::mathsat
     return t.match(
       [&](constant, auto num) { // LCOV_EXCL_LINE
         return num.match(
-          [&](zero) {
-            return msat_make_number(env, "0");
-          },
-          [&](one) {
-            return msat_make_number(env, "1");
-          },
           [&](integer, int64_t value) {
             return msat_make_number(env, std::to_string(value).c_str());
           },
@@ -321,10 +334,7 @@ namespace black_internal::mathsat
 
         black_assert(a.terms().size() > 0);
 
-        msat_decl func = to_mathsat(
-          a.terms()[0].sigma(), to_string(a.func().name()), 
-          (int)args.size(), false
-        );
+        msat_decl func = to_mathsat(a.func());
         return msat_make_uf(env, func, args.data());
       }, // LCOV_EXCL_LINE
       [&](unary_term u, auto arg) {

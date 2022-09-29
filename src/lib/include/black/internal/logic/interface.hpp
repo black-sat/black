@@ -26,6 +26,7 @@
 
 #include <black/support/common.hpp>
 
+#include <memory>
 #include <ranges>
 #include <stack>
 
@@ -39,14 +40,13 @@
 namespace black_internal::logic {
 
   //
-  // As a first thing we define the real `alphabet` class, which is just a thin
-  // addition over the `alphabet_base` class defined before, which does the
-  // heavy lifting.
+  // As a first thing we define the real `alphabet` class, which derives from
+  // the `alphabet_base` class defined before, which does the heavy lifting.
   //
   class alphabet : public alphabet_base
   {
   public:
-    alphabet() : _default_sort{this->infinite_sort("default")} { }
+    alphabet() = default;
     alphabet(alphabet const&) = delete;
     alphabet(alphabet &&) = default;
 
@@ -61,19 +61,13 @@ namespace black_internal::logic {
       return this->boolean(false);
     }
 
-    class variable variable(identifier name) {
-      return alphabet_base::variable(name, default_sort());
-    }
-    
-    class variable variable(identifier name, sort s) {
-      return alphabet_base::variable(name, s);
+    class relation relation(identifier name, seq<sort> const& s) {
+      return alphabet_base::relation(name, s);
     }
 
-    sort default_sort() const { return _default_sort; }
-    void set_default_sort(sort s) { _default_sort = s; }
-
-  private:
-    sort _default_sort;
+    class function function(identifier name, sort result, seq<sort> const& s) {
+      return alphabet_base::function(name, result, s);
+    }
   };
  
   //
@@ -151,38 +145,22 @@ namespace black_internal::logic {
 
   using wrapped_int = make_fragment_t< 
     syntax_element::constant,
-    syntax_element::zero,
-    syntax_element::one,
     syntax_element::integer
   >;
   
   using wrapped_real = make_fragment_t< 
     syntax_element::constant,
-    syntax_element::zero,
-    syntax_element::one,
     syntax_element::real
   >;
 
   template<std::integral T>
   constant<wrapped_int> wrap_term_op_arg(alphabet *sigma, T t) {
-    int64_t value = int64_t{t};
-    if(value == 0)
-      return constant{sigma->zero()};
-    if(value == 1)
-      return constant{sigma->one()};
-
-    return constant{sigma->integer(value)};
+    return constant{sigma->integer(int64_t{t})};
   }
 
   template<std::floating_point T>
   constant<wrapped_real> wrap_term_op_arg(alphabet *sigma, T t) { 
-    double value = double{t};
-    if(value == 0.0)
-      return constant{sigma->zero()};
-    if(value == 1.0)
-      return constant{sigma->one()};
-
-    return constant{sigma->real(value)};
+    return constant{sigma->real(double{t})};
   }
 
   //
@@ -384,10 +362,6 @@ namespace black_internal::logic {
   struct hierarchy_element_custom_members<syntax_element::addition, Derived>
   { 
     auto operands() const;
-
-    static auto identity(alphabet *sigma) {
-      return constant{sigma->zero()};
-    }
   };
   
   template<typename Derived>
@@ -395,10 +369,6 @@ namespace black_internal::logic {
     syntax_element::multiplication, Derived
   > { 
     auto operands() const;
-
-    static auto identity(alphabet *sigma) {
-      return constant{sigma->one()};
-    }
   };
 
   //
@@ -454,20 +424,6 @@ namespace black_internal::logic {
     );
   }
   
-  template<std::ranges::range Range, typename F>
-  auto sum(alphabet &sigma, Range const& r, F&& f) {
-    return fold_op<syntax_element::addition>(
-      sigma, r, std::forward<F>(f)
-    );
-  }
-  
-  template<std::ranges::range Range, typename F>
-  auto product(alphabet &sigma, Range const& r, F&& f) {
-    return fold_op<syntax_element::multiplication>(
-      sigma, r, std::forward<F>(f)
-    );
-  }
-
   //
   // Here we define a utility class that helps to pattern match associative
   // binary elements such as conjunctions and disjunctions or sums and products.
@@ -947,10 +903,43 @@ namespace black_internal::logic {
     }
   };
 
+  //
+  // This function recursively computes the sort of a term. 
+  // It assumes the term to be well-typed.
+  //
+  template<fragment Syntax>
+  sort sort_of(term<Syntax> t) {
+    alphabet &sigma = *t.sigma();
+    return t.match(
+      [&](constant<Syntax>, auto value) {
+        return value.match(
+          [&](integer) { return sigma.integer_sort(); },
+          [&](real)    { return sigma.real_sort(); }
+        );
+      },
+      [&](variable v) {
+        return v.sort();
+      },
+      [&](application<Syntax> app) {
+        return app.func().result();
+      },
+      [&](unary_term<Syntax>, auto arg) { 
+        return sort_of(arg);
+      },
+      [&](binary_term<Syntax>, auto left, auto right) -> sort {
+        if(sort_of(left) == sigma.integer_sort() &&
+           sort_of(right) == sigma.integer_sort())
+          return sigma.integer_sort();
+        
+        return sigma.real_sort();
+      }
+    );
+  }
+
 }
 
 //
-// `varset` class `std::hash` implementation.
+// `seq` class `std::hash` implementation.
 //
 namespace std {
   template<typename T>

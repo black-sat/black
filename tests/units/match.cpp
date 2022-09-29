@@ -156,9 +156,10 @@ TEST_CASE("Pattern matching") {
     }
     
     SECTION("Children vector") {
-      relation r = sigma.relation("r");
+      relation r = sigma.relation("r", {sigma.integer_sort()});
       std::vector<term<LTLFO>> vars = {
-        sigma.variable("x"), sigma.variable("y")
+        sigma.variable("x", sigma.integer_sort()), 
+        sigma.variable("y", sigma.integer_sort())
       };
       
       atom<LTLFO> a = r(vars);
