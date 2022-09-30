@@ -438,6 +438,12 @@ namespace black_internal::encoder
         
         return application<FO>(stepped(a.func(), k), terms);
       }, // LCOV_EXCL_LINE
+      [&](to_integer<LTLPFO>, auto arg) {
+        return to_integer(stepped(arg, k, scope));
+      },
+      [&](to_real<LTLPFO>, auto arg) {
+        return to_real(stepped(arg, k, scope));
+      },
       [&](next<LTLPFO>, auto arg) {
         return stepped(arg, k + 1, scope);
       },

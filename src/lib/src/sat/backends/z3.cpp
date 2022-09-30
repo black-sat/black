@@ -465,6 +465,12 @@ namespace black_internal::z3
         return u.match(
           [&](negative, auto arg) {
             return Z3_mk_unary_minus(context, to_z3(arg));
+          },
+          [&](to_integer, auto arg) {
+            return Z3_mk_real2int(context, to_z3(arg));
+          },
+          [&](to_real, auto arg) {
+            return Z3_mk_int2real(context, to_z3(arg));
           }
         );
       },

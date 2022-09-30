@@ -156,6 +156,8 @@ namespace black {
   Element(variable) \
   Element(application) \
   Element(negative) \
+  Element(to_integer) \
+  Element(to_real) \
   Element(subtraction) \
   Element(addition) \
   Element(multiplication) \

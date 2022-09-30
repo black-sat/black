@@ -171,6 +171,12 @@ namespace black_internal::logic
       [&](negative<LTLPFO>, auto arg) {
         return fmt::format("-({})", to_string(arg));
       },
+      [&](to_integer<LTLPFO>, auto arg) {
+        return fmt::format("to_int({})", to_string(arg));
+      },
+      [&](to_real<LTLPFO>, auto arg) {
+        return fmt::format("to_real({})", to_string(arg));
+      },
       [&](next<LTLPFO>, auto arg) {
         return fmt::format("next({})", to_string(arg));
       },
@@ -309,6 +315,12 @@ namespace black_internal::logic
       }, // LCOV_EXCL_LINE
       [](negative<FO>, auto arg) {
         return fmt::format("(- {})", to_smtlib2_inner(arg));
+      },
+      [](to_integer<FO>, auto arg) {
+        return fmt::format("(to_int {})", to_smtlib2_inner(arg));
+      },
+      [](to_real<FO>, auto arg) {
+        return fmt::format("(to_real {})", to_smtlib2_inner(arg));
       },
       [](addition<FO>, auto left, auto right) {
         return fmt::format(

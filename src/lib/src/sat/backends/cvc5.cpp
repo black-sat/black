@@ -305,6 +305,12 @@ namespace black_internal::cvc5
         return u.match(
           [&](negative, auto arg) {
             return solver.mkTerm(cvc::NEG, {to_cvc5(arg, env)});
+          },
+          [&](to_integer, auto arg) {
+            return solver.mkTerm(cvc::TO_INTEGER, {to_cvc5(arg, env)});
+          },
+          [&](to_real, auto arg) {
+            return solver.mkTerm(cvc::TO_REAL, {to_cvc5(arg, env)});
           }
         );
       },

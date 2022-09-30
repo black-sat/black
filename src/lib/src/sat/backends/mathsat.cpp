@@ -342,6 +342,12 @@ namespace black_internal::mathsat
           [&](negative) {
             return msat_make_times(env, 
               msat_make_number(env, "-1"), to_mathsat(arg));
+          },
+          [&](to_integer) {
+            return to_mathsat(arg);
+          },
+          [&](to_real) {
+            return to_mathsat(arg);
           }
         );
       },

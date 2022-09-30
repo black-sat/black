@@ -298,6 +298,14 @@ namespace black_internal
     if(!rhs)
       return {};
 
+    if(sort_of(*lhs) == _alphabet.integer_sort() &&
+       sort_of(*rhs) == _alphabet.real_sort())
+      return comparison(rel, to_real(*lhs), *rhs);
+
+    if(sort_of(*lhs) == _alphabet.real_sort() &&
+       sort_of(*rhs) == _alphabet.integer_sort())
+      return comparison(rel, *lhs, to_real(*rhs));
+
     return comparison(rel, *lhs, *rhs);
   }
 
@@ -430,6 +438,8 @@ namespace black_internal
        peek()->token_type() == token::type::real ||
        peek()->data<binary_term::type>() == binary_term::type::subtraction{} ||
        peek()->token_type() == token::type::identifier ||
+       peek()->data<unary_term::type>() == unary_term::type::to_integer{} ||
+       peek()->data<unary_term::type>() == unary_term::type::to_real{} ||
        peek()->data<unary_term::type>() == unary_term::type::next{} ||
        peek()->data<unary_term::type>() == unary_term::type::wnext{} ||
        peek()->data<unary_term::type>() == unary_term::type::prev{} ||
@@ -468,7 +478,9 @@ namespace black_internal
     if(peek()->data<binary_term::type>() == binary_term::type::subtraction{})
       return parse_term_unary_minus();
 
-    if(peek()->data<unary_term::type>() == unary_term::type::next{} ||
+    if(peek()->data<unary_term::type>() == unary_term::type::to_integer{} ||
+       peek()->data<unary_term::type>() == unary_term::type::to_real{} ||
+       peek()->data<unary_term::type>() == unary_term::type::next{} ||
        peek()->data<unary_term::type>() == unary_term::type::wnext{} ||
        peek()->data<unary_term::type>() == unary_term::type::prev{} ||
        peek()->data<unary_term::type>() == unary_term::type::wprev{})
@@ -555,6 +567,8 @@ namespace black_internal
 
   std::optional<term> parser::_parser_t::parse_term_ctor() {
     black_assert(
+      peek()->data<unary_term::type>() == unary_term::type::to_integer{} ||
+      peek()->data<unary_term::type>() == unary_term::type::to_real{} ||
       peek()->data<unary_term::type>() == unary_term::type::next{} ||
       peek()->data<unary_term::type>() == unary_term::type::wnext{} ||
       peek()->data<unary_term::type>() == unary_term::type::prev{} ||

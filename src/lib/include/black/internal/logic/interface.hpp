@@ -923,6 +923,12 @@ namespace black_internal::logic {
       [&](application<Syntax> app) {
         return app.func().result();
       },
+      [&](to_integer<Syntax>) {
+        return t.sigma()->integer_sort();
+      },
+      [&](to_real<Syntax>) {
+        return t.sigma()->real_sort();
+      },
       [&](unary_term<Syntax>, auto arg) { 
         return sort_of(arg);
       },

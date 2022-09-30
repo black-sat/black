@@ -282,6 +282,12 @@ namespace black_internal::solver
         return _check_syntax(left, err, scope, rels, funcs) ||
                _check_syntax(right, err, scope, rels, funcs);
       },
+      [&](to_integer, auto arg) {
+        return _check_syntax(arg, err, scope, rels, funcs);
+      },
+      [&](to_real, auto arg) {
+        return _check_syntax(arg, err, scope, rels, funcs);
+      },
       [&](unary_term, term arg) -> check_result_t {
         if(!arg.is<variable>()) {
           err(
