@@ -205,18 +205,16 @@ namespace black_internal::solver
   struct check_result_t {
     bool error = false;
     bool has_next = false;
-    bool has_disjunctions = false;
 
     check_result_t() = default;
-    check_result_t(bool b, bool _has_next = false, bool _has_disj = false) 
-      : error{b}, has_next{_has_next}, has_disjunctions{_has_disj} { }
+    check_result_t(bool b, bool _has_next = false) 
+      : error{b}, has_next{_has_next} { }
   };
 
   static check_result_t operator||(check_result_t r1, check_result_t r2) {
     return {
       r1.error || r2.error,
-      r1.has_next || r2.has_next, 
-      r1.has_disjunctions || r2.has_disjunctions
+      r1.has_next || r2.has_next
     };
   }
 
@@ -267,7 +265,7 @@ namespace black_internal::solver
           }
         }
         
-        return {false, true, false};
+        return {false, true};
       }
     );
   }
@@ -275,7 +273,7 @@ namespace black_internal::solver
   // function full of GCOV false negatives
   static check_result_t _check_syntax(
     formula f, std::function<void(std::string)> const& err, 
-    std::vector<variable> const& scope, bool positive
+    std::vector<variable> const& scope
   ) {
     return f.match( // LCOV_EXCL_LINE
       [](boolean) -> check_result_t { return false; },
@@ -295,17 +293,17 @@ namespace black_internal::solver
         std::vector<variable> new_scope = scope;
         new_scope.push_back(q.var());
         
-        return _check_syntax(q.matrix(), err, new_scope, positive);
+        return _check_syntax(q.matrix(), err, new_scope);
       }, // LCOV_EXCL_LINE
       [&](negation, auto arg) {
-        return _check_syntax(arg, err, scope, !positive);
+        return _check_syntax(arg, err, scope);
       },
       [&](disjunction o) {
-        check_result_t r{false, false, positive};
+        check_result_t r{false, false};
         std::vector<check_result_t> results;
         for(auto op : o.operands()) {
           results.push_back(
-            _check_syntax(op, err, scope, positive)
+            _check_syntax(op, err, scope)
           );
         }
         return std::accumulate(
@@ -313,11 +311,11 @@ namespace black_internal::solver
         );
       },
       [&](conjunction c) {
-        check_result_t r{false, false, !positive};
+        check_result_t r{false, false};
         std::vector<check_result_t> results;
         for(auto op : c.operands()) {
           results.push_back(
-            _check_syntax(op, err, scope, positive)
+            _check_syntax(op, err, scope)
           );
         }
         return std::accumulate(
@@ -325,25 +323,25 @@ namespace black_internal::solver
         );
       },
       [&](implication, formula left, formula right) {
-        return _check_syntax(!left || right, err, scope, positive);
+        return _check_syntax(!left || right, err, scope);
       },
       [&](iff, formula left, formula right) {
         return _check_syntax( // LCOV_EXCL_LINE
           implies(left, right) && implies(right, left), 
-          err, scope, positive
+          err, scope
         );
       },
       [&](tomorrow, auto arg) {
-        return _check_syntax(arg, err, scope, positive);
+        return _check_syntax(arg, err, scope);
       },
       [&](w_tomorrow, auto arg) {
-        return _check_syntax(arg, err, scope, positive);
+        return _check_syntax(arg, err, scope);
       },
       [&](yesterday, auto arg) {
-        return _check_syntax(arg, err, scope, positive);
+        return _check_syntax(arg, err, scope);
       },
       [&](w_yesterday, auto arg) {
-        return _check_syntax(arg, err, scope, positive);
+        return _check_syntax(arg, err, scope);
       },
       [&](only<temporal> t) -> check_result_t {
         if(!scope.empty()) {
@@ -356,11 +354,11 @@ namespace black_internal::solver
 
         return t.match( // LCOV_EXCL_LINE
           [&](unary, formula arg) {
-            return _check_syntax(arg, err, scope, positive);
+            return _check_syntax(arg, err, scope);
           },
           [&](binary, formula left, formula right) {
-            return _check_syntax(left, err, scope, positive) || 
-                   _check_syntax(right, err, scope, positive);
+            return _check_syntax(left, err, scope) || 
+                   _check_syntax(right, err, scope);
           }
         );
       }
@@ -372,7 +370,7 @@ namespace black_internal::solver
     tsl::hopscotch_map<identifier, size_t> rels;
     tsl::hopscotch_map<identifier, size_t> funcs;
     return 
-      !_check_syntax(f, err, std::vector<variable>{}, true).error;
+      !_check_syntax(f, err, std::vector<variable>{}).error;
   }
 
   

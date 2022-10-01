@@ -238,8 +238,9 @@ namespace black_internal::logic
 
         bool parens = q.matrix().is<binary<LTLPFO>>();
 
-        for(variable v : q.variables())
-          qs += to_string(v) + ' ';
+        for(variable v : q.variables()) {
+          qs += '(' + to_string(v) + " : " + to_string(v.sort()) + ") ";
+        }
 
         return fmt::format("{}. {}", qs, parens_if_needed(q.matrix(), parens));
       }, // LCOV_EXCL_LINE
@@ -280,8 +281,8 @@ namespace black_internal::logic
 
   std::string to_string(sort s) {
     return s.match(
-      [](integer_sort) { return "integers"; },
-      [](real_sort)    { return "reals"; },
+      [](integer_sort) { return "Int"; },
+      [](real_sort)    { return "Real"; },
       [](otherwise)    -> const char *{ black_unreachable(); } // LCOV_EXCL_LINE
     );
   }

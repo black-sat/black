@@ -168,9 +168,9 @@ if(ENABLE_FORMULAS_TESTS)
 
     string(FIND "${FILE}" "LRA" LRA_FOUND)
     if((SMT_FOUND GREATER_EQUAL 0) AND (LRA_FOUND GREATER_EQUAL 0))
-      set(SMT_OPTS "${SMT_OPTS} -d reals")
+      set(SMT_OPTS "${SMT_OPTS} -d Real")
     else()
-      set(SMT_OPTS "${SMT_OPTS} -d integers")
+      set(SMT_OPTS "${SMT_OPTS} -d Int")
     endif()
     
     set(SHELL_CMD /bin/sh -c)

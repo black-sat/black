@@ -83,7 +83,7 @@ namespace black::frontend {
     std::optional<formula> f;
 
     if(cli::domain) {
-      if(cli::domain == "integers")
+      if(cli::domain == "Int")
         f = black::parse_formula(sigma, sigma.integer_sort(),
           file, formula_syntax_error_handler(path)
         );

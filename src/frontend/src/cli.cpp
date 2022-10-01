@@ -117,7 +117,7 @@ namespace black::frontend
   }
 
   static bool is_sort(std::string const& s) {
-    return s == "integers" || s == "reals"; // LCOV_EXCL_LINE
+    return s == "Int" || s == "Real"; // LCOV_EXCL_LINE
   }
 
   //
@@ -150,7 +150,7 @@ namespace black::frontend
         & value(is_sort, "sort", cli::domain))
         % "select the domain for first-order variables.\n"
           "Mandatory for first-order formulas.\n"
-          "Accepted domains: integers, reals",
+          "Accepted domains: Int, Real",
       option("-s", "--semi-decision").set(cli::semi_decision)
         % "disable termination checks for unsatisfiable formulas, speeding up "
           "the execution for satisfiable ones.\n"

@@ -89,8 +89,7 @@ namespace black_internal
     std::vector<token> _tokens;
     size_t _pos = 0;
 
-    using entity_t = std::variant<proposition, variable, function, relation>;
-    tsl::hopscotch_map<identifier, entity_t> _symbols;
+    tsl::hopscotch_map<identifier, variable> _scope;
 
     _parser_t(
       alphabet &sigma, sort default_sort,
@@ -99,6 +98,8 @@ namespace black_internal
 
     template<typename F>
     auto try_parse(F f);
+
+    std::optional<variable> lookup(identifier id);
 
     std::optional<token> peek();
     std::optional<token> get();
@@ -167,13 +168,20 @@ namespace black_internal
     size_t pos = _pos;
     bool t = _trying;
     _trying = true;
-    tsl::hopscotch_map<identifier, entity_t> symbols = _symbols;
+    auto scope = _scope;
     auto r = f();
     if(!r)
       _pos = pos;
-    _symbols = symbols;
+    _scope = scope;
     _trying = t;
     return r;
+  }
+
+  std::optional<variable> parser::_parser_t::lookup(identifier id) {
+    if(auto it = _scope.find(id); it != _scope.end())
+      return it->second;
+    
+    return {};
   }
 
   std::optional<token> parser::_parser_t::peek() {
@@ -422,11 +430,20 @@ namespace black_internal
     if(!peek())
       return error("Expected dot, found end of input");
 
+    if(vars.empty())
+      return error("Expected variable list, found '.'");
+
     consume(); // consume the dot
+
+    auto scope = _scope;
+    for(auto v : vars)
+      _scope.insert({v.name(), v});
 
     std::optional<formula> matrix = parse_primary();
     if(!matrix)
       return {};
+
+    _scope = scope;
 
     if(q == quantifier::type::exists{})
       return exists_block(vars, *matrix);
@@ -706,16 +723,10 @@ namespace black_internal
     if(!peek() || 
         peek()->data<token::punctuation>() != token::punctuation::left_paren)
     {  
-      std::optional<sort> s;
+      if(auto var = lookup(id); var)
+        return var;
 
-      if(peek()->data<token::punctuation>() == token::punctuation::colon) {
-        consume();
-        s = parse_sort();
-        if(!s)
-          return {};
-      }
-
-      return _alphabet.variable(id, s ? *s : _default_sort);
+      return _alphabet.variable(id, _default_sort);
     }
 
     // otherwise it is a function application
