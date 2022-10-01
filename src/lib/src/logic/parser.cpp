@@ -85,6 +85,9 @@ namespace black_internal
     std::vector<token> _tokens;
     size_t _pos = 0;
 
+    using entity_t = std::variant<proposition, variable, function, relation>;
+    tsl::hopscotch_map<identifier, entity_t> _symbols;
+
     _parser_t(
       alphabet &sigma, std::optional<sort> default_sort,
       std::istream &stream, error_handler error
@@ -92,6 +95,9 @@ namespace black_internal
 
     template<typename F>
     auto try_parse(F f);
+
+    template<hierarchy_element H, typename ...Args>
+    std::optional<H> symbol(identifier id, Args ...args);
 
     std::optional<token> peek();
     std::optional<token> get();
@@ -161,11 +167,30 @@ namespace black_internal
     size_t pos = _pos;
     bool t = _trying;
     _trying = true;
+    tsl::hopscotch_map<identifier, entity_t> symbols = _symbols;
     auto r = f();
     if(!r)
       _pos = pos;
+    _symbols = symbols;
     _trying = t;
     return r;
+  }
+
+  template<hierarchy_element H, typename ...Args>
+  std::optional<H> parser::_parser_t::symbol(identifier id, Args ...args) {
+    if(auto it = _symbols.find(id); it != _symbols.end()) {
+      if(std::holds_alternative<H>(it->second))
+        return std::get<H>(it->second);
+      
+      return error(
+        "Identifier '" + to_string(id) + "' used twice with different meanings"
+      );
+    }
+
+    H h = _alphabet.element<H::element>(id, args...);
+    _symbols.insert({id, h});
+
+    return h;
   }
 
   std::optional<token> parser::_parser_t::peek() {
@@ -328,7 +353,7 @@ namespace black_internal
     // if there is no open paren this is a simple proposition
     if(!peek() || 
         peek()->data<token::punctuation>() != token::punctuation::left_paren)
-      return _alphabet.proposition(id);
+      return symbol<proposition>(id);
 
     // otherwise it is a relational atom
     std::vector<term> terms;
@@ -350,9 +375,11 @@ namespace black_internal
     for(size_t i = 0; i < terms.size(); ++i) 
       sorts.push_back(sort_of(terms[i]));
 
-    relation r = _alphabet.relation(id, sorts);
+    auto r = symbol<relation>(id, sorts);
+    if(!r)
+      return {};
 
-    return r(terms);
+    return (*r)(terms);
   }
 
   std::optional<formula> parser::_parser_t::parse_quantifier() {
@@ -384,10 +411,12 @@ namespace black_internal
       return {};
 
     std::vector<variable> vars;
-    for(token tok : vartoks)
-      vars.push_back(
-        _alphabet.variable(*tok.data<std::string>(), *_default_sort)
-      );
+    for(token tok : vartoks) {
+      auto v = symbol<variable>(*tok.data<std::string>(), *_default_sort);
+      if(!v)
+        return {};
+      vars.push_back(*v);
+    }
 
     if(q == quantifier::type::exists{})
       return exists_block(vars, *matrix);
@@ -650,7 +679,7 @@ namespace black_internal
         peek()->data<token::punctuation>() != token::punctuation::left_paren) {
       if(!_default_sort)
         return error("Variable parsed, but no default sort is set");
-      return _alphabet.variable(id, *_default_sort);
+      return symbol<variable>(id, *_default_sort);
     }
 
     // otherwise it is a function application
@@ -676,9 +705,11 @@ namespace black_internal
     if(!_default_sort)
       return error("Function application parsed, but no default sort is set");
 
-    function f = _alphabet.function(id, *_default_sort, sorts);
+    auto f = symbol<function>(id, *_default_sort, sorts);
+    if(!f)
+      return {};
 
-    return f(terms);
+    return (*f)(terms);
   }
 
   std::optional<term> parser::_parser_t::parse_term_parens() {
