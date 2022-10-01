@@ -244,13 +244,13 @@ namespace black_internal::z3
       [&](real_sort) {
         return Z3_mk_real_sort(context);
       },
-      [&](infinite_sort) {
+      [&](uninterpreted_sort) {
         return Z3_mk_uninterpreted_sort(
           context, 
           Z3_mk_string_symbol(context, to_string(s.unique_id()).c_str())
         );
       },
-      [&](finite_sort f) {
+      [&](enum_sort f) {
         size_t size = f.elements().size();
         auto names = std::make_unique<Z3_symbol[]>(size);
         auto consts = std::make_unique<Z3_func_decl[]>(size);

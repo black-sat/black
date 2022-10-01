@@ -48,10 +48,6 @@ namespace black_internal
       std::istream &stream, error_handler error
     );
     
-    parser(
-      logic::alphabet &sigma,
-      std::istream &stream, error_handler error
-    );
     ~parser();
 
     std::optional<logic::formula<logic::LTLPFO>> parse();

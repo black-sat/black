@@ -223,70 +223,30 @@ namespace black_internal::solver
   // function full of GCOV false negatives
   static check_result_t _check_syntax(
     term t, std::function<void(std::string)> const& err,
-    std::vector<variable> const& scope,
-    tsl::hopscotch_map<identifier, size_t> &rels,
-    tsl::hopscotch_map<identifier, size_t> &funcs
+    std::vector<variable> const& scope
   ) {
     return t.match( // LCOV_EXCL_LINE
       [](constant) -> check_result_t { return false; },
       [](variable) -> check_result_t { return false; },
       [&](application a) -> check_result_t {
-        identifier id = a.func().name();
-        size_t size = a.terms().size();
-        
-        if(auto it = funcs.find(id); it != funcs.end() && it->second != size) {
-          err(
-            "Function '" + to_string(id) + 
-            "' used twice with different arities"
-          );
-          return true;
-        }
-
-        if(rels.find(id) != rels.end()) {
-          err(
-            "Function symbol '" + to_string(id) + 
-            "' already used as a relation symbol"
-          );
-          return true;
-        }
-
-        if(a.terms().size() != a.func().signature().size()) {
-          err(
-            "Wrong arity in function application for function '" + 
-            to_string(id) + "'"
-          );
-          return true;
-        }
-
-        for(size_t i = 0; i < a.terms().size(); ++i) {
-          if(sort_of(a.terms()[i]) != a.func().signature()[i]) {
-            err(
-              "Wrong argument sort in function application for relation '" +
-              to_string(id) + "'"
-            );
-            return true;
-          }
-        }
-
         check_result_t res;
         for(term arg : a.terms())
-          res = res || _check_syntax(arg, err, scope, rels, funcs);
+          res = res || _check_syntax(arg, err, scope);
 
-        funcs.insert({id, size});
         return res;
       }, // LCOV_EXCL_LINE
       [&](negative, auto arg) -> check_result_t {
-        return _check_syntax(arg, err, scope, rels, funcs);
+        return _check_syntax(arg, err, scope);
       },
       [&](binary_term, auto left, auto right) {
-        return _check_syntax(left, err, scope, rels, funcs) ||
-               _check_syntax(right, err, scope, rels, funcs);
+        return _check_syntax(left, err, scope) ||
+               _check_syntax(right, err, scope);
       },
       [&](to_integer, auto arg) {
-        return _check_syntax(arg, err, scope, rels, funcs);
+        return _check_syntax(arg, err, scope);
       },
       [&](to_real, auto arg) {
-        return _check_syntax(arg, err, scope, rels, funcs);
+        return _check_syntax(arg, err, scope);
       },
       [&](unary_term, term arg) -> check_result_t {
         if(!arg.is<variable>()) {
@@ -315,76 +275,37 @@ namespace black_internal::solver
   // function full of GCOV false negatives
   static check_result_t _check_syntax(
     formula f, std::function<void(std::string)> const& err, 
-    std::vector<variable> const& scope, bool positive, 
-    tsl::hopscotch_map<identifier, size_t> &rels,
-    tsl::hopscotch_map<identifier, size_t> &funcs
+    std::vector<variable> const& scope, bool positive
   ) {
     return f.match( // LCOV_EXCL_LINE
       [](boolean) -> check_result_t { return false; },
       [](proposition) -> check_result_t { return false; },
       [&](atom a) -> check_result_t {  
-        identifier id = a.rel().name();
-        size_t size = a.terms().size();
-        if(auto it = rels.find(id); it != rels.end() && it->second != size) {
-          err(
-            "Relation '" + to_string(id) + 
-            "' used twice with different arities"
-          );
-          return true;
-        }
-
-        if(funcs.find(id) != funcs.end()) {
-          err(
-            "Relation symbol '" + to_string(id) + 
-            "' already used as a function symbol"
-          );
-          return true;
-        }
-
-        if(a.terms().size() != a.rel().signature().size()) {
-          err(
-            "Wrong arity in relational atom for relation '" + 
-            to_string(id) + "'"
-          );
-          return true;
-        }
-
-        for(size_t i = 0; i < a.terms().size(); ++i) {
-          if(sort_of(a.terms()[i]) != a.rel().signature()[i]) {
-            err(
-              "Wrong argument sort in relation atom for relation '" +
-              to_string(id) + "'"
-            );
-            return true;
-          }
-        }
-
         check_result_t res;
         for(term t : a.terms())
-          res = res || _check_syntax(t, err, scope, rels, funcs);
+          res = res || _check_syntax(t, err, scope);
         
-        rels.insert({id, size});
         return res;  
       }, // LCOV_EXCL_LINE
       [&](comparison, auto left, auto right) {
-        return _check_syntax(left, err, scope, rels, funcs) ||
-               _check_syntax(right, err, scope, rels, funcs);
+        return _check_syntax(left, err, scope) ||
+               _check_syntax(right, err, scope);
       },
       [&](quantifier q) -> check_result_t {
         std::vector<variable> new_scope = scope;
         new_scope.push_back(q.var());
         
-        return _check_syntax(q.matrix(), err, new_scope, positive, rels, funcs);
+        return _check_syntax(q.matrix(), err, new_scope, positive);
       }, // LCOV_EXCL_LINE
       [&](negation, auto arg) {
-        return _check_syntax(arg, err, scope, !positive, rels, funcs);
+        return _check_syntax(arg, err, scope, !positive);
       },
       [&](disjunction o) {
         check_result_t r{false, false, positive};
         std::vector<check_result_t> results;
         for(auto op : o.operands()) {
           results.push_back(
-            _check_syntax(op, err, scope, positive, rels, funcs)
+            _check_syntax(op, err, scope, positive)
           );
         }
         return std::accumulate(
@@ -396,7 +317,7 @@ namespace black_internal::solver
         std::vector<check_result_t> results;
         for(auto op : c.operands()) {
           results.push_back(
-            _check_syntax(op, err, scope, positive, rels, funcs)
+            _check_syntax(op, err, scope, positive)
           );
         }
         return std::accumulate(
@@ -404,25 +325,25 @@ namespace black_internal::solver
         );
       },
       [&](implication, formula left, formula right) {
-        return _check_syntax(!left || right, err, scope, positive, rels, funcs);
+        return _check_syntax(!left || right, err, scope, positive);
       },
       [&](iff, formula left, formula right) {
         return _check_syntax( // LCOV_EXCL_LINE
           implies(left, right) && implies(right, left), 
-          err, scope, positive, rels, funcs
+          err, scope, positive
         );
       },
       [&](tomorrow, auto arg) {
-        return _check_syntax(arg, err, scope, positive, rels, funcs);
+        return _check_syntax(arg, err, scope, positive);
       },
       [&](w_tomorrow, auto arg) {
-        return _check_syntax(arg, err, scope, positive, rels, funcs);
+        return _check_syntax(arg, err, scope, positive);
       },
       [&](yesterday, auto arg) {
-        return _check_syntax(arg, err, scope, positive, rels, funcs);
+        return _check_syntax(arg, err, scope, positive);
       },
       [&](w_yesterday, auto arg) {
-        return _check_syntax(arg, err, scope, positive, rels, funcs);
+        return _check_syntax(arg, err, scope, positive);
       },
       [&](only<temporal> t) -> check_result_t {
         if(!scope.empty()) {
@@ -435,11 +356,11 @@ namespace black_internal::solver
 
         return t.match( // LCOV_EXCL_LINE
           [&](unary, formula arg) {
-            return _check_syntax(arg, err, scope, positive, rels, funcs);
+            return _check_syntax(arg, err, scope, positive);
           },
           [&](binary, formula left, formula right) {
-            return _check_syntax(left, err, scope, positive, rels, funcs) || 
-                   _check_syntax(right, err, scope, positive, rels, funcs);
+            return _check_syntax(left, err, scope, positive) || 
+                   _check_syntax(right, err, scope, positive);
           }
         );
       }
@@ -451,7 +372,7 @@ namespace black_internal::solver
     tsl::hopscotch_map<identifier, size_t> rels;
     tsl::hopscotch_map<identifier, size_t> funcs;
     return 
-      !_check_syntax(f, err, std::vector<variable>{}, true, rels, funcs).error;
+      !_check_syntax(f, err, std::vector<variable>{}, true).error;
   }
 
   

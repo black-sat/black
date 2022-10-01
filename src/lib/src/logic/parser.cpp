@@ -61,7 +61,9 @@ namespace black_internal
                 std::string const&s, parser::error_handler error)
   {
     std::stringstream stream{s, std::stringstream::in};
-    parser p{sigma, stream, std::move(error)};
+    parser p{
+      sigma, sigma.uninterpreted_sort("default"), stream, std::move(error)
+    };
 
     return p.parse();
   }
@@ -71,14 +73,16 @@ namespace black_internal
   parse_formula(alphabet &sigma,
                 std::istream &stream, parser::error_handler error)
   {
-    parser p{sigma, stream, std::move(error)};
+    parser p{
+      sigma, sigma.uninterpreted_sort("default"), stream, std::move(error)
+    };
 
     return p.parse();
   }
 
   struct parser::_parser_t {
     alphabet &_alphabet;
-    std::optional<sort> _default_sort;
+    sort _default_sort;
     lexer _lex;
     bool _trying = false;
     std::function<void(std::string)> _error;
@@ -89,15 +93,12 @@ namespace black_internal
     tsl::hopscotch_map<identifier, entity_t> _symbols;
 
     _parser_t(
-      alphabet &sigma, std::optional<sort> default_sort,
+      alphabet &sigma, sort default_sort,
       std::istream &stream, error_handler error
     );
 
     template<typename F>
     auto try_parse(F f);
-
-    template<hierarchy_element H, typename ...Args>
-    std::optional<H> symbol(identifier id, Args ...args);
 
     std::optional<token> peek();
     std::optional<token> get();
@@ -116,6 +117,8 @@ namespace black_internal
     std::optional<formula> parse_parens();
     std::optional<formula> parse_primary();
 
+    std::optional<sort> parse_sort();
+
     term                build_binary_term(binary_term::type, term, term);
     std::optional<term> parse_term();
     std::optional<term> parse_term_primary();
@@ -133,9 +136,6 @@ namespace black_internal
   )
     : _data(std::make_unique<_parser_t>(sigma, default_sort, stream, error)) { }
 
-  parser::parser(alphabet &sigma, std::istream &stream, error_handler error)
-    : _data(std::make_unique<_parser_t>(sigma, std::nullopt, stream, error)) { }
-
   parser::~parser() = default;
 
   std::optional<formula> parser::parse() {
@@ -152,7 +152,7 @@ namespace black_internal
   }
 
   parser::_parser_t::_parser_t(
-    alphabet &sigma, std::optional<sort> default_sort,
+    alphabet &sigma, sort default_sort,
     std::istream &stream, error_handler error
   ) : _alphabet(sigma), _default_sort(default_sort),
       _lex(stream, error), _error(error)
@@ -174,23 +174,6 @@ namespace black_internal
     _symbols = symbols;
     _trying = t;
     return r;
-  }
-
-  template<hierarchy_element H, typename ...Args>
-  std::optional<H> parser::_parser_t::symbol(identifier id, Args ...args) {
-    if(auto it = _symbols.find(id); it != _symbols.end()) {
-      if(std::holds_alternative<H>(it->second))
-        return std::get<H>(it->second);
-      
-      return error(
-        "Identifier '" + to_string(id) + "' used twice with different meanings"
-      );
-    }
-
-    H h = _alphabet.element<H::element>(id, args...);
-    _symbols.insert({id, h});
-
-    return h;
   }
 
   std::optional<token> parser::_parser_t::peek() {
@@ -353,7 +336,7 @@ namespace black_internal
     // if there is no open paren this is a simple proposition
     if(!peek() || 
         peek()->data<token::punctuation>() != token::punctuation::left_paren)
-      return symbol<proposition>(id);
+      return _alphabet.proposition(id);
 
     // otherwise it is a relational atom
     std::vector<term> terms;
@@ -375,48 +358,75 @@ namespace black_internal
     for(size_t i = 0; i < terms.size(); ++i) 
       sorts.push_back(sort_of(terms[i]));
 
-    auto r = symbol<relation>(id, sorts);
-    if(!r)
-      return {};
+    relation r = _alphabet.relation(id, sorts);
 
-    return (*r)(terms);
+    return r(terms);
   }
 
   std::optional<formula> parser::_parser_t::parse_quantifier() {
     black_assert(peek());
     black_assert(peek()->data<quantifier::type>());
 
-    if(!_default_sort)
-      return error("Parsed a quantifier but no default sort is set");
-
     quantifier::type q = quantifier::type::forall{};
     if(consume()->data<quantifier::type>() == quantifier::type::exists{}) 
       q = quantifier::type::exists{};
 
-    std::vector<token> vartoks;
-    while(peek() && peek()->token_type() == token::type::identifier) {
-      vartoks.push_back(*peek());
-      consume();
+    std::vector<variable> vars;
+    while(
+      !peek() || 
+      peek()->data<token::punctuation>() != token::punctuation::dot
+    ) {
+      bool paren = false;
+      if(peek()->data<token::punctuation>() == 
+         token::punctuation::left_paren) 
+      {
+        consume();
+        paren = true;
+      }
+      if(!peek())
+        return error("Expected variable name, found end of input");
+
+      if(peek()->token_type() != token::type::identifier)
+        return 
+          error("Expected variable name, found '" + to_string(*peek()) + "'");
+
+      identifier varid = *consume()->data<std::string>();
+
+      std::optional<sort> s;
+      if(peek()->data<token::punctuation>() == token::punctuation::colon) {
+        consume();
+        s = parse_sort();
+        if(!s)
+          return {};
+      }
+
+      vars.push_back(_alphabet.variable(varid, s ? *s : _default_sort));
+
+      if(paren && !consume(token::punctuation::right_paren))
+        return {};
+
+      if(
+        peek() && 
+        peek()->data<token::punctuation>() == token::punctuation::comma
+      ) {
+        consume();
+        if(
+          peek() && 
+          peek()->data<token::punctuation>() == token::punctuation::comma
+        ) {
+          return error("Expected variable, found '" + to_string(*peek()) + ";");
+        } 
+      }
     }
 
-    if(vartoks.empty())
-      return error("Expected variable list after quantifier");
+    if(!peek())
+      return error("Expected dot, found end of input");
 
-    std::optional<token> dot = consume();
-    if(!dot || dot->data<token::punctuation>() != token::punctuation::dot)
-      return error("Expected dot after quantifier");
+    consume(); // consume the dot
 
     std::optional<formula> matrix = parse_primary();
     if(!matrix)
       return {};
-
-    std::vector<variable> vars;
-    for(token tok : vartoks) {
-      auto v = symbol<variable>(*tok.data<std::string>(), *_default_sort);
-      if(!v)
-        return {};
-      vars.push_back(*v);
-    }
 
     if(q == quantifier::type::exists{})
       return exists_block(vars, *matrix);
@@ -484,6 +494,24 @@ namespace black_internal
        return parse_parens();
 
     return error("Expected formula, found '" + to_string(*peek()) + "'");
+  }
+
+  std::optional<sort> parser::_parser_t::parse_sort() 
+  {
+    std::optional<token> tok = consume();
+
+    if(!peek())
+      return error("Expected sort, found end of input");
+
+    if(tok->data<arithmetic_sort::type>() == 
+       arithmetic_sort::type::integer_sort{})
+      return _alphabet.integer_sort();
+
+    if(tok->data<arithmetic_sort::type>() == 
+       arithmetic_sort::type::real_sort{})
+      return _alphabet.real_sort();
+
+    return error("Expected sort, found '" + to_string(*tok) + "'");
   }
 
   std::optional<term> parser::_parser_t::parse_term() {
@@ -676,10 +704,18 @@ namespace black_internal
 
     // if there is no open paren this is a simple variable
     if(!peek() || 
-        peek()->data<token::punctuation>() != token::punctuation::left_paren) {
-      if(!_default_sort)
-        return error("Variable parsed, but no default sort is set");
-      return symbol<variable>(id, *_default_sort);
+        peek()->data<token::punctuation>() != token::punctuation::left_paren)
+    {  
+      std::optional<sort> s;
+
+      if(peek()->data<token::punctuation>() == token::punctuation::colon) {
+        consume();
+        s = parse_sort();
+        if(!s)
+          return {};
+      }
+
+      return _alphabet.variable(id, s ? *s : _default_sort);
     }
 
     // otherwise it is a function application
@@ -702,14 +738,8 @@ namespace black_internal
     for(size_t i = 0; i < terms.size(); ++i) 
       sorts.push_back(sort_of(terms[i]));
 
-    if(!_default_sort)
-      return error("Function application parsed, but no default sort is set");
-
-    auto f = symbol<function>(id, *_default_sort, sorts);
-    if(!f)
-      return {};
-
-    return (*f)(terms);
+    function f = _alphabet.function(id, _default_sort, sorts);
+    return f(terms);
   }
 
   std::optional<term> parser::_parser_t::parse_term_parens() {

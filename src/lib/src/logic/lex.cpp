@@ -55,6 +55,14 @@ namespace black_internal::lexer_details
   }
   
   static
+  std::string to_string(arithmetic_sort::type t) {
+    return t.match(
+      [](arithmetic_sort::type::integer_sort) { return "Int";  },
+      [](arithmetic_sort::type::real_sort)    { return "Real"; }
+    );
+  }
+  
+  static
   std::string to_string(unary_term::type t) {
     return t.match(
       [](unary_term::type::negative)   { return "-";       }, // LCOV_EXCL_LINE
@@ -115,6 +123,7 @@ namespace black_internal::lexer_details
       case token::punctuation::right_paren: return ")";
       case token::punctuation::comma:       return ",";
       case token::punctuation::dot:         return ".";
+      case token::punctuation::colon:       return ":";
     }
     black_unreachable(); // LCOV_EXCL_LINE
   }
@@ -124,18 +133,19 @@ namespace black_internal::lexer_details
     using namespace std::literals;
 
     std::string stok = std::visit( overloaded { // LCOV_EXCL_LINE
-      [](std::monostate)       { return "<invalid>"s; },
-      [](bool b)               { return b ? "True"s : "False"s; },
-      [](int64_t c)            { return std::to_string(c); },
-      [](double d)             { return std::to_string(d); },
-      [](std::string s)        { return s; },
-      [](quantifier::type k)   { return to_string(k); },
-      [](comparison::type t)   { return to_string(t); },
-      [](unary_term::type t)   { return to_string(t); },
-      [](binary_term::type t)  { return to_string(t); },
-      [](unary::type t)        { return to_string(t); },
-      [](binary::type t)       { return to_string(t); },
-      [](token::punctuation p) { return to_string(p); }
+      [](std::monostate)          { return "<invalid>"s; },
+      [](bool b)                  { return b ? "True"s : "False"s; },
+      [](int64_t c)               { return std::to_string(c); },
+      [](double d)                { return std::to_string(d); },
+      [](std::string s)           { return s; },
+      [](quantifier::type k)      { return to_string(k); },
+      [](comparison::type t)      { return to_string(t); },
+      [](arithmetic_sort::type t) { return to_string(t); },
+      [](unary_term::type t)      { return to_string(t); },
+      [](binary_term::type t)     { return to_string(t); },
+      [](unary::type t)           { return to_string(t); },
+      [](binary::type t)          { return to_string(t); },
+      [](token::punctuation p)    { return to_string(p); }
     }, tok._data);
 
     return stok;
@@ -214,6 +224,9 @@ namespace black_internal::lexer_details
         case '.':
           s.get();
           return token{token::punctuation::dot};
+        case ':':
+          s.get();
+          return token{token::punctuation::colon};
         case '!':
           s.get();
           if(s.peek() == '=') {
@@ -300,9 +313,11 @@ namespace black_internal::lexer_details
     return isalpha(c) || c == '_' || c == '{';
   }
 
-  std::pair<std::string_view, token> lexer::_keywords[31] = {
+  std::pair<std::string_view, token> lexer::_keywords[33] = {
     {"True",    token{true}},
     {"False",   token{false}},
+    {"Int",     token{arithmetic_sort::type::integer_sort{}}},
+    {"Real",    token{arithmetic_sort::type::real_sort{}}},
     {"to_int",  token{unary_term::type::to_integer{}}},
     {"to_real", token{unary_term::type::to_real{}}},
     {"next",    token{unary_term::type::next{}}},

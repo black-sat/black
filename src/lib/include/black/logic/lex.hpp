@@ -47,6 +47,7 @@ namespace black_internal::lexer_details
       identifier,
       quantifier,
       comparison,
+      sort,
       unary_term_operator,
       binary_term_operator,
       unary_operator,
@@ -60,7 +61,8 @@ namespace black_internal::lexer_details
       left_paren,
       right_paren,
       comma,
-      dot
+      dot,
+      colon
     };
 
              token()              : _data{std::monostate{}} { }
@@ -70,6 +72,7 @@ namespace black_internal::lexer_details
     explicit token(std::string s) : _data{std::move(s)} { }
     explicit token(logic::quantifier<logic::LTLPFO>::type k)  : _data{k} { }
     explicit token(logic::comparison<logic::LTLPFO>::type t)  : _data{t} { }
+    explicit token(logic::arithmetic_sort::type t)            : _data{t} { }
     explicit token(logic::unary_term<logic::LTLPFO>::type t)  : _data{t} { }
     explicit token(logic::binary_term<logic::LTLPFO>::type t) : _data{t} { }
     explicit token(logic::unary<logic::LTLPFO>::type t)       : _data{t} { }
@@ -102,6 +105,7 @@ namespace black_internal::lexer_details
       std::string,               // identifiers
       logic::quantifier<logic::LTLPFO>::type,  // exists/forall
       logic::comparison<logic::LTLPFO>::type,  // =, !=, <logic::=, etc...
+      logic::arithmetic_sort::type,            // Int, Real
       logic::unary_term<logic::LTLPFO>::type,  // unary minus, next, wnext, ...
       logic::binary_term<logic::LTLPFO>::type, // +, -, *, /
       logic::unary<logic::LTLPFO>::type,       // unary operator
@@ -129,7 +133,7 @@ namespace black_internal::lexer_details
     static bool is_keyword(std::string_view s);
 
   private:
-    static std::pair<std::string_view, token> _keywords[31];
+    static std::pair<std::string_view, token> _keywords[33];
     std::optional<token> _lex();
     std::optional<token> _identifier();
     std::optional<token> _raw_identifier();
