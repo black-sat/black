@@ -69,54 +69,47 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
 {
   alphabet sigma;
 
-  std::vector<sort> sorts = {sigma.integer_sort(), sigma.real_sort()};
+  sort s = sigma.integer_sort();
 
-  for(auto s : sorts) {
-    DYNAMIC_SECTION("Sort: " << to_string(s)) {
+  proposition p = sigma.proposition("p{}");
+  proposition q = sigma.proposition("");
+  variable x = sigma.variable("x\\", s);
+  variable y = sigma.variable("Y", s);
+  variable z = sigma.variable("\\z", s);
 
-      proposition p = sigma.proposition("p{}");
-      proposition q = sigma.proposition("");
-      variable x = sigma.variable("x\\", s);
-      variable y = sigma.variable("Y", s);
-      variable z = sigma.variable("\\z", s);
+  function g = sigma.function("g", s, {s, s});
+  relation r = sigma.relation("r", {s, s});
 
-      function g = sigma.function("g", s, {s, s});
-      relation r = sigma.relation("r", {s, s});
+  std::vector<formula> tests = {
+    p, !p, X(p), F(p), G(p), O(p), H(p), X(F(p)), G(F(p)), X(G(p)),
+    p && q, p || q, U(p,q), S(p,q), R(p,q), T(p,q),
+    p && (X(U(p,q)) || X(F(!q))),
+    p && implies(Y(S(p,q)), G(F(!p))),
+    U(p, !(G(F(q)))),
+    !(iff(p || q, !q && p)),
+    (forall(x, x == x)) && p,
+    (exists(x, x == x)) && p,
+    exists_block({x,y,z}, g(x + 1, y) - 2 >= (y * 0) && y == div(z, 2)),
+    forall_block({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) && r(x,y),
+    (x + y) * z > 0, -x == y,
+    W(p, q), M(p, q), x < y, x <= y, 
+    x + 0 == x, x * 1 == x,
+    next(prev(x)) == x, next(wprev(x)) == x
+  };
 
-      std::vector<formula> tests = {
-        p, !p, X(p), F(p), G(p), O(p), H(p), X(F(p)), G(F(p)), X(G(p)),
-        p && q, p || q, U(p,q), S(p,q), R(p,q), T(p,q),
-        p && (X(U(p,q)) || X(F(!q))),
-        p && implies(Y(S(p,q)), G(F(!p))),
-        U(p, !(G(F(q)))),
-        !(iff(p || q, !q && p)),
-        (forall(x, x == x)) && p,
-        (exists(x, x == x)) && p,
-        exists_block({x,y,z}, g(x + 1, y) - 2 >= (y * 0) && y == z / 2),
-        forall_block({x,y,z}, r(x,-y) && next(x) == wnext(y) && y != z) &&
-          r(x,y),
-        (x + y) * z > 0, -x == y,
-        W(p, q), M(p, q), x < y, x <= y, 
-        x + 0 == x, x * 1 == x,
-        next(prev(x)) == x, next(wprev(x)) == x
-      };
+  for(formula f : tests) {
+    DYNAMIC_SECTION("Roundtrip for formula: " << to_string(f)) {
+      auto result = parse_formula(sigma, s, to_string(f), [](auto error){
+        INFO("parsing error: " << error);
+        REQUIRE(false);
+      });
+      
+      REQUIRE(result.has_value());
 
-      for(formula f : tests) {
-        DYNAMIC_SECTION("Roundtrip for formula: " << to_string(f)) {
-          auto result = parse_formula(sigma, s, to_string(f), [](auto error){
-            INFO("parsing error: " << error);
-            REQUIRE(false);
-          });
-          
-          REQUIRE(result.has_value());
-
-          INFO("parsed: " << to_string(*result));
-          
-          CHECK(*result == f);
-        }
-      }
+      INFO("parsed: " << to_string(*result));
+      
+      CHECK(*result == f);
     }
-    
   }
-  
 }
+    

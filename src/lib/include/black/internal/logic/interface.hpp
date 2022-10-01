@@ -69,6 +69,52 @@ namespace black_internal::logic {
       return alphabet_base::function(name, result, s);
     }
   };
+
+  //
+  // This function recursively computes the sort of a term. 
+  // It assumes the term to be well-typed.
+  //
+  template<is_term T>
+  sort sort_of(T t) {
+    using Syntax = typename T::syntax;
+    alphabet &sigma = *t.sigma();
+    return t.match(
+      [&](constant<Syntax>, auto value) {
+        return value.match(
+          [&](integer) { return sigma.integer_sort(); },
+          [&](real)    { return sigma.real_sort(); }
+        );
+      },
+      [&](variable v) {
+        return v.sort();
+      },
+      [&](application<Syntax> app) {
+        return app.func().result();
+      },
+      [&](to_integer<Syntax>) {
+        return t.sigma()->integer_sort();
+      },
+      [&](to_real<Syntax>) {
+        return t.sigma()->real_sort();
+      },
+      [&](unary_term<Syntax>, auto arg) { 
+        return sort_of(arg);
+      },
+      [&](division<Syntax>) {
+        return sigma.real_sort();
+      },
+      [&](int_division<Syntax>) {
+        return sigma.integer_sort();
+      },
+      [&](binary_term<Syntax>, auto left, auto right) -> sort {
+        if(sort_of(left) == sigma.integer_sort() &&
+           sort_of(right) == sigma.integer_sort())
+          return sigma.integer_sort();
+        
+        return sigma.real_sort();
+      }
+    );
+  }
  
   //
   // Then the implementation of the two versions of operator() for both
@@ -187,6 +233,16 @@ namespace black_internal::logic {
   declare_term_op(/, division)
 
   #undef declare_term_op
+
+  // similar function for integer division, but it's not an operator
+  template<term_op_arg Arg1, term_op_arg Arg2>
+  auto div(Arg1 arg1, Arg2 arg2) {
+    alphabet *sigma = get_sigma(arg1, arg2);
+    return
+      int_division(
+        wrap_term_op_arg(sigma, arg1), wrap_term_op_arg(sigma, arg2)
+      );
+  }
 
   //
   // The unary minus does not follow the above schema because it's unary, but
@@ -902,45 +958,6 @@ namespace black_internal::logic {
       return {static_cast<quantifier<Syntax> const&>(*this)}; 
     }
   };
-
-  //
-  // This function recursively computes the sort of a term. 
-  // It assumes the term to be well-typed.
-  //
-  template<fragment Syntax>
-  sort sort_of(term<Syntax> t) {
-    alphabet &sigma = *t.sigma();
-    return t.match(
-      [&](constant<Syntax>, auto value) {
-        return value.match(
-          [&](integer) { return sigma.integer_sort(); },
-          [&](real)    { return sigma.real_sort(); }
-        );
-      },
-      [&](variable v) {
-        return v.sort();
-      },
-      [&](application<Syntax> app) {
-        return app.func().result();
-      },
-      [&](to_integer<Syntax>) {
-        return t.sigma()->integer_sort();
-      },
-      [&](to_real<Syntax>) {
-        return t.sigma()->real_sort();
-      },
-      [&](unary_term<Syntax>, auto arg) { 
-        return sort_of(arg);
-      },
-      [&](binary_term<Syntax>, auto left, auto right) -> sort {
-        if(sort_of(left) == sigma.integer_sort() &&
-           sort_of(right) == sigma.integer_sort())
-          return sigma.integer_sort();
-        
-        return sigma.real_sort();
-      }
-    );
-  }
 
 }
 

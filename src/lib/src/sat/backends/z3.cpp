@@ -500,6 +500,9 @@ namespace black_internal::z3
           },
           [&](division, auto left, auto right) {
             return Z3_mk_div(context, to_z3(left), to_z3(right));
+          },
+          [&](int_division, auto left, auto right) {
+            return Z3_mk_div(context, to_z3(left), to_z3(right));
           }
         );
       }

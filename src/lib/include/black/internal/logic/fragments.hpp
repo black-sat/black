@@ -162,6 +162,7 @@ namespace black {
   Element(addition) \
   Element(multiplication) \
   Element(division) \
+  Element(int_division) \
   Element(equal) \
   Element(not_equal) \
   Element(less_than) \

@@ -370,6 +370,9 @@ namespace black_internal::mathsat
           },
           [&](division) {
             return msat_make_divide(env, to_mathsat(left), to_mathsat(right));
+          },
+          [&](int_division) {
+            return msat_make_divide(env, to_mathsat(left), to_mathsat(right));
           }
         );
       }

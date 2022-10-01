@@ -129,7 +129,7 @@ namespace black_internal::lexer_details
     static bool is_keyword(std::string_view s);
 
   private:
-    static std::pair<std::string_view, token> _keywords[30];
+    static std::pair<std::string_view, token> _keywords[31];
     std::optional<token> _lex();
     std::optional<token> _identifier();
     std::optional<token> _raw_identifier();

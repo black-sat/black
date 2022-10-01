@@ -73,7 +73,8 @@ namespace black_internal::lexer_details
       [](binary_term::type::addition)       { return "+"; },
       [](binary_term::type::subtraction)    { return "-"; },
       [](binary_term::type::multiplication) { return "*"; },
-      [](binary_term::type::division)       { return "/"; }
+      [](binary_term::type::division)       { return "/"; },
+      [](binary_term::type::int_division)   { return "div"; }
     );
   }
   
@@ -299,7 +300,7 @@ namespace black_internal::lexer_details
     return isalpha(c) || c == '_' || c == '{';
   }
 
-  std::pair<std::string_view, token> lexer::_keywords[30] = {
+  std::pair<std::string_view, token> lexer::_keywords[31] = {
     {"True",    token{true}},
     {"False",   token{false}},
     {"to_int",  token{unary_term::type::to_integer{}}},
@@ -308,6 +309,7 @@ namespace black_internal::lexer_details
     {"wnext",   token{unary_term::type::wnext{}}},
     {"prev",    token{unary_term::type::prev{}}},
     {"wprev",   token{unary_term::type::wprev{}}},
+    {"div",     token{binary_term::type::int_division{}}},
     {"exists",  token{quantifier::type::exists{}}},
     {"forall",  token{quantifier::type::forall{}}},
     {"NOT",     token{unary::type::negation{}}},

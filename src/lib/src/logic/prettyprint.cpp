@@ -200,6 +200,9 @@ namespace black_internal::logic
       },
       [&](division<LTLPFO>, auto left, auto right) {
         return fmt::format("({}) / ({})", to_string(left), to_string(right));
+      },
+      [&](int_division<LTLPFO>, auto left, auto right) {
+        return fmt::format("({}) div ({})", to_string(left), to_string(right));
       }
     );
   }
@@ -338,16 +341,13 @@ namespace black_internal::logic
         );
       },
       [](division<FO>, auto left, auto right) {
-        alphabet &sigma = *left.sigma();
-
-        if(sort_of(left) == sigma.integer_sort() &&
-           sort_of(right) == sigma.integer_sort())
-          return fmt::format(
-            "(div {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
-          );
-
         return fmt::format(
           "(/ {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
+        ); // LCOV_EXCL_LINE
+      },
+      [](int_division<FO>, auto left, auto right) {
+        return fmt::format(
+          "(div {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
         ); // LCOV_EXCL_LINE
       }
     );

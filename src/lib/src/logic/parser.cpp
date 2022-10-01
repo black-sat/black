@@ -110,6 +110,7 @@ namespace black_internal
     std::optional<formula> parse_parens();
     std::optional<formula> parse_primary();
 
+    term                build_binary_term(binary_term::type, term, term);
     std::optional<term> parse_term();
     std::optional<term> parse_term_primary();
     std::optional<term> parse_term_binary_rhs(int precedence, term lhs);
@@ -504,12 +505,56 @@ namespace black_internal
       [](binary_term::type::addition)       { return 20; },
       [](binary_term::type::subtraction)    { return 20; },
       [](binary_term::type::multiplication) { return 30; },
-      [](binary_term::type::division)       { return 30; }
+      [](binary_term::type::division)       { return 30; },
+      [](binary_term::type::int_division)   { return 30; }
+    );
+  }
+
+  term 
+  parser::_parser_t::build_binary_term(binary_term::type t, term lhs, term rhs) 
+  {
+    return t.match(
+      [&](binary_term::type::division) {
+        term l = lhs;
+        term r = rhs;
+
+        if(sort_of(l) != _alphabet.real_sort())
+          l = to_real(l);
+        if(sort_of(r) != _alphabet.real_sort())
+          r = to_real(r);
+        
+        return binary_term(t, l, r);
+      },
+      [&](binary_term::type::int_division) {
+        term l = lhs;
+        term r = rhs;
+
+        if(sort_of(l) != _alphabet.integer_sort())
+          l = to_integer(l);
+        if(sort_of(r) != _alphabet.integer_sort())
+          r = to_integer(r);
+        
+        return binary_term(t, l, r);
+      },
+      [&](otherwise) {
+        if(sort_of(lhs) == _alphabet.integer_sort() &&
+           sort_of(rhs) == _alphabet.real_sort())
+          return binary_term(t, to_real(lhs), rhs);
+
+        if(sort_of(lhs) == _alphabet.real_sort() &&
+           sort_of(rhs) == _alphabet.integer_sort())
+          return binary_term(t, lhs, to_real(rhs));
+
+        return binary_term(t, lhs, rhs);
+      }
     );
   }
 
   std::optional<term> 
   parser::_parser_t::parse_term_binary_rhs(int prec, term lhs) {
+    if(!sort_of(lhs).is<arithmetic_sort>())
+      return error("Operand of arithmetic operator not of arithmetic sort");
+
     while(1) {
       if(!peek() || func_precedence(*peek()) < prec)
          return {lhs};
@@ -519,6 +564,8 @@ namespace black_internal
       std::optional<term> rhs = parse_term_primary();
       if(!rhs)
         return error("Expected right operand to binary function symbol");
+      if(!sort_of(*rhs).is<arithmetic_sort>())
+        return error("Operand of arithmetic operator not of arithmetic sort");
 
       if(!peek() || func_precedence(op) < func_precedence(*peek())) {
         rhs = parse_term_binary_rhs(prec + 1, *rhs);
@@ -527,7 +574,7 @@ namespace black_internal
       }
       
       black_assert(op.is<binary_term::type>());
-      lhs = binary_term(*op.data<binary_term::type>(), lhs, *rhs);
+      lhs = build_binary_term(*op.data<binary_term::type>(), lhs, *rhs);
     }
   }
 

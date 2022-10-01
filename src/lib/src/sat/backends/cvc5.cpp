@@ -331,6 +331,9 @@ namespace black_internal::cvc5
           },
           [&](division) {
             return solver.mkTerm(cvc::DIVISION, terms);
+          },
+          [&](int_division) {
+            return solver.mkTerm(cvc::INTS_DIVISION, terms);
           }
         );
       }
