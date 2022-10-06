@@ -49,7 +49,7 @@ namespace black_internal::logic {
   // scope s2 = chain(s1);
   //
 
-  class scope 
+  class BLACK_EXPORT scope 
   {
   public:
     struct chain_t {
