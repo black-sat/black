@@ -86,10 +86,21 @@ namespace black_internal::logic
   }
 
   static
+  std::string to_string(equality<LTLPFO>::type t, bool binary) {
+    if(binary)
+      return t.match(
+        [](equality<LTLPFO>::type::equal)    { return "="; },
+        [](equality<LTLPFO>::type::distinct) { return "!="; }
+      );
+    return t.match(
+      [](equality<LTLPFO>::type::equal)    { return "equal"; },
+      [](equality<LTLPFO>::type::distinct) { return "distinct"; }
+    );
+  }
+
+  static
   std::string to_string(comparison<LTLPFO>::type t) {
     return t.match(
-      [](comparison<LTLPFO>::type::equal)              { return "="; },
-      [](comparison<LTLPFO>::type::not_equal)          { return "!="; },
       [](comparison<LTLPFO>::type::less_than)          { return "<"; },
       [](comparison<LTLPFO>::type::less_than_equal)    { return "<="; },
       [](comparison<LTLPFO>::type::greater_than)       { return ">"; },
@@ -226,6 +237,23 @@ namespace black_internal::logic
 
         return result;
       }, // LCOV_EXCL_LINE
+      [](equality<LTLPFO> e, auto terms) {
+        black_assert(terms.size() > 0);
+
+        if(terms.size() == 2) 
+          return fmt::format(
+            "{} {} {}", 
+            to_string(terms[0]), 
+            to_string(e.node_type(), true), 
+            to_string(terms[1])
+          );
+        
+        std::string args = to_string(terms[0]);
+        for(size_t i = 1; i < terms.size(); ++i) 
+          args = ", " + to_string(terms[i]);
+        
+        return fmt::format("{}({})", to_string(e.node_type(), false), args);
+      },
       [](comparison<LTLPFO> c, auto left, auto right) {
         return fmt::format(
           "{} {} {}", 
@@ -373,16 +401,15 @@ namespace black_internal::logic
         s += ")";
         return s;
       }, // LCOV_EXCL_LINE
-      [](equal<FO> cmp) {
+      [](equality<FO> e, auto terms) {
+        black_assert(terms.size() > 0);
+
+        std::string args = to_smtlib2_inner(terms[0]);
+        for(size_t i = 1; i < terms.size(); ++i)
+          args = " " + to_smtlib2_inner(terms[i]);
+
         return fmt::format(
-          "(= {} {})", 
-          to_smtlib2_inner(cmp.left()), to_smtlib2_inner(cmp.right())
-        );
-      },
-      [](not_equal<FO> cmp) {
-        return fmt::format(
-          "(distinct {} {})", 
-          to_smtlib2_inner(cmp.left()), to_smtlib2_inner(cmp.right())
+          "({} {})", e.is<equal<FO>>() ? "=" : "distinct", args
         );
       },
       [](less_than<FO> cmp) {

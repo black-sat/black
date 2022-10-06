@@ -43,10 +43,16 @@ namespace black_internal::lexer_details
   }
   
   static
+  std::string to_string(token::equality_t t) {
+    return t.first.match(
+      [&](equality::type::equal)    { return t.second ? "=" : "equal";  },
+      [&](equality::type::distinct) { return t.second ? "!=" : "distinct"; }
+    );
+  }
+
+  static
   std::string to_string(comparison::type t) {
     return t.match(
-      [](comparison::type::equal)              { return "=";  },
-      [](comparison::type::not_equal)          { return "!="; },
       [](comparison::type::less_than)          { return "<";  },
       [](comparison::type::less_than_equal)    { return "<="; },
       [](comparison::type::greater_than)       { return ">="; },
@@ -139,6 +145,7 @@ namespace black_internal::lexer_details
       [](double d)                { return std::to_string(d); },
       [](std::string s)           { return s; },
       [](quantifier::type k)      { return to_string(k); },
+      [](token::equality_t t)     { return to_string(t); },
       [](comparison::type t)      { return to_string(t); },
       [](arithmetic_sort::type t) { return to_string(t); },
       [](unary_term::type t)      { return to_string(t); },
@@ -231,7 +238,7 @@ namespace black_internal::lexer_details
           s.get();
           if(s.peek() == '=') {
             s.get();
-            return token{comparison::type::not_equal{}};
+            return token{{equality::type::distinct{}, true}};
           }
           return token{unary::type::negation{}};
         case '~':
@@ -265,7 +272,7 @@ namespace black_internal::lexer_details
             s.get();
             return token{binary::type::implication{}};
           }
-          return token{comparison::type::equal{}};
+          return token{{equality::type::equal{}, true}};
         
         case '>':
           s.get();
@@ -313,40 +320,42 @@ namespace black_internal::lexer_details
     return isalpha(c) || c == '_' || c == '{';
   }
 
-  std::pair<std::string_view, token> lexer::_keywords[33] = {
-    {"True",    token{true}},
-    {"False",   token{false}},
-    {"Int",     token{arithmetic_sort::type::integer_sort{}}},
-    {"Real",    token{arithmetic_sort::type::real_sort{}}},
-    {"to_int",  token{unary_term::type::to_integer{}}},
-    {"to_real", token{unary_term::type::to_real{}}},
-    {"next",    token{unary_term::type::next{}}},
-    {"wnext",   token{unary_term::type::wnext{}}},
-    {"prev",    token{unary_term::type::prev{}}},
-    {"wprev",   token{unary_term::type::wprev{}}},
-    {"div",     token{binary_term::type::int_division{}}},
-    {"exists",  token{quantifier::type::exists{}}},
-    {"forall",  token{quantifier::type::forall{}}},
-    {"NOT",     token{unary::type::negation{}}},
-    {"X",       token{unary::type::tomorrow{}}},
-    {"wX",      token{unary::type::w_tomorrow{}}},
-    {"Y",       token{unary::type::yesterday{}}},
-    {"Z",       token{unary::type::w_yesterday{}}},
-    {"F",       token{unary::type::eventually{}}},
-    {"G",       token{unary::type::always{}}},
-    {"O",       token{unary::type::once{}}},
-    {"H",       token{unary::type::historically{}}},
-    {"AND",     token{binary::type::conjunction{}}},
-    {"OR",      token{binary::type::disjunction{}}},
-    {"THEN",    token{binary::type::implication{}}},
-    {"IFF",     token{binary::type::iff{}}},
-    {"U",       token{binary::type::until{}}},
-    {"R",       token{binary::type::release{}}},
-    {"V",       token{binary::type::release{}}},
-    {"W",       token{binary::type::w_until{}}},
-    {"M",       token{binary::type::s_release{}}},
-    {"S",       token{binary::type::since{}}},
-    {"T",       token{binary::type::triggered{}}}
+  std::pair<std::string_view, token> lexer::_keywords[35] = {
+    {"True",     token{true}},
+    {"False",    token{false}},
+    {"Int",      token{arithmetic_sort::type::integer_sort{}}},
+    {"Real",     token{arithmetic_sort::type::real_sort{}}},
+    {"to_int",   token{unary_term::type::to_integer{}}},
+    {"to_real",  token{unary_term::type::to_real{}}},
+    {"next",     token{unary_term::type::next{}}},
+    {"wnext",    token{unary_term::type::wnext{}}},
+    {"prev",     token{unary_term::type::prev{}}},
+    {"wprev",    token{unary_term::type::wprev{}}},
+    {"div",      token{binary_term::type::int_division{}}},
+    {"exists",   token{quantifier::type::exists{}}},
+    {"forall",   token{quantifier::type::forall{}}},
+    {"equal",    token{{equality::type::equal{}, false}}},
+    {"distinct", token{{equality::type::distinct{}, false}}},
+    {"NOT",      token{unary::type::negation{}}},
+    {"X",        token{unary::type::tomorrow{}}},
+    {"wX",       token{unary::type::w_tomorrow{}}},
+    {"Y",        token{unary::type::yesterday{}}},
+    {"Z",        token{unary::type::w_yesterday{}}},
+    {"F",        token{unary::type::eventually{}}},
+    {"G",        token{unary::type::always{}}},
+    {"O",        token{unary::type::once{}}},
+    {"H",        token{unary::type::historically{}}},
+    {"AND",      token{binary::type::conjunction{}}},
+    {"OR",       token{binary::type::disjunction{}}},
+    {"THEN",     token{binary::type::implication{}}},
+    {"IFF",      token{binary::type::iff{}}},
+    {"U",        token{binary::type::until{}}},
+    {"R",        token{binary::type::release{}}},
+    {"V",        token{binary::type::release{}}},
+    {"W",        token{binary::type::w_until{}}},
+    {"M",        token{binary::type::s_release{}}},
+    {"S",        token{binary::type::since{}}},
+    {"T",        token{binary::type::triggered{}}}
   };
 
   bool lexer::is_keyword(std::string_view s) {

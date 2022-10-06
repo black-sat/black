@@ -297,10 +297,12 @@ namespace black_internal
     if(!lhs)
       return {};
 
-    if(!peek() || peek()->token_type() != token::type::comparison)
+    if(!peek() || 
+      (peek()->token_type() != token::type::equality &&
+       peek()->token_type() != token::type::comparison))
       return {};
 
-    comparison::type rel = *peek()->data<comparison::type>();
+    token op = *peek();
     consume();
 
     std::optional<term> rhs = parse_term();
@@ -309,13 +311,19 @@ namespace black_internal
 
     if(_xi.sort(*lhs) == _alphabet.integer_sort() &&
        _xi.sort(*rhs) == _alphabet.real_sort())
-      return comparison(rel, to_real(*lhs), *rhs);
+      lhs = to_real(*lhs);
 
     if(_xi.sort(*lhs) == _alphabet.real_sort() &&
        _xi.sort(*rhs) == _alphabet.integer_sort())
-      return comparison(rel, *lhs, to_real(*rhs));
+      rhs = to_real(*rhs);
 
-    return comparison(rel, *lhs, *rhs);
+    if(op.token_type() == token::type::equality)
+      return equality(
+        op.data<token::equality_t>()->first, std::vector<term>{*lhs, *rhs}
+      );
+
+    black_assert(op.token_type() == token::type::comparison);
+    return comparison(*op.data<comparison::type>(), *lhs, *rhs);
   }
 
   std::optional<formula> parser::_parser_t::parse_atom()

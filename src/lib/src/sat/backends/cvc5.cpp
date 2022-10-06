@@ -164,20 +164,26 @@ namespace black_internal::cvc5
         cvc_terms.insert(cvc_terms.begin(), rel);
         return solver.mkTerm(cvc::APPLY_UF, cvc_terms);
       },
+      [&](equality e, auto args) {
+        std::vector<cvc::Term> terms;
+        for(auto t : args)  
+          terms.push_back(to_cvc5(t, env));
+
+        return e.match(
+          [&](equal) { 
+            return solver.mkTerm(cvc::EQUAL, terms);
+          },
+          [&](distinct) {
+            return solver.mkTerm(cvc::DISTINCT, terms);
+          }
+        );
+      },
       [&](comparison c, auto left, auto right) {
         std::vector<cvc::Term> terms = { 
           to_cvc5(left, env), to_cvc5(right, env) 
         };
         
         return c.match(
-          [&](equal) { 
-            return solver.mkTerm(cvc::EQUAL, terms);
-          },
-          [&](not_equal) { // LCOV_EXCL_LINE
-            return solver.mkTerm(cvc::NOT,
-              {solver.mkTerm(cvc::EQUAL, terms)}
-            );
-          },
           [&](less_than) { 
             return solver.mkTerm(cvc::LT, terms);
           },

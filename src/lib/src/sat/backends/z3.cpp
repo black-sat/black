@@ -330,10 +330,10 @@ namespace black_internal::z3
   Z3_ast z3::_z3_t::to_z3_inner(formula f) 
   {
     return f.match(
-      [this](boolean b) {
+      [&](boolean b) {
         return b.value() ? Z3_mk_true(context) : Z3_mk_false(context);
       },
-      [this](atom a) -> Z3_ast {
+      [&](atom a) -> Z3_ast {
         std::vector<Z3_ast> z3_terms;
         for(term t : a.terms())
           z3_terms.push_back(to_z3(t));
@@ -343,16 +343,27 @@ namespace black_internal::z3
         return 
           Z3_mk_app(context, rel, unsigned(z3_terms.size()), z3_terms.data());
       }, // LCOV_EXCL_LINE
-      [this](comparison c, auto left, auto right) {
+      [&](equal, auto args) {
+        std::vector<Z3_ast> z3_terms;
+        for(auto t : args)
+          z3_terms.push_back(to_z3(t));
+        
+        std::vector<Z3_ast> z3_eqs;
+        for(size_t i = 1; i < z3_terms.size(); ++i)
+          z3_eqs.push_back(Z3_mk_eq(context, z3_terms[i-1], z3_terms[i]));
+
+        return Z3_mk_and(context, unsigned(z3_eqs.size()), z3_eqs.data());
+      },
+      [&](distinct, auto args) {
+        std::vector<Z3_ast> z3_terms;
+        for(term t : args) 
+          z3_terms.push_back(to_z3(t));
+
+        return Z3_mk_distinct(context, 2, z3_terms.data());
+      },
+      [&](comparison c, auto left, auto right) {
         // we know how to encode known relations
         return c.match(
-          [&](equal) {
-            return Z3_mk_eq(context, to_z3(left), to_z3(right));
-          },
-          [&](not_equal) {
-            Z3_ast z3_terms[] = { to_z3(left), to_z3(right) };
-            return Z3_mk_distinct(context, 2, z3_terms);
-          },
           [&](less_than) {
             return Z3_mk_lt(context, to_z3(left), to_z3(right));
           },
@@ -367,7 +378,7 @@ namespace black_internal::z3
           }
         );
       },
-      [this](quantifier q) {
+      [&](quantifier q) {
         Z3_app var = Z3_to_app(context, to_z3(q.decl()));
         bool forall = q.node_type() == quantifier::type::forall{};
         if(forall)
@@ -385,17 +396,17 @@ namespace black_internal::z3
 
         return result;
       },
-      [this](proposition p) {
+      [&](proposition p) {
         Z3_sort sort = Z3_mk_bool_sort(context);
         Z3_symbol symbol = 
           Z3_mk_string_symbol(context, to_string(p.unique_id()).c_str());
         
         return Z3_mk_const(context, symbol, sort);
       },
-      [this](negation, auto arg) {
+      [&](negation, auto arg) {
         return Z3_mk_not(context, to_z3(arg));
       },
-      [this](conjunction c) {
+      [&](conjunction c) {
         std::vector<Z3_ast> args;
         for(formula op : c.operands())
           args.push_back(to_z3(op));
@@ -405,7 +416,7 @@ namespace black_internal::z3
         return Z3_mk_and(context, 
           static_cast<unsigned int>(args.size()), args.data());
       }, // LCOV_EXCL_LINE
-      [this](disjunction c) {
+      [&](disjunction c) {
         std::vector<Z3_ast> args;
         for(formula op : c.operands())
           args.push_back(to_z3(op));
@@ -415,10 +426,10 @@ namespace black_internal::z3
         return Z3_mk_or(context, 
           static_cast<unsigned int>(args.size()), args.data());
       }, // LCOV_EXCL_LINE
-      [this](implication, auto left, auto right) {
+      [&](implication, auto left, auto right) {
         return Z3_mk_implies(context, to_z3(left), to_z3(right));
       },
-      [this](iff, auto left, auto right) {
+      [&](iff, auto left, auto right) {
         return Z3_mk_iff(context, to_z3(left), to_z3(right));
       }
     );

@@ -276,6 +276,16 @@ namespace black_internal::solver
         
         return res;  
       }, // LCOV_EXCL_LINE
+      [&](equality, auto terms) {
+        check_result_t r{false, false};
+        std::vector<check_result_t> results;
+        for(auto t : terms)
+          results.push_back(_check_syntax(t, err, scope));
+        
+        return std::accumulate(
+          begin(results), end(results), r, std::logical_or<>{}
+        );
+      },
       [&](comparison, auto left, auto right) {
         return _check_syntax(left, err, scope) ||
                _check_syntax(right, err, scope);
@@ -292,11 +302,9 @@ namespace black_internal::solver
       [&](disjunction o) {
         check_result_t r{false, false};
         std::vector<check_result_t> results;
-        for(auto op : o.operands()) {
-          results.push_back(
-            _check_syntax(op, err, scope)
-          );
-        }
+        for(auto op : o.operands())
+          results.push_back(_check_syntax(op, err, scope));
+
         return std::accumulate(
           begin(results), end(results), r, std::logical_or<>{}
         );

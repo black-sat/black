@@ -256,16 +256,17 @@ namespace black_internal::logic {
     using S = deduce_fragment_for_storage_t<syntax_element::equal, T1, T2>;
 
     return term_equality_wrapper<S, syntax_element::equal>{
-      t1.unique_id() == t2.unique_id(), equal<S>(t1, t2)
+      t1.unique_id() == t2.unique_id(), equal<S>(std::vector<term<S>>{t1, t2})
     };
   }
 
   template<is_term T1, is_term T2>
   auto operator!=(T1 t1, T2 t2) {
-    using S = deduce_fragment_for_storage_t<syntax_element::not_equal, T1, T2>;
+    using S = deduce_fragment_for_storage_t<syntax_element::distinct, T1, T2>;
 
-    return term_equality_wrapper<S, syntax_element::not_equal>{
-      t1.unique_id() != t2.unique_id(), not_equal<S>(t1, t2)
+    return term_equality_wrapper<S, syntax_element::distinct>{
+      t1.unique_id() != t2.unique_id(), 
+      distinct<S>(std::vector<term<S>>{t1, t2})
     };
   }
 
@@ -279,15 +280,14 @@ namespace black_internal::logic {
     requires (!std::is_class_v<Arg1> || !std::is_class_v<Arg2>)
   auto operator ==(Arg1 arg1, Arg2 arg2) {
     alphabet *sigma = get_sigma(arg1, arg2);
-    return equal(wrap_term_op_arg(sigma, arg1), wrap_term_op_arg(sigma, arg2));
+    return wrap_term_op_arg(sigma, arg1) == wrap_term_op_arg(sigma, arg2);
   }
   
   template<term_op_arg Arg1, term_op_arg Arg2>
     requires (!std::is_class_v<Arg1> || !std::is_class_v<Arg2>)
   auto operator !=(Arg1 arg1, Arg2 arg2) {
     alphabet *sigma = get_sigma(arg1, arg2);
-    return 
-      not_equal(wrap_term_op_arg(sigma, arg1), wrap_term_op_arg(sigma, arg2));
+    return wrap_term_op_arg(sigma, arg1) != wrap_term_op_arg(sigma, arg2);
   }
 
   //

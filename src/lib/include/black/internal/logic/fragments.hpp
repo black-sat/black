@@ -170,7 +170,7 @@ namespace black {
   Element(division) \
   Element(int_division) \
   Element(equal) \
-  Element(not_equal) \
+  Element(distinct) \
   Element(less_than) \
   Element(less_than_equal) \
   Element(greater_than) \

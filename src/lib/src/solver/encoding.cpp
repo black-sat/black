@@ -256,6 +256,13 @@ namespace black_internal::encoder
         relation stepped_rel = stepped(a.rel(), k);
         return end_of_trace_semantics(a, atom(stepped_rel, terms), k);
       }, // LCOV_EXCL_LINE
+      [&](equality<LTLPFO> e, auto terms) -> formula<FO> {
+        std::vector<term<FO>> stepterms;
+        for(auto t : terms)
+          stepterms.push_back(stepped(t, k));
+        
+        return equality<FO>(e.node_type(), stepterms);
+      },
       [&](comparison<LTLPFO> c, auto left, auto right) -> formula<FO> {
         if(auto s = start_of_trace_semantics(c, k); s)
           return *s;
@@ -521,6 +528,7 @@ namespace black_internal::encoder
       [](boolean b) { return b; },
       [](proposition p) { return p; },
       [](atom<LTLPFO> a) { return a; },
+      [](equality<LTLPFO> e) { return e; },
       [](comparison<LTLPFO> c) { return c; },
       [&](quantifier<LTLPFO> q) {
         return quantifier<LTLPFO>(q.node_type(), q.decl(), to_nnf(q.matrix()));
@@ -531,6 +539,7 @@ namespace black_internal::encoder
           [&](boolean)             { return n; },
           [&](proposition)         { return n; },
           [&](atom<LTLPFO>)        { return n; },
+          [&](equality<LTLPFO>)    { return n; },
           [&](comparison<LTLPFO>)  { return n; },
           [&](quantifier<LTLPFO> q) {
             quantifier<LTLPFO>::type dual = quantifier<LTLPFO>::type::exists{};
@@ -630,6 +639,7 @@ namespace black_internal::encoder
       [](proposition) { },
       [](quantifier<LTLPFO>) { },
       [](atom<LTLPFO>) { },
+      [](equality<LTLPFO>) { },
       [](comparison<LTLPFO>) { },
       [&](unary<LTLPFO>, auto op) {
         _add_xyz_requests(op);

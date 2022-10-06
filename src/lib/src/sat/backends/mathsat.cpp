@@ -167,15 +167,19 @@ namespace black_internal::mathsat
 
         return msat_make_term(env, rel, args.data());
       },
+      [&](equal, auto args) {
+        black_assert(args.size() == 2);
+        return 
+          msat_make_eq(env, to_mathsat(args[0]), to_mathsat(args[1]));
+      },
+      [&](distinct, auto args) {
+        black_assert(args.size() == 2);
+        return msat_make_not(env, 
+          msat_make_eq(env, to_mathsat(args[0]), to_mathsat(args[1]))
+        );
+      },
       [&](comparison c, auto left, auto right) {
         return c.match(
-          [&](equal) {
-            return msat_make_eq(env, to_mathsat(left), to_mathsat(right));
-          },
-          [&](not_equal) {
-            return msat_make_not(env, 
-              msat_make_eq(env, to_mathsat(left), to_mathsat(right)));
-          },
           [&](less_than) {
             return msat_make_and(env,
               msat_make_leq(env, to_mathsat(left), to_mathsat(right)),
