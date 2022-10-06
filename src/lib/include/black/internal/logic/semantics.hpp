@@ -56,6 +56,11 @@ namespace black_internal::logic {
       scope const& s;
     };
 
+    enum rigid_t : bool {
+      non_rigid = 0,
+      rigid = 1
+    };
+
     scope(alphabet &sigma, std::optional<struct sort> def = std::nullopt);
     scope(chain_t);
     scope(scope const&);
@@ -68,12 +73,16 @@ namespace black_internal::logic {
     void set_default_sort(std::optional<struct sort> s);
     std::optional<struct sort> default_sort() const;
 
-    void declare_variable(variable, struct sort);
-    void declare_function(function, struct sort, std::vector<struct sort>);
-    void declare_relation(relation, std::vector<struct sort>);
+    void declare_variable(variable, struct sort, rigid_t = non_rigid);
+    void declare_relation(
+      relation, std::vector<struct sort>, rigid_t = non_rigid
+    );
+    void declare_function(
+      function, struct sort, std::vector<struct sort>, rigid_t = non_rigid
+    );
 
-    void declare_variable(var_decl d) {
-      declare_variable(d.variable(), d.sort());
+    void declare_variable(var_decl d, rigid_t r = non_rigid) {
+      declare_variable(d.variable(), d.sort(), r);
     }
 
     std::optional<struct sort> sort(variable) const;
@@ -83,6 +92,10 @@ namespace black_internal::logic {
     std::optional<std::vector<struct sort>> signature(relation) const;
 
     std::optional<struct sort> sort(term<LTLPFO> t) const;
+
+    bool is_rigid(variable) const;
+    bool is_rigid(relation) const;
+    bool is_rigid(function) const;
 
   private:
     struct impl_t;

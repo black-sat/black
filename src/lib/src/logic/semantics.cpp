@@ -31,10 +31,12 @@ namespace black_internal::logic {
     
     struct frame_t 
     {  
-      tsl::hopscotch_map<variable, struct sort> vars;
-      tsl::hopscotch_map<relation, std::vector<struct sort>> rels;
+      tsl::hopscotch_map<variable, std::tuple<struct sort, rigid_t>> vars;
       tsl::hopscotch_map<
-        function, std::pair<struct sort, std::vector<struct sort>>
+        relation, std::tuple<std::vector<struct sort>, rigid_t>
+      > rels;
+      tsl::hopscotch_map<
+        function, std::tuple<struct sort, std::vector<struct sort>, rigid_t>
       > funcs;
 
       std::optional<struct sort> default_sort;
@@ -93,18 +95,20 @@ namespace black_internal::logic {
     return _impl->frame->default_sort;
   }
 
-  void scope::declare_variable(variable x, struct sort s) {
-    _impl->frame->vars.insert({x,s});
+  void scope::declare_variable(variable x, struct sort s, rigid_t r) {
+    _impl->frame->vars.insert({x,{s,r}});
   }
 
   void scope::declare_function(
-    function f, struct sort s, std::vector<struct sort> args
+    function f, struct sort s, std::vector<struct sort> args, rigid_t r
   ) {
-    _impl->frame->funcs.insert({f, {s, std::move(args)}});
+    _impl->frame->funcs.insert({f, {s, std::move(args), r}});
   }
   
-  void scope::declare_relation(relation r, std::vector<struct sort> args) {
-    _impl->frame->rels.insert({r, std::move(args)});
+  void scope::declare_relation(
+    relation r, std::vector<struct sort> args, rigid_t rigid
+  ) {
+    _impl->frame->rels.insert({r, {std::move(args), rigid}});
   }
 
   std::optional<sort> scope::sort(variable x) const {
@@ -112,7 +116,7 @@ namespace black_internal::logic {
 
     while(current) {
       if(auto it = current->vars.find(x); it != current->vars.end())
-        return it->second;
+        return std::get<struct sort>(it->second);
       current = current->next;
     }
 
@@ -124,7 +128,7 @@ namespace black_internal::logic {
 
     while(current) {
       if(auto it = current->funcs.find(f); it != current->funcs.end())
-        return it->second.first;
+        return std::get<struct sort>(it->second);
       current = current->next;
     }
 
@@ -136,7 +140,7 @@ namespace black_internal::logic {
 
     while(current) {
       if(auto it = current->funcs.find(f); it != current->funcs.end())
-        return it->second.second;
+        return std::get<std::vector<struct sort>>(it->second);
       current = current->next;
     }
 
@@ -148,12 +152,49 @@ namespace black_internal::logic {
 
     while(current) {
       if(auto it = current->rels.find(r); it != current->rels.end())
-        return it->second;
+        return std::get<std::vector<struct sort>>(it->second);
       current = current->next;
     }
 
     return {};
   }
+
+  bool scope::is_rigid(variable x) const {
+    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+
+    while(current) {
+      if(auto it = current->vars.find(x); it != current->vars.end())
+        return std::get<rigid_t>(it->second) == rigid_t::rigid;
+      current = current->next;
+    }
+
+    return false;
+  }
+
+  bool scope::is_rigid(relation r) const {
+    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+
+    while(current) {
+      if(auto it = current->rels.find(r); it != current->rels.end())
+        return std::get<rigid_t>(it->second) == rigid_t::rigid;
+      current = current->next;
+    }
+
+    return false;
+  }
+
+  bool scope::is_rigid(function f) const {
+    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+
+    while(current) {
+      if(auto it = current->funcs.find(f); it != current->funcs.end())
+        return std::get<rigid_t>(it->second) == rigid_t::rigid;
+      current = current->next;
+    }
+
+    return false;
+  }
+
 
   std::optional<sort> scope::sort(term<LTLPFO> t) const {
     using S = std::optional<struct sort>;

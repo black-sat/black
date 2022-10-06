@@ -43,7 +43,9 @@ namespace black_internal::encoder {
   struct encoder 
   {
     encoder(formula<LTLPFO> f, scope &xi, bool finite) 
-      : _frm{f}, _sigma{_frm.sigma()}, _xi{xi}, _finite{finite}
+      : _frm{f}, _sigma{_frm.sigma()}, 
+        _global_xi{xi}, _xi{chain(xi)}, 
+        _finite{finite}
     {
       _frm = to_nnf(_frm);
       _add_xyz_requests(_frm);
@@ -58,9 +60,10 @@ namespace black_internal::encoder {
     static proposition ground(formula<LTLPFO> f, size_t k);
 
     // Make the stepped version of a term, t_G^k
-    term<FO> stepped(
-      term<LTLPFO> t, size_t k, std::vector<variable> const& scope
-    );
+    term<FO> stepped(term<LTLPFO> t, size_t k);
+
+    // Make the stepped version of a variable
+    variable stepped(variable x, size_t k);
 
     // Make the stepped version of a relation
     relation stepped(relation r, size_t k);
@@ -72,9 +75,8 @@ namespace black_internal::encoder {
     formula<LTLPFO> to_nnf(formula<LTLPFO> f);
 
     // Put a formula in Stepped Normal Form
-    formula<FO> to_ground_snf(formula<LTLPFO> f, size_t k);
     formula<FO> to_ground_snf(
-      formula<LTLPFO> f, size_t k, std::vector<variable> const&scope
+      formula<LTLPFO> f, size_t k, bool quantified = false
     );
 
     // Generates the PRUNE encoding
@@ -106,7 +108,9 @@ namespace black_internal::encoder {
     alphabet *_sigma = nullptr;
 
     // scope 
-    scope &_xi;
+    scope &_global_xi;
+
+    scope _xi;
 
     // encode for finite models
     bool _finite = false;

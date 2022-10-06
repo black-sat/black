@@ -29,8 +29,6 @@
 
 #include <string_view>
 
-#include <iostream>
-
 using namespace std::literals;
 
 namespace black_internal::encoder
@@ -242,12 +240,8 @@ namespace black_internal::encoder
 
   // Turns the current formula into Stepped Normal Form
   // Note: this has to be run *after* the transformation to NNF (to_nnf() below)
-  formula<FO> encoder::to_ground_snf(formula<LTLPFO> f, size_t k) {
-    return to_ground_snf(f, k, {});
-  }
-
   formula<FO> encoder::to_ground_snf(
-    formula<LTLPFO> f, size_t k, std::vector<variable> const&scope
+    formula<LTLPFO> f, size_t k, bool quant
   ) {
     return f.match( // LCOV_EXCL_LINE
       [&](boolean b)      { return b; },
@@ -257,7 +251,7 @@ namespace black_internal::encoder
 
         std::vector<term<FO>> terms;
         for(term<LTLPFO> t : a.terms())
-          terms.push_back(stepped(t, k, scope));
+          terms.push_back(stepped(t, k));
 
         relation stepped_rel = stepped(a.rel(), k);
         return end_of_trace_semantics(a, atom(stepped_rel, terms), k);
@@ -266,30 +260,38 @@ namespace black_internal::encoder
         if(auto s = start_of_trace_semantics(c, k); s)
           return *s;
 
-        term<FO> stepleft = stepped(left, k, scope);
-        term<FO> stepright = stepped(right, k, scope);
+        term<FO> stepleft = stepped(left, k);
+        term<FO> stepright = stepped(right, k);
 
         return end_of_trace_semantics(
           c, comparison<FO>(c.node_type(), stepleft, stepright), k
         );
       },
       [&](quantifier<LTLPFO> q) {
-        std::vector<variable> new_scope = scope;
-        new_scope.push_back(q.decl().variable());
-        return quantifier<FO>(
-          q.node_type(), q.decl(), to_ground_snf(q.matrix(), k, new_scope)
+        scope xi = std::move(_xi);
+        _xi = chain(xi);
+        xi.declare_variable(q.decl(), scope::rigid);
+
+        auto result = quantifier<FO>(
+          q.node_type(), q.decl(), to_ground_snf(q.matrix(), k)
         );
+
+        _xi = std::move(xi);
+
+        return result;
       }, // LCOV_EXCL_LINE
       [&](proposition)  { return ground(f, k); },
-      [&](negation<LTLPFO> n) { return !to_ground_snf(n.argument(),k, scope); },
+      [&](negation<LTLPFO> n) { 
+        return !to_ground_snf(n.argument(),k, quant); 
+      },
       [&](conjunction<LTLPFO> c) {
         return big_and(*f.sigma(), c.operands(), [&](auto op) {
-          return to_ground_snf(op, k, scope);
+          return to_ground_snf(op, k, quant);
         });
       },
       [&](disjunction<LTLPFO> c) {
         return big_or(*f.sigma(), c.operands(), [&](auto op) {
-          return to_ground_snf(op, k, scope);
+          return to_ground_snf(op, k, quant);
         });
       },
       [&](implication<LTLPFO>) -> formula<FO> { // LCOV_EXCL_LINE 
@@ -299,63 +301,65 @@ namespace black_internal::encoder
         black_unreachable(); // LCOV_EXCL_LINE
       },
       [&](tomorrow<LTLPFO>, auto arg) -> formula<FO> { 
-        if(scope.empty())
+        if(!quant)
           return ground(f, k);
-        return end_of_trace_prop(k) && to_ground_snf(arg, k+1, scope);
+        return end_of_trace_prop(k) && to_ground_snf(arg, k+1, quant);
       },
       [&](w_tomorrow<LTLPFO>, auto arg) -> formula<FO> { 
-        if(scope.empty())
+        if(!quant)
           return ground(f, k);
-        return !end_of_trace_prop(k) || to_ground_snf(arg, k+1, scope);
+        return !end_of_trace_prop(k) || to_ground_snf(arg, k+1, quant);
       },
       [&](yesterday<LTLPFO>, auto arg) -> formula<FO> { 
-        if(scope.empty())
+        if(!quant)
           return ground(f, k);
-        return k > 0 ? to_ground_snf(arg, k-1, scope) : f.sigma()->bottom();
+        return 
+          k > 0 ? to_ground_snf(arg, k-1, quant) : f.sigma()->bottom();
       },
       [&](w_yesterday<LTLPFO>, auto arg) -> formula<FO> { 
-        if(scope.empty())
+        if(!quant)
           return ground(f, k);
-        return k > 0 ? to_ground_snf(arg, k-1, scope) : f.sigma()->top();
+        return k > 0 ? to_ground_snf(arg, k-1, quant) : f.sigma()->top();
       },
       [&](until<LTLPFO> u, auto left, auto right) {
-        return to_ground_snf(right,k, scope) ||
-            (to_ground_snf(left,k, scope) && ground(X(u), k));
+        return to_ground_snf(right,k, quant) ||
+            (to_ground_snf(left,k, quant) && ground(X(u), k));
       },
       [&](w_until<LTLPFO> w, auto left, auto right) {
         return to_ground_snf(right, k) ||
-            (to_ground_snf(left,k, scope) && ground(wX(w), k));
+            (to_ground_snf(left,k, quant) && ground(wX(w), k));
       },
       [&](eventually<LTLPFO> e, auto op) {
-        return to_ground_snf(op,k, scope) || ground(X(e), k);
+        return to_ground_snf(op,k, quant) || ground(X(e), k);
       },
       [&](always<LTLPFO> a, auto op) {
-        return to_ground_snf(op,k, scope) && ground(wX(a), k);
+        return to_ground_snf(op,k, quant) && ground(wX(a), k);
       },
       [&](release<LTLPFO> r, auto left, auto right) {
         return 
-          (to_ground_snf(left,k, scope) && to_ground_snf(right,k,scope)) ||
-            (to_ground_snf(right,k, scope) && ground(wX(r), k));
+          (to_ground_snf(left, k, quant) && to_ground_snf(right, k, quant)) ||
+            (to_ground_snf(right, k, quant) && ground(wX(r), k));
       },
       [&](s_release<LTLPFO> r, auto left, auto right) {
         return 
-          (to_ground_snf(left,k, scope) && to_ground_snf(right,k,scope)) ||
-            (to_ground_snf(right,k, scope) && ground(X(r), k));
+          (to_ground_snf(left, k, quant) && to_ground_snf(right, k, quant)) ||
+            (to_ground_snf(right, k, quant) && ground(X(r), k));
       },
       [&](since<LTLPFO> s, auto left, auto right) {
-        return to_ground_snf(right,k, scope) ||
-            (to_ground_snf(left,k, scope) && ground(Y(s), k));
+        return to_ground_snf(right, k, quant) ||
+            (to_ground_snf(left, k, quant) && ground(Y(s), k));
       },
       [&](triggered<LTLPFO> t, auto left, auto right) {
-        return 
-          (to_ground_snf(left,k, scope) && to_ground_snf(right,k, scope))
-            || (to_ground_snf(right,k, scope) && ground(Z(t), k));
+        return (
+          to_ground_snf(left,k, quant) && 
+          to_ground_snf(right,k, quant)
+        ) || (to_ground_snf(right,k, quant) && ground(Z(t), k));
       },
       [&](once<LTLPFO> o, auto op) {
-        return to_ground_snf(op,k, scope) || ground(Y(o), k);
+        return to_ground_snf(op,k, quant) || ground(Y(o), k);
       },
       [&](historically<LTLPFO> h, auto op) {
-        return to_ground_snf(op,k, scope) && ground(Z(h), k);
+        return to_ground_snf(op,k, quant) && ground(Z(h), k);
       }
     );
   }
@@ -421,71 +425,85 @@ namespace black_internal::encoder
   }
 
   term<FO>
-  encoder::stepped(term<LTLPFO> t, size_t k, std::vector<variable> const&scope) 
+  encoder::stepped(term<LTLPFO> t, size_t k) 
   {
     return t.match( // LCOV_EXCL_LINE
       [](constant<LTLPFO> c) { return fragment_unsafe_cast<FO>(c); },
       [&](variable x) { 
-        for(variable v : scope)
-          if(x == v)
-            return x;
-        return _sigma->variable(std::pair(t, k)); 
+        return stepped(x, k);
       },
       [&](application<LTLPFO> a) {
         std::vector<term<FO>> terms;
         for(term ti : a.terms())
-          terms.push_back(stepped(ti, k, scope));
+          terms.push_back(stepped(ti, k));
         
         return application<FO>(stepped(a.func(), k), terms);
       }, // LCOV_EXCL_LINE
       [&](to_integer<LTLPFO>, auto arg) {
-        return to_integer(stepped(arg, k, scope));
+        return to_integer(stepped(arg, k));
       },
       [&](to_real<LTLPFO>, auto arg) {
-        return to_real(stepped(arg, k, scope));
+        return to_real(stepped(arg, k));
       },
       [&](next<LTLPFO>, auto arg) {
-        return stepped(arg, k + 1, scope);
+        return stepped(arg, k + 1);
       },
       [&](wnext<LTLPFO>, auto arg) {
-        return stepped(arg, k + 1, scope);
+        return stepped(arg, k + 1);
       },
       [&](prev<LTLPFO>, auto arg) {
         black_assert(k > 0);
-        return stepped(arg, k - 1, scope);
+        return stepped(arg, k - 1);
       },
       [&](wprev<LTLPFO>, auto arg) {
         black_assert(k > 0);
-        return stepped(arg, k - 1, scope);
+        return stepped(arg, k - 1);
       },
       [&](negative<LTLPFO>, auto arg) {
-        return negative<FO>(stepped(arg, k, scope));
+        return negative<FO>(stepped(arg, k));
       },
       [&](binary_term<LTLPFO> b, auto left, auto right) {
         return binary_term<FO>(
-          b.node_type(), stepped(left, k, scope), stepped(right, k, scope)
+          b.node_type(), stepped(left, k), stepped(right, k)
         );
       }
     );
   }
 
-  relation encoder::stepped(relation r, size_t k) {
-    black_assert(_xi.signature(r).has_value());
+  variable encoder::stepped(variable x, size_t k) 
+  {  
+    if(_xi.is_rigid(x))
+      return x;
+
+    variable sx = _sigma->variable(std::pair{x, k});
+    if(_xi.sort(x) && !_xi.sort(sx))
+      _global_xi.declare_variable(sx, *_xi.sort(x), scope::rigid);
+
+    return sx;
+  }
+
+  relation encoder::stepped(relation r, size_t k) 
+  {
+    if(_xi.is_rigid(r))
+      return r;
 
     relation sr = _sigma->relation(std::pair{r, k});
-    if(!_xi.signature(sr))
-      _xi.declare_relation(sr, *_xi.signature(r));
+    if(_xi.signature(r) && !_xi.signature(sr))
+      _global_xi.declare_relation(sr, *_xi.signature(r), scope::rigid);
 
     return sr;
   }
 
-  function encoder::stepped(function f, size_t k) {
-    black_assert(_xi.signature(f).has_value());
-    black_assert(_xi.sort(f).has_value());
+  function encoder::stepped(function f, size_t k)
+  {
+    if(_xi.is_rigid(f))
+      return f;
 
     function sf = _sigma->function(std::pair{f, k});
-    if(!_xi.signature(sf))
-      _xi.declare_function(sf, *_xi.sort(f), *_xi.signature(f));
+    if(_xi.signature(f) && _xi.sort(f) && !_xi.signature(sf))
+      _global_xi.declare_function(
+        sf, *_xi.sort(f), *_xi.signature(f), scope::rigid
+      );
 
     return sf;
   }

@@ -255,16 +255,6 @@ namespace black_internal::solver
           );
           return true;
         }
-
-        for(variable v : scope) { // LCOV_EXCL_LINE
-          if(v == arg) {
-            err(
-              "next()/wnext()/prev()/wprev() terms cannot be applied "
-              "to quantified variables"
-            );
-            return true;
-          }
-        }
         
         return {false, true};
       }

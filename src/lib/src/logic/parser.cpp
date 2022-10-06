@@ -447,7 +447,7 @@ namespace black_internal
     _xi = chain(xi);
 
     for(auto d : vars)
-      xi.declare_variable(d);
+      xi.declare_variable(d, scope::rigid);
 
     std::optional<formula> matrix = parse_primary();
     if(!matrix)

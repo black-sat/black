@@ -162,9 +162,7 @@ TEST_CASE("Solver")
   SECTION("Solver syntax errors") {
 
     std::vector<std::string> tests = {
-      "next(x + y) = 2", "exists x . next(x) = x", 
-      "wnext(x + y) = 2", "exists x . wnext(x) = x",
-      "exists x . (wnext(x) = x || x = 0)", "exists x . F(x = 0)"
+      "next(x + y) = 2", "wnext(x + y) = 2", "exists x . F(x = 0)"
     };
 
     for(std::string s : tests) {
