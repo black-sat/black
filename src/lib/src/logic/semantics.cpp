@@ -183,7 +183,7 @@ namespace black_internal::logic {
       [&](unary_term<LTLPFO>, auto arg) { 
         return sort(arg);
       },
-      [&](binary_term<LTLPFO>, auto left, auto right) -> S {
+      [&](binary_term<LTLPFO>, auto left, [[maybe_unused]] auto right) -> S {
         black_assert(sort(left) == sort(right));
         
         return sort(left);
