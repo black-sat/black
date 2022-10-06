@@ -83,6 +83,8 @@ namespace black::frontend {
 
     std::optional<formula> f;
 
+    xi.set_default_sort(sigma.named_sort("default"));
+    
     if(cli::domain == "Int")
       xi.set_default_sort(sigma.integer_sort());
     else if(cli::domain == "Real")
@@ -127,13 +129,6 @@ namespace black::frontend {
         cli::command_name, backend
       ); // LCOV_EXCL_LINE
       quit(status_code::failure);
-    }
-
-    if(!cli::domain && (features & feature_t::first_order)) {
-      command_line_error(
-        "the --domain option is required for first-order formulas."
-      );
-      quit(status_code::command_line_error);
     }
 
     if(cli::print_model && (features & feature_t::first_order)) {

@@ -115,7 +115,7 @@ namespace black_internal
 
     std::optional<sort> parse_sort();
 
-    term                build_binary_term(binary_term::type, term, term);
+    std::optional<term> build_binary_term(binary_term::type, term, term);
     std::optional<term> parse_term();
     std::optional<term> parse_term_primary();
     std::optional<term> parse_term_binary_rhs(int precedence, term lhs);
@@ -594,9 +594,15 @@ namespace black_internal
     );
   }
 
-  term 
+  std::optional<term> 
   parser::_parser_t::build_binary_term(binary_term::type t, term lhs, term rhs) 
   {
+    if(auto s = _xi.sort(lhs); !s || !s->is<arithmetic_sort>())
+      return error("Operand of arithmetic operator not of arithmetic sort");
+    
+    if(auto s = _xi.sort(rhs); !s || !s->is<arithmetic_sort>())
+      return error("Operand of arithmetic operator not of arithmetic sort");
+    
     return t.match(
       [&](binary_term::type::division) {
         term l = lhs;
@@ -636,9 +642,6 @@ namespace black_internal
 
   std::optional<term> 
   parser::_parser_t::parse_term_binary_rhs(int prec, term lhs) {
-    if(auto s = _xi.sort(lhs); !s || !s->is<arithmetic_sort>())
-      return error("Operand of arithmetic operator not of arithmetic sort");
-
     while(1) {
       if(!peek() || func_precedence(*peek()) < prec)
          return {lhs};
@@ -648,8 +651,6 @@ namespace black_internal
       std::optional<term> rhs = parse_term_primary();
       if(!rhs)
         return error("Expected right operand to binary function symbol");
-      if(auto s = _xi.sort(*rhs); !s || !s->is<arithmetic_sort>())
-        return error("Operand of arithmetic operator not of arithmetic sort");
 
       if(!peek() || func_precedence(op) < func_precedence(*peek())) {
         rhs = parse_term_binary_rhs(prec + 1, *rhs);
@@ -658,7 +659,11 @@ namespace black_internal
       }
       
       black_assert(op.is<binary_term::type>());
-      lhs = build_binary_term(*op.data<binary_term::type>(), lhs, *rhs);
+      auto b = build_binary_term(*op.data<binary_term::type>(), lhs, *rhs);
+      if(!b)
+        return {};
+      
+      lhs = *b;
     }
   }
 

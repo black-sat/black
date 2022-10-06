@@ -53,6 +53,7 @@ namespace black_internal::cvc5
     tsl::hopscotch_map<proposition, cvc::Term> props;
     tsl::hopscotch_map<function, cvc::Term> functions;
     tsl::hopscotch_map<relation, cvc::Term> relations;
+    tsl::hopscotch_map<sort, cvc::Sort> sorts;
 
     cvc::Term to_cvc5(
       formula, tsl::hopscotch_map<variable, cvc::Term> const&env
@@ -127,15 +128,23 @@ namespace black_internal::cvc5
   cvc::Sort cvc5::_cvc5_t::to_cvc5(std::optional<sort> s) {
     black_assert(s.has_value());
     
-    return s->match(
+    if(auto it = sorts.find(*s); it != sorts.end())
+      return it->second;
+
+    cvc::Sort result = s->match(
       [&](integer_sort) {
         return solver.getIntegerSort();
       },
       [&](real_sort) {
         return solver.getRealSort();
       },
-      [](otherwise) -> cvc::Sort { black_unreachable(); } // LCOV_EXCL_LINE
+      [&](named_sort, auto name) {
+        return solver.mkUninterpretedSort(to_string(name));
+      }
     );
+
+    sorts.insert({*s, result});
+    return result;
   }
 
   cvc::Term cvc5::_cvc5_t::to_cvc5(
@@ -253,11 +262,11 @@ namespace black_internal::cvc5
     black_assert(signature.has_value());
 
     size_t arity = signature->size();
-    std::vector<cvc::Sort> sorts;
+    std::vector<cvc::Sort> fsorts;
     for(size_t i = 0; i < arity; ++i)
-      sorts.push_back(to_cvc5(signature->at(i)));
+      fsorts.push_back(to_cvc5(signature->at(i)));
 
-    cvc::Sort funcSort = solver.mkFunctionSort(sorts, to_cvc5(xi.sort(f)));
+    cvc::Sort funcSort = solver.mkFunctionSort(fsorts, to_cvc5(xi.sort(f)));
 
     cvc::Term term = solver.mkConst(funcSort, to_string(f.unique_id()));
     functions.insert({f, term});
@@ -272,11 +281,11 @@ namespace black_internal::cvc5
     black_assert(signature.has_value());
 
     size_t arity = signature->size();
-    std::vector<cvc::Sort> sorts;
+    std::vector<cvc::Sort> rsorts;
     for(size_t i = 0; i < arity; ++i)
-      sorts.push_back(to_cvc5(signature->at(i)));
+      rsorts.push_back(to_cvc5(signature->at(i)));
 
-    cvc::Sort funcSort = solver.mkFunctionSort(sorts, solver.getBooleanSort());
+    cvc::Sort funcSort = solver.mkFunctionSort(rsorts, solver.getBooleanSort());
 
     cvc::Term term = solver.mkConst(funcSort, to_string(r.unique_id()));
     relations.insert({r, term});

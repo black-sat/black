@@ -282,9 +282,9 @@ namespace black_internal::logic
 
   std::string to_string(sort s) {
     return s.match(
-      [](integer_sort) { return "Int"; },
-      [](real_sort)    { return "Real"; },
-      [](otherwise)    -> const char *{ black_unreachable(); } // LCOV_EXCL_LINE
+      [](integer_sort) -> std::string { return "Int"; },
+      [](real_sort)    -> std::string { return "Real"; },
+      [](named_sort, auto name) { return to_string(name); }
     );
   }
 

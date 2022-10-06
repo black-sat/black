@@ -59,7 +59,6 @@ namespace black_internal::z3
 
     tsl::hopscotch_map<formula, Z3_ast> formulas;
     tsl::hopscotch_map<term, Z3_ast> terms;
-    tsl::hopscotch_map<sort, Z3_sort> sorts;
 
     Z3_func_decl to_z3(function);
     Z3_func_decl to_z3(relation);
@@ -244,55 +243,20 @@ namespace black_internal::z3
 
     sort s = *o;
 
-    if(auto it = sorts.find(s); it != sorts.end()) 
-      return it->second;
-
-    Z3_sort result = s.match(
+    return s.match(
       [&](integer_sort) {
         return Z3_mk_int_sort(context);
       },
       [&](real_sort) {
         return Z3_mk_real_sort(context);
       },
-      [&](uninterpreted_sort) {
+      [&](named_sort, auto name) {
         return Z3_mk_uninterpreted_sort(
           context, 
-          Z3_mk_string_symbol(context, to_string(s.unique_id()).c_str())
+          Z3_mk_string_symbol(context, to_string(name).c_str())
         );
-      },
-      [&](enum_sort) -> Z3_sort {
-        black_unreachable();
-        // size_t size = f.elements().size();
-        // auto names = std::make_unique<Z3_symbol[]>(size);
-        // auto consts = std::make_unique<Z3_func_decl[]>(size);
-        // auto testers = std::make_unique<Z3_func_decl[]>(size);
-
-        // for(size_t i = 0; i < size; ++i) 
-        //   names[i] =
-        //     Z3_mk_string_symbol(context, to_string(s.unique_id()).c_str());
-
-        // Z3_sort enum_s = Z3_mk_enumeration_sort(
-        //   context, 
-        //   Z3_mk_string_symbol(context, to_string(s.unique_id()).c_str()),
-        //   (unsigned)f.elements().size(),
-        //   names.get(),
-        //   consts.get(),
-        //   testers.get()
-        // );
-
-        // for(size_t i = 0; i < size; ++i) {
-        //   terms.insert(
-        //     {f.elements()[i], Z3_mk_app(context, consts[i], 0, nullptr)}
-        //   );
-        // }
-
-        // return enum_s;
       }
     );
-
-    sorts.insert({s, result});
-
-    return result;
   }
 
   
