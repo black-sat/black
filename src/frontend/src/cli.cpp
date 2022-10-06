@@ -69,7 +69,9 @@ namespace black::frontend
     io::println("{}", sep);
     io::println("{}", black::license);
     for(auto name : black::sat::solver::backends()) {
-      auto backend = black::sat::solver::get_solver(name);
+      black::alphabet sigma;
+      black::scope xi{sigma};
+      auto backend = black::sat::solver::get_solver(name, xi);
       if(auto l = backend->license(); l) {
         io::println("{}", sep);
         io::println("{}", *l);

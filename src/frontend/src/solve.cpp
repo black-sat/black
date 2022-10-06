@@ -79,21 +79,18 @@ namespace black::frontend {
   int solve(std::optional<std::string> const&path, std::istream &file)
   {
     black::alphabet sigma;
+    black::scope xi{sigma};
 
     std::optional<formula> f;
 
-    if(cli::domain) {
-      if(cli::domain == "Int")
-        f = black::parse_formula(sigma, sigma.integer_sort(),
-          file, formula_syntax_error_handler(path)
-        );
-      else
-        f = black::parse_formula(sigma, sigma.real_sort(),
-          file, formula_syntax_error_handler(path)
-        );
-    } else {
-      f = black::parse_formula(sigma, file, formula_syntax_error_handler(path));
-    }
+    if(cli::domain == "Int")
+      xi.set_default_sort(sigma.integer_sort());
+    else if(cli::domain == "Real")
+      xi.set_default_sort(sigma.real_sort());
+
+    f = black::parse_formula(
+      sigma, xi, file, formula_syntax_error_handler(path)
+    );
 
     black_assert(f.has_value());
 
@@ -190,21 +187,18 @@ namespace black::frontend {
       slv.set_tracer(&trace);
 
     if (cli::remove_past)
-      slv.set_formula(
-        black::remove_past(
-          black::fragment_unsafe_cast<black::logic::LTLP>(*f)
-        ), cli::finite
+      f = black::remove_past(
+        black::fragment_unsafe_cast<black::logic::LTLP>(*f)
       );
-    else
-      slv.set_formula(*f, cli::finite);
 
     size_t bound = 
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
-    black::tribool res = slv.solve(bound, cli::semi_decision);
+    black::tribool res = 
+      slv.solve(xi, *f, cli::finite, bound, cli::semi_decision);
 
     std::optional<formula> muc;
     if(res == false && cli::unsat_core) {
-      muc = unsat_core(*f, cli::finite);
+      muc = unsat_core(xi, *f, cli::finite);
     }
 
     output(res, slv, *f, muc);
@@ -384,28 +378,27 @@ namespace black::frontend {
   }
   
   void trace(black::solver::trace_t data) {
-    auto [type, v] = data; // LCOV_EXCL_LINE
-
-    if(type == black::solver::trace_t::nnf && cli::debug == "print") {
+    if(data.type == black::solver::trace_t::nnf && cli::debug == "print") {
       io::println(
         "{}: debug: parsed formula in NNF: {}",
-        cli::command_name, to_string(std::get<logic::formula<logic::LTLPFO>>(v))
+        cli::command_name, 
+        to_string(std::get<logic::formula<logic::LTLPFO>>(data.data))
       );
     }
 
     static size_t k = 0;
-    if(type == black::solver::trace_t::stage && 
+    if(data.type == black::solver::trace_t::stage && 
        (cli::debug == "trace" || cli::debug == "trace-full" || 
         cli::debug == "trace-smtlib2")
     ) {
-      k = std::get<size_t>(v);
+      k = std::get<size_t>(data.data);
       io::errorln("- k: {}", k);
     }
 
     if(cli::debug == "trace-smtlib2") {
       std::string filename;
       
-      switch(type){
+      switch(data.type){
         case black::solver::trace_t::stage:
         case black::solver::trace_t::nnf:
           return;
@@ -424,38 +417,42 @@ namespace black::frontend {
       }
       std::ofstream file = open_out_file(filename);
 
-      file << to_smtlib2(std::get<logic::formula<logic::FO>>(v)) << "\n";
+      black_assert(data.xi);
+
+      file << 
+        to_smtlib2(std::get<logic::formula<logic::FO>>(data.data), *data.xi) 
+        << "\n";
     }
 
     if(cli::debug != "trace-full")
       return;
 
-    switch(type){
+    switch(data.type){
       case black::solver::trace_t::stage:
       case black::solver::trace_t::nnf:
         break;
       case black::solver::trace_t::unrav:
         io::errorln(
           "  - {}-unrav: {}", k,
-          to_string(std::get<logic::formula<logic::FO>>(v))
+          to_string(std::get<logic::formula<logic::FO>>(data.data))
         );
         break;
       case black::solver::trace_t::empty:
         io::errorln(
           "  - {}-empty: {}", k,
-            to_string(std::get<logic::formula<logic::FO>>(v))
+            to_string(std::get<logic::formula<logic::FO>>(data.data))
         );
         break;
       case black::solver::trace_t::loop:
         io::errorln(
           "  - {}-loop: {}", k, 
-          to_string(std::get<logic::formula<logic::FO>>(v))
+          to_string(std::get<logic::formula<logic::FO>>(data.data))
         );
         break;
       case black::solver::trace_t::prune:
         io::errorln(
           "  - {}-prune: {}", k,
-          to_string(std::get<logic::formula<logic::FO>>(v))
+          to_string(std::get<logic::formula<logic::FO>>(data.data))
         );
         break;
     }

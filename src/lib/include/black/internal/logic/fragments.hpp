@@ -32,6 +32,10 @@
 //
 //
 
+namespace black_internal::logic {
+  class scope;
+}
+
 namespace black {
 
   //
@@ -41,6 +45,8 @@ namespace black {
   namespace logic {
     inline namespace common {
       using black_internal::logic::alphabet;
+      using black_internal::logic::var_decl;
+      using black_internal::logic::scope;
       using black_internal::logic::otherwise;
       using black_internal::logic::syntax_element;
       using black_internal::logic::fragment;
@@ -57,7 +63,6 @@ namespace black {
       using black_internal::logic::has_any_element_of;
       using black_internal::logic::big_and;
       using black_internal::logic::big_or;
-      using black_internal::logic::seq;
     }
     
     using black_internal::logic::only;
@@ -152,6 +157,7 @@ namespace black {
   Element(atom) \
   Element(exists) \
   Element(forall) \
+  Element(var_decl) \
   Element(constant) \
   Element(variable) \
   Element(application) \

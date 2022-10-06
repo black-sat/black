@@ -37,21 +37,21 @@ namespace black_internal
 
   // Easy entry-point for parsing formulas
   std::optional<formula>
-  parse_formula(alphabet &sigma, sort default_sort,
+  parse_formula(alphabet &sigma, scope &xi,
                 std::string const&s, parser::error_handler error)
   {
     std::stringstream stream{s, std::stringstream::in};
-    parser p{sigma, default_sort, stream, std::move(error)};
+    parser p{sigma, xi, stream, std::move(error)};
 
     return p.parse();
   }
 
   // Easy entry-point for parsing formulas
   std::optional<formula>
-  parse_formula(alphabet &sigma, sort default_sort,
+  parse_formula(alphabet &sigma, scope &xi,
                 std::istream &stream, parser::error_handler error)
   {
-    parser p{sigma, default_sort, stream, std::move(error)};
+    parser p{sigma, xi, stream, std::move(error)};
 
     return p.parse();
   }
@@ -61,9 +61,8 @@ namespace black_internal
                 std::string const&s, parser::error_handler error)
   {
     std::stringstream stream{s, std::stringstream::in};
-    parser p{
-      sigma, sigma.uninterpreted_sort("default"), stream, std::move(error)
-    };
+    scope xi{sigma};
+    parser p{sigma, xi, stream, std::move(error)};
 
     return p.parse();
   }
@@ -73,33 +72,29 @@ namespace black_internal
   parse_formula(alphabet &sigma,
                 std::istream &stream, parser::error_handler error)
   {
-    parser p{
-      sigma, sigma.uninterpreted_sort("default"), stream, std::move(error)
-    };
+    scope xi{sigma};
+    parser p{sigma, xi, stream, std::move(error)};
 
     return p.parse();
   }
 
   struct parser::_parser_t {
     alphabet &_alphabet;
-    sort _default_sort;
+    scope &_global_xi;
+    scope _xi;
     lexer _lex;
     bool _trying = false;
     std::function<void(std::string)> _error;
     std::vector<token> _tokens;
     size_t _pos = 0;
 
-    tsl::hopscotch_map<identifier, variable> _scope;
-
     _parser_t(
-      alphabet &sigma, sort default_sort,
+      alphabet &sigma, scope &xi,
       std::istream &stream, error_handler error
     );
 
     template<typename F>
     auto try_parse(F f);
-
-    std::optional<variable> lookup(identifier id);
 
     std::optional<token> peek();
     std::optional<token> get();
@@ -132,10 +127,10 @@ namespace black_internal
   };
 
   parser::parser(
-    alphabet &sigma, sort default_sort,
+    alphabet &sigma, scope &xi,
     std::istream &stream, error_handler error
   )
-    : _data(std::make_unique<_parser_t>(sigma, default_sort, stream, error)) { }
+    : _data(std::make_unique<_parser_t>(sigma, xi, stream, error)) { }
 
   parser::~parser() = default;
 
@@ -153,9 +148,9 @@ namespace black_internal
   }
 
   parser::_parser_t::_parser_t(
-    alphabet &sigma, sort default_sort,
+    alphabet &sigma, scope &xi,
     std::istream &stream, error_handler error
-  ) : _alphabet(sigma), _default_sort(default_sort),
+  ) : _alphabet(sigma), _global_xi(xi), _xi(chain(xi)), 
       _lex(stream, error), _error(error)
   {
     std::optional<token> tok = _lex.get();
@@ -166,22 +161,19 @@ namespace black_internal
   template<typename F>
   auto parser::_parser_t::try_parse(F f) {
     size_t pos = _pos;
+    auto xi = _xi;
+
     bool t = _trying;
     _trying = true;
-    auto scope = _scope;
+    
     auto r = f();
-    if(!r)
+    if(!r) {
       _pos = pos;
-    _scope = scope;
+      _xi = xi;
+    }
+    
     _trying = t;
     return r;
-  }
-
-  std::optional<variable> parser::_parser_t::lookup(identifier id) {
-    if(auto it = _scope.find(id); it != _scope.end())
-      return it->second;
-    
-    return {};
   }
 
   std::optional<token> parser::_parser_t::peek() {
@@ -315,12 +307,12 @@ namespace black_internal
     if(!rhs)
       return {};
 
-    if(sort_of(*lhs) == _alphabet.integer_sort() &&
-       sort_of(*rhs) == _alphabet.real_sort())
+    if(_xi.sort(*lhs) == _alphabet.integer_sort() &&
+       _xi.sort(*rhs) == _alphabet.real_sort())
       return comparison(rel, to_real(*lhs), *rhs);
 
-    if(sort_of(*lhs) == _alphabet.real_sort() &&
-       sort_of(*rhs) == _alphabet.integer_sort())
+    if(_xi.sort(*lhs) == _alphabet.real_sort() &&
+       _xi.sort(*rhs) == _alphabet.integer_sort())
       return comparison(rel, *lhs, to_real(*rhs));
 
     return comparison(rel, *lhs, *rhs);
@@ -362,11 +354,18 @@ namespace black_internal
     if(!consume(token::punctuation::right_paren))
       return {};
 
-    std::vector<sort> sorts;
-    for(size_t i = 0; i < terms.size(); ++i) 
-      sorts.push_back(sort_of(terms[i]));
+    relation r = _alphabet.relation(id);
+    if(!_global_xi.signature(r)) {
+      std::vector<sort> sorts;
+      for(auto t : terms) {
+        auto s = _xi.sort(t);
+        if(s)
+          sorts.push_back(*s);
+      }
 
-    relation r = _alphabet.relation(id, sorts);
+      if(sorts.size() == terms.size())
+        _global_xi.declare_relation(r, sorts);
+    }
 
     return r(terms);
   }
@@ -379,7 +378,7 @@ namespace black_internal
     if(consume()->data<quantifier::type>() == quantifier::type::exists{}) 
       q = quantifier::type::exists{};
 
-    std::vector<variable> vars;
+    std::vector<var_decl> vars;
     while(
       !peek() || 
       peek()->data<token::punctuation>() != token::punctuation::dot
@@ -408,7 +407,16 @@ namespace black_internal
           return {};
       }
 
-      vars.push_back(_alphabet.variable(varid, s ? *s : _default_sort));
+      if(!s)
+        s = _xi.default_sort();
+
+      if(!s)
+        return error(
+          "Quantified variable with no explicit sort, but no default "
+          "sort given"
+        );
+
+      vars.push_back(_alphabet.var_decl(_alphabet.variable(varid), *s));
 
       if(paren && !consume(token::punctuation::right_paren))
         return {};
@@ -435,15 +443,17 @@ namespace black_internal
 
     consume(); // consume the dot
 
-    auto scope = _scope;
-    for(auto v : vars)
-      _scope.insert({v.name(), v});
+    auto xi = std::move(_xi);
+    _xi = chain(xi);
+
+    for(auto d : vars)
+      xi.declare_variable(d);
 
     std::optional<formula> matrix = parse_primary();
     if(!matrix)
       return {};
 
-    _scope = scope;
+    _xi = std::move(xi);
 
     if(q == quantifier::type::exists{})
       return exists_block(vars, *matrix);
@@ -592,9 +602,9 @@ namespace black_internal
         term l = lhs;
         term r = rhs;
 
-        if(sort_of(l) != _alphabet.real_sort())
+        if(_xi.sort(l) != _alphabet.real_sort())
           l = to_real(l);
-        if(sort_of(r) != _alphabet.real_sort())
+        if(_xi.sort(r) != _alphabet.real_sort())
           r = to_real(r);
         
         return binary_term(t, l, r);
@@ -603,20 +613,20 @@ namespace black_internal
         term l = lhs;
         term r = rhs;
 
-        if(sort_of(l) != _alphabet.integer_sort())
+        if(_xi.sort(l) != _alphabet.integer_sort())
           l = to_integer(l);
-        if(sort_of(r) != _alphabet.integer_sort())
+        if(_xi.sort(r) != _alphabet.integer_sort())
           r = to_integer(r);
         
         return binary_term(t, l, r);
       },
       [&](otherwise) {
-        if(sort_of(lhs) == _alphabet.integer_sort() &&
-           sort_of(rhs) == _alphabet.real_sort())
+        if(_xi.sort(lhs) == _alphabet.integer_sort() &&
+           _xi.sort(rhs) == _alphabet.real_sort())
           return binary_term(t, to_real(lhs), rhs);
 
-        if(sort_of(lhs) == _alphabet.real_sort() &&
-           sort_of(rhs) == _alphabet.integer_sort())
+        if(_xi.sort(lhs) == _alphabet.real_sort() &&
+           _xi.sort(rhs) == _alphabet.integer_sort())
           return binary_term(t, lhs, to_real(rhs));
 
         return binary_term(t, lhs, rhs);
@@ -626,7 +636,7 @@ namespace black_internal
 
   std::optional<term> 
   parser::_parser_t::parse_term_binary_rhs(int prec, term lhs) {
-    if(!sort_of(lhs).is<arithmetic_sort>())
+    if(auto s = _xi.sort(lhs); !s || !s->is<arithmetic_sort>())
       return error("Operand of arithmetic operator not of arithmetic sort");
 
     while(1) {
@@ -638,7 +648,7 @@ namespace black_internal
       std::optional<term> rhs = parse_term_primary();
       if(!rhs)
         return error("Expected right operand to binary function symbol");
-      if(!sort_of(*rhs).is<arithmetic_sort>())
+      if(auto s = _xi.sort(*rhs); !s || !s->is<arithmetic_sort>())
         return error("Operand of arithmetic operator not of arithmetic sort");
 
       if(!peek() || func_precedence(op) < func_precedence(*peek())) {
@@ -722,12 +732,7 @@ namespace black_internal
     // if there is no open paren this is a simple variable
     if(!peek() || 
         peek()->data<token::punctuation>() != token::punctuation::left_paren)
-    {  
-      if(auto var = lookup(id); var)
-        return var;
-
-      return _alphabet.variable(id, _default_sort);
-    }
+      return _alphabet.variable(id);
 
     // otherwise it is a function application
     std::vector<term> terms;
@@ -745,11 +750,23 @@ namespace black_internal
     if(!consume(token::punctuation::right_paren))
       return {};
 
-    std::vector<sort> sorts;
-    for(size_t i = 0; i < terms.size(); ++i) 
-      sorts.push_back(sort_of(terms[i]));
+    function f = _alphabet.function(id);
 
-    function f = _alphabet.function(id, _default_sort, sorts);
+    if(!_global_xi.signature(f)) {
+      if(!_global_xi.default_sort())
+        return error("Uninterpreted function used, but no default sort given");
+
+      std::vector<sort> sorts;
+      for(auto t : terms) {
+        auto s = _xi.sort(t);
+        if(s)
+          sorts.push_back(*s);
+      }
+
+      if(sorts.size() == terms.size())
+        _global_xi.declare_function(f, *_global_xi.default_sort(), sorts);
+    }
+
     return f(terms);
   }
 

@@ -74,7 +74,7 @@ TEST_CASE("New API") {
     proposition p = sigma.proposition("p");
     REQUIRE(p.name() == "p");
 
-    variable x = sigma.variable("x", sigma.integer_sort());
+    variable x = sigma.variable("x");
     REQUIRE(x.name() == "x");
 
     formula<LTL> f = p;
@@ -193,14 +193,12 @@ TEST_CASE("New API") {
   }
 
   SECTION("Atoms and applications") {
-    function f = sigma.function(
-      "f", sigma.integer_sort(), {sigma.integer_sort(), sigma.integer_sort()}
-    );
+    function f = sigma.function("f");
 
     REQUIRE(f.is<function>());
 
-    variable x = sigma.variable("x", sigma.integer_sort());
-    variable y = sigma.variable("y", sigma.integer_sort());
+    variable x = sigma.variable("x");
+    variable y = sigma.variable("y");
     std::vector<term<FO>> variables = {x,y};
 
     application<FO> app = application<FO>(f, variables);
@@ -222,21 +220,23 @@ TEST_CASE("New API") {
   }
 
   SECTION("Quantifiers") {
-    variable x = sigma.variable("x", sigma.integer_sort());
+    variable x = sigma.variable("x");
+    sort s = sigma.integer_sort();
     comparison<FO> e = comparison<FO>(comparison<FO>::type::equal{}, x, x);
-    quantifier<FO> f = quantifier<FO>(quantifier<FO>::type::forall{}, x, e);
+    quantifier<FO> f = quantifier<FO>(quantifier<FO>::type::forall{}, x[s], e);
 
     REQUIRE(e.left() == x);
     REQUIRE(e.right() == x);
 
-    REQUIRE(bool(f.var() == x));
+    REQUIRE(bool(f.decl().variable() == x));
+    REQUIRE(f.decl().sort() == s);
     REQUIRE(f.matrix() == e);
   }
   
   SECTION("Deduction guides") {
     formula b = sigma.boolean(true);
     formula p = sigma.proposition("p");
-    variable x = sigma.variable("x", sigma.integer_sort());
+    variable x = sigma.variable("x");
     unary u = unary<propositional>(unary<propositional>::type::negation{}, b);
     conjunction c = conjunction(p, b);
     binary c2 = conjunction(u, b);
@@ -298,7 +298,7 @@ TEST_CASE("New API") {
   }
 
   SECTION("Sugar for terms") {
-    variable x = sigma.variable("x", sigma.integer_sort());
+    variable x = sigma.variable("x");
     constant c = constant{sigma.integer(42)};
 
     comparison lt = x < c;
@@ -436,9 +436,8 @@ TEST_CASE("New API") {
   }
 
   SECTION("Complex formula") {
-    variable x = sigma.variable("x", sigma.integer_sort());
-    function f = 
-      sigma.function("f", sigma.integer_sort(), {sigma.integer_sort()});
+    variable x = sigma.variable("x");
+    function f = sigma.function("f");
 
     formula complex = (x == 0 && G(wnext(x) == f(x) + 1) && F(x == 42));
 
@@ -450,8 +449,8 @@ TEST_CASE("New API") {
 
     boolean b = sigma.boolean(true);
     proposition p = sigma.proposition("p");
-    variable x = sigma.variable("x", sigma.integer_sort());
-    variable y = sigma.variable("y", sigma.integer_sort());
+    variable x = sigma.variable("x");
+    variable y = sigma.variable("y");
 
     conjunction<LTL> c = b && ((p && (b && p)) && b);
     addition<FO> sum = x + ((y + (x + y)) + x);
@@ -484,14 +483,16 @@ TEST_CASE("New API") {
   SECTION("Quantifier blocks") {
     using namespace black_internal;
 
-    variable x = sigma.variable("x", sigma.integer_sort());
-    variable y = sigma.variable("y", sigma.integer_sort());
-    variable z = sigma.variable("z", sigma.integer_sort());
-    variable w = sigma.variable("w", sigma.integer_sort());
+    variable x = sigma.variable("x");
+    variable y = sigma.variable("y");
+    variable z = sigma.variable("z");
+    variable w = sigma.variable("w");
+
+    sort s = sigma.integer_sort();
 
     formula<FO> f = x == y && y == z && z == w;
 
-    std::vector<variable> v = {x, y, z, w};
+    std::vector<var_decl> v = {x[s], y[s], z[s], w[s]};
 
     static_assert(storage_kind<quantifier_block<FO>>);
 
@@ -507,7 +508,8 @@ TEST_CASE("New API") {
 
     quantifier<FO> q = qb;
 
-    quantifier<FO> q2 = exists(x, exists(y, (exists(z, exists(w, f)))));
+    quantifier<FO> q2 = 
+      exists(x[s], exists(y[s], (exists(z[s], exists(w[s], f)))));
 
     REQUIRE(q == q2);
 
@@ -515,7 +517,7 @@ TEST_CASE("New API") {
     
     REQUIRE(eb == q2);
 
-    std::vector<variable> vars;
+    std::vector<var_decl> vars;
     for(auto var : q.block().variables()) {
       vars.push_back(var);
     }
@@ -534,7 +536,7 @@ TEST_CASE("New API") {
     formula<FO> qf = q;
     qf.match(
       [&](quantifier_block<FO> b) {
-        std::vector<variable> bvars;
+        std::vector<var_decl> bvars;
         for(auto var : q.block().variables()) {
           bvars.push_back(var);
         }
@@ -546,7 +548,7 @@ TEST_CASE("New API") {
 
     qf.match(
       [&](exists_block<FO> b) {
-        std::vector<variable> bvars;
+        std::vector<var_decl> bvars;
         for(auto var : q.block().variables()) {
           bvars.push_back(var);
         }
@@ -576,11 +578,13 @@ TEST_CASE("New API") {
     using namespace black::logic;
 
     proposition p = sigma.proposition("p");
-    variable x = sigma.variable("x", sigma.integer_sort());
+    variable x = sigma.variable("x");
     boolean top = sigma.top();
 
+    sort s = sigma.integer_sort();
+
     REQUIRE(has_any_element_of(
-      p && !p && x > x && exists(x, x > x) && F(F(top)),
+      p && !p && x > x && exists(x[s], x > x) && F(F(top)),
       syntax_element::boolean, quantifier<FO>::type::forall{}
     ));
   }

@@ -97,8 +97,8 @@ namespace black_internal::encoder
     );
   }
 
-  proposition encoder::loop_prop(size_t l, size_t k) {
-    return _sigma->proposition(std::tuple{"_loop_prop"sv, l, k});
+  proposition encoder::loop_prop(alphabet *sigma, size_t l, size_t k) {
+    return sigma->proposition(std::tuple{"_loop_prop"sv, l, k});
   }
 
   // Generates the encoding for LOOP_k
@@ -109,14 +109,14 @@ namespace black_internal::encoder
       return _sigma->bottom();
 
     formula axioms = big_and(*_sigma, range(0,k), [&](size_t l) {
-      proposition loop_prop = this->loop_prop(l, k);
-      return iff(loop_prop, l_to_k_loop(l, k, true) && l_to_k_period(l, k));
+      proposition lp = loop_prop(_sigma, l, k);
+      return iff(lp, l_to_k_loop(l, k, true) && l_to_k_period(l, k));
     });
     
 
     return // LCOV_EXCL_LINE
       axioms && big_or(*_sigma, range(0, k), [&](size_t l) { // LCOV_EXCL_LINE
-      return loop_prop(l, k);
+      return loop_prop(_sigma, l, k);
     });
   }
 
@@ -275,9 +275,9 @@ namespace black_internal::encoder
       },
       [&](quantifier<LTLPFO> q) {
         std::vector<variable> new_scope = scope;
-        new_scope.push_back(q.var());
+        new_scope.push_back(q.decl().variable());
         return quantifier<FO>(
-          q.node_type(), q.var(), to_ground_snf(q.matrix(), k, new_scope)
+          q.node_type(), q.decl(), to_ground_snf(q.matrix(), k, new_scope)
         );
       }, // LCOV_EXCL_LINE
       [&](proposition)  { return ground(f, k); },
@@ -429,7 +429,7 @@ namespace black_internal::encoder
         for(variable v : scope)
           if(x == v)
             return x;
-        return _sigma->variable(std::pair(t, k), x.sort()); 
+        return _sigma->variable(std::pair(t, k)); 
       },
       [&](application<LTLPFO> a) {
         std::vector<term<FO>> terms;
@@ -470,15 +470,28 @@ namespace black_internal::encoder
   }
 
   relation encoder::stepped(relation r, size_t k) {
-    return _sigma->relation(std::pair{r, k}, r.signature());
+    black_assert(_xi.signature(r).has_value());
+
+    relation sr = _sigma->relation(std::pair{r, k});
+    if(!_xi.signature(sr))
+      _xi.declare_relation(sr, *_xi.signature(r));
+
+    return sr;
   }
 
   function encoder::stepped(function f, size_t k) {
-    return _sigma->function(std::pair{f, k}, f.result(), f.signature());
+    black_assert(_xi.signature(f).has_value());
+    black_assert(_xi.sort(f).has_value());
+
+    function sf = _sigma->function(std::pair{f, k});
+    if(!_xi.signature(sf))
+      _xi.declare_function(sf, *_xi.sort(f), *_xi.signature(f));
+
+    return sf;
   }
 
   proposition encoder::ground(formula<LTLPFO> f, size_t k) {
-    return _sigma->proposition(std::pair(f,k));
+    return f.sigma()->proposition(std::pair(f,k));
   }
 
   // Transformation in NNF
@@ -492,7 +505,7 @@ namespace black_internal::encoder
       [](atom<LTLPFO> a) { return a; },
       [](comparison<LTLPFO> c) { return c; },
       [&](quantifier<LTLPFO> q) {
-        return quantifier<LTLPFO>(q.node_type(), q.var(), to_nnf(q.matrix()));
+        return quantifier<LTLPFO>(q.node_type(), q.decl(), to_nnf(q.matrix()));
       },
       // Push the negation down to literals
       [&](negation<LTLPFO> n) {
@@ -506,7 +519,7 @@ namespace black_internal::encoder
             if(q.node_type() == quantifier<LTLPFO>::type::exists{})
               dual = quantifier<LTLPFO>::type::forall{};
 
-            return quantifier<LTLPFO>(dual, q.var(), to_nnf(!q.matrix()));
+            return quantifier<LTLPFO>(dual, q.decl(), to_nnf(!q.matrix()));
           },
           [&](negation<LTLPFO>, auto op) { // special case for double negation
             return to_nnf(op);

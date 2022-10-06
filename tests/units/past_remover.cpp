@@ -71,6 +71,7 @@ proposition past_label(formula f) {
 TEST_CASE("Translation for basic past formulas")
 {
   alphabet sigma;
+  scope xi{sigma};
 
   proposition p = sigma.proposition("p");
   proposition q = sigma.proposition("q");
@@ -117,10 +118,8 @@ TEST_CASE("Translation for basic past formulas")
 
     for(test t : tests) {
       DYNAMIC_SECTION("Check for formula: " << to_string(t.f)) {
-        slv.set_formula(
-          formula{!implies(remove_past(t.f), t.f)}
-        );
-        CHECK(!slv.solve()); // check validity
+        // check validity
+        CHECK(!slv.solve(xi, !implies(remove_past(t.f), t.f))); 
       }
     }
   }

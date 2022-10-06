@@ -45,7 +45,11 @@
 #include <black/internal/logic/interface-fwd.hpp>
 #include <black/internal/logic/generation.hpp>
 #include <black/internal/logic/interface.hpp>
-#include <black/internal/logic/semantics.hpp>
 #include <black/internal/logic/fragments.hpp>
+
+//
+// All things semantics
+//
+#include <black/internal/logic/semantics.hpp>
 
 #endif // BLACK_LOGIC_FORMULA_HPP

@@ -332,7 +332,7 @@ namespace black::frontend
         std::string smuc = jmuc.get<std::string>();
         trace.muc =
           black::parse_formula(
-            sigma, sigma.integer_sort(), smuc, [&](auto error) {
+            sigma, smuc, [&](auto error) {
               io::fatal(
                 status_code::syntax_error, "{}: malformed 'muc' field: {}", 
                 path, error
@@ -415,11 +415,11 @@ namespace black::frontend
     std::istream &tracefile
   ) {
     black::alphabet sigma;
+    black::scope xi{sigma};
+    xi.set_default_sort(sigma.integer_sort());
 
     std::optional<formula> f = 
-      black::parse_formula(
-        sigma, sigma.integer_sort(), file, formula_syntax_error_handler(path)
-      );
+      black::parse_formula(sigma, xi, file, formula_syntax_error_handler(path));
 
     black_assert(f.has_value());
 
@@ -437,8 +437,8 @@ namespace black::frontend
 
     if(trace.muc.has_value()) {
       black::solver slv;
-      slv.set_formula(*trace.muc, cli::finite);
-      if(slv.solve() != false) {
+      
+      if(slv.solve(xi, *trace.muc, cli::finite) != false) {
         io::println("SAT CORE");
         quit(status_code::failed_check);
       }

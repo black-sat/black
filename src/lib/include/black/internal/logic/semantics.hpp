@@ -24,6 +24,8 @@
 #ifndef BLACK_LOGIC_SEMANTICS_HPP
 #define BLACK_LOGIC_SEMANTICS_HPP
 
+#include <memory>
+
 //
 // This file contains code that deals with the semantic aspects of formulas and
 // terms. These include type checking and other semantic checks to be done on
@@ -33,49 +35,62 @@
 namespace black_internal::logic {
   
   //
-  // This function recursively computes the sort of a term. 
-  // The result is meaningless if the term is not well-typed.
+  // The `scope` class handles all the semantic information needed to manage a
+  // formula. A `formula` object only describes the syntax of the formula, but
+  // to interpret it often semantics information are needed (for first-order
+  // ones, not so much for propositional LTL), such as the sort of variables and
+  // the signatures/arities of functions and relations. The `scope` class
+  // handles these information.
   //
-  template<is_term T>
-  sort sort_of(T t) {
-    using Syntax = typename T::syntax;
-    alphabet &sigma = *t.sigma();
-    return t.match(
-      [&](constant<Syntax>, auto value) {
-        return value.match(
-          [&](integer) { return sigma.integer_sort(); },
-          [&](real)    { return sigma.real_sort(); }
-        );
-      },
-      [&](variable v) {
-        return v.sort();
-      },
-      [&](application<Syntax> app) {
-        return app.func().result();
-      },
-      [&](to_integer<Syntax>) {
-        return t.sigma()->integer_sort();
-      },
-      [&](to_real<Syntax>) {
-        return t.sigma()->real_sort();
-      },
-      [&](unary_term<Syntax>, auto arg) { 
-        return sort_of(arg);
-      },
-      [&](division<Syntax>) {
-        return sigma.real_sort();
-      },
-      [&](int_division<Syntax>) {
-        return sigma.integer_sort();
-      },
-      [&](binary_term<Syntax>, auto left, auto right) -> sort {
-        if(sort_of(left) == sigma.integer_sort() &&
-           sort_of(right) == sigma.integer_sort())
-          return sigma.integer_sort();
-        
-        return sigma.real_sort();
-      }
-    );
+  // Crucially, scopes can be chained to support nested scopes. This is done as
+  // follows:
+  // 
+  // scope s1 = ...;
+  // scope s2 = chain(s1);
+  //
+
+  class scope 
+  {
+  public:
+    struct chain_t {
+      scope const& s;
+    };
+
+    scope(alphabet &sigma, std::optional<struct sort> def = std::nullopt);
+    scope(chain_t);
+    scope(scope const&);
+    scope(scope &&);
+    ~scope();
+
+    scope &operator=(scope const&);
+    scope &operator=(scope &&);
+
+    void set_default_sort(std::optional<struct sort> s);
+    std::optional<struct sort> default_sort() const;
+
+    void declare_variable(variable, struct sort);
+    void declare_function(function, struct sort, std::vector<struct sort>);
+    void declare_relation(relation, std::vector<struct sort>);
+
+    void declare_variable(var_decl d) {
+      declare_variable(d.variable(), d.sort());
+    }
+
+    std::optional<struct sort> sort(variable) const;
+    std::optional<struct sort> sort(function) const;
+
+    std::optional<std::vector<struct sort>> signature(function) const;
+    std::optional<std::vector<struct sort>> signature(relation) const;
+
+    std::optional<struct sort> sort(term<LTLPFO> t) const;
+
+  private:
+    struct impl_t;
+    std::unique_ptr<impl_t> _impl;
+  };
+
+  inline scope::chain_t chain(scope const&s) {
+    return {s};
   }
 }
 

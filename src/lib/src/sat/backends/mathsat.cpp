@@ -39,6 +39,10 @@ BLACK_REGISTER_SAT_BACKEND(mathsat, {black::sat::feature::smt})
 namespace black_internal::mathsat
 {
   struct mathsat::_mathsat_t {
+    scope xi;
+
+    _mathsat_t(scope const& _xi) : xi{chain(_xi)} { }
+
     msat_env env;
     tsl::hopscotch_map<formula, msat_term> formulas;
     tsl::hopscotch_map<term, msat_term> terms;
@@ -51,7 +55,7 @@ namespace black_internal::mathsat
     msat_term to_mathsat_inner(formula);
     msat_term to_mathsat(term);
     msat_term to_mathsat_inner(term);
-    msat_type to_mathsat(sort);
+    msat_type to_mathsat(std::optional<sort>);
     msat_decl to_mathsat(function);
     msat_decl to_mathsat(relation);
     msat_decl to_mathsat(variable);
@@ -62,7 +66,7 @@ namespace black_internal::mathsat
     }
   };
 
-  mathsat::mathsat() : _data{std::make_unique<_mathsat_t>()}
+  mathsat::mathsat(scope const&xi) : _data{std::make_unique<_mathsat_t>(xi)}
   {  
     msat_config cfg = msat_create_config();
     msat_set_option(cfg, "model_generation", "true");
@@ -237,8 +241,10 @@ namespace black_internal::mathsat
     );
   }
 
-  msat_type mathsat::_mathsat_t::to_mathsat(sort s) {
-    return s.match(
+  msat_type mathsat::_mathsat_t::to_mathsat(std::optional<sort> s) {
+    black_assert(s.has_value());
+
+    return s->match(
       [&](integer_sort) {
         return msat_get_integer_type(env);
       },
@@ -253,13 +259,16 @@ namespace black_internal::mathsat
     if(auto it = functions.find(f); it != functions.end())
       return it->second; // LCOV_EXCL_LINE
 
-    size_t arity = f.signature().size();
+    auto signature = xi.signature(f);
+    black_assert(signature.has_value());
+
+    size_t arity = signature->size();
     std::vector<msat_type> types;
     for(size_t i = 0; i < arity; ++i)
-      types.push_back(to_mathsat(f.signature()[i]));
+      types.push_back(to_mathsat(signature->at(i)));
 
     msat_type functype = msat_get_function_type(
-      env, types.data(), arity, to_mathsat(f.result())
+      env, types.data(), arity, to_mathsat(xi.sort(f))
     ); // LCOV_EXCL_LINE
     msat_decl d = 
       msat_declare_function(env, to_string(f.unique_id()).c_str(), functype);
@@ -275,10 +284,13 @@ namespace black_internal::mathsat
 
     msat_type bool_type = msat_get_bool_type(env);
 
-    size_t arity = r.signature().size();
+    auto signature = xi.signature(r);
+    black_assert(signature);
+
+    size_t arity = signature->size();
     std::vector<msat_type> types;
     for(size_t i = 0; i < arity; ++i)
-      types.push_back(to_mathsat(r.signature()[i]));
+      types.push_back(to_mathsat(signature->at(i)));
 
     msat_type functype = msat_get_function_type(
       env, types.data(), arity, bool_type
@@ -296,7 +308,7 @@ namespace black_internal::mathsat
       return it->second; // LCOV_EXCL_LINE
 
     msat_decl var = 
-      msat_declare_function(env, to_string(x).c_str(), to_mathsat(x.sort()));
+      msat_declare_function(env, to_string(x).c_str(), to_mathsat(xi.sort(x)));
 
     return var;
   }

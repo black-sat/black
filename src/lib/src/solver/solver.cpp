@@ -38,11 +38,12 @@ namespace black_internal::solver
    */
   struct solver::_solver_t 
   {
-    std::optional<encoder::encoder> encoder;
-
     // whether a model has been found 
     // i.e., whether solve() has been called and returned true
     bool model = false;
+
+    // alphabet of last solved formula
+    alphabet *sigma = nullptr;
 
     // size of the found model (if any)
     size_t model_size = 0;
@@ -59,28 +60,24 @@ namespace black_internal::solver
     std::function<void(trace_t)> tracer = [](trace_t){};
 
     void trace(size_t k);
-    void trace(trace_t::type_t type, logic::formula<logic::LTLPFO>);
-    void trace(trace_t::type_t type, logic::formula<logic::FO>);
+    void trace(trace_t::type_t, scope const&, logic::formula<logic::LTLPFO>);
+    void trace(trace_t::type_t, scope const&, logic::formula<logic::FO>);
 
     // Main algorithm
-    tribool solve(size_t k_max, bool semi_decision);
+    tribool solve(
+      scope const& xi, logic::formula<logic::LTLPFO> f, 
+      bool finite, size_t k_max, bool semi_decision
+    );
   };
 
   solver::solver() : _data{std::make_unique<_solver_t>()} { }
   solver::~solver() = default;
 
-  void solver::set_formula(formula f, bool finite) {
-    _data->model = false;
-    _data->model_size = 0;
-    _data->last_bound = 0;
-    _data->encoder = encoder::encoder{f, finite};
-  }
-
-  tribool solver::solve(size_t k_max, bool semi_decision) {
-    if(!_data->encoder.has_value())
-      return true;
-    
-    return _data->solve(k_max, semi_decision);
+  tribool solver::solve(
+    scope const& xi, logic::formula<logic::LTLPFO> f, 
+    bool finite, size_t k_max, bool semi_decision
+  ) {
+    return _data->solve(xi, f, finite, k_max, semi_decision);
   }
 
   std::optional<model> solver::model() const {
@@ -111,12 +108,12 @@ namespace black_internal::solver
   }
 
   size_t model::loop() const {
+    using black_internal::encoder::encoder;
     black_assert(size() > 0);
-    black_assert(_solver._data->encoder);
     
     size_t k = size() - 1;
     for(size_t l = 0; l < k; ++l) {
-      proposition loop_prop = _solver._data->encoder->loop_prop(l, k);
+      proposition loop_prop = encoder::loop_prop(_solver._data->sigma, l, k);
       tribool value = _solver._data->sat->value(loop_prop);
       
       if(value == true)
@@ -127,60 +124,64 @@ namespace black_internal::solver
   }
 
   tribool model::value(proposition a, size_t t) const {
-    black_assert(_solver._data->encoder);
-    
-    proposition u = _solver._data->encoder->ground(a, t);
+    using black_internal::encoder::encoder;
+    proposition u = encoder::ground(a, t);
 
     return _solver._data->sat->value(u);
   }
 
   void solver::_solver_t::trace(size_t k){
-    tracer({trace_t::stage, {k}});
+    tracer({nullptr, trace_t::stage, {k}});
   }
 
   void solver::_solver_t::trace(
-    trace_t::type_t type, logic::formula<logic::LTLPFO> f
+    trace_t::type_t type, scope const& xi, logic::formula<logic::LTLPFO> f
   ){
-    tracer({type, {f}});
+    tracer({&xi, type, {f}});
   }
   
   void solver::_solver_t::trace(
-    trace_t::type_t type, logic::formula<logic::FO> f
+    trace_t::type_t type, scope const& xi, logic::formula<logic::FO> f
   ){
-    tracer({type, {f}});
+    tracer({&xi, type, {f}});
   }
 
   /*
    * Main algorithm. Solve the formula with up to `k_max' iterations.
    * If semi_decision = true, we disable the PRUNE rule.
    */
-  tribool solver::_solver_t::solve(size_t k_max, bool semi_decision)
-  {
-    black_assert(encoder); // LCOV_EXCL_LINE
+  tribool solver::_solver_t::solve(
+    scope const& s, logic::formula<logic::LTLPFO> f, bool finite, 
+    size_t k_max, bool semi_decision
+  ) {
+    scope xi = chain(s);
     
-    trace(trace_t::nnf, encoder->get_formula());
+    encoder::encoder enc{f, xi, finite};
+    sat = black::sat::solver::get_solver(sat_backend, xi);
 
-    sat = black::sat::solver::get_solver(sat_backend);
+    trace(trace_t::nnf, xi, enc.get_formula());
 
+    sigma = f.sigma();
     model = false;
+    model_size = 0;
     last_bound = 0;
     for(size_t k = 0; k <= k_max; last_bound = k++)
     {
       trace(k);
       // Generating the k-unraveling.
       // If it is UNSAT, then stop with UNSAT
-      auto unrav = encoder->k_unraveling(k);
-      trace(trace_t::unrav, unrav);
+      auto unrav = enc.k_unraveling(k);
+      trace(trace_t::unrav, xi, unrav);
       sat->assert_formula(unrav);
       if(tribool res = sat->is_sat(); !res)
         return res;
 
       // else, continue to check EMPTY and LOOP.
       // If the k-unrav is SAT assuming EMPTY or LOOP, then stop with SAT
-      auto empty = encoder->k_empty(k);
-      auto loop = encoder->k_loop(k);
-      trace(trace_t::empty, empty);
-      trace(trace_t::loop, loop);
+      auto empty = enc.k_empty(k);
+      auto loop = enc.k_loop(k);
+      trace(trace_t::empty, xi, empty);
+      trace(trace_t::loop, xi, loop);
       if(sat->is_sat_with(empty || loop)) {
         model_size = k + 1;
         model = true;
@@ -191,8 +192,8 @@ namespace black_internal::solver
       // else, generate the PRUNE
       // If the PRUNE is UNSAT, the formula is UNSAT
       if(!semi_decision) {
-        auto prune = encoder->prune(k);
-        trace(trace_t::prune, prune);
+        auto prune = enc.prune(k);
+        trace(trace_t::prune, xi, prune);
         sat->assert_formula(!prune);
         if(tribool res = sat->is_sat(); !res)
           return res;
@@ -291,7 +292,7 @@ namespace black_internal::solver
       },
       [&](quantifier q) -> check_result_t {
         std::vector<variable> new_scope = scope;
-        new_scope.push_back(q.var());
+        new_scope.push_back(q.decl().variable());
         
         return _check_syntax(q.matrix(), err, new_scope);
       }, // LCOV_EXCL_LINE

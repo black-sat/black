@@ -238,8 +238,9 @@ namespace black_internal::logic
 
         bool parens = q.matrix().is<binary<LTLPFO>>();
 
-        for(variable v : q.variables()) {
-          qs += '(' + to_string(v) + " : " + to_string(v.sort()) + ") ";
+        for(var_decl d : q.variables()) {
+          qs += 
+            '(' + to_string(d.variable()) + " : " + to_string(d.sort()) + ") ";
         }
 
         return fmt::format("{}. {}", qs, parens_if_needed(q.matrix(), parens));
@@ -410,11 +411,11 @@ namespace black_internal::logic
       },
       [&](quantifier<FO> q) {
         std::string vars;
-        for(auto x : q.block().variables()) {
+        for(auto d : q.block().variables()) {
           vars += fmt::format(
             " ({} {})", 
-            to_smtlib2(to_underlying(x.unique_id())), 
-            to_string(x.sort())
+            to_smtlib2(to_underlying(d.variable().unique_id())), 
+            to_string(d.sort())
           );
         }
         vars.erase(vars.begin()); 
@@ -462,7 +463,7 @@ namespace black_internal::logic
     );
   }
 
-  std::string to_smtlib2(formula<FO> f) {
+  std::string to_smtlib2(formula<FO> f, scope const& xi) {
     tsl::hopscotch_set<proposition> props;
     tsl::hopscotch_set<variable> vars;
     tsl::hopscotch_set<relation> rels;
@@ -499,18 +500,25 @@ namespace black_internal::logic
     }
     
     for(auto x : vars) {
-      smtlib += 
-        fmt::format(
-          "(declare-const {} {})\n", 
-          to_smtlib2(to_underlying(x.unique_id())), 
-          to_string(x.sort())
-        );
+      auto s = xi.sort(x);
+      
+      if(s)
+        smtlib += 
+          fmt::format(
+            "(declare-const {} {})\n", 
+            to_smtlib2(to_underlying(x.unique_id())), 
+            to_string(*s)
+          );
     }
     
     for(auto r : rels) {
-      std::string args = to_string(r.signature()[0]);
-      for(size_t i = 1; i < r.signature().size(); ++i) {
-        args += " " + to_string(r.signature()[i]);
+      std::optional<std::vector<sort>> signature = xi.signature(r);
+      if(!signature)
+        continue;
+
+      std::string args = to_string(signature->at(0));
+      for(size_t i = 1; i < signature->size(); ++i) {
+        args += " " + to_string(signature->at(i));
       }
 
       smtlib += fmt::format(
@@ -521,16 +529,22 @@ namespace black_internal::logic
     }
     
     for(auto fun : funs) {
-      std::string args = to_string(fun.signature()[0]);
-      for(size_t i = 1; i < fun.signature().size(); ++i) {
-        args += " " + to_string(fun.signature()[i]);
+      std::optional<std::vector<sort>> signature = xi.signature(fun);
+      std::optional<sort> result = xi.sort(fun);
+
+      if(!signature || !result)
+        continue;
+
+      std::string args = to_string(signature->at(0));
+      for(size_t i = 1; i < signature->size(); ++i) {
+        args += " " + to_string(signature->at(i));
       }
 
       smtlib += fmt::format(
         "(declare-fun {} ({}) {})\n", 
         to_smtlib2(to_underlying(fun.unique_id())), 
         args,
-        to_string(fun.result())
+        to_string(*result)
       );
     }
 

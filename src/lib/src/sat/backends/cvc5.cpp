@@ -42,6 +42,10 @@ namespace black_internal::cvc5
 
   namespace cvc = ::cvc5;
   struct cvc5::_cvc5_t {
+    class scope xi;
+
+    _cvc5_t(logic::scope const& _xi) : xi{chain(_xi)} { }
+
     cvc::Solver solver;
     bool sat_response = false;
 
@@ -56,13 +60,13 @@ namespace black_internal::cvc5
     cvc::Term to_cvc5(
       term, tsl::hopscotch_map<variable, cvc::Term> const&env
     );
-    cvc::Sort to_cvc5(sort);
+    cvc::Sort to_cvc5(std::optional<sort>);
 
     cvc::Term to_cvc5(function);
     cvc::Term to_cvc5(relation);
   };
 
-  cvc5::cvc5() : _data{std::make_unique<_cvc5_t>()}
+  cvc5::cvc5(class scope const&xi) : _data{std::make_unique<_cvc5_t>(xi)}
   {
     _data->solver.setLogic("ALL");
     _data->solver.setOption("produce-models", "true");
@@ -120,8 +124,10 @@ namespace black_internal::cvc5
     _data->solver.resetAssertions();
   }
 
-  cvc::Sort cvc5::_cvc5_t::to_cvc5(sort s) {
-    return s.match(
+  cvc::Sort cvc5::_cvc5_t::to_cvc5(std::optional<sort> s) {
+    black_assert(s.has_value());
+    
+    return s->match(
       [&](integer_sort) {
         return solver.getIntegerSort();
       },
@@ -179,19 +185,27 @@ namespace black_internal::cvc5
       },
       [&](quantifier q) { // LCOV_EXCL_LINE
         cvc::Term var = solver.mkVar(
-          to_cvc5(q.var().sort()), to_string(q.var().unique_id())
+          to_cvc5(q.decl().sort()), to_string(q.decl().variable().unique_id())
         );
         
         cvc::Term varlist = solver.mkTerm(cvc::VARIABLE_LIST, {var});
 
         tsl::hopscotch_map<variable, cvc::Term> new_env = env;
-        new_env.insert({q.var(), var});
+        new_env.insert({q.decl().variable(), var});
+
+        auto _xi = std::move(xi);
+        xi = chain(_xi);
+        xi.declare_variable(q.decl());
+
+        cvc::Term cvc5matrix = to_cvc5(q.matrix(), new_env);
+
+        xi = std::move(_xi);
 
         if(q.node_type() == quantifier::type::forall{})
           return 
-            solver.mkTerm(cvc::FORALL, {varlist, to_cvc5(q.matrix(), new_env)});
+            solver.mkTerm(cvc::FORALL, {varlist, cvc5matrix});
         return 
-            solver.mkTerm(cvc::EXISTS, {varlist, to_cvc5(q.matrix(), new_env)});
+            solver.mkTerm(cvc::EXISTS, {varlist, cvc5matrix});
       },
       [&](proposition p) {
         if(auto it = props.find(p); it != props.end())
@@ -235,12 +249,15 @@ namespace black_internal::cvc5
     if(auto it = functions.find(f); it != functions.end())
       return it->second;
 
-    size_t arity = f.signature().size();
+    auto signature = xi.signature(f);
+    black_assert(signature.has_value());
+
+    size_t arity = signature->size();
     std::vector<cvc::Sort> sorts;
     for(size_t i = 0; i < arity; ++i)
-      sorts.push_back(to_cvc5(f.signature()[i]));
+      sorts.push_back(to_cvc5(signature->at(i)));
 
-    cvc::Sort funcSort = solver.mkFunctionSort(sorts, to_cvc5(f.result()));
+    cvc::Sort funcSort = solver.mkFunctionSort(sorts, to_cvc5(xi.sort(f)));
 
     cvc::Term term = solver.mkConst(funcSort, to_string(f.unique_id()));
     functions.insert({f, term});
@@ -251,10 +268,13 @@ namespace black_internal::cvc5
     if(auto it = relations.find(r); it != relations.end())
       return it->second;
 
-    size_t arity = r.signature().size();
+    auto signature = xi.signature(r);
+    black_assert(signature.has_value());
+
+    size_t arity = signature->size();
     std::vector<cvc::Sort> sorts;
     for(size_t i = 0; i < arity; ++i)
-      sorts.push_back(to_cvc5(r.signature()[i]));
+      sorts.push_back(to_cvc5(signature->at(i)));
 
     cvc::Sort funcSort = solver.mkFunctionSort(sorts, solver.getBooleanSort());
 
@@ -287,7 +307,7 @@ namespace black_internal::cvc5
           return it->second;
 
         cvc::Term term = 
-          solver.mkConst(to_cvc5(v.sort()), to_string(v.unique_id()));
+          solver.mkConst(to_cvc5(xi.sort(v)), to_string(v.unique_id()));
         vars.insert({v, term});
         return term;
       },

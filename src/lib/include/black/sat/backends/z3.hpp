@@ -33,7 +33,7 @@ namespace black_internal::z3
   class BLACK_EXPORT z3 : public ::black::sat::solver
   {
   public:
-    z3();
+    z3(class scope const&);
     ~z3() override;
 
     virtual void assert_formula(formula f) override;

@@ -60,14 +60,6 @@ namespace black_internal::logic {
     class boolean bottom() {
       return this->boolean(false);
     }
-
-    class relation relation(identifier name, seq<sort> const& s) {
-      return alphabet_base::relation(name, s);
-    }
-
-    class function function(identifier name, sort result, seq<sort> const& s) {
-      return alphabet_base::function(name, result, s);
-    }
   };
  
   //
@@ -120,6 +112,14 @@ namespace black_internal::logic {
     >;
 
     return atom<Syntax>(static_cast<Derived const&>(*this), v);
+  }
+  
+  //
+  // And the implementation of the subscript operator for variables
+  //
+  template<typename Derived>
+  var_decl variable_decl_op<Derived>::operator[](sort s) const {
+    return s.sigma()->var_decl(static_cast<Derived const&>(*this), s);
   }
 
   //
@@ -654,7 +654,7 @@ namespace black_internal::logic {
   class quantifier_block_view<Syntax>::const_iterator {
   public:
     using difference_type = ssize_t;
-    using value_type = variable;
+    using value_type = var_decl;
 
     // All due constructors. A default-constructed iterator equals to end()
     // because `_quantifier` is empty.
@@ -694,10 +694,10 @@ namespace black_internal::logic {
       return o;
     }
 
-    // Here we just return the variable of the current quantifier
-    variable operator*() const {
+    // Here we just return the declaration of the current quantifier
+    var_decl operator*() const {
       black_assert(_quantifier.has_value());
-      return _quantifier->var();
+      return _quantifier->decl();
     }
 
   private:
@@ -839,7 +839,7 @@ namespace black_internal::logic {
     }
     
     specific_quantifier_block(
-      std::initializer_list<variable> const&vars,
+      std::initializer_list<var_decl> const&vars,
       formula<Syntax> matrix
     ) : specific_quantifier_block{
       create_block<element_t>(fragment_enum_value<E>{}, vars, matrix)
@@ -913,25 +913,6 @@ namespace black_internal::logic {
     }
   };
 
-}
-
-//
-// `seq` class `std::hash` implementation.
-//
-namespace std {
-  template<typename T>
-  struct hash<black_internal::logic::seq<T>> {
-    size_t operator()(black_internal::logic::seq<T> const& s) const {
-      using namespace black_internal::logic;
-      using namespace black_internal;
-
-      size_t h = 0;
-      for(size_t i = 0; i < s.size(); ++i) 
-        h = hash_combine(h, std::hash<T>{}(s[i]));
-
-      return h;
-    }
-  };
 }
 
 #endif // BLACK_LOGIC_SUGAR_HPP_

@@ -54,6 +54,7 @@ namespace black_internal::dimacs
   {
   public:
     solver();
+    solver(scope const&);
 
     virtual ~solver() override;
 

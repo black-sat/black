@@ -36,7 +36,7 @@ namespace black_internal::mathsat
   class BLACK_EXPORT mathsat : public ::black::sat::solver
   {
   public:
-    mathsat();
+    mathsat(scope const& xi);
     virtual ~mathsat() override;
 
     virtual void assert_formula(formula f) override;

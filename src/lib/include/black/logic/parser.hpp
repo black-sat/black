@@ -44,7 +44,7 @@ namespace black_internal
     using error_handler = std::function<void(std::string)>;
 
     parser(
-      logic::alphabet &sigma, logic::sort default_sort, 
+      logic::alphabet &sigma, logic::scope &xi,
       std::istream &stream, error_handler error
     );
     
@@ -60,12 +60,12 @@ namespace black_internal
   // Easy entry-point for parsing formulas
   BLACK_EXPORT
   std::optional<logic::formula<logic::LTLPFO>>
-  parse_formula(logic::alphabet &sigma, logic::sort default_sort,
+  parse_formula(logic::alphabet &sigma, logic::scope &xi,
                 std::string const&s, parser::error_handler error);
 
   BLACK_EXPORT
   std::optional<logic::formula<logic::LTLPFO>>
-  parse_formula(logic::alphabet &sigma, logic::sort default_sort,
+  parse_formula(logic::alphabet &sigma, logic::scope &xi,
                 std::istream &s, parser::error_handler error);
   
   BLACK_EXPORT
@@ -81,17 +81,17 @@ namespace black_internal
   BLACK_EXPORT
   inline std::optional<logic::formula<logic::LTLPFO>>
   parse_formula(
-    logic::alphabet &sigma, logic::sort default_sort, std::string const&s
+    logic::alphabet &sigma, logic::scope &xi, std::string const&s
   ) {
-    return parse_formula(sigma, default_sort, s, [](auto){});
+    return parse_formula(sigma, xi, s, [](auto){});
   }
 
   BLACK_EXPORT
   inline std::optional<logic::formula<logic::LTLPFO>>
   parse_formula(
-    logic::alphabet &sigma, logic::sort default_sort, std::istream &s
+    logic::alphabet &sigma, logic::scope &xi, std::istream &s
   ) {
-    return parse_formula(sigma, default_sort, s, [](auto){});
+    return parse_formula(sigma, xi, s, [](auto){});
   }
 
   BLACK_EXPORT

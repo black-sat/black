@@ -25,6 +25,7 @@
 #define BLACK_LOGIC_CUSTOM_HPP_
 
 namespace black_internal::logic {
+
   //
   // relations and functions support creating the associated atom or application
   // (respectively) with a simple call-like syntax such as f(x, y).
@@ -54,24 +55,17 @@ namespace black_internal::logic {
   };
 
   //
-  // `seq` template class used as a thin hashable
-  // wrapper over `std::vector` of hierarchy objects.
+  // A variable `x` can be subscripted with a sort `s`, as in `x[s]`, to obtain 
+  // the corresponding `var_decl`.
   //
-  // `std::hash` implementation in `interface.hpp`
-  //
-  template<typename T>
-  struct seq 
-  {
-    std::vector<T> elements;
+  struct sort;
+  class var_decl;
 
-    seq(std::initializer_list<T> const& l) : elements{l} { }
-    seq(std::vector<T> const& v) : elements{v} { }
-
-    size_t size() const { return elements.size(); }
-    T operator[](size_t i) const { return elements[i]; }
-
-    friend bool operator==(seq const&, seq const&) = default;
+  template<typename Derived>
+  struct variable_decl_op {
+    var_decl operator[](sort s) const;
   };
+
 }
 
 

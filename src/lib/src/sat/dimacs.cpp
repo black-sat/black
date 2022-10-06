@@ -46,7 +46,10 @@ namespace black_internal::dimacs
     }
   };
 
-  solver::solver() : _data{ std::make_unique<_solver_t>() } { }
+  solver::solver() : 
+    _data{ std::make_unique<_solver_t>() } { }
+
+  solver::solver(scope const&) : solver() { }
 
   solver::~solver() = default;
 

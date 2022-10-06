@@ -33,7 +33,7 @@ namespace black_internal::cvc5
   class BLACK_EXPORT cvc5 : public ::black::sat::solver
   {
   public:
-    cvc5();
+    cvc5(class scope const&);
     ~cvc5() override;
 
     virtual void assert_formula(formula f) override;
