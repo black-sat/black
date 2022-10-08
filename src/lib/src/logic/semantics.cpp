@@ -25,19 +25,37 @@
 
 #include <tsl/hopscotch_map.h>
 
+#include <any>
+
 namespace black_internal::logic {
   
   struct scope::impl_t {
     
+    struct var_record_t {
+      struct sort sort;
+      rigid_t rigid;
+    };
+
+    struct rel_record_t {
+      std::vector<struct sort> signature;
+      rigid_t rigid;
+    };
+
+    struct func_record_t {
+      struct sort result;
+      std::vector<struct sort> signature;
+      rigid_t rigid;
+    };
+
     struct frame_t 
     {  
-      tsl::hopscotch_map<variable, std::tuple<struct sort, rigid_t>> vars;
-      tsl::hopscotch_map<
-        relation, std::tuple<std::vector<struct sort>, rigid_t>
-      > rels;
-      tsl::hopscotch_map<
-        function, std::tuple<struct sort, std::vector<struct sort>, rigid_t>
-      > funcs;
+      tsl::hopscotch_map<variable, var_record_t> vars;
+      tsl::hopscotch_map<relation, rel_record_t> rels;
+      tsl::hopscotch_map<function, func_record_t> funcs;
+      
+      tsl::hopscotch_map<variable, std::any> vars_data;
+      tsl::hopscotch_map<relation, std::any> rels_data;
+      tsl::hopscotch_map<function, std::any> funcs_data;
 
       std::optional<struct sort> default_sort;
       std::shared_ptr<const frame_t> next;
@@ -96,7 +114,7 @@ namespace black_internal::logic {
   }
 
   void scope::declare_variable(variable x, struct sort s, rigid_t r) {
-    _impl->frame->vars.insert({x,{s,r}});
+    _impl->frame->vars.insert({x, {s,r}});
   }
 
   void scope::declare_function(
@@ -116,7 +134,7 @@ namespace black_internal::logic {
 
     while(current) {
       if(auto it = current->vars.find(x); it != current->vars.end())
-        return std::get<struct sort>(it->second);
+        return it->second.sort;
       current = current->next;
     }
 
@@ -128,7 +146,7 @@ namespace black_internal::logic {
 
     while(current) {
       if(auto it = current->funcs.find(f); it != current->funcs.end())
-        return std::get<struct sort>(it->second);
+        return it->second.result;
       current = current->next;
     }
 
@@ -140,7 +158,7 @@ namespace black_internal::logic {
 
     while(current) {
       if(auto it = current->funcs.find(f); it != current->funcs.end())
-        return std::get<std::vector<struct sort>>(it->second);
+        return it->second.signature;
       current = current->next;
     }
 
@@ -152,7 +170,7 @@ namespace black_internal::logic {
 
     while(current) {
       if(auto it = current->rels.find(r); it != current->rels.end())
-        return std::get<std::vector<struct sort>>(it->second);
+        return it->second.signature;
       current = current->next;
     }
 
@@ -164,7 +182,7 @@ namespace black_internal::logic {
 
     while(current) {
       if(auto it = current->vars.find(x); it != current->vars.end())
-        return std::get<rigid_t>(it->second) == rigid_t::rigid;
+        return it->second.rigid == rigid_t::rigid;
       current = current->next;
     }
 
@@ -176,7 +194,7 @@ namespace black_internal::logic {
 
     while(current) {
       if(auto it = current->rels.find(r); it != current->rels.end())
-        return std::get<rigid_t>(it->second) == rigid_t::rigid;
+        return it->second.rigid == rigid_t::rigid;
       current = current->next;
     }
 
@@ -188,11 +206,59 @@ namespace black_internal::logic {
 
     while(current) {
       if(auto it = current->funcs.find(f); it != current->funcs.end())
-        return std::get<rigid_t>(it->second) == rigid_t::rigid;
+        return it->second.rigid == rigid_t::rigid;
       current = current->next;
     }
 
     return false;
+  }
+
+  void scope::set_data(variable x, std::any data) {
+    _impl->frame->vars_data.insert({x, std::move(data)});
+  }
+
+  void scope::set_data(relation r, std::any data) {
+    _impl->frame->rels_data.insert({r, std::move(data)});
+  }
+
+  void scope::set_data(function f, std::any data) {
+    _impl->frame->funcs_data.insert({f, std::move(data)});
+  }
+
+  std::any scope::data(variable x) const {
+    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+
+    while(current) {
+      if(auto it = current->vars_data.find(x); it != current->vars_data.end())
+        return it->second;
+      current = current->next;
+    }
+
+    return {};
+  }
+
+  std::any scope::data(relation r) const {
+    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+
+    while(current) {
+      if(auto it = current->rels_data.find(r); it != current->rels_data.end())
+        return it->second;
+      current = current->next;
+    }
+
+    return {};
+  }
+
+  std::any scope::data(function f) const {
+    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+
+    while(current) {
+      if(auto it = current->funcs_data.find(f); it != current->funcs_data.end())
+        return it->second;
+      current = current->next;
+    }
+
+    return {};
   }
 
 

@@ -97,6 +97,14 @@ namespace black_internal::logic {
     bool is_rigid(relation) const;
     bool is_rigid(function) const;
 
+    void set_data(variable, std::any);
+    void set_data(relation, std::any);
+    void set_data(function, std::any);
+
+    std::any data(variable) const;
+    std::any data(relation) const;
+    std::any data(function) const;
+
   private:
     struct impl_t;
     std::unique_ptr<impl_t> _impl;
@@ -105,6 +113,22 @@ namespace black_internal::logic {
   inline scope::chain_t chain(scope const&s) {
     return {s};
   }
+
+  class nest_scope_t 
+  {
+  public:
+    nest_scope_t(scope &xi) : _ref{xi}, _old{std::move(xi)} {
+      _ref = chain(_old);
+    }
+
+    ~nest_scope_t() {
+      _ref = std::move(_old);
+    }
+    
+  private:
+    scope &_ref;
+    scope _old;
+  };
 }
 
 #endif

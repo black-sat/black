@@ -42,29 +42,24 @@ namespace black_internal::cvc5
 
   namespace cvc = ::cvc5;
   struct cvc5::_cvc5_t {
+    class scope global_xi;
     class scope xi;
 
-    _cvc5_t(logic::scope const& _xi) : xi{chain(_xi)} { }
+    _cvc5_t(logic::scope const& _xi) 
+      : global_xi{chain(_xi)}, xi{chain(global_xi)} { }
 
     cvc::Solver solver;
     bool sat_response = false;
 
-    tsl::hopscotch_map<variable, cvc::Term> vars;
     tsl::hopscotch_map<proposition, cvc::Term> props;
-    tsl::hopscotch_map<function, cvc::Term> functions;
-    tsl::hopscotch_map<relation, cvc::Term> relations;
     tsl::hopscotch_map<sort, cvc::Sort> sorts;
 
-    cvc::Term to_cvc5(
-      formula, tsl::hopscotch_map<variable, cvc::Term> const&env
-    );
-    cvc::Term to_cvc5(
-      term, tsl::hopscotch_map<variable, cvc::Term> const&env
-    );
-    cvc::Sort to_cvc5(std::optional<sort>);
-
+    cvc::Term to_cvc5(formula);
+    cvc::Term to_cvc5(term);
     cvc::Term to_cvc5(function);
     cvc::Term to_cvc5(relation);
+    cvc::Sort to_cvc5(std::optional<sort>);
+
   };
 
   cvc5::cvc5(class scope const&xi) : _data{std::make_unique<_cvc5_t>(xi)}
@@ -147,9 +142,7 @@ namespace black_internal::cvc5
     return result;
   }
 
-  cvc::Term cvc5::_cvc5_t::to_cvc5(
-    formula f, tsl::hopscotch_map<variable, cvc::Term> const&env
-  ) {
+  cvc::Term cvc5::_cvc5_t::to_cvc5(formula f) {
     return f.match(
       [&](boolean b) { // LCOV_EXCL_LINE
         return b.value() ? solver.mkTrue() : solver.mkFalse();
@@ -157,7 +150,7 @@ namespace black_internal::cvc5
       [&](atom a) -> cvc::Term { // LCOV_EXCL_LINE
         std::vector<cvc::Term> cvc_terms;
         for(term t : a.terms())
-          cvc_terms.push_back(to_cvc5(t, env));
+          cvc_terms.push_back(to_cvc5(t));
 
         cvc::Term rel = to_cvc5(a.rel());
         
@@ -167,7 +160,7 @@ namespace black_internal::cvc5
       [&](equality e, auto args) {
         std::vector<cvc::Term> terms;
         for(auto t : args)  
-          terms.push_back(to_cvc5(t, env));
+          terms.push_back(to_cvc5(t));
 
         return e.match(
           [&](equal) { 
@@ -179,9 +172,7 @@ namespace black_internal::cvc5
         );
       },
       [&](comparison c, auto left, auto right) {
-        std::vector<cvc::Term> terms = { 
-          to_cvc5(left, env), to_cvc5(right, env) 
-        };
+        std::vector<cvc::Term> terms = { to_cvc5(left), to_cvc5(right) };
         
         return c.match(
           [&](less_than) { 
@@ -199,23 +190,19 @@ namespace black_internal::cvc5
         );
       },
       [&](quantifier q) { // LCOV_EXCL_LINE
+        nest_scope_t nest{xi};
+        
+        xi.declare_variable(q.decl());
+
         cvc::Term var = solver.mkVar(
           to_cvc5(q.decl().sort()), to_string(q.decl().variable().unique_id())
         );
+
+        xi.set_data(q.decl().variable(), var);
         
+        cvc::Term cvc5matrix = to_cvc5(q.matrix());
+
         cvc::Term varlist = solver.mkTerm(cvc::VARIABLE_LIST, {var});
-
-        tsl::hopscotch_map<variable, cvc::Term> new_env = env;
-        new_env.insert({q.decl().variable(), var});
-
-        auto _xi = std::move(xi);
-        xi = chain(_xi);
-        xi.declare_variable(q.decl());
-
-        cvc::Term cvc5matrix = to_cvc5(q.matrix(), new_env);
-
-        xi = std::move(_xi);
-
         if(q.node_type() == quantifier::type::forall{})
           return 
             solver.mkTerm(cvc::FORALL, {varlist, cvc5matrix});
@@ -298,9 +285,7 @@ namespace black_internal::cvc5
     return term;
   }
 
-  cvc::Term cvc5::_cvc5_t::to_cvc5(
-    term t, tsl::hopscotch_map<variable, cvc::Term> const&env
-  ) {
+  cvc::Term cvc5::_cvc5_t::to_cvc5(term t) {
     return t.match(
       [&](constant, auto n) { // LCOV_EXCL_LINE
         return n.match(
@@ -315,8 +300,9 @@ namespace black_internal::cvc5
         );
       },
       [&](variable v) { // LCOV_EXCL_LINE
-        if(auto it = env.find(v); it != env.end())
-          return it->second;
+        
+        if(auto *var = std::any_cast<cvc5::Term>(&cxi.data(v)); var != nullptr)
+          return *var;
 
         if(auto it = vars.find(v); it != vars.end())
           return it->second;
