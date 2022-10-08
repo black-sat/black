@@ -192,7 +192,7 @@ namespace black_internal::cvc5
       [&](quantifier q) { // LCOV_EXCL_LINE
         logic::nest_scope_t nest{xi};
         
-        xi.declare_variable(q.decl());
+        xi.declare(q.decl());
 
         cvc::Term var = solver.mkVar(
           to_cvc5(q.decl().sort()), to_string(q.decl().variable().unique_id())

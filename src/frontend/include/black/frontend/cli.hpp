@@ -74,7 +74,7 @@ namespace black::frontend
     inline std::optional<std::string> sat_backend;
 
     // domain for first-order variables
-    inline std::optional<std::string> domain;
+    inline std::optional<std::string> default_sort;
 
     // disable the PRUNE rule
     inline bool semi_decision = false;

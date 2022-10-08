@@ -417,11 +417,9 @@ namespace black::frontend
     std::istream &tracefile
   ) {
     black::alphabet sigma;
-    black::scope xi{sigma};
-    xi.set_default_sort(sigma.integer_sort());
-
+    
     std::optional<formula> f = 
-      black::parse_formula(sigma, xi, file, formula_syntax_error_handler(path));
+      black::parse_formula(sigma, file, formula_syntax_error_handler(path));
 
     black_assert(f.has_value());
 
@@ -438,8 +436,15 @@ namespace black::frontend
     }
 
     if(trace.muc.has_value()) {
+      scope xi{sigma};
+      xi.set_default_sort(sigma.named_sort("default"));
+    
+      if(cli::default_sort == "Int")
+        xi.set_default_sort(sigma.integer_sort());
+      else if(cli::default_sort == "Real")
+        xi.set_default_sort(sigma.real_sort());
+
       black::solver slv;
-      
       if(slv.solve(xi, *trace.muc, cli::finite) != false) {
         io::println("SAT CORE");
         quit(status_code::failed_check);

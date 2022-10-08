@@ -73,16 +73,20 @@ namespace black_internal::logic {
     void set_default_sort(std::optional<struct sort> s);
     std::optional<struct sort> default_sort() const;
 
-    void declare_variable(variable, struct sort, rigid_t = non_rigid);
-    void declare_relation(
+    void declare(variable, struct sort, rigid_t = non_rigid);
+    void declare(
       relation, std::vector<struct sort>, rigid_t = non_rigid
     );
-    void declare_function(
+    void declare(
       function, struct sort, std::vector<struct sort>, rigid_t = non_rigid
     );
 
-    void declare_variable(var_decl d, rigid_t r = non_rigid) {
-      declare_variable(d.variable(), d.sort(), r);
+    void declare(
+      function, std::vector<struct sort>, rigid_t = non_rigid
+    );
+
+    void declare(var_decl d, rigid_t r = non_rigid) {
+      declare(d.variable(), d.sort(), r);
     }
 
     std::optional<struct sort> sort(variable) const;
@@ -90,8 +94,11 @@ namespace black_internal::logic {
 
     std::optional<std::vector<struct sort>> signature(function) const;
     std::optional<std::vector<struct sort>> signature(relation) const;
+    
+    std::optional<struct sort>
+    type_check(term<LTLPFO> t, std::function<void(std::string)> err);
 
-    std::optional<struct sort> sort(term<LTLPFO> t) const;
+    bool type_check(formula<LTLPFO> f, std::function<void(std::string)> err);
 
     bool is_rigid(variable) const;
     bool is_rigid(relation) const;
@@ -101,7 +108,7 @@ namespace black_internal::logic {
     void set_data(Key k, T&& t) {
       set_data_inner(k, std::any{std::forward<T>(t)});
     }
-    
+
     template<typename T, typename Key>
     std::optional<T> data(Key k) const {
       std::any a = data_inner(k);

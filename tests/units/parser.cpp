@@ -68,12 +68,7 @@ TEST_CASE("Syntax errors") {
 TEST_CASE("Roundtrip of parser and pretty-printer")
 {
   alphabet sigma;
-  scope xi{sigma};
-
-  sort s = sigma.integer_sort();
-
-  xi.set_default_sort(s);
-
+  
   proposition p = sigma.proposition("p{}");
   proposition q = sigma.proposition("");
   variable x = sigma.variable("x\\");
@@ -82,6 +77,8 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
 
   function g = sigma.function("g");
   relation r = sigma.relation("r");
+
+  sort s = sigma.integer_sort();
 
   std::vector<formula> tests = {
     p, !p, X(p), F(p), G(p), O(p), H(p), X(F(p)), G(F(p)), X(G(p)),
@@ -104,7 +101,7 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
 
   for(formula f : tests) {
     DYNAMIC_SECTION("Roundtrip for formula: " << to_string(f)) {
-      auto result = parse_formula(sigma, xi, to_string(f), [](auto error){
+      auto result = parse_formula(sigma, to_string(f), [](auto error){
         INFO("parsing error: " << error);
         REQUIRE(false);
       });

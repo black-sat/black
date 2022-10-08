@@ -95,7 +95,7 @@ TEST_CASE("Solver")
           auto x = sigma.variable("x");
           auto rel = sigma.relation("r");
 
-          xi.declare_relation(rel, {sigma.integer_sort()});
+          xi.declare(rel, {sigma.integer_sort()});
 
           std::vector<formula> tests = {
             G(x > 0), F(x == 1), F(-x == -x), !rel(prev(x)), rel(wprev(x)),
@@ -126,7 +126,7 @@ TEST_CASE("Solver")
           proposition p = sigma.proposition("p");
           function func = sigma.function("f");
 
-          xi.declare_function(
+          xi.declare(
             func, sigma.integer_sort(), {sigma.integer_sort()}
           );
 
@@ -170,7 +170,7 @@ TEST_CASE("Solver")
       {
         xi.set_default_sort(sigma.integer_sort());
 
-        auto result = parse_formula(sigma, xi, s);
+        auto result = parse_formula(sigma, s);
 
         REQUIRE(result.has_value());
 

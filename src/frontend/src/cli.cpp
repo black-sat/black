@@ -118,10 +118,6 @@ namespace black::frontend
     return format == "readable" || format == "json"; // LCOV_EXCL_LINE
   }
 
-  static bool is_sort(std::string const& s) {
-    return s == "Int" || s == "Real"; // LCOV_EXCL_LINE
-  }
-
   //
   // main command-line parsing entry-point
   //
@@ -148,11 +144,11 @@ namespace black::frontend
         % "print the model of the formula, if any",
       option("-c", "--unsat-core").set(cli::unsat_core)
         % "for unsatisfiable formulas, compute the minimum unsat core",
-      (option("-d", "--domain")
-        & value(is_sort, "sort", cli::domain))
-        % "select the domain for first-order variables.\n"
+      (option("-d", "--default-sort")
+        & value("sort", cli::default_sort))
+        % "select the default-sort for first-order variables.\n"
           "Mandatory for first-order formulas.\n"
-          "Accepted domains: Int, Real",
+          "Accepted default-sorts: Int, Real",
       option("-s", "--semi-decision").set(cli::semi_decision)
         % "disable termination checks for unsatisfiable formulas, speeding up "
           "the execution for satisfiable ones.\n"
@@ -181,6 +177,10 @@ namespace black::frontend
           "Default: 0",
       option("--finite").set(cli::finite)
         % "treat formulas as LTLf and expect a finite model",
+      (option("-d", "--default-sort")
+        & value("sort", cli::default_sort))
+        % "select the default sort for first-order variables.\n"
+          "Used for checking the MUC.\n",
       (option("--verbose").set(cli::verbose))
         % "output a verbose log",
       (option("-f", "--formula") & value("formula", cli::formula))

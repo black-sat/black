@@ -79,22 +79,31 @@ namespace black::frontend {
   int solve(std::optional<std::string> const&path, std::istream &file)
   {
     black::alphabet sigma;
-    black::scope xi{sigma};
-
     std::optional<formula> f;
+
+    f = black::parse_formula(sigma, file, formula_syntax_error_handler(path));
+    black_assert(f.has_value());
+
+    if(cli::debug == "print")
+      io::println(
+        "{}: debug: parsed formula: {}", cli::command_name, to_string(*f)
+      );
+
+    black::scope xi{sigma};
 
     xi.set_default_sort(sigma.named_sort("default"));
     
-    if(cli::domain == "Int")
+    if(cli::default_sort == "Int")
       xi.set_default_sort(sigma.integer_sort());
-    else if(cli::domain == "Real")
+    else if(cli::default_sort == "Real")
       xi.set_default_sort(sigma.real_sort());
+    
+    [[maybe_unused]]
+    bool ok = xi.type_check(*f, formula_syntax_error_handler(path));
+    black_assert(ok);
 
-    f = black::parse_formula(
-      sigma, xi, file, formula_syntax_error_handler(path)
-    );
-
-    black_assert(f.has_value());
+    ok = black::solver::check_syntax(*f, formula_syntax_error_handler(path));
+    black_assert(ok);    
 
     uint8_t features = formula_features(*f);
 
@@ -162,17 +171,6 @@ namespace black::frontend {
       );
       quit(status_code::command_line_error);
     }
-
-    if(cli::debug == "print")
-      io::println(
-        "{}: debug: parsed formula: {}", cli::command_name, to_string(*f)
-      );
-
-    [[maybe_unused]]
-    bool ok = 
-      black::solver::check_syntax(*f, formula_syntax_error_handler(path));
-    
-    black_assert(ok); // the error handler quits
 
     black::solver slv;
 

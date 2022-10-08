@@ -22,10 +22,13 @@
 // SOFTWARE.
 
 #include <black/logic/logic.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <tsl/hopscotch_map.h>
 
 #include <any>
+
+#include <iostream>
 
 namespace black_internal::logic {
   
@@ -83,7 +86,6 @@ namespace black_internal::logic {
 
     alphabet &sigma;
     std::shared_ptr<frame_t> frame;
-    mutable tsl::hopscotch_map<term<LTLPFO>, struct sort> cache;
   };
 
   scope::scope(alphabet &sigma, std::optional<struct sort> def) 
@@ -110,20 +112,35 @@ namespace black_internal::logic {
   }
 
   std::optional<sort> scope::default_sort() const {
-    return _impl->frame->default_sort;
+    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+
+    while(current) {
+      if(current->default_sort.has_value())
+        return current->default_sort;
+      current = current->next;
+    }
+
+    return {};
   }
 
-  void scope::declare_variable(variable x, struct sort s, rigid_t r) {
+  void scope::declare(variable x, struct sort s, rigid_t r) {
     _impl->frame->vars.insert({x, {s,r}});
   }
 
-  void scope::declare_function(
+  void scope::declare(
     function f, struct sort s, std::vector<struct sort> args, rigid_t r
   ) {
     _impl->frame->funcs.insert({f, {s, std::move(args), r}});
   }
   
-  void scope::declare_relation(
+  void scope::declare(
+    function f, std::vector<struct sort> args, rigid_t r
+  ) {
+    black_assert(default_sort().has_value());
+    _impl->frame->funcs.insert({f, {*default_sort(), std::move(args), r}});
+  }
+  
+  void scope::declare(
     relation r, std::vector<struct sort> args, rigid_t rigid
   ) {
     _impl->frame->rels.insert({r, {std::move(args), rigid}});
@@ -138,7 +155,7 @@ namespace black_internal::logic {
       current = current->next;
     }
 
-    return _impl->frame->default_sort;
+    return default_sort();
   }
 
   std::optional<sort> scope::sort(function f) const {
@@ -150,7 +167,7 @@ namespace black_internal::logic {
       current = current->next;
     }
 
-    return _impl->frame->default_sort;
+    return default_sort();
   }
 
   std::optional<std::vector<sort>> scope::signature(function f) const {
@@ -261,46 +278,260 @@ namespace black_internal::logic {
     return {};
   }
 
+  struct type_checker 
+  {
+    template<typename F>
+    type_checker(scope &_xi, F _err) 
+      : global{_xi}, xi{chain(_xi)}, err{_err} { }
 
-  std::optional<sort> scope::sort(term<LTLPFO> t) const {
+    bool type_check_rel_func(hierarchy auto h, auto terms);
+
+    std::optional<sort> type_check(term<LTLPFO> t);
+    bool type_check(formula<LTLPFO> f);
+
+    scope &global;
+    scope xi;
+    std::function<void(std::string)> err;
+  };
+
+  std::optional<struct sort>
+  scope::type_check(term<LTLPFO> t, std::function<void(std::string)> err) {
+    type_checker checker{*this, err};
+
+    return checker.type_check(t);
+  }
+
+  bool 
+  scope::type_check(formula<LTLPFO> f, std::function<void(std::string)> err) {
+    type_checker checker{*this, err};
+
+    return checker.type_check(f);
+  }
+
+  bool type_checker::type_check_rel_func(hierarchy auto h, auto terms) {
+    std::vector<sort> sorts;
+    for(auto t : terms) {
+      auto s = type_check(t);
+      if(!s.has_value())
+        return false;
+      
+      sorts.push_back(*s);
+    }
+
+    auto signature = xi.signature(h);
+    if(!signature.has_value()) {
+      if(!global.default_sort().has_value()) {
+        err("Use of undeclared function/relation '" + to_string(h) + "'");
+        return false;
+      }
+      global.declare(h, sorts);
+      signature = sorts;
+    }
+
+    if(signature->size() != sorts.size()) {
+      err(
+        "Function/relation '" + to_string(h) + "' expects " + 
+        std::to_string(signature->size()) + " arguments, " + 
+        std::to_string(sorts.size()) + " given"
+      );
+      return false;
+    }
+
+    for(size_t i = 0; i < signature->size(); ++i) {
+      if(sorts[i] != signature->at(i)) {
+        err(
+          "In call of function/relation '" + to_string(h) + 
+          "', argument " + std::to_string(i) + " has wrong sort (expected '" +
+          to_string(signature->at(i)) + "', given '" + 
+          to_string(sorts[i]) + "')"
+        );
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  std::optional<sort> 
+  type_checker::type_check(term<LTLPFO> t) {
     using S = std::optional<struct sort>;
 
-    if(auto it = _impl->cache.find(t); it != _impl->cache.end())
-      return it->second;
-
-    S result = t.match(
+    return t.match(
       [&](constant<LTLPFO>, auto value) -> S {
         return value.match(
-          [&](integer) { return _impl->sigma.integer_sort(); },
-          [&](real)    { return _impl->sigma.real_sort(); }
+          [&](integer) { return t.sigma()->integer_sort(); },
+          [&](real)    { return t.sigma()->real_sort(); }
         );
       },
-      [&](variable x) {
-        return sort(x);
+      [&](variable x) -> S { 
+        if(auto s = xi.sort(x); s.has_value())
+          return *s;
+        
+        err("Use of undeclared variable '" + to_string(x) + "'");
+        return {};
       },
-      [&](application<LTLPFO> app) {
-        return sort(app.func());
+      [&](application<LTLPFO>, auto func, auto terms) -> S {
+        if(!type_check_rel_func(func, terms))
+          return {};
+
+        return xi.sort(func);
       },
-      [&](to_integer<LTLPFO>) -> S {
-        return _impl->sigma.integer_sort();
+      [&](to_integer<LTLPFO>, auto arg) -> S {
+        std::optional<struct sort> argsort = type_check(arg);
+        if(!argsort)
+          return {};
+        if(!argsort->is<arithmetic_sort>()) {
+          err("to_int() can only be applied to terms of arithmetic sort");
+          return {};
+        }
+          
+        return t.sigma()->integer_sort();
       },
-      [&](to_real<LTLPFO>) -> S {
-        return _impl->sigma.real_sort();
+      [&](to_real<LTLPFO>, auto arg) -> S {
+        std::optional<struct sort> argsort = type_check(arg);
+        if(!argsort)
+          return {};
+        if(!argsort->is<arithmetic_sort>()) {
+          err("to_real() can only be applied to terms of arithmetic sort");
+          return {};
+        }
+          
+        return t.sigma()->real_sort();
       },
       [&](unary_term<LTLPFO>, auto arg) { 
-        return sort(arg);
+        return type_check(arg);
       },
-      [&](binary_term<LTLPFO>, auto left, [[maybe_unused]] auto right) -> S {
-        black_assert(sort(left) == sort(right));
-        
-        return sort(left);
+      [&](int_division<LTLPFO>, auto left, auto right) -> S {
+        auto leftsort = type_check(left);
+        if(!leftsort.has_value())
+          return {};
+
+        auto rightsort = type_check(right);
+        if(!rightsort.has_value())
+          return {};
+
+        if(leftsort != t.sigma()->integer_sort() ||
+           rightsort != t.sigma()->integer_sort())
+        {
+          err("Integer division operator must applied to terms of 'Int' sort");
+          return {};
+        }
+
+        return t.sigma()->integer_sort();
+      },
+      [&](division<LTLPFO>, auto left, auto right) -> S {
+        std::optional<struct sort> leftsort = type_check(left);
+        if(!leftsort.has_value())
+          return {};
+
+        std::optional<struct sort> rightsort = type_check(right);
+        if(!rightsort.has_value())
+          return {};
+
+        if(!leftsort->is<arithmetic_sort>() ||
+           !rightsort->is<arithmetic_sort>())
+        {
+          err("Division operator applied to terms of non-arithmetic sort");
+          return {};
+        }
+
+        return t.sigma()->real_sort();
+      },
+      [&](binary_term<LTLPFO>, auto left, auto right) -> S {
+        std::optional<struct sort> leftsort = type_check(left);
+        if(!leftsort.has_value())
+          return {};
+
+        std::optional<struct sort> rightsort = type_check(right);
+        if(!rightsort.has_value())
+          return {};
+
+        if(!leftsort->is<arithmetic_sort>() ||
+           !rightsort->is<arithmetic_sort>())
+        {
+          err("Arithmetic operator applied to terms of non-arithmetic sort");
+          return {};
+        }
+
+        if(leftsort != rightsort)
+          return t.sigma()->real_sort();
+        return *leftsort;
       }
     );
+  }
 
-    if(result)
-      _impl->cache.insert({t, *result});
+  bool type_checker::type_check(formula<LTLPFO> f) {
+    return f.match(
+      [](boolean) { return true; },
+      [](proposition) { return true; },
+      [&](atom<LTLPFO>, auto rel, auto terms) {
+        return type_check_rel_func(rel, terms);
+      },
+      [&](equality<LTLPFO>, auto terms) {
+        std::vector<sort> sorts;
+        for(auto t : terms) {
+          auto ts = type_check(t);
+          if(!ts) {
+            std::cerr << "Here 2\n";
+            return false;
+          }
+          sorts.push_back(*ts);
+        }
+        if(
+          std::adjacent_find(
+            sorts.begin(), sorts.end(), std::not_equal_to<>{}
+          ) != sorts.end()
+        ) {
+          err(
+            "Equal/distinct predicate must be applied to terms of equal sort"
+          );
+          return false;
+        }
+        return true;
+      },
+      [&](comparison<LTLPFO>, auto left, auto right) {
+        std::optional<struct sort> leftsort = type_check(left);
+        std::optional<struct sort> rightsort = type_check(right);
 
-    return result;
+        if(!leftsort || !rightsort) {
+          std::cerr << "Here 3\n";
+          return false;
+        }
+
+        if(!leftsort->is<arithmetic_sort>() ||
+           !rightsort->is<arithmetic_sort>()) 
+        {
+          err(
+            "Arithmetic comparison predicates applied to terms "
+            "of non-arithmetic sorts"
+          );
+          return false;
+        }
+        
+        if(leftsort != rightsort) {
+          err(
+            "Arithmetic comparison operators applied to terms of different "
+            "sorts"
+          );
+          return false;
+        }
+        return true;
+      },
+      [&](quantifier_block<LTLPFO> q) {
+        nest_scope_t nest{xi};
+
+        for(auto d : q.variables())
+          xi.declare(d, scope::rigid);
+        
+        return type_check(q.matrix());
+      },
+      [&](unary<LTLPFO>, auto arg) {
+        return type_check(arg);
+      },
+      [&](binary<LTLPFO>, auto left, auto right) {
+        return type_check(left) && type_check(right);
+      }
+    );
   }
 
 }

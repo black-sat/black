@@ -385,7 +385,7 @@ namespace black_internal::z3
           upgrade_solver();
 
         nest_scope_t nest{xi};
-        xi.declare_variable(q.decl());
+        xi.declare(q.decl());
 
         auto result = Z3_mk_quantifier_const(
           context, forall, 0, 1, &var, 0, nullptr, to_z3(q.matrix())

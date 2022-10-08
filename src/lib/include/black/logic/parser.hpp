@@ -43,10 +43,7 @@ namespace black_internal
   public:
     using error_handler = std::function<void(std::string)>;
 
-    parser(
-      logic::alphabet &sigma, logic::scope &xi,
-      std::istream &stream, error_handler error
-    );
+    parser(logic::alphabet &sigma, std::istream &stream, error_handler error);
     
     ~parser();
 
@@ -60,44 +57,19 @@ namespace black_internal
   // Easy entry-point for parsing formulas
   BLACK_EXPORT
   std::optional<logic::formula<logic::LTLPFO>>
-  parse_formula(logic::alphabet &sigma, logic::scope &xi,
-                std::string const&s, parser::error_handler error);
-
-  BLACK_EXPORT
-  std::optional<logic::formula<logic::LTLPFO>>
-  parse_formula(logic::alphabet &sigma, logic::scope &xi,
-                std::istream &s, parser::error_handler error);
-  
-  BLACK_EXPORT
-  std::optional<logic::formula<logic::LTLPFO>>
-  parse_formula(logic::alphabet &sigma, 
-                std::string const&s, parser::error_handler error);
-
-  BLACK_EXPORT
-  std::optional<logic::formula<logic::LTLPFO>>
-  parse_formula(logic::alphabet &sigma,
-                std::istream &s, parser::error_handler error);
-
-  BLACK_EXPORT
-  inline std::optional<logic::formula<logic::LTLPFO>>
   parse_formula(
-    logic::alphabet &sigma, logic::scope &xi, std::string const&s
-  ) {
-    return parse_formula(sigma, xi, s, [](auto){});
-  }
+    logic::alphabet &sigma, std::string const&s, parser::error_handler error
+  );
 
   BLACK_EXPORT
-  inline std::optional<logic::formula<logic::LTLPFO>>
+  std::optional<logic::formula<logic::LTLPFO>>
   parse_formula(
-    logic::alphabet &sigma, logic::scope &xi, std::istream &s
-  ) {
-    return parse_formula(sigma, xi, s, [](auto){});
-  }
+    logic::alphabet &sigma, std::istream &s, parser::error_handler error
+  );
 
   BLACK_EXPORT
   inline std::optional<logic::formula<logic::LTLPFO>>
-  parse_formula(logic::alphabet &sigma, std::string const&s) 
-  {
+  parse_formula(logic::alphabet &sigma, std::string const&s) {
     return parse_formula(sigma, s, [](auto){});
   }
 
