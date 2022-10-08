@@ -451,17 +451,14 @@ namespace black_internal
 
     consume(); // consume the dot
 
-    auto xi = std::move(_xi);
-    _xi = chain(xi);
+    nest_scope_t nest{_xi};
 
     for(auto d : vars)
-      xi.declare_variable(d, scope::rigid);
+      _xi.declare_variable(d, scope::rigid);
 
     std::optional<formula> matrix = parse_primary();
     if(!matrix)
       return {};
-
-    _xi = std::move(xi);
 
     if(q == quantifier::type::exists{})
       return exists_block(vars, *matrix);

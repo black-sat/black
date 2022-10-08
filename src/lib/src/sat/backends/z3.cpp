@@ -384,15 +384,12 @@ namespace black_internal::z3
         if(forall)
           upgrade_solver();
 
-        scope _xi = std::move(xi);
-        xi = chain(_xi);
+        nest_scope_t nest{xi};
         xi.declare_variable(q.decl());
 
         auto result = Z3_mk_quantifier_const(
           context, forall, 0, 1, &var, 0, nullptr, to_z3(q.matrix())
         );
-
-        xi = std::move(_xi);
 
         return result;
       },

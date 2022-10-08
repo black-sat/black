@@ -34,6 +34,7 @@
 
 namespace black_internal::logic {
   class scope;
+  class nest_scope_t;
 }
 
 namespace black {
@@ -47,6 +48,7 @@ namespace black {
       using black_internal::logic::alphabet;
       using black_internal::logic::var_decl;
       using black_internal::logic::scope;
+      using black_internal::logic::nest_scope_t;
       using black_internal::logic::otherwise;
       using black_internal::logic::syntax_element;
       using black_internal::logic::fragment;

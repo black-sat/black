@@ -275,15 +275,13 @@ namespace black_internal::encoder
         );
       },
       [&](quantifier<LTLPFO> q) {
-        scope xi = std::move(_xi);
-        _xi = chain(xi);
-        xi.declare_variable(q.decl(), scope::rigid);
+        nest_scope_t nest{_xi};
+        
+        _xi.declare_variable(q.decl(), scope::rigid);
 
         auto result = quantifier<FO>(
           q.node_type(), q.decl(), to_ground_snf(q.matrix(), k)
         );
-
-        _xi = std::move(xi);
 
         return result;
       }, // LCOV_EXCL_LINE
