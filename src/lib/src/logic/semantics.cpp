@@ -213,19 +213,19 @@ namespace black_internal::logic {
     return false;
   }
 
-  void scope::set_data(variable x, std::any data) {
+  void scope::set_data_inner(variable x, std::any data) {
     _impl->frame->vars_data.insert({x, std::move(data)});
   }
 
-  void scope::set_data(relation r, std::any data) {
+  void scope::set_data_inner(relation r, std::any data) {
     _impl->frame->rels_data.insert({r, std::move(data)});
   }
 
-  void scope::set_data(function f, std::any data) {
+  void scope::set_data_inner(function f, std::any data) {
     _impl->frame->funcs_data.insert({f, std::move(data)});
   }
 
-  std::any scope::data(variable x) const {
+  std::any scope::data_inner(variable x) const {
     std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
 
     while(current) {
@@ -237,7 +237,7 @@ namespace black_internal::logic {
     return {};
   }
 
-  std::any scope::data(relation r) const {
+  std::any scope::data_inner(relation r) const {
     std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
 
     while(current) {
@@ -249,7 +249,7 @@ namespace black_internal::logic {
     return {};
   }
 
-  std::any scope::data(function f) const {
+  std::any scope::data_inner(function f) const {
     std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
 
     while(current) {

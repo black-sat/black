@@ -97,15 +97,30 @@ namespace black_internal::logic {
     bool is_rigid(relation) const;
     bool is_rigid(function) const;
 
-    void set_data(variable, std::any);
-    void set_data(relation, std::any);
-    void set_data(function, std::any);
+    template<typename T, typename Key>
+    void set_data(Key k, T&& t) {
+      set_data_inner(k, std::any{std::forward<T>(t)});
+    }
+    
+    template<typename T, typename Key>
+    std::optional<T> data(Key k) const {
+      std::any a = data_inner(k);
 
-    std::any data(variable) const;
-    std::any data(relation) const;
-    std::any data(function) const;
+      if(T *t = std::any_cast<T>(&a); t != nullptr)
+        return *t;
+
+      return {};
+    }
+
 
   private:
+    void set_data_inner(variable, std::any);
+    void set_data_inner(relation, std::any);
+    void set_data_inner(function, std::any);
+    std::any data_inner(variable) const;
+    std::any data_inner(relation) const;
+    std::any data_inner(function) const;
+    
     struct impl_t;
     std::unique_ptr<impl_t> _impl;
   };
