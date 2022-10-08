@@ -261,7 +261,9 @@ namespace black_internal::encoder
         for(auto t : terms)
           stepterms.push_back(stepped(t, k));
         
-        return equality<FO>(e.node_type(), stepterms);
+        return end_of_trace_semantics(
+          e, equality<FO>(e.node_type(), stepterms), k
+        );
       },
       [&](comparison<LTLPFO> c, auto left, auto right) -> formula<FO> {
         if(auto s = start_of_trace_semantics(c, k); s)

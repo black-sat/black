@@ -1248,6 +1248,12 @@ namespace black_internal::logic {
       auto obj = static_cast<node_t const *>(f.node());
       return std::optional<Derived>{Derived{f.sigma(), obj}};
     }
+
+    // we return an empty result for unrelated hierarchies
+    template<hierarchy F, typename D = Derived>
+    static std::optional<Derived> from(F) {
+      return {};
+    }
   };
 
   //

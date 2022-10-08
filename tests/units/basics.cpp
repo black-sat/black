@@ -189,6 +189,7 @@ TEST_CASE("New API") {
       REQUIRE(n.is<negation<LTL>>());
       REQUIRE(n.is<negation<LTLP>>());
       REQUIRE(!n.is<negation<propositional>>());
+      REQUIRE(!n.is<unary_term<FO>>());
     }
   }
 

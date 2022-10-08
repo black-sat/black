@@ -203,175 +203,53 @@ namespace black_internal::solver
     return tribool::undef;
   }
 
-  struct check_result_t {
-    bool error = false;
-    bool has_next = false;
+  template<hierarchy H, typename F>
+  void _check_syntax(H h, bool quantified, F err) {
+    if(h.template is<quantifier>())
+      quantified = true;
 
-    check_result_t() = default;
-    check_result_t(bool b, bool _has_next = false) 
-      : error{b}, has_next{_has_next} { }
-  };
-
-  static check_result_t operator||(check_result_t r1, check_result_t r2) {
-    return {
-      r1.error || r2.error,
-      r1.has_next || r2.has_next
-    };
-  }
-
-  // function full of GCOV false negatives
-  static check_result_t _check_syntax(
-    term t, std::function<void(std::string)> const& err,
-    std::vector<variable> const& scope
-  ) {
-    return t.match( // LCOV_EXCL_LINE
-      [](constant) -> check_result_t { return false; },
-      [](variable) -> check_result_t { return false; },
-      [&](application a) -> check_result_t {
-        check_result_t res;
-        for(term arg : a.terms())
-          res = res || _check_syntax(arg, err, scope);
-
-        return res;
-      }, // LCOV_EXCL_LINE
-      [&](negative, auto arg) -> check_result_t {
-        return _check_syntax(arg, err, scope);
-      },
-      [&](binary_term, auto left, auto right) {
-        return _check_syntax(left, err, scope) ||
-               _check_syntax(right, err, scope);
-      },
-      [&](to_integer, auto arg) {
-        return _check_syntax(arg, err, scope);
-      },
-      [&](to_real, auto arg) {
-        return _check_syntax(arg, err, scope);
-      },
-      [&](unary_term, term arg) -> check_result_t {
-        if(!arg.is<variable>()) {
-          err(
-            "next()/wnext()/prev()/wprev() terms can only be applied "
-            "directly to variables"
+    for_each_child(h, [&](auto child){
+      child.match(
+        [&](unary_term t, term arg){
+          t.match(
+            [](negative) { },
+            [](to_real) { },
+            [](to_integer) { },
+            [&](otherwise) {
+              if(!arg.is<variable>())
+                err(
+                  "next()/wnext()/prev()/wprev() terms can only be applied "
+                  "directly to variables"
+                );
+            }
           );
-          return true;
-        }
-        
-        return {false, true};
-      }
-    );
-  }
-
-  // function full of GCOV false negatives
-  static check_result_t _check_syntax(
-    formula f, std::function<void(std::string)> const& err, 
-    std::vector<variable> const& scope
-  ) {
-    return f.match( // LCOV_EXCL_LINE
-      [](boolean) -> check_result_t { return false; },
-      [](proposition) -> check_result_t { return false; },
-      [&](atom a) -> check_result_t {  
-        check_result_t res;
-        for(term t : a.terms())
-          res = res || _check_syntax(t, err, scope);
-        
-        return res;  
-      }, // LCOV_EXCL_LINE
-      [&](equality, auto terms) {
-        check_result_t r{false, false};
-        std::vector<check_result_t> results;
-        for(auto t : terms)
-          results.push_back(_check_syntax(t, err, scope));
-        
-        return std::accumulate(
-          begin(results), end(results), r, std::logical_or<>{}
-        );
-      },
-      [&](comparison, auto left, auto right) {
-        return _check_syntax(left, err, scope) ||
-               _check_syntax(right, err, scope);
-      },
-      [&](quantifier q) -> check_result_t {
-        std::vector<variable> new_scope = scope;
-        new_scope.push_back(q.decl().variable());
-        
-        return _check_syntax(q.matrix(), err, new_scope);
-      }, // LCOV_EXCL_LINE
-      [&](negation, auto arg) {
-        return _check_syntax(arg, err, scope);
-      },
-      [&](disjunction o) {
-        check_result_t r{false, false};
-        std::vector<check_result_t> results;
-        for(auto op : o.operands())
-          results.push_back(_check_syntax(op, err, scope));
-
-        return std::accumulate(
-          begin(results), end(results), r, std::logical_or<>{}
-        );
-      },
-      [&](conjunction c) {
-        check_result_t r{false, false};
-        std::vector<check_result_t> results;
-        for(auto op : c.operands()) {
-          results.push_back(
-            _check_syntax(op, err, scope)
-          );
-        }
-        return std::accumulate(
-          begin(results), end(results), r, std::logical_or<>{}
-        );
-      },
-      [&](implication, formula left, formula right) {
-        return _check_syntax(!left || right, err, scope);
-      },
-      [&](iff, formula left, formula right) {
-        return _check_syntax( // LCOV_EXCL_LINE
-          implies(left, right) && implies(right, left), 
-          err, scope
-        );
-      },
-      [&](tomorrow, auto arg) {
-        return _check_syntax(arg, err, scope);
-      },
-      [&](w_tomorrow, auto arg) {
-        return _check_syntax(arg, err, scope);
-      },
-      [&](yesterday, auto arg) {
-        return _check_syntax(arg, err, scope);
-      },
-      [&](w_yesterday, auto arg) {
-        return _check_syntax(arg, err, scope);
-      },
-      [&](only<temporal> t) -> check_result_t {
-        if(!scope.empty()) {
-          err(
-            "Temporal operators (excepting X/wX/Y/Z) cannot appear "
-            "inside quantifiers"
-          );
-          return true;
-        }
-
-        return t.match( // LCOV_EXCL_LINE
-          [&](unary, formula arg) {
-            return _check_syntax(arg, err, scope);
-          },
-          [&](binary, formula left, formula right) {
-            return _check_syntax(left, err, scope) || 
-                   _check_syntax(right, err, scope);
-          }
-        );
-      }
-    );
+        },
+        [&](only<temporal>) {
+          if(quantified)
+            err(
+              "Temporal operators (excepting X/wX/Y/Z) cannot appear "
+              "inside quantifiers"
+            );
+        },
+        [](otherwise) { }
+      );
+      _check_syntax(child, quantified, err);
+    });
   }
 
   bool 
-  solver::check_syntax(formula f, std::function<void(std::string)> const&err) {
-    tsl::hopscotch_map<identifier, size_t> rels;
-    tsl::hopscotch_map<identifier, size_t> funcs;
-    return 
-      !_check_syntax(f, err, std::vector<variable>{}).error;
+  solver::check_syntax(formula f, std::function<void(std::string)> const&err) 
+  {
+    bool ok = true;
+
+    _check_syntax(f, false, [&](auto msg) {
+      ok = false;
+      err(msg);
+    });
+
+    return ok;
   }
 
   
 
-} // end namespace black::size_ternal
+} // end namespace black::internal
