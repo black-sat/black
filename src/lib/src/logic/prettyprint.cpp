@@ -147,6 +147,21 @@ namespace black_internal::logic
     return s;
   }
 
+  static
+  std::string term_parens(term<LTLPFO> t) {
+    return t.match(
+      [&](variable) {
+        return to_string(t);
+      },
+      [&](constant<LTLPFO>) {
+        return to_string(t);
+      },
+      [&](otherwise) {
+        return "(" + to_string(t) + ")";
+      }
+    );
+  }
+
   std::string to_string(term<LTLPFO> t)
   {
     using namespace std::literals;
@@ -201,19 +216,19 @@ namespace black_internal::logic
         return fmt::format("wprev({})", to_string(arg));
       },
       [&](addition<LTLPFO>, auto left, auto right) {
-        return fmt::format("({}) + ({})", to_string(left), to_string(right));
+        return fmt::format("{} + {}", term_parens(left), term_parens(right));
       },
       [&](subtraction<LTLPFO>, auto left, auto right) {
-        return fmt::format("({}) - ({})", to_string(left), to_string(right));
+        return fmt::format("{} - {}", term_parens(left), term_parens(right));
       },
       [&](multiplication<LTLPFO>, auto left, auto right) {
-        return fmt::format("({}) * ({})", to_string(left), to_string(right));
+        return fmt::format("{} * {}", term_parens(left), term_parens(right));
       },
       [&](division<LTLPFO>, auto left, auto right) {
-        return fmt::format("({}) / ({})", to_string(left), to_string(right));
+        return fmt::format("{} / {}", term_parens(left), term_parens(right));
       },
       [&](int_division<LTLPFO>, auto left, auto right) {
-        return fmt::format("({}) div ({})", to_string(left), to_string(right));
+        return fmt::format("{} div {}", term_parens(left), term_parens(right));
       }
     );
   }

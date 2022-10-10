@@ -55,7 +55,7 @@ should_fail ./black solve --remove-past -s -d Int -f 'F H(x = 0)'
 should_fail ./black solve -m -d Int -f 'x = 0'
 
 should_fail ./black solve -B cmsat -s -d Int -f 'x = 0'
-should_fail ./black solve -B mathsat -s -d Int -f 'exists x . x = 0'
+should_fail ./black solve -B mathsat -s -d Int -f 'exists x : Int . x = 0'
 should_fail ./black solve -s -f 'x = 0'
 
 ./black solve -d Int -f 'next(x) = 0' 2>&1 | grep -- '--semi-decision'
@@ -76,7 +76,7 @@ X ( F p & G !p)
 END
 
 ./black solve -s -d Int --debug trace-smtlib2 - <<END
-true & !false & p & r(x, f(x,y), 0, 1, 42, 3.14, -x, x + y, x * y, x - y, x / y) & x = y & x != y & x < y & x > y & x <= y & x >= y & forall x . x = x & exists x . x != x & (p | (q & s)) & p -> q & p <-> q
+true & !false & p & r(x, f(x,y), 0, 1, 42, 3.14, -x, x + y, x * y, x - y, x / y) & x = y & x != y & x < y & x > y & x <= y & x >= y & forall x : Int . x = x & exists x : Int . x != x & (p | (q & s)) & p -> q & p <-> q
 END
 
 ./black solve -s -d Real --debug trace-smtlib2 - <<END
