@@ -132,29 +132,20 @@ namespace black_internal::cvc5
       [&](real_sort) {
         return solver.getRealSort();
       },
-      [&](named_sort, auto name) {
+      [&](named_sort n) {
         auto d = global_xi.domain(*s);
         if(!d)
-          return solver.mkUninterpretedSort(to_string(name));
+          return solver.mkUninterpretedSort(to_string(n.unique_id()));
         
-        auto decl = solver.mkDatatypeDecl(to_string(name));
+        auto decl = solver.mkDatatypeDecl(to_string(n.unique_id()));
         
         for(auto x : d->elements()) {
-          auto ctor = solver.mkDatatypeConstructorDecl(to_string(x.name()));
+          auto ctor = 
+            solver.mkDatatypeConstructorDecl(to_string(x.unique_id()));
           decl.addConstructor(ctor);
         }
 
-        cvc::Sort datatype = solver.mkDatatypeSort(decl);
-
-        for(size_t i = 0; i < d->elements().size(); ++i) {
-          cvc::Term term = 
-            solver.mkTerm(
-              cvc::APPLY_CONSTRUCTOR, {datatype.getDatatype()[i].getTerm()}
-            );
-          global_xi.set_data(d->elements()[i], term);
-        }
-
-        return datatype;
+        return solver.mkDatatypeSort(decl);
       }
     );
 
@@ -320,16 +311,29 @@ namespace black_internal::cvc5
         );
       },
       [&](variable v) {
-        // NOTE: the sort must be translated before we look up the variable in
-        // the scope, because `to_cvc5(sort)` might register terms for constants
-        // of enumerated domains
-        cvc::Sort s = to_cvc5(xi.sort(v)); // so first we compute the sort
-
-        // then wee look up the variable in the scope
+        // then we look up the variable in the scope
         if(auto var = xi.data<cvc::Term>(v); var.has_value())
           return *var;
 
-        cvc::Term term = solver.mkConst(s, to_string(v.unique_id()));
+        auto vSort = xi.sort(v); // we look up the sort of the variable
+        black_assert(vSort); 
+        cvc::Sort cvcSort = to_cvc5(*vSort);
+
+        // if the sort has an enumerated domain, the variable is rendered
+        // as a constructor application of the relevant datatype
+        if(xi.domain(*vSort)) {
+          cvc::Term term = 
+            solver.mkTerm(
+              cvc::APPLY_CONSTRUCTOR, {
+                cvcSort.getDatatype()[to_string(v.unique_id())].getTerm()
+              }
+            );
+          global_xi.set_data(v, term);
+          return term;
+        }
+
+        // if not, this is a normal variable
+        cvc::Term term = solver.mkConst(cvcSort, to_string(v.unique_id()));
         xi.set_data(v, term);
         return term;
       },
