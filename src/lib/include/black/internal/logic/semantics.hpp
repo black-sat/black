@@ -25,6 +25,7 @@
 #define BLACK_LOGIC_SEMANTICS_HPP
 
 #include <memory>
+#include <vector>
 
 //
 // This file contains code that deals with the semantic aspects of formulas and
@@ -34,6 +35,36 @@
 //
 namespace black_internal::logic {
   
+  //
+  // The `domain` class represents a finite domain associated with a named sort.
+  // Named sorts can be either infinite and uninterpreted, in which case they
+  // have no associated domain, or finite and enumerated, in which case they are
+  // associated with a `domain` object by the `scope` class below. 
+  //
+  class BLACK_EXPORT domain 
+  {
+  public:
+    domain(std::vector<variable> elements) 
+      : _elements{std::move(elements)}
+      { }
+
+    domain(domain const&) = delete;
+    domain(domain &&) = delete;
+    
+    domain &operator=(domain const&) = delete;
+    domain &operator=(domain &&) = delete;
+
+    std::vector<variable> const& elements() const { return _elements; }
+
+  private:
+    std::vector<variable> _elements;
+  };
+
+  using domain_ref = std::unique_ptr<const domain>;
+  inline domain_ref make_domain(std::vector<variable> elements) {
+    return std::make_unique<const domain>(std::move(elements));
+  }
+
   //
   // The `scope` class handles all the semantic information needed to manage a
   // formula. A `formula` object only describes the syntax of the formula, but
@@ -63,11 +94,11 @@ namespace black_internal::logic {
 
     scope(alphabet &sigma, std::optional<struct sort> def = std::nullopt);
     scope(chain_t);
-    scope(scope const&);
+    scope(scope const&) = delete;
     scope(scope &&);
     ~scope();
 
-    scope &operator=(scope const&);
+    scope &operator=(scope const&) = delete;
     scope &operator=(scope &&);
 
     void set_default_sort(std::optional<struct sort> s);
@@ -89,11 +120,15 @@ namespace black_internal::logic {
       declare(d.variable(), d.sort(), r);
     }
 
+    void declare(struct sort s, domain_ref d);
+
     std::optional<struct sort> sort(variable) const;
     std::optional<struct sort> sort(function) const;
 
     std::optional<std::vector<struct sort>> signature(function) const;
     std::optional<std::vector<struct sort>> signature(relation) const;
+
+    domain const*domain(struct sort) const;
     
     std::optional<struct sort>
     type_check(term<LTLPFO> t, std::function<void(std::string)> err);
@@ -124,9 +159,11 @@ namespace black_internal::logic {
     void set_data_inner(variable, std::any);
     void set_data_inner(relation, std::any);
     void set_data_inner(function, std::any);
+    void set_data_inner(struct sort, std::any);
     std::any data_inner(variable) const;
     std::any data_inner(relation) const;
     std::any data_inner(function) const;
+    std::any data_inner(struct sort) const;
     
     struct impl_t;
     std::unique_ptr<impl_t> _impl;

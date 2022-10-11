@@ -52,7 +52,6 @@ namespace black_internal::cvc5
     bool sat_response = false;
 
     tsl::hopscotch_map<proposition, cvc::Term> props;
-    tsl::hopscotch_map<sort, cvc::Sort> sorts;
 
     cvc::Term to_cvc5(formula);
     cvc::Term to_cvc5(term);
@@ -123,8 +122,8 @@ namespace black_internal::cvc5
   cvc::Sort cvc5::_cvc5_t::to_cvc5(std::optional<sort> s) {
     black_assert(s.has_value());
     
-    if(auto it = sorts.find(*s); it != sorts.end())
-      return it->second;
+    if(auto cvcSort = global_xi.data<cvc::Sort>(*s); cvcSort.has_value())
+      return *cvcSort;
 
     cvc::Sort result = s->match(
       [&](integer_sort) {
@@ -134,11 +133,32 @@ namespace black_internal::cvc5
         return solver.getRealSort();
       },
       [&](named_sort, auto name) {
-        return solver.mkUninterpretedSort(to_string(name));
+        auto d = global_xi.domain(*s);
+        if(!d)
+          return solver.mkUninterpretedSort(to_string(name));
+        
+        auto decl = solver.mkDatatypeDecl(to_string(name));
+        
+        for(auto x : d->elements()) {
+          auto ctor = solver.mkDatatypeConstructorDecl(to_string(x.name()));
+          decl.addConstructor(ctor);
+        }
+
+        cvc::Sort datatype = solver.mkDatatypeSort(decl);
+
+        for(size_t i = 0; i < d->elements().size(); ++i) {
+          cvc::Term term = 
+            solver.mkTerm(
+              cvc::APPLY_CONSTRUCTOR, {datatype.getDatatype()[i].getTerm()}
+            );
+          global_xi.set_data(d->elements()[i], term);
+        }
+
+        return datatype;
       }
     );
 
-    sorts.insert({*s, result});
+    global_xi.set_data(*s, result);
     return result;
   }
 
@@ -299,12 +319,17 @@ namespace black_internal::cvc5
           }
         );
       },
-      [&](variable v) {        
+      [&](variable v) {
+        // NOTE: the sort must be translated before we look up the variable in
+        // the scope, because `to_cvc5(sort)` might register terms for constants
+        // of enumerated domains
+        cvc::Sort s = to_cvc5(xi.sort(v)); // so first we compute the sort
+
+        // then wee look up the variable in the scope
         if(auto var = xi.data<cvc::Term>(v); var.has_value())
           return *var;
 
-        cvc::Term term = 
-          solver.mkConst(to_cvc5(xi.sort(v)), to_string(v.unique_id()));
+        cvc::Term term = solver.mkConst(s, to_string(v.unique_id()));
         xi.set_data(v, term);
         return term;
       },

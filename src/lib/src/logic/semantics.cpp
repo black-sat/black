@@ -52,13 +52,17 @@ namespace black_internal::logic {
 
     struct frame_t 
     {  
+      std::vector<domain_ref> domains;
+
       tsl::hopscotch_map<variable, var_record_t> vars;
       tsl::hopscotch_map<relation, rel_record_t> rels;
       tsl::hopscotch_map<function, func_record_t> funcs;
+      tsl::hopscotch_map<struct sort, size_t> sorts;
       
       tsl::hopscotch_map<variable, std::any> vars_data;
       tsl::hopscotch_map<relation, std::any> rels_data;
       tsl::hopscotch_map<function, std::any> funcs_data;
+      tsl::hopscotch_map<struct sort, std::any> sorts_data;
 
       std::optional<struct sort> default_sort;
       std::shared_ptr<const frame_t> next;
@@ -68,8 +72,8 @@ namespace black_internal::logic {
         std::shared_ptr<const frame_t> n
       ) : default_sort{d}, next{std::move(n)} { }
 
-      frame_t(frame_t const&) = default;
-      frame_t &operator=(frame_t const&) = default;
+      frame_t(frame_t const&) = delete;
+      frame_t &operator=(frame_t const&) = delete;
     };
 
     impl_t(alphabet &a, std::optional<struct sort> default_sort)
@@ -79,10 +83,6 @@ namespace black_internal::logic {
     impl_t(scope const&s)
       : sigma{s._impl->sigma},
         frame{std::make_shared<frame_t>(s.default_sort(), s._impl->frame)} { }
-
-    impl_t(impl_t const& i)
-      : sigma{i.sigma},
-        frame{std::make_shared<frame_t>(*i.frame)} { }
 
     alphabet &sigma;
     std::shared_ptr<frame_t> frame;
@@ -97,15 +97,6 @@ namespace black_internal::logic {
 
   scope::scope(scope &&) = default;
   scope &scope::operator=(scope &&) = default;
-
-  scope::scope(scope const& s) 
-    : _impl{std::make_unique<impl_t>(*s._impl)} { }
-
-  scope &scope::operator=(scope const& s) {
-    _impl = std::make_unique<impl_t>(*s._impl);
-
-    return *this;
-  }
 
   void scope::set_default_sort(std::optional<struct sort> s) {
     _impl->frame->default_sort = s;
@@ -144,6 +135,13 @@ namespace black_internal::logic {
     relation r, std::vector<struct sort> args, rigid_t rigid
   ) {
     _impl->frame->rels.insert({r, {std::move(args), rigid}});
+  }
+
+  void scope::declare(struct sort s, domain_ref domain) {
+    _impl->frame->domains.push_back(std::move(domain));
+    _impl->frame->sorts.insert({s, _impl->frame->domains.size() - 1});
+    for(variable x : domain->elements())
+      declare(x, s, scope::rigid);
   }
 
   std::optional<sort> scope::sort(variable x) const {
@@ -194,6 +192,15 @@ namespace black_internal::logic {
     return {};
   }
 
+  domain const*scope::domain(struct sort s) const {
+    if(auto it = _impl->frame->sorts.find(s); it != _impl->frame->sorts.end()) {
+      black_assert(it->second < _impl->frame->domains.size());
+      return _impl->frame->domains[it->second].get();
+    }
+
+    return nullptr;
+  }
+
   bool scope::is_rigid(variable x) const {
     std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
 
@@ -242,6 +249,10 @@ namespace black_internal::logic {
     _impl->frame->funcs_data.insert({f, std::move(data)});
   }
 
+  void scope::set_data_inner(struct sort s, std::any data) {
+    _impl->frame->sorts_data.insert({s, std::move(data)});
+  }
+
   std::any scope::data_inner(variable x) const {
     std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
 
@@ -271,6 +282,18 @@ namespace black_internal::logic {
 
     while(current) {
       if(auto it = current->funcs_data.find(f); it != current->funcs_data.end())
+        return it->second;
+      current = current->next;
+    }
+
+    return {};
+  }
+
+  std::any scope::data_inner(struct sort s) const {
+    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+
+    while(current) {
+      if(auto it = current->sorts_data.find(s); it != current->sorts_data.end())
         return it->second;
       current = current->next;
     }
