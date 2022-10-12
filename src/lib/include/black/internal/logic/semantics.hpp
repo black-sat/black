@@ -62,7 +62,7 @@ namespace black_internal::logic {
 
   // this `using` is forward declared in `fragments.hpp`.
   // using domain_ref = std::unique_ptr<const domain>;
-  
+
   inline domain_ref make_domain(std::vector<variable> elements) {
     return std::make_unique<const domain>(std::move(elements));
   }
@@ -130,7 +130,7 @@ namespace black_internal::logic {
     std::optional<std::vector<struct sort>> signature(function) const;
     std::optional<std::vector<struct sort>> signature(relation) const;
 
-    domain const*domain(struct sort) const;
+    class domain const*domain(struct sort) const;
     
     std::optional<struct sort>
     type_check(term<LTLPFO> t, std::function<void(std::string)> err);
