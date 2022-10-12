@@ -138,10 +138,11 @@ namespace black_internal::logic {
   }
 
   void scope::declare(struct sort s, domain_ref domain) {
-    _impl->frame->domains.push_back(std::move(domain));
-    _impl->frame->sorts.insert({s, _impl->frame->domains.size() - 1});
     for(variable x : domain->elements())
       declare(x, s, scope::rigid);
+    
+    _impl->frame->domains.push_back(std::move(domain));
+    _impl->frame->sorts.insert({s, _impl->frame->domains.size() - 1});
   }
 
   std::optional<sort> scope::sort(variable x) const {
@@ -193,9 +194,14 @@ namespace black_internal::logic {
   }
 
   domain const*scope::domain(struct sort s) const {
-    if(auto it = _impl->frame->sorts.find(s); it != _impl->frame->sorts.end()) {
-      black_assert(it->second < _impl->frame->domains.size());
-      return _impl->frame->domains[it->second].get();
+    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+
+    while(current) {
+      if(auto it = current->sorts.find(s); it != current->sorts.end()) {
+        black_assert(it->second < current->domains.size());
+        return current->domains[it->second].get();
+      }
+      current = current->next;
     }
 
     return nullptr;

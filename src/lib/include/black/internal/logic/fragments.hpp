@@ -35,6 +35,9 @@
 namespace black_internal::logic {
   class scope;
   class nest_scope_t;
+  class domain;
+  using domain_ref = std::unique_ptr<const domain>;
+  domain_ref make_domain(std::vector<variable>);
 }
 
 namespace black {
@@ -47,6 +50,9 @@ namespace black {
     inline namespace common {
       using black_internal::logic::alphabet;
       using black_internal::logic::var_decl;
+      using black_internal::logic::domain;
+      using black_internal::logic::domain_ref;
+      using black_internal::logic::make_domain;
       using black_internal::logic::scope;
       using black_internal::logic::nest_scope_t;
       using black_internal::logic::otherwise;

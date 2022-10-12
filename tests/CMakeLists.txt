@@ -80,6 +80,7 @@ if(Catch2_FOUND)
     units/parser.cpp
     units/past_remover.cpp
     units/solver.cpp
+    units/sorts.cpp
     units/sat.cpp
     units/cnf.cpp
   )

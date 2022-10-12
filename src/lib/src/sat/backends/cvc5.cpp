@@ -133,7 +133,7 @@ namespace black_internal::cvc5
         return solver.getRealSort();
       },
       [&](named_sort n) {
-        auto d = global_xi.domain(*s);
+        auto d = global_xi.domain(n);
         if(!d)
           return solver.mkUninterpretedSort(to_string(n.unique_id()));
         
@@ -160,17 +160,16 @@ namespace black_internal::cvc5
       },
       [&](atom a) -> cvc::Term { // LCOV_EXCL_LINE
         std::vector<cvc::Term> cvc_terms;
+        cvc_terms.push_back(to_cvc5(a.rel()));
+
         for(term t : a.terms())
           cvc_terms.push_back(to_cvc5(t));
 
-        cvc::Term rel = to_cvc5(a.rel());
-        
-        cvc_terms.insert(cvc_terms.begin(), rel);
         return solver.mkTerm(cvc::APPLY_UF, cvc_terms);
       },
       [&](equality e, auto args) {
         std::vector<cvc::Term> terms;
-        for(auto t : args)  
+        for(auto t : args)
           terms.push_back(to_cvc5(t));
 
         return e.match(

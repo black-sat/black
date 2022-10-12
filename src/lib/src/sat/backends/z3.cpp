@@ -47,30 +47,43 @@ namespace black_internal::z3
     return f.sigma()->proposition(f);
   }
 
+  struct z3_sort_record_t {
+    Z3_sort sort;
+    std::shared_ptr<tsl::hopscotch_map<variable, Z3_ast>> elements;
+    
+    z3_sort_record_t(Z3_sort s, tsl::hopscotch_map<variable, Z3_ast> e)
+      : sort{s}, 
+        elements{
+          std::make_shared<tsl::hopscotch_map<variable, Z3_ast>>(std::move(e))
+        } { }
+  };
+
   struct z3::_z3_t {
+    logic::scope global_xi;
     logic::scope xi;
 
-    _z3_t(logic::scope const& _xi) : xi{chain(_xi)} { }
+    _z3_t(logic::scope const& _xi) 
+      : global_xi{chain(_xi)}, xi{chain(global_xi)} { }
 
     Z3_context context;
     Z3_solver solver;
     std::optional<Z3_model> model;
     bool solver_upgraded = false;
 
-    tsl::hopscotch_map<formula, Z3_ast> formulas;
-    tsl::hopscotch_map<term, Z3_ast> terms;
+    tsl::hopscotch_map<proposition, Z3_ast> props;
 
     Z3_func_decl to_z3(function);
     Z3_func_decl to_z3(relation);
     Z3_ast to_z3(var_decl);
     Z3_ast to_z3(formula);
     Z3_ast to_z3(term);
-    Z3_sort to_z3(std::optional<sort>);
+    z3_sort_record_t to_z3(std::optional<sort>);
     Z3_ast to_z3_inner(formula);
     Z3_ast to_z3_inner(term);
 
     void upgrade_solver();
   };
+
 
   //
   // This trick, up to error_handler(), is needed to support Z3 4.4 
@@ -139,7 +152,10 @@ namespace black_internal::z3
   }
 
   void z3::assert_formula(formula f) { 
-    Z3_ast ast = _data->to_z3(f); // this call must stay on its own line
+    // the call to to_ze() must stay on its own line before `Z3_solver_assert`
+    // because it might update _data->solver
+    Z3_ast ast = _data->to_z3(f); 
+
     Z3_solver_assert(_data->context, _data->solver, ast);
   }
   
@@ -185,8 +201,8 @@ namespace black_internal::z3
     if(!_data->model)
       return tribool::undef;
     
-    auto it = _data->formulas.find(a);
-    if(it == _data->formulas.end())
+    auto it = _data->props.find(a);
+    if(it == _data->props.end())
       return tribool::undef;
     
     Z3_ast term = it->second;
@@ -238,54 +254,72 @@ namespace black_internal::z3
     solver_upgraded = true;
   }
 
-  Z3_sort z3::_z3_t::to_z3(std::optional<sort> o) {
-    black_assert(o.has_value());
+  z3_sort_record_t z3::_z3_t::to_z3(std::optional<sort> s) {
+    black_assert(s.has_value());
 
-    sort s = *o;
+    if(auto record = global_xi.data<z3_sort_record_t>(*s); record.has_value()) 
+      return *record;
 
-    return s.match(
-      [&](integer_sort) {
-        return Z3_mk_int_sort(context);
+    z3_sort_record_t record = s->match(
+      [&](integer_sort) -> z3_sort_record_t {
+        return {Z3_mk_int_sort(context), {}};
       },
-      [&](real_sort) {
-        return Z3_mk_real_sort(context);
+      [&](real_sort) -> z3_sort_record_t {
+        return {Z3_mk_real_sort(context), {}};
       },
-      [&](named_sort, auto name) {
-        return Z3_mk_uninterpreted_sort(
-          context, 
-          Z3_mk_string_symbol(context, to_string(name).c_str())
+      [&](named_sort n) -> z3_sort_record_t {
+        auto d = global_xi.domain(n);
+        if(!d)
+          return {Z3_mk_uninterpreted_sort(
+            context, 
+            Z3_mk_string_symbol(context, to_string(n.unique_id()).c_str())
+          ), {}};
+
+        Z3_symbol sort_name = 
+          Z3_mk_string_symbol(context, to_string(n.unique_id()).c_str());
+        std::vector<Z3_symbol> names;
+        std::vector<Z3_constructor> ctors;
+        
+        for(auto x : d->elements()) {
+          Z3_symbol xname = 
+            Z3_mk_string_symbol(context, to_string(x.unique_id()).c_str());
+          Z3_symbol xrec = Z3_mk_string_symbol(context, "");
+
+          names.push_back(xname);
+          ctors.push_back(
+            Z3_mk_constructor(
+              context, xname, xrec, 0, nullptr, nullptr, nullptr
+            )
+          );
+        }
+
+        Z3_sort enum_sort = Z3_mk_datatype(
+          context, sort_name, unsigned(d->elements().size()), ctors.data()
         );
+
+        tsl::hopscotch_map<variable, Z3_ast> apps;
+        for(size_t i = 0; i < d->elements().size(); ++i) {
+          Z3_func_decl decl;
+          Z3_func_decl tester;
+          Z3_query_constructor(context, ctors[i], 0, &decl, &tester, nullptr);
+          apps.insert({
+            d->elements()[i], Z3_mk_app(context, decl, 0, nullptr)
+          });
+        }
+
+        return {enum_sort, std::move(apps)};
       }
     );
-  }
 
-  
-  Z3_ast z3::_z3_t::to_z3(formula f) 
-  {
-    if(auto it = formulas.find(f); it != formulas.end()) 
-      return it->second;
-
-    Z3_ast z3_f = to_z3_inner(f);
-    formulas.insert({f, z3_f});
-
-    return z3_f;
-  }
-
-  Z3_ast z3::_z3_t::to_z3(term t) {
-    if(auto it = terms.find(t); it != terms.end()) 
-      return it->second;
-
-    Z3_ast z3_t = to_z3_inner(t);
-    terms.insert({t, z3_t});
-
-    return z3_t;
+    global_xi.set_data(*s, record);
+    return record;
   }
 
   Z3_func_decl z3::_z3_t::to_z3(function f) {
     Z3_symbol symbol = 
       Z3_mk_string_symbol(context, to_string(f.name()).c_str());
     
-    Z3_sort result = to_z3(xi.sort(f));
+    Z3_sort result = to_z3(xi.sort(f)).sort;
     
     auto signature = xi.signature(f);
     black_assert(signature.has_value());
@@ -293,7 +327,7 @@ namespace black_internal::z3
     unsigned arity = unsigned(signature->size());
     std::unique_ptr<Z3_sort[]> domain = std::make_unique<Z3_sort[]>(arity);
     for(size_t i = 0; i < arity; ++i) {
-      domain[i] = to_z3(signature->at(i));
+      domain[i] = to_z3(signature->at(i)).sort;
     }
     
     return Z3_mk_func_decl(context, symbol, arity, domain.get(), result);
@@ -311,14 +345,14 @@ namespace black_internal::z3
     unsigned arity = unsigned(signature->size());
     std::unique_ptr<Z3_sort[]> domain = std::make_unique<Z3_sort[]>(arity);
     for(size_t i = 0; i < arity; ++i) {
-      domain[i] = to_z3(signature->at(i));
+      domain[i] = to_z3(signature->at(i)).sort;
     }
     
     return Z3_mk_func_decl(context, symbol, arity, domain.get(), bool_s);
   }
 
   Z3_ast z3::_z3_t::to_z3(var_decl decl) {
-    Z3_sort s = to_z3(decl.sort());
+    Z3_sort s = to_z3(decl.sort()).sort;
 
     Z3_symbol symbol = Z3_mk_string_symbol(
       context, to_string(decl.variable().unique_id()).c_str()
@@ -327,7 +361,7 @@ namespace black_internal::z3
     return Z3_mk_const(context, symbol, s);
   }
 
-  Z3_ast z3::_z3_t::to_z3_inner(formula f) 
+  Z3_ast z3::_z3_t::to_z3(formula f) 
   {
     return f.match(
       [&](boolean b) {
@@ -359,7 +393,8 @@ namespace black_internal::z3
         for(term t : args) 
           z3_terms.push_back(to_z3(t));
 
-        return Z3_mk_distinct(context, 2, z3_terms.data());
+        return 
+          Z3_mk_distinct(context, unsigned(z3_terms.size()), z3_terms.data());
       },
       [&](comparison c, auto left, auto right) {
         // we know how to encode known relations
@@ -379,26 +414,35 @@ namespace black_internal::z3
         );
       },
       [&](quantifier q) {
-        Z3_app var = Z3_to_app(context, to_z3(q.decl()));
         bool forall = q.node_type() == quantifier::type::forall{};
         if(forall)
           upgrade_solver();
-
+        
         nest_scope_t nest{xi};
         xi.declare(q.decl());
-
+        
+        Z3_ast var = to_z3(q.decl());
+        xi.set_data(q.decl().variable(), var);
+        
+        Z3_app app = Z3_to_app(context, var);
         auto result = Z3_mk_quantifier_const(
-          context, forall, 0, 1, &var, 0, nullptr, to_z3(q.matrix())
+          context, forall, 0, 1, &app, 0, nullptr, to_z3(q.matrix())
         );
 
         return result;
       },
       [&](proposition p) {
+        if(auto it = props.find(p); it != props.end())
+          return it->second;
+
         Z3_sort sort = Z3_mk_bool_sort(context);
         Z3_symbol symbol = 
           Z3_mk_string_symbol(context, to_string(p.unique_id()).c_str());
         
-        return Z3_mk_const(context, symbol, sort);
+        Z3_ast result = Z3_mk_const(context, symbol, sort);
+        props.insert({p, result});
+
+        return result;
       },
       [&](negation, auto arg) {
         return Z3_mk_not(context, to_z3(arg));
@@ -432,7 +476,7 @@ namespace black_internal::z3
     );
   }
 
-  Z3_ast z3::_z3_t::to_z3_inner(term t) {
+  Z3_ast z3::_z3_t::to_z3(term t) {
     return t.match(
       [&](constant, auto n) {
         return n.match(
@@ -446,16 +490,28 @@ namespace black_internal::z3
         );
       },
       [&](variable v) {
-        Z3_sort s = to_z3(xi.sort(v));
+        if(auto var = xi.data<Z3_ast>(v); var.has_value())
+          return *var;
 
-        // // to_z3 might have added the variable from a finite sort declaration
-        // if(auto it = terms.find(t); it != terms.end()) 
-        //   return it->second;
+        auto vSort = xi.sort(v);
+        black_assert(vSort);
+        z3_sort_record_t record = to_z3(*vSort);
 
+        // if the sort has an enumerated domain, the variable is taken from the 
+        // relevant enum sort
+        if(xi.domain(*vSort)) {
+          auto it = record.elements->find(v);
+          black_assert(it != record.elements->end());
+          Z3_ast term = it->second;
+          global_xi.set_data(v, term);
+          return term;
+        }
+
+        // if not, this is a normal variable
         Z3_symbol symbol = 
           Z3_mk_string_symbol(context, to_string(v.unique_id()).c_str());
 
-        return Z3_mk_const(context, symbol, s);
+        return Z3_mk_const(context, symbol, record.sort);
       },
       [&](application a) { 
         std::vector<Z3_ast> z3_terms;

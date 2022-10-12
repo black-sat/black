@@ -265,7 +265,7 @@ namespace black_internal::logic
         
         std::string args = to_string(terms[0]);
         for(size_t i = 1; i < terms.size(); ++i) 
-          args = ", " + to_string(terms[i]);
+          args += ", " + to_string(terms[i]);
         
         return fmt::format("{}({})", to_string(e.node_type(), false), args);
       },
