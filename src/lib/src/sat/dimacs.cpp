@@ -104,6 +104,10 @@ namespace black_internal::dimacs
     return this->value(prop);
   }
 
+  tribool solver::value(logic::atom<logic::FO>) const {
+    return tribool::undef;
+  }
+
   void solver::clear_vars() {
     _data = std::make_unique<_solver_t>();
   }

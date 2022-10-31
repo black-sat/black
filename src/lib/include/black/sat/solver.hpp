@@ -75,7 +75,14 @@ namespace black::sat
     // gets the value of a proposition from the solver.
     // The result is tribool::undef if the variable has not been decided
     // e.g. before the first call to is_sat()
+    // or if it is a don't care
     virtual tribool value(proposition a) const = 0;
+
+    // gets the value of a relational atom from the solver.
+    // The result is tribool::undef if the value has not been decided
+    // e.g. before the first call to is_sat()
+    // or if it is a don't care
+    virtual tribool value(logic::atom<logic::FO> a) const = 0;
 
     // clear the current context completely
     virtual void clear() = 0;

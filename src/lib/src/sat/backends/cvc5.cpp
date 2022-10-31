@@ -115,6 +115,20 @@ namespace black_internal::cvc5
     return res.getBooleanValue();
   }
 
+  tribool cvc5::value(atom a) const 
+  {
+    if(!_data->sat_response)
+      return tribool::undef;
+    
+    cvc::Term term = _data->to_cvc5(a);
+    cvc::Term res = _data->solver.getValue(term);
+
+    if(res.isNull())
+      return tribool::undef; // LCOV_EXCL_LINE
+
+    return res.getBooleanValue();
+  }
+
   void cvc5::clear() {
     _data->solver.resetAssertions();
   }
