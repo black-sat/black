@@ -434,6 +434,16 @@ namespace black_internal::logic {
     );
   }
   
+  template<std::ranges::range Range>
+  auto big_and(alphabet &sigma, Range const& r) {
+    return big_and(sigma, r, [](auto x) { return x; });
+  }
+  
+  template<std::ranges::range Range>
+  auto big_or(alphabet &sigma, Range const& r) {
+    return big_or(sigma, r, [](auto x) { return x; });
+  }
+  
   //
   // Here we define a utility class that helps to pattern match associative
   // binary elements such as conjunctions and disjunctions or sums and products.
@@ -913,6 +923,96 @@ namespace black_internal::logic {
     }
   };
 
+  //
+  // Utility function to replace some subterms of a term with some replacement
+  //
+  template<fragment Syntax>
+  term<Syntax> replace(
+    term<Syntax> src, 
+    std::vector<term<Syntax>> patterns,
+    std::vector<term<Syntax>> replacements
+  ) {
+    black_assert(patterns.size() == replacements.size());
+    auto it = std::find(patterns.begin(), patterns.end(), src);
+    if(it != patterns.end())
+      return replacements[it - patterns.begin()];
+
+    return src.match(
+      [&](application<Syntax>, auto func, auto terms) {
+        std::vector<term<Syntax>> newterms;
+        for(auto t : terms)
+          newterms.push_back(replace(t, patterns, replacements));
+        return func(newterms);
+      },
+      [&](unary_term<Syntax> t, auto arg) {
+        return 
+          unary_term<Syntax>(
+            t.node_type(), replace(arg, patterns, replacements)
+          );
+      },
+      [&](binary_term<Syntax> t, auto left, auto right) {
+        return
+          binary_term<Syntax>(
+            t.node_type(), 
+            replace(left, patterns, replacements),
+            replace(right, patterns, replacements)
+          );
+      },
+      [&](otherwise) {
+        return src;
+      }
+    );
+  }
+
+  //
+  // Utility function to replace some term inside a formula with some
+  // replacement
+  //
+  template<fragment Syntax>
+  formula<Syntax> replace(
+    formula<Syntax> src, 
+    std::vector<term<Syntax>> patterns,
+    std::vector<term<Syntax>> replacements
+  ) {
+    return src.match(
+      [&](atom<Syntax>, auto rel, auto terms) {
+        std::vector<term<Syntax>> newterms;
+        for(auto t : terms)
+          newterms.push_back(replace(t, patterns, replacements));
+        return rel(newterms);
+      },
+      [&](equality<Syntax> e, auto terms) {
+        std::vector<term<Syntax>> newterms;
+        for(auto t : terms)
+          newterms.push_back(replace(t, patterns, replacements));
+        return equality<Syntax>(e.node_type(), newterms);
+      },
+      [&](comparison<Syntax> c, auto left, auto right) {
+        return
+          comparison<Syntax>(
+            c.node_type(), 
+            replace(left, patterns, replacements),
+            replace(right, patterns, replacements)
+          );
+      },
+      [&](unary<Syntax> u, auto op) {
+        return unary<Syntax>(
+          u.node_type(), replace(op, patterns, replacements)
+        );
+      },
+      [&](binary<Syntax> b, auto left, auto right) {
+        return
+          binary<Syntax>(
+            b.node_type(), 
+            replace(left, patterns, replacements),
+            replace(right, patterns, replacements)
+          );
+      },
+      [&](otherwise) {
+        return src;
+      }
+    );
+  }
 }
 
 #endif // BLACK_LOGIC_SUGAR_HPP_

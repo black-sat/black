@@ -66,6 +66,9 @@ namespace black_internal::logic {
     var_decl operator[](sort s) const;
   };
 
+  class domain;
+  using domain_ref = std::shared_ptr<const domain>;
+
 }
 
 

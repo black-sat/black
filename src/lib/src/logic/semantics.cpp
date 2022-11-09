@@ -57,7 +57,7 @@ namespace black_internal::logic {
       tsl::hopscotch_map<variable, var_record_t> vars;
       tsl::hopscotch_map<relation, rel_record_t> rels;
       tsl::hopscotch_map<function, func_record_t> funcs;
-      tsl::hopscotch_map<struct sort, size_t> sorts;
+      tsl::hopscotch_map<named_sort, size_t> sorts;
       
       tsl::hopscotch_map<variable, std::any> vars_data;
       tsl::hopscotch_map<relation, std::any> rels_data;
@@ -137,7 +137,7 @@ namespace black_internal::logic {
     _impl->frame->rels.insert({r, {std::move(args), rigid}});
   }
 
-  void scope::declare(struct sort s, domain_ref domain) {
+  void scope::declare(named_sort s, domain_ref domain) {
     for(variable x : domain->elements())
       declare(x, s, scope::rigid);
     
@@ -194,10 +194,15 @@ namespace black_internal::logic {
   }
 
   domain const*scope::domain(struct sort s) const {
+    if(!s.is<named_sort>())
+      return nullptr;
+    
+    named_sort n = *s.to<named_sort>();
+
     std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
 
     while(current) {
-      if(auto it = current->sorts.find(s); it != current->sorts.end()) {
+      if(auto it = current->sorts.find(n); it != current->sorts.end()) {
         black_assert(it->second < current->domains.size());
         return current->domains[it->second].get();
       }

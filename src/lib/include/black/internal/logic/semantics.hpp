@@ -41,7 +41,7 @@ namespace black_internal::logic {
   // have no associated domain, or finite and enumerated, in which case they are
   // associated with a `domain` object by the `scope` class below. 
   //
-  class BLACK_EXPORT domain 
+  class BLACK_EXPORT domain : public std::enable_shared_from_this<domain>
   {
   public:
     domain(std::vector<variable> elements) 
@@ -64,7 +64,7 @@ namespace black_internal::logic {
   // using domain_ref = std::unique_ptr<const domain>;
 
   inline domain_ref make_domain(std::vector<variable> elements) {
-    return std::make_unique<const domain>(std::move(elements));
+    return std::make_shared<const domain>(std::move(elements));
   }
 
   //
@@ -122,7 +122,10 @@ namespace black_internal::logic {
       declare(d.variable(), d.sort(), r);
     }
 
-    void declare(struct sort s, domain_ref d);
+    void declare(named_sort s, domain_ref d);
+    void declare(sort_decl d) {
+      declare(d.sort(), d.domain());
+    }
 
     std::optional<struct sort> sort(variable) const;
     std::optional<struct sort> sort(function) const;

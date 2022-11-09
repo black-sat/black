@@ -39,7 +39,7 @@ TEST_CASE("Sorts and domains") {
   auto c3 = sigma.variable("c3");
   auto c4 = sigma.variable("c4");
 
-  sort s = sigma.named_sort("example");
+  named_sort s = sigma.named_sort("example");
 
   std::vector<formula> tests = {
     exists(x[s], distinct(std::vector<term>{c1, c2, c3, c4, x})),

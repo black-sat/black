@@ -407,13 +407,6 @@ declare_hierarchy(formula)
 
 end_hierarchy(formula)
 
-declare_simple_hierarchy(declaration)
-  declare_leaf_storage_kind(declaration, var_decl)
-    declare_field(declaration, var_decl, class variable, variable)
-    declare_field(declaration, var_decl, struct sort, sort)
-  end_leaf_storage_kind(decalration, var_decl)
-end_simple_hierarchy(declaration)
-
 declare_simple_hierarchy(sort)
   declare_leaf_storage_kind(sort, named_sort)
     declare_field(sort, named_sort, identifier, name)
@@ -423,6 +416,17 @@ declare_simple_hierarchy(sort)
     declare_leaf_hierarchy_element(sort, arithmetic_sort, real_sort)
   end_simple_storage_kind(sort, arithmetic_sort)
 end_simple_hierarchy(sort)
+
+declare_simple_hierarchy(declaration)
+  declare_leaf_storage_kind(declaration, var_decl)
+    declare_field(declaration, var_decl, class variable, variable)
+    declare_field(declaration, var_decl, struct sort, sort)
+  end_leaf_storage_kind(decalration, var_decl)
+  declare_leaf_storage_kind(declaration, sort_decl)
+    declare_field(declaration, sort_decl, named_sort, sort)
+    declare_field(declaration, sort_decl, domain_ref, domain)
+  end_leaf_storage_kind(decalration, sort_decl)
+end_simple_hierarchy(declaration)
 
 #undef declare_hierarchy
 #undef declare_simple_hierarchy
