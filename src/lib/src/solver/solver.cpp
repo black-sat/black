@@ -239,6 +239,10 @@ namespace black_internal::solver
             }
           );
         },
+        [](tomorrow) { },
+        [](w_tomorrow) { },
+        [](yesterday) { },
+        [](w_yesterday) { },
         [&](only<temporal>) {
           if(quantified)
             err(

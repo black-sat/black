@@ -277,7 +277,7 @@ namespace black_internal::encoder
         _xi.declare(q.decl(), scope::rigid);
 
         auto result = quantifier<FO>(
-          q.node_type(), q.decl(), to_ground_snf(q.matrix(), k)
+          q.node_type(), q.decl(), to_ground_snf(q.matrix(), k, true)
         );
 
         return result;
@@ -328,7 +328,7 @@ namespace black_internal::encoder
             (to_ground_snf(left,k, quant) && ground(X(u), k));
       },
       [&](w_until<LTLPFO> w, auto left, auto right) {
-        return to_ground_snf(right, k) ||
+        return to_ground_snf(right, k, quant) ||
             (to_ground_snf(left,k, quant) && ground(wX(w), k));
       },
       [&](eventually<LTLPFO> e, auto op) {

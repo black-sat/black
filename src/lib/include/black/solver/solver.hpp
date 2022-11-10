@@ -101,7 +101,7 @@ namespace black_internal::solver {
         enum type_t {
           stage,
           nnf,
-          unravstd,
+          unrav,
           empty,
           loop,
           prune
