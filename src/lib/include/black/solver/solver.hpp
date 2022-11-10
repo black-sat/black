@@ -56,6 +56,11 @@ namespace black_internal::solver {
       solver();
       ~solver();
 
+      solver(solver const&) = delete;
+      solver &operator=(solver const&) = delete;
+      solver(solver &&);
+      solver &operator=(solver &&);
+
       // Solve the formula `f` over the scope `xi`, with up to `k_max'
       // iterations returning `tribool::undef` if `k_max` is reached
       //
@@ -74,6 +79,8 @@ namespace black_internal::solver {
         size_t k_max = std::numeric_limits<size_t>::max(),
         bool semi_decision = false
       );
+
+      
 
       // Returns the model of the formula, if the last call to solve() 
       // returned true
@@ -94,7 +101,7 @@ namespace black_internal::solver {
         enum type_t {
           stage,
           nnf,
-          unrav,
+          unravstd,
           empty,
           loop,
           prune

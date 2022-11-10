@@ -77,6 +77,9 @@ namespace black_internal::encoder {
     // Make the stepped version of a function
     function stepped(function r, size_t k);
 
+    // Make the stepped version of an atom
+    atom<FO> stepped(atom<LTLPFO> a, size_t k);
+
     // Put a formula in negated normal form
     formula<LTLPFO> to_nnf(formula<LTLPFO> f);
 

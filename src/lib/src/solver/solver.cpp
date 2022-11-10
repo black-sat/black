@@ -76,6 +76,9 @@ namespace black_internal::solver
   solver::solver() : _data{std::make_unique<_solver_t>()} { }
   solver::~solver() = default;
 
+  solver::solver(solver &&) = default;
+  solver &solver::operator=(solver &&) = default;
+
   tribool solver::solve(
     scope const& xi, logic::formula<logic::LTLPFO> f, 
     bool finite, size_t k_max, bool semi_decision
@@ -137,10 +140,9 @@ namespace black_internal::solver
     if(!_solver._data->enc.has_value())
       return tribool::undef;
 
-    formula u = _solver._data->enc->to_ground_snf(a, t);
-    black_assert(u.is<logic::atom<logic::FO>>());
+    logic::atom<logic::FO> u = _solver._data->enc->stepped(a, t);
 
-    return _solver._data->sat->value(*u.to<logic::atom<logic::FO>>());
+    return _solver._data->sat->value(u);
   }
 
   void solver::_solver_t::trace(size_t k){

@@ -249,12 +249,7 @@ namespace black_internal::encoder
         if(auto s = start_of_trace_semantics(a, k); s)
           return *s;
 
-        std::vector<term<FO>> terms;
-        for(term<LTLPFO> t : a.terms())
-          terms.push_back(stepped(t, k));
-
-        relation stepped_rel = stepped(a.rel(), k);
-        return end_of_trace_semantics(a, atom(stepped_rel, terms), k);
+        return end_of_trace_semantics(a, stepped(a, k), k);
       }, // LCOV_EXCL_LINE
       [&](equality<LTLPFO> e, auto terms) -> formula<FO> {
         std::vector<term<FO>> stepterms;
@@ -513,6 +508,15 @@ namespace black_internal::encoder
       );
 
     return sf;
+  }
+
+  atom<FO> encoder::stepped(atom<LTLPFO> a, size_t k) {
+    std::vector<term<FO>> terms;
+    for(term<LTLPFO> t : a.terms())
+      terms.push_back(stepped(t, k));
+
+    relation stepped_rel = stepped(a.rel(), k);
+    return atom<FO>(stepped_rel, terms);
   }
 
   proposition encoder::ground(formula<LTLPFO> f, size_t k) {
