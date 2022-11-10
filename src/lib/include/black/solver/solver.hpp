@@ -124,6 +124,7 @@ namespace black_internal::solver {
       size_t size() const;
       size_t loop() const;
       tribool value(proposition a, size_t t) const;
+      tribool value(atom a, size_t t) const;
     private:
       friend class solver;
       model(solver const&s) : _solver{s} { }

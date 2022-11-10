@@ -42,6 +42,9 @@ namespace black_internal::solver
     // i.e., whether solve() has been called and returned true
     bool model = false;
 
+    // encoder object used in the last solve() call
+    std::optional<encoder::encoder> enc;
+
     // alphabet of last solved formula
     alphabet *sigma = nullptr;
 
@@ -130,6 +133,16 @@ namespace black_internal::solver
     return _solver._data->sat->value(u);
   }
 
+  tribool model::value(atom a, size_t t) const {
+    if(!_solver._data->enc.has_value())
+      return tribool::undef;
+
+    formula u = _solver._data->enc->to_ground_snf(a, t);
+    black_assert(u.is<logic::atom<logic::FO>>());
+
+    return _solver._data->sat->value(*u.to<logic::atom<logic::FO>>());
+  }
+
   void solver::_solver_t::trace(size_t k){
     tracer({nullptr, trace_t::stage, {k}});
   }
@@ -156,10 +169,10 @@ namespace black_internal::solver
   ) {
     scope xi = chain(s);
     
-    encoder::encoder enc{f, xi, finite};
+    enc = encoder::encoder{f, xi, finite};
     sat = black::sat::solver::get_solver(sat_backend, xi);
 
-    trace(trace_t::nnf, xi, enc.get_formula());
+    trace(trace_t::nnf, xi, enc->get_formula());
 
     sigma = f.sigma();
     model = false;
@@ -170,7 +183,7 @@ namespace black_internal::solver
       trace(k);
       // Generating the k-unraveling.
       // If it is UNSAT, then stop with UNSAT
-      auto unrav = enc.k_unraveling(k);
+      auto unrav = enc->k_unraveling(k);
       trace(trace_t::unrav, xi, unrav);
       sat->assert_formula(unrav);
       if(tribool res = sat->is_sat(); !res)
@@ -178,8 +191,8 @@ namespace black_internal::solver
 
       // else, continue to check EMPTY and LOOP.
       // If the k-unrav is SAT assuming EMPTY or LOOP, then stop with SAT
-      auto empty = enc.k_empty(k);
-      auto loop = enc.k_loop(k);
+      auto empty = enc->k_empty(k);
+      auto loop = enc->k_loop(k);
       trace(trace_t::empty, xi, empty);
       trace(trace_t::loop, xi, loop);
       if(sat->is_sat_with(empty || loop)) {
@@ -192,7 +205,7 @@ namespace black_internal::solver
       // else, generate the PRUNE
       // If the PRUNE is UNSAT, the formula is UNSAT
       if(!semi_decision) {
-        auto prune = enc.prune(k);
+        auto prune = enc->prune(k);
         trace(trace_t::prune, xi, prune);
         sat->assert_formula(!prune);
         if(tribool res = sat->is_sat(); !res)

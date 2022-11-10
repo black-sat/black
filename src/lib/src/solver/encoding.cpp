@@ -484,7 +484,7 @@ namespace black_internal::encoder
 
     variable sx = _sigma->variable(std::pair{x, k});
     if(_xi.sort(x) && !_xi.sort(sx))
-      _global_xi.declare(sx, *_xi.sort(x), scope::rigid);
+      _global_xi->declare(sx, *_xi.sort(x), scope::rigid);
 
     return sx;
   }
@@ -496,7 +496,7 @@ namespace black_internal::encoder
 
     relation sr = _sigma->relation(std::pair{r, k});
     if(_xi.signature(r) && !_xi.signature(sr))
-      _global_xi.declare(sr, *_xi.signature(r), scope::rigid);
+      _global_xi->declare(sr, *_xi.signature(r), scope::rigid);
 
     return sr;
   }
@@ -508,7 +508,7 @@ namespace black_internal::encoder
 
     function sf = _sigma->function(std::pair{f, k});
     if(_xi.signature(f) && _xi.sort(f) && !_xi.signature(sf))
-      _global_xi.declare(
+      _global_xi->declare(
         sf, *_xi.sort(f), *_xi.signature(f), scope::rigid
       );
 

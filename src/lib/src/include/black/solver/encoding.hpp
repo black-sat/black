@@ -44,12 +44,18 @@ namespace black_internal::encoder {
   {
     encoder(formula<LTLPFO> f, scope &xi, bool finite) 
       : _frm{f}, _sigma{_frm.sigma()}, 
-        _global_xi{xi}, _xi{chain(xi)}, 
+        _global_xi{&xi}, _xi{chain(xi)}, 
         _finite{finite}
     {
       _frm = to_nnf(_frm);
       _add_xyz_requests(_frm);
     }
+
+    encoder(encoder const&) = delete;
+    encoder(encoder &&) = default;
+
+    encoder &operator=(encoder const&) = delete;
+    encoder &operator=(encoder &&) = default;
 
     formula<LTLPFO> get_formula() const { return _frm; }
 
@@ -108,7 +114,7 @@ namespace black_internal::encoder {
     alphabet *_sigma = nullptr;
 
     // scope 
-    scope &_global_xi;
+    scope *_global_xi;
 
     scope _xi;
 
