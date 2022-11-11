@@ -231,3 +231,5 @@ gh.token
 appveyor.token
 
 docs/_build
+
+.disabled-solvers.cfg
