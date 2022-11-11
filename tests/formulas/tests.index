@@ -3120,7 +3120,7 @@ regressions/yrequests.pltl;SAT
 regressions/s_release-w_until.pltl;SAT
 regressions/prune.pltl;UNSAT
 regressions/prune_past.pltl;UNSAT
-regressions/recursion.pllt;SAT
+regressions/recursion.pltl;SAT
 finite_models/random/random_formulas_dim20_3.pltl;SAT
 finite_models/random/random_formulas_dim40_5.pltl;SAT
 finite_models/random/random_formulas_dim50_7.pltl;SAT
