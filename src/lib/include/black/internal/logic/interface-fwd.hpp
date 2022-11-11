@@ -24,6 +24,8 @@
 #ifndef BLACK_LOGIC_CUSTOM_HPP_
 #define BLACK_LOGIC_CUSTOM_HPP_
 
+#include <memory>
+
 namespace black_internal::logic {
 
   //
