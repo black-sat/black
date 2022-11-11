@@ -46,7 +46,10 @@ namespace black_internal::dimacs
     }
   };
 
-  solver::solver() : _data{ std::make_unique<_solver_t>() } { }
+  solver::solver() : 
+    _data{ std::make_unique<_solver_t>() } { }
+
+  solver::solver(scope const&) : solver() { }
 
   solver::~solver() = default;
 
@@ -99,6 +102,10 @@ namespace black_internal::dimacs
     uint32_t prop = it->second;
 
     return this->value(prop);
+  }
+
+  tribool solver::value(logic::atom<logic::FO>) const {
+    return tribool::undef;
   }
 
   void solver::clear_vars() {

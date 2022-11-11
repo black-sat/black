@@ -24,7 +24,10 @@
 #ifndef BLACK_LOGIC_CUSTOM_HPP_
 #define BLACK_LOGIC_CUSTOM_HPP_
 
+#include <memory>
+
 namespace black_internal::logic {
+
   //
   // relations and functions support creating the associated atom or application
   // (respectively) with a simple call-like syntax such as f(x, y).
@@ -52,6 +55,22 @@ namespace black_internal::logic {
         requires hierarchy<std::ranges::range_value_t<R>>
     auto operator()(R const& v) const;
   };
+
+  //
+  // A variable `x` can be subscripted with a sort `s`, as in `x[s]`, to obtain 
+  // the corresponding `var_decl`.
+  //
+  struct sort;
+  class var_decl;
+
+  template<typename Derived>
+  struct variable_decl_op {
+    var_decl operator[](sort s) const;
+  };
+
+  class domain;
+  using domain_ref = std::shared_ptr<const domain>;
+
 }
 
 

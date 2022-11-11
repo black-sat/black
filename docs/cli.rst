@@ -191,9 +191,9 @@ In this logic, we can use *variables* that take values over certains domains.
 Since BLACK supports the LIA and LRA theories (possibly combined with EUF),
 variables can be either *integer*- or *real*-valued. When giving a |LTLfMT|
 formula as input, we have to choose the domain using the ``-d`` option. Accepted
-values are ``integers`` and ``reals``::
+values are ``Int`` and ``Real``::
 
-   $ black solve -d integers -f 'x = y + 2'
+   $ black solve -d Int -f 'x = y + 2'
    SAT
 
 .. note:: 
@@ -208,7 +208,7 @@ values are ``integers`` and ``reals``::
 We can refer to the value of a variable at the next state using the *strong* or
 the *weak next* term constructors. For example::
 
-   $ black solve -d integers -f 'x = 0 & G(wnext(x) = x + 1) & F(x = 42)'
+   $ black solve -d Int -f 'x = 0 & G(wnext(x) = x + 1) & F(x = 42)'
    black: warning: use of `next`/`prev` terms implies the --semi-decision option.
    black: warning: execution may not terminate.
    black: warning: pass the --semi-decision option explicitly to silence this warning.
@@ -220,7 +220,7 @@ hence ``black`` turns on implicitly the ``--semi-decision`` option which
 disables the termination checks. To silence the warning, you can pass the 
 option yourself (here we use the ``-s`` short option)::
 
-   $ black solve -s -d integers -f 'x = 0 & G(wnext(x) = x + 1) & F(x = 42)'
+   $ black solve -s -d Int -f 'x = 0 & G(wnext(x) = x + 1) & F(x = 42)'
    SAT
 
 .. note:: 
@@ -288,7 +288,7 @@ Check the satisfiability of a temporal logic formula.
    select the domain for first-order variables. Mandatory for first-order 
    formulas.
                                  
-   Accepted domains: ``integers``, ``reals``
+   Accepted domains: ``Int``, ``Real``
    
 .. option:: -s, --semi-decision         
    

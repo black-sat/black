@@ -32,6 +32,12 @@
 //
 //
 
+namespace black_internal::logic {
+  class scope;
+  class nest_scope_t;
+  domain_ref make_domain(std::vector<variable>);
+}
+
 namespace black {
 
   //
@@ -41,6 +47,12 @@ namespace black {
   namespace logic {
     inline namespace common {
       using black_internal::logic::alphabet;
+      using black_internal::logic::var_decl;
+      using black_internal::logic::domain;
+      using black_internal::logic::domain_ref;
+      using black_internal::logic::make_domain;
+      using black_internal::logic::scope;
+      using black_internal::logic::nest_scope_t;
       using black_internal::logic::otherwise;
       using black_internal::logic::syntax_element;
       using black_internal::logic::fragment;
@@ -57,8 +69,7 @@ namespace black {
       using black_internal::logic::has_any_element_of;
       using black_internal::logic::big_and;
       using black_internal::logic::big_or;
-      using black_internal::logic::sum;
-      using black_internal::logic::product;
+      using black_internal::logic::replace;
     }
     
     using black_internal::logic::only;
@@ -153,24 +164,26 @@ namespace black {
   Element(atom) \
   Element(exists) \
   Element(forall) \
+  Element(var_decl) \
   Element(constant) \
   Element(variable) \
   Element(application) \
   Element(negative) \
+  Element(to_integer) \
+  Element(to_real) \
   Element(subtraction) \
   Element(addition) \
   Element(multiplication) \
   Element(division) \
+  Element(int_division) \
   Element(equal) \
-  Element(not_equal) \
+  Element(distinct) \
   Element(less_than) \
   Element(less_than_equal) \
   Element(greater_than) \
   Element(greater_than_equal) \
   Element(integer) \
   Element(real) \
-  Element(zero) \
-  Element(one) \
   Element(relation) \
   Element(function)
 

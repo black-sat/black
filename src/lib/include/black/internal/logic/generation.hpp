@@ -818,7 +818,7 @@ namespace black_internal::logic
   // Here we generate an array of string literals that maps the index of a
   // field/child/child vector to its name (as a string). The last literal of the
   // array is there to avoid declaring an empty array, for storage kinds without
-  // fields nor children (e.g. `primitive_sort`).
+  // fields nor children (e.g. `arithmetic_sort`).
   //
   #define declare_storage_kind(Base, Storage) \
     inline constexpr std::string_view Storage##_fields[] = {

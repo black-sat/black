@@ -44,6 +44,7 @@ namespace black_internal
     using error_handler = std::function<void(std::string)>;
 
     parser(logic::alphabet &sigma, std::istream &stream, error_handler error);
+    
     ~parser();
 
     std::optional<logic::formula<logic::LTLPFO>> parse();
@@ -56,13 +57,15 @@ namespace black_internal
   // Easy entry-point for parsing formulas
   BLACK_EXPORT
   std::optional<logic::formula<logic::LTLPFO>>
-  parse_formula(logic::alphabet &sigma, std::string const&s,
-                parser::error_handler error);
+  parse_formula(
+    logic::alphabet &sigma, std::string const&s, parser::error_handler error
+  );
 
   BLACK_EXPORT
   std::optional<logic::formula<logic::LTLPFO>>
-  parse_formula(logic::alphabet &sigma, std::istream &s,
-                parser::error_handler error);
+  parse_formula(
+    logic::alphabet &sigma, std::istream &s, parser::error_handler error
+  );
 
   BLACK_EXPORT
   inline std::optional<logic::formula<logic::LTLPFO>>

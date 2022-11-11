@@ -21,8 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic/alphabet.hpp>
-#include <black/logic/formula.hpp>
+#include <black/logic/logic.hpp>
 #include <black/logic/parser.hpp>
 #include <black/logic/prettyprint.hpp>
 
@@ -62,11 +61,11 @@ void print_help(std::string const& command){
 
 // Generate benchmarks for LRA theory and category 1
 void generate_category_1 (alphabet &sigma, int64_t n) {
-  variable x = sigma.var("x");
-  variable c = sigma.var("c");
+  variable x = sigma.variable("x");
+  variable c = sigma.variable("c");
   
-  formula counter = c == 1 && G(wnext(c) == 10*c);
-  formula body = x == c && G(wnext(x) == x / 10) && F(x == 1);
+  formula counter = c == 1.0 && G(wnext(c) == 10.0 * c);
+  formula body = x == c && G(wnext(x) == x / 10.0) && F(x == 1.0);
 
   for(int64_t i = 0; i < n; i++)
     body = X(body);
@@ -79,23 +78,20 @@ void generate_category_1 (alphabet &sigma, int64_t n) {
 // Generate benchmarks for LRA theory and category 2
 void generate_category_2 (alphabet &sigma, int64_t n) {
   // variables and constants
-  variable c      = sigma.var("c");
-  variable x      = sigma.var("x");
-  variable e      = sigma.var("e");
-  variable g      = sigma.var("g");
-  constant const0 = sigma.constant(0);
-  constant const1 = sigma.constant(1);
-  constant const2 = sigma.constant(2);
+  variable c      = sigma.variable("c");
+  variable x      = sigma.variable("x");
+  variable e      = sigma.variable("e");
+  variable g      = sigma.variable("g");
 
   // base case
-  formula basecase = x == 0 && e == 1;
-  formula counter = c == 1 && G(wnext(c) == 10 * c);
+  formula basecase = x == 0.0 && e == 1.0;
+  formula counter = c == 1.0 && G(wnext(c) == 10.0 * c);
 
   // G(wnext(e) < e)
-  formula body = g == c && G((wnext(e) == e / 2) && (wnext(x) == x + e) && ((const0 <= x) && (x < const2)));
+  formula body = g == c && G((wnext(e) == e / 2.0) && (wnext(x) == x + e) && ((0.0 <= x) && (x < 2.0)));
 
   // F(x > 1.(9)^n)
-  body = body && F(x > const2 - (const1 / c));
+  body = body && F(x > 2.0 - (1.0 / c));
 
   for(int64_t i = 0; i < n; ++i)
     body = X(body);

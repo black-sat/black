@@ -1248,6 +1248,12 @@ namespace black_internal::logic {
       auto obj = static_cast<node_t const *>(f.node());
       return std::optional<Derived>{Derived{f.sigma(), obj}};
     }
+
+    // we return an empty result for unrelated hierarchies
+    template<hierarchy F, typename D = Derived>
+    static std::optional<Derived> from(F) {
+      return {};
+    }
   };
 
   //
@@ -1563,21 +1569,22 @@ namespace black_internal::logic {
   // argument exists it means the hierarchy is a leaf and an instance has to be
   // requested directly to the alphabet (e.g. sigma.proposition("p")).
   //
-  template<std::ranges::range R, typename ...Args>
-    requires hierarchy<std::ranges::range_value_t<R>>
-  alphabet *get_sigma(R const& r, Args ...) {
-    black_assert(!empty(r));
-    return begin(r)->sigma();
-  }
-
-  template<hierarchy T, typename ...Args>
-  alphabet *get_sigma(T v, Args ...) {
-      return v.sigma();
-  }
-  
   template<typename T, typename ...Args>
-  alphabet *get_sigma(T, Args ...args) {
+  alphabet *get_sigma(T v, Args ...args) {
+    if constexpr(std::ranges::range<T>) {
+      if constexpr(hierarchy<std::ranges::range_value_t<T>>) {
+        black_assert(!empty(v));
+        return begin(v)->sigma();
+      } else if constexpr(hierarchy<T>) {
+        return v.sigma();
+      } else {
+        return get_sigma(args...);
+      } 
+    } else if constexpr(hierarchy<T>) {
+      return v.sigma();
+    } else {
       return get_sigma(args...);
+    }
   }
 
   //

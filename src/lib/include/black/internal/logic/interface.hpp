@@ -26,6 +26,7 @@
 
 #include <black/support/common.hpp>
 
+#include <memory>
 #include <ranges>
 #include <stack>
 
@@ -39,14 +40,13 @@
 namespace black_internal::logic {
 
   //
-  // As a first thing we define the real `alphabet` class, which is just a thin
-  // addition over the `alphabet_base` class defined before, which does the
-  // heavy lifting.
+  // As a first thing we define the real `alphabet` class, which derives from
+  // the `alphabet_base` class defined before, which does the heavy lifting.
   //
   class alphabet : public alphabet_base
   {
   public:
-    alphabet() : _default_sort{this->custom_sort("default")} { }
+    alphabet() = default;
     alphabet(alphabet const&) = delete;
     alphabet(alphabet &&) = default;
 
@@ -60,12 +60,6 @@ namespace black_internal::logic {
     class boolean bottom() {
       return this->boolean(false);
     }
-
-    sort default_sort() const { return _default_sort; }
-    void set_default_sort(sort s) { _default_sort = s; }
-
-  private:
-    sort _default_sort;
   };
  
   //
@@ -119,6 +113,14 @@ namespace black_internal::logic {
 
     return atom<Syntax>(static_cast<Derived const&>(*this), v);
   }
+  
+  //
+  // And the implementation of the subscript operator for variables
+  //
+  template<typename Derived>
+  var_decl variable_decl_op<Derived>::operator[](sort s) const {
+    return s.sigma()->var_decl(static_cast<Derived const&>(*this), s);
+  }
 
   //
   // Now we declare operators acting on terms. The complication here is that we
@@ -143,38 +145,22 @@ namespace black_internal::logic {
 
   using wrapped_int = make_fragment_t< 
     syntax_element::constant,
-    syntax_element::zero,
-    syntax_element::one,
     syntax_element::integer
   >;
   
   using wrapped_real = make_fragment_t< 
     syntax_element::constant,
-    syntax_element::zero,
-    syntax_element::one,
     syntax_element::real
   >;
 
   template<std::integral T>
   constant<wrapped_int> wrap_term_op_arg(alphabet *sigma, T t) {
-    int64_t value = int64_t{t};
-    if(value == 0)
-      return constant{sigma->zero()};
-    if(value == 1)
-      return constant{sigma->one()};
-
-    return constant{sigma->integer(value)};
+    return constant{sigma->integer(int64_t{t})};
   }
 
   template<std::floating_point T>
   constant<wrapped_real> wrap_term_op_arg(alphabet *sigma, T t) { 
-    double value = double{t};
-    if(value == 0.0)
-      return constant{sigma->zero()};
-    if(value == 1.0)
-      return constant{sigma->one()};
-
-    return constant{sigma->real(value)};
+    return constant{sigma->real(double{t})};
   }
 
   //
@@ -201,6 +187,16 @@ namespace black_internal::logic {
   declare_term_op(/, division)
 
   #undef declare_term_op
+
+  // similar function for integer division, but it's not an operator
+  template<term_op_arg Arg1, term_op_arg Arg2>
+  auto div(Arg1 arg1, Arg2 arg2) {
+    alphabet *sigma = get_sigma(arg1, arg2);
+    return
+      int_division(
+        wrap_term_op_arg(sigma, arg1), wrap_term_op_arg(sigma, arg2)
+      );
+  }
 
   //
   // The unary minus does not follow the above schema because it's unary, but
@@ -260,16 +256,17 @@ namespace black_internal::logic {
     using S = deduce_fragment_for_storage_t<syntax_element::equal, T1, T2>;
 
     return term_equality_wrapper<S, syntax_element::equal>{
-      t1.unique_id() == t2.unique_id(), equal<S>(t1, t2)
+      t1.unique_id() == t2.unique_id(), equal<S>(std::vector<term<S>>{t1, t2})
     };
   }
 
   template<is_term T1, is_term T2>
   auto operator!=(T1 t1, T2 t2) {
-    using S = deduce_fragment_for_storage_t<syntax_element::not_equal, T1, T2>;
+    using S = deduce_fragment_for_storage_t<syntax_element::distinct, T1, T2>;
 
-    return term_equality_wrapper<S, syntax_element::not_equal>{
-      t1.unique_id() != t2.unique_id(), not_equal<S>(t1, t2)
+    return term_equality_wrapper<S, syntax_element::distinct>{
+      t1.unique_id() != t2.unique_id(), 
+      distinct<S>(std::vector<term<S>>{t1, t2})
     };
   }
 
@@ -283,15 +280,14 @@ namespace black_internal::logic {
     requires (!std::is_class_v<Arg1> || !std::is_class_v<Arg2>)
   auto operator ==(Arg1 arg1, Arg2 arg2) {
     alphabet *sigma = get_sigma(arg1, arg2);
-    return equal(wrap_term_op_arg(sigma, arg1), wrap_term_op_arg(sigma, arg2));
+    return wrap_term_op_arg(sigma, arg1) == wrap_term_op_arg(sigma, arg2);
   }
   
   template<term_op_arg Arg1, term_op_arg Arg2>
     requires (!std::is_class_v<Arg1> || !std::is_class_v<Arg2>)
   auto operator !=(Arg1 arg1, Arg2 arg2) {
     alphabet *sigma = get_sigma(arg1, arg2);
-    return 
-      not_equal(wrap_term_op_arg(sigma, arg1), wrap_term_op_arg(sigma, arg2));
+    return wrap_term_op_arg(sigma, arg1) != wrap_term_op_arg(sigma, arg2);
   }
 
   //
@@ -376,10 +372,6 @@ namespace black_internal::logic {
   struct hierarchy_element_custom_members<syntax_element::addition, Derived>
   { 
     auto operands() const;
-
-    static auto identity(alphabet *sigma) {
-      return constant{sigma->zero()};
-    }
   };
   
   template<typename Derived>
@@ -387,10 +379,6 @@ namespace black_internal::logic {
     syntax_element::multiplication, Derived
   > { 
     auto operands() const;
-
-    static auto identity(alphabet *sigma) {
-      return constant{sigma->one()};
-    }
   };
 
   //
@@ -446,20 +434,16 @@ namespace black_internal::logic {
     );
   }
   
-  template<std::ranges::range Range, typename F>
-  auto sum(alphabet &sigma, Range const& r, F&& f) {
-    return fold_op<syntax_element::addition>(
-      sigma, r, std::forward<F>(f)
-    );
+  template<std::ranges::range Range>
+  auto big_and(alphabet &sigma, Range const& r) {
+    return big_and(sigma, r, [](auto x) { return x; });
   }
   
-  template<std::ranges::range Range, typename F>
-  auto product(alphabet &sigma, Range const& r, F&& f) {
-    return fold_op<syntax_element::multiplication>(
-      sigma, r, std::forward<F>(f)
-    );
+  template<std::ranges::range Range>
+  auto big_or(alphabet &sigma, Range const& r) {
+    return big_or(sigma, r, [](auto x) { return x; });
   }
-
+  
   //
   // Here we define a utility class that helps to pattern match associative
   // binary elements such as conjunctions and disjunctions or sums and products.
@@ -680,7 +664,7 @@ namespace black_internal::logic {
   class quantifier_block_view<Syntax>::const_iterator {
   public:
     using difference_type = ssize_t;
-    using value_type = variable;
+    using value_type = var_decl;
 
     // All due constructors. A default-constructed iterator equals to end()
     // because `_quantifier` is empty.
@@ -720,10 +704,10 @@ namespace black_internal::logic {
       return o;
     }
 
-    // Here we just return the variable of the current quantifier
-    variable operator*() const {
+    // Here we just return the declaration of the current quantifier
+    var_decl operator*() const {
       black_assert(_quantifier.has_value());
-      return _quantifier->var();
+      return _quantifier->decl();
     }
 
   private:
@@ -865,7 +849,7 @@ namespace black_internal::logic {
     }
     
     specific_quantifier_block(
-      std::initializer_list<variable> const&vars,
+      std::initializer_list<var_decl> const&vars,
       formula<Syntax> matrix
     ) : specific_quantifier_block{
       create_block<element_t>(fragment_enum_value<E>{}, vars, matrix)
@@ -938,6 +922,97 @@ namespace black_internal::logic {
       return {static_cast<quantifier<Syntax> const&>(*this)}; 
     }
   };
+
+  //
+  // Utility function to replace some subterms of a term with some replacement
+  //
+  template<fragment Syntax>
+  term<Syntax> replace(
+    term<Syntax> src, 
+    std::vector<term<Syntax>> patterns,
+    std::vector<term<Syntax>> replacements
+  ) {
+    black_assert(patterns.size() == replacements.size());
+    auto it = std::find(patterns.begin(), patterns.end(), src);
+    if(it != patterns.end())
+      return replacements[it - patterns.begin()];
+
+    return src.match(
+      [&](application<Syntax>, auto func, auto terms) {
+        std::vector<term<Syntax>> newterms;
+        for(auto t : terms)
+          newterms.push_back(replace(t, patterns, replacements));
+        return func(newterms);
+      },
+      [&](unary_term<Syntax> t, auto arg) {
+        return 
+          unary_term<Syntax>(
+            t.node_type(), replace(arg, patterns, replacements)
+          );
+      },
+      [&](binary_term<Syntax> t, auto left, auto right) {
+        return
+          binary_term<Syntax>(
+            t.node_type(), 
+            replace(left, patterns, replacements),
+            replace(right, patterns, replacements)
+          );
+      },
+      [&](otherwise) {
+        return src;
+      }
+    );
+  }
+
+  //
+  // Utility function to replace some term inside a formula with some
+  // replacement
+  //
+  template<fragment Syntax>
+  formula<Syntax> replace(
+    formula<Syntax> src, 
+    std::vector<term<Syntax>> patterns,
+    std::vector<term<Syntax>> replacements
+  ) {
+    return src.match(
+      [&](atom<Syntax>, auto rel, auto terms) {
+        std::vector<term<Syntax>> newterms;
+        for(auto t : terms)
+          newterms.push_back(replace(t, patterns, replacements));
+        return rel(newterms);
+      },
+      [&](equality<Syntax> e, auto terms) {
+        std::vector<term<Syntax>> newterms;
+        for(auto t : terms)
+          newterms.push_back(replace(t, patterns, replacements));
+        return equality<Syntax>(e.node_type(), newterms);
+      },
+      [&](comparison<Syntax> c, auto left, auto right) {
+        return
+          comparison<Syntax>(
+            c.node_type(), 
+            replace(left, patterns, replacements),
+            replace(right, patterns, replacements)
+          );
+      },
+      [&](unary<Syntax> u, auto op) {
+        return unary<Syntax>(
+          u.node_type(), replace(op, patterns, replacements)
+        );
+      },
+      [&](binary<Syntax> b, auto left, auto right) {
+        return
+          binary<Syntax>(
+            b.node_type(), 
+            replace(left, patterns, replacements),
+            replace(right, patterns, replacements)
+          );
+      },
+      [&](otherwise) {
+        return src;
+      }
+    );
+  }
 }
 
 #endif // BLACK_LOGIC_SUGAR_HPP_

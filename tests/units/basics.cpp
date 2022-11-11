@@ -189,6 +189,7 @@ TEST_CASE("New API") {
       REQUIRE(n.is<negation<LTL>>());
       REQUIRE(n.is<negation<LTLP>>());
       REQUIRE(!n.is<negation<propositional>>());
+      REQUIRE(!n.is<unary_term<FO>>());
     }
   }
 
@@ -221,13 +222,16 @@ TEST_CASE("New API") {
 
   SECTION("Quantifiers") {
     variable x = sigma.variable("x");
-    comparison<FO> e = comparison<FO>(comparison<FO>::type::equal{}, x, x);
-    quantifier<FO> f = quantifier<FO>(quantifier<FO>::type::forall{}, x, e);
+    sort s = sigma.integer_sort();
+    comparison<FO> e = 
+      comparison<FO>(comparison<FO>::type::greater_than{}, x, x);
+    quantifier<FO> f = quantifier<FO>(quantifier<FO>::type::forall{}, x[s], e);
 
     REQUIRE(e.left() == x);
     REQUIRE(e.right() == x);
 
-    REQUIRE(bool(f.var() == x));
+    REQUIRE(bool(f.decl().variable() == x));
+    REQUIRE(f.decl().sort() == s);
     REQUIRE(f.matrix() == e);
   }
   
@@ -238,7 +242,7 @@ TEST_CASE("New API") {
     unary u = unary<propositional>(unary<propositional>::type::negation{}, b);
     conjunction c = conjunction(p, b);
     binary c2 = conjunction(u, b);
-    equal eq = equal(x, x);
+    equal eq = equal(std::vector<term<FO>>{x, x});
 
     static_assert(std::is_same_v<decltype(c2), binary<propositional>>);
 
@@ -303,40 +307,40 @@ TEST_CASE("New API") {
     comparison le = x <= c;
     comparison gt = x > c;
     comparison ge = x >= c;
-    comparison eq = x == c;
-    comparison ne = x != c;
+    equality eq = x == c;
+    equality ne = x != c;
     formula feq = x == c;
     formula fne = x != c;
     comparison lt0 = x < 0;
     comparison le0 = x <= 0;
     comparison gt0 = x > 0;
     comparison ge0 = x >= 0;
-    comparison eq0 = x == 0;
-    comparison ne0 = x != 0;
+    equality eq0 = x == 0;
+    equality ne0 = x != 0;
     formula feq0 = x == 0;
     formula fne0 = x != 0;
     comparison lt0p = 0 < x;
     comparison le0p = 0 <= x;
     comparison gt0p = 0 > x;
     comparison ge0p = 0 >= x;
-    comparison eq0p = 0 == x;
-    comparison ne0p = 0 != x;
+    equality eq0p = 0 == x;
+    equality ne0p = 0 != x;
     formula feq0p = 0 == x;
     formula fne0p = 0 != x;
     comparison lt0f = x < 1.0;
     comparison le0f = x <= 1.0;
     comparison gt0f = x > 1.0;
     comparison ge0f = x >= 1.0;
-    comparison eq0f = x == 1.0;
-    comparison ne0f = x != 1.0;
+    equality eq0f = x == 1.0;
+    equality ne0f = x != 1.0;
     formula feq0f = x == 0.0;
     formula fne0f = x != 0.0;
     comparison lt0fp = 0.0 < x;
     comparison le0fp = 0.0 <= x;
     comparison gt0fp = 0.0 > x;
     comparison ge0fp = 0.0 >= x;
-    comparison eq0fp = 0.0 == x;
-    comparison ne0fp = 0.0 != x;
+    equality eq0fp = 0.0 == x;
+    equality ne0fp = 0.0 != x;
     formula feq0fp = 0.0 == x;
     formula fne0fp = 0.0 != x;
 
@@ -344,42 +348,42 @@ TEST_CASE("New API") {
     REQUIRE(le.is<comparison<FO>>());
     REQUIRE(gt.is<comparison<FO>>());
     REQUIRE(ge.is<comparison<FO>>());
-    REQUIRE(eq.is<comparison<FO>>());
-    REQUIRE(ne.is<comparison<FO>>());
-    REQUIRE(feq.is<comparison<FO>>());
-    REQUIRE(fne.is<comparison<FO>>());
+    REQUIRE(eq.is<equality<FO>>());
+    REQUIRE(ne.is<equality<FO>>());
+    REQUIRE(feq.is<equality<FO>>());
+    REQUIRE(fne.is<equality<FO>>());
     REQUIRE(lt0.is<comparison<FO>>());
     REQUIRE(le0.is<comparison<FO>>());
     REQUIRE(gt0.is<comparison<FO>>());
     REQUIRE(ge0.is<comparison<FO>>());
-    REQUIRE(eq0.is<comparison<FO>>());
-    REQUIRE(ne0.is<comparison<FO>>());
-    REQUIRE(feq0.is<comparison<FO>>());
-    REQUIRE(fne0.is<comparison<FO>>());
+    REQUIRE(eq0.is<equality<FO>>());
+    REQUIRE(ne0.is<equality<FO>>());
+    REQUIRE(feq0.is<equality<FO>>());
+    REQUIRE(fne0.is<equality<FO>>());
     REQUIRE(lt0p.is<comparison<FO>>());
     REQUIRE(le0p.is<comparison<FO>>());
     REQUIRE(gt0p.is<comparison<FO>>());
     REQUIRE(ge0p.is<comparison<FO>>());
-    REQUIRE(eq0p.is<comparison<FO>>());
-    REQUIRE(ne0p.is<comparison<FO>>());
-    REQUIRE(feq0p.is<comparison<FO>>());
-    REQUIRE(fne0p.is<comparison<FO>>());
+    REQUIRE(eq0p.is<equality<FO>>());
+    REQUIRE(ne0p.is<equality<FO>>());
+    REQUIRE(feq0p.is<equality<FO>>());
+    REQUIRE(fne0p.is<equality<FO>>());
     REQUIRE(lt0f.is<comparison<FO>>());
     REQUIRE(le0f.is<comparison<FO>>());
     REQUIRE(gt0f.is<comparison<FO>>());
     REQUIRE(ge0f.is<comparison<FO>>());
-    REQUIRE(eq0f.is<comparison<FO>>());
-    REQUIRE(ne0f.is<comparison<FO>>());
-    REQUIRE(feq0f.is<comparison<FO>>());
-    REQUIRE(fne0f.is<comparison<FO>>());
+    REQUIRE(eq0f.is<equality<FO>>());
+    REQUIRE(ne0f.is<equality<FO>>());
+    REQUIRE(feq0f.is<equality<FO>>());
+    REQUIRE(fne0f.is<equality<FO>>());
     REQUIRE(lt0fp.is<comparison<FO>>());
     REQUIRE(le0fp.is<comparison<FO>>());
     REQUIRE(gt0fp.is<comparison<FO>>());
     REQUIRE(ge0fp.is<comparison<FO>>());
-    REQUIRE(eq0fp.is<comparison<FO>>());
-    REQUIRE(ne0fp.is<comparison<FO>>());
-    REQUIRE(feq0fp.is<comparison<FO>>());
-    REQUIRE(fne0fp.is<comparison<FO>>());
+    REQUIRE(eq0fp.is<equality<FO>>());
+    REQUIRE(ne0fp.is<equality<FO>>());
+    REQUIRE(feq0fp.is<equality<FO>>());
+    REQUIRE(fne0fp.is<equality<FO>>());
 
     REQUIRE((x == x && true) == true);
     REQUIRE((true && x == x) == true);
@@ -486,9 +490,11 @@ TEST_CASE("New API") {
     variable z = sigma.variable("z");
     variable w = sigma.variable("w");
 
+    sort s = sigma.integer_sort();
+
     formula<FO> f = x == y && y == z && z == w;
 
-    std::vector<variable> v = {x, y, z, w};
+    std::vector<var_decl> v = {x[s], y[s], z[s], w[s]};
 
     static_assert(storage_kind<quantifier_block<FO>>);
 
@@ -504,7 +510,8 @@ TEST_CASE("New API") {
 
     quantifier<FO> q = qb;
 
-    quantifier<FO> q2 = exists(x, exists(y, (exists(z, exists(w, f)))));
+    quantifier<FO> q2 = 
+      exists(x[s], exists(y[s], (exists(z[s], exists(w[s], f)))));
 
     REQUIRE(q == q2);
 
@@ -512,7 +519,7 @@ TEST_CASE("New API") {
     
     REQUIRE(eb == q2);
 
-    std::vector<variable> vars;
+    std::vector<var_decl> vars;
     for(auto var : q.block().variables()) {
       vars.push_back(var);
     }
@@ -531,7 +538,7 @@ TEST_CASE("New API") {
     formula<FO> qf = q;
     qf.match(
       [&](quantifier_block<FO> b) {
-        std::vector<variable> bvars;
+        std::vector<var_decl> bvars;
         for(auto var : q.block().variables()) {
           bvars.push_back(var);
         }
@@ -543,7 +550,7 @@ TEST_CASE("New API") {
 
     qf.match(
       [&](exists_block<FO> b) {
-        std::vector<variable> bvars;
+        std::vector<var_decl> bvars;
         for(auto var : q.block().variables()) {
           bvars.push_back(var);
         }
@@ -576,8 +583,10 @@ TEST_CASE("New API") {
     variable x = sigma.variable("x");
     boolean top = sigma.top();
 
+    sort s = sigma.integer_sort();
+
     REQUIRE(has_any_element_of(
-      p && !p && x > x && exists(x, x > x) && F(F(top)),
+      p && !p && x > x && exists(x[s], x > x) && F(F(top)),
       syntax_element::boolean, quantifier<FO>::type::forall{}
     ));
   }
@@ -585,13 +594,16 @@ TEST_CASE("New API") {
   SECTION("big_and, big_or, etc...") {
     using namespace black::logic;
 
-    std::vector<int> v = {1, 2, 3, 4};
-    auto t = sum(sigma, v, [&](int i) {
-      return constant{sigma.integer(i)};
+    auto p1 = sigma.proposition("p1");
+    auto p2 = sigma.proposition("p2");
+    auto p3 = sigma.proposition("p3");
+    auto p4 = sigma.proposition("p4");
+
+    std::vector<proposition> v = {p1, p2, p3, p4};
+    auto t = big_and(sigma, v, [&](auto p) {
+      return !p;
     });
 
-    auto one = constant{sigma.integer(1)};
-
-    REQUIRE(t == (((one + 2) + 3) + 4));
+    REQUIRE(t == (((!p1 && !p2) && !p3) && !p4));
   }
 }
