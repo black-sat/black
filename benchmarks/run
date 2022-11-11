@@ -40,6 +40,17 @@ if [ -z "$MCAP" ]; then
   export MCAP
 fi
 
+# filename of disabled solvers list
+if [ -z "$DISABLED_SOLVERS" ]; then
+  DISABLED_SOLVERS=.disabled-solvers.cfg
+  export DISABLED_SOLVERS
+
+  ( \
+    cd "$(git rev-parse --show-toplevel)/benchmarks" && \
+    touch "$DISABLED_SOLVERS" \
+  )
+fi
+
 if $MCAP; then
   mcap() {
     systemd-run --quiet --user --scope -p MemoryMax=$MEMORY_MAX -p MemorySwapMax=0 $@
@@ -161,8 +172,9 @@ setup() {
   # get list of solvers run modes
   modes=$(for s in $solvers; do
     if [ -d "scripts/$s" ]; then
-      find "scripts/$s" -mindepth 1 \( ! -regex '.*/\..*' \)  -type d \
-        | sed 's|^.*scripts/||' | sed 's|/$||'
+      find "scripts/$s" -mindepth 1 -type d \
+        | sed 's|^.*scripts/||' | sed 's|/$||' \
+        | grep -v -f $DISABLED_SOLVERS
     fi
   done)
 
@@ -170,6 +182,12 @@ setup() {
   for mode in $modes; do
     report "- $mode"
   done
+  report
+
+  report "Disabled patterns:"
+  while read -r line; do  
+    report "- $line"
+  done < $DISABLED_SOLVERS
   report
 
   report "Timeout: $TIMEOUT seconds"
@@ -247,13 +265,16 @@ disable() {
   # Reset working directory
   cd "$(git rev-parse --show-toplevel)/benchmarks"
 
-  # find solvers directory
-  solvers_dir=$(pwd)/scripts
+  temp=$(mktemp)
+  while [ ! -z "$mode" ]; do
+    cp $DISABLED_SOLVERS $temp
+    echo "$mode" >> $temp
 
-  basename=$(basename $solvers_dir/$mode)
-  dirname=$(dirname $solvers_dir/$mode)
-  
-  mv "$solvers_dir/$mode" "$dirname/.$basename"
+    cat $temp | sort | uniq > $DISABLED_SOLVERS
+
+    mode=$1
+    shift
+  done
 }
 
 enable() {
@@ -267,13 +288,17 @@ enable() {
   # Reset working directory
   cd "$(git rev-parse --show-toplevel)/benchmarks"
 
-  # find solvers directory
-  solvers_dir=$(pwd)/scripts
+  while [ ! -z "$mode" ]; do
+    temp=$(mktemp)
 
-  basename=$(basename $solvers_dir/$mode)
-  dirname=$(dirname $solvers_dir/$mode)
-  
-  mv "$dirname/.$basename" "$solvers_dir/$mode" 
+    if [ -f $DISABLED_SOLVERS ]; then
+      cat $DISABLED_SOLVERS | grep -v "$mode" > $temp
+      mv $temp $DISABLED_SOLVERS
+    fi
+
+    mode=$1
+    shift
+  done
 }
 
 # prints the result of the preprocessing for the specified solver/mode
