@@ -25,8 +25,6 @@
 
 #include <black/support/bitset.hpp>
 
-#include <iostream>
-
 constexpr size_t N = 70;
 
 static constexpr black::bitset<N> test1() {
