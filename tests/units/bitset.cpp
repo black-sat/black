@@ -27,9 +27,25 @@
 
 #include <iostream>
 
-TEST_CASE("black::bitset<N>") {
-  constexpr size_t N = 70;
+constexpr size_t N = 70;
 
+static constexpr black::bitset<N> test1() {
+  black::bitset<N> b = {10, 42};
+
+  return b;
+}
+
+static constexpr black::bitset<N> test2() {
+  black::bitset<N> b1 = {10, 42};
+  black::bitset<N> b2 = {55};
+
+  return b1 | b2;
+}
+
+static_assert(test2().contains(test1()));
+
+TEST_CASE("black::bitset<N>") 
+{
   black::bitset<N> b;
 
   for(size_t i = 0; i < N; ++i) {
@@ -98,6 +114,17 @@ TEST_CASE("black::bitset<N>") {
     b3.set(42);
 
     REQUIRE(~b2 == b3);
+  }
+
+  SECTION("Initializer list constructor") {
+    black::bitset<N> b2 = {1, 2, 3, 5, 7};
+
+    REQUIRE(b2.contains(1));
+    REQUIRE(b2.contains(2));
+    REQUIRE(b2.contains(3));
+    REQUIRE(b2.contains(5));
+    REQUIRE(b2.contains(7));
+    REQUIRE(!b2.contains(8));
   }
 
 }

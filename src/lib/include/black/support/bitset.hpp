@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <limits>
+#include <concepts>
 
 namespace black_internal {
   
@@ -44,6 +45,11 @@ namespace black_internal {
 
     constexpr bitset() = default;
     constexpr bitset(bitset const&) = default;
+
+    constexpr bitset(std::initializer_list<size_t> args) {
+      for(size_t i : args)
+        set(i);
+    }
 
     constexpr bitset &operator=(bitset const&) = default;
 
