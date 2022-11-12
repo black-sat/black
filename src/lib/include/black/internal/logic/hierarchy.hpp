@@ -85,10 +85,10 @@
 //   such, the corresponding type will be non-templated. For example, `boolean`
 //   is a leaf storage kind, since it only has a field `bool value` but no
 //   children and no hierarchy elements. The class `boolean` is concrete, not a
-//   template, since there are no children to constrain the fragment of. `zero`
-//   is a leaf hierarchy element of the storage kind `identity` (hierarchy
-//   `number`). It has to be, because its parent storage kind defines no
-//   children.
+//   template, since there are no children to constrain the fragment of.
+//   `integer_sort` is a leaf hierarchy element of the storage kind
+//   `arithmetic_sort` (hierarchy `sort`). It has to be, because its parent
+//   storage kind defines no children.
 // - `simple` hierarchies and `simple` storage kinds are entities that are not
 //   parameterized over the fragment, but are always used with the universal
 //   fragment. An example is the `sort` hierarchy type and its storage kinds.

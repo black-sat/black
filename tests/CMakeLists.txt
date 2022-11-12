@@ -75,6 +75,7 @@ if(Catch2_FOUND)
     UNIT_TESTS
     units/support.cpp
     units/basics.cpp
+    units/bitset.cpp
     units/match.cpp
     units/namespaces.cpp
     units/parser.cpp
