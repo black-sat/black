@@ -487,7 +487,7 @@ namespace black_internal::logic {
     using difference_type = ssize_t;
     using value_type = 
       hierarchy_type_of_t<typename E::syntax, 
-        hierarchy_of_storage_v<storage_of_element_v<E::element>>
+        hierarchy_of_storage(storage_of_element(E::element))
       >;
 
     const_iterator() = default;

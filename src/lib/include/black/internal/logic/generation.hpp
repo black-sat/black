@@ -77,6 +77,27 @@ namespace black_internal::logic
   };
 
   //
+  // here we count the number of items in the `syntax_element` enum.
+  //
+  inline constexpr size_t syntax_element_enum_size() 
+  {
+    return 0
+    #define declare_leaf_storage_kind(Base, Storage) + 1
+    #define has_no_hierarchy_elements(Base, Storage) + 1
+    #define declare_hierarchy_element(Base, Storage, Element) + 1
+
+    #include <black/internal/logic/hierarchy.hpp>
+
+    ;
+  }
+
+  //
+  // then we ensure the count respects the bound declared in `core.hpp`.
+  //
+  static_assert(syntax_element_enum_size() <= syntax_element_max_size);
+
+
+  //
   // Printing of `syntax_element` values. This is just for debugging.
   //
   inline std::string to_string(syntax_element e) {
@@ -95,36 +116,74 @@ namespace black_internal::logic
     black_unreachable();
   }
 
-  // Specializations of the trait to associate to each storage kind its
-  // hierarchy
-  #define declare_storage_kind(Base, Storage) \
-    template<> \
-    struct hierarchy_of_storage<storage_type::Storage> { \
-      static constexpr auto value = hierarchy_type::Base; \
-    };
+  // A function to map each storage type to its hierarchy type
+  inline constexpr hierarchy_type hierarchy_of_storage(storage_type storage) {
+    switch(storage) {
+      #define declare_storage_kind(Base, Storage) \
+      case storage_type::Storage: \
+        return hierarchy_type::Base;
+
+      #include <black/internal/logic/hierarchy.hpp> 
+    }
+    black_unreachable();
+  }
   
-  #include <black/internal/logic/hierarchy.hpp>
+  // Function to map each `syntax_element` to its `storage_kind`. We have to do
+  // the same thing for all the entities included in the declaration of
+  // `syntax_element`, so hierarchy elements, leaf storage kinds, and those with
+  // `has_no_hierarchy_elements`.
+  inline constexpr storage_type storage_of_element(syntax_element element) {
+    switch(element) {
+      #define declare_storage_of_element(Storage, Element) \
+        case syntax_element::Element: \
+          return storage_type::Storage;
+      
+      #define declare_leaf_storage_kind(Base, Storage) \
+        declare_storage_of_element(Storage, Storage)
+      #define has_no_hierarchy_elements(Base, Storage) \
+        declare_storage_of_element(Storage, Storage)
+      #define declare_hierarchy_element(Base, Storage, Element) \
+        declare_storage_of_element(Storage, Element)
+      
+      #include <black/internal/logic/hierarchy.hpp>
+
+      #undef declare_storage_of_element 
+    }
+    black_unreachable();
+  }
   
-  // Specializations of the trait to associate to each syntax element its
-  // storage kind. We have to do the same thing for all the entities included in
-  // the declaration of `syntax_element`, so hierarchy elements, leaf storage
-  // kinds, and those with `has_no_hierarchy_elements`.
-  #define declare_storage_of_element(Storage, Element) \
-    template<> \
-    struct storage_of_element<syntax_element::Element> { \
-      static constexpr auto value = storage_type::Storage; \
-    };
-  
+
+  //
+  // The following function tells us if a storage kind is a leaf. The trait is a
+  // work-around to silence `-Wswitch`
+  //
+  template<storage_type Storage>
+  struct storage_has_children_trait : std::true_type { };
+
   #define declare_leaf_storage_kind(Base, Storage) \
-    declare_storage_of_element(Storage, Storage)
-  #define has_no_hierarchy_elements(Base, Storage) \
-    declare_storage_of_element(Storage, Storage)
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    declare_storage_of_element(Storage, Element)
-  
+  template<> \
+  struct storage_has_children_trait<storage_type::Storage> : \
+    std::false_type { };
+      
+  #define has_no_children(Base, Storage) \
+  template<> \
+  struct storage_has_children_trait<storage_type::Storage> : \
+    std::false_type { };
+
   #include <black/internal/logic/hierarchy.hpp>
 
-  #undef declare_storage_of_element
+  inline constexpr bool storage_has_children(storage_type storage) 
+  {
+    switch(storage) {
+      #define declare_storage_kind(Base, Storage) \
+      case storage_type::Storage: \
+        return storage_has_children_trait<storage_type::Storage>::value;
+
+      #include <black/internal/logic/hierarchy.hpp>
+    }
+    black_unreachable();
+  }
+  
 
   // Specializations of the trait to associate a `syntax_element` to those
   // storage kinds which correspond to a single `syntax_element`, such as leaf
