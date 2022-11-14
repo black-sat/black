@@ -430,7 +430,7 @@ namespace black_internal::encoder
   encoder::stepped(term<LTLPFO> t, size_t k) 
   {
     return t.match( // LCOV_EXCL_LINE
-      [](constant<LTLPFO> c) { return fragment_unsafe_cast<FO>(c); },
+      [](constant<LTLPFO> c) { return *fragment_cast<FO>(c); },
       [&](variable x) { 
         return stepped(x, k);
       },

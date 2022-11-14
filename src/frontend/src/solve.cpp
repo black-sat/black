@@ -179,10 +179,11 @@ namespace black::frontend {
     if(!cli::debug.empty())
       slv.set_tracer(&trace);
 
-    if (cli::remove_past)
-      f = black::remove_past(
-        black::fragment_unsafe_cast<black::logic::LTLP>(*f)
-      );
+    if (cli::remove_past) {
+      auto ltl = black::fragment_cast<black::logic::LTLP>(*f);
+      black_assert(ltl);
+      f = black::remove_past(*ltl);
+    }
 
     size_t bound = 
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();

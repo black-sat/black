@@ -35,6 +35,8 @@
 #include <cstdio>
 #include <cinttypes>
 
+#include <iostream>
+
 //
 // This file contains all the declarations that do not depend on including the
 // hierarchy definition file, i.e. everything that does not need the
@@ -972,11 +974,6 @@ namespace black_internal::logic {
   // The following function extracts and computes the runtime fragments from the
   // constructing arguments of a node.
   //
-  template<typename T>
-  runtime_fragment_t fragment_of(T&&) {
-    return runtime_fragment_t{};
-  }
-
   template<hierarchy_type Hierarchy>
   runtime_fragment_t fragment_of(hierarchy_node<Hierarchy> const *child) {
     storage_type storage = storage_of_element(child->type);
@@ -987,20 +984,44 @@ namespace black_internal::logic {
     return runtime_fragment_t{static_cast<size_t>(child->type)};
   }
 
-  template<hierarchy_type Hierarchy>
-  runtime_fragment_t fragment_of(
-    std::vector<hierarchy_node<Hierarchy> const *> children
-  ) {
+  template<typename T>
+  runtime_fragment_t fragment_of_(T&&) {
+    return runtime_fragment_t{};
+  }
+
+  template<hierarchy_type H, fragment Syntax>
+  struct child_wrapper;
+  template<hierarchy_type H, fragment Syntax>
+  struct children_wrapper;
+
+  template<hierarchy_type H, fragment Syntax>
+  runtime_fragment_t fragment_of_(child_wrapper<H, Syntax> child) {
+    return fragment_of(child.child);
+  }
+
+  template<hierarchy_type H, fragment Syntax>
+  runtime_fragment_t fragment_of_(children_wrapper<H, Syntax> children)
+  {
     runtime_fragment_t result;
-    for(auto child : children)
+    for(auto child : children.children)
       result = result | fragment_of(child);
 
     return result;
   }
-
+  
   template<typename ...Args>
-  runtime_fragment_t fragment_of(Args&& ...args) {
-    return (fragment_of(std::forward<Args>(args)) | ...);
+  runtime_fragment_t fragment_of_(syntax_element element, Args&& ...args) {
+    runtime_fragment_t f{static_cast<size_t>(element)};
+
+    std::cerr << "fragment_of_(element, ...)\n";
+    std::cerr << "f:      " << to_string(f) << "\n";
+    ((std::cerr << "child:  " << to_string(fragment_of_(std::forward<Args>(args))) << "\n"), ...);
+
+    auto result = f | (fragment_of_(std::forward<Args>(args)) | ...);
+
+    std::cerr << "result: " << to_string(result) << "\n";
+
+    return result;
   }
 
   //
@@ -1028,7 +1049,7 @@ namespace black_internal::logic {
     template<typename ...Args>
     storage_node_base(syntax_element element, Args&& ...args)
       : fragment_holder_base<hierarchy_of_storage(Storage)>{
-          element, fragment_of(std::forward<Args>(args)...)
+          element, fragment_of_(element, std::forward<Args>(args)...)
         } { }
 
     runtime_fragment_t fragment() const { return this->_fragment; }
@@ -1126,7 +1147,10 @@ namespace black_internal::logic {
 
     // this constructor is for internal use but has to be public (for now)
     hierarchy_base(alphabet_base *sigma, node_t const*node)
-      : _sigma{sigma}, _node{node} { }
+      : _sigma{sigma}, _node{node} 
+    { 
+      black_assert(Syntax::value.contains(fragment_of(node)));
+    }
 
     // converting constructor from other hierarchy types
     // the conversion only happen for the same kind of hierarchy (e.g. formulas)
@@ -1300,7 +1324,7 @@ namespace black_internal::logic {
     storage_base(alphabet_base *sigma, node_t const*node) 
       : base_t{sigma, node} { 
       black_assert(accepts_type::doesit(node->type));
-      black_assert(Syntax::value.contains(node->fragment()));
+      black_assert(Syntax::value.contains(fragment_of(node)));
     }
 
     // converting constructors from other storages of the same kind. 
@@ -1496,6 +1520,7 @@ namespace black_internal::logic {
     hierarchy_element_base(alphabet_base *sigma, node_t const*node) 
       : base_t{sigma, node} {
       black_assert(accepts_type::doesit(node->type));
+      black_assert(Syntax::value.contains(fragment_of(node)));
     }
 
     // converting constructor only from other equal elements with compatible
@@ -1596,13 +1621,13 @@ namespace black_internal::logic {
   template<hierarchy_type H, fragment Syntax>
   struct child_wrapper 
   {
-    child_wrapper(hierarchy_base<H, Syntax> h) : child{h} { }
+    child_wrapper(hierarchy_base<H, Syntax> h) : child{h.node()} { }
 
     operator hierarchy_node<H> const*() const {
-      return child.node();
+      return child;
     }
     
-    hierarchy_base<H, Syntax> child;
+    hierarchy_node<H> const *child;
   };
 
   template<hierarchy_type H, fragment Syntax>
@@ -2403,75 +2428,34 @@ namespace black_internal::logic {
   }
 
   //
-  // `can_fragment_cast` checks whether `fragment_unsafe_cast`, defined below,
-  // can be safely called, by traversing the hierarchy object recursively to all
-  // the children. So after a positive call of this function,
-  // `fragment_unsafe_cast` is safe to use, but beware that this requires a
-  // complete traversal of the whole hierarchy object, which for large formulas
-  // can be quite expensive. This is a prototypical application of
-  // `for_each_child`.
-  //
-  template<fragment Syntax, hierarchy H>
-  auto can_fragment_cast(H h) {
-    if(!is_syntax_element_allowed(h.node_type(), typename Syntax::list{}))
-      return false;
-
-    bool can_cast = true;
-
-    for_each_child(h, [&](auto child) {
-      if(!can_fragment_cast<Syntax>(child))
-        can_cast = false;
-    });
-
-    return can_cast;
-  }
-
-  //
   // The following function performs a cast between hierarchy types of the same
-  // type but different fragments. It does no checks whatsoever to ensure the
-  // conversion is legit, so it has to be used sparingly and only when the
-  // programmer knows from other facts that the conversion is safe. Think of it
-  // as a `static_cast` from base to derived: if you know that your Base *
-  // pointer actually points to a Derived, then everything's ok, otherwise,
-  // undefined behavior.
+  // type but different fragments. It checks that the actual runtime fragment is
+  // contained in the new static fragment. Returns an empty `optional` if the
+  // cast cannot be done.
   //
   template<fragment Syntax, hierarchy H>
-  auto fragment_unsafe_cast(H h) {
-    black_assert(can_fragment_cast<Syntax>(h));
-    return hierarchy_type_of_t<Syntax, H::hierarchy>{h.sigma(), h.node()};
+  std::optional<hierarchy_type_of_t<Syntax, H::hierarchy>> fragment_cast(H h) {
+    if(Syntax::value.contains(fragment_of(h.node())))
+      return {{h.sigma(), h.node()}};
+    return {};
   }
   
   template<fragment Syntax, storage_kind S>
-  auto fragment_unsafe_cast(S s) {
-    black_assert(can_fragment_cast<Syntax>(s));
-    return storage_type_of_t<Syntax, S::storage>{s.sigma(), s.node()};
+  std::optional<storage_type_of_t<Syntax, S::storage>> fragment_cast(S s) {
+    if(Syntax::value.contains(fragment_of(s.node())))
+      return {{s.sigma(), s.node()}};
+    return {};
   }
   
   template<fragment Syntax, hierarchy_element E>
-  auto fragment_unsafe_cast(E e) {
-    black_assert(can_fragment_cast<Syntax>(e));
-    return element_type_of_t<Syntax, E::element>{e.sigma(), e.node()};
-  }
-
-  //
-  // This function is a checked version of `fragment_unsafe_cast` that returns
-  // an empty optional if `can_fragment_cast` returns false. So this is safe to
-  // use everywhere but beware of the same performance implications of
-  // `can_fragment_cast`.
-  //
-  template<fragment Syntax, hierarchy H>
-  auto fragment_cast(H h)
-    -> std::optional<decltype(fragment_unsafe_cast<Syntax>(h))> 
-  {
-    if(can_fragment_cast<Syntax>(h))
-      return {fragment_unsafe_cast<Syntax>(h)};
-    return std::nullopt;
+  std::optional<element_type_of_t<Syntax, E::element>> fragment_cast(E e) {
+    if(Syntax::value.contains(fragment_of(e.node())))
+      return {{e.sigma(), e.node()}};
+    return {};
   }
   
   //
-  // Sometimes it is useful to perform a similar cast on fragment types. For
-  // this overload there is no `unsafe` version since this cast is very cheap,
-  // unlike those for hierarchy objects.
+  // Sometimes it is useful to perform a similar cast on fragment types. 
   //
   template<fragment Syntax, typename O, typename List>
   auto fragment_cast(fragment_type<O, List> t) {
@@ -2485,8 +2469,8 @@ namespace black_internal::logic {
   }
 
   //
-  // Another good application for `for_each_child`. This function tells whether
-  // a hierarchy object `h` contains any element among those given as arguments.
+  // A good application for `for_each_child`. This function tells whether a
+  // hierarchy object `h` contains any element among those given as arguments.
   // For example, if `f` is a formula, `has_any_element_of(f,
   // syntax_element::boolean, syntax_element::iff)` tells whether there is any
   // boolean constant in the formula or any double implication.

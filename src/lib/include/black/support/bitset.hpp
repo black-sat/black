@@ -29,7 +29,9 @@
 #include <limits>
 #include <concepts>
 
-namespace black_internal {
+#include <iostream>
+
+namespace black_internal::bitset {
   
   //
   // This is a simple replacement of the `std::bitset` class with the difference
@@ -118,8 +120,28 @@ namespace black_internal {
       return b;
     }
 
+    //
+    // Debug function to print bitsets
+    //
+    friend std::string to_string(bitset f) {
+      std::string s = "";
+      for(size_t i = 0; i < N; ++i) {
+        if(i != 0 && i % 4 == 0)
+          s += " ";
+        s += f.contains(i) ? "1" : "0";
+      }
+      return s;
+    }
+
     constexpr bool contains(bitset const& other) const {
-      return *this == (*this | other);
+      for(size_t i = 0; i < N; ++i)
+        if(other.contains(i) && !contains(i)) {
+          std::cerr << "this:  " << to_string(*this) << "\n";
+          std::cerr << "other: " << to_string(other) << "\n";
+          return false;
+        }
+      return true;
+      //return *this == (*this | other);
     }
 
   private:
@@ -133,7 +155,7 @@ namespace black_internal {
 }
 
 namespace black {
-  using black_internal::bitset;
+  using black_internal::bitset::bitset;
 }
 
 #endif // BLACK_SUPPORT_BITSET_HPP

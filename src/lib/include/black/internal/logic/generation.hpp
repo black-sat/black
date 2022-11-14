@@ -794,8 +794,8 @@ namespace black_internal::logic
   // temporary node object from those arguments (with the due unwrapping, e.g.
   // from `formula<Syntax>` to `hierarchy_node<hierarchy_type::formula>
   // const*`). Then, the `unique_<storage>` member function of `alphabet_base`
-  // (e.g. `unique_boolean`) is used to get the address of the uniqued copy of
-  // the node.
+  // (e.g. `unique_conjunction`) is used to get the address of the uniqued copy
+  // of the node.
   //
   #define declare_leaf_storage_kind(Base, Storage)
   #define declare_storage_kind(Base, Storage) \

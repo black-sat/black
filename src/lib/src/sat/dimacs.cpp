@@ -55,9 +55,10 @@ namespace black_internal::dimacs
 
   void solver::assert_formula(formula<FO> f) 
   {
-    black_assert(can_fragment_cast<propositional>(f));
+    auto pf = fragment_cast<propositional>(f);
+    black_assert(pf.has_value());
     // conversion of the formula to CNF
-    cnf::cnf c = cnf::to_cnf(fragment_unsafe_cast<propositional>(f));
+    cnf::cnf c = cnf::to_cnf(*pf);
 
     // census of new variables
     size_t old_size = _data->vars.size();
