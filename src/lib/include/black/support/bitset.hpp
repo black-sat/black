@@ -89,7 +89,9 @@ namespace black_internal::bitset {
           return false;
 
       uint64_t rem = N % _word;
-      uint64_t mask = ~(std::numeric_limits<uint64_t>::max() << rem);
+      uint64_t mask = std::numeric_limits<uint64_t>::max();
+      if(rem > 0)
+        mask = ~(mask << rem);
       return (b1._data[_width - 1] & mask) == (b2._data[_width - 1] & mask);
     }
 
@@ -132,11 +134,7 @@ namespace black_internal::bitset {
     }
 
     constexpr bool contains(bitset const& other) const {
-      for(size_t i = 0; i < N; ++i)
-        if(other.contains(i) && !contains(i))
-          return false;
-      return true;
-      //return *this == (*this | other);
+      return *this == (*this | other);
     }
 
   private:

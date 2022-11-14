@@ -35,8 +35,6 @@
 #include <cstdio>
 #include <cinttypes>
 
-#include <iostream>
-
 //
 // This file contains all the declarations that do not depend on including the
 // hierarchy definition file, i.e. everything that does not need the
@@ -971,8 +969,7 @@ namespace black_internal::logic {
   };
 
   //
-  // The following function extracts and computes the runtime fragments from the
-  // constructing arguments of a node.
+  // The following function gets the runtime fragment from a node
   //
   template<hierarchy_type Hierarchy>
   runtime_fragment_t fragment_of(hierarchy_node<Hierarchy> const *child) {
@@ -984,11 +981,20 @@ namespace black_internal::logic {
     return runtime_fragment_t{static_cast<size_t>(child->type)};
   }
 
+  //
+  // The following are wrappers over `fragment_of` to get or compute the runtime
+  // fragment from the arguments given to the constructor of `storage_node_base`
+  // below.
+  //
   template<typename T>
   runtime_fragment_t fragment_of_(T&&) {
     return runtime_fragment_t{};
   }
 
+  //
+  // `child_wrapper` and `children_wrapper` are the types used to wrap child and
+  // children arguments in the construction of storage kinds. See below.
+  //
   template<hierarchy_type H, fragment Syntax>
   struct child_wrapper;
   template<hierarchy_type H, fragment Syntax>
