@@ -29,8 +29,6 @@
 #include <limits>
 #include <concepts>
 
-#include <iostream>
-
 namespace black_internal::bitset {
   
   //
@@ -135,11 +133,8 @@ namespace black_internal::bitset {
 
     constexpr bool contains(bitset const& other) const {
       for(size_t i = 0; i < N; ++i)
-        if(other.contains(i) && !contains(i)) {
-          std::cerr << "this:  " << to_string(*this) << "\n";
-          std::cerr << "other: " << to_string(other) << "\n";
+        if(other.contains(i) && !contains(i))
           return false;
-        }
       return true;
       //return *this == (*this | other);
     }

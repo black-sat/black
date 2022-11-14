@@ -69,49 +69,33 @@ namespace black_internal::logic {
   template<typename Derived>
   template<hierarchy Arg, hierarchy ...Args>
   auto function_call_op<Derived>::operator()(Arg arg, Args ...args) const {
-    using Syntax = 
-      make_combined_fragment_t<
-        typename Derived::syntax, typename Arg::syntax, typename Args::syntax...
-      >;
-    using Hierarchy = hierarchy_type_of_t<Syntax, Arg::hierarchy>;
+    using common_t = std::common_type_t<Arg, Args...>;
 
-    std::vector<Hierarchy> v{Hierarchy(arg), Hierarchy(args)...};
-    return application<Syntax>(static_cast<Derived const&>(*this), v);
+    std::vector<common_t> v{common_t{arg}, common_t{args}...};
+    return application(static_cast<Derived const&>(*this), v);
   }
 
   template<typename Derived>
   template<std::ranges::range R>
     requires hierarchy<std::ranges::range_value_t<R>>
   auto function_call_op<Derived>::operator()(R const& v) const {
-    using Syntax = make_combined_fragment_t<
-      typename Derived::syntax, typename std::ranges::range_value_t<R>::syntax
-    >;
-
-    return application<Syntax>(static_cast<Derived const&>(*this), v);
+    return application(static_cast<Derived const&>(*this), v);
   }
   
   template<typename Derived>
   template<hierarchy Arg, hierarchy ...Args>
   auto relation_call_op<Derived>::operator()(Arg arg, Args ...args) const {
-    using Syntax = 
-      make_combined_fragment_t<
-        typename Derived::syntax, typename Arg::syntax, typename Args::syntax...
-      >;
-    using Hierarchy = hierarchy_type_of_t<Syntax, Arg::hierarchy>;
+    using common_t = std::common_type_t<Arg, Args...>;
 
-    std::vector<Hierarchy> v{Hierarchy(arg), Hierarchy(args)...};
-    return atom<Syntax>(static_cast<Derived const&>(*this), v);
+    std::vector<common_t> v{common_t{arg}, common_t{args}...};
+    return atom(static_cast<Derived const&>(*this), v);
   }
 
   template<typename Derived>
   template<std::ranges::range R>
     requires hierarchy<std::ranges::range_value_t<R>>
   auto relation_call_op<Derived>::operator()(R const& v) const {
-    using Syntax = make_combined_fragment_t<
-      typename Derived::syntax, typename std::ranges::range_value_t<R>::syntax
-    >;
-
-    return atom<Syntax>(static_cast<Derived const&>(*this), v);
+    return atom(static_cast<Derived const&>(*this), v);
   }
   
   //

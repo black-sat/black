@@ -1013,15 +1013,7 @@ namespace black_internal::logic {
   runtime_fragment_t fragment_of_(syntax_element element, Args&& ...args) {
     runtime_fragment_t f{static_cast<size_t>(element)};
 
-    std::cerr << "fragment_of_(element, ...)\n";
-    std::cerr << "f:      " << to_string(f) << "\n";
-    ((std::cerr << "child:  " << to_string(fragment_of_(std::forward<Args>(args))) << "\n"), ...);
-
-    auto result = f | (fragment_of_(std::forward<Args>(args)) | ...);
-
-    std::cerr << "result: " << to_string(result) << "\n";
-
-    return result;
+    return f | (fragment_of_(std::forward<Args>(args)) | ...);
   }
 
   //
