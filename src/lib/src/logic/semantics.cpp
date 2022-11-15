@@ -28,8 +28,6 @@
 
 #include <any>
 
-#include <iostream>
-
 namespace black_internal::logic {
   
   struct scope::impl_t {
@@ -505,10 +503,8 @@ namespace black_internal::logic {
         std::vector<sort> sorts;
         for(auto t : terms) {
           auto ts = type_check(t);
-          if(!ts) {
-            std::cerr << "Here 2\n";
+          if(!ts)
             return false;
-          }
           sorts.push_back(*ts);
         }
         if(
@@ -527,10 +523,8 @@ namespace black_internal::logic {
         std::optional<struct sort> leftsort = type_check(left);
         std::optional<struct sort> rightsort = type_check(right);
 
-        if(!leftsort || !rightsort) {
-          std::cerr << "Here 3\n";
+        if(!leftsort || !rightsort)
           return false;
-        }
 
         if(!leftsort->is<arithmetic_sort>() ||
            !rightsort->is<arithmetic_sort>()) 

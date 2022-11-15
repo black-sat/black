@@ -85,10 +85,10 @@
 //   such, the corresponding type will be non-templated. For example, `boolean`
 //   is a leaf storage kind, since it only has a field `bool value` but no
 //   children and no hierarchy elements. The class `boolean` is concrete, not a
-//   template, since there are no children to constrain the fragment of. `zero`
-//   is a leaf hierarchy element of the storage kind `identity` (hierarchy
-//   `number`). It has to be, because its parent storage kind defines no
-//   children.
+//   template, since there are no children to constrain the fragment of.
+//   `integer_sort` is a leaf hierarchy element of the storage kind
+//   `arithmetic_sort` (hierarchy `sort`). It has to be, because its parent
+//   storage kind defines no children.
 // - `simple` hierarchies and `simple` storage kinds are entities that are not
 //   parameterized over the fragment, but are always used with the universal
 //   fragment. An example is the `sort` hierarchy type and its storage kinds.
@@ -220,6 +220,16 @@
 //       - `Base` is the name of the parent hierarchy
 //       - `Storage` is the name of the parent storage kind 
 //
+// - has_no_children(Base, Storage)
+//    States that a non-leaf storage has no children. As a consequence, it can
+//    only contain leaf hierarchy elements declared with
+//    `declare_leaf_hierarchy_element`. At least one of this, `declare_child` or
+//    `declare_children` must appear in a give (non-leaf) storage kind. It must
+//    not appear together with `declare_child` or `declare_children`.
+//    - Parent macro: `declare_storage_kind`
+//     - Arguments:
+//       - `Base` is the name of the parent hierarchy
+//       - `Storage` is the name of the parent storage kind 
 
 #ifndef declare_hierarchy
   #define declare_hierarchy(Base)
@@ -260,6 +270,9 @@
 #ifndef declare_leaf_hierarchy_element
   #define declare_leaf_hierarchy_element declare_hierarchy_element
 #endif
+#ifndef has_no_children
+  #define has_no_children(Base, Storage)
+#endif
 #ifndef end_storage_kind
   #define end_storage_kind(Base, Storage)
 #endif
@@ -275,9 +288,6 @@
 #ifndef end_simple_hierarchy
   #define end_simple_hierarchy end_hierarchy
 #endif
-#ifndef escape_commas
-#define escape_commas(...) __VA_ARGS__
-#endif 
 
 declare_hierarchy(symbol)
   declare_leaf_storage_kind(symbol, relation)
@@ -412,6 +422,7 @@ declare_simple_hierarchy(sort)
     declare_field(sort, named_sort, identifier, name)
   end_leaf_storage_kind(sort, named_sort)
   declare_simple_storage_kind(sort, arithmetic_sort)
+    has_no_children(sort, arithmetic_sort)
     declare_leaf_hierarchy_element(sort, arithmetic_sort, integer_sort)
     declare_leaf_hierarchy_element(sort, arithmetic_sort, real_sort)
   end_simple_storage_kind(sort, arithmetic_sort)
@@ -442,9 +453,9 @@ end_simple_hierarchy(declaration)
 #undef has_no_hierarchy_elements
 #undef declare_leaf_hierarchy_element
 #undef declare_hierarchy_element
+#undef has_no_children
 #undef end_storage_kind
 #undef end_simple_storage_kind
 #undef end_leaf_storage_kind
 #undef end_hierarchy
 #undef end_simple_hierarchy
-#undef escape_commas

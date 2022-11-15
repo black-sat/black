@@ -206,7 +206,7 @@ TEST_CASE("New API") {
     REQUIRE(app.func() == f);
     REQUIRE(variables == app.terms());
 
-    application<FO> app2 = f(x, y);
+    application<FO> app2 = f(x,y);
 
     REQUIRE(app.func() == f);
     REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
