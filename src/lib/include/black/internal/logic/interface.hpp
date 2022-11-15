@@ -214,19 +214,6 @@ namespace black_internal::logic {
 
     term_equality_wrapper(bool eq, base_t b) : base_t{b}, _eq{eq} { }
 
-    friend bool operator&&(bool b, term_equality_wrapper const& w) {
-      return b && bool(w); // LCOV_EXCL_LINE
-    }
-    friend bool operator&&(term_equality_wrapper const& w, bool b) {
-      return bool(w) && b; // LCOV_EXCL_LINE
-    }
-    friend bool operator||(bool b, term_equality_wrapper const& w) {
-      return b || bool(w); // LCOV_EXCL_LINE
-    }
-    friend bool operator||(term_equality_wrapper const& w, bool b) {
-      return bool(w) || b; // LCOV_EXCL_LINE
-    }
-
     bool operator!() const { return !_eq; }
     operator bool() const { return _eq; }
   };
@@ -313,8 +300,6 @@ namespace black_internal::logic {
   declare_unary_formula_op(F, eventually)
   declare_unary_formula_op(O, once)
   declare_unary_formula_op(H, historically)
-  declare_binary_formula_op(operator&&, conjunction)
-  declare_binary_formula_op(operator||, disjunction)
   declare_binary_formula_op(implies, implication)
   declare_binary_formula_op(U, until)
   declare_binary_formula_op(R, release)
@@ -325,6 +310,50 @@ namespace black_internal::logic {
 
   #undef declare_unary_formula_op
   #undef declare_binary_formula_op
+
+  //
+  // For conjunctions and disjunctions we have to specialize the macro above to
+  // exclude `term_equality_wrapper` from the overloads, in order to avoid
+  // problems in boolean expressions involving equality comparisons between
+  // terms (e.g. in the code of `std::optional`).
+  //
+  template<typename T, typename U>
+  struct no_bool_equality_wrapper : std::true_type { };
+
+  template<typename S, syntax_element E>
+  struct no_bool_equality_wrapper<bool, term_equality_wrapper<S, E>>
+    : std::false_type { };
+
+  template<typename S, syntax_element E>
+  struct no_bool_equality_wrapper<term_equality_wrapper<S, E>, bool>
+    : std::false_type { };
+
+  template<typename T, typename U>
+  inline constexpr bool no_bool_equality_wrapper_v = 
+    no_bool_equality_wrapper<T, U>::value;
+
+  template<formula_op_arg F1, formula_op_arg F2>
+    requires 
+      ((std::is_class_v<F1> || std::is_class_v<F2>) &&
+        no_bool_equality_wrapper_v<F1, F2>)
+  auto operator&&(F1 f1, F2 f2) {
+    alphabet *sigma = get_sigma(f1, f2);
+    return conjunction(
+      wrap_formula_arg(sigma, f1), wrap_formula_arg(sigma, f2)
+    );
+  }
+
+  template<formula_op_arg F1, formula_op_arg F2>
+    requires 
+      ((std::is_class_v<F1> || std::is_class_v<F2>) &&
+        no_bool_equality_wrapper_v<F1, F2>)
+  auto operator||(F1 f1, F2 f2) {
+    alphabet *sigma = get_sigma(f1, f2);
+    return disjunction(
+      wrap_formula_arg(sigma, f1), wrap_formula_arg(sigma, f2)
+    );
+  }
+
 
   //
   // Here we add an `identity()` static member function to some operators such
@@ -489,7 +518,11 @@ namespace black_internal::logic {
     const_iterator &operator=(const_iterator &&) = default;
 
     // We are the end iterator if there is no current element
-    bool operator==(const_iterator const&it) const = default;
+    bool operator==(const_iterator const&it) const {
+      auto result = _stack == it._stack && _current == it._current;
+
+      return result;
+    }
 
     //
     // operator++ advances the iterator. If the stack is empty we are at the
