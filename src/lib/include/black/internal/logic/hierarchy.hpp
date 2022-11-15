@@ -69,6 +69,9 @@
 //   elements). For example, the `boolean` storage kind has the field `value`
 //   which is of type `bool`. This results into an actual member function called
 //   `value()` exposed by the class `boolean`.
+// - a `field vector` is a data attribute of a storage kind that is a vector of
+//   fields of the same type. The only example we have here is the `vars` field
+//   of the `quantifier` storage kind, which is a vector of `var_decl` objects.
 // - a `child` is a data attribute of a storage kind whose type is a hierarchy
 //   hierarchy and thus is subject to the same restrictions regarding its syntax
 //   as imposed by the fragment applied to the current storage kind. For
@@ -169,6 +172,18 @@
 //       - `Type` is the type of the field
 //       - `Field` is the name of the field
 //
+// - declare_fields(Base, Storage, Type, Fields) 
+//     Declare a field of a storage kind that is a vector of fields of the same
+//     type.
+//     - Parent macro: 
+//        `declare_storage_kind`, `declare_leaf_storage_kind` or 
+//        `declare_leaf_storage_kind`
+//     - Arguments:
+//       - `Base` is the name of the parent hierarchy
+//       - `Storage` is the name of the parent storage kind 
+//       - `Type` is the type of the elements of the vector
+//       - `Fields` is the name of the field
+//
 // - declare_child(Base, Storage, Hierarchy, Child) 
 //     Declare a child of a storage kind. 
 //     - Parent macro: `declare_storage_kind`
@@ -254,6 +269,9 @@
 #endif
 #ifndef declare_field
   #define declare_field(Base, Storage, Type, Field)
+#endif
+#ifndef declare_fields
+  #define declare_fields(Base, Storage, Type, Fields)
 #endif
 #ifndef declare_child
   #define declare_child(Base, Storage, Hierarchy, Child)
@@ -439,6 +457,12 @@ declare_simple_hierarchy(declaration)
   end_leaf_storage_kind(decalration, sort_decl)
 end_simple_hierarchy(declaration)
 
+declare_simple_hierarchy(test_hierarchy)
+  declare_leaf_storage_kind(test_hierarchy, test_storage)
+    declare_fields(test_hierarchy, test_storage, int, values)
+  end_leaf_storage_kind(test_hierarchy, test_storage)
+end_simple_hierarchy(test_hierarchy)
+
 #undef declare_hierarchy
 #undef declare_simple_hierarchy
 #undef has_no_standard_equality
@@ -447,6 +471,7 @@ end_simple_hierarchy(declaration)
 #undef declare_leaf_storage_kind
 #undef declare_storage_custom_members
 #undef declare_field
+#undef declare_fields
 #undef declare_child
 #undef declare_children
 #undef has_no_leaf_hierarchy_elements

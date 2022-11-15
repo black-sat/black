@@ -319,6 +319,9 @@ namespace black_internal::logic
 
   #define declare_field(Base, Storage, Type, Field) , Type
 
+  #define declare_fields(Base, Storage, Type, Fields) \
+    , std::vector<Type>
+
   #define declare_child(Base, Storage, Hierarchy, Child) \
     , hierarchy_node<hierarchy_type::Hierarchy> const *
   
@@ -425,6 +428,9 @@ namespace black_internal::logic
 
     #define declare_field(Base, Storage, Type, Field) \
       Type Field() const;
+
+    #define declare_fields(Base, Storage, Type, Fields) \
+      std::vector<Type> const& Fields() const;
 
   #define end_storage_kind(Base, Storage) \
     };
@@ -657,6 +663,9 @@ namespace black_internal::logic
       : make_storage_alloc_args<Syntax, storage_type::Storage \
   
   #define declare_field(Base, Storage, Type, Field) , Type
+  
+  #define declare_fields(Base, Storage, Type, Fields) \
+    , std::vector<Type>
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
     , child_wrapper<hierarchy_type::Hierarchy, Syntax>
@@ -866,6 +875,8 @@ namespace black_internal::logic
   #define declare_field(Base, Storage, Type, Field) \
     inline constexpr const char Storage##_##Field##_field[] = #Field;
 
+  #define declare_fields(Base, Storage, Type, Fields) \
+    declare_field(Base, Storage, Hierarchy, Fields)
   #define declare_child(Base, Storage, Hierarchy, Child) \
     declare_field(Base, Storage, Hierarchy, Child)
   #define declare_children(Base, Storage, Hierarchy, Children) \
@@ -883,6 +894,7 @@ namespace black_internal::logic
     inline constexpr std::string_view Storage##_fields[] = {
   
   #define declare_field(Base, Storage, Type, Field) #Field, 
+  #define declare_fields(Base, Storage, Type, Fields) #Fields, 
   #define declare_child(Base, Storage, Hierarchy, Child) #Child, 
   #define declare_children(Base, Storage, Hierarchy, Children) #Children,
 
@@ -924,6 +936,15 @@ namespace black_internal::logic
         index_of_field_v<Storage##_fields, Storage##_##Field##_field>; \
       return get_field<I>(static_cast<H const&>(*this)); \
     }
+  
+  #define declare_fields(Base, Storage, Type, Fields) \
+    template<typename H> \
+    std::vector<Type> const& \
+    storage_fields_base<storage_type::Storage, H>::Fields() const { \
+      constexpr size_t I = \
+        index_of_field_v<Storage##_fields, Storage##_##Fields##_field>; \
+      return get_field<I>(static_cast<H const&>(*this)); \
+    }
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
     template<typename H, fragment Syntax> \
@@ -953,6 +974,13 @@ namespace black_internal::logic
     template<> \
     struct storage_ith_data_is_field< \
       index_of_field_v<Storage##_fields, Storage##_##Field##_field>, \
+      storage_type::Storage \
+    > : std::true_type { };
+
+  #define declare_fields(Base, Storage, Type, Fields) \
+    template<> \
+    struct storage_ith_data_is_field< \
+      index_of_field_v<Storage##_fields, Storage##_##Fields##_field>, \
       storage_type::Storage \
     > : std::true_type { };
   

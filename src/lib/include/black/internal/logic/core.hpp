@@ -1794,7 +1794,7 @@ namespace black_internal::logic {
   // Now we can actually get the fields.
   //
   template<size_t I, storage_kind H>
-  auto get_field(H h) {
+  auto const &get_field(H h) {
     return std::get<I>(h.node()->data.values);
   }
 

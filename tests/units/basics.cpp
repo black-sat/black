@@ -237,6 +237,11 @@ TEST_CASE("New API") {
     REQUIRE(bool(f.decl().variable() == x));
     REQUIRE(f.decl().sort() == s);
     REQUIRE(f.matrix() == e);
+
+    std::vector<int> values = {1, 2, 3, 4};
+    test_storage h = sigma.test_storage(values);
+
+    REQUIRE(values == h.values());
   }
   
   SECTION("Deduction guides") {
