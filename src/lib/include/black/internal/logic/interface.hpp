@@ -66,12 +66,28 @@ namespace black_internal::logic {
   // Then the implementation of the two versions of operator() for both
   // functions and relations. The declarations are in `interface-fwd.hpp`
   //
+  template<typename T>
+  auto call_op_get_arg(T v) {
+    return v;
+  }
+
+  inline variable call_op_get_arg(var_decl x) {
+    return x.variable();
+  }
+
+  template<typename T>
+  using call_op_arg_t = decltype(call_op_get_arg(std::declval<T>()));
+
   template<typename Derived>
   template<hierarchy Arg, hierarchy ...Args>
   auto function_call_op<Derived>::operator()(Arg arg, Args ...args) const {
-    using common_t = std::common_type_t<Arg, Args...>;
+    using common_t = std::common_type_t<
+      call_op_arg_t<Arg>, call_op_arg_t<Args>...
+    >;
 
-    std::vector<common_t> v{common_t{arg}, common_t{args}...};
+    std::vector<common_t> v{
+      common_t{call_op_get_arg(arg)}, common_t{call_op_get_arg(args)}...
+    };
     return application(static_cast<Derived const&>(*this), v);
   }
 
@@ -81,13 +97,17 @@ namespace black_internal::logic {
   auto function_call_op<Derived>::operator()(R const& v) const {
     return application(static_cast<Derived const&>(*this), v);
   }
-  
+
   template<typename Derived>
   template<hierarchy Arg, hierarchy ...Args>
   auto relation_call_op<Derived>::operator()(Arg arg, Args ...args) const {
-    using common_t = std::common_type_t<Arg, Args...>;
+    using common_t = std::common_type_t<
+      call_op_arg_t<Arg>, call_op_arg_t<Args>...
+    >;
 
-    std::vector<common_t> v{common_t{arg}, common_t{args}...};
+    std::vector<common_t> v{
+      common_t{call_op_get_arg(arg)}, common_t{call_op_get_arg(args)}...
+    };
     return atom(static_cast<Derived const&>(*this), v);
   }
 

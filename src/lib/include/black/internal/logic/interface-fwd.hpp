@@ -28,6 +28,8 @@
 
 namespace black_internal::logic {
 
+  class var_decl;
+
   //
   // relations and functions support creating the associated atom or application
   // (respectively) with a simple call-like syntax such as f(x, y).
@@ -61,8 +63,7 @@ namespace black_internal::logic {
   // the corresponding `var_decl`.
   //
   struct sort;
-  class var_decl;
-
+  
   template<typename Derived>
   struct variable_decl_op {
     var_decl operator[](sort s) const;

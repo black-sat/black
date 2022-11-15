@@ -216,8 +216,12 @@ TEST_CASE("New API") {
     REQUIRE(app.func() == f);
     REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
 
+    sort s = sigma.integer_sort();
+    application<FO> app4 = f(x[s], y[s]);
+
     REQUIRE(bool(app == app2));
     REQUIRE(bool(app == app3));
+    REQUIRE(bool(app == app4));
   }
 
   SECTION("Quantifiers") {
