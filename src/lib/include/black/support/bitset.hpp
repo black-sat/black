@@ -53,7 +53,11 @@ namespace black_internal::bitset {
 
     constexpr bitset &operator=(bitset const&) = default;
 
-    constexpr bool contains(size_t i) const {
+    template<typename T>
+      requires requires(T t) { static_cast<size_t>(t); }
+    constexpr bool contains(T t) const {
+      size_t i = static_cast<size_t>(t);
+
       if(i >= N)
         return false;
 

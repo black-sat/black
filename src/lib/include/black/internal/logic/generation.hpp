@@ -200,13 +200,13 @@ namespace black_internal::logic
   #include <black/internal/logic/hierarchy.hpp>
 
   //
-  // Custom syntax predicate for each hierarchy type, enumerating all its syntax
+  // Custom syntax filters for each hierarchy type, enumerating all its syntax
   // elements.
   //
   #define declare_hierarchy(Base) \
     template<> \
-    struct hierarchy_syntax_predicate<hierarchy_type::Base> \
-      : make_syntax_predicate_cpp<0 \
+    struct hierarchy_syntax_filter<hierarchy_type::Base> \
+      : make_syntax_filter_cpp<0 \
 
   #define declare_leaf_storage_kind(Base, Storage) \
           , syntax_element::Storage
@@ -225,8 +225,8 @@ namespace black_internal::logic
   //
   #define declare_storage_kind(Base, Storage) \
     template<> \
-    struct storage_syntax_predicate<storage_type::Storage> \
-      : make_syntax_predicate_cpp<0
+    struct storage_syntax_filter<storage_type::Storage> \
+      : make_syntax_filter_cpp<0
       
   #define has_no_hierarchy_elements(Base, Storage) \
           , syntax_element::Storage
@@ -239,8 +239,8 @@ namespace black_internal::logic
 
   #define declare_leaf_storage_kind(Base, Storage) \
     template<> \
-    struct storage_syntax_predicate<storage_type::Storage> \
-      : make_syntax_predicate<syntax_list<syntax_element::Storage>> { };
+    struct storage_syntax_filter<storage_type::Storage> \
+      : make_syntax_filter<syntax_list<syntax_element::Storage>> { };
 
   #define end_leaf_storage_kind(Base, Storage)
   
@@ -469,6 +469,30 @@ namespace black_internal::logic
   #include <black/internal/logic/hierarchy.hpp>
 
   //
+  // Here we specialize the `storage_type_of` trait which returns the concrete
+  // type for a given `storage_type` and a given fragment.
+  //
+  #define declare_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    struct storage_type_of<Syntax, storage_type::Storage> { \
+      using type = Storage<Syntax>; \
+    };
+  
+  #define declare_simple_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    struct storage_type_of<Syntax, storage_type::Storage> { \
+      using type = Storage; \
+    };
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    struct storage_type_of<Syntax, storage_type::Storage> { \
+      using type = Storage; \
+    };
+
+  #include <black/internal/logic/hierarchy.hpp>  
+
+  //
   // Here we define storage kinds. These are only non-leaf storage kinds, which
   // thus are templated over the fragment of their children. We inherit from
   // `storage_base` and we inherit its constructors, but we also need to declare
@@ -552,31 +576,6 @@ namespace black_internal::logic
   #include <black/internal/logic/hierarchy.hpp>
 
   //
-  // Here we specialize the `storage_type_of` trait which returns the concrete
-  // type for a given `storage_type` and a given fragment.
-  //
-  #define declare_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    struct storage_type_of<Syntax, storage_type::Storage> { \
-      using type = Storage<Syntax>; \
-    };
-  
-  #define declare_simple_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    struct storage_type_of<Syntax, storage_type::Storage> { \
-      using type = Storage; \
-    };
-
-  #define declare_leaf_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    struct storage_type_of<Syntax, storage_type::Storage> { \
-      using type = Storage; \
-    };
-
-  #include <black/internal/logic/hierarchy.hpp>  
-
-
-  //
   // Here we declare concrete types for hierarchy elements. Again, the non-leaf
   // ones are templated over the fragment, while the leaf ones are not. The
   // non-leaf ones have the same allocating constructor as non-leaf storage
@@ -650,8 +649,7 @@ namespace black_internal::logic
   #include <black/internal/logic/hierarchy.hpp>
 
   //
-  // Here we start talking about the alphabet and the allocation of storage
-  // kinds. This is the type that defines which arguments are accepted by the
+  // This is the type that defines which arguments are accepted by the
   // allocating constructor of storage kinds. Fields are accepted as-is, while
   // children and children vectors are accepted through wrappers that later can
   // be implicitly converted to their underlying type (i.e. a `formula<Syntax>`
