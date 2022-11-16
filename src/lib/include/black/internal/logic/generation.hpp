@@ -205,8 +205,8 @@ namespace black_internal::logic
   //
   #define declare_hierarchy(Base) \
     template<> \
-    struct hierarchy_syntax_filter<hierarchy_type::Base> \
-      : make_syntax_filter_cpp<0 \
+    struct hierarchy_syntax_mask<hierarchy_type::Base> \
+      : make_syntax_mask_cpp<0 \
 
   #define declare_leaf_storage_kind(Base, Storage) \
           , syntax_element::Storage
@@ -225,8 +225,8 @@ namespace black_internal::logic
   //
   #define declare_storage_kind(Base, Storage) \
     template<> \
-    struct storage_syntax_filter<storage_type::Storage> \
-      : make_syntax_filter_cpp<0
+    struct storage_syntax_mask<storage_type::Storage> \
+      : make_syntax_mask_cpp<0
       
   #define has_no_hierarchy_elements(Base, Storage) \
           , syntax_element::Storage
@@ -239,8 +239,8 @@ namespace black_internal::logic
 
   #define declare_leaf_storage_kind(Base, Storage) \
     template<> \
-    struct storage_syntax_filter<storage_type::Storage> \
-      : make_syntax_filter<syntax_list<syntax_element::Storage>> { };
+    struct storage_syntax_mask<storage_type::Storage> \
+      : make_syntax_mask<syntax_list<syntax_element::Storage>> { };
 
   #define end_leaf_storage_kind(Base, Storage)
   
@@ -427,7 +427,7 @@ namespace black_internal::logic
     struct storage_fields_base<storage_type::Storage, Derived> {
 
     #define declare_field(Base, Storage, Type, Field) \
-      Type Field() const;
+      Type const& Field() const;
 
     #define declare_fields(Base, Storage, Type, Fields) \
       std::vector<Type> const& Fields() const;
@@ -493,6 +493,34 @@ namespace black_internal::logic
   #include <black/internal/logic/hierarchy.hpp>  
 
   //
+  // This is the type that defines which arguments are accepted by the
+  // allocating constructor of storage kinds. Fields are accepted as-is, while
+  // children and children vectors are accepted through wrappers that later can
+  // be implicitly converted to their underlying type (i.e. a `formula<Syntax>`
+  // argument becomes `hierarchy_node_t<hierarchy_type::formula> const*`).
+  //
+  #define declare_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    struct storage_alloc_args<Syntax, storage_type::Storage> \
+      : storage_alloc_args_cpp<0 \
+  
+  #define declare_field(Base, Storage, Type, Field) , Type
+  
+  #define declare_fields(Base, Storage, Type, Fields) \
+    , std::vector<Type>
+
+  #define declare_child(Base, Storage, Hierarchy, Child) \
+    , child_wrapper<hierarchy_type::Hierarchy, Syntax>
+
+  #define declare_children(Base, Storage, Hierarchy, Children) \
+    , children_wrapper<hierarchy_type::Hierarchy, Syntax>
+
+  #define end_storage_kind(Base, Storage) \
+      > { };
+
+  #include <black/internal/logic/hierarchy.hpp>
+
+  //
   // Here we define storage kinds. These are only non-leaf storage kinds, which
   // thus are templated over the fragment of their children. We inherit from
   // `storage_base` and we inherit its constructors, but we also need to declare
@@ -512,11 +540,6 @@ namespace black_internal::logic
         storage_base<storage_type::Storage, Syntax, Storage<Syntax>>; \
     public: \
       using base_t::base_t; \
-      \
-      template<typename ...Args> \
-        requires \
-          is_storage_constructible_v<storage_type::Storage, Syntax, Args...> \
-      explicit Storage(Args ...args); \
     }; \
     \
     template<storage_kind S> \
@@ -532,12 +555,6 @@ namespace black_internal::logic
         storage_base<storage_type::Storage, universal_fragment_t, Storage>; \
     public: \
       using base_t::base_t; \
-      \
-      template<typename ...Args> \
-        requires is_storage_constructible_v< \
-          storage_type::Storage, universal_fragment_t, Args... \
-        > \
-      explicit Storage(Args ...args); \
     };
 
   //
@@ -649,34 +666,6 @@ namespace black_internal::logic
   #include <black/internal/logic/hierarchy.hpp>
 
   //
-  // This is the type that defines which arguments are accepted by the
-  // allocating constructor of storage kinds. Fields are accepted as-is, while
-  // children and children vectors are accepted through wrappers that later can
-  // be implicitly converted to their underlying type (i.e. a `formula<Syntax>`
-  // argument becomes `hierarchy_node_t<hierarchy_type::formula> const*`).
-  //
-  #define declare_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    struct storage_alloc_args<Syntax, storage_type::Storage> \
-      : make_storage_alloc_args<Syntax, storage_type::Storage \
-  
-  #define declare_field(Base, Storage, Type, Field) , Type
-  
-  #define declare_fields(Base, Storage, Type, Fields) \
-    , std::vector<Type>
-
-  #define declare_child(Base, Storage, Hierarchy, Child) \
-    , child_wrapper<hierarchy_type::Hierarchy, Syntax>
-
-  #define declare_children(Base, Storage, Hierarchy, Children) \
-    , children_wrapper<hierarchy_type::Hierarchy, Syntax>
-
-  #define end_storage_kind(Base, Storage) \
-      > { };
-
-  #include <black/internal/logic/hierarchy.hpp>
-
-  //
   // Here it finally comes the `alphabet_base` class, which `alphabet` will
   // inherit without adding too much (see `interface.hpp`). The class is default
   // constructible and movable, but not copyable. We generate a lot of members,
@@ -713,7 +702,7 @@ namespace black_internal::logic
         return \
           ::black_internal::logic::Storage{ \
             this, \
-            unique_##Storage( \
+            unique( \
               storage_node<storage_type::Storage>{ \
                 syntax_element::Storage, args... \
               } \
@@ -737,7 +726,7 @@ namespace black_internal::logic
         return \
           ::black_internal::logic::Element{ \
             this, \
-            unique_##Storage( \
+            unique( \
               storage_node<storage_type::Storage>{ \
                 syntax_element::Element, args... \
               } \
@@ -752,6 +741,12 @@ namespace black_internal::logic
       }
 
     #include <black/internal/logic/hierarchy.hpp>
+
+    template<storage_type, fragment, typename>
+    friend class storage_ctor_base;
+    
+    template<syntax_element, fragment, typename, typename>
+    friend class hierarchy_element_ctor_base;
 
     //
     // Here we declare as friends all the non-leaf storage and hierarchy element
@@ -778,7 +773,7 @@ namespace black_internal::logic
     // These member functions are defined out-of-line in `logic.cpp`.
     //
     #define declare_storage_kind(Base, Storage) \
-      storage_node<storage_type::Storage> *unique_##Storage( \
+      storage_node<storage_type::Storage> *unique( \
         storage_node<storage_type::Storage> node \
       );
 
@@ -790,78 +785,7 @@ namespace black_internal::logic
 
     // pimpl pointer to `alphabet_impl`, defined in `logic.cpp`.
     std::unique_ptr<alphabet_impl> _impl;
-  };  
-
-  //
-  // Now that we have the `alphabet_base` class, we can define the allocating
-  // constructors declared above of storage kinds and hierarchy elements. We get
-  // a pointer to the aphabet by one of the arguments using `get_sigma()`. Then,
-  // we construct an object of type `storage_alloc_args_t<>` from the arguments
-  // of the function, which is passed to `args_to_node` which creates a
-  // temporary node object from those arguments (with the due unwrapping, e.g.
-  // from `formula<Syntax>` to `hierarchy_node<hierarchy_type::formula>
-  // const*`). Then, the `unique_<storage>` member function of `alphabet_base`
-  // (e.g. `unique_conjunction`) is used to get the address of the uniqued copy
-  // of the node.
-  //
-  #define declare_leaf_storage_kind(Base, Storage)
-  #define declare_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    template<typename ...Args> \
-      requires is_storage_constructible_v< \
-        storage_type::Storage, Syntax, Args... \
-      > \
-    Storage<Syntax>::Storage(Args ...args) \
-      : Storage{ \
-          get_sigma(args...), \
-          get_sigma(args...)->unique_##Storage( \
-            args_to_node<Syntax, storage_type::Storage>( \
-              storage_alloc_args_t<Syntax, storage_type::Storage>{args...} \
-            ) \
-          ) \
-        } { }
-  
-  #define declare_simple_storage_kind(Base, Storage) \
-    template<typename ...Args> \
-      requires is_storage_constructible_v< \
-        storage_type::Storage, universal_fragment_t, Args... \
-      > \
-    Storage::Storage(Args ...args) \
-      : Storage{ \
-          get_sigma(args...), \
-          get_sigma(args...)->unique_##Storage( \
-            args_to_node<universal_fragment_t, storage_type::Storage>( \
-              storage_alloc_args_t< \
-                universal_fragment_t, storage_type::Storage \
-              >{args...} \
-            ) \
-          ) \
-        } { }
-
-  //
-  // Same thing as above for hierarchy elements.
-  //
-  #define declare_leaf_hierarchy_element(Base, Storage, Element)
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    template<fragment Syntax> \
-    template<typename ...Args> \
-      requires is_hierarchy_element_constructible_v< \
-        syntax_element::Element, Syntax, Args... \
-      > \
-    Element<Syntax>::Element(Args ...args) \
-      : Element{ \
-          get_sigma(args...), \
-          get_sigma(args...)->unique_##Storage( \
-            args_to_node<Syntax, storage_type::Storage>( \
-              storage_alloc_args_t<Syntax, storage_type::Storage>{ \
-                typename Storage<Syntax>::type::Element{}, \
-                args... \
-              } \
-            ) \
-          ) \
-        } { }
-
-  #include <black/internal/logic/hierarchy.hpp>
+  };
 
   //
   // Here we start to account for the other elements of the interface of
@@ -929,7 +853,7 @@ namespace black_internal::logic
   //
   #define declare_field(Base, Storage, Type, Field) \
     template<typename H> \
-    Type storage_fields_base<storage_type::Storage, H>::Field() const { \
+    Type const &storage_fields_base<storage_type::Storage, H>::Field() const { \
       constexpr size_t I = \
         index_of_field_v<Storage##_fields, Storage##_##Field##_field>; \
       return get_field<I>(static_cast<H const&>(*this)); \
