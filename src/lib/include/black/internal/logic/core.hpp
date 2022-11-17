@@ -35,6 +35,8 @@
 #include <cstdio>
 #include <cinttypes>
 
+#include <iostream>
+
 //
 // This file contains all the declarations that do not depend on including the
 // hierarchy definition file, i.e. everything that does not need the
@@ -1001,9 +1003,22 @@ namespace black_internal::logic {
     return fragment_of(child.child);
   }
 
+  template<typename T>
+  struct is_children_wrapper : std::false_type { };
+
   template<hierarchy_type H, fragment Syntax>
-  fragment_mask_t fragment_of_(children_wrapper<H, Syntax> children)
+  struct is_children_wrapper<children_wrapper<H, Syntax>>
+    : std:: true_type { };
+
+  template<typename T>
+  inline constexpr bool is_children_wrapper_v =
+    is_children_wrapper<T>::value;
+
+  template<typename T>
+    requires (is_children_wrapper_v<std::remove_cvref_t<T>>)
+  fragment_mask_t fragment_of_(T&& children)
   {
+    std::cerr << "I'm here\n";
     fragment_mask_t result;
     for(auto child : children.children)
       result = result | fragment_of(child);
@@ -1813,40 +1828,24 @@ namespace black_internal::logic {
   // argument exists it means the hierarchy is a leaf and an instance has to be
   // requested directly to the alphabet (e.g. sigma.proposition("p")).
   //
-  // template<typename T, typename ...Args>
-  // alphabet *get_sigma(T v, Args ...args) {
-  //   if constexpr(std::ranges::range<T>) {
-  //     if constexpr(hierarchy<std::ranges::range_value_t<T>>) {
-  //       black_assert(!empty(v));
-  //       return begin(v)->sigma();
-  //     } else if constexpr(hierarchy<T>) {
-  //       return v.sigma();
-  //     } else {
-  //       return get_sigma(args...);
-  //     } 
-  //   } else if constexpr(hierarchy<T>) {
-  //     return v.sigma();
-  //   } else {
-  //     return get_sigma(args...);
-  //   }
-  // }
-
   template<hierarchy_type H, fragment Syntax, typename ...Args>
   alphabet *get_sigma(child_wrapper<H, Syntax> child, Args ...) {
     return child.sigma;
   }
-  template<hierarchy_type H, fragment Syntax, typename ...Args>
-  alphabet *get_sigma(children_wrapper<H, Syntax> children, Args ...) {
+  template<typename T, typename ...Args>
+    requires (is_children_wrapper_v<std::remove_cvref_t<T>>)
+  alphabet *get_sigma(T&& children, Args ...) {
     return children.sigma;
   }
 
-  template<hierarchy H, typename ...Args>
-  alphabet *get_sigma(H h, Args...) {
+  template<typename H, typename ...Args>
+    requires hierarchy<std::remove_cvref_t<H>>
+  alphabet *get_sigma(H&& h, Args...) {
     return h.sigma();
   }
 
   template<typename T, typename ...Args>
-  alphabet *get_sigma(T, Args ...args) {
+  alphabet *get_sigma(T&&, Args ...args) {
     return get_sigma(args...);
   }
 

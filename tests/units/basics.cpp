@@ -576,9 +576,23 @@ TEST_CASE("New API") {
     formula<LTLP> u2 = Y(sigma.proposition("p"));
     formula<LTLP> u3 = G(Y(sigma.proposition("p")));
 
+    auto x = sigma.variable("x");
+    auto y = sigma.variable("y");
+    auto z = sigma.variable("z");
+
+    std::vector<variable> vars = {x, y, z};
+    std::vector<term<FO>> sums = {x + x, y + y, z + z};
+
+    auto e1 = equal(vars);
+    auto e2 = equal(sums);
+
+    using vars_fragment = decltype(e1)::syntax;
+
     REQUIRE(fragment_cast<LTL>(u1).has_value());
     REQUIRE(!fragment_cast<LTL>(u2).has_value());
     REQUIRE(!fragment_cast<LTL>(u3).has_value());
+    
+    REQUIRE(!fragment_cast<vars_fragment>(e2).has_value());
 
     REQUIRE(fragment_cast<LTL>(u1.node_type()));
     REQUIRE(!fragment_cast<LTL>(u2.node_type()));
