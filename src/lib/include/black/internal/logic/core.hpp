@@ -35,8 +35,6 @@
 #include <cstdio>
 #include <cinttypes>
 
-#include <iostream>
-
 //
 // This file contains all the declarations that do not depend on including the
 // hierarchy definition file, i.e. everything that does not need the
@@ -1018,7 +1016,6 @@ namespace black_internal::logic {
     requires (is_children_wrapper_v<std::remove_cvref_t<T>>)
   fragment_mask_t fragment_of_(T&& children)
   {
-    std::cerr << "I'm here\n";
     fragment_mask_t result;
     for(auto child : children.children)
       result = result | fragment_of(child);
@@ -1631,6 +1628,8 @@ namespace black_internal::logic {
       black_assert(syntax_mask::value.contains(node->type));
     }
 
+    template<typename = void>
+      requires (storage_has_children(storage_of_element(Element)))
     explicit hierarchy_element_ctor_base(Args ...args)
       : hierarchy_element_ctor_base{
         get_sigma(args...),
@@ -1694,6 +1693,54 @@ namespace black_internal::logic {
   };
 
   //
+  // Similarly to `hierarchy_type_of` and `storage_type_of`, we can obtain the
+  // concrete type of a `syntax_element` with this trait, specialized later.
+  // Note that the `Syntax` parameter will be ignored if a leaf hierarchy
+  // element is requested. Note also that the returned type might not be a
+  // `hierarchy_element_base` but only a `storage_base`, in the case of leaf
+  // storage kinds or storage kinds with no hierarchy element.
+  //
+  template<fragment Syntax, syntax_element E>
+  struct element_type_of;
+
+  template<fragment Syntax, syntax_element E>
+  using element_type_of_t = 
+    typename element_type_of<Syntax, E>::type;
+
+  //
+  // Similarly to `hierarchy_ctor_base`, we declare factory functions to be
+  // inherited by `alphabet` for leaf hierarchy types.
+  //
+  template<syntax_element Element, typename Derived, typename Tuple>
+  struct alphabet_ctor_base_aux;
+
+  template<syntax_element Element, typename Derived, typename ...Args>
+  struct alphabet_ctor_base_aux<Element, Derived, std::tuple<Args...>>
+  {
+    using type = element_type_of_t<make_fragment_t<Element>, Element>;
+    
+    type construct(Args ...args) {
+      return type{
+        static_cast<Derived *>(this),
+        static_cast<Derived *>(this)->unique(
+          storage_node<storage_of_element(Element)>{
+            Element, std::move(args)...
+          }
+        )
+      };
+    }
+  };
+
+  template<syntax_element Element, typename Derived>
+  struct alphabet_ctor_base 
+    : alphabet_ctor_base_aux<
+        Element, Derived, 
+        storage_alloc_args_t<
+          make_fragment_t<Element>, storage_of_element(Element)
+        >
+      > { };
+
+  //
   // Sometimes it is useful (e.g. in tests), to compare two hierarchy types for
   // equivalence. Exact equality of types can be difficult to achieve because of
   // different fragments being equivalent (e.g. different calls to
@@ -1708,21 +1755,6 @@ namespace black_internal::logic {
   template<hierarchy T, hierarchy U>
   inline constexpr bool are_same_hierarchy_types_v = 
     are_same_hierarchy_types<T,U>::value;
-
-  //
-  // Similarly to `hierarchy_type_of` and `storage_type_of`, we can obtain the
-  // concrete type of a `syntax_element` with this trait, specialized later.
-  // Note that the `Syntax` parameter will be ignored if a leaf hierarchy
-  // element is requested. Note also that the returned type might not be a
-  // `hierarchy_element_base` but only a `storage_base`, in the case of leaf
-  // storage kinds or storage kinds with no hierarchy element.
-  //
-  template<fragment Syntax, syntax_element E>
-  struct element_type_of;
-
-  template<fragment Syntax, syntax_element E>
-  using element_type_of_t = 
-    typename element_type_of<Syntax, E>::type;
 
   //
   // Some hierarchy types can appear as arguments both for fields (e.g. the

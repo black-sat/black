@@ -668,11 +668,27 @@ namespace black_internal::logic
   //
   // Here it finally comes the `alphabet_base` class, which `alphabet` will
   // inherit without adding too much (see `interface.hpp`). The class is default
-  // constructible and movable, but not copyable. We generate a lot of members,
-  // see later for each inclusion.
+  // constructible and movable, but not copyable. 
   //
-  class BLACK_EXPORT alphabet_base
+  // The most of the work is done by inheriting from `alphabet_ctor_base`
+  // defined in `core.hpp`, which defines the factory functions for leaf
+  // elements (e.g. `alphabet::boolean()`).
+  //
+  // The `alphabet_impl` internal class is the one that contains the actual
+  // nodes and handles the uniquing of nodes. The `unique()` overloads are only
+  // declared here and implemented in `logic.cpp`, together with
+  // `alphabet_impl`.
+  //
+  #define declare_leaf_storage_kind(Base, Storage) \
+    , public alphabet_ctor_base<syntax_element::Storage, alphabet_base>
+  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+    , public alphabet_ctor_base<syntax_element::Element, alphabet_base>
+
+  class BLACK_EXPORT alphabet_base : std::monostate
+  #include <black/internal/logic/hierarchy.hpp>
   {
+    template<syntax_element E>
+    using base_t = alphabet_ctor_base<E, alphabet_base>;
   public:
     alphabet_base();
     ~alphabet_base();
@@ -683,61 +699,16 @@ namespace black_internal::logic
     alphabet_base &operator=(alphabet_base const&) = delete;
     alphabet_base &operator=(alphabet_base &&);
 
-    //
-    // Here we generate the allocation functions for leaf storage kinds, e.g.
-    // `sigma.boolean()` or `sigma.proposition()`. The function calls
-    // `unique_<storage>()` (e.g. `unique_boolean()`), which is declared later
-    // and defined in `logic.cpp`. To that, we pass a temporary node object
-    // allocated directly from the function arguments (since there are no
-    // children, we do not have to wrap anything). The `unique_<storage>()`
-    // function will take this object and return the address of a uniqued copy
-    // of it. We also generate an overload of the `element()` member function,
-    // which does the same thing but takes which element to allocate as a
-    // template parameter of type `syntax_element`.
-    //
     #define declare_leaf_storage_kind(Base, Storage) \
       template<typename ...Args> \
-        requires is_leaf_storage_constructible_v<Storage, Args...> \
       class Storage Storage(Args ...args) { \
-        return \
-          ::black_internal::logic::Storage{ \
-            this, \
-            unique( \
-              storage_node<storage_type::Storage>{ \
-                syntax_element::Storage, args... \
-              } \
-            ) \
-          }; \
-      } \
-      \
-      template<syntax_element Element, typename ...Args> \
-        requires (Element == syntax_element::Storage) \
-      auto element(Args ...args) -> decltype(Storage(args...)) { \
-        return Storage(args...); \
+        return base_t<syntax_element::Storage>::construct(args...); \
       }
 
-    //
-    // Same thing as above, for leaf hierarchy elements.
-    //
     #define declare_leaf_hierarchy_element(Base, Storage, Element) \
       template<typename ...Args> \
-        requires is_leaf_storage_constructible_v<Element, Args...> \
       class Element Element(Args ...args) { \
-        return \
-          ::black_internal::logic::Element{ \
-            this, \
-            unique( \
-              storage_node<storage_type::Storage>{ \
-                syntax_element::Element, args... \
-              } \
-            ) \
-          }; \
-      } \
-      \
-      template<syntax_element E, typename ...Args> \
-        requires (E == syntax_element::Element) \
-      auto element(Args ...args) -> decltype(Element(args...)) { \
-        return Element(args...); \
+        return base_t<syntax_element::Element>::construct(args...); \
       }
 
     #include <black/internal/logic/hierarchy.hpp>
@@ -748,25 +719,8 @@ namespace black_internal::logic
     template<syntax_element, fragment, typename, typename>
     friend class hierarchy_element_ctor_base;
 
-    //
-    // Here we declare as friends all the non-leaf storage and hierarchy element
-    // types, because their allocating constructors have to call the private
-    // `unique_<storage>` members.
-    //
-    #define declare_leaf_storage_kind(Base, Storage)
-    #define declare_storage_kind(Base, Storage) \
-      template<fragment Syntax> \
-      friend class Storage;
-    
-    #define declare_simple_storage_kind(Base, Storage) \
-      friend class Storage;
-    
-    #define declare_leaf_hierarchy_element(Base, Storage, Element)
-    #define declare_hierarchy_element(Base, Storage, Element) \
-      template<fragment Syntax> \
-      friend class Element;
-
-    #include <black/internal/logic/hierarchy.hpp>
+    template<syntax_element, typename, typename>
+    friend struct alphabet_ctor_base_aux;
 
   private:
     //
