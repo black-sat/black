@@ -288,36 +288,19 @@ namespace black_internal::logic {
   // computation on fragments, while the `syntax_list` representation is easy to
   // manipulate at the type level.
   //
-  using fragment_mask_t = black::bitset<syntax_element_max_size>;
-
-  //
-  // A `fragment_mask_t` can be obtained from a `syntax_list`
-  //
-  template<typename List>
-  struct make_fragment_mask;
-  
-  template<syntax_element ...Elements>
-  struct make_fragment_mask<syntax_list<Elements...>> {
-    static constexpr fragment_mask_t value = { 
-      static_cast<size_t>(Elements)... 
-    };
-  };
-
-  template<typename List>
-  inline constexpr auto make_fragment_mask_v = 
-    make_fragment_mask<List>::value;
+  using syntax_mask_t = black::bitset<syntax_element_max_size>;
 
   //
   // The `syntax_mask` concept models types used to define, either a
   // compile-time or at runtime, whether a given `syntax_element` is allowed in
   // a given fragment or by a given storage kind. These types define a
-  // `fragment_mask_t` constexpr static member `value` that that represents
+  // `syntax_mask_t` constexpr static member `value` that that represents
   // the accepted syntax elements. These are usually accessed by an
   // `::syntax_mask` member type in hierarchy objects.
   //
   template<typename T>
   concept syntax_mask = requires {
-    { T::value } -> std::convertible_to<fragment_mask_t>;
+    { T::value } -> std::convertible_to<syntax_mask_t>;
   };
 
   //
@@ -331,7 +314,7 @@ namespace black_internal::logic {
 
   template<syntax_element ...Elements>
   struct make_syntax_mask<syntax_list<Elements...>> {
-    static constexpr fragment_mask_t value = { 
+    static constexpr syntax_mask_t value = { 
       static_cast<size_t>(Elements)...
     };
   };
@@ -361,7 +344,7 @@ namespace black_internal::logic {
     storage_syntax_mask<Storage>::value;
 
   //
-  // Trait to filter a `syntax_list` by intersecting it with a `fragment_mask`
+  // Trait to filter a `syntax_list` by intersecting it with a `syntax_mask`
   //
   template<typename List, syntax_mask Mask>
   struct syntax_list_filter;
@@ -420,7 +403,7 @@ namespace black_internal::logic {
   // Dummy `syntax_mask` instance used in the following concept.
   //
   struct false_syntax_mask {
-    static constexpr fragment_mask_t value{};
+    static constexpr syntax_mask_t value{};
   };
 
   //
@@ -434,8 +417,165 @@ namespace black_internal::logic {
   template<typename T>
   concept fragment = requires {
     requires is_syntax_list_v<typename T::list>;
-    { T::mask } -> std::convertible_to<fragment_mask_t>;
+    { T::mask } -> std::convertible_to<syntax_mask_t>;
   };
+
+  //
+  // Now we define how to create fragments. To make a fragment made of some
+  // given `syntax_element`s, just call `make_fragment_t<Elements...>`
+  //
+  template<syntax_element ...Elements>
+  struct make_fragment_t {
+    using list = syntax_list_unique_t<syntax_list<Elements...>>;
+    
+    static constexpr auto mask = make_syntax_mask_v<list>;
+  };
+
+  template<syntax_element ...Elements>
+  struct make_fragment {
+    using type = make_fragment_t<Elements...>;
+  };
+
+  //
+  // Helper trait to use `make_fragment` in the preprocessed code and handle
+  // trailing commas properly.
+  //
+  template<int Dummy, syntax_element ...Elements>
+  struct make_fragment_cpp : make_fragment<Elements...> { };
+
+  template<int Dummy, syntax_element ...Elements>
+  using make_fragment_cpp_t = make_fragment_t<Elements...>;
+
+  //
+  // Trait to tell whether a fragment is subsumed by another. This trait is used
+  // in every place where a conversion between different syntaxes is requested,
+  // e.g. from formula<propositional> to formula<LTL>.
+  //
+  template<fragment Fragment, fragment Allowed>
+  struct is_subfragment_of : syntax_list_includes<
+    typename Allowed::list,
+    typename Fragment::list
+  > { };
+  
+  template<fragment Fragment, fragment Allowed>
+  inline constexpr bool is_subfragment_of_v = 
+    is_subfragment_of<Fragment, Allowed>::value;
+
+  //
+  // Fragments can also be created by combining other fragments. This is a bit
+  // complex because we want to avoid creating bigger and bigger types (in terms
+  // of instantiation depth) when we compose `make_combined_fragment_t` multiple
+  // times, and we also want to short-circuit common cases like combining a
+  // fragment with a proper subfragment of itself.
+  //
+  // For example, `make_combined_fragment_t<propositional, LTL>` should be exactly
+  // `LTL`, not some more complex type leading to an equivalent fragment.
+  //
+  // So first we declare the type doing the actual combination of two fragments.
+  //
+  template<fragment Fragment1, fragment Fragment2>
+  struct make_combined_fragment_impl_t {
+    using list = syntax_list_unique_t<
+      syntax_list_concat_t<typename Fragment1::list, typename Fragment2::list>
+    >;
+
+    static constexpr auto mask = make_syntax_mask_v<list>;
+  };
+
+  //
+  // Now we implement a trait on top of that to simplify common scenarios.
+  //
+  template<fragment Fragment1, fragment Fragment2>
+  struct make_combined_fragment_simplified {
+    using type = make_combined_fragment_impl_t<Fragment1, Fragment2>;
+  };
+
+  template<fragment Fragment1, fragment Fragment2>
+    requires is_subfragment_of_v<Fragment1, Fragment2>
+  struct make_combined_fragment_simplified<Fragment1, Fragment2> { 
+    using type = Fragment2;
+  };
+  
+  template<fragment Fragment1, fragment Fragment2>
+    requires (!is_subfragment_of_v<Fragment1, Fragment2> &&
+              is_subfragment_of_v<Fragment2, Fragment1>)
+  struct make_combined_fragment_simplified<Fragment1, Fragment2> { 
+    using type = Fragment1;
+  };
+
+  //
+  // And then the final vararg version that puts everything together
+  //
+  template<fragment ...Fragments>
+  struct make_combined_fragment;
+
+  template<>
+  struct make_combined_fragment<> : make_fragment<> { };
+
+  template<fragment Fragment, fragment ...Fragments>
+  struct make_combined_fragment<Fragment, Fragments...> 
+    : make_combined_fragment_simplified<
+        Fragment, typename make_combined_fragment<Fragments...>::type
+      > { };
+
+  template<fragment ...Fragments>
+  using make_combined_fragment_t = 
+    typename make_combined_fragment<Fragments...>::type;
+
+  //
+  // We can obtain a fragment also by filtering it with a mask
+  //
+  template<fragment Syntax, syntax_mask Mask>
+  struct fragment_filter_t {
+    using list = syntax_list_filter_t<typename Syntax::list, Mask>;
+    static constexpr auto mask = make_syntax_mask_v<list>;
+  };
+
+  template<fragment Syntax, syntax_mask Mask>
+  struct fragment_filter {
+    using type = fragment_filter_t<Syntax, Mask>;
+  };
+
+  //
+  // Interesecting two fragments is also often useful 
+  //
+  template<fragment S1, fragment S2>
+  struct fragment_intersect_t {
+    using list = syntax_list_intersect_t<
+      typename S1::list, typename S2::list
+    >;
+    static constexpr auto mask = make_syntax_mask_v<list>;
+  };
+
+  template<fragment Syntax, syntax_mask Mask>
+  struct fragment_intersect {
+    using type = fragment_intersect_t<Syntax, Mask>;
+  };
+
+  //
+  // Union of fragments is useful as well
+  //
+  template<fragment S1, fragment S2>
+  struct fragment_union_t {
+    using list = syntax_list_unique_t<
+      syntax_list_concat_t<
+        typename S1::list, typename S2::list
+      >
+    >;
+    static constexpr auto mask = make_syntax_mask_v<list>;
+  };
+
+  template<fragment S1, fragment S2>
+  struct fragment_union {
+    using type = fragment_union_t<S1, S2>;
+  };
+
+  //
+  // This type, defined later, gives us the fragment made of all the
+  // `syntax_element`s of all the hierarchies. It is used as the catch-all
+  // fragment for `simple` hierarchy types such as `sort`.
+  //
+  struct universal_fragment_t;
 
   //
   // The `fragment_type` class will provide the concrete instances of the
@@ -509,12 +649,10 @@ namespace black_internal::logic {
   // `match()` function is implemented later, after the machinery for the
   // pattern matching functionality.
   //
-  template<typename Owner, typename List>
-  class fragment_type : public fragment_type_base<List> 
+  template<typename Owner, fragment Syntax>
+  class fragment_type : public fragment_type_base<typename Syntax::list> 
   {
   public:
-    using list = List;
-
     fragment_type() = delete;
 
     fragment_type(fragment_type const&) = default;
@@ -524,16 +662,16 @@ namespace black_internal::logic {
     fragment_type &operator=(fragment_type &&) = default;
 
     template<syntax_element Element>
-      requires syntax_list_contains_v<list, Element>
+      requires (Syntax::mask.contains(Element))
     fragment_type(fragment_enum_value<Element>) : _element{Element} { }
 
-    template<typename O, typename L2>
-      requires syntax_list_includes_v<list, L2>
-    fragment_type(fragment_type<O, L2> const&t) 
+    template<typename O, fragment S2>
+      requires is_subfragment_of_v<S2, Syntax>
+    fragment_type(fragment_type<O, S2> const&t) 
       : _element{t.element()} { }
 
-    template<typename O, typename L2>
-    bool operator==(fragment_type<O, L2> const& t) const {
+    template<typename O, fragment S2>
+    bool operator==(fragment_type<O, S2> const& t) const {
       return _element == t.element();
     }
     
@@ -558,145 +696,36 @@ namespace black_internal::logic {
   private:
     friend Owner;
 
-    template<fragment Syntax, typename O, typename L>
-    friend auto fragment_cast(fragment_type<O, L> t);
+    template<fragment, typename O, fragment S2>
+    friend auto fragment_cast(fragment_type<O, S2> t);
 
     explicit fragment_type(syntax_element e) : _element{e} { 
-      black_assert(is_syntax_element_allowed(e, list{}));
+      black_assert(Syntax::mask.contains(e));
     }
 
   private:
     syntax_element _element;
   };
 
-  template<typename O, typename L2, syntax_element E>
-  bool operator==(fragment_type<O, L2> const& t, fragment_enum_value<E>) {
+  template<typename O, fragment S2, syntax_element E>
+  bool operator==(fragment_type<O, S2> const& t, fragment_enum_value<E>) {
     return t.element() == E;
   }
   
-  template<typename O, typename L2, syntax_element E>
-  bool operator==(fragment_enum_value<E>, fragment_type<O, L2> const& t) {
+  template<typename O, fragment S2, syntax_element E>
+  bool operator==(fragment_enum_value<E>, fragment_type<O, S2> const& t) {
     return E == t.element();
   }
 
-  template<typename O, typename L2>
-  bool operator==(fragment_type<O, L2> const& t, syntax_element E) {
+  template<typename O, fragment S2>
+  bool operator==(fragment_type<O, S2> const& t, syntax_element E) {
     return t.element() == E;
   }
   
-  template<typename O, typename L2>
-  bool operator==(syntax_element E, fragment_type<O, L2> const& t) {
+  template<typename O, fragment S2>
+  bool operator==(syntax_element E, fragment_type<O, S2> const& t) {
     return E == t.element();
   }
-
-  //
-  // Now we can define actual fragments. To make a fragment made of some given
-  // `syntax_element`s, just call `make_fragment_t<Elements...>`
-  //
-  template<syntax_element ...Elements>
-  struct make_fragment_t {
-    using list = syntax_list_unique_t<syntax_list<Elements...>>;
-    
-    static constexpr auto mask = make_fragment_mask_v<list>;
-  };
-
-  template<syntax_element ...Elements>
-  struct make_fragment {
-    using type = make_fragment_t<Elements...>;
-  };
-
-  //
-  // Helper trait to use `make_fragment` in the preprocessed code and handle
-  // trailing commas properly.
-  //
-  template<int Dummy, syntax_element ...Elements>
-  struct make_fragment_cpp : make_fragment<Elements...> { };
-
-  template<int Dummy, syntax_element ...Elements>
-  using make_fragment_cpp_t = make_fragment_t<Elements...>;
-
-  //
-  // Trait to tell whether a fragment is subsumed by another. This trait is used
-  // in every place where a conversion between different syntaxes is requested,
-  // e.g. from formula<propositional> to formula<LTL>.
-  //
-  template<fragment Fragment, fragment Allowed>
-  struct is_subfragment_of : syntax_list_includes<
-    typename Allowed::list,
-    typename Fragment::list
-  > { };
-  
-  template<fragment Fragment, fragment Allowed>
-  inline constexpr bool is_subfragment_of_v = 
-    is_subfragment_of<Fragment, Allowed>::value;
-
-  //
-  // Fragments can also be created by combining other fragments. This is a bit
-  // complex because we want to avoid creating bigger and bigger types (in terms
-  // of instantiation depth) when we compose `make_combined_fragment_t` multiple
-  // times, and we also want to short-circuit common cases like combining a
-  // fragment with a proper subfragment of itself.
-  //
-  // For example, `make_combined_fragment_t<propositional, LTL>` should be exactly
-  // `LTL`, not some more complex type leading to an equivalent fragment.
-  //
-  // So first we declare the type doing the actual combination of two fragments.
-  //
-  template<fragment Fragment1, fragment Fragment2>
-  struct make_combined_fragment_impl_t {
-    using list = syntax_list_unique_t<
-      syntax_list_concat_t<typename Fragment1::list, typename Fragment2::list>
-    >;
-
-    static constexpr auto mask = make_fragment_mask_v<list>;
-  };
-
-  //
-  // Now we implement a trait on top of that to simplify common scenarios.
-  //
-  template<fragment Fragment1, fragment Fragment2>
-  struct make_combined_fragment_simplified {
-    using type = make_combined_fragment_impl_t<Fragment1, Fragment2>;
-  };
-
-  template<fragment Fragment1, fragment Fragment2>
-    requires is_subfragment_of_v<Fragment1, Fragment2>
-  struct make_combined_fragment_simplified<Fragment1, Fragment2> { 
-    using type = Fragment2;
-  };
-  
-  template<fragment Fragment1, fragment Fragment2>
-    requires (!is_subfragment_of_v<Fragment1, Fragment2> &&
-              is_subfragment_of_v<Fragment2, Fragment1>)
-  struct make_combined_fragment_simplified<Fragment1, Fragment2> { 
-    using type = Fragment1;
-  };
-
-  //
-  // And then the final vararg version that puts everything together
-  //
-  template<fragment ...Fragments>
-  struct make_combined_fragment;
-
-  template<>
-  struct make_combined_fragment<> : make_fragment<> { };
-
-  template<fragment Fragment, fragment ...Fragments>
-  struct make_combined_fragment<Fragment, Fragments...> 
-    : make_combined_fragment_simplified<
-        Fragment, typename make_combined_fragment<Fragments...>::type
-      > { };
-
-  template<fragment ...Fragments>
-  using make_combined_fragment_t = 
-    typename make_combined_fragment<Fragments...>::type;
-
-  //
-  // This type, defined later, gives us the fragment made of all the
-  // `syntax_element`s of all the hierarchies. It is used as the catch-all
-  // fragment for `simple` hierarchy types such as `sort`.
-  //
-  struct universal_fragment_t;
 
   //
   // We start to prepare for the declaration of actual hierarchy types such as
@@ -958,23 +987,23 @@ namespace black_internal::logic {
   template<hierarchy_type Hierarchy>
   struct fragment_holder_base : hierarchy_node<Hierarchy> 
   {
-    fragment_holder_base(syntax_element element, fragment_mask_t f)
+    fragment_holder_base(syntax_element element, syntax_mask_t f)
       : hierarchy_node<Hierarchy>{element}, _fragment{f} { }
     
-    fragment_mask_t _fragment;
+    syntax_mask_t _fragment;
   };
 
   //
   // The following function gets the runtime fragment from a node
   //
   template<hierarchy_type Hierarchy>
-  fragment_mask_t fragment_of(hierarchy_node<Hierarchy> const *child) {
+  syntax_mask_t fragment_of(hierarchy_node<Hierarchy> const *child) {
     storage_type storage = storage_of_element(child->type);
     if(storage_has_children(storage))
       return 
         static_cast<fragment_holder_base<Hierarchy> const*>(child)->_fragment;
     
-    return fragment_mask_t{static_cast<size_t>(child->type)};
+    return syntax_mask_t{static_cast<size_t>(child->type)};
   }
 
   //
@@ -983,8 +1012,8 @@ namespace black_internal::logic {
   // below.
   //
   template<typename T>
-  fragment_mask_t fragment_of_(T&&) {
-    return fragment_mask_t{};
+  syntax_mask_t fragment_of_(T&&) {
+    return syntax_mask_t{};
   }
 
   //
@@ -997,7 +1026,7 @@ namespace black_internal::logic {
   struct children_wrapper;
 
   template<hierarchy_type H, fragment Syntax>
-  fragment_mask_t fragment_of_(child_wrapper<H, Syntax> child) {
+  syntax_mask_t fragment_of_(child_wrapper<H, Syntax> child) {
     return fragment_of(child.child);
   }
 
@@ -1014,9 +1043,9 @@ namespace black_internal::logic {
 
   template<typename T>
     requires (is_children_wrapper_v<std::remove_cvref_t<T>>)
-  fragment_mask_t fragment_of_(T&& children)
+  syntax_mask_t fragment_of_(T&& children)
   {
-    fragment_mask_t result;
+    syntax_mask_t result;
     for(auto child : children.children)
       result = result | fragment_of(child);
 
@@ -1024,8 +1053,8 @@ namespace black_internal::logic {
   }
   
   template<typename ...Args>
-  fragment_mask_t fragment_of_(syntax_element element, Args&& ...args) {
-    fragment_mask_t f{static_cast<size_t>(element)};
+  syntax_mask_t fragment_of_(syntax_element element, Args&& ...args) {
+    syntax_mask_t f{static_cast<size_t>(element)};
 
     return f | (fragment_of_(std::forward<Args>(args)) | ...);
   }
@@ -1042,8 +1071,8 @@ namespace black_internal::logic {
     storage_node_base(syntax_element element, Args&& ...)
       : hierarchy_node<hierarchy_of_storage(Storage)>{element} { }
 
-    fragment_mask_t fragment() const { 
-      return fragment_mask_t{ static_cast<size_t>(this->type) };
+    syntax_mask_t fragment() const { 
+      return syntax_mask_t{ static_cast<size_t>(this->type) };
     }
   };
 
@@ -1058,7 +1087,7 @@ namespace black_internal::logic {
           element, fragment_of_(element, std::forward<Args>(args)...)
         } { }
 
-    fragment_mask_t fragment() const { return this->_fragment; }
+    syntax_mask_t fragment() const { return this->_fragment; }
   };
 
   //
@@ -1140,7 +1169,7 @@ namespace black_internal::logic {
     using syntax = Syntax;
     using syntax_mask = hierarchy_syntax_mask<Hierarchy>;
     using type = fragment_type<
-      hierarchy_base, syntax_list_filter_t<typename Syntax::list, syntax_mask>
+      hierarchy_base, fragment_filter_t<Syntax, syntax_mask>
     >;
     static constexpr auto hierarchy = Hierarchy;
 
@@ -1353,8 +1382,7 @@ namespace black_internal::logic {
     // these three members have to be specialized w.r.t. `hierarchy_base`
     using syntax_mask = storage_syntax_mask<Storage>;
     using type = fragment_type<
-      storage_ctor_base, 
-      syntax_list_filter_t<typename Syntax::list, syntax_mask>
+      storage_ctor_base, fragment_filter_t<Syntax, syntax_mask>
     >;
     static constexpr storage_type storage = Storage;
 
@@ -1617,8 +1645,7 @@ namespace black_internal::logic {
     // these members from the base have to be overriden and specialized
     using syntax_mask = make_syntax_mask<syntax_list<Element>>;
     using type = fragment_type<
-      hierarchy_element_ctor_base, 
-      syntax_list_filter_t<typename Syntax::list, syntax_mask>
+      hierarchy_element_ctor_base, fragment_filter_t<Syntax, syntax_mask>
     >;
     static constexpr syntax_element element = Element;
 
@@ -2108,52 +2135,46 @@ namespace black_internal::logic {
     > {
       using type = black_internal::logic::fragment_type<
         black_internal::logic::dummy_owner_t,
-        black_internal::logic::syntax_list<E1, E2>
+        black_internal::logic::make_fragment_t<E1, E2>
       >;
     };
 
     template<
-      typename O, typename List, black_internal::logic::syntax_element E
+      typename O, typename Syntax, black_internal::logic::syntax_element E
     >
     struct common_type<
-      black_internal::logic::fragment_type<O, List>,
+      black_internal::logic::fragment_type<O, Syntax>,
       black_internal::logic::fragment_enum_value<E>
     > {
       using type = black_internal::logic::fragment_type<O, 
-        black_internal::logic::syntax_list_unique_t<
-          black_internal::logic::syntax_list_concat_t<
-            List, black_internal::logic::syntax_list<E>
-          >
+        black_internal::logic::fragment_union_t<
+          Syntax, black_internal::logic::make_fragment_t<E>
         >
       >;
     };
 
     template<
-      typename O, typename List, black_internal::logic::syntax_element E
+      typename O, typename Syntax, black_internal::logic::syntax_element E
     >
     struct common_type<
       black_internal::logic::fragment_enum_value<E>,
-      black_internal::logic::fragment_type<O, List>
+      black_internal::logic::fragment_type<O, Syntax>
     > {
       using type = black_internal::logic::fragment_type<O, 
-        black_internal::logic::syntax_list_unique_t<
-          black_internal::logic::syntax_list_concat_t<
-            List, black_internal::logic::syntax_list<E>
-          >
+        black_internal::logic::fragment_union_t<
+          Syntax, black_internal::logic::make_fragment_t<E>
         >
       >;
     };
 
-    template<typename O1, typename L1,typename O2, typename L2>
+    template<typename O1, typename S1,typename O2, typename S2>
     struct common_type<
-      black_internal::logic::fragment_type<O1, L1>,
-      black_internal::logic::fragment_type<O2, L2>
+      black_internal::logic::fragment_type<O1, S1>,
+      black_internal::logic::fragment_type<O2, S2>
     > {
       using type = black_internal::logic::fragment_type<
         black_internal::logic::dummy_owner_t,
-        black_internal::logic::syntax_list_unique_t<
-          black_internal::logic::syntax_list_concat_t<L1, L2>
-        >
+        black_internal::logic::fragment_union_t<S1, S2>
       >;
     };
 
@@ -2342,11 +2363,11 @@ namespace black_internal::logic {
   using fragment_enum_values_of_elements_t =
     typename fragment_enum_values_of_elements<Elements>::type;
 
-  template<typename Owner, typename List>
+  template<typename Owner, fragment Syntax>
   template<typename ...Handlers>
-  auto fragment_type<Owner, List>::match(Handlers ...hs) const {
+  auto fragment_type<Owner, Syntax>::match(Handlers ...hs) const {
     return matcher<fragment_type,
-      fragment_enum_values_of_elements_t<fragment_type::list>
+      fragment_enum_values_of_elements_t<typename Syntax::list>
     >{}.match(*this, hs...);
   }
 
@@ -2465,7 +2486,7 @@ namespace black_internal::logic {
     using syntax = Syntax;
     using syntax_mask = make_syntax_mask<typename TopLevel::list>;
     using type = fragment_type<
-      only, syntax_list_filter_t<typename Syntax::list, syntax_mask>
+      only, fragment_filter_t<Syntax, syntax_mask>
     >;
 
     type node_type() {
@@ -2589,12 +2610,12 @@ namespace black_internal::logic {
   //
   // Sometimes it is useful to perform a similar cast on fragment types. 
   //
-  template<fragment Syntax, typename O, typename List>
-  auto fragment_cast(fragment_type<O, List> t) {
-    using new_list = syntax_list_intersect_t<typename Syntax::list, List>;
-    using new_type = fragment_type<O, new_list>;
+  template<fragment Syntax, typename O, fragment Source>
+  auto fragment_cast(fragment_type<O, Source> t) {
+    using new_syntax = fragment_intersect_t<Syntax, Source>;
+    using new_type = fragment_type<O, new_syntax>;
 
-    if(is_syntax_element_allowed(t.element(), new_list{}))
+    if(new_syntax::mask.contains(t.element()))
       return std::optional<new_type>{new_type{t.element()}};
     
     return std::optional<new_type>{};
