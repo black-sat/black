@@ -451,7 +451,8 @@ namespace black_internal::z3
         }
         
         auto result = Z3_mk_quantifier_const(
-          context, forall, 0, 1, z3_apps.data(), 0, nullptr, to_z3(q.matrix())
+          context, forall, 0, unsigned(z3_apps.size()), 
+          z3_apps.data(), 0, nullptr, to_z3(q.matrix())
         );
 
         return result;
