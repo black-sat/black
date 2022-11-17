@@ -219,9 +219,13 @@ TEST_CASE("New API") {
     sort s = sigma.integer_sort();
     application<FO> app4 = f(x[s], y[s]);
 
+    std::vector<var_decl> decls = {x[s], y[s]};
+    application<FO> app5 = f(decls);
+
     REQUIRE(bool(app == app2));
     REQUIRE(bool(app == app3));
     REQUIRE(bool(app == app4));
+    REQUIRE(bool(app == app5));
   }
 
   SECTION("Quantifiers") {

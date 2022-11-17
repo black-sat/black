@@ -113,13 +113,29 @@ namespace black_internal::logic {
     void declare(
       function, struct sort, std::vector<struct sort>, rigid_t = non_rigid
     );
-
     void declare(
       function, std::vector<struct sort>, rigid_t = non_rigid
     );
 
     void declare(var_decl d, rigid_t r = non_rigid) {
       declare(d.variable(), d.sort(), r);
+    }
+    void declare(
+      relation rel, std::vector<var_decl> decls, rigid_t r = non_rigid
+    ) {
+      std::vector<struct sort> sorts;
+      for(auto decl : decls)
+        sorts.push_back(decl.sort());
+      declare(rel, sorts, r);
+    }
+    void declare(
+      function fun, struct sort s, std::vector<var_decl> decls, 
+      rigid_t r = non_rigid
+    ) {
+      std::vector<struct sort> sorts;
+      for(auto decl : decls)
+        sorts.push_back(decl.sort());
+      declare(fun, s, sorts, r);
     }
 
     void declare(named_sort s, domain_ref d);

@@ -78,51 +78,85 @@ namespace black_internal::logic {
   template<typename T>
   using call_op_arg_t = decltype(call_op_get_arg(std::declval<T>()));
 
-  template<typename Derived>
+  template<storage_type S>
+  struct call_op_return;
+
+  template<storage_type S>
+  inline constexpr auto call_op_return_v = call_op_return<S>::value;
+
+  template<>
+  struct call_op_return<storage_type::relation> {
+    static constexpr auto value = storage_type::atom;
+  };
+
+  template<>
+  struct call_op_return<storage_type::function> {
+    static constexpr auto value = storage_type::application;
+  };
+
+  template<storage_type S, typename Derived>
   template<hierarchy Arg, hierarchy ...Args>
-  auto function_call_op<Derived>::operator()(Arg arg, Args ...args) const {
+  auto call_op_interface<S, Derived>::operator()(Arg arg, Args ...args) const {
     using common_t = std::common_type_t<
       call_op_arg_t<Arg>, call_op_arg_t<Args>...
     >;
 
-    std::vector<common_t> v{
-      common_t{call_op_get_arg(arg)}, common_t{call_op_get_arg(args)}...
-    };
-    return application(static_cast<Derived const&>(*this), v);
-  }
-
-  template<typename Derived>
-  template<std::ranges::range R>
-    requires hierarchy<std::ranges::range_value_t<R>>
-  auto function_call_op<Derived>::operator()(R const& v) const {
-    return application(static_cast<Derived const&>(*this), v);
-  }
-
-  template<typename Derived>
-  template<hierarchy Arg, hierarchy ...Args>
-  auto relation_call_op<Derived>::operator()(Arg arg, Args ...args) const {
-    using common_t = std::common_type_t<
-      call_op_arg_t<Arg>, call_op_arg_t<Args>...
+    using syntax = make_combined_fragment_t<
+      make_singleton_fragment_t<element_of_storage_v<S>>,
+      make_singleton_fragment_t<element_of_storage_v<call_op_return_v<S>>>,
+      typename common_t::syntax
     >;
+    
+    using return_t = storage_type_of_t<syntax, call_op_return_v<S>>;
 
     std::vector<common_t> v{
       common_t{call_op_get_arg(arg)}, common_t{call_op_get_arg(args)}...
     };
-    return atom(static_cast<Derived const&>(*this), v);
+    return return_t{static_cast<Derived const&>(*this), v};
   }
 
-  template<typename Derived>
+  template<storage_type S, typename Derived>
   template<std::ranges::range R>
-    requires hierarchy<std::ranges::range_value_t<R>>
-  auto relation_call_op<Derived>::operator()(R const& v) const {
-    return atom(static_cast<Derived const&>(*this), v);
+    requires (
+      hierarchy<std::ranges::range_value_t<R>> &&
+      !std::is_same_v<std::ranges::range_value_t<R>, var_decl>
+    )
+  auto call_op_interface<S, Derived>::operator()(R const& v) const {
+    using syntax = make_combined_fragment_t<
+      make_singleton_fragment_t<element_of_storage_v<S>>,
+      make_singleton_fragment_t<element_of_storage_v<call_op_return_v<S>>>,
+      typename std::ranges::range_value_t<R>::syntax
+    >;
+    using return_t = storage_type_of_t<syntax, call_op_return_v<S>>;
+
+    return return_t{static_cast<Derived const&>(*this), v};
+  }
+  
+  template<storage_type S, typename Derived>
+  template<std::ranges::range R>
+    requires std::is_same_v<std::ranges::range_value_t<R>, var_decl>
+  auto call_op_interface<S, Derived>::operator()(R const& v) const {
+    using syntax = make_fragment_t<
+      syntax_list<
+        element_of_storage_v<S>,
+        element_of_storage_v<call_op_return_v<S>>,
+        syntax_element::variable
+      >
+    >;
+    using return_t = storage_type_of_t<syntax, call_op_return_v<S>>;
+
+    std::vector<variable> vars;
+    for(auto decl : v)
+      vars.push_back(decl.variable());
+
+    return return_t{static_cast<Derived const&>(*this), vars};
   }
   
   //
   // And the implementation of the subscript operator for variables
   //
-  template<typename Derived>
-  var_decl variable_decl_op<Derived>::operator[](sort s) const {
+  template<storage_type S, typename Derived>
+  var_decl variable_decl_op<S, Derived>::operator[](sort s) const {
     return s.sigma()->var_decl(static_cast<Derived const&>(*this), s);
   }
 

@@ -465,7 +465,7 @@ namespace black_internal::logic
   #define declare_storage_custom_members(Base, Storage, Struct) \
     template<typename Derived> \
     struct storage_custom_members<storage_type::Storage, Derived> \
-      : Struct<Derived> { };
+      : Struct<storage_type::Storage, Derived> { };
 
   #include <black/internal/logic/hierarchy.hpp>
 

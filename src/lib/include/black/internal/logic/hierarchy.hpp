@@ -309,11 +309,11 @@
 
 declare_hierarchy(symbol)
   declare_leaf_storage_kind(symbol, relation)
-    declare_storage_custom_members(symbol, relation, relation_call_op)
+    declare_storage_custom_members(symbol, relation, call_op_interface)
     declare_field(symbol, relation, identifier, name)
   end_leaf_storage_kind(symbol, relation)
   declare_leaf_storage_kind(symbol, function)
-    declare_storage_custom_members(symbol, function, function_call_op)
+    declare_storage_custom_members(symbol, function, call_op_interface)
     declare_field(symbol, function, identifier, name)
   end_leaf_storage_kind(symbol, function)
 end_hierarchy(symbol)
