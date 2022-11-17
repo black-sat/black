@@ -719,7 +719,7 @@ namespace black_internal::logic
     friend class hierarchy_element_ctor_base;
 
     template<syntax_element, typename, typename>
-    friend struct alphabet_ctor_base_aux;
+    friend struct ::black_internal::logic::alphabet_ctor_base_aux;
 
   private:
     //
