@@ -27,6 +27,7 @@
 #include <black/support/common.hpp>
 
 #include <memory>
+#include <variant>
 
 //
 // This file expands the macros used in `hierarchy.hpp` to generate the actual

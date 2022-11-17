@@ -1578,6 +1578,9 @@ namespace black_internal::logic {
   using combined_fragment_from_args_t = 
     typename combined_fragment_from_args<Args...>::type;
 
+  template<>
+  struct combined_fragment_from_args<> : make_fragment<syntax_list<>> { };
+
   template<can_get_fragment Arg>
   struct combined_fragment_from_args<Arg> : get_fragment_from_arg<Arg> { };
 
