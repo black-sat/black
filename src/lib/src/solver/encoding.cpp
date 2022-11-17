@@ -274,10 +274,11 @@ namespace black_internal::encoder
       [&](quantifier<LTLPFO> q) {
         nest_scope_t nest{_xi};
         
-        _xi.declare(q.decl(), scope::rigid);
+        for(auto decl : q.variables())
+          _xi.declare(decl, scope::rigid);
 
         auto result = quantifier<FO>(
-          q.node_type(), q.decl(), to_ground_snf(q.matrix(), k, true)
+          q.node_type(), q.variables(), to_ground_snf(q.matrix(), k, true)
         );
 
         return result;
@@ -535,7 +536,9 @@ namespace black_internal::encoder
       [](equality<LTLPFO> e) { return e; },
       [](comparison<LTLPFO> c) { return c; },
       [&](quantifier<LTLPFO> q) {
-        return quantifier<LTLPFO>(q.node_type(), q.decl(), to_nnf(q.matrix()));
+        return quantifier<LTLPFO>(
+          q.node_type(), q.variables(), to_nnf(q.matrix())
+        );
       },
       // Push the negation down to literals
       [&](negation<LTLPFO> n) {
@@ -550,7 +553,7 @@ namespace black_internal::encoder
             if(q.node_type() == quantifier<LTLPFO>::type::exists{})
               dual = quantifier<LTLPFO>::type::forall{};
 
-            return quantifier<LTLPFO>(dual, q.decl(), to_nnf(!q.matrix()));
+            return quantifier<LTLPFO>(dual, q.variables(), to_nnf(!q.matrix()));
           },
           [&](negation<LTLPFO>, auto op) { // special case for double negation
             return to_nnf(op);

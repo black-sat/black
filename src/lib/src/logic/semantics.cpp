@@ -545,7 +545,7 @@ namespace black_internal::logic {
         }
         return true;
       },
-      [&](quantifier_block<LTLPFO> q) {
+      [&](quantifier<LTLPFO> q) {
         nest_scope_t nest{xi};
 
         for(auto d : q.variables())

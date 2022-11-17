@@ -397,9 +397,9 @@ namespace black_internal
       return {};
 
     if(q == quantifier::type::exists{})
-      return exists_block(vars, *matrix);
+      return exists(vars, *matrix);
 
-    return forall_block(vars, *matrix);
+    return forall(vars, *matrix);
   }
 
   std::optional<formula> parser::_parser_t::parse_unary()

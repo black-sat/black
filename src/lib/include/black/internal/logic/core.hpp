@@ -372,15 +372,6 @@ namespace black_internal::logic {
       >
     { };
 
-  //
-  // Function to check *at runtime* if a syntax element is allowed by the
-  // element list of a fragment.
-  //
-  template<syntax_element ...Elements>
-  bool is_syntax_element_allowed(syntax_element e, syntax_list<Elements...>) {
-    return ((e == Elements) || ...);
-  }
-
   // this empty class is used as a base class of `fragment_type` later, to mark
   // fragment types in the following concept definition.
   struct fragment_type_marker_base { };
@@ -421,19 +412,18 @@ namespace black_internal::logic {
   };
 
   //
-  // Now we define how to create fragments. To make a fragment made of some
-  // given `syntax_element`s, just call `make_fragment_t<Elements...>`
+  // Now we define how to create fragments from syntax lists.
   //
-  template<syntax_element ...Elements>
+  template<typename List>
   struct make_fragment_t {
-    using list = syntax_list_unique_t<syntax_list<Elements...>>;
+    using list = syntax_list_unique_t<List>;
     
     static constexpr auto mask = make_syntax_mask_v<list>;
   };
 
-  template<syntax_element ...Elements>
+  template<typename List>
   struct make_fragment {
-    using type = make_fragment_t<Elements...>;
+    using type = make_fragment_t<List>;
   };
 
   //
@@ -441,10 +431,20 @@ namespace black_internal::logic {
   // trailing commas properly.
   //
   template<int Dummy, syntax_element ...Elements>
-  struct make_fragment_cpp : make_fragment<Elements...> { };
+  struct make_fragment_cpp : make_fragment<syntax_list<Elements...>> { };
 
   template<int Dummy, syntax_element ...Elements>
-  using make_fragment_cpp_t = make_fragment_t<Elements...>;
+  using make_fragment_cpp_t = make_fragment_t<syntax_list<Elements...>>;
+
+  //
+  // Helper trait to make singleton fragments
+  //
+  template<syntax_element Element>
+  struct make_singleton_fragment : make_fragment<syntax_list<Element>> { };
+  
+  template<syntax_element Element>
+  using make_singleton_fragment_t = 
+    typename make_singleton_fragment<Element>::type;
 
   //
   // Trait to tell whether a fragment is subsumed by another. This trait is used
@@ -474,21 +474,19 @@ namespace black_internal::logic {
   // So first we declare the type doing the actual combination of two fragments.
   //
   template<fragment Fragment1, fragment Fragment2>
-  struct make_combined_fragment_impl_t {
-    using list = syntax_list_unique_t<
-      syntax_list_concat_t<typename Fragment1::list, typename Fragment2::list>
-    >;
-
-    static constexpr auto mask = make_syntax_mask_v<list>;
-  };
+  struct make_combined_fragment_impl : 
+    make_fragment<
+      syntax_list_unique_t<
+        syntax_list_concat_t<typename Fragment1::list, typename Fragment2::list>
+      >
+    > { };
 
   //
   // Now we implement a trait on top of that to simplify common scenarios.
   //
   template<fragment Fragment1, fragment Fragment2>
-  struct make_combined_fragment_simplified {
-    using type = make_combined_fragment_impl_t<Fragment1, Fragment2>;
-  };
+  struct make_combined_fragment_simplified 
+    : make_combined_fragment_impl<Fragment1, Fragment2> { };
 
   template<fragment Fragment1, fragment Fragment2>
     requires is_subfragment_of_v<Fragment1, Fragment2>
@@ -510,7 +508,7 @@ namespace black_internal::logic {
   struct make_combined_fragment;
 
   template<>
-  struct make_combined_fragment<> : make_fragment<> { };
+  struct make_combined_fragment<> : make_fragment<syntax_list<>> { };
 
   template<fragment Fragment, fragment ...Fragments>
   struct make_combined_fragment<Fragment, Fragments...> 
@@ -526,49 +524,41 @@ namespace black_internal::logic {
   // We can obtain a fragment also by filtering it with a mask
   //
   template<fragment Syntax, syntax_mask Mask>
-  struct fragment_filter_t {
-    using list = syntax_list_filter_t<typename Syntax::list, Mask>;
-    static constexpr auto mask = make_syntax_mask_v<list>;
-  };
-
+  struct fragment_filter 
+    : make_fragment<syntax_list_filter_t<typename Syntax::list, Mask>> { };
+  
   template<fragment Syntax, syntax_mask Mask>
-  struct fragment_filter {
-    using type = fragment_filter_t<Syntax, Mask>;
-  };
+  using fragment_filter_t = typename fragment_filter<Syntax, Mask>::type;
 
   //
   // Interesecting two fragments is also often useful 
   //
   template<fragment S1, fragment S2>
-  struct fragment_intersect_t {
-    using list = syntax_list_intersect_t<
-      typename S1::list, typename S2::list
-    >;
-    static constexpr auto mask = make_syntax_mask_v<list>;
-  };
+  struct fragment_intersect 
+    : make_fragment<
+        syntax_list_intersect_t<
+          typename S1::list, typename S2::list
+        >
+      > { };
 
-  template<fragment Syntax, syntax_mask Mask>
-  struct fragment_intersect {
-    using type = fragment_intersect_t<Syntax, Mask>;
-  };
+  template<fragment S1, fragment S2>
+  using fragment_intersect_t = typename fragment_intersect<S1, S2>::type;
 
   //
   // Union of fragments is useful as well
   //
   template<fragment S1, fragment S2>
-  struct fragment_union_t {
-    using list = syntax_list_unique_t<
-      syntax_list_concat_t<
-        typename S1::list, typename S2::list
-      >
-    >;
-    static constexpr auto mask = make_syntax_mask_v<list>;
-  };
+  struct fragment_union
+    : make_fragment<
+        syntax_list_unique_t<
+          syntax_list_concat_t<
+            typename S1::list, typename S2::list
+          >
+        >
+      > { };
 
   template<fragment S1, fragment S2>
-  struct fragment_union {
-    using type = fragment_union_t<S1, S2>;
-  };
+  using fragment_union_t = typename fragment_union<S1, S2>::type;
 
   //
   // This type, defined later, gives us the fragment made of all the
@@ -1608,7 +1598,7 @@ namespace black_internal::logic {
   template<syntax_element Element, typename ...Args>
   struct deduce_fragment_for_storage :
     make_combined_fragment< \
-      make_fragment_t<Element>, \
+      make_singleton_fragment_t<Element>, \
       combined_fragment_from_args_t<Args...> \
     > { };
 
@@ -1744,7 +1734,7 @@ namespace black_internal::logic {
   template<syntax_element Element, typename Derived, typename ...Args>
   struct alphabet_ctor_base_aux<Element, Derived, std::tuple<Args...>>
   {
-    using type = element_type_of_t<make_fragment_t<Element>, Element>;
+    using type = element_type_of_t<make_singleton_fragment_t<Element>, Element>;
     
     type construct(Args ...args) {
       return type{
@@ -1763,7 +1753,7 @@ namespace black_internal::logic {
     : alphabet_ctor_base_aux<
         Element, Derived, 
         storage_alloc_args_t<
-          make_fragment_t<Element>, storage_of_element(Element)
+          make_singleton_fragment_t<Element>, storage_of_element(Element)
         >
       > { };
 
@@ -1830,56 +1820,6 @@ namespace black_internal::logic {
     alphabet *sigma;
   };
 
-
-  //
-  // To declare the allocating constructor, we need a trait to check whether a
-  // given invocation is well formed. 
-  //
-  template<storage_type Storage, fragment Syntax, typename ...Args>
-  inline constexpr bool is_storage_constructible_v = requires { 
-    storage_alloc_args_t<Syntax, Storage>{std::declval<Args>()...}; 
-  };
-
-  template<storage_type Storage, fragment Syntax, typename ...Args>
-  struct is_storage_constructible : std::bool_constant<
-    is_storage_constructible_v<Storage, Syntax, Args...>
-  > { };
-
-  //
-  // Similar thing for hierarchy elements, but a bit different because we need
-  // to pass the type which does not come from the arguments.
-  //
-  template<syntax_element Element, fragment Syntax, typename ...Args>
-  struct is_hierarchy_element_constructible
-    : is_storage_constructible<
-        storage_of_element(Element), Syntax,
-        fragment_enum_value<Element>, Args...
-      > { };
-
-  template<syntax_element Element, fragment Syntax, typename ...Args>
-  inline constexpr auto is_hierarchy_element_constructible_v = 
-    is_hierarchy_element_constructible<Element, Syntax, Args...>::value;
-  
-  //
-  // The same thing for leaf types is still a bit different. Here, since we do
-  // not have children, we do not have to do any conversion between the argument
-  // (e.g. `formula<LTL>`) and the actual value stored (e.g.
-  // `hierarchy_node<hierarchy_type::formula>`). So we do not use
-  // `storage_alloc_args_t`, and we just have to check if the arguments can
-  // directly initialize the corresponding `storage_node`.
-  //
-  template<leaf_storage_kind Storage, typename ...Args>
-  inline constexpr auto is_leaf_storage_constructible_v = requires { 
-    storage_node<Storage::storage>{
-      std::declval<syntax_element>(), std::declval<Args>()...
-    }; 
-  };
-
-  template<leaf_storage_kind Storage, typename ...Args>
-  struct is_leaf_storage_constructible
-    : std::bool_constant<is_leaf_storage_constructible_v<Storage, Args...>> { };
-
-  
   //
   // The allocating constructor needs to get access to the alphabet to make any
   // allocation. The alphabet is extracted with the following function from the
@@ -1907,8 +1847,6 @@ namespace black_internal::logic {
   alphabet *get_sigma(T&&, Args ...args) {
     return get_sigma(args...);
   }
-
-  
 
   //
   // Let us now address the remaining parts of the user interface of hierarchy
@@ -2135,7 +2073,9 @@ namespace black_internal::logic {
     > {
       using type = black_internal::logic::fragment_type<
         black_internal::logic::dummy_owner_t,
-        black_internal::logic::make_fragment_t<E1, E2>
+        black_internal::logic::make_fragment_t<
+          black_internal::logic::syntax_list<E1, E2>
+        >
       >;
     };
 
@@ -2148,7 +2088,7 @@ namespace black_internal::logic {
     > {
       using type = black_internal::logic::fragment_type<O, 
         black_internal::logic::fragment_union_t<
-          Syntax, black_internal::logic::make_fragment_t<E>
+          Syntax, black_internal::logic::make_singleton_fragment_t<E>
         >
       >;
     };
@@ -2162,7 +2102,7 @@ namespace black_internal::logic {
     > {
       using type = black_internal::logic::fragment_type<O, 
         black_internal::logic::fragment_union_t<
-          Syntax, black_internal::logic::make_fragment_t<E>
+          Syntax, black_internal::logic::make_singleton_fragment_t<E>
         >
       >;
     };

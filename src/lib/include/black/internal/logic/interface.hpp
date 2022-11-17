@@ -148,13 +148,17 @@ namespace black_internal::logic {
   T wrap_term_op_arg(alphabet *, T t) { return t; }
 
   using wrapped_int = make_fragment_t< 
-    syntax_element::constant,
-    syntax_element::integer
+    syntax_list<
+      syntax_element::constant,
+      syntax_element::integer
+    >
   >;
   
   using wrapped_real = make_fragment_t< 
-    syntax_element::constant,
-    syntax_element::real
+    syntax_list<
+      syntax_element::constant,
+      syntax_element::real
+    >
   >;
 
   template<std::integral T>
@@ -429,7 +433,8 @@ namespace black_internal::logic {
     
     using H = hierarchy_type_of_t<
       make_combined_fragment_t<
-        typename R::syntax, make_fragment_t<Op>, typename decltype(id)::syntax
+        typename R::syntax, make_singleton_fragment_t<Op>, 
+        typename decltype(id)::syntax
       >,
       R::hierarchy
     >;
@@ -447,6 +452,19 @@ namespace black_internal::logic {
 
     return acc;
   }
+
+  //
+  // Here we declare an ad-hoc deduction guide to help invoke `exists` and
+  // `forall` constructors with an initializer list argument, without specifying
+  // the fragment
+  //
+  template<hierarchy H>
+  exists(std::initializer_list<var_decl>, H) 
+    -> exists<deduce_fragment_for_storage_t<syntax_element::exists, H>>;
+  
+  template<hierarchy H>
+  forall(std::initializer_list<var_decl>, H) 
+    -> forall<deduce_fragment_for_storage_t<syntax_element::forall, H>>;
 
   //
   // The following are instances of `fold_op`, useful functions to create long
@@ -657,308 +675,6 @@ namespace black_internal::logic {
     for(auto child : c.operands())
       f(child);
   }
-
-  //
-  // We also provide some accessor functions to `quantifier` that help matching
-  // quantifier blocks instead of one quantifier at the time. Algorithmically,
-  // this is conceptually simpler because we just have to recurse on the
-  // children of the quantifier until we fine something different from the same
-  // kind of quantifier. However, the things are a bit complex because we want
-  // to support different use cases. See the comments above `quantifier_block`.
-  //
-  // We start from the lazy view over the variables of a quantifier block. The
-  // view itself is a thin wrapper over the quantifier, that returns its
-  // iterators at begin() and end().
-  //
-  template<fragment Syntax>
-  class quantifier_block_view : public std::ranges::view_base {
-  public:
-    class const_iterator;
-    using iterator = const_iterator;
-
-    quantifier_block_view() = default;
-    quantifier_block_view(quantifier<Syntax> q) : _quantifier{q} { }
-
-    const_iterator begin() const { 
-      black_assert(_quantifier.has_value());
-      return const_iterator{*_quantifier}; 
-    }
-    const_iterator end() const { return const_iterator{}; }
-
-  private:
-    std::optional<quantifier<Syntax>> _quantifier;
-  };
-
-  // forward declaration
-  template<fragment Syntax>
-  class quantifier_block;
-
-  //
-  // The iterator is simpler than the one of `associative_op_view`, because of
-  // what we said above.
-  //
-  template<fragment Syntax>
-  class quantifier_block_view<Syntax>::const_iterator {
-  public:
-    using difference_type = ssize_t;
-    using value_type = var_decl;
-
-    // All due constructors. A default-constructed iterator equals to end()
-    // because `_quantifier` is empty.
-    const_iterator() = default;
-    const_iterator(const_iterator const&) = default;
-    const_iterator(const_iterator &&) = default;
-
-    // constructor used by the view in begin()
-    const_iterator(quantifier<Syntax> q) : _quantifier{q} { }
-
-    const_iterator &operator=(const_iterator const&) = default;
-    const_iterator &operator=(const_iterator &&) = default;
-
-    bool operator==(const_iterator const&) const = default;
-
-    // the increment just goes down a level into the `matrix()` of the current
-    // quantifier. If we reach something that is not a quantifier or not a
-    // quantifier of the right type, we set `_quantifier` to `nullopt` so we
-    // become the end() iterator.
-    const_iterator &operator++() {
-      black_assert(_quantifier.has_value());
-      auto t = _quantifier->node_type();
-
-      auto child = _quantifier->matrix().template to<quantifier<Syntax>>();
-      if(child.has_value() && child->node_type() == t)
-        _quantifier = child;
-      else
-        _quantifier = std::nullopt;
-
-      return *this;
-    }
-
-    // post-increment
-    const_iterator operator++(int) {
-      auto o = *this;
-      operator++();
-      return o;
-    }
-
-    // Here we just return the declaration of the current quantifier
-    var_decl operator*() const {
-      black_assert(_quantifier.has_value());
-      return _quantifier->decl();
-    }
-
-  private:
-    std::optional<quantifier<Syntax>> _quantifier;
-  };
-
-  //
-  // The following class represents a block of quantifiers of the same kind. It
-  // is a `storage_kind` in itself, of the same `storage_type` as
-  // `quantifier<>`. This means we can convert from a quantifier block to a
-  // quantifier freely, and viceversa. The accessors lazily go into the
-  // quantifier to look for the variables and the matrix.
-  //
-  // This supports various use cases:
-  // 1. you use quantifier_block's second constructor to build a chain of
-  //    quantifier objects from a vector (a range) of variables and a matrix.
-  // 2. you use the class as a result of `quantifier<>::block()` to view the
-  //    quantifier as a quantifier block.
-  // 3. you use `quantifier_block` instead of `quantifier` in a pattern matching
-  //    case to use directly the quantifier block without having to match a
-  //    `quantifier` and then call `block()` each time.
-  //
-  // first we declare some utility functions. This function creates a chain of
-  // quantifiers given a matrix and a range of variables. `Q` is either
-  // `quntifier<>`, `exists<>` or `forall<>`
-  template<typename Q, std::ranges::range R>
-  Q create_block(
-    typename quantifier<typename Q::syntax>::type t, 
-    R const&vars, formula<typename Q::syntax> matrix
-  ) {
-    black_assert(begin(vars) != end(vars));
-    for(auto it = rbegin(vars); it != rend(vars); ++it) {
-      matrix = quantifier<typename Q::syntax>(t, *it, matrix);
-    }
-    return *matrix.template to<Q>();
-  }
-
-  //
-  // This function takes a `quantifier` that heads a quantifier chain and looks
-  // for the innermost `quantifier` of the chain.
-  //
-  template<fragment Syntax>
-  quantifier<Syntax> innermost_quantifier(quantifier<Syntax> q)
-  {
-    while(q.matrix().template is<quantifier<Syntax>>())
-      q = *q.matrix().template to<quantifier<Syntax>>();
-    return q;
-  }
-  
-  //
-  // Now the `quantifier_block` class itself.
-  //
-  template<fragment Syntax>
-  class quantifier_block 
-    : public
-      storage_base<storage_type::quantifier, Syntax, quantifier_block<Syntax>>
-  {
-    using base_t = storage_base<
-      storage_type::quantifier, Syntax, quantifier_block<Syntax>
-    >;
-  public:
-    //
-    // converting constructors from general and specific quantifiers
-    //
-    quantifier_block(quantifier<Syntax> q)
-      : base_t{q.sigma(), q.node()} { }
-    quantifier_block(exists<Syntax> q) 
-      : base_t{q.sigma(), q.node()} { }
-    quantifier_block(forall<Syntax> q) 
-      : base_t{q.sigma(), q.node()} { }
-
-    //
-    // allocating constructor, mimicking the one of `quantifier<>`. Here we take
-    // a range of variables instead of a single variable, and build the chain of
-    // quantifiers by calling `create_block()`. We also already set `_last`
-    // because we already know the block's matrix.
-    //
-    template<std::ranges::range R>
-    quantifier_block(
-      typename quantifier<Syntax>::type t,
-      R const&vars, 
-      formula<Syntax> matrix
-    ) : quantifier_block{create_block<quantifier<Syntax>>(t, vars, matrix)} 
-    { 
-      black_assert(!empty(vars));
-      _last = quantifier<Syntax>(t, *rbegin(vars), matrix);
-    }
-
-    // returns the view to the variables.
-    quantifier_block_view<Syntax> variables() const {
-      return {*this};
-    }
-
-    //
-    // Here we return the matrix of the block. To avoid having to traverse the
-    // block each time the function is called, we cache the result into the
-    // mutable variable `_last`, which contains the innermost quantifier of the
-    // block.
-    formula<Syntax> matrix() const {
-      if(_last)
-        return _last->matrix();
-      _last = innermost_quantifier<Syntax>(*this);
-      return _last->matrix();
-    }
-
-  private:
-     mutable std::optional<quantifier<Syntax>> _last;
-  };
-
-  //
-  // Similar to `quantifier_block<>`, `exists_block<>` and `forall_block<>` do
-  // the same thing but for specific quantifiers. Here we declare a common base
-  // class for both. The interface and member functions are the same of
-  // `quantifier_block`, excepting that here we derive from
-  // `hierarchy_element_base`, so we are perfectly compatible with `exists<>`
-  // and `forall<>`.
-  //
-  template<syntax_element E, fragment Syntax>
-  class specific_quantifier_block 
-    : public
-      hierarchy_element_base<E, Syntax, specific_quantifier_block<E, Syntax>>
-  {
-    using element_t = element_type_of_t<Syntax, E>;
-    using base_t = 
-      hierarchy_element_base<E, Syntax, specific_quantifier_block<E, Syntax>>;
-  public:
-    specific_quantifier_block(element_t q) 
-        : base_t{q.sigma(), q.node()} { }
-
-    template<std::ranges::range R>
-    specific_quantifier_block(
-      R const&vars, 
-      formula<Syntax> matrix
-    ) : specific_quantifier_block{
-      create_block<element_t>(fragment_enum_value<E>{}, vars, matrix)
-    } { 
-      black_assert(!empty(vars));
-      _last = element_t(*rbegin(vars), matrix);
-    }
-    
-    specific_quantifier_block(
-      std::initializer_list<var_decl> const&vars,
-      formula<Syntax> matrix
-    ) : specific_quantifier_block{
-      create_block<element_t>(fragment_enum_value<E>{}, vars, matrix)
-    } { 
-      black_assert(!empty(vars));
-      _last = element_t(*rbegin(vars), matrix);
-    }
-
-    quantifier_block_view<Syntax> variables() const {
-      return {*this};
-    }
-
-    formula<Syntax> matrix() const {
-      if(_last)
-        return _last->matrix(); // LCOV_EXCL_LINE
-      _last = innermost_quantifier<Syntax>(*this);
-      return _last->matrix();
-    }
-
-  private:
-    mutable std::optional<quantifier<Syntax>> _last;
-  };
-
-  //
-  // The specific classses just derive from `specific_quantifier_block` without
-  // anything else.
-  //
-  template<fragment Syntax>
-  struct exists_block 
-    : specific_quantifier_block<syntax_element::exists, Syntax> 
-  {
-    using base_t = specific_quantifier_block<syntax_element::exists, Syntax>;
-    using base_t::base_t;
-  };
-
-  template<fragment Syntax>
-  struct forall_block 
-    : specific_quantifier_block<syntax_element::forall, Syntax> 
-  {
-    using base_t = specific_quantifier_block<syntax_element::forall, Syntax>;
-    using base_t::base_t;
-  };
-
-  //
-  // Finally, we can add our custom member `block()` to `quantifier<>`,
-  // `exists<>` and `forall<>`.
-  //
-  template<fragment Syntax>
-  struct storage_custom_members<storage_type::quantifier, quantifier<Syntax>>
-  {
-    quantifier_block<Syntax> block() const { 
-      return {static_cast<quantifier<Syntax> const&>(*this)}; 
-    }
-  };
-  
-  template<fragment Syntax>
-  struct hierarchy_element_custom_members<
-    syntax_element::exists, exists<Syntax>
-  > {
-    exists_block<Syntax> block() const { 
-      return {static_cast<quantifier<Syntax> const&>(*this)}; 
-    }
-  };
-  
-  template<fragment Syntax>
-  struct hierarchy_element_custom_members<
-    syntax_element::forall, forall<Syntax>
-  > {
-    forall_block<Syntax> block() const { 
-      return {static_cast<quantifier<Syntax> const&>(*this)}; 
-    }
-  };
 
   //
   // Utility function to replace some subterms of a term with some replacement

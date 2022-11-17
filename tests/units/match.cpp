@@ -249,7 +249,8 @@ TEST_CASE("Pattern matching") {
     formula<LTL> f = u;
 
     using F = make_combined_fragment_t<
-      make_fragment_t<syntax_element::proposition>, make_fragment_t<syntax_element::boolean>
+      make_singleton_fragment_t<syntax_element::proposition>, 
+      make_singleton_fragment_t<syntax_element::boolean>
     >;
 
     REQUIRE_CT(b, p, formula<F>);

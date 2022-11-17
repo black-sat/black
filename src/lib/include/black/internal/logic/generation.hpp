@@ -579,13 +579,15 @@ namespace black_internal::logic
   #define declare_leaf_storage_kind(Base, Storage) \
     class Storage : \
       public hierarchy_element_base< \
-        syntax_element::Storage, make_fragment_t<syntax_element::Storage>, \
+        syntax_element::Storage,  \
+        make_singleton_fragment_t<syntax_element::Storage>, \
         Storage \
       > \
     { \
     public: \
       using hierarchy_element_base< \
-        syntax_element::Storage, make_fragment_t<syntax_element::Storage>, \
+        syntax_element::Storage, \
+        make_singleton_fragment_t<syntax_element::Storage>, \
         Storage \
       >::hierarchy_element_base; \
     };
@@ -609,12 +611,6 @@ namespace black_internal::logic
       using hierarchy_element_base< \
         syntax_element::Element, Syntax, Element<Syntax> \
       >::hierarchy_element_base; \
-      \
-      template<typename ...Args> \
-        requires is_hierarchy_element_constructible_v< \
-          syntax_element::Element, Syntax, Args... \
-        > \
-      explicit Element(Args ...args); \
     }; \
     \
     template<typename ...Args> \
@@ -628,13 +624,15 @@ namespace black_internal::logic
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     class Element : \
       public hierarchy_element_base< \
-        syntax_element::Element, make_fragment_t<syntax_element::Element>, \
+        syntax_element::Element, \
+        make_singleton_fragment_t<syntax_element::Element>, \
         Element \
       > \
     { \
     public: \
       using hierarchy_element_base< \
-        syntax_element::Element, make_fragment_t<syntax_element::Element>, \
+        syntax_element::Element, \
+        make_singleton_fragment_t<syntax_element::Element>, \
         Element \
       >::hierarchy_element_base; \
     };
