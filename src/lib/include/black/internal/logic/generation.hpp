@@ -324,10 +324,10 @@ namespace black_internal::logic
     , std::vector<Type>
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
-    , hierarchy_node<hierarchy_type::Hierarchy> const *
+    , hierarchy_node const *
   
   #define declare_children(Base, Storage, Hierarchy, Children) \
-    , std::vector<hierarchy_node<hierarchy_type::Hierarchy> const*>
+    , std::vector<hierarchy_node const*>
 
   #define end_storage_kind(Base, Storage) \
       > { };
