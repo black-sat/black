@@ -1309,8 +1309,12 @@ namespace black_internal::logic {
   // Once we got the arguments into the allocating constructor, we need to build
   // a `storage_node` from them. Since we wrapped the elements of
   // `storage_alloc_args_t` into suitable wrapper types `child_arg` and
-  // `children_arg`, which have the right conversion operators, the
-  // conversion is automatic, we just have to unpack the tuples correctly.
+  // `children_arg`, which have the right conversion operators, the conversion
+  // is automatic, we just have to unpack the tuples correctly.
+  //
+  // The reason why this function is needed at all is that depending on whether
+  // the storage kind has hierarchy elements or not, we need to also pass the
+  // `syntax_element` as the first argument to the node constructor.
   //
   template<storage_type Storage, typename ...Args>
     requires storage_has_hierarchy_elements_v<Storage>
@@ -1329,9 +1333,7 @@ namespace black_internal::logic {
   // The `storage_ctor_base` type will be the main base class of `storage_base`
   // below, through which it inherits from `hierarchy_base`. This class takes
   // care of declaring the correct constructor that allocates the nodes from
-  // suitable arguments. The class is forward-declared here and implemented
-  // later so we get a better general picture by looking at `storage_base` and
-  // `hierarchy_element_base` first.
+  // suitable arguments.
   //
   template<storage_type Storage, fragment Syntax, typename Tuple>
   class storage_ctor_base;
@@ -1412,18 +1414,15 @@ namespace black_internal::logic {
   };
 
   //
-  // To define hierarchy types for storage kinds is more complex because they
-  // have to call back to the alphabet to allocate the underlying nodes. Hence
-  // we have to also consider the definition of the `alphabet` class. Thus, the
-  // "allocating constructor" of storage types has to be defined in the
-  // generated code. Nevertheless, here we can declare all the rest, and we can
-  // inherit directly from hierarchy_base<> for all the common parts.
+  // Here we define the base class for storage kinds such as `unary` or
+  // `binary`. The constructors allocating the nodes have already been declared
+  // in `storage_ctor_base`, which we inherit from.
   //
   // Note that this base class is for non-leaf storage kinds with at least a
-  // hierarchy element. Leaf storage kinds, or storage kinds with no hierarchy
-  // elements, are more similar to hierarchy elements and thus inherit from
-  // `hierarchy_element_base` declared below. Differently from `hierarchy_base`,
-  // this is a CRTP base class.
+  // hierarchy element. Leaf storage kinds (e.g. `boolean`), or storage kinds
+  // with no hierarchy elements (e.g. `atom`), are more similar to hierarchy
+  // elements and thus inherit from `hierarchy_element_base` declared below.
+  // Differently from `hierarchy_base`, this is a CRTP base class.
   //
   template<storage_type Storage, fragment Syntax, typename Derived>
   class storage_base 
@@ -1481,9 +1480,9 @@ namespace black_internal::logic {
     // children.
     //
     // The dummy template parameter `D` is always used with its default argument
-    // equal to `Derived`, and is needed to access to Derived::hierarchy, which
-    // otherwise would not be available because `Derived` is not complete at
-    // this point.
+    // equal to `Derived`, and is needed to access to Derived::hierarchy in the
+    // `requires` clause, which otherwise would not be available because
+    // `Derived` is not complete at this point.
     template<hierarchy F, typename D = Derived>
       requires (F::hierarchy == D::hierarchy)
     static std::optional<Derived> from(F f) {
@@ -1595,6 +1594,7 @@ namespace black_internal::logic {
   //
   // To declare the constructor(s) for `hierarchy_element_base` we need an
   // auxiliary base class similar to `storage_ctor_base`.
+  // `hierarchy_element_base` will inherit from `storage_base` through this one.
   //
   template<
     syntax_element Element, fragment Syntax, typename D, typename Tuple
@@ -1642,9 +1642,9 @@ namespace black_internal::logic {
 
   //
   // The following is the last of the three kinds of hierarchy types. Hierarchy
-  // elements are the leaves of the hierarchy tree. They are associated to a
-  // single `syntax_element` with no more uncertainty. This is a CRTP class as
-  // well.
+  // elements are the most detailed elements of the hierarchy tree. They are
+  // associated to a single `syntax_element` with no more uncertainty. This is a
+  // CRTP class as well.
   //
   template<syntax_element Element, fragment Syntax, typename Derived>
   class hierarchy_element_base
@@ -1735,22 +1735,6 @@ namespace black_internal::logic {
       > { };
 
   //
-  // Sometimes it is useful (e.g. in tests), to compare two hierarchy types for
-  // equivalence. Exact equality of types can be difficult to achieve because of
-  // different fragments being equivalent (e.g. different calls to
-  // `make_combined_fragment`). Hence, here we define a trait
-  // `are_same_hierarchy_types` to smartly compare for equivalence two hierarchy
-  // types.
-  //
-  template<hierarchy T, hierarchy U>
-  struct are_same_hierarchy_types : 
-    std::conjunction<std::is_convertible<T, U>, std::is_convertible<U, T>> { };
-
-  template<hierarchy T, hierarchy U>
-  inline constexpr bool are_same_hierarchy_types_v = 
-    are_same_hierarchy_types<T,U>::value;
-
-  //
   // Some hierarchy types can appear as arguments both for fields (e.g. the
   // `var` field of `quantifier` which is of type `variable`), and for children.
   // In the second case, since we must handle the fragments etc.., we store the
@@ -1833,7 +1817,7 @@ namespace black_internal::logic {
   // contents are stored in tuples which can be accessed by index. Hence we need
   // a map from names of fields to indices in the tuples. This is implemented as
   // just an array of string views declared in the preprocessed code. Then, a
-  // bunch of constexpr simbols holding the name of the single fields is
+  // bunch of constexpr symbols holding the name of the single fields is
   // declared. Here, we only need to declare a function that searches for one
   // symbol in the table and returns its index. Note that the specialization of
   // the trait is selected with SFINAE instead of a `requires` clause because of
