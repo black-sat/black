@@ -66,7 +66,7 @@ namespace black_internal::logic {
   // A variable `x` can be subscripted with a sort `s`, as in `x[s]`, to obtain 
   // the corresponding `var_decl`.
   //
-  struct sort;
+  class sort;
   
   template<storage_type, typename Derived>
   struct variable_decl_op {

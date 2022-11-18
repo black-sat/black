@@ -291,7 +291,7 @@ namespace black_internal::logic
   //
   #define declare_hierarchy(Base) \
     template<fragment Syntax> \
-    struct Base;
+    class Base;
   #define declare_hierarchy_element(Base, Storage, Element) \
     template<fragment Syntax> \
     class Element;
@@ -299,7 +299,7 @@ namespace black_internal::logic
     template<fragment Syntax> \
     class Storage;
   #define declare_simple_hierarchy(Base) \
-    struct Base;
+    class Base;
   #define declare_simple_storage_kind(Base, Storage) \
     class Storage;
   #define declare_leaf_storage_kind(Base, Storage) \
@@ -343,9 +343,9 @@ namespace black_internal::logic
   //
   #define declare_hierarchy(Base) \
     template<fragment Syntax> \
-    struct Base \
-      : hierarchy_base<hierarchy_type::Base, Syntax>, \
-        hierarchy_custom_members<hierarchy_type::Base, Base<Syntax>> \
+    class Base \
+      : public hierarchy_base<hierarchy_type::Base, Syntax>, \
+        public hierarchy_custom_members<hierarchy_type::Base, Base<Syntax>> \
     { \
       using hierarchy_base<hierarchy_type::Base, Syntax>::hierarchy_base; \
     }; \
@@ -357,9 +357,9 @@ namespace black_internal::logic
     concept is_##Base = hierarchy<T> && T::hierarchy == hierarchy_type::Base;
 
   #define declare_simple_hierarchy(Base) \
-    struct Base \
-      : hierarchy_base<hierarchy_type::Base, universal_fragment_t>, \
-        hierarchy_custom_members<hierarchy_type::Base, Base> \
+    class Base \
+      : public hierarchy_base<hierarchy_type::Base, universal_fragment_t>, \
+        public hierarchy_custom_members<hierarchy_type::Base, Base> \
     { \
       using hierarchy_base< \
         hierarchy_type::Base, universal_fragment_t \
