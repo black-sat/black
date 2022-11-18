@@ -1304,23 +1304,6 @@ namespace black_internal::logic {
     storage_has_hierarchy_elements<Storage>::value;
 
   //
-  // This trait tells whether a given `storage_kind` is leaf or not. This can
-  // be detected by looking at size of its fragment. If the fragment is a
-  // singleton, we have a leaf.
-  //
-  template<typename S>
-  struct is_leaf_storage_kind : std::false_type { };
-
-  template<storage_kind S>
-  struct is_leaf_storage_kind<S>
-    : std::bool_constant<
-        syntax_list_length_v<typename S::syntax::list> == 1
-      > { };
-
-  template<typename S>
-  inline constexpr bool is_leaf_storage_kind_v = is_leaf_storage_kind<S>::value;
-
-  //
   // hierarchy types for storage kinds need to provide access to fields and
   // children. Here we declare two empty CRTP base classes that will be
   // specialized later by the preprocessed hierarchy definition file to provide
