@@ -156,20 +156,6 @@ namespace black_internal::logic {
   inline constexpr auto syntax_list_head_v = syntax_list_head<List>::value;
 
   //
-  // Trait to extract the tail of a `syntax_list`
-  //
-  template<typename List>
-  struct syntax_list_tail;
-
-  template<syntax_element Element, syntax_element ...Elements>
-  struct syntax_list_tail<syntax_list<Element, Elements...>> {
-    using type = syntax_list<Elements...>;
-  };
-
-  template<typename List>
-  constexpr auto syntax_list_tail_t = syntax_list_tail<List>::value;
-
-  //
   // Trait to tell the length of a `syntax_list`
   //
   template<typename List>
@@ -777,7 +763,7 @@ namespace black_internal::logic {
   template<typename T>
   concept hierarchy = requires(T t) {
     requires fragment<typename T::syntax>;
-    requires syntax_mask<typename T::syntax_mask>;
+    requires fragment<typename T::effective_syntax>;
     requires fragment_enum<typename T::type>;
     { T::hierarchy } -> std::convertible_to<hierarchy_type>;
 
@@ -796,25 +782,6 @@ namespace black_internal::logic {
     // to<H>() function to convert to another compatible hierarchy type H
     // is<H>() function to tell if it can be converted to H
     // match(...) function for pattern matching
-  };
-
-  //
-  // This trait type provides information computed from the given `hierarchy`
-  // type.
-  // 1. `syntax` and `syntax_mask` and `type` are just exported from the
-  //    hierarchy type.
-  // 2. `accepted_elements` is the syntax list from `syntax` filtered by
-  //    `syntax_mask`.
-  // 3. `unique_id_t` is the unique type id from `hierarchy_unique_id_t`
-  //
-  template<hierarchy H>
-  struct hierarchy_traits {
-    using syntax = typename H::syntax;
-    using syntax_mask = typename H::syntax_mask;
-    using type = typename H::type;
-    using accepted_elements =
-      syntax_list_filter_t<typename syntax::list, syntax_mask>;
-    using unique_id_t = hierarchy_unique_id_t<H::hierarchy>;
   };
 
   //
@@ -1007,32 +974,32 @@ namespace black_internal::logic {
   }
 
   //
-  // `child_wrapper` and `children_wrapper` are the types used to wrap child and
+  // `child_arg` and `children_arg` are the types used to wrap child and
   // children arguments in the construction of storage kinds. See below.
   //
   template<hierarchy_type H, fragment Syntax>
-  struct child_wrapper;
+  struct child_arg;
   template<hierarchy_type H, fragment Syntax>
-  struct children_wrapper;
+  struct children_arg;
 
   template<hierarchy_type H, fragment Syntax>
-  syntax_mask_t fragment_of_(child_wrapper<H, Syntax> child) {
+  syntax_mask_t fragment_of_(child_arg<H, Syntax> child) {
     return fragment_of(child.child);
   }
 
   template<typename T>
-  struct is_children_wrapper : std::false_type { };
+  struct is_children_arg : std::false_type { };
 
   template<hierarchy_type H, fragment Syntax>
-  struct is_children_wrapper<children_wrapper<H, Syntax>>
+  struct is_children_arg<children_arg<H, Syntax>>
     : std:: true_type { };
 
   template<typename T>
-  inline constexpr bool is_children_wrapper_v =
-    is_children_wrapper<T>::value;
+  inline constexpr bool is_children_arg_v =
+    is_children_arg<T>::value;
 
   template<typename T>
-    requires (is_children_wrapper_v<std::remove_cvref_t<T>>)
+    requires (is_children_arg_v<std::remove_cvref_t<T>>)
   syntax_mask_t fragment_of_(T&& children)
   {
     syntax_mask_t result;
@@ -1157,10 +1124,10 @@ namespace black_internal::logic {
   public:
     // members required by the `hierarchy` concept
     using syntax = Syntax;
-    using syntax_mask = hierarchy_syntax_mask<Hierarchy>;
-    using type = fragment_type<
-      hierarchy_base, fragment_filter_t<Syntax, syntax_mask>
+    using effective_syntax = fragment_filter_t<
+      Syntax, hierarchy_syntax_mask<Hierarchy>
     >;
+    using type = fragment_type<hierarchy_base, effective_syntax>;
     static constexpr auto hierarchy = Hierarchy;
 
     // hierarchy types are not default constructible but are
@@ -1333,8 +1300,8 @@ namespace black_internal::logic {
   //
   // Once we got the arguments into the allocating constructor, we need to build
   // a `storage_node` from them. Since we wrapped the elements of
-  // `storage_alloc_args_t` into suitable wrapper types `child_wrapper` and
-  // `children_wrapper`, which have the right conversion operators, the
+  // `storage_alloc_args_t` into suitable wrapper types `child_arg` and
+  // `children_arg`, which have the right conversion operators, the
   // conversion is automatic, we just have to unpack the tuples correctly.
   //
   template<storage_type Storage, typename ...Args>
@@ -1370,10 +1337,11 @@ namespace black_internal::logic {
 
   public:
     // these three members have to be specialized w.r.t. `hierarchy_base`
-    using syntax_mask = storage_syntax_mask<Storage>;
-    using type = fragment_type<
-      storage_ctor_base, fragment_filter_t<Syntax, syntax_mask>
+    using effective_syntax = fragment_filter_t<
+      typename base_t::effective_syntax,
+      storage_syntax_mask<Storage>
     >;
+    using type = fragment_type<storage_ctor_base, effective_syntax>;
     static constexpr storage_type storage = Storage;
 
     // the wrapping constructor delegates to the base's one
@@ -1516,10 +1484,10 @@ namespace black_internal::logic {
         !is_subfragment_of_v<typename F::syntax, typename base_t::syntax>
       ) return {};
 
-      // note the subtlety here: we have to use Derived::syntax_mask to get
+      // note the subtlety here: we have to use Derived::effective_syntax to get
       // the right set of accepted elements.
-      constexpr auto derived_syntax_mask = Derived::syntax_mask::value;
-      if(!derived_syntax_mask.contains(f.node()->type))
+      using derived_effective_syntax = typename Derived::effective_syntax;
+      if(!derived_effective_syntax::mask.contains(f.node()->type))
         return {};
 
       auto obj = static_cast<node_t const *>(f.node());
@@ -1636,16 +1604,14 @@ namespace black_internal::logic {
 
   public:
     // these members from the base have to be overriden and specialized
-    using syntax_mask = make_syntax_mask<syntax_list<Element>>;
-    using type = fragment_type<
-      hierarchy_element_ctor_base, fragment_filter_t<Syntax, syntax_mask>
-    >;
+    using effective_syntax = make_fragment_t<syntax_list<Element>>;
+    using type = fragment_type<hierarchy_element_ctor_base, effective_syntax>;
     static constexpr syntax_element element = Element;
 
     // the wrapping constructor delegates to the base's one
     hierarchy_element_ctor_base(alphabet_base *sigma, node_t const*node) 
       : base_t{sigma, node} {
-      black_assert(syntax_mask::value.contains(node->type));
+      black_assert(effective_syntax::mask.contains(node->type));
     }
 
     template<typename = void>
@@ -1785,11 +1751,11 @@ namespace black_internal::logic {
   // appropriate type later.
   //
   template<hierarchy_type Hierarchy, fragment Syntax>
-  struct child_wrapper 
+  struct child_arg 
   {
     template<hierarchy H>
       requires (H::hierarchy == Hierarchy)
-    child_wrapper(H h) : child{h.node()}, sigma{h.sigma()} { }
+    child_arg(H h) : child{h.node()}, sigma{h.sigma()} { }
 
     operator hierarchy_node<Hierarchy> const*() const {
       return child;
@@ -1800,7 +1766,7 @@ namespace black_internal::logic {
   };
 
   template<hierarchy_type H, fragment Syntax>
-  struct children_wrapper
+  struct children_arg
   {
     template<std::ranges::range R>
     using value_t = std::ranges::range_value_t<R>;
@@ -1808,7 +1774,7 @@ namespace black_internal::logic {
     template<std::ranges::range R>
       requires (value_t<R>::hierarchy == H && 
                 is_subfragment_of_v<typename value_t<R>::syntax, Syntax>)
-    children_wrapper(R v) {
+    children_arg(R v) {
       black_assert(!empty(v));
       sigma = begin(v)->sigma();
       for(auto h : v)
@@ -1831,11 +1797,11 @@ namespace black_internal::logic {
   // requested directly to the alphabet (e.g. sigma.proposition("p")).
   //
   template<hierarchy_type H, fragment Syntax, typename ...Args>
-  alphabet *get_sigma(child_wrapper<H, Syntax> child, Args ...) {
+  alphabet *get_sigma(child_arg<H, Syntax> child, Args ...) {
     return child.sigma;
   }
   template<typename T, typename ...Args>
-    requires (is_children_wrapper_v<std::remove_cvref_t<T>>)
+    requires (is_children_arg_v<std::remove_cvref_t<T>>)
   alphabet *get_sigma(T&& children, Args ...) {
     return children.sigma;
   }
@@ -2230,7 +2196,7 @@ namespace black_internal::logic {
     typename H,
     typename Cases = element_types_of_syntax_list_t<
       typename H::syntax,
-      typename hierarchy_traits<H>::accepted_elements
+      typename H::effective_syntax::list
     >
   >
   struct matcher;
@@ -2417,8 +2383,8 @@ namespace black_internal::logic {
     template<hierarchy H>
       requires (H::hierarchy == base_t::hierarchy && 
         syntax_list_includes_v<
-          typename TopLevel::list, 
-          typename hierarchy_traits<H>::accepted_elements
+          typename TopLevel::list,
+          typename H::effective_syntax::list
         > && is_subfragment_of_v<typename H::syntax, Syntax>)
     only(H h) : base_t{h} { }
 
@@ -2427,10 +2393,12 @@ namespace black_internal::logic {
     // Here we have some members to model the `hierarchy` concept
     //
     using syntax = Syntax;
-    using syntax_mask = make_syntax_mask<typename TopLevel::list>;
-    using type = fragment_type<
-      only, fragment_filter_t<Syntax, syntax_mask>
-    >;
+    using effective_syntax = 
+      fragment_filter_t<
+        Syntax,
+        make_syntax_mask<typename TopLevel::list>
+      >;
+    using type = fragment_type<only, effective_syntax>;
 
     type node_type() {
       return type{this->node()->type};

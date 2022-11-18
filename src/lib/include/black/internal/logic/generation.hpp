@@ -511,10 +511,10 @@ namespace black_internal::logic
     , std::vector<Type>
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
-    , child_wrapper<hierarchy_type::Hierarchy, Syntax>
+    , child_arg<hierarchy_type::Hierarchy, Syntax>
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
-    , children_wrapper<hierarchy_type::Hierarchy, Syntax>
+    , children_arg<hierarchy_type::Hierarchy, Syntax>
 
   #define end_storage_kind(Base, Storage) \
       > { };
