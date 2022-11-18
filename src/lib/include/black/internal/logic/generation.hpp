@@ -344,10 +344,10 @@ namespace black_internal::logic
   #define declare_hierarchy(Base) \
     template<fragment Syntax> \
     class Base \
-      : public hierarchy_base<hierarchy_type::Base, Syntax>, \
+      : public hierarchy_base<hierarchy_type::Base, Syntax, Base<Syntax>>, \
         public hierarchy_custom_members<hierarchy_type::Base, Base<Syntax>> \
     { \
-      using hierarchy_base<hierarchy_type::Base, Syntax>::hierarchy_base; \
+      using hierarchy_base<hierarchy_type::Base, Syntax, Base>::hierarchy_base;\
     }; \
     \
     template<typename H> \
@@ -358,11 +358,12 @@ namespace black_internal::logic
 
   #define declare_simple_hierarchy(Base) \
     class Base \
-      : public hierarchy_base<hierarchy_type::Base, universal_fragment_t>, \
+      : public \
+          hierarchy_base<hierarchy_type::Base, universal_fragment_t, Base>, \
         public hierarchy_custom_members<hierarchy_type::Base, Base> \
     { \
       using hierarchy_base< \
-        hierarchy_type::Base, universal_fragment_t \
+        hierarchy_type::Base, universal_fragment_t, Base \
       >::hierarchy_base; \
     }; \
     \
@@ -712,7 +713,7 @@ namespace black_internal::logic
 
     #include <black/internal/logic/hierarchy.hpp>
 
-    template<storage_type, fragment, typename>
+    template<storage_type, fragment, typename, typename>
     friend class storage_ctor_base;
     
     template<syntax_element, fragment, typename, typename>

@@ -55,7 +55,7 @@ namespace black_internal::dimacs
 
   void solver::assert_formula(formula<FO> f) 
   {
-    auto pf = fragment_cast<propositional>(f);
+    auto pf = f.to<formula<propositional>>();
     black_assert(pf.has_value());
     // conversion of the formula to CNF
     cnf::cnf c = cnf::to_cnf(*pf);

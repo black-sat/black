@@ -188,8 +188,34 @@ TEST_CASE("New API") {
 
       REQUIRE(n.is<negation<LTL>>());
       REQUIRE(n.is<negation<LTLP>>());
-      REQUIRE(!n.is<negation<propositional>>());
+      REQUIRE(n.is<negation<propositional>>());
       REQUIRE(!n.is<unary_term<FO>>());
+
+      proposition p = sigma.proposition("p");
+      formula<LTLP> u1 = G(p);
+      formula<LTLP> u2 = Y(sigma.proposition("p"));
+      formula<LTLP> u3 = G(Y(sigma.proposition("p")));
+
+      auto x = sigma.variable("x");
+      auto y = sigma.variable("y");
+      auto z = sigma.variable("z");
+
+      std::vector<variable> vars = {x, y, z};
+      std::vector<term<FO>> sums = {x + x, y + y, z + z};
+
+      auto e1 = equal(vars);
+      auto e2 = equal(sums);
+
+      using vars_fragment = decltype(e1)::syntax;
+
+      REQUIRE(u1.to<formula<LTL>>().has_value());
+      REQUIRE(!u2.to<formula<LTL>>().has_value());
+      REQUIRE(!u3.to<formula<LTL>>().has_value());
+      
+      REQUIRE(!e2.to<equal<vars_fragment>>().has_value());
+
+      REQUIRE(u1.node_type().to<formula<LTL>::type>().has_value());
+      REQUIRE(!u2.node_type().to<formula<LTL>::type>().has_value()); 
     }
   }
 
@@ -488,34 +514,6 @@ TEST_CASE("New API") {
       tv2.push_back(f);
 
     REQUIRE(tv1 == tv2);
-  }
-
-  SECTION("fragment_cast<>") {
-    proposition p = sigma.proposition("p");
-    formula<LTLP> u1 = G(p);
-    formula<LTLP> u2 = Y(sigma.proposition("p"));
-    formula<LTLP> u3 = G(Y(sigma.proposition("p")));
-
-    auto x = sigma.variable("x");
-    auto y = sigma.variable("y");
-    auto z = sigma.variable("z");
-
-    std::vector<variable> vars = {x, y, z};
-    std::vector<term<FO>> sums = {x + x, y + y, z + z};
-
-    auto e1 = equal(vars);
-    auto e2 = equal(sums);
-
-    using vars_fragment = decltype(e1)::syntax;
-
-    REQUIRE(fragment_cast<LTL>(u1).has_value());
-    REQUIRE(!fragment_cast<LTL>(u2).has_value());
-    REQUIRE(!fragment_cast<LTL>(u3).has_value());
-    
-    REQUIRE(!fragment_cast<vars_fragment>(e2).has_value());
-
-    REQUIRE(fragment_cast<LTL>(u1.node_type()));
-    REQUIRE(!fragment_cast<LTL>(u2.node_type()));
   }
 
   SECTION("has_any_element_of()")
