@@ -219,6 +219,23 @@ TEST_CASE("New API") {
     }
   }
 
+  SECTION("Tuple-like access") {
+    auto p = sigma.proposition("p");
+    auto q = sigma.proposition("q");
+
+    auto c = p && q;
+
+    auto [l, r] = c;
+
+    REQUIRE(l == p);
+    REQUIRE(r == q);
+
+    REQUIRE(get<0>(c) == p);
+    REQUIRE(get<1>(c) == q);
+
+    STATIC_REQUIRE(std::tuple_size_v<decltype(c)> == 2);
+  }
+
   SECTION("Atoms and applications") {
     function f = sigma.function("f");
 

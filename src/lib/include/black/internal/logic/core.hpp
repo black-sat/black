@@ -1812,6 +1812,18 @@ namespace black_internal::logic {
     hierarchy_of_storage_child<I, Storage>::value;
   
   //
+  // The following is a trait template to get an array with the actual names
+  // of the fields of a storage, specialized later.
+  //
+  template<storage_type>
+  inline constexpr auto storage_fields_v = nullptr;
+
+  template<storage_type Storage>
+  struct storage_fields {
+    static constexpr auto value = storage_fields_v<Storage>;
+  };
+
+  //
   // Now we can actually get the fields.
   //
   template<size_t I, storage_kind H>

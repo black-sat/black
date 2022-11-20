@@ -26,7 +26,11 @@
 
 #include <black/logic/logic.hpp>
 
+#include <pybind11/stl.h>
+
+#include <vector>
 #include <tuple>
+#include <variant>
 
 namespace pyblack 
 {
@@ -42,6 +46,11 @@ namespace pyblack
   template<internal::hierarchy_type H>
   struct clean_init_arg<internal::child_arg<H, syntax>>
     : internal::hierarchy_type_of<syntax, H> { };
+  
+  template<internal::hierarchy_type H>
+  struct clean_init_arg<internal::children_arg<H, syntax>> {
+    using type = std::vector<internal::hierarchy_type_of_t<syntax, H>>;
+  };
 
   template<typename T>
   using clean_init_arg_t = typename clean_init_arg<T>::type;
@@ -55,6 +64,32 @@ namespace pyblack
       return py::init<clean_init_arg_t<Args>...>();
     }
   };
+
+  template<typename List>
+  struct make_universal_variant;
+
+  template<black::syntax_element ...Elements>
+  struct make_universal_variant<black::syntax_list<Elements...>> {
+    using type = std::variant<internal::element_type_of_t<syntax, Elements>...>;
+  };
+
+  using universal_variant_t = typename 
+    make_universal_variant<internal::universal_fragment_t::list>::type;
+
+  template<typename T>
+  inline auto specialize(T&& t) {
+    return t;
+  }
+
+  template<typename H>
+    requires black::hierarchy<std::remove_cvref_t<H>>
+  inline auto specialize(H&& h) {
+    return h.match(
+      [](auto x) {
+        return universal_variant_t{x};
+      }
+    );
+  }
 
   template<black::syntax_element Element, typename HClass>
   void register_hierarchy_element(
@@ -87,6 +122,19 @@ namespace pyblack
       class_.def(
         init_aux<internal::storage_alloc_args_t<syntax, storage>>::init()
       );
+
+    static constexpr size_t n_fields = std::tuple_size_v<element_type>;
+
+    auto declare_fields = [&]<size_t ...I>(std::index_sequence<I...>) {
+      (class_.def_property_readonly(
+        internal::storage_fields_v<storage>[I].data(), 
+        [](element_type self) {
+          return specialize(get<I>(self));
+        }
+      ), ...);
+    };
+
+    declare_fields(std::make_index_sequence<n_fields>{});
   }
 
   template<internal::hierarchy_type Hierarchy>

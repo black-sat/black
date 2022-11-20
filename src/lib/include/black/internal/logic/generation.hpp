@@ -767,15 +767,19 @@ namespace black_internal::logic
   // fields nor children (e.g. `arithmetic_sort`).
   //
   #define declare_storage_kind(Base, Storage) \
-    inline constexpr std::string_view Storage##_fields[] = {
+    template<> \
+    inline constexpr std::string_view \
+    storage_fields_v<storage_type::Storage>[] = {
   
   #define declare_field(Base, Storage, Type, Field) #Field, 
   #define declare_fields(Base, Storage, Type, Fields) #Fields, 
   #define declare_child(Base, Storage, Hierarchy, Child) #Child, 
   #define declare_children(Base, Storage, Hierarchy, Children) #Children,
 
+  #define has_no_children(Base, Storage) \
+    "__THIS_SHOULD_NOT_SHOW_UP_ANYWHERE__",
+
   #define end_storage_kind(Base, Storage) \
-      "__THIS_SHOULD_NOT_SHOW_UP_ANYWHERE__" \
     };
 
   #include <black/internal/logic/hierarchy.hpp>
@@ -787,7 +791,9 @@ namespace black_internal::logic
   #define declare_child(Base, Storage, Hierarchy, Child) \
   template<> \
   struct hierarchy_of_storage_child< \
-    index_of_field_v<Storage##_fields, Storage##_##Child##_field>, \
+    index_of_field_v< \
+      storage_fields_v<storage_type::Storage>, Storage##_##Child##_field \
+    >, \
     storage_type::Storage \
   > { \
     static constexpr auto value = hierarchy_type::Hierarchy; \
@@ -809,7 +815,9 @@ namespace black_internal::logic
     template<typename H> \
     Type const &storage_fields_base<storage_type::Storage, H>::Field() const { \
       constexpr size_t I = \
-        index_of_field_v<Storage##_fields, Storage##_##Field##_field>; \
+        index_of_field_v< \
+          storage_fields_v<storage_type::Storage>, Storage##_##Field##_field \
+        >; \
       return get_field<I>(static_cast<H const&>(*this)); \
     }
   
@@ -818,7 +826,9 @@ namespace black_internal::logic
     std::vector<Type> const& \
     storage_fields_base<storage_type::Storage, H>::Fields() const { \
       constexpr size_t I = \
-        index_of_field_v<Storage##_fields, Storage##_##Fields##_field>; \
+        index_of_field_v< \
+          storage_fields_v<storage_type::Storage>, Storage##_##Fields##_field \
+        >; \
       return get_field<I>(static_cast<H const&>(*this)); \
     }
 
@@ -827,7 +837,9 @@ namespace black_internal::logic
     Hierarchy<Syntax> \
     storage_children_base<storage_type::Storage, Syntax, H>::Child() const { \
       constexpr size_t I = \
-        index_of_field_v<Storage##_fields, Storage##_##Child##_field>;\
+        index_of_field_v< \
+          storage_fields_v<storage_type::Storage>, Storage##_##Child##_field \
+        >;\
       return get_child<I, Syntax>(static_cast<H const&>(*this)); \
     }
 
@@ -836,7 +848,9 @@ namespace black_internal::logic
     auto \
     storage_children_base<storage_type::Storage, Syntax, H>::Children() const {\
       constexpr size_t I = \
-        index_of_field_v<Storage##_fields, Storage##_##Children##_field>;\
+        index_of_field_v< \
+          storage_fields_v<storage_type::Storage>, Storage##_##Children##_field \
+        >;\
       return get_children<I, Syntax>(static_cast<H const&>(*this)); \
     }
 
@@ -849,21 +863,27 @@ namespace black_internal::logic
   #define declare_field(Base, Storage, Type, Field) \
     template<> \
     struct storage_ith_data_is_field< \
-      index_of_field_v<Storage##_fields, Storage##_##Field##_field>, \
+      index_of_field_v< \
+        storage_fields_v<storage_type::Storage>, Storage##_##Field##_field \
+      >, \
       storage_type::Storage \
     > : std::true_type { };
 
   #define declare_fields(Base, Storage, Type, Fields) \
     template<> \
     struct storage_ith_data_is_field< \
-      index_of_field_v<Storage##_fields, Storage##_##Fields##_field>, \
+      index_of_field_v< \
+        storage_fields_v<storage_type::Storage>, Storage##_##Fields##_field \
+      >, \
       storage_type::Storage \
     > : std::true_type { };
   
   #define declare_child(Base, Storage, Hierarchy, Child) \
     template<> \
     struct storage_ith_data_is_child< \
-      index_of_field_v<Storage##_fields, Storage##_##Child##_field>, \
+      index_of_field_v< \
+        storage_fields_v<storage_type::Storage>, Storage##_##Child##_field \
+      >, \
       storage_type::Storage \
     > : std::true_type { };
 
