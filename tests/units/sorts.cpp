@@ -42,8 +42,8 @@ TEST_CASE("Sorts and domains") {
   named_sort s = sigma.named_sort("example");
 
   std::vector<formula> tests = {
-    exists(x[s], distinct(std::vector<term>{c1, c2, c3, c4, x})),
-    !forall(x[s], x == c1 || x == c2 || x == c3 || x == c4)
+    exists({x[s]}, distinct(std::vector<term>{c1, c2, c3, c4, x})),
+    !forall({x[s]}, x == c1 || x == c2 || x == c3 || x == c4)
   };
 
   scope xi{sigma};

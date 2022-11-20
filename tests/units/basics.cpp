@@ -188,8 +188,34 @@ TEST_CASE("New API") {
 
       REQUIRE(n.is<negation<LTL>>());
       REQUIRE(n.is<negation<LTLP>>());
-      REQUIRE(!n.is<negation<propositional>>());
+      REQUIRE(n.is<negation<propositional>>());
       REQUIRE(!n.is<unary_term<FO>>());
+
+      proposition p = sigma.proposition("p");
+      formula<LTLP> u1 = G(p);
+      formula<LTLP> u2 = Y(sigma.proposition("p"));
+      formula<LTLP> u3 = G(Y(sigma.proposition("p")));
+
+      auto x = sigma.variable("x");
+      auto y = sigma.variable("y");
+      auto z = sigma.variable("z");
+
+      std::vector<variable> vars = {x, y, z};
+      std::vector<term<FO>> sums = {x + x, y + y, z + z};
+
+      auto e1 = equal(vars);
+      auto e2 = equal(sums);
+
+      using vars_fragment = decltype(e1)::syntax;
+
+      REQUIRE(u1.to<formula<LTL>>().has_value());
+      REQUIRE(!u2.to<formula<LTL>>().has_value());
+      REQUIRE(!u3.to<formula<LTL>>().has_value());
+      
+      REQUIRE(!e2.to<equal<vars_fragment>>().has_value());
+
+      REQUIRE(u1.node_type().to<formula<LTL>::type>().has_value());
+      REQUIRE(!u2.node_type().to<formula<LTL>::type>().has_value()); 
     }
   }
 
@@ -216,8 +242,16 @@ TEST_CASE("New API") {
     REQUIRE(app.func() == f);
     REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
 
+    sort s = sigma.integer_sort();
+    application<FO> app4 = f(x[s], y[s]);
+
+    std::vector<var_decl> decls = {x[s], y[s]};
+    application<FO> app5 = f(decls);
+
     REQUIRE(bool(app == app2));
     REQUIRE(bool(app == app3));
+    REQUIRE(bool(app == app4));
+    REQUIRE(bool(app == app5));
   }
 
   SECTION("Quantifiers") {
@@ -225,13 +259,13 @@ TEST_CASE("New API") {
     sort s = sigma.integer_sort();
     comparison<FO> e = 
       comparison<FO>(comparison<FO>::type::greater_than{}, x, x);
-    quantifier<FO> f = quantifier<FO>(quantifier<FO>::type::forall{}, x[s], e);
+    quantifier<FO> f = 
+      quantifier<FO>(quantifier<FO>::type::forall{}, {x[s]}, e);
 
     REQUIRE(e.left() == x);
     REQUIRE(e.right() == x);
 
-    REQUIRE(bool(f.decl().variable() == x));
-    REQUIRE(f.decl().sort() == s);
+    REQUIRE(bool(f.variables() == std::vector{x[s]}));
     REQUIRE(f.matrix() == e);
   }
   
@@ -482,99 +516,6 @@ TEST_CASE("New API") {
     REQUIRE(tv1 == tv2);
   }
 
-  SECTION("Quantifier blocks") {
-    using namespace black_internal;
-
-    variable x = sigma.variable("x");
-    variable y = sigma.variable("y");
-    variable z = sigma.variable("z");
-    variable w = sigma.variable("w");
-
-    sort s = sigma.integer_sort();
-
-    formula<FO> f = x == y && y == z && z == w;
-
-    std::vector<var_decl> v = {x[s], y[s], z[s], w[s]};
-
-    static_assert(storage_kind<quantifier_block<FO>>);
-
-    auto qb = quantifier_block<FO>(quantifier<FO>::type::forall{}, v, f);
-
-    REQUIRE(qb.matrix() == f);
-    REQUIRE(qb.matrix() == f); // testing caching
-    
-    qb = quantifier_block<FO>(quantifier<FO>::type::exists{}, v, f);
-
-    REQUIRE(qb.matrix() == f);
-    REQUIRE(qb.matrix() == f); // testing caching
-
-    quantifier<FO> q = qb;
-
-    quantifier<FO> q2 = 
-      exists(x[s], exists(y[s], (exists(z[s], exists(w[s], f)))));
-
-    REQUIRE(q == q2);
-
-    exists<FO> eb = exists_block<FO>(v, f);
-    
-    REQUIRE(eb == q2);
-
-    std::vector<var_decl> vars;
-    for(auto var : q.block().variables()) {
-      vars.push_back(var);
-    }
-
-    REQUIRE(v == vars);
-    REQUIRE(q.block().matrix() == f);
-
-    using view_t = decltype(qb.variables());
-    STATIC_REQUIRE(std::input_or_output_iterator<view_t::const_iterator>);
-    STATIC_REQUIRE(std::input_iterator<view_t::const_iterator>);
-    STATIC_REQUIRE(std::forward_iterator<view_t::const_iterator>);
-    STATIC_REQUIRE(std::ranges::range<view_t>);
-    STATIC_REQUIRE(std::ranges::view<view_t>);
-    STATIC_REQUIRE(std::ranges::viewable_range<view_t>);
-
-    formula<FO> qf = q;
-    qf.match(
-      [&](quantifier_block<FO> b) {
-        std::vector<var_decl> bvars;
-        for(auto var : q.block().variables()) {
-          bvars.push_back(var);
-        }
-        REQUIRE(bvars == v);
-        REQUIRE(b.matrix() == f);
-      },
-      [](otherwise) { REQUIRE(false); }
-    );
-
-    qf.match(
-      [&](exists_block<FO> b) {
-        std::vector<var_decl> bvars;
-        for(auto var : q.block().variables()) {
-          bvars.push_back(var);
-        }
-        REQUIRE(bvars == v);
-        REQUIRE(b.matrix() == f);
-      },
-      [](otherwise) { REQUIRE(false); }
-    );
-  }
-
-  SECTION("fragment_cast<>") {
-    proposition p = sigma.proposition("p");
-    formula<LTLP> u1 = G(p);
-    formula<LTLP> u2 = Y(sigma.proposition("p"));
-    formula<LTLP> u3 = G(Y(sigma.proposition("p")));
-
-    REQUIRE(fragment_cast<LTL>(u1).has_value());
-    REQUIRE(!fragment_cast<LTL>(u2).has_value());
-    REQUIRE(!fragment_cast<LTL>(u3).has_value());
-
-    REQUIRE(fragment_cast<LTL>(u1.node_type()));
-    REQUIRE(!fragment_cast<LTL>(u2.node_type()));
-  }
-
   SECTION("has_any_element_of()")
   {
     using namespace black::logic;
@@ -586,7 +527,7 @@ TEST_CASE("New API") {
     sort s = sigma.integer_sort();
 
     REQUIRE(has_any_element_of(
-      p && !p && x > x && exists(x[s], x > x) && F(F(top)),
+      p && !p && x > x && exists({x[s]}, x > x) && F(F(top)),
       syntax_element::boolean, quantifier<FO>::type::forall{}
     ));
   }

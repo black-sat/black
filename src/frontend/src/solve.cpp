@@ -180,7 +180,7 @@ namespace black::frontend {
       slv.set_tracer(&trace);
 
     if (cli::remove_past) {
-      auto ltl = black::fragment_cast<black::logic::LTLP>(*f);
+      auto ltl = f->to<black::logic::formula<black::logic::LTLP>>();
       black_assert(ltl);
       f = black::remove_past(*ltl);
     }

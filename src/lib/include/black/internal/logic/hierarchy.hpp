@@ -69,6 +69,9 @@
 //   elements). For example, the `boolean` storage kind has the field `value`
 //   which is of type `bool`. This results into an actual member function called
 //   `value()` exposed by the class `boolean`.
+// - a `field vector` is a data attribute of a storage kind that is a vector of
+//   fields of the same type. The only example we have here is the `vars` field
+//   of the `quantifier` storage kind, which is a vector of `var_decl` objects.
 // - a `child` is a data attribute of a storage kind whose type is a hierarchy
 //   hierarchy and thus is subject to the same restrictions regarding its syntax
 //   as imposed by the fragment applied to the current storage kind. For
@@ -169,6 +172,18 @@
 //       - `Type` is the type of the field
 //       - `Field` is the name of the field
 //
+// - declare_fields(Base, Storage, Type, Fields) 
+//     Declare a field of a storage kind that is a vector of fields of the same
+//     type.
+//     - Parent macro: 
+//        `declare_storage_kind`, `declare_leaf_storage_kind` or 
+//        `declare_leaf_storage_kind`
+//     - Arguments:
+//       - `Base` is the name of the parent hierarchy
+//       - `Storage` is the name of the parent storage kind 
+//       - `Type` is the type of the elements of the vector
+//       - `Fields` is the name of the field
+//
 // - declare_child(Base, Storage, Hierarchy, Child) 
 //     Declare a child of a storage kind. 
 //     - Parent macro: `declare_storage_kind`
@@ -255,6 +270,9 @@
 #ifndef declare_field
   #define declare_field(Base, Storage, Type, Field)
 #endif
+#ifndef declare_fields
+  #define declare_fields(Base, Storage, Type, Fields)
+#endif
 #ifndef declare_child
   #define declare_child(Base, Storage, Hierarchy, Child)
 #endif
@@ -291,11 +309,11 @@
 
 declare_hierarchy(symbol)
   declare_leaf_storage_kind(symbol, relation)
-    declare_storage_custom_members(symbol, relation, relation_call_op)
+    declare_storage_custom_members(symbol, relation, call_op_interface)
     declare_field(symbol, relation, identifier, name)
   end_leaf_storage_kind(symbol, relation)
   declare_leaf_storage_kind(symbol, function)
-    declare_storage_custom_members(symbol, function, function_call_op)
+    declare_storage_custom_members(symbol, function, call_op_interface)
     declare_field(symbol, function, identifier, name)
   end_leaf_storage_kind(symbol, function)
 end_hierarchy(symbol)
@@ -381,7 +399,7 @@ declare_hierarchy(formula)
   end_storage_kind(formula, comparison)
 
   declare_storage_kind(formula, quantifier)
-    declare_field(formula, quantifier, var_decl, decl)
+    declare_fields(formula, quantifier, var_decl, variables)
     declare_child(formula, quantifier, formula, matrix)
     declare_hierarchy_element(formula, quantifier, exists)
     declare_hierarchy_element(formula, quantifier, forall)
@@ -431,12 +449,12 @@ end_simple_hierarchy(sort)
 declare_simple_hierarchy(declaration)
   declare_leaf_storage_kind(declaration, var_decl)
     declare_field(declaration, var_decl, class variable, variable)
-    declare_field(declaration, var_decl, struct sort, sort)
-  end_leaf_storage_kind(decalration, var_decl)
+    declare_field(declaration, var_decl, class sort, sort)
+  end_leaf_storage_kind(declaration, var_decl)
   declare_leaf_storage_kind(declaration, sort_decl)
     declare_field(declaration, sort_decl, named_sort, sort)
     declare_field(declaration, sort_decl, domain_ref, domain)
-  end_leaf_storage_kind(decalration, sort_decl)
+  end_leaf_storage_kind(declaration, sort_decl)
 end_simple_hierarchy(declaration)
 
 #undef declare_hierarchy
@@ -447,6 +465,7 @@ end_simple_hierarchy(declaration)
 #undef declare_leaf_storage_kind
 #undef declare_storage_custom_members
 #undef declare_field
+#undef declare_fields
 #undef declare_child
 #undef declare_children
 #undef has_no_leaf_hierarchy_elements

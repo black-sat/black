@@ -216,17 +216,19 @@ namespace black_internal::cvc5
       [&](quantifier q) { // LCOV_EXCL_LINE
         logic::nest_scope_t nest{xi};
         
-        xi.declare(q.decl());
+        std::vector<cvc::Term> vars;
+        for(auto decl : q.variables()) {
+          xi.declare(decl);
+          cvc::Term var = solver.mkVar(
+            to_cvc5(decl.sort()), to_string(decl.variable().unique_id())
+          );
+          xi.set_data(decl.variable(), var);
+          vars.push_back(var);
+        }
 
-        cvc::Term var = solver.mkVar(
-          to_cvc5(q.decl().sort()), to_string(q.decl().variable().unique_id())
-        );
-
-        xi.set_data(q.decl().variable(), var);
-        
         cvc::Term cvc5matrix = to_cvc5(q.matrix());
+        cvc::Term varlist = solver.mkTerm(cvc::VARIABLE_LIST, vars);
 
-        cvc::Term varlist = solver.mkTerm(cvc::VARIABLE_LIST, {var});
         if(q.node_type() == quantifier::type::forall{})
           return 
             solver.mkTerm(cvc::FORALL, {varlist, cvc5matrix});

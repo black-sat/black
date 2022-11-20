@@ -28,6 +28,14 @@
 
 namespace black_internal::logic {
 
+  class var_decl;
+  
+  template<fragment>
+  class application;
+  
+  template<fragment>
+  class atom;
+
   //
   // relations and functions support creating the associated atom or application
   // (respectively) with a simple call-like syntax such as f(x, y).
@@ -36,23 +44,21 @@ namespace black_internal::logic {
   // the purpose. We have both a vararg version and one taking a range.
   // The implementation is in `interface.hpp`
   //
-  template<typename Derived>
-  struct relation_call_op {
+  template<storage_type S, typename Derived>
+  struct call_op_interface 
+  {
     template<hierarchy Arg, hierarchy ...Args>
     auto operator()(Arg, Args ...) const;
 
     template<std::ranges::range R>
-        requires hierarchy<std::ranges::range_value_t<R>>
+      requires (
+        hierarchy<std::ranges::range_value_t<R>> &&
+        !std::is_same_v<std::ranges::range_value_t<R>, var_decl>
+      )
     auto operator()(R const& v) const;
-  };
-
-  template<typename Derived>
-  struct function_call_op {
-    template<hierarchy Arg, hierarchy ...Args>
-    auto operator()(Arg, Args ...) const;
 
     template<std::ranges::range R>
-        requires hierarchy<std::ranges::range_value_t<R>>
+        requires std::is_same_v<std::ranges::range_value_t<R>, var_decl>
     auto operator()(R const& v) const;
   };
 
@@ -60,10 +66,9 @@ namespace black_internal::logic {
   // A variable `x` can be subscripted with a sort `s`, as in `x[s]`, to obtain 
   // the corresponding `var_decl`.
   //
-  struct sort;
-  class var_decl;
-
-  template<typename Derived>
+  class sort;
+  
+  template<storage_type, typename Derived>
   struct variable_decl_op {
     var_decl operator[](sort s) const;
   };

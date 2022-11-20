@@ -275,7 +275,7 @@ namespace black_internal::logic
           to_string(left), to_string(c.node_type()), to_string(right)
         );
       },
-      [](quantifier_block<LTLPFO> q) {
+      [](quantifier<LTLPFO> q) {
         std::string qs = q.node_type() == quantifier<LTLPFO>::type::exists{} ?
           "exists " : "forall ";
 
@@ -453,7 +453,7 @@ namespace black_internal::logic
       },
       [&](quantifier<FO> q) {
         std::string vars;
-        for(auto d : q.block().variables()) {
+        for(auto d : q.variables()) {
           vars += fmt::format(
             " ({} {})", 
             to_smtlib2(to_underlying(d.variable().unique_id())), 
@@ -465,7 +465,7 @@ namespace black_internal::logic
         return fmt::format(
           "({} ({}) {})", 
           q.is<exists<FO>>() ? "exists" : "forall",
-          vars, to_smtlib2_inner(q.block().matrix())
+          vars, to_smtlib2_inner(q.matrix())
         );
       },
       [](negation<FO>, auto op) {

@@ -50,7 +50,7 @@ TEST_CASE("Fragment namespaces") {
 
     sort s = sigma.integer_sort();
     
-    formula f = exists(x[s], r(x));
+    formula f = exists({x[s]}, r(x));
 
     REQUIRE(f.is<exists>());
   }

@@ -133,17 +133,17 @@ TEST_CASE("Solver")
           sort s = sigma.integer_sort();
           
           std::vector<formula> tests = {
-            forall(x[s], x == x),
-            X(forall(x[s], x == x)),
-            exists_block({x[s],y[s]}, next(z) + 2 != y),
-            exists_block({x[s],y[s]}, sigma.top()),
-            exists_block({x[s],y[s]}, !p),
-            !forall_block({x[s],y[s]}, x != y),
-            !exists(x[s], func(x) == x),
-            exists(x[s], X(x == y)),
-            exists(x[s], wX(x == y)),
-            exists(x[s], X(Y(x == 0))),
-            exists(x[s], X(Z(x == 0)))
+            forall({x[s]}, x == x),
+            X(forall({x[s]}, x == x)),
+            exists({x[s],y[s]}, next(z) + 2 != y),
+            exists({x[s],y[s]}, sigma.top()),
+            exists({x[s],y[s]}, !p),
+            !forall({x[s],y[s]}, x != y),
+            !exists({x[s]}, func(x) == x),
+            exists({x[s]}, X(x == y)),
+            exists({x[s]}, wX(x == y)),
+            exists({x[s]}, X(Y(x == 0))),
+            exists({x[s]}, X(Z(x == 0)))
           };
 
           for(formula f : tests) {

@@ -94,7 +94,7 @@ namespace black_internal::logic {
       rigid = 1
     };
 
-    scope(alphabet &sigma, std::optional<struct sort> def = std::nullopt);
+    scope(alphabet &sigma, std::optional<class sort> def = std::nullopt);
     scope(chain_t);
     scope(scope const&) = delete;
     scope(scope &&);
@@ -103,23 +103,39 @@ namespace black_internal::logic {
     scope &operator=(scope const&) = delete;
     scope &operator=(scope &&);
 
-    void set_default_sort(std::optional<struct sort> s);
-    std::optional<struct sort> default_sort() const;
+    void set_default_sort(std::optional<class sort> s);
+    std::optional<class sort> default_sort() const;
 
-    void declare(variable, struct sort, rigid_t = non_rigid);
+    void declare(variable, class sort, rigid_t = non_rigid);
     void declare(
-      relation, std::vector<struct sort>, rigid_t = non_rigid
+      relation, std::vector<class sort>, rigid_t = non_rigid
     );
     void declare(
-      function, struct sort, std::vector<struct sort>, rigid_t = non_rigid
+      function, class sort, std::vector<class sort>, rigid_t = non_rigid
     );
-
     void declare(
-      function, std::vector<struct sort>, rigid_t = non_rigid
+      function, std::vector<class sort>, rigid_t = non_rigid
     );
 
     void declare(var_decl d, rigid_t r = non_rigid) {
       declare(d.variable(), d.sort(), r);
+    }
+    void declare(
+      relation rel, std::vector<var_decl> decls, rigid_t r = non_rigid
+    ) {
+      std::vector<class sort> sorts;
+      for(auto decl : decls)
+        sorts.push_back(decl.sort());
+      declare(rel, sorts, r);
+    }
+    void declare(
+      function fun, class sort s, std::vector<var_decl> decls, 
+      rigid_t r = non_rigid
+    ) {
+      std::vector<class sort> sorts;
+      for(auto decl : decls)
+        sorts.push_back(decl.sort());
+      declare(fun, s, sorts, r);
     }
 
     void declare(named_sort s, domain_ref d);
@@ -127,15 +143,15 @@ namespace black_internal::logic {
       declare(d.sort(), d.domain());
     }
 
-    std::optional<struct sort> sort(variable) const;
-    std::optional<struct sort> sort(function) const;
+    std::optional<class sort> sort(variable) const;
+    std::optional<class sort> sort(function) const;
 
-    std::optional<std::vector<struct sort>> signature(function) const;
-    std::optional<std::vector<struct sort>> signature(relation) const;
+    std::optional<std::vector<class sort>> signature(function) const;
+    std::optional<std::vector<class sort>> signature(relation) const;
 
-    class domain const*domain(struct sort) const;
+    class domain const*domain(class sort) const;
     
-    std::optional<struct sort>
+    std::optional<class sort>
     type_check(term<LTLPFO> t, std::function<void(std::string)> err);
 
     bool type_check(formula<LTLPFO> f, std::function<void(std::string)> err);
@@ -164,11 +180,11 @@ namespace black_internal::logic {
     void set_data_inner(variable, std::any);
     void set_data_inner(relation, std::any);
     void set_data_inner(function, std::any);
-    void set_data_inner(struct sort, std::any);
+    void set_data_inner(class sort, std::any);
     std::any data_inner(variable) const;
     std::any data_inner(relation) const;
     std::any data_inner(function) const;
-    std::any data_inner(struct sort) const;
+    std::any data_inner(class sort) const;
     
     struct impl_t;
     std::unique_ptr<impl_t> _impl;

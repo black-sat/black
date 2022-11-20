@@ -440,14 +440,19 @@ namespace black_internal::z3
           upgrade_solver();
         
         nest_scope_t nest{xi};
-        xi.declare(q.decl());
+
+        std::vector<Z3_app> z3_apps;
+
+        for(auto decl : q.variables()) {
+          xi.declare(decl);
+          Z3_ast var = to_z3(decl);
+          xi.set_data(decl.variable(), var);
+          z3_apps.push_back(Z3_to_app(context, var));
+        }
         
-        Z3_ast var = to_z3(q.decl());
-        xi.set_data(q.decl().variable(), var);
-        
-        Z3_app app = Z3_to_app(context, var);
         auto result = Z3_mk_quantifier_const(
-          context, forall, 0, 1, &app, 0, nullptr, to_z3(q.matrix())
+          context, forall, 0, unsigned(z3_apps.size()), 
+          z3_apps.data(), 0, nullptr, to_z3(q.matrix())
         );
 
         return result;

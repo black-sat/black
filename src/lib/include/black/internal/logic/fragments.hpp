@@ -59,11 +59,15 @@ namespace black {
       using black_internal::logic::hierarchy;
       using black_internal::logic::storage_kind;
       using black_internal::logic::hierarchy_element;
+      using black_internal::logic::syntax_list;
+      using black_internal::logic::make_fragment;
+      using black_internal::logic::make_singleton_fragment;
+      using black_internal::logic::make_combined_fragment;
       using black_internal::logic::make_fragment_t;
+      using black_internal::logic::make_singleton_fragment_t;
       using black_internal::logic::make_combined_fragment_t;
       using black_internal::logic::for_each_child;
       using black_internal::logic::for_each_child_deep;
-      using black_internal::logic::fragment_cast;
       using black_internal::logic::has_any_element_of;
       using black_internal::logic::big_and;
       using black_internal::logic::big_or;
@@ -71,31 +75,32 @@ namespace black {
     }
     
     using black_internal::logic::only;
-    using black_internal::logic::quantifier_block;
-    using black_internal::logic::exists_block;
-    using black_internal::logic::forall_block;
 
     //
     // These are three fragments useful for use with `only`
     //
     struct future : make_fragment_t<
-      syntax_element::tomorrow,
-      syntax_element::w_tomorrow,
-      syntax_element::always,
-      syntax_element::eventually,
-      syntax_element::until,
-      syntax_element::release,
-      syntax_element::w_until,
-      syntax_element::s_release
+      syntax_list<
+        syntax_element::tomorrow,
+        syntax_element::w_tomorrow,
+        syntax_element::always,
+        syntax_element::eventually,
+        syntax_element::until,
+        syntax_element::release,
+        syntax_element::w_until,
+        syntax_element::s_release
+      >
     > { };
 
     struct past : make_fragment_t<
-      syntax_element::yesterday,
-      syntax_element::w_yesterday,
-      syntax_element::once,
-      syntax_element::historically,
-      syntax_element::since,
-      syntax_element::triggered
+      syntax_list<
+        syntax_element::yesterday,
+        syntax_element::w_yesterday,
+        syntax_element::once,
+        syntax_element::historically,
+        syntax_element::since,
+        syntax_element::triggered
+      >
     > { };
 
     struct temporal : make_combined_fragment_t<future, past> { };

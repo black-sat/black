@@ -33,18 +33,18 @@ namespace black_internal::logic {
   struct scope::impl_t {
     
     struct var_record_t {
-      struct sort sort;
+      class sort sort;
       rigid_t rigid;
     };
 
     struct rel_record_t {
-      std::vector<struct sort> signature;
+      std::vector<class sort> signature;
       rigid_t rigid;
     };
 
     struct func_record_t {
-      struct sort result;
-      std::vector<struct sort> signature;
+      class sort result;
+      std::vector<class sort> signature;
       rigid_t rigid;
     };
 
@@ -60,13 +60,13 @@ namespace black_internal::logic {
       tsl::hopscotch_map<variable, std::any> vars_data;
       tsl::hopscotch_map<relation, std::any> rels_data;
       tsl::hopscotch_map<function, std::any> funcs_data;
-      tsl::hopscotch_map<struct sort, std::any> sorts_data;
+      tsl::hopscotch_map<class sort, std::any> sorts_data;
 
-      std::optional<struct sort> default_sort;
+      std::optional<class sort> default_sort;
       std::shared_ptr<const frame_t> next;
 
       frame_t(
-        std::optional<struct sort> d,
+        std::optional<class sort> d,
         std::shared_ptr<const frame_t> n
       ) : default_sort{d}, next{std::move(n)} { }
 
@@ -74,7 +74,7 @@ namespace black_internal::logic {
       frame_t &operator=(frame_t const&) = delete;
     };
 
-    impl_t(alphabet &a, std::optional<struct sort> default_sort)
+    impl_t(alphabet &a, std::optional<class sort> default_sort)
       : sigma{a},
         frame{std::make_shared<frame_t>(default_sort, nullptr)} { }
     
@@ -86,7 +86,7 @@ namespace black_internal::logic {
     std::shared_ptr<frame_t> frame;
   };
 
-  scope::scope(alphabet &sigma, std::optional<struct sort> def) 
+  scope::scope(alphabet &sigma, std::optional<class sort> def) 
     : _impl{std::make_unique<impl_t>(sigma, def)} { }
   
   scope::scope(chain_t c) : _impl{std::make_unique<impl_t>(c.s)} { }
@@ -96,7 +96,7 @@ namespace black_internal::logic {
   scope::scope(scope &&) = default;
   scope &scope::operator=(scope &&) = default;
 
-  void scope::set_default_sort(std::optional<struct sort> s) {
+  void scope::set_default_sort(std::optional<class sort> s) {
     _impl->frame->default_sort = s;
   }
 
@@ -112,25 +112,25 @@ namespace black_internal::logic {
     return {};
   }
 
-  void scope::declare(variable x, struct sort s, rigid_t r) {
+  void scope::declare(variable x, class sort s, rigid_t r) {
     _impl->frame->vars.insert({x, {s,r}});
   }
 
   void scope::declare(
-    function f, struct sort s, std::vector<struct sort> args, rigid_t r
+    function f, class sort s, std::vector<class sort> args, rigid_t r
   ) {
     _impl->frame->funcs.insert({f, {s, std::move(args), r}});
   }
   
   void scope::declare(
-    function f, std::vector<struct sort> args, rigid_t r
+    function f, std::vector<class sort> args, rigid_t r
   ) {
     black_assert(default_sort().has_value());
     _impl->frame->funcs.insert({f, {*default_sort(), std::move(args), r}});
   }
   
   void scope::declare(
-    relation r, std::vector<struct sort> args, rigid_t rigid
+    relation r, std::vector<class sort> args, rigid_t rigid
   ) {
     _impl->frame->rels.insert({r, {std::move(args), rigid}});
   }
@@ -191,7 +191,7 @@ namespace black_internal::logic {
     return {};
   }
 
-  domain const*scope::domain(struct sort s) const {
+  domain const*scope::domain(class sort s) const {
     if(!s.is<named_sort>())
       return nullptr;
     
@@ -258,7 +258,7 @@ namespace black_internal::logic {
     _impl->frame->funcs_data.insert({f, std::move(data)});
   }
 
-  void scope::set_data_inner(struct sort s, std::any data) {
+  void scope::set_data_inner(class sort s, std::any data) {
     _impl->frame->sorts_data.insert({s, std::move(data)});
   }
 
@@ -298,7 +298,7 @@ namespace black_internal::logic {
     return {};
   }
 
-  std::any scope::data_inner(struct sort s) const {
+  std::any scope::data_inner(class sort s) const {
     std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
 
     while(current) {
@@ -326,7 +326,7 @@ namespace black_internal::logic {
     std::function<void(std::string)> err;
   };
 
-  std::optional<struct sort>
+  std::optional<class sort>
   scope::type_check(term<LTLPFO> t, std::function<void(std::string)> err) {
     type_checker checker{*this, err};
 
@@ -386,7 +386,7 @@ namespace black_internal::logic {
 
   std::optional<sort> 
   type_checker::type_check(term<LTLPFO> t) {
-    using S = std::optional<struct sort>;
+    using S = std::optional<class sort>;
 
     return t.match(
       [&](constant<LTLPFO>, auto value) -> S {
@@ -409,7 +409,7 @@ namespace black_internal::logic {
         return xi.sort(func);
       },
       [&](to_integer<LTLPFO>, auto arg) -> S {
-        std::optional<struct sort> argsort = type_check(arg);
+        std::optional<class sort> argsort = type_check(arg);
         if(!argsort)
           return {};
         if(!argsort->is<arithmetic_sort>()) {
@@ -420,7 +420,7 @@ namespace black_internal::logic {
         return t.sigma()->integer_sort();
       },
       [&](to_real<LTLPFO>, auto arg) -> S {
-        std::optional<struct sort> argsort = type_check(arg);
+        std::optional<class sort> argsort = type_check(arg);
         if(!argsort)
           return {};
         if(!argsort->is<arithmetic_sort>()) {
@@ -452,11 +452,11 @@ namespace black_internal::logic {
         return t.sigma()->integer_sort();
       },
       [&](division<LTLPFO>, auto left, auto right) -> S {
-        std::optional<struct sort> leftsort = type_check(left);
+        std::optional<class sort> leftsort = type_check(left);
         if(!leftsort.has_value())
           return {};
 
-        std::optional<struct sort> rightsort = type_check(right);
+        std::optional<class sort> rightsort = type_check(right);
         if(!rightsort.has_value())
           return {};
 
@@ -470,11 +470,11 @@ namespace black_internal::logic {
         return t.sigma()->real_sort();
       },
       [&](binary_term<LTLPFO>, auto left, auto right) -> S {
-        std::optional<struct sort> leftsort = type_check(left);
+        std::optional<class sort> leftsort = type_check(left);
         if(!leftsort.has_value())
           return {};
 
-        std::optional<struct sort> rightsort = type_check(right);
+        std::optional<class sort> rightsort = type_check(right);
         if(!rightsort.has_value())
           return {};
 
@@ -520,8 +520,8 @@ namespace black_internal::logic {
         return true;
       },
       [&](comparison<LTLPFO>, auto left, auto right) {
-        std::optional<struct sort> leftsort = type_check(left);
-        std::optional<struct sort> rightsort = type_check(right);
+        std::optional<class sort> leftsort = type_check(left);
+        std::optional<class sort> rightsort = type_check(right);
 
         if(!leftsort || !rightsort)
           return false;
@@ -545,7 +545,7 @@ namespace black_internal::logic {
         }
         return true;
       },
-      [&](quantifier_block<LTLPFO> q) {
+      [&](quantifier<LTLPFO> q) {
         nest_scope_t nest{xi};
 
         for(auto d : q.variables())
