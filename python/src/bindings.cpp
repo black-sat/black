@@ -22,28 +22,25 @@
 // SOFTWARE.
 
 #include <pybind11/pybind11.h>
-#include <pybind11/operators.h>
-#include <pybind11/stl.h>
 
-#include <black/logic/logic.hpp>
-#include <black/logic/prettyprint.hpp>
-#include <black/solver/solver.hpp>
+#include <black/support/tribool.hpp>
+#include <black/support/identifier.hpp>
 
-#include "support.hpp"
+#include <black/python/support.hpp>
+#include <black/python/hierarchy.hpp>
 
-#include <iostream>
-
-namespace black_internal::python {
-
-  namespace py = pybind11;
+namespace pyblack {
 
   static void register_basic_types(py::module_ &m) {
+    using tribool = black::tribool;
+    using identifier = black::identifier;
+
     auto tribool_to_string = [](tribool b) {
       return b == true ? "True" : 
-            b == false ? "False" : "tribool.undef";
+             b == false ? "False" : "tribool.undef";
     };
 
-    py::class_<tribool::undef_t>(m, "tribool_undef_t")
+    py::class_<black::tribool::undef_t>(m, "tribool_undef_t")
       .def("__str__", [](tribool::undef_t) { return "tribool.undef"; })
       .def("__repr__", [](tribool::undef_t) { return "tribool.undef"; })
       .def("__bool__", [](tribool::undef_t) { return false; });
@@ -66,9 +63,14 @@ namespace black_internal::python {
 
 PYBIND11_MODULE(black, m) {
 
-  using namespace black_internal::python;
+  using namespace pyblack;
 
   register_basic_types(m);
+
+  py::class_<black::alphabet> alphabet{m, "alphabet"};
+  alphabet.def(py::init<>());
+
+  register_hierarchies(m, alphabet);
 
 }
 

@@ -21,24 +21,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_PYTHON_SUPPORT_HPP_
-#define BLACK_PYTHON_SUPPORT_HPP_
+#ifndef BLACK_PYTHON_HIERARCHY_HPP
+#define BLACK_PYTHON_HIERARCHY_HPP
 
-#include <black/logic/logic.hpp>
+#include <black/python/support.hpp>
 
-#include <pybind11/pybind11.h>
-
-#include <tuple>
-
-namespace black_internal::python 
-{  
-  namespace py = pybind11;
-
-  using namespace black::logic;
-  
-  
-
+namespace pyblack {
+  void register_hierarchies(
+    py::module_ &m, py::class_<black::alphabet> &alphabet
+  );
 }
 
-#endif // BLACK_PYTHON_SUPPORT_HPP_
-
+#endif // BLACK_PYTHON_HIERARCHY_HPP
