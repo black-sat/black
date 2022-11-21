@@ -25,8 +25,10 @@
 #include <black/python/support.hpp>
 
 #include <black/logic/logic.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <pybind11/stl.h>
+#include <pybind11/operators.h>
 
 #include <vector>
 #include <tuple>
@@ -91,6 +93,73 @@ namespace pyblack
     );
   }
 
+  template<black::hierarchy H, typename F>
+  void def_bin_op(py::class_<H> &class_, const char *name, F op) {
+    using base_t =  internal::hierarchy_type_of_t<syntax, H::hierarchy>;
+    class_.def(name, [&](H h, base_t t) {
+      return specialize(op(h, t));
+    }, py::is_operator());
+  };
+
+  template<black::hierarchy H, typename F>
+  void def_unary_op(py::class_<H> &class_, const char *name, F op) {
+    class_.def(name, [&](H h) {
+      return specialize(op(h));
+    }, py::is_operator());
+  };
+
+  template<typename T>
+  void register_operators(T) { }
+
+  template<internal::hierarchy H>
+    requires (H::hierarchy == internal::hierarchy_type::term)
+  void register_operators(py::class_<H> &class_) {
+    def_bin_op(class_, "__add__", std::plus<>{});
+    def_bin_op(class_, "__sub__", std::minus<>{});
+    def_bin_op(class_, "__mul__", std::multiplies<>{});
+    def_bin_op(class_, "__truediv__", std::divides<>{});
+    def_unary_op(class_, "__negate__", std::negate<>{});
+    def_bin_op(class_, "__eq__", std::equal_to<>{});
+    def_bin_op(class_, "__ne__", std::not_equal_to<>{});
+    def_bin_op(class_, "__lt__", std::less<>{});
+    def_bin_op(class_, "__le__", std::less_equal<>{});
+    def_bin_op(class_, "__gt__", std::greater<>{});
+    def_bin_op(class_, "__ge__", std::greater_equal<>{});
+  }
+
+  template<internal::hierarchy H>
+    requires (H::hierarchy == internal::hierarchy_type::formula)
+  void register_operators(py::class_<H> &class_) {
+    def_unary_op(class_, "__invert__", std::logical_not<>{});
+    def_bin_op(class_, "__and__", std::logical_and<>{});
+    def_bin_op(class_, "__or__", std::logical_or<>{});
+  }
+
+  template<typename T>
+  void register_api(py::module_ &, T) { }
+
+
+  template<internal::hierarchy H>
+    requires (H::hierarchy == internal::hierarchy_type::formula)
+  void register_api(py::module_ &m, py::class_<H> &) {
+    m.def("X", [](H h) { return specialize(X(h)); });
+    m.def("wX", [](H h) { return specialize(wX(h)); });
+    m.def("Y", [](H h) { return specialize(Y(h)); });
+    m.def("Z", [](H h) { return specialize(Z(h)); });
+    m.def("G", [](H h) { return specialize(G(h)); });
+    m.def("F", [](H h) { return specialize(F(h)); });
+    m.def("O", [](H h) { return specialize(O(h)); });
+    m.def("H", [](H h) { return specialize(H(h)); });
+    m.def("implies", [](H h1, H h2) { return specialize(implies(h1, h2)); });
+    m.def("U", [](H h1, H h2) { return specialize(U(h1, h2)); });
+    m.def("R", [](H h1, H h2) { return specialize(R(h1, h2)); });
+    m.def("W", [](H h1, H h2) { return specialize(W(h1, h2)); });
+    m.def("M", [](H h1, H h2) { return specialize(M(h1, h2)); });
+    m.def("S", [](H h1, H h2) { return specialize(S(h1, h2)); });
+    m.def("T", [](H h1, H h2) { return specialize(T(h1, h2)); });
+  }
+
+
   template<black::syntax_element Element, typename HClass>
   void register_hierarchy_element(
     const char *name, py::module_ &m, py::class_<black::alphabet> &alphabet,
@@ -123,7 +192,6 @@ namespace pyblack
         init_aux<internal::storage_alloc_args_t<syntax, storage>>::init()
       );
 
-    static constexpr size_t n_fields = std::tuple_size_v<element_type>;
 
     auto declare_fields = [&]<size_t ...I>(std::index_sequence<I...>) {
       (class_.def_property_readonly(
@@ -134,7 +202,16 @@ namespace pyblack
       ), ...);
     };
 
-    declare_fields(std::make_index_sequence<n_fields>{});
+    declare_fields(std::make_index_sequence<std::tuple_size_v<element_type>>{});
+
+    auto repr = [](element_type e) {
+      return to_string(hierarchy_type{e});
+    };
+
+    class_.def("__str__", repr);
+    class_.def("__repr__", repr);
+
+    register_operators(class_);
   }
 
   template<internal::hierarchy_type Hierarchy>
@@ -157,6 +234,8 @@ namespace pyblack
         );
 
     #include <black/internal/logic/hierarchy.hpp>
+
+    register_api(m, class_);
   }
     
 
