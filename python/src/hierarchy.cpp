@@ -125,6 +125,12 @@ namespace pyblack
     def_bin_op(class_, "__le__", std::less_equal<>{});
     def_bin_op(class_, "__gt__", std::greater<>{});
     def_bin_op(class_, "__ge__", std::greater_equal<>{});
+
+    if constexpr(H::storage == internal::storage_type::variable) {
+      class_.def("__getitem__", [&](H var, black::sort s) {
+        return specialize(var[s]);
+      });
+    }
   }
 
   template<internal::hierarchy H>
@@ -162,8 +168,8 @@ namespace pyblack
 
   template<black::syntax_element Element, typename HClass>
   void register_hierarchy_element(
-    const char *name, py::module_ &m, py::class_<black::alphabet> &alphabet,
-    HClass &hclass
+    std::string_view name, py::module_ &m, 
+    py::class_<black::alphabet> &alphabet, HClass &hclass
   ) {
     static constexpr auto element = Element;
     static constexpr auto storage = internal::storage_of_element(element);
@@ -173,7 +179,7 @@ namespace pyblack
     // using storage_type = internal::storage_type_of_t<syntax, storage>;
     using hierarchy_type = internal::hierarchy_type_of_t<syntax, hierarchy>;
 
-    py::class_<element_type> class_{m, name};
+    py::class_<element_type> class_{m, name.data()};
 
     hclass.def(py::init<element_type>());
 
@@ -181,7 +187,7 @@ namespace pyblack
 
     if constexpr(!internal::storage_has_children(storage))
       alphabet.def(
-        name, 
+        name.data(), 
         &internal::alphabet_ctor_base<
           element, internal::alphabet_base
         >::construct
@@ -216,36 +222,47 @@ namespace pyblack
 
   template<internal::hierarchy_type Hierarchy>
   void register_hierarchy(
-    const char *name, py::module_ &m, py::class_<black::alphabet> &alphabet
+    std::string_view name, py::module_ &m, py::class_<black::alphabet> &alphabet
   ) {
     using hierarchy_type = internal::hierarchy_type_of_t<syntax, Hierarchy>;
-    py::class_<hierarchy_type> class_{m, name};
+    py::class_<hierarchy_type> class_{m, name.data()};
 
-    #define declare_leaf_storage_kind(Base, Storage) \
-      declare_hierarchy_element(Base, Storage, Storage)
+    auto declare = [&]<black::syntax_element E>(black::syntax_list<E>) {
+      if constexpr(Hierarchy == hierarchy_of_storage(storage_of_element(E)))
+        register_hierarchy_element<E>(to_string(E), m, alphabet, class_);
+    };
 
-    #define has_no_hierarchy_elements(Base, Storage) \
-      declare_hierarchy_element(Base, Storage, Storage)
+    auto declare_all = 
+      [&]<black::syntax_element ...E>(black::syntax_list<E...>) {
+        (declare(black::syntax_list<E>{}), ...);
+      };
 
-    #define declare_hierarchy_element(Base, Storage, Element) \
-      if constexpr(Hierarchy == internal::hierarchy_type::Base) \
-        register_hierarchy_element<black::syntax_element::Element>( \
-          #Element, m, alphabet, class_ \
-        );
-
-    #include <black/internal/logic/hierarchy.hpp>
+    declare_all(internal::universal_fragment_t::list{});
 
     register_api(m, class_);
   }
     
+  template<internal::hierarchy_type H>
+  bool hierarchy_registered_v = false;
 
   void register_hierarchies(
     py::module_ &m, py::class_<black::alphabet> &alphabet
   ) {
-    #define declare_hierarchy(Base) \
-      register_hierarchy<internal::hierarchy_type::Base>(#Base, m, alphabet);
 
-    #include <black/internal/logic/hierarchy.hpp>
+    auto declare = [&]<black::syntax_element E>(black::syntax_list<E>) {
+      static constexpr auto H = hierarchy_of_storage(storage_of_element(E));
+      if(!hierarchy_registered_v<H>) {
+        register_hierarchy<H>(to_string(H), m, alphabet);
+        hierarchy_registered_v<H> = true;
+      }
+    };
+
+    auto declare_all = 
+      [&]<black::syntax_element ...E>(black::syntax_list<E...>) {
+        (declare(black::syntax_list<E>{}), ...);
+      };
+
+    declare_all(internal::universal_fragment_t::list{});
   }
 
 }

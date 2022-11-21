@@ -99,9 +99,27 @@ namespace black_internal::logic
 
 
   //
-  // Printing of `syntax_element` values. This is just for debugging.
+  // Printing of the above enumerations, for debugging and introspection.
   //
-  inline std::string to_string(syntax_element e) {
+  inline constexpr std::string_view to_string(hierarchy_type s) {
+    switch(s) {
+      #define declare_hierarchy(Base) \
+        case hierarchy_type::Base: return #Base;
+      #include <black/internal/logic/hierarchy.hpp>
+    }
+    black_unreachable();
+  }
+  
+  inline constexpr std::string_view to_string(storage_type s) {
+    switch(s) {
+      #define declare_storage_kind(Base, Storage) \
+        case storage_type::Storage: return #Storage;
+      #include <black/internal/logic/hierarchy.hpp>
+    }
+    black_unreachable();
+  }
+
+  inline constexpr std::string_view to_string(syntax_element e) {
     switch(e) {
 
     #define declare_leaf_storage_kind(Base, Storage) \

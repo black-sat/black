@@ -9,10 +9,9 @@ y = sigma.variable("y")
 
 e = equal([x, y])
 
-x_decl = sigma.var_decl(x, sigma.integer_sort())
-y_decl = sigma.var_decl(y, sigma.integer_sort())
+s = sigma.integer_sort()
 
-f = exists([x_decl, y_decl], e)
+f = exists([x[s], y[s]], e)
 
 print(f)
 
