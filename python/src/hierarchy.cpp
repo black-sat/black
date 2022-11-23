@@ -140,6 +140,30 @@ namespace pyblack
     def_bin_op(class_, "__and__", std::logical_and<>{});
     def_bin_op(class_, "__or__", std::logical_or<>{});
   }
+  
+  template<internal::hierarchy H>
+    requires (H::storage == internal::storage_type::relation)
+  void register_operators(py::class_<H> &class_) {
+    class_.def("__call__", [](black::relation self, py::args args) {
+      std::vector<black::term> terms;
+      for(auto it = args.begin(); it != args.end(); ++it) {
+        terms.push_back(py::cast<black::term>(*it));
+      }
+      return black::atom(self, terms);
+    });
+  }
+  
+  template<internal::hierarchy H>
+    requires (H::storage == internal::storage_type::function)
+  void register_operators(py::class_<H> &class_) {
+    class_.def("__call__", [](black::function self, py::args args) {
+      std::vector<black::term> terms;
+      for(auto it = args.begin(); it != args.end(); ++it) {
+        terms.push_back(py::cast<black::term>(*it));
+      }
+      return black::application(self, terms);
+    });
+  }
 
   template<typename T>
   void register_api(py::module_ &, T) { }

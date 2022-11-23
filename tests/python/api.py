@@ -7,17 +7,25 @@ sigma = alphabet()
 x = sigma.variable("x")
 y = sigma.variable("y")
 
-e = equal([x, y])
+ale = sigma.variable("ale")
+nicola = sigma.variable("nicola")
+luca = sigma.variable("luca")
 
-s = sigma.integer_sort()
+people = domain([ale, nicola, luca])
 
-f = exists([x[s], y[s]], e)
+person = sigma.named_sort("person")
 
-print(f)
+knows = sigma.relation("knows")
 
-t1 = (x + y)
-t2 = (x * y)
+f = ~knows(ale, luca) & forall([x[person], y[person]], knows(ale, x))
 
-f = G(U(t1 < t2, t2 == t1))
+xi = scope(sigma)
+xi.declare(person, people)
+xi.declare(knows, [person, person])
 
-print(f)
+slv = solver()
+
+result = slv.solve(xi, f)
+
+print(result)
+
