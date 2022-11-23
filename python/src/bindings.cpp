@@ -51,10 +51,17 @@ namespace pyblack {
     py::class_<tribool>(m, "tribool")
       .def(py::init<bool>())
       .def(py::init<tribool::undef_t>())
+      .def_readonly_static("undef", &tribool::undef)
       .def("__bool__", [](tribool b) { return b == true; })
       .def("__str__", tribool_to_string)
       .def("__repr__", tribool_to_string)
-      .def_readonly_static("undef", &tribool::undef);
+      .def("__eq__", [](tribool self, tribool other) {
+        return self == other;
+      }).def("__eq__", [](tribool self, bool b) {
+        return self == b;
+      }).def("__req__", [](tribool self, bool b) {
+        return self == b;
+      });
     
     py::class_<identifier>(m, "identifier")
       .def(py::init<std::string>());

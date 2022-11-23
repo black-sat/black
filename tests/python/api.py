@@ -26,6 +26,19 @@ xi.declare(knows, [person, person])
 slv = solver()
 
 result = slv.solve(xi, f)
+result2 = slv.solve(xi, f)
+result3 = slv.solve(xi, ~f)
 
-print(result)
+assert not(result != result2)
+assert result2 != result3
+
+assert ~f == ~f
+
+print(f"formula: {f}")
+if result == True:
+    print("Satisfiable")
+elif result == False:
+    print("Unsatisfiable")
+else:
+    print("Uknown")
 

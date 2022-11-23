@@ -139,6 +139,7 @@ namespace pyblack
     def_unary_op(class_, "__invert__", std::logical_not<>{});
     def_bin_op(class_, "__and__", std::logical_and<>{});
     def_bin_op(class_, "__or__", std::logical_or<>{});
+    def_bin_op(class_, "__eq__", std::equal_to<>{});
   }
   
   template<internal::hierarchy H>
