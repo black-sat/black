@@ -169,17 +169,7 @@ namespace black_internal::logic
 
     return t.match(
       [&](constant<LTLPFO> c) {
-        return c.value().match(
-          [](integer, int64_t value) {
-            return fmt::format("{}", value);
-          },
-          [](real, double value) {
-            std::string s = fmt::format("{}", value);
-            if(s.find('.') == std::string::npos)
-              s += ".0";
-            return s;
-          }
-        );        
+        return to_string(c.value());
       },
       [&](variable x) {
         return escape(to_string(x.name()));
@@ -315,12 +305,45 @@ namespace black_internal::logic
     );
   }
 
-  std::string to_string(relation r) {
-    return to_string(r.name());
+  std::string to_string(symbol<LTLPFO> s) {
+    return s.match(
+      [](relation r) {
+        return to_string(r.name());
+      },
+      [](function f) {
+        return to_string(f.name());
+      }
+    );
   }
-  
-  std::string to_string(function f) {
-    return to_string(f.name());
+
+  std::string to_string(number<LTLPFO> n) {
+    return n.match(
+      [](integer, int64_t value) {
+        return fmt::format("{}", value);
+      },
+      [](real, double value) {
+        std::string s = fmt::format("{}", value);
+        if(s.find('.') == std::string::npos)
+          s += ".0";
+        return s;
+      }
+    );
+  }
+
+  std::string to_string(declaration s) {
+    return s.match(
+      [](var_decl, auto var, auto sort) { 
+        return to_string(var) + " : " + to_string(sort); 
+      },
+      [](sort_decl, auto sort, auto d) {
+        auto res = to_string(sort) + " = { " + to_string(d->elements()[0]);
+        for(size_t i = 1; i < d->elements().size(); ++i)
+          res += to_string(d->elements()[i]);
+        res += " }";
+
+        return res;
+      }
+    );
   }
 
   std::string to_string(sort s) {

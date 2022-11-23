@@ -61,10 +61,10 @@ namespace black_internal::logic {
   };
 
   // this `using` is forward declared in `fragments.hpp`.
-  // using domain_ref = std::unique_ptr<const domain>;
+  // using domain_ref = std::unique_ptr<domain>;
 
   inline domain_ref make_domain(std::vector<variable> elements) {
-    return std::make_shared<const domain>(std::move(elements));
+    return std::make_shared<domain>(std::move(elements));
   }
 
   //

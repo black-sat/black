@@ -104,6 +104,9 @@ endif()
 add_subdirectory(src/lib)
 add_subdirectory(src/frontend)
 
+# Python bindings
+add_subdirectory(python)
+
 # Tests
 
 if (ENABLE_TESTS)

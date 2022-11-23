@@ -74,7 +74,7 @@ namespace black_internal::logic {
   };
 
   class domain;
-  using domain_ref = std::shared_ptr<const domain>;
+  using domain_ref = std::shared_ptr<domain>;
 
 }
 

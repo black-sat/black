@@ -84,10 +84,12 @@ namespace black_internal::logic {
   inline constexpr size_t syntax_element_max_size = 64;
 
   //
-  // For debugging purposes it is useful to be able to print `syntax_element`
-  // values. Implemented later in the preprocessed code.
+  // For introspection it is useful to be able to print the values of the above
+  // enumerations. Implemented later in the preprocessed code.
   //
-  std::string to_string(syntax_element);
+  constexpr std::string_view to_string(hierarchy_type);
+  constexpr std::string_view to_string(storage_type);
+  constexpr std::string_view to_string(syntax_element);
 
   //
   // A constexpr function to get the base hierarchy_type of a given
@@ -1811,6 +1813,18 @@ namespace black_internal::logic {
   inline constexpr auto hierarchy_of_storage_child_v =
     hierarchy_of_storage_child<I, Storage>::value;
   
+  //
+  // The following is a trait template to get an array with the actual names
+  // of the fields of a storage, specialized later.
+  //
+  template<storage_type>
+  inline constexpr auto storage_fields_v = nullptr;
+
+  template<storage_type Storage>
+  struct storage_fields {
+    static constexpr auto value = storage_fields_v<Storage>;
+  };
+
   //
   // Now we can actually get the fields.
   //
