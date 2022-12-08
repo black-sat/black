@@ -172,6 +172,10 @@ namespace black_internal::logic
         return to_string(c.value());
       },
       [&](variable x) {
+        if(x.subscript())
+          return 
+            "{" + escape(to_string(x.name())) + 
+            ", " + escape(to_string(*x.subscript())) + "}";
         return escape(to_string(x.name()));
       },
       [&](application<LTLPFO> a) {
@@ -308,9 +312,17 @@ namespace black_internal::logic
   std::string to_string(symbol<LTLPFO> s) {
     return s.match(
       [](relation r) {
+        if(r.subscript())
+          return 
+            "{" + escape(to_string(r.name())) + 
+            ", " + escape(to_string(*r.subscript())) + "}";
         return to_string(r.name());
       },
       [](function f) {
+        if(f.subscript())
+          return 
+            "{" + escape(to_string(f.name())) + 
+            ", " + escape(to_string(*f.subscript())) + "}";
         return to_string(f.name());
       }
     );

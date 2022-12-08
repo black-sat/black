@@ -92,6 +92,8 @@ namespace black_internal::logic {
 
     bool operator==(scope const&) const = default;
 
+    class std::optional<frame> frame() const { return _frame; }
+
     void push(std::vector<var_decl> decls, rigid_t = non_rigid);
     void push(std::vector<rel_decl> decls, rigid_t = non_rigid);
     void push(std::vector<fun_decl> decls, rigid_t = non_rigid);
@@ -135,7 +137,9 @@ namespace black_internal::logic {
     bool is_rigid(relation) const;
     bool is_rigid(function) const;
 
-    size_t hash() const { return std::hash<std::optional<frame>>{}(_frame); }
+    size_t hash() const { 
+      return std::hash<std::optional<class frame>>{}(_frame); 
+    }
 
     friend std::string to_string(scope xi) {
       return "scope:" + to_string(xi._frame->unique_id());
@@ -143,7 +147,7 @@ namespace black_internal::logic {
 
   private:
     alphabet *_sigma;
-    std::optional<frame> _frame;
+    std::optional<class frame> _frame;
   };
 
   class nest_scope_t 

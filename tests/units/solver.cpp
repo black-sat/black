@@ -106,6 +106,7 @@ TEST_CASE("Solver")
               REQUIRE(!slv.model().has_value());
 
               REQUIRE(xi.type_check(f, sigma.integer_sort(), [](auto) { }));
+              REQUIRE(xi.sort(x));
 
               REQUIRE(slv.solve(xi, f));
             }

@@ -111,7 +111,7 @@ namespace black_internal::logic {
   }
 
   std::optional<sort> scope::sort(variable x) const {
-    std::optional<frame> current = _frame;
+    std::optional<class frame> current = _frame;
 
     while(current) {
       for(auto decl : current->decls()) {
@@ -130,7 +130,7 @@ namespace black_internal::logic {
   }
 
   std::optional<sort> scope::sort(function fun) const {
-    std::optional<frame> current = _frame;
+    std::optional<class frame> current = _frame;
 
     while(current) {
       for(auto decl : current->decls()) {
@@ -149,7 +149,7 @@ namespace black_internal::logic {
   }
 
   std::optional<std::vector<sort>> scope::signature(function fun) const {
-    std::optional<frame> current = _frame;
+    std::optional<class frame> current = _frame;
 
     while(current) {
       for(auto decl : current->decls()) {
@@ -167,7 +167,7 @@ namespace black_internal::logic {
   }
 
   std::optional<std::vector<sort>> scope::signature(relation rel) const {
-    std::optional<frame> current = _frame;
+    std::optional<class frame> current = _frame;
 
     while(current) {
       for(auto decl : current->decls()) {
@@ -190,7 +190,7 @@ namespace black_internal::logic {
     
     named_sort n = *s.to<named_sort>();
 
-    std::optional<frame> current = _frame;
+    std::optional<class frame> current = _frame;
 
     while(current) {
       for(auto decl : current->decls()) {
@@ -206,7 +206,7 @@ namespace black_internal::logic {
   }
 
   bool scope::is_rigid(variable x) const {
-    std::optional<frame> current = _frame;
+    std::optional<class frame> current = _frame;
 
     while(current) {
       for(auto decl : current->decls()) {
@@ -224,7 +224,7 @@ namespace black_internal::logic {
   }
 
   bool scope::is_rigid(relation rel) const {
-    std::optional<frame> current = _frame;
+    std::optional<class frame> current = _frame;
 
     while(current) {
       for(auto decl : current->decls()) {
@@ -242,7 +242,7 @@ namespace black_internal::logic {
   }
 
   bool scope::is_rigid(function fun) const {
-    std::optional<frame> current = _frame;
+    std::optional<class frame> current = _frame;
 
     while(current) {
       for(auto decl : current->decls()) {
@@ -366,8 +366,11 @@ namespace black_internal::logic {
         if(auto s = xi.sort(x); s.has_value())
           return *s;
 
-        if(default_sort)
+        if(default_sort) {
+          global.push(x, *default_sort);
+          xi.push(x, *default_sort);
           return default_sort;
+        }
         
         err("Use of undeclared variable '" + to_string(x) + "'");
         return {};

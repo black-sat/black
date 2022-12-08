@@ -65,6 +65,7 @@ TEST_CASE("Sorts and domains") {
 
           black::solver slv;
           slv.set_sat_backend(backend);
+          REQUIRE(xi.type_check(test, std::nullopt, [](auto) { }));
           auto result = slv.solve(xi, test);
           REQUIRE(result == false);
         }
