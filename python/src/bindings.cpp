@@ -85,79 +85,73 @@ namespace pyblack {
 
     py::class_<logic::scope> scope{m, "scope"};
     scope.def(py::init<logic::alphabet &>());
-    scope.def(py::init<logic::alphabet &, logic::sort>());
 
-    scope.def_property(
-      "default_sort",
-      &logic::scope::default_sort, &logic::scope::set_default_sort
-    );
-
-    py::enum_<logic::scope::rigid_t>{scope, "rigid_t"}
-      .value("rigid", logic::scope::rigid)
-      .value("non_rigid", logic::scope::non_rigid)
+    py::enum_<logic::rigid_t>{scope, "rigid_t"}
+      .value("rigid", logic::rigid_t::rigid)
+      .value("non_rigid", logic::rigid_t::non_rigid)
       .export_values();
 
-    scope.def("declare", 
+    scope.def("push", 
       [](logic::scope &self, 
-         logic::variable v, logic::sort s, logic::scope::rigid_t r) {
-        return self.declare(v, s, r);
+         logic::variable v, logic::sort s, logic::rigid_t r) {
+        return self.push(v, s, r);
       }, py::arg("v"), py::arg("s"), py::arg("r") = logic::scope::non_rigid
     );
     
-    scope.def("declare", 
+    scope.def("push", 
       [](logic::scope &self, 
          logic::relation rel, std::vector<logic::sort> sorts, 
-         logic::scope::rigid_t r
+         logic::rigid_t r
         ) {
-        return self.declare(rel, std::move(sorts), r);
+        return self.push(rel, std::move(sorts), r);
       }, 
       py::arg("rel"), py::arg("sorts"), 
       py::arg("r") = logic::scope::non_rigid
     );
     
-    scope.def("declare", 
+    scope.def("push", 
       [](logic::scope &self, 
          logic::relation rel, std::vector<logic::var_decl> decls, 
-         logic::scope::rigid_t r
+         logic::rigid_t r
         ) {
-        return self.declare(rel, std::move(decls), r);
+        return self.push(rel, std::move(decls), r);
       }, 
       py::arg("rel"), py::arg("decls"), 
       py::arg("r") = logic::scope::non_rigid
     );
     
-    scope.def("declare", 
+    scope.def("push", 
       [](logic::scope &self, 
          logic::function fun, logic::sort sort, std::vector<logic::sort> sorts, 
-         logic::scope::rigid_t r
+         logic::rigid_t r
         ) {
-        return self.declare(fun, sort, std::move(sorts), r);
+        return self.push(fun, sort, std::move(sorts), r);
       }, 
       py::arg("fun"), py::arg("sort"), py::arg("sorts"), 
       py::arg("r") = logic::scope::non_rigid
     );
     
-    scope.def("declare", 
+    scope.def("push", 
       [](logic::scope &self, 
          logic::function fun, logic::sort sort, 
          std::vector<logic::var_decl> decls, 
-         logic::scope::rigid_t r
+         logic::rigid_t r
         ) {
-        return self.declare(fun, sort, std::move(decls), r);
+        return self.push(fun, sort, std::move(decls), r);
       }, 
       py::arg("fun"), py::arg("sort"), py::arg("decls"), 
       py::arg("r") = logic::scope::non_rigid
     );
 
-    scope.def("declare", 
+    scope.def("push", 
       [](logic::scope &self, logic::named_sort s, logic::domain_ref d) {
-        self.declare(s, d);
+        self.push(s, d);
       }
     );
     
-    scope.def("declare", 
-      [](logic::scope &self, logic::sort_decl decl) {
-        self.declare(decl);
+    scope.def("push", 
+      [](logic::scope &self, logic::named_sort s, logic::domain_ref d) {
+        self.push(s, d);
       }
     );
 
@@ -174,9 +168,10 @@ namespace pyblack {
       return self.signature(rel);
     });
     scope.def("domain", &logic::scope::domain);
-    scope.def("type_check", [](logic::scope &self, black::formula f) {
-      return self.type_check(f, [](auto) { }); // TODO: handle error
-    });
+    scope.def("type_check", 
+      [](logic::scope &self, logic::sort &ds, black::formula f) {
+        return self.type_check(f, ds, [](auto) { }); // TODO: handle error
+      });
 
     scope.def("is_rigid", [](logic::scope &self, logic::variable v) {
       return self.is_rigid(v);

@@ -242,7 +242,7 @@ TEST_CASE("Pattern matching") {
         > \
       );
 
-    boolean b = sigma.boolean("b");
+    boolean b = sigma.boolean(true);
     proposition p = sigma.proposition("p");
     unary<LTL> u = !b;
     conjunction<LTL> c = b && p;

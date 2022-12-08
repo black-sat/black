@@ -684,6 +684,27 @@ namespace black_internal::logic
   #include <black/internal/logic/hierarchy.hpp>
 
   //
+  // Specialization of `alphabet_ctor_base_specific` that gives the specialized
+  // names to the factory methods (e.g. `::variable()`).
+  //
+  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+    template<typename Derived, typename ...Args> \
+    struct alphabet_ctor_base_specific< \
+      syntax_element::Element, Derived, std::tuple<Args...> \
+    > : alphabet_ctor_base_aux< \
+      syntax_element::Element, Derived, std::tuple<Args...> \
+    > { \
+      class Element Element(Args ...args) { \
+        return this->construct(args...); \
+      } \
+    };
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    declare_leaf_hierarchy_element(Base, Storage, Storage)
+
+  #include <black/internal/logic/hierarchy.hpp>
+
+  //
   // Here it finally comes the `alphabet_base` class, which `alphabet` will
   // inherit without adding too much (see `interface.hpp`). The class is default
   // constructible and movable, but not copyable. 
@@ -716,20 +737,6 @@ namespace black_internal::logic
 
     alphabet_base &operator=(alphabet_base const&) = delete;
     alphabet_base &operator=(alphabet_base &&);
-
-    #define declare_leaf_storage_kind(Base, Storage) \
-      template<typename ...Args> \
-      class Storage Storage(Args ...args) { \
-        return base_t<syntax_element::Storage>::construct(args...); \
-      }
-
-    #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-      template<typename ...Args> \
-      class Element Element(Args ...args) { \
-        return base_t<syntax_element::Element>::construct(args...); \
-      }
-
-    #include <black/internal/logic/hierarchy.hpp>
 
     template<storage_type, fragment, typename, typename>
     friend class storage_ctor_base;

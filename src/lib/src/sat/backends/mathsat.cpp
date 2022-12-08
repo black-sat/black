@@ -41,7 +41,7 @@ namespace black_internal::mathsat
   struct mathsat::_mathsat_t {
     scope xi;
 
-    _mathsat_t(scope const& _xi) : xi{chain(_xi)} { }
+    _mathsat_t(scope const& _xi) : xi{_xi} { }
 
     msat_env env;
     tsl::hopscotch_map<formula, msat_term> formulas;

@@ -48,6 +48,9 @@ namespace black_internal::logic
   std::string to_string(declaration t);
   
   BLACK_EXPORT
+  std::string to_string(frame_t f);
+  
+  BLACK_EXPORT
   std::string to_string(sort s);
 
   BLACK_EXPORT

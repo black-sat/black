@@ -1690,9 +1690,19 @@ namespace black_internal::logic {
     }
   };
 
+  //
+  // This intermediate base class is specialized later to give the specialized
+  // name to the constructor method (e.g. `::variable()` or `::proposition()`)
+  //
+  // Each specialization of this template will inherit from the corresponding
+  // specialization of `alphabet_ctor_base_aux`
+  //
+  template<syntax_element E, typename Derived, typename Tuple>
+  struct alphabet_ctor_base_specific;
+
   template<syntax_element Element, typename Derived>
   struct alphabet_ctor_base 
-    : alphabet_ctor_base_aux<
+    : alphabet_ctor_base_specific<
         Element, Derived, 
         storage_alloc_args_t<
           make_singleton_fragment_t<Element>, storage_of_element(Element)

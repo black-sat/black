@@ -91,15 +91,15 @@ namespace black::frontend {
 
     black::scope xi{sigma};
 
-    xi.set_default_sort(sigma.named_sort("default"));
-    
+    sort default_sort = sigma.named_sort("default");
     if(cli::default_sort == "Int")
-      xi.set_default_sort(sigma.integer_sort());
+      default_sort = sigma.integer_sort();
     else if(cli::default_sort == "Real")
-      xi.set_default_sort(sigma.real_sort());
-    
+      default_sort = sigma.real_sort();
+
     [[maybe_unused]]
-    bool ok = xi.type_check(*f, formula_syntax_error_handler(path));
+    bool ok = 
+      xi.type_check(*f, default_sort, formula_syntax_error_handler(path));
     black_assert(ok);
 
     ok = black::solver::check_syntax(*f, formula_syntax_error_handler(path));

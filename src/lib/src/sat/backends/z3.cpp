@@ -37,6 +37,8 @@
 #include <string>
 #include <memory>
 
+#include <iostream>
+
 BLACK_REGISTER_SAT_BACKEND(z3, {
   black::sat::feature::smt, black::sat::feature::quantifiers
 })
@@ -63,7 +65,7 @@ namespace black_internal::z3
     logic::scope xi;
 
     _z3_t(logic::scope const& _xi) 
-      : global_xi{chain(_xi)}, xi{chain(global_xi)} { }
+      : global_xi{_xi}, xi{_xi} { }
 
     Z3_context context;
     Z3_solver solver;
@@ -71,6 +73,13 @@ namespace black_internal::z3
     bool solver_upgraded = false;
 
     tsl::hopscotch_map<proposition, Z3_ast> props;
+    tsl::hopscotch_map<identifier, std::any> _cache;
+
+    template<typename Key>
+    void set_cache(scope, Key, std::any);
+
+    template<typename T, typename Key>
+    std::optional<T> cache(scope, Key);
 
     Z3_func_decl to_z3(function);
     Z3_func_decl to_z3(relation);
@@ -275,10 +284,27 @@ namespace black_internal::z3
     solver_upgraded = true;
   }
 
+  template<typename Key>
+  void z3::_z3_t::set_cache(scope s, Key key, std::any val) {
+    _cache.insert({identifier{std::tuple{s, key}}, val});
+  }
+
+  template<typename T, typename Key>
+  std::optional<T> z3::_z3_t::cache(scope s, Key key) {
+    identifier id{std::tuple{s, key}};
+    if(auto it = _cache.find(id); it != _cache.end()) {
+      std::any val = *it;
+      if(T const* ptr = std::any_cast<T>(&val); ptr)
+        return *ptr;
+    }
+
+    return std::nullopt;
+  }
+
   z3_sort_record_t z3::_z3_t::to_z3(std::optional<sort> s) {
     black_assert(s.has_value());
 
-    if(auto record = global_xi.data<z3_sort_record_t>(*s); record.has_value()) 
+    if(auto record = cache<z3_sort_record_t>(xi, *s); record.has_value()) 
       return *record;
 
     z3_sort_record_t record = s->match(
@@ -332,7 +358,7 @@ namespace black_internal::z3
       }
     );
 
-    global_xi.set_data(*s, record);
+    set_cache(global_xi, *s, record);
     return record;
   }
 
@@ -443,10 +469,11 @@ namespace black_internal::z3
 
         std::vector<Z3_app> z3_apps;
 
+        xi.push(q.variables());
+
         for(auto decl : q.variables()) {
-          xi.declare(decl);
           Z3_ast var = to_z3(decl);
-          xi.set_data(decl.variable(), var);
+          set_cache(xi, decl.variable(), var);
           z3_apps.push_back(Z3_to_app(context, var));
         }
         
@@ -516,7 +543,7 @@ namespace black_internal::z3
         );
       },
       [&](variable v) {
-        if(auto var = xi.data<Z3_ast>(v); var.has_value())
+        if(auto var = cache<Z3_ast>(xi, v); var.has_value())
           return *var;
 
         auto vSort = xi.sort(v);
@@ -527,9 +554,10 @@ namespace black_internal::z3
         // relevant enum sort
         if(xi.domain(*vSort)) {
           auto it = record.elements->find(v);
+          std::cerr << "v: " << to_string(v) << "\n";
           black_assert(it != record.elements->end());
           Z3_ast term = it->second;
-          global_xi.set_data(v, term);
+          set_cache(global_xi, v, term);
           return term;
         }
 
@@ -537,14 +565,15 @@ namespace black_internal::z3
         Z3_symbol symbol = 
           Z3_mk_string_symbol(context, to_string(v.unique_id()).c_str());
 
-        return Z3_mk_const(context, symbol, record.sort);
+        Z3_ast term = Z3_mk_const(context, symbol, record.sort);
+        set_cache(xi, v, term);
+        return term;
       },
       [&](application a) { 
         std::vector<Z3_ast> z3_terms;
         for(term t2 : a.terms())
           z3_terms.push_back(to_z3(t2));
         
-        // Otherwise we go for uninterpreted functions
         Z3_func_decl func = to_z3(a.func());
         
         return 

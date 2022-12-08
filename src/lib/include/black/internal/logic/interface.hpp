@@ -53,6 +53,21 @@ namespace black_internal::logic {
     alphabet &operator=(alphabet const&) = delete;
     alphabet &operator=(alphabet &&) = default;
 
+    using alphabet_base::variable;
+    class variable variable(identifier name) {
+      return this->variable(name, std::nullopt);
+    }
+    
+    using alphabet_base::relation;
+    class relation relation(identifier name) {
+      return this->relation(name, std::nullopt);
+    }
+    
+    using alphabet_base::function;
+    class function function(identifier name) {
+      return this->function(name, std::nullopt);
+    }
+
     class boolean top() {
       return this->boolean(true);
     }

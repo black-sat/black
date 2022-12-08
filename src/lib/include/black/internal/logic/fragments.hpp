@@ -53,6 +53,7 @@ namespace black {
       using black_internal::logic::make_domain;
       using black_internal::logic::scope;
       using black_internal::logic::nest_scope_t;
+      using black_internal::logic::rigid_t;
       using black_internal::logic::otherwise;
       using black_internal::logic::syntax_element;
       using black_internal::logic::fragment;

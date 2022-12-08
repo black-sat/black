@@ -437,12 +437,6 @@ namespace black::frontend
 
     if(trace.muc.has_value()) {
       scope xi{sigma};
-      xi.set_default_sort(sigma.named_sort("default"));
-    
-      if(cli::default_sort == "Int")
-        xi.set_default_sort(sigma.integer_sort());
-      else if(cli::default_sort == "Real")
-        xi.set_default_sort(sigma.real_sort());
 
       black::solver slv;
       if(slv.solve(xi, *trace.muc, cli::finite) != false) {

@@ -40,7 +40,6 @@ TEST_CASE("Solver")
   sigma = std::move(sigma_);
 
   scope xi{sigma};
-  xi.set_default_sort(sigma.integer_sort());
 
   SECTION("Propositional formulas") {
 
@@ -95,7 +94,7 @@ TEST_CASE("Solver")
           auto x = sigma.variable("x");
           auto rel = sigma.relation("r");
 
-          xi.declare(rel, {sigma.integer_sort()});
+          xi.push(rel, {sigma.integer_sort()});
 
           std::vector<formula> tests = {
             G(x > 0), F(x == 1), F(-x == -x), !rel(prev(x)), rel(wprev(x)),
@@ -105,6 +104,9 @@ TEST_CASE("Solver")
           for(auto f : tests) {
             DYNAMIC_SECTION("Formula: " << to_string(f)) {
               REQUIRE(!slv.model().has_value());
+
+              REQUIRE(xi.type_check(f, sigma.integer_sort(), [](auto) { }));
+
               REQUIRE(slv.solve(xi, f));
             }
           }
@@ -126,7 +128,7 @@ TEST_CASE("Solver")
           proposition p = sigma.proposition("p");
           function func = sigma.function("f");
 
-          xi.declare(
+          xi.push(
             func, sigma.integer_sort(), {sigma.integer_sort()}
           );
 
@@ -151,6 +153,8 @@ TEST_CASE("Solver")
               solver slv;
               slv.set_sat_backend(backend);
 
+              REQUIRE(xi.type_check(f, sigma.integer_sort(), [](auto) { }));
+
               REQUIRE(slv.solve(xi, f));
             }
           }
@@ -168,8 +172,6 @@ TEST_CASE("Solver")
     for(std::string s : tests) {
       DYNAMIC_SECTION("Test formula: " << s) 
       {
-        xi.set_default_sort(sigma.integer_sort());
-
         auto result = parse_formula(sigma, s);
 
         REQUIRE(result.has_value());

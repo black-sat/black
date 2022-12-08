@@ -274,8 +274,7 @@ namespace black_internal::encoder
       [&](quantifier<LTLPFO> q) {
         nest_scope_t nest{_xi};
         
-        for(auto decl : q.variables())
-          _xi.declare(decl, scope::rigid);
+        _xi.push(q.variables(), scope::rigid);
 
         auto result = quantifier<FO>(
           q.node_type(), q.variables(), to_ground_snf(q.matrix(), k, true)
@@ -478,11 +477,7 @@ namespace black_internal::encoder
     if(_xi.is_rigid(x))
       return x;
 
-    variable sx = _sigma->variable(std::pair{x, k});
-    if(_xi.sort(x) && !_xi.sort(sx))
-      _global_xi->declare(sx, *_xi.sort(x), scope::rigid);
-
-    return sx;
+    return _sigma->variable(x.name(), k);
   }
 
   relation encoder::stepped(relation r, size_t k) 
@@ -490,11 +485,7 @@ namespace black_internal::encoder
     if(_xi.is_rigid(r))
       return r;
 
-    relation sr = _sigma->relation(std::pair{r, k});
-    if(_xi.signature(r) && !_xi.signature(sr))
-      _global_xi->declare(sr, *_xi.signature(r), scope::rigid);
-
-    return sr;
+    return _sigma->relation(r.name(), k);
   }
 
   function encoder::stepped(function f, size_t k)
@@ -502,13 +493,7 @@ namespace black_internal::encoder
     if(_xi.is_rigid(f))
       return f;
 
-    function sf = _sigma->function(std::pair{f, k});
-    if(_xi.signature(f) && _xi.sort(f) && !_xi.signature(sf))
-      _global_xi->declare(
-        sf, *_xi.sort(f), *_xi.signature(f), scope::rigid
-      );
-
-    return sf;
+    return _sigma->function(f.name(), k);
   }
 
   atom<FO> encoder::stepped(atom<LTLPFO> a, size_t k) {

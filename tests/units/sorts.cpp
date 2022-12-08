@@ -47,9 +47,10 @@ TEST_CASE("Sorts and domains") {
   };
 
   scope xi{sigma};
-  xi.declare(s, make_domain({c1, c2, c3, c4}));
+  xi.push(s, make_domain({c1, c2, c3, c4}));
 
   REQUIRE(xi.domain(s));
+  REQUIRE(xi.sort(c1));
 
   std::vector<std::string> backends = { "z3", "cvc5" };
 

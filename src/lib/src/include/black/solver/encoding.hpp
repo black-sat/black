@@ -42,10 +42,8 @@ namespace black_internal::encoder {
   //
   struct encoder 
   {
-    encoder(formula<LTLPFO> f, scope &xi, bool finite) 
-      : _frm{f}, _sigma{_frm.sigma()}, 
-        _global_xi{&xi}, _xi{chain(xi)}, 
-        _finite{finite}
+    encoder(formula<LTLPFO> f, scope xi, bool finite) 
+      : _frm{f}, _sigma{_frm.sigma()}, _xi{xi}, _finite{finite}
     {
       _frm = to_nnf(_frm);
       _add_xyz_requests(_frm);
@@ -115,9 +113,6 @@ namespace black_internal::encoder {
 
     // the alphabet of frm
     alphabet *_sigma = nullptr;
-
-    // scope 
-    scope *_global_xi;
 
     scope _xi;
 

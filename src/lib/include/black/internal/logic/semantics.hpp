@@ -75,73 +75,42 @@ namespace black_internal::logic {
   // the signatures/arities of functions and relations. The `scope` class
   // handles these information.
   //
-  // Crucially, scopes can be chained to support nested scopes. This is done as
-  // follows:
-  // 
-  // scope s1 = ...;
-  // scope s2 = chain(s1);
-  //
 
   class BLACK_EXPORT scope 
   {
   public:
-    struct chain_t {
-      scope const& s;
-    };
 
-    enum rigid_t : bool {
-      non_rigid = 0,
-      rigid = 1
-    };
+    using enum rigid_t;
 
-    scope(alphabet &sigma, std::optional<class sort> def = std::nullopt);
-    scope(chain_t);
-    scope(scope const&) = delete;
-    scope(scope &&);
-    ~scope();
+    scope(alphabet &sigma);
+    
+    scope(scope const&) = default;
+    scope(scope &&) = default;
 
-    scope &operator=(scope const&) = delete;
-    scope &operator=(scope &&);
+    scope &operator=(scope const&) = default;
+    scope &operator=(scope &&) = default;
 
-    void set_default_sort(std::optional<class sort> s);
-    std::optional<class sort> default_sort() const;
+    bool operator==(scope const&) const = default;
 
-    void declare(variable, class sort, rigid_t = non_rigid);
-    void declare(
-      relation, std::vector<class sort>, rigid_t = non_rigid
+    void push(std::vector<var_decl> decls, rigid_t = non_rigid);
+    void push(std::vector<rel_decl> decls, rigid_t = non_rigid);
+    void push(std::vector<fun_decl> decls, rigid_t = non_rigid);
+    void push(std::vector<sort_decl> decls);
+    
+    void push(variable var, class sort s, rigid_t = non_rigid);
+    void push(relation rel, std::vector<class sort> sorts, rigid_t = non_rigid);
+    void push(relation rel, std::vector<var_decl> sorts, rigid_t = non_rigid);
+    void push(
+      function fun, class sort s, std::vector<class sort> sorts, 
+      rigid_t = non_rigid
     );
-    void declare(
-      function, class sort, std::vector<class sort>, rigid_t = non_rigid
-    );
-    void declare(
-      function, std::vector<class sort>, rigid_t = non_rigid
-    );
-
-    void declare(var_decl d, rigid_t r = non_rigid) {
-      declare(d.variable(), d.sort(), r);
-    }
-    void declare(
-      relation rel, std::vector<var_decl> decls, rigid_t r = non_rigid
-    ) {
-      std::vector<class sort> sorts;
-      for(auto decl : decls)
-        sorts.push_back(decl.sort());
-      declare(rel, sorts, r);
-    }
-    void declare(
+    void push(
       function fun, class sort s, std::vector<var_decl> decls, 
-      rigid_t r = non_rigid
-    ) {
-      std::vector<class sort> sorts;
-      for(auto decl : decls)
-        sorts.push_back(decl.sort());
-      declare(fun, s, sorts, r);
-    }
+      rigid_t = non_rigid
+    );
+    void push(named_sort s, domain_ref domain);
 
-    void declare(named_sort s, domain_ref d);
-    void declare(sort_decl d) {
-      declare(d.sort(), d.domain());
-    }
+    void pop();
 
     std::optional<class sort> sort(variable) const;
     std::optional<class sort> sort(function) const;
@@ -152,62 +121,53 @@ namespace black_internal::logic {
     class domain const*domain(class sort) const;
     
     std::optional<class sort>
-    type_check(term<LTLPFO> t, std::function<void(std::string)> err);
+    type_check(
+      term<LTLPFO> t, std::optional<class sort> default_sort, 
+      std::function<void(std::string)> err
+    );
 
-    bool type_check(formula<LTLPFO> f, std::function<void(std::string)> err);
+    bool type_check(
+      formula<LTLPFO> f, std::optional<class sort> default_sort, 
+      std::function<void(std::string)> err
+    );
 
     bool is_rigid(variable) const;
     bool is_rigid(relation) const;
     bool is_rigid(function) const;
 
-    template<typename T, typename Key>
-    void set_data(Key k, T&& t) {
-      set_data_inner(k, std::any{std::forward<T>(t)});
+    size_t hash() const { return std::hash<std::optional<frame>>{}(_frame); }
+
+    friend std::string to_string(scope xi) {
+      return "scope:" + to_string(xi._frame->unique_id());
     }
-
-    template<typename T, typename Key>
-    std::optional<T> data(Key k) const {
-      std::any a = data_inner(k);
-
-      if(T *t = std::any_cast<T>(&a); t != nullptr)
-        return *t;
-
-      return {};
-    }
-
 
   private:
-    void set_data_inner(variable, std::any);
-    void set_data_inner(relation, std::any);
-    void set_data_inner(function, std::any);
-    void set_data_inner(class sort, std::any);
-    std::any data_inner(variable) const;
-    std::any data_inner(relation) const;
-    std::any data_inner(function) const;
-    std::any data_inner(class sort) const;
-    
-    struct impl_t;
-    std::unique_ptr<impl_t> _impl;
+    alphabet *_sigma;
+    std::optional<frame> _frame;
   };
-
-  inline scope::chain_t chain(scope const&s) {
-    return {s};
-  }
 
   class nest_scope_t 
   {
   public:
-    nest_scope_t(scope &xi) : _ref{xi}, _old{std::move(xi)} {
-      _ref = chain(_old);
-    }
+    nest_scope_t(scope &xi) : _old{xi}, _xi{xi} { }
 
     ~nest_scope_t() {
-      _ref = std::move(_old);
+      while(_xi != _old)
+        _xi.pop();
     }
     
   private:
-    scope &_ref;
     scope _old;
+    scope &_xi;
+  };
+}
+
+namespace std {
+  template<>
+  struct hash<::black_internal::logic::scope> {
+    size_t operator()(::black_internal::logic::scope xi) const {
+      return xi.hash();
+    }
   };
 }
 

@@ -169,7 +169,7 @@ namespace black_internal::solver
     scope const& s, logic::formula<logic::LTLPFO> f, bool finite, 
     size_t k_max, bool semi_decision
   ) {
-    scope xi = chain(s);
+    scope xi = s;
     
     enc = encoder::encoder{f, xi, finite};
     sat = black::sat::solver::get_solver(sat_backend, xi);

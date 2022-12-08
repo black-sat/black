@@ -30,164 +30,157 @@
 
 namespace black_internal::logic {
   
-  struct scope::impl_t {
-    
-    struct var_record_t {
-      class sort sort;
-      rigid_t rigid;
-    };
+  scope::scope(alphabet &sigma)
+    : _sigma{&sigma}, _frame{std::nullopt} { }
 
-    struct rel_record_t {
-      std::vector<class sort> signature;
-      rigid_t rigid;
-    };
 
-    struct func_record_t {
-      class sort result;
-      std::vector<class sort> signature;
-      rigid_t rigid;
-    };
+  void scope::push(std::vector<var_decl> decls, rigid_t r) {
+    std::vector<declaration> v;
+    for(auto d : decls)
+      v.push_back(d);
 
-    struct frame_t 
-    {  
-      std::vector<domain_ref> domains;
-
-      tsl::hopscotch_map<variable, var_record_t> vars;
-      tsl::hopscotch_map<relation, rel_record_t> rels;
-      tsl::hopscotch_map<function, func_record_t> funcs;
-      tsl::hopscotch_map<named_sort, size_t> sorts;
-      
-      tsl::hopscotch_map<variable, std::any> vars_data;
-      tsl::hopscotch_map<relation, std::any> rels_data;
-      tsl::hopscotch_map<function, std::any> funcs_data;
-      tsl::hopscotch_map<class sort, std::any> sorts_data;
-
-      std::optional<class sort> default_sort;
-      std::shared_ptr<const frame_t> next;
-
-      frame_t(
-        std::optional<class sort> d,
-        std::shared_ptr<const frame_t> n
-      ) : default_sort{d}, next{std::move(n)} { }
-
-      frame_t(frame_t const&) = delete;
-      frame_t &operator=(frame_t const&) = delete;
-    };
-
-    impl_t(alphabet &a, std::optional<class sort> default_sort)
-      : sigma{a},
-        frame{std::make_shared<frame_t>(default_sort, nullptr)} { }
-    
-    impl_t(scope const&s)
-      : sigma{s._impl->sigma},
-        frame{std::make_shared<frame_t>(s.default_sort(), s._impl->frame)} { }
-
-    alphabet &sigma;
-    std::shared_ptr<frame_t> frame;
-  };
-
-  scope::scope(alphabet &sigma, std::optional<class sort> def) 
-    : _impl{std::make_unique<impl_t>(sigma, def)} { }
-  
-  scope::scope(chain_t c) : _impl{std::make_unique<impl_t>(c.s)} { }
-
-  scope::~scope() = default;
-
-  scope::scope(scope &&) = default;
-  scope &scope::operator=(scope &&) = default;
-
-  void scope::set_default_sort(std::optional<class sort> s) {
-    _impl->frame->default_sort = s;
+    _frame = _sigma->frame(_frame, r, v);
   }
 
-  std::optional<sort> scope::default_sort() const {
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+  void scope::push(std::vector<rel_decl> decls, rigid_t r) {
+    std::vector<declaration> v;
+    for(auto d : decls)
+      v.push_back(d);
 
-    while(current) {
-      if(current->default_sort.has_value())
-        return current->default_sort;
-      current = current->next;
-    }
-
-    return {};
+    _frame = _sigma->frame(_frame, r, v);
   }
 
-  void scope::declare(variable x, class sort s, rigid_t r) {
-    _impl->frame->vars.insert({x, {s,r}});
+  void scope::push(std::vector<fun_decl> decls, rigid_t r) {
+    std::vector<declaration> v;
+    for(auto d : decls)
+      v.push_back(d);
+
+    _frame = _sigma->frame(_frame, r, v);
   }
 
-  void scope::declare(
-    function f, class sort s, std::vector<class sort> args, rigid_t r
-  ) {
-    _impl->frame->funcs.insert({f, {s, std::move(args), r}});
+  void scope::push(std::vector<sort_decl> decls) {
+    std::vector<declaration> v;
+    for(auto d : decls)
+      v.push_back(d);
+
+    _frame = _sigma->frame(_frame, rigid_t::non_rigid, v);
+  }
+
+  void scope::push(variable var, class sort s, rigid_t r) {
+    push({_sigma->var_decl(var, s)}, r);
+  }
+
+  void scope::push(relation rel, std::vector<class sort> sorts, rigid_t r) {
+    push({_sigma->rel_decl(rel, sorts)}, r);
   }
   
-  void scope::declare(
-    function f, std::vector<class sort> args, rigid_t r
-  ) {
-    black_assert(default_sort().has_value());
-    _impl->frame->funcs.insert({f, {*default_sort(), std::move(args), r}});
-  }
-  
-  void scope::declare(
-    relation r, std::vector<class sort> args, rigid_t rigid
-  ) {
-    _impl->frame->rels.insert({r, {std::move(args), rigid}});
+  void scope::push(relation rel, std::vector<var_decl> decls, rigid_t r) {
+    std::vector<class sort> sorts;
+    for(auto d : decls)
+      sorts.push_back(d.sort());
+    push({_sigma->rel_decl(rel, sorts)}, r);
   }
 
-  void scope::declare(named_sort s, domain_ref domain) {
+  void scope::push(
+    function fun, class sort s, std::vector<class sort> sorts, rigid_t r
+  ) {
+    push({_sigma->fun_decl(fun, s, sorts)}, r);
+  }
+  
+  void scope::push(
+    function fun, class sort s, std::vector<var_decl> decls, rigid_t r
+  ) {
+    std::vector<class sort> sorts;
+    for(auto d : decls)
+      sorts.push_back(d.sort());
+    push({_sigma->fun_decl(fun, s, sorts)}, r);
+  }
+
+  void scope::push(named_sort s, domain_ref domain) {
+    std::vector<var_decl> decls;
     for(variable x : domain->elements())
-      declare(x, s, scope::rigid);
+      decls.push_back(_sigma->var_decl(x, s));
     
-    _impl->frame->domains.push_back(std::move(domain));
-    _impl->frame->sorts.insert({s, _impl->frame->domains.size() - 1});
+    push(decls, rigid_t::rigid);
+    push({_sigma->sort_decl(s, domain)});
+  }
+
+  void scope::pop() {
+    if(_frame)
+      _frame = _frame->next();
   }
 
   std::optional<sort> scope::sort(variable x) const {
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+    std::optional<frame> current = _frame;
 
     while(current) {
-      if(auto it = current->vars.find(x); it != current->vars.end())
-        return it->second.sort;
-      current = current->next;
+      for(auto decl : current->decls()) {
+        if(auto d = decl.to<var_decl>(); d.has_value()) {
+          if(d->variable() == x)
+            return d->sort();
+        }
+      }
+      current = current->next();
     }
 
-    return default_sort();
+    if(x.subscript())
+      return sort(_sigma->variable(x.name()));
+
+    return std::nullopt;
   }
 
-  std::optional<sort> scope::sort(function f) const {
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+  std::optional<sort> scope::sort(function fun) const {
+    std::optional<frame> current = _frame;
 
     while(current) {
-      if(auto it = current->funcs.find(f); it != current->funcs.end())
-        return it->second.result;
-      current = current->next;
+      for(auto decl : current->decls()) {
+        if(auto d = decl.to<fun_decl>(); d.has_value()) {
+          if(d->function() == fun)
+            return d->sort();
+        }
+      }
+      current = current->next();
     }
 
-    return default_sort();
+    if(fun.subscript())
+      return sort(_sigma->function(fun.name()));
+
+    return std::nullopt;
   }
 
-  std::optional<std::vector<sort>> scope::signature(function f) const {
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+  std::optional<std::vector<sort>> scope::signature(function fun) const {
+    std::optional<frame> current = _frame;
 
     while(current) {
-      if(auto it = current->funcs.find(f); it != current->funcs.end())
-        return it->second.signature;
-      current = current->next;
+      for(auto decl : current->decls()) {
+        if(auto d = decl.to<fun_decl>(); d.has_value()) {
+          if(d->function() == fun)
+            return d->signature();
+        }
+      }
+      current = current->next();
     }
 
+    if(fun.subscript())
+      return signature(_sigma->function(fun.name()));
     return {};
   }
 
-  std::optional<std::vector<sort>> scope::signature(relation r) const {
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+  std::optional<std::vector<sort>> scope::signature(relation rel) const {
+    std::optional<frame> current = _frame;
 
     while(current) {
-      if(auto it = current->rels.find(r); it != current->rels.end())
-        return it->second.signature;
-      current = current->next;
+      for(auto decl : current->decls()) {
+        if(auto d = decl.to<rel_decl>(); d.has_value()) {
+          if(d->relation() == rel)
+            return d->signature();
+        }
+      }
+      current = current->next();
     }
 
+    if(rel.subscript())
+      return signature(_sigma->relation(rel.name()));
     return {};
   }
 
@@ -197,124 +190,80 @@ namespace black_internal::logic {
     
     named_sort n = *s.to<named_sort>();
 
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+    std::optional<frame> current = _frame;
 
     while(current) {
-      if(auto it = current->sorts.find(n); it != current->sorts.end()) {
-        black_assert(it->second < current->domains.size());
-        return current->domains[it->second].get();
+      for(auto decl : current->decls()) {
+        if(auto d = decl.to<sort_decl>(); d.has_value()) {
+          if(d->sort() == n)
+            return d->domain().get();
+        }
       }
-      current = current->next;
+      current = current->next();
     }
 
     return nullptr;
   }
 
   bool scope::is_rigid(variable x) const {
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+    std::optional<frame> current = _frame;
 
     while(current) {
-      if(auto it = current->vars.find(x); it != current->vars.end())
-        return it->second.rigid == rigid_t::rigid;
-      current = current->next;
+      for(auto decl : current->decls()) {
+        if(auto d = decl.to<var_decl>(); d.has_value()) {
+          if(d->variable() == x)
+            return current->rigid() == rigid_t::rigid;
+        }
+      }
+      current = current->next();
     }
 
+    if(x.subscript())
+      return is_rigid(_sigma->variable(x.name()));
     return false;
   }
 
-  bool scope::is_rigid(relation r) const {
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+  bool scope::is_rigid(relation rel) const {
+    std::optional<frame> current = _frame;
 
     while(current) {
-      if(auto it = current->rels.find(r); it != current->rels.end())
-        return it->second.rigid == rigid_t::rigid;
-      current = current->next;
+      for(auto decl : current->decls()) {
+        if(auto d = decl.to<rel_decl>(); d.has_value()) {
+          if(d->relation() == rel)
+            return current->rigid() == rigid_t::rigid;
+        }
+      }
+      current = current->next();
     }
 
+    if(rel.subscript())
+      return is_rigid(_sigma->relation(rel.name()));
     return false;
   }
 
-  bool scope::is_rigid(function f) const {
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+  bool scope::is_rigid(function fun) const {
+    std::optional<frame> current = _frame;
 
     while(current) {
-      if(auto it = current->funcs.find(f); it != current->funcs.end())
-        return it->second.rigid == rigid_t::rigid;
-      current = current->next;
+      for(auto decl : current->decls()) {
+        if(auto d = decl.to<fun_decl>(); d.has_value()) {
+          if(d->function() == fun)
+            return current->rigid() == rigid_t::rigid;
+        }
+      }
+      current = current->next();
     }
 
+    if(fun.subscript())
+      return is_rigid(_sigma->function(fun.name()));
     return false;
-  }
-
-  void scope::set_data_inner(variable x, std::any data) {
-    _impl->frame->vars_data.insert({x, std::move(data)});
-  }
-
-  void scope::set_data_inner(relation r, std::any data) {
-    _impl->frame->rels_data.insert({r, std::move(data)});
-  }
-
-  void scope::set_data_inner(function f, std::any data) {
-    _impl->frame->funcs_data.insert({f, std::move(data)});
-  }
-
-  void scope::set_data_inner(class sort s, std::any data) {
-    _impl->frame->sorts_data.insert({s, std::move(data)});
-  }
-
-  std::any scope::data_inner(variable x) const {
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
-
-    while(current) {
-      if(auto it = current->vars_data.find(x); it != current->vars_data.end())
-        return it->second;
-      current = current->next;
-    }
-
-    return {};
-  }
-
-  std::any scope::data_inner(relation r) const {
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
-
-    while(current) {
-      if(auto it = current->rels_data.find(r); it != current->rels_data.end())
-        return it->second;
-      current = current->next;
-    }
-
-    return {};
-  }
-
-  std::any scope::data_inner(function f) const {
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
-
-    while(current) {
-      if(auto it = current->funcs_data.find(f); it != current->funcs_data.end())
-        return it->second;
-      current = current->next;
-    }
-
-    return {};
-  }
-
-  std::any scope::data_inner(class sort s) const {
-    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
-
-    while(current) {
-      if(auto it = current->sorts_data.find(s); it != current->sorts_data.end())
-        return it->second;
-      current = current->next;
-    }
-
-    return {};
   }
 
   struct type_checker 
   {
     template<typename F>
-    type_checker(scope &_xi, F _err) 
-      : global{_xi}, xi{chain(_xi)}, err{_err} { }
+    type_checker(scope &_xi, std::optional<sort> _sort, F _err) 
+      : global{_xi}, xi{_xi}, default_sort{_sort}, err{_err} { }
 
     bool type_check_rel_func(hierarchy auto h, auto terms);
 
@@ -323,21 +272,39 @@ namespace black_internal::logic {
 
     scope &global;
     scope xi;
+    std::optional<sort> default_sort;
     std::function<void(std::string)> err;
   };
 
   std::optional<class sort>
-  scope::type_check(term<LTLPFO> t, std::function<void(std::string)> err) {
-    type_checker checker{*this, err};
+  scope::type_check(
+    term<LTLPFO> t, std::optional<class sort> default_sort, 
+    std::function<void(std::string)> err
+  ) {
+    type_checker checker{*this, default_sort, err};
 
     return checker.type_check(t);
   }
 
-  bool 
-  scope::type_check(formula<LTLPFO> f, std::function<void(std::string)> err) {
-    type_checker checker{*this, err};
+  bool scope::type_check(
+    formula<LTLPFO> f, std::optional<class sort> default_sort, 
+    std::function<void(std::string)> err
+  ) {
+    type_checker checker{*this, default_sort, err};
 
     return checker.type_check(f);
+  }
+
+  static void push_fun_rel(
+    scope &xi, function fun, sort s, std::vector<sort> sorts
+  ) {
+    xi.push(fun, s, sorts);
+  }
+  
+  static void push_fun_rel(
+    scope &xi, relation rel, sort, std::vector<sort> sorts
+  ) {
+    xi.push(rel, sorts);
   }
 
   bool type_checker::type_check_rel_func(hierarchy auto h, auto terms) {
@@ -350,13 +317,13 @@ namespace black_internal::logic {
       sorts.push_back(*s);
     }
 
-    auto signature = xi.signature(h);
+    auto signature = global.signature(h);
     if(!signature.has_value()) {
-      if(!global.default_sort().has_value()) {
+      if(!default_sort.has_value()) {
         err("Use of undeclared function/relation '" + to_string(h) + "'");
         return false;
       }
-      global.declare(h, sorts);
+      push_fun_rel(global, h, *default_sort, sorts);
       signature = sorts;
     }
 
@@ -398,6 +365,9 @@ namespace black_internal::logic {
       [&](variable x) -> S { 
         if(auto s = xi.sort(x); s.has_value())
           return *s;
+
+        if(default_sort)
+          return default_sort;
         
         err("Use of undeclared variable '" + to_string(x) + "'");
         return {};
@@ -548,8 +518,7 @@ namespace black_internal::logic {
       [&](quantifier<LTLPFO> q) {
         nest_scope_t nest{xi};
 
-        for(auto d : q.variables())
-          xi.declare(d, scope::rigid);
+        xi.push(q.variables(), scope::rigid);
         
         return type_check(q.matrix());
       },

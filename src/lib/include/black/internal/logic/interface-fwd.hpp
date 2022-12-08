@@ -36,6 +36,11 @@ namespace black_internal::logic {
   template<fragment>
   class atom;
 
+  enum rigid_t : bool {
+    non_rigid = 0,
+    rigid = 1
+  };
+
   //
   // relations and functions support creating the associated atom or application
   // (respectively) with a simple call-like syntax such as f(x, y).
