@@ -47,13 +47,14 @@ namespace black::sat
   {
   public:
 
-    // default constructor
     solver() = default;
 
     static std::vector<std::string_view> backends();
     static bool backend_exists(std::string_view name);
-    static std::unique_ptr<solver> get_solver(std::string_view name);
     static bool backend_has_feature(std::string_view name, feature f);
+    static std::unique_ptr<solver> get_solver(
+      std::string_view name, logic::scope const& xi
+    );
 
     // solver is a polymorphic, non-copyable type
     solver(const solver &) = delete;
@@ -74,7 +75,14 @@ namespace black::sat
     // gets the value of a proposition from the solver.
     // The result is tribool::undef if the variable has not been decided
     // e.g. before the first call to is_sat()
+    // or if it is a don't care
     virtual tribool value(proposition a) const = 0;
+
+    // gets the value of a relational atom from the solver.
+    // The result is tribool::undef if the value has not been decided
+    // e.g. before the first call to is_sat()
+    // or if it is a don't care
+    virtual tribool value(logic::atom<logic::FO> a) const = 0;
 
     // clear the current context completely
     virtual void clear() = 0;
@@ -85,7 +93,8 @@ namespace black::sat
 
   namespace internal {
     struct backend_init_hook {
-      using backend_ctor = std::unique_ptr<solver> (*)();
+      using backend_ctor = 
+        std::unique_ptr<solver> (*)(black::logic::scope const&);
       backend_init_hook(
         std::string_view, backend_ctor, std::vector<black::sat::feature>
       );
@@ -95,8 +104,10 @@ namespace black::sat
       static const black::sat::internal::backend_init_hook \
         Backend##_init_hook_{ \
           #Backend, \
-          []() -> std::unique_ptr<::black::sat::solver> { \
-            return std::make_unique<::black::sat::backends::Backend>(); \
+          [](::black::logic::scope const& xi) -> \
+            std::unique_ptr<::black::sat::solver> \
+          { \
+            return std::make_unique<::black::sat::backends::Backend>(xi); \
           }, \
           __VA_ARGS__ \
         };

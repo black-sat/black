@@ -26,6 +26,7 @@
 
 #include <black/support/common.hpp>
 
+#include <memory>
 #include <ranges>
 #include <stack>
 
@@ -39,19 +40,33 @@
 namespace black_internal::logic {
 
   //
-  // As a first thing we define the real `alphabet` class, which is just a thin
-  // addition over the `alphabet_base` class defined before, which does the
-  // heavy lifting.
+  // As a first thing we define the real `alphabet` class, which derives from
+  // the `alphabet_base` class defined before, which does the heavy lifting.
   //
   class alphabet : public alphabet_base
   {
   public:
-    alphabet() : _default_sort{this->custom_sort("default")} { }
+    alphabet() = default;
     alphabet(alphabet const&) = delete;
     alphabet(alphabet &&) = default;
 
     alphabet &operator=(alphabet const&) = delete;
     alphabet &operator=(alphabet &&) = default;
+
+    using alphabet_base::variable;
+    class variable variable(identifier name) {
+      return this->variable(name, std::nullopt);
+    }
+    
+    using alphabet_base::relation;
+    class relation relation(identifier name) {
+      return this->relation(name, std::nullopt);
+    }
+    
+    using alphabet_base::function;
+    class function function(identifier name) {
+      return this->function(name, std::nullopt);
+    }
 
     class boolean top() {
       return this->boolean(true);
@@ -60,64 +75,104 @@ namespace black_internal::logic {
     class boolean bottom() {
       return this->boolean(false);
     }
-
-    sort default_sort() const { return _default_sort; }
-    void set_default_sort(sort s) { _default_sort = s; }
-
-  private:
-    sort _default_sort;
   };
  
   //
   // Then the implementation of the two versions of operator() for both
   // functions and relations. The declarations are in `interface-fwd.hpp`
   //
-  template<typename Derived>
-  template<hierarchy Arg, hierarchy ...Args>
-  auto function_call_op<Derived>::operator()(Arg arg, Args ...args) const {
-    using Syntax = 
-      make_combined_fragment_t<
-        typename Derived::syntax, typename Arg::syntax, typename Args::syntax...
-      >;
-    using Hierarchy = hierarchy_type_of_t<Syntax, Arg::hierarchy>;
-
-    std::vector<Hierarchy> v{Hierarchy(arg), Hierarchy(args)...};
-    return application<Syntax>(static_cast<Derived const&>(*this), v);
+  template<typename T>
+  auto call_op_get_arg(T v) {
+    return v;
   }
 
-  template<typename Derived>
-  template<std::ranges::range R>
-    requires hierarchy<std::ranges::range_value_t<R>>
-  auto function_call_op<Derived>::operator()(R const& v) const {
-    using Syntax = make_combined_fragment_t<
-      typename Derived::syntax, typename std::ranges::range_value_t<R>::syntax
+  inline variable call_op_get_arg(var_decl x) {
+    return x.variable();
+  }
+
+  template<typename T>
+  using call_op_arg_t = decltype(call_op_get_arg(std::declval<T>()));
+
+  template<storage_type S>
+  struct call_op_return;
+
+  template<storage_type S>
+  inline constexpr auto call_op_return_v = call_op_return<S>::value;
+
+  template<>
+  struct call_op_return<storage_type::relation> {
+    static constexpr auto value = storage_type::atom;
+  };
+
+  template<>
+  struct call_op_return<storage_type::function> {
+    static constexpr auto value = storage_type::application;
+  };
+
+  template<storage_type S, typename Derived>
+  template<hierarchy Arg, hierarchy ...Args>
+  auto call_op_interface<S, Derived>::operator()(Arg arg, Args ...args) const {
+    using common_t = std::common_type_t<
+      call_op_arg_t<Arg>, call_op_arg_t<Args>...
     >;
 
-    return application<Syntax>(static_cast<Derived const&>(*this), v);
+    using syntax = make_combined_fragment_t<
+      make_singleton_fragment_t<element_of_storage_v<S>>,
+      make_singleton_fragment_t<element_of_storage_v<call_op_return_v<S>>>,
+      typename common_t::syntax
+    >;
+    
+    using return_t = storage_type_of_t<syntax, call_op_return_v<S>>;
+
+    std::vector<common_t> v{
+      common_t{call_op_get_arg(arg)}, common_t{call_op_get_arg(args)}...
+    };
+    return return_t{static_cast<Derived const&>(*this), v};
+  }
+
+  template<storage_type S, typename Derived>
+  template<std::ranges::range R>
+    requires (
+      hierarchy<std::ranges::range_value_t<R>> &&
+      !std::is_same_v<std::ranges::range_value_t<R>, var_decl>
+    )
+  auto call_op_interface<S, Derived>::operator()(R const& v) const {
+    using syntax = make_combined_fragment_t<
+      make_singleton_fragment_t<element_of_storage_v<S>>,
+      make_singleton_fragment_t<element_of_storage_v<call_op_return_v<S>>>,
+      typename std::ranges::range_value_t<R>::syntax
+    >;
+    using return_t = storage_type_of_t<syntax, call_op_return_v<S>>;
+
+    return return_t{static_cast<Derived const&>(*this), v};
   }
   
-  template<typename Derived>
-  template<hierarchy Arg, hierarchy ...Args>
-  auto relation_call_op<Derived>::operator()(Arg arg, Args ...args) const {
-    using Syntax = 
-      make_combined_fragment_t<
-        typename Derived::syntax, typename Arg::syntax, typename Args::syntax...
-      >;
-    using Hierarchy = hierarchy_type_of_t<Syntax, Arg::hierarchy>;
-
-    std::vector<Hierarchy> v{Hierarchy(arg), Hierarchy(args)...};
-    return atom<Syntax>(static_cast<Derived const&>(*this), v);
-  }
-
-  template<typename Derived>
+  template<storage_type S, typename Derived>
   template<std::ranges::range R>
-    requires hierarchy<std::ranges::range_value_t<R>>
-  auto relation_call_op<Derived>::operator()(R const& v) const {
-    using Syntax = make_combined_fragment_t<
-      typename Derived::syntax, typename std::ranges::range_value_t<R>::syntax
+    requires std::is_same_v<std::ranges::range_value_t<R>, var_decl>
+  auto call_op_interface<S, Derived>::operator()(R const& v) const {
+    using syntax = make_fragment_t<
+      syntax_list<
+        element_of_storage_v<S>,
+        element_of_storage_v<call_op_return_v<S>>,
+        syntax_element::variable
+      >
     >;
+    using return_t = storage_type_of_t<syntax, call_op_return_v<S>>;
 
-    return atom<Syntax>(static_cast<Derived const&>(*this), v);
+    std::vector<variable> vars;
+    for(auto decl : v)
+      vars.push_back(decl.variable());
+
+    return return_t{static_cast<Derived const&>(*this), vars};
+  }
+  
+  //
+  // And the implementation of the subscript operator for variables
+  //
+  template<storage_type S, typename Derived>
+  var_decl variable_decl_op<S, Derived>::operator[](sort s) const {
+    return s.sigma()->var_decl(static_cast<Derived const&>(*this), s);
   }
 
   //
@@ -142,39 +197,27 @@ namespace black_internal::logic {
   T wrap_term_op_arg(alphabet *, T t) { return t; }
 
   using wrapped_int = make_fragment_t< 
-    syntax_element::constant,
-    syntax_element::zero,
-    syntax_element::one,
-    syntax_element::integer
+    syntax_list<
+      syntax_element::constant,
+      syntax_element::integer
+    >
   >;
   
   using wrapped_real = make_fragment_t< 
-    syntax_element::constant,
-    syntax_element::zero,
-    syntax_element::one,
-    syntax_element::real
+    syntax_list<
+      syntax_element::constant,
+      syntax_element::real
+    >
   >;
 
   template<std::integral T>
   constant<wrapped_int> wrap_term_op_arg(alphabet *sigma, T t) {
-    int64_t value = int64_t{t};
-    if(value == 0)
-      return constant{sigma->zero()};
-    if(value == 1)
-      return constant{sigma->one()};
-
-    return constant{sigma->integer(value)};
+    return constant{sigma->integer(int64_t{t})};
   }
 
   template<std::floating_point T>
   constant<wrapped_real> wrap_term_op_arg(alphabet *sigma, T t) { 
-    double value = double{t};
-    if(value == 0.0)
-      return constant{sigma->zero()};
-    if(value == 1.0)
-      return constant{sigma->one()};
-
-    return constant{sigma->real(value)};
+    return constant{sigma->real(double{t})};
   }
 
   //
@@ -201,6 +244,16 @@ namespace black_internal::logic {
   declare_term_op(/, division)
 
   #undef declare_term_op
+
+  // similar function for integer division, but it's not an operator
+  template<term_op_arg Arg1, term_op_arg Arg2>
+  auto div(Arg1 arg1, Arg2 arg2) {
+    alphabet *sigma = get_sigma(arg1, arg2);
+    return
+      int_division(
+        wrap_term_op_arg(sigma, arg1), wrap_term_op_arg(sigma, arg2)
+      );
+  }
 
   //
   // The unary minus does not follow the above schema because it's unary, but
@@ -234,19 +287,6 @@ namespace black_internal::logic {
 
     term_equality_wrapper(bool eq, base_t b) : base_t{b}, _eq{eq} { }
 
-    friend bool operator&&(bool b, term_equality_wrapper const& w) {
-      return b && bool(w); // LCOV_EXCL_LINE
-    }
-    friend bool operator&&(term_equality_wrapper const& w, bool b) {
-      return bool(w) && b; // LCOV_EXCL_LINE
-    }
-    friend bool operator||(bool b, term_equality_wrapper const& w) {
-      return b || bool(w); // LCOV_EXCL_LINE
-    }
-    friend bool operator||(term_equality_wrapper const& w, bool b) {
-      return bool(w) || b; // LCOV_EXCL_LINE
-    }
-
     bool operator!() const { return !_eq; }
     operator bool() const { return _eq; }
   };
@@ -260,16 +300,17 @@ namespace black_internal::logic {
     using S = deduce_fragment_for_storage_t<syntax_element::equal, T1, T2>;
 
     return term_equality_wrapper<S, syntax_element::equal>{
-      t1.unique_id() == t2.unique_id(), equal<S>(t1, t2)
+      t1.unique_id() == t2.unique_id(), equal<S>(std::vector<term<S>>{t1, t2})
     };
   }
 
   template<is_term T1, is_term T2>
   auto operator!=(T1 t1, T2 t2) {
-    using S = deduce_fragment_for_storage_t<syntax_element::not_equal, T1, T2>;
+    using S = deduce_fragment_for_storage_t<syntax_element::distinct, T1, T2>;
 
-    return term_equality_wrapper<S, syntax_element::not_equal>{
-      t1.unique_id() != t2.unique_id(), not_equal<S>(t1, t2)
+    return term_equality_wrapper<S, syntax_element::distinct>{
+      t1.unique_id() != t2.unique_id(), 
+      distinct<S>(std::vector<term<S>>{t1, t2})
     };
   }
 
@@ -283,15 +324,14 @@ namespace black_internal::logic {
     requires (!std::is_class_v<Arg1> || !std::is_class_v<Arg2>)
   auto operator ==(Arg1 arg1, Arg2 arg2) {
     alphabet *sigma = get_sigma(arg1, arg2);
-    return equal(wrap_term_op_arg(sigma, arg1), wrap_term_op_arg(sigma, arg2));
+    return wrap_term_op_arg(sigma, arg1) == wrap_term_op_arg(sigma, arg2);
   }
   
   template<term_op_arg Arg1, term_op_arg Arg2>
     requires (!std::is_class_v<Arg1> || !std::is_class_v<Arg2>)
   auto operator !=(Arg1 arg1, Arg2 arg2) {
     alphabet *sigma = get_sigma(arg1, arg2);
-    return 
-      not_equal(wrap_term_op_arg(sigma, arg1), wrap_term_op_arg(sigma, arg2));
+    return wrap_term_op_arg(sigma, arg1) != wrap_term_op_arg(sigma, arg2);
   }
 
   //
@@ -333,8 +373,6 @@ namespace black_internal::logic {
   declare_unary_formula_op(F, eventually)
   declare_unary_formula_op(O, once)
   declare_unary_formula_op(H, historically)
-  declare_binary_formula_op(operator&&, conjunction)
-  declare_binary_formula_op(operator||, disjunction)
   declare_binary_formula_op(implies, implication)
   declare_binary_formula_op(U, until)
   declare_binary_formula_op(R, release)
@@ -345,6 +383,50 @@ namespace black_internal::logic {
 
   #undef declare_unary_formula_op
   #undef declare_binary_formula_op
+
+  //
+  // For conjunctions and disjunctions we have to specialize the macro above to
+  // exclude `term_equality_wrapper` from the overloads, in order to avoid
+  // problems in boolean expressions involving equality comparisons between
+  // terms (e.g. in the code of `std::optional`).
+  //
+  template<typename T, typename U>
+  struct no_bool_equality_wrapper : std::true_type { };
+
+  template<typename S, syntax_element E>
+  struct no_bool_equality_wrapper<bool, term_equality_wrapper<S, E>>
+    : std::false_type { };
+
+  template<typename S, syntax_element E>
+  struct no_bool_equality_wrapper<term_equality_wrapper<S, E>, bool>
+    : std::false_type { };
+
+  template<typename T, typename U>
+  inline constexpr bool no_bool_equality_wrapper_v = 
+    no_bool_equality_wrapper<T, U>::value;
+
+  template<formula_op_arg F1, formula_op_arg F2>
+    requires 
+      ((std::is_class_v<F1> || std::is_class_v<F2>) &&
+        no_bool_equality_wrapper_v<F1, F2>)
+  auto operator&&(F1 f1, F2 f2) {
+    alphabet *sigma = get_sigma(f1, f2);
+    return conjunction(
+      wrap_formula_arg(sigma, f1), wrap_formula_arg(sigma, f2)
+    );
+  }
+
+  template<formula_op_arg F1, formula_op_arg F2>
+    requires 
+      ((std::is_class_v<F1> || std::is_class_v<F2>) &&
+        no_bool_equality_wrapper_v<F1, F2>)
+  auto operator||(F1 f1, F2 f2) {
+    alphabet *sigma = get_sigma(f1, f2);
+    return disjunction(
+      wrap_formula_arg(sigma, f1), wrap_formula_arg(sigma, f2)
+    );
+  }
+
 
   //
   // Here we add an `identity()` static member function to some operators such
@@ -376,10 +458,6 @@ namespace black_internal::logic {
   struct hierarchy_element_custom_members<syntax_element::addition, Derived>
   { 
     auto operands() const;
-
-    static auto identity(alphabet *sigma) {
-      return constant{sigma->zero()};
-    }
   };
   
   template<typename Derived>
@@ -387,10 +465,6 @@ namespace black_internal::logic {
     syntax_element::multiplication, Derived
   > { 
     auto operands() const;
-
-    static auto identity(alphabet *sigma) {
-      return constant{sigma->one()};
-    }
   };
 
   //
@@ -408,7 +482,8 @@ namespace black_internal::logic {
     
     using H = hierarchy_type_of_t<
       make_combined_fragment_t<
-        typename R::syntax, make_fragment_t<Op>, typename decltype(id)::syntax
+        typename R::syntax, make_singleton_fragment_t<Op>, 
+        typename decltype(id)::syntax
       >,
       R::hierarchy
     >;
@@ -426,6 +501,19 @@ namespace black_internal::logic {
 
     return acc;
   }
+
+  //
+  // Here we declare an ad-hoc deduction guide to help invoke `exists` and
+  // `forall` constructors with an initializer list argument, without specifying
+  // the fragment
+  //
+  template<hierarchy H>
+  exists(std::initializer_list<var_decl>, H) 
+    -> exists<deduce_fragment_for_storage_t<syntax_element::exists, H>>;
+  
+  template<hierarchy H>
+  forall(std::initializer_list<var_decl>, H) 
+    -> forall<deduce_fragment_for_storage_t<syntax_element::forall, H>>;
 
   //
   // The following are instances of `fold_op`, useful functions to create long
@@ -446,20 +534,16 @@ namespace black_internal::logic {
     );
   }
   
-  template<std::ranges::range Range, typename F>
-  auto sum(alphabet &sigma, Range const& r, F&& f) {
-    return fold_op<syntax_element::addition>(
-      sigma, r, std::forward<F>(f)
-    );
+  template<std::ranges::range Range>
+  auto big_and(alphabet &sigma, Range const& r) {
+    return big_and(sigma, r, [](auto x) { return x; });
   }
   
-  template<std::ranges::range Range, typename F>
-  auto product(alphabet &sigma, Range const& r, F&& f) {
-    return fold_op<syntax_element::multiplication>(
-      sigma, r, std::forward<F>(f)
-    );
+  template<std::ranges::range Range>
+  auto big_or(alphabet &sigma, Range const& r) {
+    return big_or(sigma, r, [](auto x) { return x; });
   }
-
+  
   //
   // Here we define a utility class that helps to pattern match associative
   // binary elements such as conjunctions and disjunctions or sums and products.
@@ -503,7 +587,7 @@ namespace black_internal::logic {
     using difference_type = ssize_t;
     using value_type = 
       hierarchy_type_of_t<typename E::syntax, 
-        hierarchy_of_storage_v<storage_of_element_v<E::element>>
+        hierarchy_of_storage(storage_of_element(E::element))
       >;
 
     const_iterator() = default;
@@ -521,7 +605,11 @@ namespace black_internal::logic {
     const_iterator &operator=(const_iterator &&) = default;
 
     // We are the end iterator if there is no current element
-    bool operator==(const_iterator const&it) const = default;
+    bool operator==(const_iterator const&it) const {
+      auto result = _stack == it._stack && _current == it._current;
+
+      return result;
+    }
 
     //
     // operator++ advances the iterator. If the stack is empty we are at the
@@ -638,306 +726,95 @@ namespace black_internal::logic {
   }
 
   //
-  // We also provide some accessor functions to `quantifier` that help matching
-  // quantifier blocks instead of one quantifier at the time. Algorithmically,
-  // this is conceptually simpler because we just have to recurse on the
-  // children of the quantifier until we fine something different from the same
-  // kind of quantifier. However, the things are a bit complex because we want
-  // to support different use cases. See the comments above `quantifier_block`.
-  //
-  // We start from the lazy view over the variables of a quantifier block. The
-  // view itself is a thin wrapper over the quantifier, that returns its
-  // iterators at begin() and end().
+  // Utility function to replace some subterms of a term with some replacement
   //
   template<fragment Syntax>
-  class quantifier_block_view : public std::ranges::view_base {
-  public:
-    class const_iterator;
-    using iterator = const_iterator;
-
-    quantifier_block_view() = default;
-    quantifier_block_view(quantifier<Syntax> q) : _quantifier{q} { }
-
-    const_iterator begin() const { 
-      black_assert(_quantifier.has_value());
-      return const_iterator{*_quantifier}; 
-    }
-    const_iterator end() const { return const_iterator{}; }
-
-  private:
-    std::optional<quantifier<Syntax>> _quantifier;
-  };
-
-  // forward declaration
-  template<fragment Syntax>
-  class quantifier_block;
-
-  //
-  // The iterator is simpler than the one of `associative_op_view`, because of
-  // what we said above.
-  //
-  template<fragment Syntax>
-  class quantifier_block_view<Syntax>::const_iterator {
-  public:
-    using difference_type = ssize_t;
-    using value_type = variable;
-
-    // All due constructors. A default-constructed iterator equals to end()
-    // because `_quantifier` is empty.
-    const_iterator() = default;
-    const_iterator(const_iterator const&) = default;
-    const_iterator(const_iterator &&) = default;
-
-    // constructor used by the view in begin()
-    const_iterator(quantifier<Syntax> q) : _quantifier{q} { }
-
-    const_iterator &operator=(const_iterator const&) = default;
-    const_iterator &operator=(const_iterator &&) = default;
-
-    bool operator==(const_iterator const&) const = default;
-
-    // the increment just goes down a level into the `matrix()` of the current
-    // quantifier. If we reach something that is not a quantifier or not a
-    // quantifier of the right type, we set `_quantifier` to `nullopt` so we
-    // become the end() iterator.
-    const_iterator &operator++() {
-      black_assert(_quantifier.has_value());
-      auto t = _quantifier->node_type();
-
-      auto child = _quantifier->matrix().template to<quantifier<Syntax>>();
-      if(child.has_value() && child->node_type() == t)
-        _quantifier = child;
-      else
-        _quantifier = std::nullopt;
-
-      return *this;
-    }
-
-    // post-increment
-    const_iterator operator++(int) {
-      auto o = *this;
-      operator++();
-      return o;
-    }
-
-    // Here we just return the variable of the current quantifier
-    variable operator*() const {
-      black_assert(_quantifier.has_value());
-      return _quantifier->var();
-    }
-
-  private:
-    std::optional<quantifier<Syntax>> _quantifier;
-  };
-
-  //
-  // The following class represents a block of quantifiers of the same kind. It
-  // is a `storage_kind` in itself, of the same `storage_type` as
-  // `quantifier<>`. This means we can convert from a quantifier block to a
-  // quantifier freely, and viceversa. The accessors lazily go into the
-  // quantifier to look for the variables and the matrix.
-  //
-  // This supports various use cases:
-  // 1. you use quantifier_block's second constructor to build a chain of
-  //    quantifier objects from a vector (a range) of variables and a matrix.
-  // 2. you use the class as a result of `quantifier<>::block()` to view the
-  //    quantifier as a quantifier block.
-  // 3. you use `quantifier_block` instead of `quantifier` in a pattern matching
-  //    case to use directly the quantifier block without having to match a
-  //    `quantifier` and then call `block()` each time.
-  //
-  // first we declare some utility functions. This function creates a chain of
-  // quantifiers given a matrix and a range of variables. `Q` is either
-  // `quntifier<>`, `exists<>` or `forall<>`
-  template<typename Q, std::ranges::range R>
-  Q create_block(
-    typename quantifier<typename Q::syntax>::type t, 
-    R const&vars, formula<typename Q::syntax> matrix
+  term<Syntax> replace(
+    term<Syntax> src, 
+    std::vector<term<Syntax>> patterns,
+    std::vector<term<Syntax>> replacements
   ) {
-    black_assert(begin(vars) != end(vars));
-    for(auto it = rbegin(vars); it != rend(vars); ++it) {
-      matrix = quantifier<typename Q::syntax>(t, *it, matrix);
-    }
-    return *matrix.template to<Q>();
+    black_assert(patterns.size() == replacements.size());
+    auto it = std::find(patterns.begin(), patterns.end(), src);
+    if(it != patterns.end())
+      return replacements[it - patterns.begin()];
+
+    return src.match(
+      [&](application<Syntax>, auto func, auto terms) {
+        std::vector<term<Syntax>> newterms;
+        for(auto t : terms)
+          newterms.push_back(replace(t, patterns, replacements));
+        return func(newterms);
+      },
+      [&](unary_term<Syntax> t, auto arg) {
+        return 
+          unary_term<Syntax>(
+            t.node_type(), replace(arg, patterns, replacements)
+          );
+      },
+      [&](binary_term<Syntax> t, auto left, auto right) {
+        return
+          binary_term<Syntax>(
+            t.node_type(), 
+            replace(left, patterns, replacements),
+            replace(right, patterns, replacements)
+          );
+      },
+      [&](otherwise) {
+        return src;
+      }
+    );
   }
 
   //
-  // This function takes a `quantifier` that heads a quantifier chain and looks
-  // for the innermost `quantifier` of the chain.
+  // Utility function to replace some term inside a formula with some
+  // replacement
   //
   template<fragment Syntax>
-  quantifier<Syntax> innermost_quantifier(quantifier<Syntax> q)
-  {
-    while(q.matrix().template is<quantifier<Syntax>>())
-      q = *q.matrix().template to<quantifier<Syntax>>();
-    return q;
+  formula<Syntax> replace(
+    formula<Syntax> src, 
+    std::vector<term<Syntax>> patterns,
+    std::vector<term<Syntax>> replacements
+  ) {
+    return src.match(
+      [&](atom<Syntax>, auto rel, auto terms) {
+        std::vector<term<Syntax>> newterms;
+        for(auto t : terms)
+          newterms.push_back(replace(t, patterns, replacements));
+        return rel(newterms);
+      },
+      [&](equality<Syntax> e, auto terms) {
+        std::vector<term<Syntax>> newterms;
+        for(auto t : terms)
+          newterms.push_back(replace(t, patterns, replacements));
+        return equality<Syntax>(e.node_type(), newterms);
+      },
+      [&](comparison<Syntax> c, auto left, auto right) {
+        return
+          comparison<Syntax>(
+            c.node_type(), 
+            replace(left, patterns, replacements),
+            replace(right, patterns, replacements)
+          );
+      },
+      [&](unary<Syntax> u, auto op) {
+        return unary<Syntax>(
+          u.node_type(), replace(op, patterns, replacements)
+        );
+      },
+      [&](binary<Syntax> b, auto left, auto right) {
+        return
+          binary<Syntax>(
+            b.node_type(), 
+            replace(left, patterns, replacements),
+            replace(right, patterns, replacements)
+          );
+      },
+      [&](otherwise) {
+        return src;
+      }
+    );
   }
-  
-  //
-  // Now the `quantifier_block` class itself.
-  //
-  template<fragment Syntax>
-  class quantifier_block 
-    : public
-      storage_base<storage_type::quantifier, Syntax, quantifier_block<Syntax>>
-  {
-    using base_t = storage_base<
-      storage_type::quantifier, Syntax, quantifier_block<Syntax>
-    >;
-  public:
-    //
-    // converting constructors from general and specific quantifiers
-    //
-    quantifier_block(quantifier<Syntax> q)
-      : base_t{q.sigma(), q.node()} { }
-    quantifier_block(exists<Syntax> q) 
-      : base_t{q.sigma(), q.node()} { }
-    quantifier_block(forall<Syntax> q) 
-      : base_t{q.sigma(), q.node()} { }
-
-    //
-    // allocating constructor, mimicking the one of `quantifier<>`. Here we take
-    // a range of variables instead of a single variable, and build the chain of
-    // quantifiers by calling `create_block()`. We also already set `_last`
-    // because we already know the block's matrix.
-    //
-    template<std::ranges::range R>
-    quantifier_block(
-      typename quantifier<Syntax>::type t,
-      R const&vars, 
-      formula<Syntax> matrix
-    ) : quantifier_block{create_block<quantifier<Syntax>>(t, vars, matrix)} 
-    { 
-      black_assert(!empty(vars));
-      _last = quantifier<Syntax>(t, *rbegin(vars), matrix);
-    }
-
-    // returns the view to the variables.
-    quantifier_block_view<Syntax> variables() const {
-      return {*this};
-    }
-
-    //
-    // Here we return the matrix of the block. To avoid having to traverse the
-    // block each time the function is called, we cache the result into the
-    // mutable variable `_last`, which contains the innermost quantifier of the
-    // block.
-    formula<Syntax> matrix() const {
-      if(_last)
-        return _last->matrix();
-      _last = innermost_quantifier<Syntax>(*this);
-      return _last->matrix();
-    }
-
-  private:
-     mutable std::optional<quantifier<Syntax>> _last;
-  };
-
-  //
-  // Similar to `quantifier_block<>`, `exists_block<>` and `forall_block<>` do
-  // the same thing but for specific quantifiers. Here we declare a common base
-  // class for both. The interface and member functions are the same of
-  // `quantifier_block`, excepting that here we derive from
-  // `hierarchy_element_base`, so we are perfectly compatible with `exists<>`
-  // and `forall<>`.
-  //
-  template<syntax_element E, fragment Syntax>
-  class specific_quantifier_block 
-    : public
-      hierarchy_element_base<E, Syntax, specific_quantifier_block<E, Syntax>>
-  {
-    using element_t = element_type_of_t<Syntax, E>;
-    using base_t = 
-      hierarchy_element_base<E, Syntax, specific_quantifier_block<E, Syntax>>;
-  public:
-    specific_quantifier_block(element_t q) 
-        : base_t{q.sigma(), q.node()} { }
-
-    template<std::ranges::range R>
-    specific_quantifier_block(
-      R const&vars, 
-      formula<Syntax> matrix
-    ) : specific_quantifier_block{
-      create_block<element_t>(fragment_enum_value<E>{}, vars, matrix)
-    } { 
-      black_assert(!empty(vars));
-      _last = element_t(*rbegin(vars), matrix);
-    }
-    
-    specific_quantifier_block(
-      std::initializer_list<variable> const&vars,
-      formula<Syntax> matrix
-    ) : specific_quantifier_block{
-      create_block<element_t>(fragment_enum_value<E>{}, vars, matrix)
-    } { 
-      black_assert(!empty(vars));
-      _last = element_t(*rbegin(vars), matrix);
-    }
-
-    quantifier_block_view<Syntax> variables() const {
-      return {*this};
-    }
-
-    formula<Syntax> matrix() const {
-      if(_last)
-        return _last->matrix(); // LCOV_EXCL_LINE
-      _last = innermost_quantifier<Syntax>(*this);
-      return _last->matrix();
-    }
-
-  private:
-    mutable std::optional<quantifier<Syntax>> _last;
-  };
-
-  //
-  // The specific classses just derive from `specific_quantifier_block` without
-  // anything else.
-  //
-  template<fragment Syntax>
-  struct exists_block 
-    : specific_quantifier_block<syntax_element::exists, Syntax> 
-  {
-    using base_t = specific_quantifier_block<syntax_element::exists, Syntax>;
-    using base_t::base_t;
-  };
-
-  template<fragment Syntax>
-  struct forall_block 
-    : specific_quantifier_block<syntax_element::forall, Syntax> 
-  {
-    using base_t = specific_quantifier_block<syntax_element::forall, Syntax>;
-    using base_t::base_t;
-  };
-
-  //
-  // Finally, we can add our custom member `block()` to `quantifier<>`,
-  // `exists<>` and `forall<>`.
-  //
-  template<fragment Syntax>
-  struct storage_custom_members<storage_type::quantifier, quantifier<Syntax>>
-  {
-    quantifier_block<Syntax> block() const { 
-      return {static_cast<quantifier<Syntax> const&>(*this)}; 
-    }
-  };
-  
-  template<fragment Syntax>
-  struct hierarchy_element_custom_members<
-    syntax_element::exists, exists<Syntax>
-  > {
-    exists_block<Syntax> block() const { 
-      return {static_cast<quantifier<Syntax> const&>(*this)}; 
-    }
-  };
-  
-  template<fragment Syntax>
-  struct hierarchy_element_custom_members<
-    syntax_element::forall, forall<Syntax>
-  > {
-    forall_block<Syntax> block() const { 
-      return {static_cast<quantifier<Syntax> const&>(*this)}; 
-    }
-  };
 }
 
 #endif // BLACK_LOGIC_SUGAR_HPP_

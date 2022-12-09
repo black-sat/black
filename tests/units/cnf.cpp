@@ -36,6 +36,7 @@ using namespace black::logic;
 TEST_CASE("CNF Translation")
 {
   alphabet sigma;
+  scope xi{sigma};
 
   SECTION("remove_booleans()") {
     using namespace black_internal::cnf;
@@ -102,10 +103,10 @@ TEST_CASE("CNF Translation")
     { 
       DYNAMIC_SECTION("Formula: " << to_string(f)) {
         formula<propositional> fc = to_formula(sigma, black::to_cnf(f));
-        s.set_formula(!implies(fc,f));
-
+        
         INFO("CNF: " << to_string(fc));
-        REQUIRE(!s.solve());
+        
+        REQUIRE(!s.solve(xi, !implies(fc,f)));
       }      
     }   
   }

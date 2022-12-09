@@ -38,11 +38,15 @@ namespace black_internal::solver
    */
   struct solver::_solver_t 
   {
-    std::optional<encoder::encoder> encoder;
-
     // whether a model has been found 
     // i.e., whether solve() has been called and returned true
     bool model = false;
+
+    // encoder object used in the last solve() call
+    std::optional<encoder::encoder> enc;
+
+    // alphabet of last solved formula
+    alphabet *sigma = nullptr;
 
     // size of the found model (if any)
     size_t model_size = 0;
@@ -59,28 +63,27 @@ namespace black_internal::solver
     std::function<void(trace_t)> tracer = [](trace_t){};
 
     void trace(size_t k);
-    void trace(trace_t::type_t type, logic::formula<logic::LTLPFO>);
-    void trace(trace_t::type_t type, logic::formula<logic::FO>);
+    void trace(trace_t::type_t, scope const&, logic::formula<logic::LTLPFO>);
+    void trace(trace_t::type_t, scope const&, logic::formula<logic::FO>);
 
     // Main algorithm
-    tribool solve(size_t k_max, bool semi_decision);
+    tribool solve(
+      scope const& xi, logic::formula<logic::LTLPFO> f, 
+      bool finite, size_t k_max, bool semi_decision
+    );
   };
 
   solver::solver() : _data{std::make_unique<_solver_t>()} { }
   solver::~solver() = default;
 
-  void solver::set_formula(formula f, bool finite) {
-    _data->model = false;
-    _data->model_size = 0;
-    _data->last_bound = 0;
-    _data->encoder = encoder::encoder{f, finite};
-  }
+  solver::solver(solver &&) = default;
+  solver &solver::operator=(solver &&) = default;
 
-  tribool solver::solve(size_t k_max, bool semi_decision) {
-    if(!_data->encoder.has_value())
-      return true;
-    
-    return _data->solve(k_max, semi_decision);
+  tribool solver::solve(
+    scope const& xi, logic::formula<logic::LTLPFO> f, 
+    bool finite, size_t k_max, bool semi_decision
+  ) {
+    return _data->solve(xi, f, finite, k_max, semi_decision);
   }
 
   std::optional<model> solver::model() const {
@@ -111,12 +114,12 @@ namespace black_internal::solver
   }
 
   size_t model::loop() const {
+    using black_internal::encoder::encoder;
     black_assert(size() > 0);
-    black_assert(_solver._data->encoder);
     
     size_t k = size() - 1;
     for(size_t l = 0; l < k; ++l) {
-      proposition loop_prop = _solver._data->encoder->loop_prop(l, k);
+      proposition loop_prop = encoder::loop_prop(_solver._data->sigma, l, k);
       tribool value = _solver._data->sat->value(loop_prop);
       
       if(value == true)
@@ -127,60 +130,73 @@ namespace black_internal::solver
   }
 
   tribool model::value(proposition a, size_t t) const {
-    black_assert(_solver._data->encoder);
-    
-    proposition u = _solver._data->encoder->ground(a, t);
+    using black_internal::encoder::encoder;
+    proposition u = encoder::ground(a, t);
+
+    return _solver._data->sat->value(u);
+  }
+
+  tribool model::value(atom a, size_t t) const {
+    if(!_solver._data->enc.has_value())
+      return tribool::undef;
+
+    logic::atom<logic::FO> u = _solver._data->enc->stepped(a, t);
 
     return _solver._data->sat->value(u);
   }
 
   void solver::_solver_t::trace(size_t k){
-    tracer({trace_t::stage, {k}});
+    tracer({nullptr, trace_t::stage, {k}});
   }
 
   void solver::_solver_t::trace(
-    trace_t::type_t type, logic::formula<logic::LTLPFO> f
+    trace_t::type_t type, scope const& xi, logic::formula<logic::LTLPFO> f
   ){
-    tracer({type, {f}});
+    tracer({&xi, type, {f}});
   }
   
   void solver::_solver_t::trace(
-    trace_t::type_t type, logic::formula<logic::FO> f
+    trace_t::type_t type, scope const& xi, logic::formula<logic::FO> f
   ){
-    tracer({type, {f}});
+    tracer({&xi, type, {f}});
   }
 
   /*
    * Main algorithm. Solve the formula with up to `k_max' iterations.
    * If semi_decision = true, we disable the PRUNE rule.
    */
-  tribool solver::_solver_t::solve(size_t k_max, bool semi_decision)
-  {
-    black_assert(encoder); // LCOV_EXCL_LINE
+  tribool solver::_solver_t::solve(
+    scope const& s, logic::formula<logic::LTLPFO> f, bool finite, 
+    size_t k_max, bool semi_decision
+  ) {
+    scope xi = s;
     
-    trace(trace_t::nnf, encoder->get_formula());
+    enc = encoder::encoder{f, xi, finite};
+    sat = black::sat::solver::get_solver(sat_backend, xi);
 
-    sat = black::sat::solver::get_solver(sat_backend);
+    trace(trace_t::nnf, xi, enc->get_formula());
 
+    sigma = f.sigma();
     model = false;
+    model_size = 0;
     last_bound = 0;
     for(size_t k = 0; k <= k_max; last_bound = k++)
     {
       trace(k);
       // Generating the k-unraveling.
       // If it is UNSAT, then stop with UNSAT
-      auto unrav = encoder->k_unraveling(k);
-      trace(trace_t::unrav, unrav);
+      auto unrav = enc->k_unraveling(k);
+      trace(trace_t::unrav, xi, unrav);
       sat->assert_formula(unrav);
       if(tribool res = sat->is_sat(); !res)
         return res;
 
       // else, continue to check EMPTY and LOOP.
       // If the k-unrav is SAT assuming EMPTY or LOOP, then stop with SAT
-      auto empty = encoder->k_empty(k);
-      auto loop = encoder->k_loop(k);
-      trace(trace_t::empty, empty);
-      trace(trace_t::loop, loop);
+      auto empty = enc->k_empty(k);
+      auto loop = enc->k_loop(k);
+      trace(trace_t::empty, xi, empty);
+      trace(trace_t::loop, xi, loop);
       if(sat->is_sat_with(empty || loop)) {
         model_size = k + 1;
         model = true;
@@ -191,8 +207,8 @@ namespace black_internal::solver
       // else, generate the PRUNE
       // If the PRUNE is UNSAT, the formula is UNSAT
       if(!semi_decision) {
-        auto prune = encoder->prune(k);
-        trace(trace_t::prune, prune);
+        auto prune = enc->prune(k);
+        trace(trace_t::prune, xi, prune);
         sat->assert_formula(!prune);
         if(tribool res = sat->is_sat(); !res)
           return res;
@@ -202,216 +218,57 @@ namespace black_internal::solver
     return tribool::undef;
   }
 
-  struct check_result_t {
-    bool error = false;
-    bool has_next = false;
-    bool has_disjunctions = false;
+  template<hierarchy H, typename F>
+  void _check_syntax(H h, bool quantified, F err) {
+    if(h.template is<quantifier>())
+      quantified = true;
 
-    check_result_t() = default;
-    check_result_t(bool b, bool _has_next = false, bool _has_disj = false) 
-      : error{b}, has_next{_has_next}, has_disjunctions{_has_disj} { }
-  };
-
-  static check_result_t operator||(check_result_t r1, check_result_t r2) {
-    return {
-      r1.error || r2.error,
-      r1.has_next || r2.has_next, 
-      r1.has_disjunctions || r2.has_disjunctions
-    };
-  }
-
-  // function full of GCOV false negatives
-  static check_result_t _check_syntax(
-    term t, std::function<void(std::string)> const& err,
-    std::vector<variable> const& scope,
-    tsl::hopscotch_map<identifier, size_t> &rels,
-    tsl::hopscotch_map<identifier, size_t> &funcs
-  ) {
-    return t.match( // LCOV_EXCL_LINE
-      [](constant) -> check_result_t { return false; },
-      [](variable) -> check_result_t { return false; },
-      [&](application a) -> check_result_t {
-        identifier id = a.func().name();
-        size_t size = a.terms().size();
-        
-        if(auto it = funcs.find(id); it != funcs.end() && it->second != size) {
-          err(
-            "Function '" + to_string(id) + 
-            "' used twice with different arities"
+    for_each_child(h, [&](auto child){
+      child.match(
+        [&](unary_term t, term arg){
+          t.match(
+            [](negative) { },
+            [](to_real) { },
+            [](to_integer) { },
+            [&](otherwise) {
+              if(!arg.is<variable>())
+                err(
+                  "next()/wnext()/prev()/wprev() terms can only be applied "
+                  "directly to variables"
+                );
+            }
           );
-          return true;
-        }
-
-        if(rels.find(id) != rels.end()) {
-          err(
-            "Function symbol '" + to_string(id) + 
-            "' already used as a relation symbol"
-          );
-          return true;
-        }
-
-        check_result_t res;
-        for(term arg : a.terms())
-          res = res || _check_syntax(arg, err, scope, rels, funcs);
-
-        funcs.insert({id, size});
-        return res;
-      }, // LCOV_EXCL_LINE
-      [&](negative, auto arg) -> check_result_t {
-        return _check_syntax(arg, err, scope, rels, funcs);
-      },
-      [&](binary_term, auto left, auto right) {
-        return _check_syntax(left, err, scope, rels, funcs) ||
-               _check_syntax(right, err, scope, rels, funcs);
-      },
-      [&](unary_term, term arg) -> check_result_t {
-        if(!arg.is<variable>()) {
-          err(
-            "next()/wnext()/prev()/wprev() terms can only be applied "
-            "directly to variables"
-          );
-          return true;
-        }
-
-        for(variable v : scope) { // LCOV_EXCL_LINE
-          if(v == arg) {
+        },
+        [](tomorrow) { },
+        [](w_tomorrow) { },
+        [](yesterday) { },
+        [](w_yesterday) { },
+        [&](only<temporal>) {
+          if(quantified)
             err(
-              "next()/wnext()/prev()/wprev() terms cannot be applied "
-              "to quantified variables"
+              "Temporal operators (excepting X/wX/Y/Z) cannot appear "
+              "inside quantifiers"
             );
-            return true;
-          }
-        }
-        
-        return {false, true, false};
-      }
-    );
-  }
-
-  // function full of GCOV false negatives
-  static check_result_t _check_syntax(
-    formula f, std::function<void(std::string)> const& err, 
-    std::vector<variable> const& scope, bool positive, 
-    tsl::hopscotch_map<identifier, size_t> &rels,
-    tsl::hopscotch_map<identifier, size_t> &funcs
-  ) {
-    return f.match( // LCOV_EXCL_LINE
-      [](boolean) -> check_result_t { return false; },
-      [](proposition) -> check_result_t { return false; },
-      [&](atom a) -> check_result_t {  
-        identifier id = a.rel().name();
-        size_t size = a.terms().size();
-        if(auto it = rels.find(id); it != rels.end() && it->second != size) {
-          err(
-            "Relation '" + to_string(id) + 
-            "' used twice with different arities"
-          );
-          return true;
-        }
-
-        if(funcs.find(id) != funcs.end()) {
-          err(
-            "Relation symbol '" + to_string(id) + 
-            "' already used as a function symbol"
-          );
-          return true;
-        }
-
-        check_result_t res;
-        for(term t : a.terms())
-          res = res || _check_syntax(t, err, scope, rels, funcs);
-        
-        rels.insert({id, size});
-        return res;  
-      }, // LCOV_EXCL_LINE
-      [&](comparison, auto left, auto right) {
-        return _check_syntax(left, err, scope, rels, funcs) ||
-               _check_syntax(right, err, scope, rels, funcs);
-      },
-      [&](quantifier q) -> check_result_t {
-        std::vector<variable> new_scope = scope;
-        new_scope.push_back(q.var());
-        
-        return _check_syntax(q.matrix(), err, new_scope, positive, rels, funcs);
-      }, // LCOV_EXCL_LINE
-      [&](negation, auto arg) {
-        return _check_syntax(arg, err, scope, !positive, rels, funcs);
-      },
-      [&](disjunction o) {
-        check_result_t r{false, false, positive};
-        std::vector<check_result_t> results;
-        for(auto op : o.operands()) {
-          results.push_back(
-            _check_syntax(op, err, scope, positive, rels, funcs)
-          );
-        }
-        return std::accumulate(
-          begin(results), end(results), r, std::logical_or<>{}
-        );
-      },
-      [&](conjunction c) {
-        check_result_t r{false, false, !positive};
-        std::vector<check_result_t> results;
-        for(auto op : c.operands()) {
-          results.push_back(
-            _check_syntax(op, err, scope, positive, rels, funcs)
-          );
-        }
-        return std::accumulate(
-          begin(results), end(results), r, std::logical_or<>{}
-        );
-      },
-      [&](implication, formula left, formula right) {
-        return _check_syntax(!left || right, err, scope, positive, rels, funcs);
-      },
-      [&](iff, formula left, formula right) {
-        return _check_syntax( // LCOV_EXCL_LINE
-          implies(left, right) && implies(right, left), 
-          err, scope, positive, rels, funcs
-        );
-      },
-      [&](tomorrow, auto arg) {
-        return _check_syntax(arg, err, scope, positive, rels, funcs);
-      },
-      [&](w_tomorrow, auto arg) {
-        return _check_syntax(arg, err, scope, positive, rels, funcs);
-      },
-      [&](yesterday, auto arg) {
-        return _check_syntax(arg, err, scope, positive, rels, funcs);
-      },
-      [&](w_yesterday, auto arg) {
-        return _check_syntax(arg, err, scope, positive, rels, funcs);
-      },
-      [&](only<temporal> t) -> check_result_t {
-        if(!scope.empty()) {
-          err(
-            "Temporal operators (excepting X/wX/Y/Z) cannot appear "
-            "inside quantifiers"
-          );
-          return true;
-        }
-
-        return t.match( // LCOV_EXCL_LINE
-          [&](unary, formula arg) {
-            return _check_syntax(arg, err, scope, positive, rels, funcs);
-          },
-          [&](binary, formula left, formula right) {
-            return _check_syntax(left, err, scope, positive, rels, funcs) || 
-                   _check_syntax(right, err, scope, positive, rels, funcs);
-          }
-        );
-      }
-    );
+        },
+        [](otherwise) { }
+      );
+      _check_syntax(child, quantified, err);
+    });
   }
 
   bool 
-  solver::check_syntax(formula f, std::function<void(std::string)> const&err) {
-    tsl::hopscotch_map<identifier, size_t> rels;
-    tsl::hopscotch_map<identifier, size_t> funcs;
-    return 
-      !_check_syntax(f, err, std::vector<variable>{}, true, rels, funcs).error;
+  solver::check_syntax(formula f, std::function<void(std::string)> const&err) 
+  {
+    bool ok = true;
+
+    _check_syntax(f, false, [&](auto msg) {
+      ok = false;
+      err(msg);
+    });
+
+    return ok;
   }
 
   
 
-} // end namespace black::size_ternal
+} // end namespace black::internal

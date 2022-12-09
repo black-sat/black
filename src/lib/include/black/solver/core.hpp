@@ -34,7 +34,7 @@ namespace black_internal::core {
   using namespace black::logic::fragments::LTLPFO;
 
   BLACK_EXPORT
-  formula unsat_core(formula f, bool finite);
+  formula unsat_core(scope const& xi, formula f, bool finite);
 
   struct core_placeholder_t {
     size_t n;

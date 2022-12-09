@@ -47,8 +47,10 @@ TEST_CASE("Fragment namespaces") {
     [[maybe_unused]]
     relation r = sigma.relation("r");
     variable x = sigma.variable("x");
+
+    sort s = sigma.integer_sort();
     
-    formula f = exists(x, r(x));
+    formula f = exists({x[s]}, r(x));
 
     REQUIRE(f.is<exists>());
   }

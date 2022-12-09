@@ -54,6 +54,7 @@ namespace black_internal::dimacs
   {
   public:
     solver();
+    solver(scope const&);
 
     virtual ~solver() override;
 
@@ -63,6 +64,8 @@ namespace black_internal::dimacs
     virtual tribool is_sat_with(logic::formula<logic::FO> assumption) override;
     
     virtual tribool value(logic::proposition a) const override;
+    
+    virtual tribool value(logic::atom<logic::FO> a) const override;
     
     // specialized DIMACS interface
 

@@ -71,11 +71,6 @@ namespace black::logic::fragments::FRAGMENT {
     Only, black::logic::FRAGMENT
   >;
 
-  using quantifier_block = 
-    black::logic::quantifier_block<black::logic::FRAGMENT>;
-  using exists_block = black::logic::exists_block<black::logic::FRAGMENT>;
-  using forall_block = black::logic::forall_block<black::logic::FRAGMENT>;
-
   #define declare_hierarchy(Base) \
     using Base = black::logic::Base< \
       black::logic::FRAGMENT \

@@ -26,5 +26,5 @@ SAT
 ## Command for BLACK
 
 ```
-./black solve -d reals -s ../benchmarks/formulas/ltlf-modulo-theory/LRA/scalable_2/scalable_2_N.ltlfmt
+./black solve -d Real -s ../benchmarks/formulas/ltlf-modulo-theory/LRA/scalable_2/scalable_2_N.ltlfmt
 ```

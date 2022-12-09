@@ -98,12 +98,12 @@ namespace black_internal::remove_past {
         },
         [&](unary<LTLP> u, auto arg) {
           return unary<LTL>(
-            *fragment_cast<LTL>(u.node_type()), sub_past(arg, sem)
+            *u.node_type().to<unary<LTL>::type>(), sub_past(arg, sem)
           );
         },
         [&](binary<LTLP> b, auto left, auto right) {
           return binary<LTL>(
-            *fragment_cast<LTL>(b.node_type()),
+            *b.node_type().to<binary<LTL>::type>(),
             sub_past(left, sem), sub_past(right, sem)
           );
         }

@@ -232,15 +232,17 @@ TEST_CASE("Pattern matching") {
 
   SECTION("Common type") {
 
-    #define REQUIRE_CT(x, y, ...) \
+    #define REQUIRE_CT(x, y, T) \
       STATIC_REQUIRE( \
-        black_internal::logic::are_same_hierarchy_types_v< \
-          std::common_type_t<decltype(x),decltype(y)>, \
-          __VA_ARGS__ \
+        std::is_convertible_v< \
+          std::common_type_t<decltype(x),decltype(y)>, T \
+        > && \
+        std::is_convertible_v< \
+          T, std::common_type_t<decltype(x),decltype(y)> \
         > \
       );
 
-    boolean b = sigma.boolean("b");
+    boolean b = sigma.boolean(true);
     proposition p = sigma.proposition("p");
     unary<LTL> u = !b;
     conjunction<LTL> c = b && p;
@@ -249,7 +251,8 @@ TEST_CASE("Pattern matching") {
     formula<LTL> f = u;
 
     using F = make_combined_fragment_t<
-      make_fragment_t<syntax_element::proposition>, make_fragment_t<syntax_element::boolean>
+      make_singleton_fragment_t<syntax_element::proposition>, 
+      make_singleton_fragment_t<syntax_element::boolean>
     >;
 
     REQUIRE_CT(b, p, formula<F>);

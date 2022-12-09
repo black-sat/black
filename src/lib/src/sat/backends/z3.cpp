@@ -47,27 +47,45 @@ namespace black_internal::z3
     return f.sigma()->proposition(f);
   }
 
+  struct z3_sort_record_t {
+    Z3_sort sort;
+    std::shared_ptr<tsl::hopscotch_map<variable, Z3_ast>> elements;
+    
+    z3_sort_record_t(Z3_sort s, tsl::hopscotch_map<variable, Z3_ast> e)
+      : sort{s}, 
+        elements{
+          std::make_shared<tsl::hopscotch_map<variable, Z3_ast>>(std::move(e))
+        } { }
+  };
+
   struct z3::_z3_t {
+    logic::scope xi;
     Z3_context context;
     Z3_solver solver;
     std::optional<Z3_model> model;
     bool solver_upgraded = false;
 
-    tsl::hopscotch_map<formula, Z3_ast> formulas;
-    tsl::hopscotch_map<term, Z3_ast> terms;
+    tsl::hopscotch_map<proposition, Z3_ast> props;
+    tsl::hopscotch_map<variable, Z3_ast> vars;
+    tsl::hopscotch_map<identifier, std::any> cache;
+    
+    _z3_t(logic::scope const& _xi) : xi{_xi} { }
 
+    template<typename T, typename Key>
+    std::optional<T> lookup(Key);
+
+    Z3_func_decl to_z3(function);
+    Z3_func_decl to_z3(relation);
+    Z3_ast to_z3(var_decl);
     Z3_ast to_z3(formula);
     Z3_ast to_z3(term);
     Z3_sort to_z3(sort);
     Z3_ast to_z3_inner(formula);
     Z3_ast to_z3_inner(term);
 
-    Z3_func_decl to_z3_func_decl(
-      alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
-    );
-
     void upgrade_solver();
   };
+
 
   //
   // This trick, up to error_handler(), is needed to support Z3 4.4 
@@ -113,7 +131,8 @@ namespace black_internal::z3
 
   // end trick
 
-  z3::z3() : _data{std::make_unique<_z3_t>()} 
+  z3::z3(class scope const& xi) 
+    : _data{std::make_unique<_z3_t>(xi)} 
   { 
     Z3_config  cfg;
     
@@ -135,7 +154,10 @@ namespace black_internal::z3
   }
 
   void z3::assert_formula(formula f) { 
-    Z3_ast ast = _data->to_z3(f); // this call must stay on its own line
+    // the call to to_ze() must stay on its own line before `Z3_solver_assert`
+    // because it might update _data->solver
+    Z3_ast ast = _data->to_z3(f); 
+
     Z3_solver_assert(_data->context, _data->solver, ast);
   }
   
@@ -181,13 +203,34 @@ namespace black_internal::z3
     if(!_data->model)
       return tribool::undef;
     
-    auto it = _data->formulas.find(a);
-    if(it == _data->formulas.end())
+    auto it = _data->props.find(a);
+    if(it == _data->props.end())
       return tribool::undef;
     
     Z3_ast term = it->second;
     Z3_ast res;
     
+    [[maybe_unused]] 
+    auto ok = 
+      Z3_model_eval(_data->context, *_data->model, term, false, &res);
+    black_assert(ok);
+
+    Z3_lbool lres = Z3_get_bool_value(_data->context, res);
+    
+    tribool result = 
+      lres == Z3_L_TRUE ? tribool{true} :
+      lres == Z3_L_FALSE ? tribool{false} : tribool::undef;
+
+    return result;
+  }
+
+  tribool z3::value(atom a) const {
+    if(!_data->model)
+      return tribool::undef;
+
+    Z3_ast term = _data->to_z3(a);
+    Z3_ast res;
+
     [[maybe_unused]] 
     auto ok = 
       Z3_model_eval(_data->context, *_data->model, term, false, &res);
@@ -234,86 +277,162 @@ namespace black_internal::z3
     solver_upgraded = true;
   }
 
+  template<typename T, typename Key>
+  std::optional<T> z3::_z3_t::lookup(Key key) {
+    if(auto it = cache.find(key); it != cache.end()) {
+      std::any val = it->second;
+      T const* ptr = std::any_cast<T>(&val);
+      black_assert(ptr);
+      return *ptr;
+    }
+
+    return std::nullopt;
+  }
+
   Z3_sort z3::_z3_t::to_z3(sort s) {
-    return s.match(
+    if(auto result = lookup<Z3_sort>(s); result.has_value()) 
+      return *result;
+
+    Z3_sort result = s.match(
       [&](integer_sort) {
         return Z3_mk_int_sort(context);
       },
       [&](real_sort) {
         return Z3_mk_real_sort(context);
       },
-      [](otherwise) -> Z3_sort { black_unreachable(); } // LCOV_EXCL_LINE
+      [&](named_sort n) {
+        auto d = xi.domain(n);
+        if(!d)
+          return Z3_mk_uninterpreted_sort(
+            context, 
+            Z3_mk_string_symbol(context, to_string(n.unique_id()).c_str())
+          );
+
+        Z3_symbol sort_name = 
+          Z3_mk_string_symbol(context, to_string(n.unique_id()).c_str());
+        std::vector<Z3_symbol> names;
+        std::vector<Z3_constructor> ctors;
+        
+        for(auto x : d->elements()) {
+          Z3_symbol xname = 
+            Z3_mk_string_symbol(context, to_string(x.unique_id()).c_str());
+          Z3_symbol xrec = Z3_mk_string_symbol(context, "");
+
+          names.push_back(xname);
+          ctors.push_back(
+            Z3_mk_constructor(
+              context, xname, xrec, 0, nullptr, nullptr, nullptr
+            )
+          );
+        }
+
+        Z3_sort enum_sort = Z3_mk_datatype(
+          context, sort_name, unsigned(d->elements().size()), ctors.data()
+        );
+
+        for(size_t i = 0; i < d->elements().size(); ++i) {
+          Z3_func_decl decl;
+          Z3_func_decl tester;
+          Z3_query_constructor(context, ctors[i], 0, &decl, &tester, nullptr);
+          cache.insert({
+            d->elements()[i], Z3_mk_app(context, decl, 0, nullptr)
+          });
+        }
+
+        return enum_sort;
+      }
     );
+
+    cache.insert({s, result});
+    return result;
   }
 
-  // TODO: Factor out common logic with mathsat.cpp
-  Z3_ast z3::_z3_t::to_z3(formula f) 
-  {
-    if(auto it = formulas.find(f); it != formulas.end()) 
-      return it->second;
-
-    Z3_ast z3_f = to_z3_inner(f);
-    formulas.insert({f, z3_f});
-
-    return z3_f;
-  }
-
-  Z3_ast z3::_z3_t::to_z3(term t) {
-    if(auto it = terms.find(t); it != terms.end()) 
-      return it->second;
-
-    Z3_ast z3_t = to_z3_inner(t);
-    terms.insert({t, z3_t});
-
-    return z3_t;
-  }
-
-  Z3_func_decl z3::_z3_t::to_z3_func_decl(
-    alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
-  ) {
-    black_assert(arity > 0);
+  Z3_func_decl z3::_z3_t::to_z3(function f) {
+    Z3_symbol symbol = 
+      Z3_mk_string_symbol(context, to_string(f.name()).c_str());
     
-    Z3_symbol symbol = Z3_mk_string_symbol(context, name.c_str());
-    Z3_sort s = to_z3(sigma->default_sort());
+    auto rsort = xi.sort(f);
+    black_assert(rsort);
+    Z3_sort result = to_z3(*rsort);
+    
+    auto signature = xi.signature(f);
+    black_assert(signature.has_value());
+
+    unsigned arity = unsigned(signature->size());
+    std::unique_ptr<Z3_sort[]> domain = std::make_unique<Z3_sort[]>(arity);
+    for(size_t i = 0; i < arity; ++i) {
+      domain[i] = to_z3(signature->at(i));
+    }
+    
+    return Z3_mk_func_decl(context, symbol, arity, domain.get(), result);
+  }
+  
+  Z3_func_decl z3::_z3_t::to_z3(relation r) {
+    Z3_symbol symbol = 
+      Z3_mk_string_symbol(context, to_string(r.name()).c_str());
+    
     Z3_sort bool_s = Z3_mk_bool_sort(context);
     
+    auto signature = xi.signature(r);
+    black_assert(signature.has_value());
+
+    unsigned arity = unsigned(signature->size());
     std::unique_ptr<Z3_sort[]> domain = std::make_unique<Z3_sort[]>(arity);
-    std::fill(domain.get(), domain.get() + arity, s);
+    for(size_t i = 0; i < arity; ++i) {
+      domain[i] = to_z3(signature->at(i));
+    }
     
-    return Z3_mk_func_decl(
-      context, symbol, arity, domain.get(), is_relation ? bool_s : s
-    );
+    return Z3_mk_func_decl(context, symbol, arity, domain.get(), bool_s);
   }
 
-  Z3_ast z3::_z3_t::to_z3_inner(formula f) 
+  Z3_ast z3::_z3_t::to_z3(var_decl decl) {
+    Z3_sort s = to_z3(decl.sort());
+
+    Z3_symbol symbol = Z3_mk_string_symbol(
+      context, to_string(decl.variable().unique_id()).c_str()
+    );
+
+    return Z3_mk_const(context, symbol, s);
+  }
+
+  Z3_ast z3::_z3_t::to_z3(formula f) 
   {
     return f.match(
-      [this](boolean b) {
+      [&](boolean b) {
         return b.value() ? Z3_mk_true(context) : Z3_mk_false(context);
       },
-      [this](atom a) -> Z3_ast {
+      [&](atom a) -> Z3_ast {
         std::vector<Z3_ast> z3_terms;
         for(term t : a.terms())
           z3_terms.push_back(to_z3(t));
 
-        Z3_func_decl rel = 
-          to_z3_func_decl(
-            a.sigma(), to_string(a.rel().name()),
-            unsigned(z3_terms.size()), true);
+        Z3_func_decl rel = to_z3(a.rel());
         
         return 
           Z3_mk_app(context, rel, unsigned(z3_terms.size()), z3_terms.data());
       }, // LCOV_EXCL_LINE
-      [this](comparison c, auto left, auto right) {
+      [&](equal, auto args) {
+        std::vector<Z3_ast> z3_terms;
+        for(auto t : args)
+          z3_terms.push_back(to_z3(t));
+        
+        std::vector<Z3_ast> z3_eqs;
+        for(size_t i = 1; i < z3_terms.size(); ++i)
+          z3_eqs.push_back(Z3_mk_eq(context, z3_terms[i-1], z3_terms[i]));
+
+        return Z3_mk_and(context, unsigned(z3_eqs.size()), z3_eqs.data());
+      },
+      [&](distinct, auto args) {
+        std::vector<Z3_ast> z3_terms;
+        for(term t : args) 
+          z3_terms.push_back(to_z3(t));
+
+        return 
+          Z3_mk_distinct(context, unsigned(z3_terms.size()), z3_terms.data());
+      },
+      [&](comparison c, auto left, auto right) {
         // we know how to encode known relations
         return c.match(
-          [&](equal) {
-            return Z3_mk_eq(context, to_z3(left), to_z3(right));
-          },
-          [&](not_equal) {
-            Z3_ast z3_terms[] = { to_z3(left), to_z3(right) };
-            return Z3_mk_distinct(context, 2, z3_terms);
-          },
           [&](less_than) {
             return Z3_mk_lt(context, to_z3(left), to_z3(right));
           },
@@ -328,27 +447,49 @@ namespace black_internal::z3
           }
         );
       },
-      [this](quantifier q) {
-        Z3_app var = Z3_to_app(context, to_z3(q.var()));
+      [&](quantifier q) {
         bool forall = q.node_type() == quantifier::type::forall{};
         if(forall)
           upgrade_solver();
+        
+        nest_scope_t nest{xi};
+        xi.push(q.variables());
 
-        return Z3_mk_quantifier_const(
-          context, forall, 0, 1, &var, 0, nullptr, to_z3(q.matrix())
+        tsl::hopscotch_map<variable, Z3_ast> old_vars = vars;
+
+        std::vector<Z3_app> z3_apps;
+        for(auto decl : q.variables()) {
+          Z3_ast var = to_z3(decl);
+          vars.insert({decl.variable(), var});
+          z3_apps.push_back(Z3_to_app(context, var));
+        }
+        
+        auto result = Z3_mk_quantifier_const(
+          context, forall, 0, unsigned(z3_apps.size()), 
+          z3_apps.data(), 0, nullptr, to_z3(q.matrix())
         );
+
+        vars = old_vars;
+
+        return result;
       },
-      [this](proposition p) {
+      [&](proposition p) {
+        if(auto it = props.find(p); it != props.end())
+          return it->second;
+
         Z3_sort sort = Z3_mk_bool_sort(context);
         Z3_symbol symbol = 
           Z3_mk_string_symbol(context, to_string(p.unique_id()).c_str());
         
-        return Z3_mk_const(context, symbol, sort);
+        Z3_ast result = Z3_mk_const(context, symbol, sort);
+        props.insert({p, result});
+
+        return result;
       },
-      [this](negation, auto arg) {
+      [&](negation, auto arg) {
         return Z3_mk_not(context, to_z3(arg));
       },
-      [this](conjunction c) {
+      [&](conjunction c) {
         std::vector<Z3_ast> args;
         for(formula op : c.operands())
           args.push_back(to_z3(op));
@@ -358,7 +499,7 @@ namespace black_internal::z3
         return Z3_mk_and(context, 
           static_cast<unsigned int>(args.size()), args.data());
       }, // LCOV_EXCL_LINE
-      [this](disjunction c) {
+      [&](disjunction c) {
         std::vector<Z3_ast> args;
         for(formula op : c.operands())
           args.push_back(to_z3(op));
@@ -368,29 +509,21 @@ namespace black_internal::z3
         return Z3_mk_or(context, 
           static_cast<unsigned int>(args.size()), args.data());
       }, // LCOV_EXCL_LINE
-      [this](implication, auto left, auto right) {
+      [&](implication, auto left, auto right) {
         return Z3_mk_implies(context, to_z3(left), to_z3(right));
       },
-      [this](iff, auto left, auto right) {
+      [&](iff, auto left, auto right) {
         return Z3_mk_iff(context, to_z3(left), to_z3(right));
       }
     );
   }
 
-  Z3_ast z3::_z3_t::to_z3_inner(term t) {
-    alphabet *sigma = t.sigma();
+  Z3_ast z3::_z3_t::to_z3(term t) {
     return t.match(
       [&](constant, auto n) {
         return n.match(
-          [&](zero) { return to_z3_inner(constant(sigma->integer(0))); },
-          [&](one)  { return to_z3_inner(constant(sigma->integer(1))); },
           [&](integer, int64_t value) {
-            Z3_ast number = 
-              Z3_mk_int64(context, value, Z3_mk_int_sort(context));
-
-            if(sigma->default_sort().is<integer_sort>())
-              return number;
-            return Z3_mk_int2real(context, number);  
+            return Z3_mk_int64(context, value, Z3_mk_int_sort(context));
           },
           [&](real, double value) {
             auto [num,denum] = black_internal::double_to_fraction(value);
@@ -399,22 +532,27 @@ namespace black_internal::z3
         );
       },
       [&](variable v) {
-        Z3_symbol symbol = 
-          Z3_mk_string_symbol(context, to_string(v.unique_id()).c_str());
+        if(auto it = vars.find(v); it != vars.end())
+          return it->second;
 
-        sort s = t.sigma()->default_sort();
-        return Z3_mk_const(context, symbol, to_z3(s));
+        auto vSort = xi.sort(v);
+        black_assert(vSort);
+        Z3_ast term = to_z3(v.sigma()->var_decl(v, *vSort));
+
+        // we lookup the variable after the call to `to_z3` because the call
+        // might add variables from the domain of a named sort
+        if(auto var = lookup<Z3_ast>(v); var.has_value())
+          return *var;
+
+        cache.insert({v, term});
+        return term;
       },
       [&](application a) { 
         std::vector<Z3_ast> z3_terms;
         for(term t2 : a.terms())
           z3_terms.push_back(to_z3(t2));
         
-        // Otherwise we go for uninterpreted functions
-        Z3_func_decl func = 
-          to_z3_func_decl(
-            a.sigma(), to_string(a.func().name()), 
-            unsigned(z3_terms.size()), false);
+        Z3_func_decl func = to_z3(a.func());
         
         return 
           Z3_mk_app(context, func, unsigned(z3_terms.size()), z3_terms.data());
@@ -423,6 +561,12 @@ namespace black_internal::z3
         return u.match(
           [&](negative, auto arg) {
             return Z3_mk_unary_minus(context, to_z3(arg));
+          },
+          [&](to_integer, auto arg) {
+            return Z3_mk_real2int(context, to_z3(arg));
+          },
+          [&](to_real, auto arg) {
+            return Z3_mk_int2real(context, to_z3(arg));
           }
         );
       },
@@ -451,6 +595,9 @@ namespace black_internal::z3
             );
           },
           [&](division, auto left, auto right) {
+            return Z3_mk_div(context, to_z3(left), to_z3(right));
+          },
+          [&](int_division, auto left, auto right) {
             return Z3_mk_div(context, to_z3(left), to_z3(right));
           }
         );
