@@ -79,8 +79,8 @@ namespace black_internal::logic {
   class BLACK_EXPORT scope 
   {
   public:
-
-    using enum rigid_t;
+    static constexpr auto rigid = rigid_t::rigid;
+    static constexpr auto non_rigid = rigid_t::non_rigid;
 
     scope(alphabet &sigma);
     
