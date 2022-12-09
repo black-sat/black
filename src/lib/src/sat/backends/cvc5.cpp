@@ -52,19 +52,18 @@ namespace black_internal::cvc5
     bool sat_response = false;
 
     tsl::hopscotch_map<proposition, cvc::Term> props;
-    tsl::hopscotch_map<identifier, std::any> _cache;
-
-    template<typename Key>
-    void set_cache(scope, Key, std::any);
+    tsl::hopscotch_map<variable, cvc::Term> vars;
+    tsl::hopscotch_map<identifier, std::any> cache;
 
     template<typename T, typename Key>
-    std::optional<T> cache(scope, Key);
+    std::optional<T> lookup(Key);
 
+    cvc::Term to_cvc5(var_decl);
     cvc::Term to_cvc5(formula);
     cvc::Term to_cvc5(term);
     cvc::Term to_cvc5(function);
     cvc::Term to_cvc5(relation);
-    cvc::Sort to_cvc5(std::optional<sort>);
+    cvc::Sort to_cvc5(sort);
 
   };
 
@@ -140,30 +139,23 @@ namespace black_internal::cvc5
     _data->solver.resetAssertions();
   }
 
-  template<typename Key>
-  void cvc5::_cvc5_t::set_cache(scope s, Key key, std::any val) {
-    _cache.insert({identifier{std::tuple{s, key}}, val});
-  }
-
   template<typename T, typename Key>
-  std::optional<T> cvc5::_cvc5_t::cache(scope s, Key key) {
-    identifier id{std::tuple{s, key}};
-    if(auto it = _cache.find(id); it != _cache.end()) {
-      std::any val = *it;
-      if(T const* ptr = std::any_cast<T>(&val); ptr)
-        return *ptr;
+  std::optional<T> cvc5::_cvc5_t::lookup(Key key) {
+    if(auto it = cache.find(key); it != cache.end()) {
+      std::any val = it->second;
+      T const* ptr = std::any_cast<T>(&val);
+      black_assert(ptr);
+      return *ptr;
     }
 
     return std::nullopt;
   }
 
-  cvc::Sort cvc5::_cvc5_t::to_cvc5(std::optional<sort> s) {
-    black_assert(s.has_value());
-    
-    if(auto cvcSort = cache<cvc::Sort>(global_xi, *s); cvcSort.has_value())
+  cvc::Sort cvc5::_cvc5_t::to_cvc5(sort s) {
+    if(auto cvcSort = lookup<cvc::Sort>(s); cvcSort.has_value())
       return *cvcSort;
 
-    cvc::Sort result = s->match(
+    cvc::Sort result = s.match(
       [&](integer_sort) {
         return solver.getIntegerSort();
       },
@@ -183,12 +175,32 @@ namespace black_internal::cvc5
           decl.addConstructor(ctor);
         }
 
-        return solver.mkDatatypeSort(decl);
+        cvc::Sort datatype = solver.mkDatatypeSort(decl);
+
+        for(auto x : d->elements()) {
+          cvc::Term term = solver.mkTerm(
+            cvc::APPLY_CONSTRUCTOR, {
+              datatype.getDatatype()[to_string(x.unique_id())].getTerm()
+            }
+          );
+          cache.insert({x, term});
+        }
+
+        return datatype;
       }
     );
 
-    set_cache(global_xi, *s, result);
+    cache.insert({s, result});
     return result;
+  }
+
+  cvc::Term cvc5::_cvc5_t::to_cvc5(var_decl d) {
+    cvc::Sort cvcSort = to_cvc5(d.sort());
+
+    cvc::Term term = solver.mkConst(
+      cvcSort, to_string(d.variable().unique_id())
+    );
+    return term;
   }
 
   cvc::Term cvc5::_cvc5_t::to_cvc5(formula f) {
@@ -239,20 +251,23 @@ namespace black_internal::cvc5
       },
       [&](quantifier q) { // LCOV_EXCL_LINE
         logic::nest_scope_t nest{xi};
-        
         xi.push(q.variables());
 
-        std::vector<cvc::Term> vars;
+        tsl::hopscotch_map<variable, cvc::Term> old_vars = vars;
+
+        std::vector<cvc::Term> qvars;
         for(auto decl : q.variables()) {
           cvc::Term var = solver.mkVar(
             to_cvc5(decl.sort()), to_string(decl.variable().unique_id())
           );
-          set_cache(xi, decl.variable(), var);
-          vars.push_back(var);
+          vars.insert({decl.variable(), var});
+          qvars.push_back(var);
         }
 
         cvc::Term cvc5matrix = to_cvc5(q.matrix());
-        cvc::Term varlist = solver.mkTerm(cvc::VARIABLE_LIST, vars);
+        cvc::Term varlist = solver.mkTerm(cvc::VARIABLE_LIST, qvars);
+
+        vars = old_vars;
 
         if(q.node_type() == quantifier::type::forall{})
           return 
@@ -299,7 +314,7 @@ namespace black_internal::cvc5
   }
 
   cvc::Term cvc5::_cvc5_t::to_cvc5(function f) {
-    if(auto term = cache<cvc::Term>(xi, f); term.has_value())
+    if(auto term = lookup<cvc::Term>(f); term.has_value())
       return *term;
 
     auto signature = xi.signature(f);
@@ -310,15 +325,17 @@ namespace black_internal::cvc5
     for(size_t i = 0; i < arity; ++i)
       fsorts.push_back(to_cvc5(signature->at(i)));
 
-    cvc::Sort funcSort = solver.mkFunctionSort(fsorts, to_cvc5(xi.sort(f)));
+    auto s = xi.sort(f);
+    black_assert(s);
+    cvc::Sort funcSort = solver.mkFunctionSort(fsorts, to_cvc5(*s));
 
     cvc::Term term = solver.mkConst(funcSort, to_string(f.unique_id()));
-    set_cache(global_xi, f, term);
+    cache.insert({f, term});
     return term;
   }
 
   cvc::Term cvc5::_cvc5_t::to_cvc5(relation r) {
-    if(auto term = cache<cvc::Term>(xi, r); term.has_value())
+    if(auto term = lookup<cvc::Term>(r); term.has_value())
       return *term;
 
     auto signature = xi.signature(r);
@@ -332,7 +349,7 @@ namespace black_internal::cvc5
     cvc::Sort funcSort = solver.mkFunctionSort(rsorts, solver.getBooleanSort());
 
     cvc::Term term = solver.mkConst(funcSort, to_string(r.unique_id()));
-    set_cache(global_xi, r, term);
+    cache.insert({r, term});
     return term;
   }
 
@@ -351,30 +368,19 @@ namespace black_internal::cvc5
         );
       },
       [&](variable v) {
-        // then we look up the variable in the scope
-        if(auto var = cache<cvc::Term>(xi, v); var.has_value())
+        if(auto it = vars.find(v); it != vars.end())
+          return it->second;
+
+        auto vSort = xi.sort(v);
+        black_assert(vSort); 
+        cvc::Term term = to_cvc5(v.sigma()->var_decl(v, *vSort));
+
+        // we lookup the variable after the call to `to_cvc5` because the call
+        // might add variables from the domain of a named sort
+        if(auto var = lookup<cvc::Term>(v); var.has_value())
           return *var;
 
-        auto vSort = xi.sort(v); // we look up the sort of the variable
-        black_assert(vSort); 
-        cvc::Sort cvcSort = to_cvc5(*vSort);
-
-        // if the sort has an enumerated domain, the variable is rendered
-        // as a constructor application of the relevant datatype
-        if(xi.domain(*vSort)) {
-          cvc::Term term = 
-            solver.mkTerm(
-              cvc::APPLY_CONSTRUCTOR, {
-                cvcSort.getDatatype()[to_string(v.unique_id())].getTerm()
-              }
-            );
-          set_cache(global_xi, v, term);
-          return term;
-        }
-
-        // if not, this is a normal variable
-        cvc::Term term = solver.mkConst(cvcSort, to_string(v.unique_id()));
-        set_cache(xi, v, term);
+        cache.insert({v, term});
         return term;
       },
       [&](application a) { // LCOV_EXCL_LINE

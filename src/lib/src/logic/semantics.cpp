@@ -365,10 +365,11 @@ namespace black_internal::logic {
       [&](variable x) -> S { 
         if(auto s = xi.sort(x); s.has_value())
           return *s;
+        if(auto s = global.sort(x); s.has_value())
+          return *s;
 
         if(default_sort) {
           global.push(x, *default_sort);
-          xi.push(x, *default_sort);
           return default_sort;
         }
         
@@ -379,7 +380,7 @@ namespace black_internal::logic {
         if(!type_check_rel_func(func, terms))
           return {};
 
-        return xi.sort(func);
+        return global.sort(func);
       },
       [&](to_integer<LTLPFO>, auto arg) -> S {
         std::optional<class sort> argsort = type_check(arg);
