@@ -35,5 +35,5 @@ SAT
 ## Command for BLACK
 
 ```
-./black solve -d Int -s ../benchmarks/formulas/ltlf-modulo-theory/LIA/scalable_2/scalable_2_N.ltlfmt
+./black solve -d integers -s ../benchmarks/formulas/ltlf-modulo-theory/LIA/scalable_2/scalable_2_N.ltlfmt
 ```

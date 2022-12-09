@@ -42,32 +42,25 @@ namespace black_internal::encoder {
   //
   struct encoder 
   {
-    encoder(formula<LTLPFO> f, scope xi, bool finite) 
-      : _frm{f}, _sigma{_frm.sigma()}, _xi{xi}, _finite{finite}
+    encoder(formula<LTLPFO> f, bool finite) 
+      : _frm{f}, _sigma{_frm.sigma()}, _finite{finite}
     {
       _frm = to_nnf(_frm);
       _add_xyz_requests(_frm);
     }
 
-    encoder(encoder const&) = delete;
-    encoder(encoder &&) = default;
-
-    encoder &operator=(encoder const&) = delete;
-    encoder &operator=(encoder &&) = default;
-
     formula<LTLPFO> get_formula() const { return _frm; }
 
     // Return the loop var for the loop from l to k
-    static proposition loop_prop(alphabet *sigma, size_t l, size_t k);
+    proposition loop_prop(size_t l, size_t k);
 
     // Make the stepped ground version of a formula, f_G^k
-    static proposition ground(formula<LTLPFO> f, size_t k);
+    proposition ground(formula<LTLPFO> f, size_t k);
 
     // Make the stepped version of a term, t_G^k
-    term<FO> stepped(term<LTLPFO> t, size_t k);
-
-    // Make the stepped version of a variable
-    variable stepped(variable x, size_t k);
+    term<FO> stepped(
+      term<LTLPFO> t, size_t k, std::vector<variable> const& scope
+    );
 
     // Make the stepped version of a relation
     relation stepped(relation r, size_t k);
@@ -75,15 +68,13 @@ namespace black_internal::encoder {
     // Make the stepped version of a function
     function stepped(function r, size_t k);
 
-    // Make the stepped version of an atom
-    atom<FO> stepped(atom<LTLPFO> a, size_t k);
-
     // Put a formula in negated normal form
     formula<LTLPFO> to_nnf(formula<LTLPFO> f);
 
     // Put a formula in Stepped Normal Form
+    formula<FO> to_ground_snf(formula<LTLPFO> f, size_t k);
     formula<FO> to_ground_snf(
-      formula<LTLPFO> f, size_t k, bool quantified = false
+      formula<LTLPFO> f, size_t k, std::vector<variable> const&scope
     );
 
     // Generates the PRUNE encoding
@@ -113,8 +104,6 @@ namespace black_internal::encoder {
 
     // the alphabet of frm
     alphabet *_sigma = nullptr;
-
-    scope _xi;
 
     // encode for finite models
     bool _finite = false;

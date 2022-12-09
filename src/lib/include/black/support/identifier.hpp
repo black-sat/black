@@ -65,18 +65,6 @@ namespace black_internal::identifier_details
   concept identifier_label = 
     hashable<T> && stringable<T> && std::equality_comparable<T>;
 
-  template<typename T>
-  struct is_tuple : std::false_type { };
-
-  template<typename ...Args>
-  struct is_tuple<std::tuple<Args...>> : std::true_type { };
-  
-  template<typename T, typename U>
-  struct is_tuple<std::pair<T, U>> : std::true_type { };
-
-  template<typename T>
-  inline constexpr bool is_tuple_v = is_tuple<T>::value;
-
   //
   // Type-erased hashable, comparable and printable value
   //
@@ -87,25 +75,22 @@ namespace black_internal::identifier_details
     identifier(identifier const&) = default;
     identifier(identifier&&) = default;
 
-    template<typename T>
-      requires (
-        !std::is_same_v<std::remove_cvref_t<T>, identifier> &&
-        !is_tuple_v<std::remove_cvref_t<T>>
-      )
+    template<identifier_label T>
+      requires (!std::is_same_v<std::remove_cvref_t<T>, identifier>)
     identifier(T&& value)
       : _any(std::forward<T>(value)),
         _hash(make_hasher(value)),
         _cmp(make_cmp(value)),
         _printer(make_printer(value)) { }
 
-    template<typename ...T>
+    template<identifier_label ...T>
     identifier(std::tuple<T...> const& t) 
       : _any(t),
         _hash(make_tuple_hasher(t)),
         _cmp(make_cmp(t)),
         _printer(make_printer(t)) { }
 
-    template<typename T, typename U>
+    template<identifier_label T, identifier_label U>
     identifier(std::pair<T, U> const& t) 
       : _any(t),
         _hash(make_pair_hasher(t)),

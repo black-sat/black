@@ -99,16 +99,25 @@ namespace black_internal::logic {
       return &_false;
     }
   };
-
-  struct alphabet_base::alphabet_impl : std::monostate
+  
+  //
+  // Here we prepare the concrete (non-template) classes exposing the member
+  // functions unique_Storage (e.g. unique_boolean, unique_unary, ...).
+  //
   #define declare_storage_kind(Base, Storage) \
-    , storage_allocator<storage_type::Storage>
+    struct Storage##_allocator : storage_allocator<storage_type::Storage> { \
+      template<typename T> \
+      auto unique_##Storage(T t) { \
+        return allocate(t); \
+      } \
+    };
+
   #include <black/internal/logic/hierarchy.hpp>
-  { 
-    #define declare_storage_kind(Base, Storage) \
-      using storage_allocator<storage_type::Storage>::allocate;
-    #include <black/internal/logic/hierarchy.hpp>
-  };
+
+  struct alphabet_base::alphabet_impl : 
+  #define declare_storage_kind(Base, Storage) Storage##_allocator,
+  #include <black/internal/logic/hierarchy.hpp>
+    std::monostate { };
 
   //
   // Out-of-line definitions of constructors and assignments of `alphabet_base`,
@@ -133,10 +142,9 @@ namespace black_internal::logic {
   //
   #define declare_storage_kind(Base, Storage) \
     storage_node<storage_type::Storage> * \
-    alphabet_base::unique( \
-      storage_node<storage_type::Storage> node \
-    ) { \
-      return impl()->allocate(std::move(node)); \
+    alphabet_base::unique_##Storage(storage_node<storage_type::Storage> node)\
+    { \
+      return impl()->unique_##Storage(std::move(node)); \
     }
 
   #include <black/internal/logic/hierarchy.hpp>

@@ -56,31 +56,24 @@ namespace black_internal::solver {
       solver();
       ~solver();
 
-      solver(solver const&) = delete;
-      solver &operator=(solver const&) = delete;
-      solver(solver &&);
-      solver &operator=(solver &&);
+      // Sets the formula to solve.
+      // If `finite` is true, it is interpreted over finite models
+      // If the formula contains any first-order element,
+      // the `finite` argument is ignored and always treated as `true`.
+      void set_formula(formula f, bool finite = false);
 
-      // Solve the formula `f` over the scope `xi`, with up to `k_max'
-      // iterations returning `tribool::undef` if `k_max` is reached
+      // Solve the formula with up to `k_max' iterations
+      // returns tribool::undef if `k_max` is reached
       //
-      // If `semi_decision` is true, the termination rules for unsatisfiable
+      // If `semi_decision` is true, the termination rules for unsatisfiable 
       // formulas are disabled, speeding up solving of satisfiable ones.
       //
-      // If `finite` is `true` the formula is solved for the finite-trace
-      // semantics.
-      //
-      // WARNING: `semi_decision = false` with first-order formulas using
+      // WARNING: `semi_decision = false` with first-order formulas using 
       //          next(x) terms results in an *incomplete* algorithm.
       tribool solve(
-        scope const& xi,
-        formula f,
-        bool finite = false,
         size_t k_max = std::numeric_limits<size_t>::max(),
         bool semi_decision = false
       );
-
-      
 
       // Returns the model of the formula, if the last call to solve() 
       // returned true
@@ -107,7 +100,6 @@ namespace black_internal::solver {
           prune
         };
 
-        scope const *xi;
         type_t type;
         std::variant<
           size_t, 
@@ -131,7 +123,6 @@ namespace black_internal::solver {
       size_t size() const;
       size_t loop() const;
       tribool value(proposition a, size_t t) const;
-      tribool value(atom a, size_t t) const;
     private:
       friend class solver;
       model(solver const&s) : _solver{s} { }

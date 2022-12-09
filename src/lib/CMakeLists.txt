@@ -167,7 +167,6 @@ configure_file(include/black/support/config.hpp.in ${CMAKE_BINARY_DIR}/include/b
 set (
   LIB_SRC
   src/logic/logic.cpp
-  src/logic/semantics.cpp
   src/logic/prettyprint.cpp
   src/logic/lex.cpp
   src/logic/parser.cpp
@@ -300,20 +299,7 @@ install(EXPORT blackTargets
   DESTINATION lib/cmake/black
 )
 
-include(CMakePackageConfigHelpers)
-
-set(INCLUDE_INSTALL_DIR include/)
-set(LIBRARY_INSTALL_DIR lib/)
-
-configure_package_config_file(blackConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/blackConfig.cmake
-  INSTALL_DESTINATION lib/cmake/black
-  PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR)
-
-write_basic_package_version_file(
-  ${CMAKE_CURRENT_BINARY_DIR}/blackConfigVersion.cmake
-  COMPATIBILITY SameMajorVersion )
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/blackConfig.cmake
-              ${CMAKE_CURRENT_BINARY_DIR}/blackConfigVersion.cmake
-        DESTINATION lib/cmake/black )
+configure_file(blackConfig.cmake.in blackConfig.cmake @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/blackConfig.cmake"
+  DESTINATION lib/cmake/black
+)

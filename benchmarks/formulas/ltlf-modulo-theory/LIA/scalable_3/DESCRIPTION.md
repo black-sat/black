@@ -34,6 +34,6 @@ UNSAT
 ## Command for BLACK
 
 ```
-./black solve -d Int -s ../benchmarks/formulas/ltlf-modulo-theory/LIA/scalable_3/scalable_3_N.ltlfmt
+./black solve -d integers -s ../benchmarks/formulas/ltlf-modulo-theory/LIA/scalable_3/scalable_3_N.ltlfmt
 ```
 

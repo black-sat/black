@@ -46,9 +46,7 @@ namespace black_internal::lexer_details
       real,
       identifier,
       quantifier,
-      equality,
       comparison,
-      sort,
       unary_term_operator,
       binary_term_operator,
       unary_operator,
@@ -62,12 +60,8 @@ namespace black_internal::lexer_details
       left_paren,
       right_paren,
       comma,
-      dot,
-      colon
+      dot
     };
-
-    using equality_t = 
-      std::pair<logic::equality<logic::LTLPFO>::type, bool /* binary */>;
 
              token()              : _data{std::monostate{}} { }
     explicit token(bool b)        : _data{b} { }
@@ -75,9 +69,7 @@ namespace black_internal::lexer_details
     explicit token(double d)      : _data{d} { }
     explicit token(std::string s) : _data{std::move(s)} { }
     explicit token(logic::quantifier<logic::LTLPFO>::type k)  : _data{k} { }
-    explicit token(equality_t t)                              : _data{t} { }
     explicit token(logic::comparison<logic::LTLPFO>::type t)  : _data{t} { }
-    explicit token(logic::arithmetic_sort::type t)            : _data{t} { }
     explicit token(logic::unary_term<logic::LTLPFO>::type t)  : _data{t} { }
     explicit token(logic::binary_term<logic::LTLPFO>::type t) : _data{t} { }
     explicit token(logic::unary<logic::LTLPFO>::type t)       : _data{t} { }
@@ -109,9 +101,7 @@ namespace black_internal::lexer_details
       double,                    // reals
       std::string,               // identifiers
       logic::quantifier<logic::LTLPFO>::type,  // exists/forall
-      equality_t,                              // =, !=, equal(), distinct()
-      logic::comparison<logic::LTLPFO>::type,  // <, >, <=, >= 
-      logic::arithmetic_sort::type,            // Int, Real
+      logic::comparison<logic::LTLPFO>::type,  // =, !=, <logic::=, etc...
       logic::unary_term<logic::LTLPFO>::type,  // unary minus, next, wnext, ...
       logic::binary_term<logic::LTLPFO>::type, // +, -, *, /
       logic::unary<logic::LTLPFO>::type,       // unary operator
@@ -139,7 +129,7 @@ namespace black_internal::lexer_details
     static bool is_keyword(std::string_view s);
 
   private:
-    static std::pair<std::string_view, token> _keywords[35];
+    static std::pair<std::string_view, token> _keywords[28];
     std::optional<token> _lex();
     std::optional<token> _identifier();
     std::optional<token> _raw_identifier();

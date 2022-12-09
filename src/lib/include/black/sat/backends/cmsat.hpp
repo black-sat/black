@@ -29,7 +29,7 @@ namespace black_internal::cmsat
   class BLACK_EXPORT cmsat : public ::black::sat::dimacs::solver
   {
   public:
-    cmsat(black::logic::scope const&);
+    cmsat();
     virtual ~cmsat() override;
 
     virtual void new_vars(size_t n) override;

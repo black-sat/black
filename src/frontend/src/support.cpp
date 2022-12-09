@@ -114,14 +114,6 @@ namespace black::frontend
             nextvar = (uint8_t)feature_t::nextvar;
         return nextvar | (uint8_t)feature_t::first_order;
       },
-      [](equality, auto terms) -> uint8_t {
-        for(auto t : terms)
-          if(has_next(t))
-            return 
-              (uint8_t)feature_t::nextvar | (uint8_t)feature_t::first_order;
-
-        return (uint8_t)feature_t::first_order;
-      },
       [](comparison, term left, term right) -> uint8_t {
         if(has_next(left) || has_next(right))
           return (uint8_t)feature_t::nextvar | (uint8_t)feature_t::first_order;

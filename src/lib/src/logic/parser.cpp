@@ -37,9 +37,9 @@ namespace black_internal
 
   // Easy entry-point for parsing formulas
   std::optional<formula>
-  parse_formula(
-    alphabet &sigma, std::string const&s, parser::error_handler error
-  ) {
+  parse_formula(alphabet &sigma, std::string const&s,
+                parser::error_handler error)
+  {
     std::stringstream stream{s, std::stringstream::in};
     parser p{sigma, stream, std::move(error)};
 
@@ -48,9 +48,9 @@ namespace black_internal
 
   // Easy entry-point for parsing formulas
   std::optional<formula>
-  parse_formula(
-    alphabet &sigma, std::istream &stream, parser::error_handler error
-  ) {
+  parse_formula(alphabet &sigma, std::istream &stream,
+                parser::error_handler error)
+  {
     parser p{sigma, stream, std::move(error)};
 
     return p.parse();
@@ -86,9 +86,6 @@ namespace black_internal
     std::optional<formula> parse_parens();
     std::optional<formula> parse_primary();
 
-    std::optional<sort> parse_sort();
-
-    std::optional<term> build_binary_term(binary_term::type, term, term);
     std::optional<term> parse_term();
     std::optional<term> parse_term_primary();
     std::optional<term> parse_term_binary_rhs(int precedence, term lhs);
@@ -129,14 +126,11 @@ namespace black_internal
   template<typename F>
   auto parser::_parser_t::try_parse(F f) {
     size_t pos = _pos;
-    
     bool t = _trying;
     _trying = true;
-    
     auto r = f();
     if(!r)
       _pos = pos;
-    
     _trying = t;
     return r;
   }
@@ -187,9 +181,8 @@ namespace black_internal
   }
 
   std::nullopt_t parser::_parser_t::error(std::string const&s) {
-    if(!_trying) {
+    if(!_trying)
       _error(s);
-    }
     return std::nullopt;
   }
 
@@ -262,25 +255,17 @@ namespace black_internal
     if(!lhs)
       return {};
 
-    if(!peek() || 
-      (peek()->token_type() != token::type::equality &&
-       peek()->token_type() != token::type::comparison))
+    if(!peek() || peek()->token_type() != token::type::comparison)
       return {};
 
-    token op = *peek();
+    comparison::type rel = *peek()->data<comparison::type>();
     consume();
 
     std::optional<term> rhs = parse_term();
     if(!rhs)
       return {};
 
-    if(op.token_type() == token::type::equality)
-      return equality(
-        op.data<token::equality_t>()->first, std::vector<term>{*lhs, *rhs}
-      );
-
-    black_assert(op.token_type() == token::type::comparison);
-    return comparison(*op.data<comparison::type>(), *lhs, *rhs);
+    return comparison(rel, *lhs, *rhs);
   }
 
   std::optional<formula> parser::_parser_t::parse_atom()
@@ -319,8 +304,7 @@ namespace black_internal
     if(!consume(token::punctuation::right_paren))
       return {};
 
-    relation r = _alphabet.relation(id);
-    return r(terms);
+    return atom(_alphabet.relation(id), terms);
   }
 
   std::optional<formula> parser::_parser_t::parse_quantifier() {
@@ -331,75 +315,31 @@ namespace black_internal
     if(consume()->data<quantifier::type>() == quantifier::type::exists{}) 
       q = quantifier::type::exists{};
 
-    std::vector<var_decl> vars;
-    while(
-      !peek() || 
-      peek()->data<token::punctuation>() != token::punctuation::dot
-    ) {
-      bool paren = false;
-      if(peek()->data<token::punctuation>() == 
-         token::punctuation::left_paren) 
-      {
-        consume();
-        paren = true;
-      }
-      if(!peek())
-        return error("Expected variable name, found end of input");
-
-      if(peek()->token_type() != token::type::identifier)
-        return 
-          error("Expected variable name, found '" + to_string(*peek()) + "'");
-
-      identifier varid = *consume()->data<std::string>();
-
-      std::optional<sort> s;
-      if(!peek())
-        return error("Expected ':', found end of input");
-
-      if(peek()->data<token::punctuation>() != token::punctuation::colon) 
-        return error("Expected ':', found '" + to_string(*peek()) + "'");
-
-      consume(); // consume the colon
-      
-      s = parse_sort();
-      if(!s)
-        return {};
-
-      vars.push_back(_alphabet.var_decl(_alphabet.variable(varid), *s));
-
-      if(paren && !consume(token::punctuation::right_paren))
-        return {};
-
-      if(
-        peek() && 
-        peek()->data<token::punctuation>() == token::punctuation::comma
-      ) {
-        consume();
-        if(
-          peek() && 
-          peek()->data<token::punctuation>() == token::punctuation::comma
-        ) {
-          return error("Expected variable, found '" + to_string(*peek()) + ";");
-        } 
-      }
+    std::vector<token> vartoks;
+    while(peek() && peek()->token_type() == token::type::identifier) {
+      vartoks.push_back(*peek());
+      consume();
     }
 
-    if(!peek())
-      return error("Expected '.', found end of input");
+    if(vartoks.empty())
+      return error("Expected variable list after quantifier");
 
-    if(vars.empty())
-      return error("Expected variable list, found '.'");
-
-    consume(); // consume the dot
+    std::optional<token> dot = consume();
+    if(!dot || dot->data<token::punctuation>() != token::punctuation::dot)
+      return error("Expected dot after quantifier");
 
     std::optional<formula> matrix = parse_primary();
     if(!matrix)
       return {};
 
-    if(q == quantifier::type::exists{})
-      return exists(vars, *matrix);
+    std::vector<variable> vars;
+    for(token tok : vartoks)
+      vars.push_back(_alphabet.variable(*tok.data<std::string>()));
 
-    return forall(vars, *matrix);
+    if(q == quantifier::type::exists{})
+      return exists_block(vars, *matrix);
+
+    return forall_block(vars, *matrix);
   }
 
   std::optional<formula> parser::_parser_t::parse_unary()
@@ -443,11 +383,8 @@ namespace black_internal
     if(peek()->token_type() == token::type::boolean)
       return parse_boolean();
     if(peek()->token_type() == token::type::integer ||
-       peek()->token_type() == token::type::real ||
        peek()->data<binary_term::type>() == binary_term::type::subtraction{} ||
        peek()->token_type() == token::type::identifier ||
-       peek()->data<unary_term::type>() == unary_term::type::to_integer{} ||
-       peek()->data<unary_term::type>() == unary_term::type::to_real{} ||
        peek()->data<unary_term::type>() == unary_term::type::next{} ||
        peek()->data<unary_term::type>() == unary_term::type::wnext{} ||
        peek()->data<unary_term::type>() == unary_term::type::prev{} ||
@@ -462,27 +399,6 @@ namespace black_internal
        return parse_parens();
 
     return error("Expected formula, found '" + to_string(*peek()) + "'");
-  }
-
-  std::optional<sort> parser::_parser_t::parse_sort() 
-  {
-    std::optional<token> tok = consume();
-
-    if(!tok)
-      return error("Expected sort, found end of input");
-
-    if(tok->data<arithmetic_sort::type>() == 
-       arithmetic_sort::type::integer_sort{})
-      return _alphabet.integer_sort();
-
-    if(tok->data<arithmetic_sort::type>() == 
-       arithmetic_sort::type::real_sort{})
-      return _alphabet.real_sort();
-
-    if(tok->token_type() == token::type::identifier)
-      return _alphabet.named_sort(*tok->data<std::string>());
-
-    return error("Expected sort, found '" + to_string(*tok) + "'");
   }
 
   std::optional<term> parser::_parser_t::parse_term() {
@@ -507,9 +423,7 @@ namespace black_internal
     if(peek()->data<binary_term::type>() == binary_term::type::subtraction{})
       return parse_term_unary_minus();
 
-    if(peek()->data<unary_term::type>() == unary_term::type::to_integer{} ||
-       peek()->data<unary_term::type>() == unary_term::type::to_real{} ||
-       peek()->data<unary_term::type>() == unary_term::type::next{} ||
+    if(peek()->data<unary_term::type>() == unary_term::type::next{} ||
        peek()->data<unary_term::type>() == unary_term::type::wnext{} ||
        peek()->data<unary_term::type>() == unary_term::type::prev{} ||
        peek()->data<unary_term::type>() == unary_term::type::wprev{})
@@ -533,8 +447,7 @@ namespace black_internal
       [](binary_term::type::addition)       { return 20; },
       [](binary_term::type::subtraction)    { return 20; },
       [](binary_term::type::multiplication) { return 30; },
-      [](binary_term::type::division)       { return 30; },
-      [](binary_term::type::int_division)   { return 30; }
+      [](binary_term::type::division)       { return 30; }
     );
   }
 
@@ -573,12 +486,22 @@ namespace black_internal
 
     if(tok.token_type() == token::type::integer) {
       int64_t value = *tok.data<int64_t>();
+      if(value == 0)
+        return constant(_alphabet.zero());
+      else if(value == 1)
+        return constant(_alphabet.one());
+      
       return constant(_alphabet.integer(value));
     }
     
     black_assert(tok.token_type() == token::type::real);
 
     double value = *tok.data<double>();
+    if(value == 0.0)
+      return constant(_alphabet.zero());
+    else if(value == 1.0)
+      return constant(_alphabet.one());
+    
     return constant(_alphabet.real(value));
   }
 
@@ -597,8 +520,6 @@ namespace black_internal
 
   std::optional<term> parser::_parser_t::parse_term_ctor() {
     black_assert(
-      peek()->data<unary_term::type>() == unary_term::type::to_integer{} ||
-      peek()->data<unary_term::type>() == unary_term::type::to_real{} ||
       peek()->data<unary_term::type>() == unary_term::type::next{} ||
       peek()->data<unary_term::type>() == unary_term::type::wnext{} ||
       peek()->data<unary_term::type>() == unary_term::type::prev{} ||
@@ -649,8 +570,7 @@ namespace black_internal
     if(!consume(token::punctuation::right_paren))
       return {};
 
-    function f = _alphabet.function(id);
-    return f(terms);
+    return application(_alphabet.function(id), terms);
   }
 
   std::optional<term> parser::_parser_t::parse_term_parens() {

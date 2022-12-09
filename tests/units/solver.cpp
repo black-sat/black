@@ -39,7 +39,7 @@ TEST_CASE("Solver")
 
   sigma = std::move(sigma_);
 
-  scope xi{sigma};
+  sigma.set_default_sort(sigma.integer_sort());
 
   SECTION("Propositional formulas") {
 
@@ -52,6 +52,7 @@ TEST_CASE("Solver")
         if(black::sat::solver::backend_exists(backend)) {
           black::solver slv;
           REQUIRE(slv.sat_backend() == BLACK_DEFAULT_BACKEND);
+          REQUIRE(slv.solve() == true);
           
           slv.set_sat_backend(backend);
 
@@ -68,8 +69,10 @@ TEST_CASE("Solver")
 
           for(auto f : tests) {
             DYNAMIC_SECTION("Formula: " << to_string(f)) {
+              slv.set_formula(f);
               REQUIRE(!slv.model().has_value());
-              REQUIRE(slv.solve(xi, f));
+
+              REQUIRE(slv.solve());
             }
           }
         }
@@ -88,13 +91,12 @@ TEST_CASE("Solver")
         if(black::sat::solver::backend_exists(backend)) {
           black::solver slv;
           REQUIRE(slv.sat_backend() == BLACK_DEFAULT_BACKEND);
+          REQUIRE(slv.solve() == true);
           
           slv.set_sat_backend(backend);
 
           auto x = sigma.variable("x");
           auto rel = sigma.relation("r");
-
-          xi.push(rel, {sigma.integer_sort()});
 
           std::vector<formula> tests = {
             G(x > 0), F(x == 1), F(-x == -x), !rel(prev(x)), rel(wprev(x)),
@@ -103,12 +105,10 @@ TEST_CASE("Solver")
 
           for(auto f : tests) {
             DYNAMIC_SECTION("Formula: " << to_string(f)) {
+              slv.set_formula(f);
               REQUIRE(!slv.model().has_value());
 
-              REQUIRE(xi.type_check(f, sigma.integer_sort(), [](auto) { }));
-              REQUIRE(xi.sort(x));
-
-              REQUIRE(slv.solve(xi, f));
+              REQUIRE(slv.solve());
             }
           }
         }
@@ -128,35 +128,28 @@ TEST_CASE("Solver")
           variable z = sigma.variable("z");
           proposition p = sigma.proposition("p");
           function func = sigma.function("f");
-
-          xi.push(
-            func, sigma.integer_sort(), {sigma.integer_sort()}
-          );
-
-          sort s = sigma.integer_sort();
           
           std::vector<formula> tests = {
-            forall({x[s]}, x == x),
-            X(forall({x[s]}, x == x)),
-            exists({x[s],y[s]}, next(z) + 2 != y),
-            exists({x[s],y[s]}, sigma.top()),
-            exists({x[s],y[s]}, !p),
-            !forall({x[s],y[s]}, x != y),
-            !exists({x[s]}, func(x) == x),
-            exists({x[s]}, X(x == y)),
-            exists({x[s]}, wX(x == y)),
-            exists({x[s]}, X(Y(x == 0))),
-            exists({x[s]}, X(Z(x == 0)))
+            forall(x, x == x),
+            X(forall(x, x == x)),
+            exists_block({x,y}, next(z) + 2 != y),
+            exists_block({x,y}, sigma.top()),
+            exists_block({x,y}, !p),
+            !forall_block({x,y}, x != y),
+            !exists(x, func(x) == x),
+            exists(x, X(x == y)),
+            exists(x, wX(x == y)),
+            exists(x, X(Y(x == 0))),
+            exists(x, X(Z(x == 0)))
           };
 
           for(formula f : tests) {
             DYNAMIC_SECTION("Test formula: " << to_string(f)) {
               solver slv;
               slv.set_sat_backend(backend);
+              slv.set_formula(f);
 
-              REQUIRE(xi.type_check(f, sigma.integer_sort(), [](auto) { }));
-
-              REQUIRE(slv.solve(xi, f));
+              REQUIRE(slv.solve());
             }
           }
         }
@@ -167,7 +160,11 @@ TEST_CASE("Solver")
   SECTION("Solver syntax errors") {
 
     std::vector<std::string> tests = {
-      "next(x + y) = 2", "wnext(x + y) = 2", "exists x : Int . F(x = 0)"
+      "f(x) & f(x,y)", "f(x) = 2 & f(x)", "f(x) & f(x) = 2",
+      "f(x) = 2 & f(x,y) = 2", "f(x) + 2 = 2 & f(x)", "f(x) & f(x) + 2 = 2",
+      "next(x + y) = 2", "exists x . next(x) = x", 
+      "wnext(x + y) = 2", "exists x . wnext(x) = x",
+      "exists x . (wnext(x) = x || x = 0)", "exists x . F(x = 0)"
     };
 
     for(std::string s : tests) {

@@ -69,9 +69,6 @@
 //   elements). For example, the `boolean` storage kind has the field `value`
 //   which is of type `bool`. This results into an actual member function called
 //   `value()` exposed by the class `boolean`.
-// - a `field vector` is a data attribute of a storage kind that is a vector of
-//   fields of the same type. The only example we have here is the `vars` field
-//   of the `quantifier` storage kind, which is a vector of `var_decl` objects.
 // - a `child` is a data attribute of a storage kind whose type is a hierarchy
 //   hierarchy and thus is subject to the same restrictions regarding its syntax
 //   as imposed by the fragment applied to the current storage kind. For
@@ -88,10 +85,10 @@
 //   such, the corresponding type will be non-templated. For example, `boolean`
 //   is a leaf storage kind, since it only has a field `bool value` but no
 //   children and no hierarchy elements. The class `boolean` is concrete, not a
-//   template, since there are no children to constrain the fragment of.
-//   `integer_sort` is a leaf hierarchy element of the storage kind
-//   `arithmetic_sort` (hierarchy `sort`). It has to be, because its parent
-//   storage kind defines no children.
+//   template, since there are no children to constrain the fragment of. `zero`
+//   is a leaf hierarchy element of the storage kind `identity` (hierarchy
+//   `number`). It has to be, because its parent storage kind defines no
+//   children.
 // - `simple` hierarchies and `simple` storage kinds are entities that are not
 //   parameterized over the fragment, but are always used with the universal
 //   fragment. An example is the `sort` hierarchy type and its storage kinds.
@@ -172,18 +169,6 @@
 //       - `Type` is the type of the field
 //       - `Field` is the name of the field
 //
-// - declare_fields(Base, Storage, Type, Fields) 
-//     Declare a field of a storage kind that is a vector of fields of the same
-//     type.
-//     - Parent macro: 
-//        `declare_storage_kind`, `declare_leaf_storage_kind` or 
-//        `declare_leaf_storage_kind`
-//     - Arguments:
-//       - `Base` is the name of the parent hierarchy
-//       - `Storage` is the name of the parent storage kind 
-//       - `Type` is the type of the elements of the vector
-//       - `Fields` is the name of the field
-//
 // - declare_child(Base, Storage, Hierarchy, Child) 
 //     Declare a child of a storage kind. 
 //     - Parent macro: `declare_storage_kind`
@@ -235,16 +220,6 @@
 //       - `Base` is the name of the parent hierarchy
 //       - `Storage` is the name of the parent storage kind 
 //
-// - has_no_children(Base, Storage)
-//    States that a non-leaf storage has no children. As a consequence, it can
-//    only contain leaf hierarchy elements declared with
-//    `declare_leaf_hierarchy_element`. At least one of this, `declare_child` or
-//    `declare_children` must appear in a give (non-leaf) storage kind. It must
-//    not appear together with `declare_child` or `declare_children`.
-//    - Parent macro: `declare_storage_kind`
-//     - Arguments:
-//       - `Base` is the name of the parent hierarchy
-//       - `Storage` is the name of the parent storage kind 
 
 #ifndef declare_hierarchy
   #define declare_hierarchy(Base)
@@ -270,9 +245,6 @@
 #ifndef declare_field
   #define declare_field(Base, Storage, Type, Field)
 #endif
-#ifndef declare_fields
-  #define declare_fields(Base, Storage, Type, Fields)
-#endif
 #ifndef declare_child
   #define declare_child(Base, Storage, Hierarchy, Child)
 #endif
@@ -287,9 +259,6 @@
 #endif
 #ifndef declare_leaf_hierarchy_element
   #define declare_leaf_hierarchy_element declare_hierarchy_element
-#endif
-#ifndef has_no_children
-  #define has_no_children(Base, Storage)
 #endif
 #ifndef end_storage_kind
   #define end_storage_kind(Base, Storage)
@@ -306,21 +275,26 @@
 #ifndef end_simple_hierarchy
   #define end_simple_hierarchy end_hierarchy
 #endif
+#ifndef escape_commas
+#define escape_commas(...) __VA_ARGS__
+#endif 
 
 declare_hierarchy(symbol)
   declare_leaf_storage_kind(symbol, relation)
-    declare_storage_custom_members(symbol, relation, call_op_interface)
+    declare_storage_custom_members(symbol, relation, relation_call_op)
     declare_field(symbol, relation, identifier, name)
-    declare_field(symbol, relation, std::optional<identifier>, subscript)
   end_leaf_storage_kind(symbol, relation)
   declare_leaf_storage_kind(symbol, function)
-    declare_storage_custom_members(symbol, function, call_op_interface)
+    declare_storage_custom_members(symbol, function, function_call_op)
     declare_field(symbol, function, identifier, name)
-    declare_field(symbol, function, std::optional<identifier>, subscript)
   end_leaf_storage_kind(symbol, function)
 end_hierarchy(symbol)
 
 declare_hierarchy(number)
+  declare_storage_kind(number, identity)
+    declare_leaf_hierarchy_element(number, identity, zero)
+    declare_leaf_hierarchy_element(number, identity, one)
+  end_storage_kind(number, identity)
   declare_leaf_storage_kind(number, integer)
     declare_field(number, integer, int64_t, value)
   end_leaf_storage_kind(number, integer)
@@ -337,9 +311,7 @@ declare_hierarchy(term)
   end_storage_kind(term, constant)
 
   declare_leaf_storage_kind(term, variable)
-    declare_storage_custom_members(term, variable, variable_decl_op)
     declare_field(term, variable, identifier, name)
-    declare_field(term, variable, std::optional<identifier>, subscript)
   end_leaf_storage_kind(term, variable)
 
   declare_storage_kind(term, application)
@@ -351,8 +323,6 @@ declare_hierarchy(term)
   declare_storage_kind(term, unary_term)
     declare_child(term, unary_term, term, argument)
     declare_hierarchy_element(term, unary_term, negative)
-    declare_hierarchy_element(term, unary_term, to_real)
-    declare_hierarchy_element(term, unary_term, to_integer)
     declare_hierarchy_element(term, unary_term, next)
     declare_hierarchy_element(term, unary_term, wnext)
     declare_hierarchy_element(term, unary_term, prev)
@@ -366,7 +336,6 @@ declare_hierarchy(term)
     declare_hierarchy_element(term, binary_term, subtraction)
     declare_hierarchy_element(term, binary_term, multiplication)
     declare_hierarchy_element(term, binary_term, division)
-    declare_hierarchy_element(term, binary_term, int_division)
   end_storage_kind(term, binary_term)
 end_hierarchy(term)
 
@@ -386,15 +355,11 @@ declare_hierarchy(formula)
     has_no_hierarchy_elements(formula, atom)
   end_storage_kind(formula, atom)
 
-  declare_storage_kind(formula, equality)
-    declare_children(formula, equality, term, terms)
-    declare_hierarchy_element(formula, equality, equal)
-    declare_hierarchy_element(formula, equality, distinct)
-  end_storage_kind(formula, equality)
-
   declare_storage_kind(formula, comparison)
     declare_child(formula, comparison, term, left)
     declare_child(formula, comparison, term, right)
+    declare_hierarchy_element(formula, comparison, equal)
+    declare_hierarchy_element(formula, comparison, not_equal)
     declare_hierarchy_element(formula, comparison, less_than)
     declare_hierarchy_element(formula, comparison, less_than_equal)
     declare_hierarchy_element(formula, comparison, greater_than)
@@ -402,7 +367,7 @@ declare_hierarchy(formula)
   end_storage_kind(formula, comparison)
 
   declare_storage_kind(formula, quantifier)
-    declare_fields(formula, quantifier, var_decl, variables)
+    declare_field(formula, quantifier, variable, var)
     declare_child(formula, quantifier, formula, matrix)
     declare_hierarchy_element(formula, quantifier, exists)
     declare_hierarchy_element(formula, quantifier, forall)
@@ -439,43 +404,24 @@ declare_hierarchy(formula)
 end_hierarchy(formula)
 
 declare_simple_hierarchy(sort)
-  declare_leaf_storage_kind(sort, named_sort)
-    declare_field(sort, named_sort, identifier, name)
-  end_leaf_storage_kind(sort, named_sort)
-  declare_simple_storage_kind(sort, arithmetic_sort)
-    has_no_children(sort, arithmetic_sort)
-    declare_leaf_hierarchy_element(sort, arithmetic_sort, integer_sort)
-    declare_leaf_hierarchy_element(sort, arithmetic_sort, real_sort)
-  end_simple_storage_kind(sort, arithmetic_sort)
+  declare_leaf_storage_kind(sort, custom_sort)
+    declare_field(sort, custom_sort, identifier, name)
+  end_leaf_storage_kind(sort, custom_sort)
+  declare_simple_storage_kind(sort, primitive_sort)
+    declare_leaf_hierarchy_element(sort, primitive_sort, integer_sort)
+    declare_leaf_hierarchy_element(sort, primitive_sort, real_sort)
+  end_simple_storage_kind(sort, primitive_sort)
+  // These will be supported in the future
+  // declare_leaf_storage_kind(sort, function_sort)
+  //   declare_field(sort, function_sort, identifier, name)
+  //   declare_field(sort, function_sort, sort, return_sort)
+  //   declare_field(sort, function_sort, std::vector<sort>, arguments)
+  // end_leaf_storage_kind(sort, function_sort)
+  // declare_leaf_storage_kind(sort, relation_sort)
+  //   declare_field(sort, relation_sort, identifier, name)
+  //   declare_field(sort, relation_sort, std::vector<sort>, arguments)
+  // end_leaf_storage_kind(sort, relation_sort)
 end_simple_hierarchy(sort)
-
-declare_simple_hierarchy(declaration)
-  declare_leaf_storage_kind(declaration, var_decl)
-    declare_field(declaration, var_decl, class variable, variable)
-    declare_field(declaration, var_decl, class sort, sort)
-  end_leaf_storage_kind(declaration, var_decl)
-  declare_leaf_storage_kind(declaration, rel_decl)
-    declare_field(declaration, rel_decl, class relation, relation)
-    declare_fields(declaration, rel_decl, sort, signature)
-  end_leaf_storage_kind(declaration, rel_decl)
-  declare_leaf_storage_kind(declaration, fun_decl)
-    declare_field(declaration, fun_decl, class function, function)
-    declare_field(declaration, fun_decl, class sort, sort)
-    declare_fields(declaration, fun_decl, class sort, signature)
-  end_leaf_storage_kind(declaration, fun_decl)
-  declare_leaf_storage_kind(declaration, sort_decl)
-    declare_field(declaration, sort_decl, named_sort, sort)
-    declare_field(declaration, sort_decl, domain_ref, domain)
-  end_leaf_storage_kind(declaration, sort_decl)
-end_simple_hierarchy(declaration)
-
-declare_simple_hierarchy(frame_t)
-  declare_leaf_storage_kind(frame_t, frame)
-    declare_field(frame_t, frame, std::optional<frame>, next)
-    declare_field(frame_t, frame, rigid_t, rigid)
-    declare_fields(frame_t, frame, declaration, decls)
-  end_leaf_storage_kind(frame_t, frame)
-end_simple_hierarchy(frame_t)
 
 #undef declare_hierarchy
 #undef declare_simple_hierarchy
@@ -485,16 +431,15 @@ end_simple_hierarchy(frame_t)
 #undef declare_leaf_storage_kind
 #undef declare_storage_custom_members
 #undef declare_field
-#undef declare_fields
 #undef declare_child
 #undef declare_children
 #undef has_no_leaf_hierarchy_elements
 #undef has_no_hierarchy_elements
 #undef declare_leaf_hierarchy_element
 #undef declare_hierarchy_element
-#undef has_no_children
 #undef end_storage_kind
 #undef end_simple_storage_kind
 #undef end_leaf_storage_kind
 #undef end_hierarchy
 #undef end_simple_hierarchy
+#undef escape_commas

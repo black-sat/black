@@ -21,7 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic/logic.hpp>
+#include <black/logic/alphabet.hpp>
+#include <black/logic/formula.hpp>
 #include <black/logic/parser.hpp>
 #include <black/logic/prettyprint.hpp>
 
@@ -61,9 +62,10 @@ void print_help(std::string const& command){
 
 // Generate benchmarks for LIA theory and category 1
 void generate_category_1 (alphabet &sigma, unsigned int n) {
-  variable x = sigma.variable("x");
+  variable x = sigma.var("x");
+  constant N = sigma.constant((int) n);
 
-  formula f = x == 0 && G(wnext(x) == x + 1) && F(x == n);
+  formula f = x == 0 && G(wnext(x) == x + 1) && F(x == N);
 
   std::cout << to_string(f) << "\n"; 
 }
@@ -73,11 +75,12 @@ void generate_category_2 (alphabet &sigma, unsigned int n, categories category) 
   // vector of n variables
   std::vector<variable> variables;
   for (std::size_t i = 0; i <= n; ++i) {
-    variables.push_back(sigma.variable("x" + std::to_string(i)));
+    variables.push_back(sigma.var("x"+std::to_string(i)));
   }
   
   // x0 > 0
-  formula basecase = variables[0] > 0;
+  constant zero = sigma.constant(0);
+  formula basecase = variables[0] > zero;
 
   // /\_{i=0}^{n-1} X^i ( next(x_{i+1}) > x_i )
   formula body = sigma.top();
@@ -100,14 +103,14 @@ void generate_category_2 (alphabet &sigma, unsigned int n, categories category) 
   //    F(sum(x0 ... x_{n-1}) = n*(n+1)/2 & wX false)
   // Category 3:
   //    G(sum(x0 ... x_{n-1}) = n*(n+1)/2 - 1)
-  term sum = constant(sigma.integer(0));
+  term sum = sigma.constant(0);
   for(unsigned i=0; i<=n; i++){
     sum = sum + variables[i]; 
   }
   
   formula sum_formula = ( ((category == CATEGORY2)
-      ? (term) constant(sigma.integer((int)((n+1)*(n+2))/2))
-      : (term) constant(sigma.integer((int)((n+1)*(n+2))/2 - 1)))
+      ? (term) sigma.constant((int)((n+1)*(n+2))/2)
+      : (term) sigma.constant((int)((n+1)*(n+2))/2 - 1))
       == sum);
   body = body && ( (category == CATEGORY2) 
       ? (formula) F(sum_formula && wX(sigma.bottom())) 

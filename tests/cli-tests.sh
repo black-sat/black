@@ -49,23 +49,23 @@ should_fail ./black solve
 should_fail ./black solve -f 'p' file.pltl
 should_fail ./black 
 should_fail ./black solve -o
-should_fail ./black solve -s -d Int -c -f 'x = 0 & x != 0'
+should_fail ./black solve -s -d integers -c -f 'x = 0 & x != 0'
 
-should_fail ./black solve --remove-past -s -d Int -f 'F H(x = 0)'
-should_fail ./black solve -m -d Int -f 'x = 0'
+should_fail ./black solve --remove-past -s -d integers -f 'F H(x = 0)'
+should_fail ./black solve -m -d integers -f 'x = 0'
 
-should_fail ./black solve -B cmsat -s -d Int -f 'x = 0'
-should_fail ./black solve -B mathsat -s -d Int -f 'exists x : Int . x = 0'
+should_fail ./black solve -B cmsat -s -d integers -f 'x = 0'
+should_fail ./black solve -B mathsat -s -d integers -f 'exists x . x = 0'
 should_fail ./black solve -s -f 'x = 0'
 
-./black solve -d Int -f 'next(x) = 0' 2>&1 | grep -- '--semi-decision'
-./black solve -d Int -f 'wnext(x) = 0' 2>&1 | grep -- '--semi-decision'
-./black solve -d Int -f 'prev(x) = 0' 2>&1 | grep -- '--semi-decision'
-./black solve -d Int -f 'wprev(x) = 0' 2>&1 | grep -- '--semi-decision'
-./black solve -d Int -f 'r(next(x))' 2>&1 | grep -- '--semi-decision'
-./black solve -d Int -f 'r(wnext(x))' 2>&1 | grep -- '--semi-decision'
-./black solve -d Int -f 'r(prev(x))' 2>&1 | grep -- '--semi-decision'
-./black solve -d Int -f 'r(wprev(x))' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'next(x) = 0' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'wnext(x) = 0' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'prev(x) = 0' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'wprev(x) = 0' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'r(next(x))' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'r(wnext(x))' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'r(prev(x))' 2>&1 | grep -- '--semi-decision'
+./black solve -d integers -f 'r(wprev(x))' 2>&1 | grep -- '--semi-decision'
 
 ./black solve -f 'p & q' --debug print
 ./black solve -f 'X p & X X q & F(q)' --debug trace
@@ -75,11 +75,11 @@ should_fail ./black solve -s -f 'x = 0'
 X ( F p & G !p)
 END
 
-./black solve -s -d Int --debug trace-smtlib2 - <<END
-true & !false & p & r(x, f(x,y), 0, 1, 42, 3.14, -x, x + y, x * y, x - y, x / y) & x = y & x != y & x < y & x > y & x <= y & x >= y & forall x : Int . x = x & exists x : Int . x != x & (p | (q & s)) & p -> q & p <-> q
+./black solve -s -d integers --debug trace-smtlib2 - <<END
+true & !false & p & r(x, f(x,y), 0, 1, 42, 3.14, -x, x + y, x * y, x - y, x / y) & x = y & x != y & x < y & x > y & x <= y & x >= y & forall x . x = x & exists x . x != x & (p | (q & r)) & p -> q & p <-> q
 END
 
-./black solve -s -d Real --debug trace-smtlib2 - <<END
+./black solve -s -d reals --debug trace-smtlib2 - <<END
 x = 3.14
 END
 

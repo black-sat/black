@@ -32,15 +32,13 @@ TEST_CASE("SAT backends") {
   };
 
   black::alphabet sigma;
-  black::scope xi{sigma};
-
   auto p = sigma.proposition("p");
   auto q = sigma.proposition("q");
 
   for(auto backend : backends) {
     DYNAMIC_SECTION("SAT backend: " << backend) {
       if(black::sat::solver::backend_exists(backend)) {
-        auto slv = black::sat::solver::get_solver(backend, xi);
+        auto slv = black::sat::solver::get_solver(backend);
 
         REQUIRE(slv->value(p) == black::tribool::undef);
         slv->assert_formula(p);

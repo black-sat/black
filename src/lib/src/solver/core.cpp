@@ -226,7 +226,7 @@ namespace black_internal::core {
     return check_replacements_impl(f, formulas);
   }
 
-  formula unsat_core(scope const& xi, formula f, bool finite) {
+  formula unsat_core(formula f, bool finite) {
     auto [ks, next_placeholder] = traverse(f);
     auto groups = group_by_K(f, ks);
 
@@ -239,9 +239,10 @@ namespace black_internal::core {
         formula candidate = replace(f, subset, next_placeholder);
 
         black::solver slv;
+        slv.set_formula(candidate, finite);
         
-        if(slv.solve(xi, candidate, finite) == false)
-          return unsat_core(xi, candidate, finite);
+        if(slv.solve() == false)
+          return unsat_core(candidate, finite);
       }      
     }
     black_assert(check_replacements(f));

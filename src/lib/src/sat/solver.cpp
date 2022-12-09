@@ -60,15 +60,14 @@ namespace black::sat
     return _backends->find(name) != _backends->end();
   }
 
-  std::unique_ptr<solver> solver::get_solver(
-    std::string_view name, logic::scope const& xi
-  ) {
+  std::unique_ptr<solver> solver::get_solver(std::string_view name) 
+  {
     using namespace black::sat::internal;
     auto it = _backends->find(name); 
     
     black_assert(it != _backends->end());
     
-    return (it->second.first)(xi);
+    return (it->second.first)();
   }
 
   bool solver::backend_has_feature(std::string_view name, feature f)
