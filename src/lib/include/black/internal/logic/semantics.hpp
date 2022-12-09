@@ -92,7 +92,7 @@ namespace black_internal::logic {
 
     bool operator==(scope const&) const = default;
 
-    class std::optional<frame> frame() const { return _frame; }
+    std::optional<class frame> frame() const { return _frame; }
 
     void push(std::vector<var_decl> decls, rigid_t = non_rigid);
     void push(std::vector<rel_decl> decls, rigid_t = non_rigid);
