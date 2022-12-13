@@ -335,6 +335,22 @@ namespace black_internal::logic
       [](var_decl, auto var, auto sort) { 
         return to_string(var) + " : " + to_string(sort); 
       },
+      [](rel_decl, auto rel, auto signature) {
+        auto res = to_string(rel) + "(" + to_string(signature[0]);
+        for(size_t i = 1; i < signature.size(); ++i)
+          res += to_string(signature[i]);
+        res += ")";
+
+        return res;
+      },
+      [](fun_decl, auto fun, auto sort, auto signature) {
+        auto res = to_string(fun) + "(" + to_string(signature[0]);
+        for(size_t i = 1; i < signature.size(); ++i)
+          res += to_string(signature[i]);
+        res += ") : " + to_string(sort);
+
+        return res;
+      },
       [](sort_decl, auto sort, auto d) {
         auto res = to_string(sort) + " = { " + to_string(d->elements()[0]);
         for(size_t i = 1; i < d->elements().size(); ++i)
