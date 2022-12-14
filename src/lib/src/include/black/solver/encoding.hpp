@@ -27,6 +27,7 @@
 #define BLACK_SOLVER_ENCODING_HPP
 
 #include <black/logic/logic.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <vector>
 
@@ -35,6 +36,44 @@
 namespace black_internal::encoder {
   
   using namespace black_internal::logic;
+
+  struct req_t {
+    enum type_t : uint8_t {
+      future,
+      past,
+      atom
+    };
+
+    enum strength_t : uint8_t {
+      none,
+      weak,
+      strong
+    };
+
+    bool operator==(req_t const&) const = default;
+
+    formula<LTLPFO> target;
+    std::vector<var_decl> signature;
+    type_t type;
+    strength_t future_strength;
+    strength_t past_strength;
+  };
+
+  inline std::string to_string(req_t req) {
+    switch(req.type) {
+      case req_t::future:
+        if(req.future_strength == req_t::strong)
+          return "{" + to_string(X(req.target)) + "}";
+        return "{" + to_string(wX(req.target)) + "}";
+      case req_t::past:
+        if(req.past_strength == req_t::strong)
+          return "{" + to_string(Y(req.target)) + "}";
+        return "{" + to_string(Z(req.target)) + "}";
+      case req_t::atom:
+        return "{" + to_string(req.target) + "}";
+    }
+    black_unreachable();    
+  }
 
   //
   // Functions that implement the SAT encoding. 
@@ -48,7 +87,7 @@ namespace black_internal::encoder {
         _finite{finite}
     {
       _frm = to_nnf(_frm);
-      _add_xyz_requests(_frm);
+      _collect_requests(_frm);
     }
 
     encoder(encoder const&) = delete;
@@ -116,28 +155,6 @@ namespace black_internal::encoder {
     formula<FO> k_unraveling(size_t k);
 
   private:
-    struct req_t {
-      enum type_t : uint8_t {
-        future,
-        past,
-        atom
-      };
-
-      enum strength_t : uint8_t {
-        none,
-        weak,
-        strong
-      };
-
-      bool operator==(req_t) const = default;
-
-      formula<LTLPFO> target;
-      std::vector<var_decl> signature;
-      type_t type;
-      strength_t future_strength;
-      strength_t past_strength;
-    };
-
     // the formula to encode
     formula<LTLPFO> _frm;
 
@@ -169,26 +186,25 @@ namespace black_internal::encoder {
     std::optional<req_t> mk_req(atom<LTLPFO>, std::vector<var_decl>);
     std::optional<req_t> mk_req(equality<LTLPFO>, std::vector<var_decl>);
     std::optional<req_t> mk_req(comparison<LTLPFO>, std::vector<var_decl>);
-    bool future_strength(formula<LTLPFO> a);
-    bool past_strength(formula<LTLPFO> a);
-    bool has_lookahead(formula<LTLPFO> f)
+    req_t::strength_t future_strength(formula<LTLPFO> a);
+    req_t::strength_t past_strength(formula<LTLPFO> a);
     
     void error(std::string const&msg);
 
     // Extract the x-eventuality from an x-request
-    static std::optional<formula<LTLPFO>> _get_xev(unary<LTLPFO> xreq);
+    static std::optional<formula<LTLPFO>> _get_ev(formula<LTLPFO> f);
   };
 
 }
 
 namespace std {
   template<>
-  struct hash<black_internal::encoder::encoder::req_t> {
-    size_t operator()(black_internal::encoder::encoder::req_t r) const {
-      using black_internal::encoder::encoder::req_t;
+  struct hash<black_internal::encoder::req_t> {
+    size_t operator()(black_internal::encoder::req_t r) const {
+      using black_internal::encoder::req_t;
       using namespace black_internal;
       
-      size_t h = std::hash<logic::formula<LTLPFO>>{}(r.target);
+      size_t h = std::hash<logic::formula<logic::LTLPFO>>{}(r.target);
       h = hash_combine(h, std::hash<req_t::type_t>{}(r.type));
       h = hash_combine(h, std::hash<req_t::strength_t>{}(r.future_strength));
       h = hash_combine(h, std::hash<req_t::strength_t>{}(r.past_strength));
