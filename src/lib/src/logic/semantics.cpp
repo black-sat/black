@@ -96,6 +96,10 @@ namespace black_internal::logic {
   scope::scope(scope &&) = default;
   scope &scope::operator=(scope &&) = default;
 
+  alphabet *scope::sigma() const {
+    return &_impl->sigma;
+  }
+
   void scope::set_default_sort(std::optional<class sort> s) {
     _impl->frame->default_sort = s;
   }
@@ -508,12 +512,16 @@ namespace black_internal::logic {
           sorts.push_back(*ts);
         }
         if(
-          std::adjacent_find(
+          auto it = std::adjacent_find(
             sorts.begin(), sorts.end(), std::not_equal_to<>{}
-          ) != sorts.end()
+          ); it != sorts.end()
         ) {
+          size_t i = size_t(it - sorts.begin());
           err(
-            "Equal/distinct predicate must be applied to terms of equal sort"
+            "Terms '" + to_string(terms[i]) + "' and '" + 
+            to_string(terms[i+1]) + "' of distinct sorts '" + 
+            to_string(*it) + "' and '" +
+            to_string(*(it + 1)) + "' cannot be compared by `equal`/`distinct`"
           );
           return false;
         }

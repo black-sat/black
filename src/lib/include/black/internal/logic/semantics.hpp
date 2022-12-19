@@ -103,6 +103,8 @@ namespace black_internal::logic {
     scope &operator=(scope const&) = delete;
     scope &operator=(scope &&);
 
+    alphabet *sigma() const;
+
     void set_default_sort(std::optional<class sort> s);
     std::optional<class sort> default_sort() const;
 
