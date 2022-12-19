@@ -38,6 +38,11 @@ namespace black_internal::encoder
   // Generates the PRUNE encoding
   formula<FO> encoder::prune(size_t k)
   {
+    if(_finite)
+      return big_or(*_sigma, range(0, k), [&](size_t l) {
+        return l_to_k_loop(l, k, false);
+      });
+
     return big_or(*_sigma, range(0, k), [&](size_t l) {
       return big_or(*_sigma, range(l + 1, k), [&](size_t j) {
         return l_to_k_loop(l,j,false) && l_to_k_loop(j,k, false) && 
