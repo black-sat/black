@@ -27,6 +27,7 @@
 #define BLACK_SOLVER_ENCODING_HPP
 
 #include <black/logic/logic.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <vector>
 
@@ -35,6 +36,44 @@
 namespace black_internal::encoder {
   
   using namespace black_internal::logic;
+
+  struct req_t {
+    enum type_t : uint8_t {
+      future,
+      past,
+      atom
+    };
+
+    enum strength_t : uint8_t {
+      none,
+      weak,
+      strong
+    };
+
+    bool operator==(req_t const&) const = default;
+
+    formula<LTLPFO> target;
+    std::vector<var_decl> signature;
+    type_t type;
+    strength_t future_strength;
+    strength_t past_strength;
+  };
+
+  inline std::string to_string(req_t req) {
+    switch(req.type) {
+      case req_t::future:
+        if(req.future_strength == req_t::strong)
+          return "{" + to_string(X(req.target)) + "}";
+        return "{" + to_string(wX(req.target)) + "}";
+      case req_t::past:
+        if(req.past_strength == req_t::strong)
+          return "{" + to_string(Y(req.target)) + "}";
+        return "{" + to_string(Z(req.target)) + "}";
+      case req_t::atom:
+        return "{" + to_string(req.target) + "}";
+    }
+    black_unreachable();    
+  }
 
   //
   // Functions that implement the SAT encoding. 
@@ -48,7 +87,7 @@ namespace black_internal::encoder {
         _finite{finite}
     {
       _frm = to_nnf(_frm);
-      _add_xyz_requests(_frm);
+      _collect_requests(_frm);
     }
 
     encoder(encoder const&) = delete;
@@ -62,8 +101,8 @@ namespace black_internal::encoder {
     // Return the loop var for the loop from l to k
     static proposition loop_prop(alphabet *sigma, size_t l, size_t k);
 
-    // Make the stepped ground version of a formula, f_G^k
-    static proposition ground(formula<LTLPFO> f, size_t k);
+    // Make the stepped ground version of a proposition
+    static proposition stepped(proposition p, size_t k);
 
     // Make the stepped version of a term, t_G^k
     term<FO> stepped(term<LTLPFO> t, size_t k);
@@ -79,13 +118,19 @@ namespace black_internal::encoder {
 
     // Make the stepped version of an atom
     atom<FO> stepped(atom<LTLPFO> a, size_t k);
+    
+    // Make the stepped version of an equality
+    equality<FO> stepped(equality<LTLPFO> a, size_t k);
+    
+    // Make the stepped version of a comparison
+    comparison<FO> stepped(comparison<LTLPFO> a, size_t k);
 
     // Put a formula in negated normal form
     formula<LTLPFO> to_nnf(formula<LTLPFO> f);
 
     // Put a formula in Stepped Normal Form
     formula<FO> to_ground_snf(
-      formula<LTLPFO> f, size_t k, bool quantified = false
+      formula<LTLPFO> f, size_t k, std::vector<var_decl> env
     );
 
     // Generates the PRUNE encoding
@@ -125,31 +170,51 @@ namespace black_internal::encoder {
     bool _finite = false;
 
     // X/Y/Z-requests from the formula's closure
-    std::vector<unary<LTLPFO>> _xrequests;
-    std::vector<yesterday<LTLPFO>> _yrequests;
-    std::vector<w_yesterday<LTLPFO>> _zrequests;
+    std::vector<req_t> _requests;
 
     // cache to memoize to_nnf() calls
     tsl::hopscotch_map<formula<LTLPFO>, formula<LTLPFO>> _nnf_cache;
 
-    // collect X/Y/Z-requests
-    void _add_xyz_requests(formula<LTLPFO> f);
-    bool is_strong(formula<LTLPFO> a);
-    bool is_weak(formula<LTLPFO> a);
-    formula<FO> end_of_trace_prop(size_t i);
-    formula<FO> end_of_trace_semantics(
-      formula<LTLPFO> f, formula<FO> s, size_t k
-    );
-    
-    std::optional<formula<FO>>
-    start_of_trace_semantics(formula<LTLPFO> f, size_t k);
+    formula<FO> ground(req_t, size_t);
+    formula<FO> forall(std::vector<var_decl> env, formula<FO> f);
+
+    void _collect_requests(formula<LTLPFO> f, std::vector<var_decl> env = {});
+    req_t mk_req(tomorrow<LTLPFO>, std::vector<var_decl>);
+    req_t mk_req(w_tomorrow<LTLPFO>, std::vector<var_decl>);
+    req_t mk_req(yesterday<LTLPFO>, std::vector<var_decl>);
+    req_t mk_req(w_yesterday<LTLPFO>, std::vector<var_decl>);
+    std::optional<req_t> mk_req(atom<LTLPFO>, std::vector<var_decl>);
+    std::optional<req_t> mk_req(equality<LTLPFO>, std::vector<var_decl>);
+    std::optional<req_t> mk_req(comparison<LTLPFO>, std::vector<var_decl>);
+    req_t::strength_t future_strength(formula<LTLPFO> a);
+    req_t::strength_t past_strength(formula<LTLPFO> a);
     
     void error(std::string const&msg);
 
     // Extract the x-eventuality from an x-request
-    static std::optional<formula<LTLPFO>> _get_xev(unary<LTLPFO> xreq);
+    static std::optional<formula<LTLPFO>> _get_ev(formula<LTLPFO> f);
   };
 
+}
+
+namespace std {
+  template<>
+  struct hash<black_internal::encoder::req_t> {
+    size_t operator()(black_internal::encoder::req_t r) const {
+      using black_internal::encoder::req_t;
+      using namespace black_internal;
+      
+      size_t h = std::hash<logic::formula<logic::LTLPFO>>{}(r.target);
+      h = hash_combine(h, std::hash<req_t::type_t>{}(r.type));
+      h = hash_combine(h, std::hash<req_t::strength_t>{}(r.future_strength));
+      h = hash_combine(h, std::hash<req_t::strength_t>{}(r.past_strength));
+      
+      for(auto d : r.signature)
+        h = hash_combine(h, d.hash());
+      
+      return h;
+    }
+  };
 }
 
 #endif

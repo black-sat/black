@@ -131,7 +131,7 @@ namespace black_internal::solver
 
   tribool model::value(proposition a, size_t t) const {
     using black_internal::encoder::encoder;
-    proposition u = encoder::ground(a, t);
+    proposition u = encoder::stepped(a, t);
 
     return _solver._data->sat->value(u);
   }

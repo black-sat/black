@@ -336,15 +336,18 @@ namespace black_internal::cvc5
 
         // if the sort has an enumerated domain, the variable is rendered
         // as a constructor application of the relevant datatype
-        if(xi.domain(*vSort)) {
-          cvc::Term term = 
-            solver.mkTerm(
-              cvc::APPLY_CONSTRUCTOR, {
-                cvcSort.getDatatype()[to_string(v.unique_id())].getTerm()
-              }
-            );
-          global_xi.set_data(v, term);
-          return term;
+        if(auto d = xi.domain(*vSort); d) {
+          auto it = std::find(d->elements().begin(), d->elements().end(), v);
+          if(it != d->elements().end()) {
+            cvc::Term term = 
+              solver.mkTerm(
+                cvc::APPLY_CONSTRUCTOR, {
+                  cvcSort.getDatatype()[to_string(v.unique_id())].getTerm()
+                }
+              );
+            global_xi.set_data(v, term);
+            return term;
+          }
         }
 
         // if not, this is a normal variable
