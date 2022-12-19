@@ -29,6 +29,8 @@
 
 #include <string_view>
 
+#include <iostream>
+
 using namespace std::literals;
 
 namespace black_internal::encoder

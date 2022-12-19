@@ -40,7 +40,6 @@ TEST_CASE("Solver")
   sigma = std::move(sigma_);
 
   scope xi{sigma};
-  xi.set_default_sort(sigma.integer_sort());
 
   SECTION("Propositional formulas") {
 
@@ -79,6 +78,8 @@ TEST_CASE("Solver")
   }
 
   SECTION("First-order formulas") {
+    
+    xi.set_default_sort(sigma.integer_sort());
 
     std::vector<std::string> backends = {
       "z3", "mathsat", "cvc5"
@@ -126,30 +127,39 @@ TEST_CASE("Solver")
           proposition p = sigma.proposition("p");
           function func = sigma.function("f");
 
-          xi.declare(
-            func, sigma.integer_sort(), {sigma.integer_sort()}
-          );
+          variable a = sigma.variable("a");
+          variable b = sigma.variable("b");
+          variable c = sigma.variable("c");
 
-          sort s = sigma.integer_sort();
+          named_sort s = sigma.named_sort("sort");
+
+          xi.declare(s, make_domain({a,b,c}));
+
+          xi.declare(func, s, {s});
+          xi.declare(x, s);
+          xi.declare(y, s);
+          xi.declare(z, s);
           
           std::vector<formula> tests = {
             forall({x[s]}, x == x),
             X(forall({x[s]}, x == x)),
-            exists({x[s],y[s]}, next(z) + 2 != y),
+            exists({x[s],y[s]}, func(next(z)) != y),
             exists({x[s],y[s]}, sigma.top()),
             exists({x[s],y[s]}, !p),
             !forall({x[s],y[s]}, x != y),
             !exists({x[s]}, func(x) == x),
             exists({x[s]}, X(x == y)),
             exists({x[s]}, wX(x == y)),
-            exists({x[s]}, X(Y(x == 0))),
-            exists({x[s]}, X(Z(x == 0)))
+            exists({x[s]}, X(Y(x == a))),
+            exists({x[s]}, X(Z(x == b)))
           };
 
           for(formula f : tests) {
             DYNAMIC_SECTION("Test formula: " << to_string(f)) {
               solver slv;
               slv.set_sat_backend(backend);
+
+              REQUIRE(xi.type_check(f, [](auto) { }));
 
               REQUIRE(slv.solve(xi, f));
             }

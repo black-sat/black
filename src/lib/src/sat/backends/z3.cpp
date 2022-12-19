@@ -519,14 +519,14 @@ namespace black_internal::z3
         black_assert(vSort);
         z3_sort_record_t record = to_z3(*vSort);
 
-        // if the sort has an enumerated domain, the variable is taken from the 
-        // relevant enum sort
+        // if the sort has an enumerated domain, the variable might be taken
+        // from the relevant enum sort
         if(xi.domain(*vSort)) {
-          auto it = record.elements->find(v);
-          black_assert(it != record.elements->end());
-          Z3_ast term = it->second;
-          global_xi.set_data(v, term);
-          return term;
+          if(auto it = record.elements->find(v); it != record.elements->end()) {
+            Z3_ast term = it->second;
+            global_xi.set_data(v, term);
+            return term;
+          }
         }
 
         // if not, this is a normal variable
