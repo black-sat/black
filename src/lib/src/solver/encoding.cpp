@@ -662,7 +662,21 @@ namespace black_internal::encoder
     return req_t{f, env, req_t::atom, future_w, past_w};
   }
 
-
+  formula<LTLPFO> to_formula(req_t req) {
+    switch(req.type) {
+      case req_t::future:
+        if(req.future_strength == req_t::strong)
+          return X(req.target);
+        return wX(req.target);
+      case req_t::past:
+        if(req.past_strength == req_t::strong)
+          return Y(req.target);
+        return Z(req.target);
+      case req_t::atom:
+        return req.target;
+    }
+    black_unreachable();
+  }
 
   void encoder::_collect_requests(formula<LTLPFO> f, std::vector<var_decl> env)
   { 

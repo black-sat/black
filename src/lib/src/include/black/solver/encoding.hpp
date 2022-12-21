@@ -59,20 +59,10 @@ namespace black_internal::encoder {
     strength_t past_strength;
   };
 
+  formula<LTLPFO> to_formula(req_t req);
+
   inline std::string to_string(req_t req) {
-    switch(req.type) {
-      case req_t::future:
-        if(req.future_strength == req_t::strong)
-          return "{" + to_string(X(req.target)) + "}";
-        return "{" + to_string(wX(req.target)) + "}";
-      case req_t::past:
-        if(req.past_strength == req_t::strong)
-          return "{" + to_string(Y(req.target)) + "}";
-        return "{" + to_string(Z(req.target)) + "}";
-      case req_t::atom:
-        return "{" + to_string(req.target) + "}";
-    }
-    black_unreachable();    
+    return "{" + to_string(to_formula(req)) + "}"; 
   }
 
   //
