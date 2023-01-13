@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
       x_status == c_apps_rcvd &&
       applications(u1, s1) &&
       wnext(x_evaluations) == x_evaluations &&
-      //s1 > 80 &&
+      s1 > 80 &&
       wnext(x_status) == c_evaluated &&
       wX(winners(u1, s1)) &&
       forall({u2[user], s2[score]},
@@ -223,7 +223,11 @@ int main(int argc, char **argv) {
 
   solver slv;
 
-  tribool result = slv.solve(xi, to_check, /* finite = */true);
+  tribool result = slv.solve(
+    xi, to_check, 
+    /* finite = */true, 
+    std::numeric_limits<size_t>::max(),
+    /* semi_decidable = */true);
 
   if(result == true)
     std::cout << "SAT\n";

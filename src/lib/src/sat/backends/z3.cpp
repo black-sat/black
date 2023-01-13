@@ -527,10 +527,11 @@ namespace black_internal::z3
         // relevant enum sort
         if(xi.domain(*vSort)) {
           auto it = record.elements->find(v);
-          black_assert(it != record.elements->end());
-          Z3_ast term = it->second;
-          global_xi.set_data(v, term);
-          return term;
+          if(it != record.elements->end()) {
+            Z3_ast term = it->second;
+            global_xi.set_data(v, term);
+            return term;
+          }
         }
 
         // if not, this is a normal variable
