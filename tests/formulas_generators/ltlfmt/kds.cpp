@@ -30,6 +30,32 @@
 
 using namespace black;
 
+[[maybe_unused]]
+static void tracer(black::solver::trace_t trace) {
+  static size_t k = 0;
+  using black::logic::fragments::FO::formula;
+
+  if(trace.type == black::solver::trace_t::stage) {
+    k = std::get<size_t>(trace.data);
+    std::cerr << "k: " << k << "\n";
+  }
+
+  // if(trace.type == black::solver::trace_t::unrav) {
+  //   std::cerr << k << "-unrav: " << 
+  //     to_string(std::get<formula>(trace.data)) << "\n";
+  // }
+
+  // if(trace.type == black::solver::trace_t::empty) {
+  //   std::cerr << k << "-empty: " << 
+  //     to_string(std::get<formula>(trace.data)) << "\n";
+  // }
+  
+  // if(trace.type == black::solver::trace_t::prune) {
+  //   std::cerr << k << "-prune: " << 
+  //     to_string(std::get<formula>(trace.data)) << "\n";
+  // }
+}
+
 inline auto frame_axiom(scope &xi, relation rel) {
   using namespace std::literals;
 
@@ -43,20 +69,6 @@ inline auto frame_axiom(scope &xi, relation rel) {
 
   return 
     forall(decls, implies(X(sigma.top()), iff(rel(decls), wX(rel(decls)))));
-}
-
-inline auto frame_axiom(
-  scope &xi, std::vector<relation> &rels, std::optional<size_t> except
-) {
-  formula axiom = xi.sigma()->top();
-
-  for(size_t i = 0; i < rels.size(); ++i) {
-    if(i == except)
-      continue;
-    axiom = axiom && frame_axiom(xi, rels[i]);
-  }
-
-  return axiom;
 }
 
 int main(int argc, char **argv) {
@@ -73,6 +85,13 @@ int main(int argc, char **argv) {
     std::cerr << "Property must be 1 or 2\n";
     return 1;
   }
+
+  if(N <= 0) {
+    std::cerr << "N must be positive\n";
+    return 1;
+  }
+
+  std::cout << "Solving property " << P << " for N = " << N << "...\n";
 
   alphabet sigma;
   scope xi{sigma};
@@ -111,31 +130,45 @@ int main(int argc, char **argv) {
   xi.declare(state, make_domain({
     c_init, c_app_phase, c_apps_rcvd, c_evaluated, c_final
   }));
+  
+  // auto c_undef_user = sigma.variable("c_undef_user");
+  // xi.declare(c_undef_user, user, scope::rigid);
 
   formula winners_primary_key = 
     forall({u1[user], s1[score], s2[score]}, 
       implies(winners(u1, s1) && winners(u1, s2), s1 == s2)
     );
+  
+  formula applications_primary_key = 
+    forall({u1[user], s1[score], s2[score]}, 
+      implies(applications(u1, s1) && applications(u1, s2), s1 == s2)
+    );
 
-  formula axioms = winners_primary_key;
+  formula axioms = winners_primary_key && applications_primary_key;
 
   formula reset =
     x_status == c_init &&
     forall({u1[user], s1[score]}, !applications(u1, s1));
 
-  formula init = reset && x_evaluations == N &&
+  formula init = reset && x_evaluations == N - 1 && 
+    x_score == 0 && //x_winner == c_undef_user &&
     forall({u1[user], s1[score]}, !winners(u1, s1));
 
   formula phi_tr = sigma.bottom();
 
   phi_tr = phi_tr || (
     exists({u1[user], s1[score]}, 
+      // guard
       (x_status == c_init || x_status == c_app_phase) && 
       s1 >= 1 && s1 <= 100 && 
       !applications(u1, s1) &&
-      wnext(x_evaluations) == x_evaluations &&
+      // update
       wnext(x_status) == c_app_phase &&
+      wnext(x_evaluations) == x_evaluations &&
+      wnext(x_score) == x_score &&
+      wnext(x_winner) == x_winner &&
       wX(applications(u1, s1)) &&
+      // frames
       forall({u2[user], s2[score]},
         (
           implies(u2 != u1 && s2 != s1, 
@@ -144,26 +177,36 @@ int main(int argc, char **argv) {
             )
           )
         )
-      ) && frame_axiom(xi, winners)
+      ) && frame_axiom(xi, winners) 
     )
   );
 
   phi_tr = phi_tr || (
+    // guard
     x_status == c_app_phase &&
+    // update
     wnext(x_evaluations) == x_evaluations && 
     wnext(x_status) == c_apps_rcvd &&
+    wnext(x_score) == x_score &&
+    wnext(x_winner) == x_winner &&
+    // frames
     frame_axiom(xi, applications) &&
     frame_axiom(xi, winners)
   );
 
   phi_tr = phi_tr || (
     exists({u1[user], s1[score]}, 
+      // guard
       x_status == c_apps_rcvd &&
       applications(u1, s1) &&
+      //s1 > 80 &&
+      // update
       wnext(x_evaluations) == x_evaluations &&
-      s1 > 80 &&
       wnext(x_status) == c_evaluated &&
+      wnext(x_score) == x_score &&
+      wnext(x_winner) == x_winner &&
       wX(winners(u1, s1)) &&
+      // frames
       forall({u2[user], s2[score]},
         implies(u2 != u1 && s2 != s1, 
           implies(X(sigma.top()), 
@@ -175,30 +218,36 @@ int main(int argc, char **argv) {
   );
 
   phi_tr = phi_tr || (
+    // guard
     x_status == c_evaluated && x_evaluations > 0 &&
+    // update
     wX(reset) &&
+    wnext(x_score) == x_score &&
+    wnext(x_winner) == x_winner &&
     wnext(x_evaluations) == x_evaluations - 1 &&
+    // frames
     frame_axiom(xi, winners)
   );
 
   phi_tr = phi_tr || (
-    x_status == c_evaluated && x_evaluations == 0 && 
-    wnext(x_status) == c_final &&
     exists({u1[user], s1[score]},
+      // guard
+      x_status == c_evaluated && x_evaluations == 0 && 
       winners(u1, s1) &&
+      // update
+      wnext(x_status) == c_final &&
       wnext(x_winner) == u1 &&
       wnext(x_score) == s1
-    ) && frame_axiom(xi, winners)
-  );
-
-  phi_tr = phi_tr || (
-    x_status == c_final && wX(sigma.bottom())
+    ) && 
+    // frames
+    frame_axiom(xi, winners)
   );
 
   [[maybe_unused]]
   formula final = x_status == c_final;
 
-  formula system = axioms && init && G(phi_tr) && F(final);
+  formula system = 
+    init && G(axioms) && G(implies(X(sigma.top()), phi_tr)) && F(final);
 
   // -------
 
@@ -223,6 +272,9 @@ int main(int argc, char **argv) {
 
   solver slv;
 
+  slv.set_tracer(tracer);
+  //slv.set_sat_backend("cvc5");
+
   tribool result = slv.solve(
     xi, to_check, 
     /* finite = */true, 
@@ -235,6 +287,13 @@ int main(int argc, char **argv) {
     std::cout << "UNSAT\n";
   else
     std::cout << "UNKNOWN\n";
+
+  // if(result == true) {
+  //   auto m = slv.model();
+  //   black_assert(m);
+
+  //   std::cout << m->dump();
+  // }
 
   return 0;
 }

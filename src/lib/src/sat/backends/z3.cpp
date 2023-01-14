@@ -43,8 +43,17 @@ BLACK_REGISTER_SAT_BACKEND(z3, {
 
 namespace black_internal::z3
 {
-  inline proposition fresh(formula f) {
+  static proposition fresh(formula f) {
     return f.sigma()->proposition(f);
+  }
+
+  template<typename T>
+  std::string unique_symbol(T v) {
+    std::string name = to_string(v.name());
+    if(name.size() >= 20)
+      return to_string(v.unique_id());
+
+    return to_string(v.unique_id()) + ":" + to_string(v.name());
   }
 
   struct z3_sort_record_t {
@@ -243,6 +252,13 @@ namespace black_internal::z3
     return result;
   }
 
+  std::string z3::dump_model() const {
+    if(!_data->model)
+      return "<no model>";
+
+    return Z3_model_to_string(_data->context, *_data->model);
+  }
+  
   void z3::clear() { 
     Z3_solver_reset(_data->context, _data->solver);
   }
@@ -293,17 +309,17 @@ namespace black_internal::z3
         if(!d)
           return {Z3_mk_uninterpreted_sort(
             context, 
-            Z3_mk_string_symbol(context, to_string(n.unique_id()).c_str())
+            Z3_mk_string_symbol(context, unique_symbol(n).c_str())
           ), {}};
 
         Z3_symbol sort_name = 
-          Z3_mk_string_symbol(context, to_string(n.unique_id()).c_str());
+          Z3_mk_string_symbol(context, unique_symbol(n).c_str());
         std::vector<Z3_symbol> names;
         std::vector<Z3_constructor> ctors;
         
         for(auto x : d->elements()) {
           Z3_symbol xname = 
-            Z3_mk_string_symbol(context, to_string(x.unique_id()).c_str());
+            Z3_mk_string_symbol(context, unique_symbol(x).c_str());
           Z3_symbol xrec = Z3_mk_string_symbol(context, "");
 
           names.push_back(xname);
@@ -338,7 +354,7 @@ namespace black_internal::z3
 
   Z3_func_decl z3::_z3_t::to_z3(function f) {
     Z3_symbol symbol = 
-      Z3_mk_string_symbol(context, to_string(f.name()).c_str());
+      Z3_mk_string_symbol(context, unique_symbol(f).c_str());
     
     Z3_sort result = to_z3(xi.sort(f)).sort;
     
@@ -356,7 +372,7 @@ namespace black_internal::z3
   
   Z3_func_decl z3::_z3_t::to_z3(relation r) {
     Z3_symbol symbol = 
-      Z3_mk_string_symbol(context, to_string(r.name()).c_str());
+      Z3_mk_string_symbol(context, unique_symbol(r).c_str());
     
     Z3_sort bool_s = Z3_mk_bool_sort(context);
     
@@ -376,7 +392,7 @@ namespace black_internal::z3
     Z3_sort s = to_z3(decl.sort()).sort;
 
     Z3_symbol symbol = Z3_mk_string_symbol(
-      context, to_string(decl.variable().unique_id()).c_str()
+      context, unique_symbol(decl.variable()).c_str()
     );
 
     return Z3_mk_const(context, symbol, s);
@@ -463,7 +479,7 @@ namespace black_internal::z3
 
         Z3_sort sort = Z3_mk_bool_sort(context);
         Z3_symbol symbol = 
-          Z3_mk_string_symbol(context, to_string(p.unique_id()).c_str());
+          Z3_mk_string_symbol(context, unique_symbol(p).c_str());
         
         Z3_ast result = Z3_mk_const(context, symbol, sort);
         props.insert({p, result});
@@ -536,7 +552,7 @@ namespace black_internal::z3
 
         // if not, this is a normal variable
         Z3_symbol symbol = 
-          Z3_mk_string_symbol(context, to_string(v.unique_id()).c_str());
+          Z3_mk_string_symbol(context, unique_symbol(v).c_str());
 
         return Z3_mk_const(context, symbol, record.sort);
       },

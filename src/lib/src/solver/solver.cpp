@@ -145,6 +145,10 @@ namespace black_internal::solver
     return _solver._data->sat->value(u);
   }
 
+  std::string model::dump() const {
+    return _solver._data->sat->dump_model();
+  }
+
   void solver::_solver_t::trace(size_t k){
     tracer({nullptr, trace_t::stage, {k}});
   }

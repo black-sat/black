@@ -84,6 +84,11 @@ namespace black::sat
     // or if it is a don't care
     virtual tribool value(logic::atom<logic::FO> a) const = 0;
 
+    // gets an internal string representation of the current model.
+    // the output is backend-dependent.
+    // useful for debugging purposes.
+    virtual std::string dump_model() const { return "<unimplemented>"; }
+
     // clear the current context completely
     virtual void clear() = 0;
 
