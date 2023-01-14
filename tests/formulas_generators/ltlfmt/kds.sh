@@ -50,22 +50,20 @@ main() {
 
   echo Running with N = $1 and T = $2... >&2
 
-  {
-    echo "N P1s P1l P2s P2l"
+  echo "N P1s P1l P2s P2l"
 
-    for n in $(seq 5 5 $N); do
-      echo -n $n
-      for P in 1 2; do
-        for S in s l; do
-          echo -n "n = $n/$N, P = $P, S = $S, ..." 1>&2
-          result=$(run $T $P $S $n)
-          echo " $result" >&2
-          echo -n " $result"
-        done
+  for n in $(seq 5 5 $N); do
+    echo -n $n
+    for P in 1 2; do
+      for S in s l; do
+        echo -n "n = $n/$N, P = $P, S = $S, ..." 1>&2
+        result=$(run $T $P $S $n)
+        echo " $result" >&2
+        echo -n " $result"
       done
-      echo
-    done 
-  } | column -t
+    done
+    echo
+  done 
   
 
 }

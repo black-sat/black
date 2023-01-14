@@ -62,8 +62,13 @@ static tribool verify_kds(KDS kds, formula property) {
   solver slv;
 
   slv.set_tracer([](black::solver::trace_t trace) {
-    if(trace.type == black::solver::trace_t::stage)
+    if(trace.type == black::solver::trace_t::stage) {
+      size_t k = std::get<size_t>(trace.data);
       std::cout << ".";
+      if(k % 10 == 0)
+        std::cout << k;
+      std::cout << std::flush;
+    }
   });
 
   return slv.solve(
@@ -371,7 +376,7 @@ int main(int argc, char **argv)
 
   std::cout << 
     "Verifying " << ((S == 2) ? "simple" : "arithmetic") <<
-    " property " << P << " for N = " << N << "...";
+    " property " << P << " for N = " << N << "..." << std::flush;
 
   bool simple = S == 2;
 
