@@ -63,7 +63,7 @@ static tribool verify_kds(KDS kds, formula property) {
 
   slv.set_tracer([](black::solver::trace_t trace) {
     if(trace.type == black::solver::trace_t::stage)
-      std::cerr << ".";
+      std::cout << ".";
   });
 
   return slv.solve(
