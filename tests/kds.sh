@@ -26,7 +26,8 @@ run() {
   T=$1
   shift
 
-  result=$(timeout $T \time ./kds "$@" 2>&1 1>\dev\null | awk '{print $1}')
+  result=$(timeout $T \time ./kds "$@" 2>&1 1>\dev\null | head -n 1 | awk '{print $1}' | sed 's/user//g' )
+
   if [ -z "$result" ]; then
     echo "timeout"
   else
