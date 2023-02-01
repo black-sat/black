@@ -131,7 +131,7 @@ set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 
 set(CPACK_DEBIAN_PACKAGE_SECTION "science")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS 
-  "libc6,libgcc1,libstdc++6,zlib1g,libz3-4,libfmt8"
+  "libc6,libgcc1,libstdc++6,zlib1g,libz3-4,libfmt-dev"
 )
 
 include(CPack)

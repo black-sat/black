@@ -26,9 +26,20 @@ option(BLACK_ENABLE_PYTHON_BINDINGS "Enable Python bindings" ON)
 
 if(BLACK_ENABLE_PYTHON_BINDINGS)
 
+  find_package(Python3 COMPONENTS Interpreter Development)
   find_package(pybind11 QUIET)
 
-  if(pybind11_FOUND)
+  message(STATUS "Python sitelib: ${Python3_SITELIB}")
+
+  if(NOT Python3_FOUND)
+    message(STATUS "Python NOT found. Disabling Python bindings...") 
+  endif()
+
+  if(NOT pybind11_FOUND)
+    message(STATUS "PyBind11 NOT found. Disabling Python bindings...")
+  endif()
+
+  if(Python3_FOUND AND pybind11_FOUND)
 
     message(STATUS "Python and PyBind11 found! Enabling Python bindings...")
 
@@ -38,8 +49,11 @@ if(BLACK_ENABLE_PYTHON_BINDINGS)
       pyblack PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
     target_link_libraries(pyblack PUBLIC black)
-    set_target_properties(pyblack PROPERTIES OUTPUT_NAME black)
+    set_target_properties(pyblack PROPERTIES OUTPUT_NAME black_sat)
 
+    install(TARGETS pyblack DESTINATION "${Python3_SITELIB}")
+  
   endif()
+    
 endif()
 

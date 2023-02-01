@@ -99,14 +99,14 @@ namespace pyblack
     class_.def(name, [&](H h, base_t t) {
       return specialize(op(h, t));
     }, py::is_operator());
-  };
+  }
 
   template<black::hierarchy H, typename F>
   void def_unary_op(py::class_<H> &class_, const char *name, F op) {
     class_.def(name, [&](H h) {
       return specialize(op(h));
     }, py::is_operator());
-  };
+  }
 
   template<typename T>
   void register_operators(T) { }
@@ -167,12 +167,12 @@ namespace pyblack
   }
 
   template<typename T>
-  void register_api(py::module_ &, T) { }
+  void register_api(py::module &, T) { }
 
 
   template<internal::hierarchy H>
     requires (H::hierarchy == internal::hierarchy_type::formula)
-  void register_api(py::module_ &m, py::class_<H> &) {
+  void register_api(py::module &m, py::class_<H> &) {
     m.def("X", [](H h) { return specialize(X(h)); });
     m.def("wX", [](H h) { return specialize(wX(h)); });
     m.def("Y", [](H h) { return specialize(Y(h)); });
@@ -193,7 +193,7 @@ namespace pyblack
 
   template<black::syntax_element Element, typename HClass>
   void register_hierarchy_element(
-    std::string_view name, py::module_ &m, 
+    std::string_view name, py::module &m, 
     py::class_<black::alphabet> &alphabet, HClass &hclass
   ) {
     static constexpr auto element = Element;
@@ -228,7 +228,7 @@ namespace pyblack
       (class_.def_property_readonly(
         internal::storage_fields_v<storage>[I].data(), 
         [](element_type self) {
-          return specialize(get<I>(self));
+          return specialize(black_internal::logic::get<I>(self));
         }
       ), ...);
     };
@@ -247,7 +247,7 @@ namespace pyblack
 
   template<internal::hierarchy_type Hierarchy>
   void register_hierarchy(
-    std::string_view name, py::module_ &m, py::class_<black::alphabet> &alphabet
+    std::string_view name, py::module &m, py::class_<black::alphabet> &alphabet
   ) {
     using hierarchy_type = internal::hierarchy_type_of_t<syntax, Hierarchy>;
     py::class_<hierarchy_type> class_{m, name.data()};
@@ -271,7 +271,7 @@ namespace pyblack
   bool hierarchy_registered_v = false;
 
   void register_hierarchies(
-    py::module_ &m, py::class_<black::alphabet> &alphabet
+    py::module &m, py::class_<black::alphabet> &alphabet
   ) {
 
     auto declare = [&]<black::syntax_element E>(black::syntax_list<E>) {

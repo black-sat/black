@@ -34,7 +34,7 @@
 
 namespace pyblack {
 
-  static void register_basic_types(py::module_ &m) {
+  static void register_basic_types(py::module &m) {
     using tribool = black::tribool;
     using identifier = black::identifier;
 
@@ -69,7 +69,7 @@ namespace pyblack {
     py::implicitly_convertible<std::string, identifier>();
   }
 
-  static void register_api(py::module_ &m, py::class_<black::alphabet> &sigma) {
+  static void register_api(py::module &m, py::class_<black::alphabet> &sigma) {
     namespace logic = black::logic;
 
     sigma.def("top", &black::alphabet::top);
@@ -200,7 +200,7 @@ namespace pyblack {
 
 }
 
-PYBIND11_MODULE(black, m) {
+PYBIND11_MODULE(black_sat, m) {
 
   using namespace pyblack;
 
