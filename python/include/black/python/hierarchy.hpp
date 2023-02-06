@@ -27,8 +27,10 @@
 #include <black/python/support.hpp>
 
 namespace pyblack {
+  namespace py = pybind11;
+
   void register_hierarchies(
-    py::module_ &m, py::class_<black::alphabet> &alphabet
+    py::module &m, py::class_<black::alphabet> &alphabet
   );
 }
 
