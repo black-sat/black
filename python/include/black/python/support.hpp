@@ -31,6 +31,43 @@
 namespace pyblack 
 {  
   namespace py = pybind11;
+  namespace internal = black_internal::logic;
+
+  using syntax = black::logic::LTLPFO;
+
+  template<typename List>
+  struct make_universal_variant;
+
+  template<black::syntax_element ...Elements>
+  struct make_universal_variant<black::syntax_list<Elements...>> {
+    using type = std::variant<internal::element_type_of_t<syntax, Elements>...>;
+  };
+
+  using universal_variant_t = typename 
+    make_universal_variant<internal::universal_fragment_t::list>::type;
+
+  template<typename T>
+  inline auto specialize(T&& t) {
+    return t;
+  }
+
+  template<typename H>
+    requires black::hierarchy<std::remove_cvref_t<H>>
+  inline auto specialize(H&& h) {
+    return h.match(
+      [](auto x) {
+        return universal_variant_t{x};
+      }
+    );
+  }
+
+  template<typename H>
+    requires black::hierarchy<std::remove_cvref_t<H>>
+  inline std::optional<universal_variant_t> specialize(std::optional<H> h) {
+    if(!h)
+      return std::nullopt;
+    return std::optional{universal_variant_t{specialize(*h)}};
+  }
 
 }
 

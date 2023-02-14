@@ -41,6 +41,8 @@ namespace black_internal::cvc5
     virtual tribool is_sat_with(formula assumption) override;
     virtual tribool value(proposition a) const override;
     virtual tribool value(atom a) const override;
+    virtual tribool value(equality a) const override;
+    virtual tribool value(comparison a) const override;
     virtual void clear() override;
     virtual std::optional<std::string> license() const override;
 

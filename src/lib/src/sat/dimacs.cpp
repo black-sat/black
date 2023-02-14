@@ -109,6 +109,14 @@ namespace black_internal::dimacs
     return tribool::undef;
   }
 
+  tribool solver::value(logic::equality<logic::FO>) const {
+    return tribool::undef;
+  }
+
+  tribool solver::value(logic::comparison<logic::FO>) const {
+    return tribool::undef;
+  }
+
   void solver::clear_vars() {
     _data = std::make_unique<_solver_t>();
   }

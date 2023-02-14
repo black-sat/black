@@ -36,10 +36,6 @@
 
 namespace pyblack 
 {
-  namespace internal = black_internal::logic;
-
-  using syntax = black::logic::LTLPFO;
-
   template<typename T>
   struct clean_init_arg {
     using type = T;
@@ -67,43 +63,48 @@ namespace pyblack
     }
   };
 
-  template<typename List>
-  struct make_universal_variant;
-
-  template<black::syntax_element ...Elements>
-  struct make_universal_variant<black::syntax_list<Elements...>> {
-    using type = std::variant<internal::element_type_of_t<syntax, Elements>...>;
-  };
-
-  using universal_variant_t = typename 
-    make_universal_variant<internal::universal_fragment_t::list>::type;
-
-  template<typename T>
-  inline auto specialize(T&& t) {
-    return t;
-  }
-
-  template<typename H>
-    requires black::hierarchy<std::remove_cvref_t<H>>
-  inline auto specialize(H&& h) {
-    return h.match(
-      [](auto x) {
-        return universal_variant_t{x};
-      }
-    );
-  }
-
   template<black::hierarchy H, typename F>
-  void def_bin_op(py::class_<H> &class_, const char *name, F op) {
+  void def_bin_op_simple(
+    py::class_<H> &class_, std::string name, F op
+  ) {
     using base_t =  internal::hierarchy_type_of_t<syntax, H::hierarchy>;
-    class_.def(name, [&](H h, base_t t) {
+    std::string opname = "__" + name + "__";
+
+    class_.def(opname.c_str(), [&](H h, base_t t) {
       return specialize(op(h, t));
     }, py::is_operator());
   }
 
+
   template<black::hierarchy H, typename F>
-  void def_unary_op(py::class_<H> &class_, const char *name, F op) {
-    class_.def(name, [&](H h) {
+  void def_bin_op(
+    py::class_<H> &class_, std::string name, F op
+  ) {
+    std::string opname = "__" + name + "__";
+    std::string ropname = "__r" + name + "__";
+
+    def_bin_op_simple(class_, name, op);
+
+    class_.def(opname.c_str(), [&](H h, int64_t x) {
+      return specialize(op(h, x));
+    }, py::is_operator());
+
+    class_.def(opname.c_str(), [&](H h, double x) {
+      return specialize(op(h, x));
+    }, py::is_operator());
+    
+    class_.def(ropname.c_str(), [&](H h, int64_t x) {
+      return specialize(op(h, x));
+    }, py::is_operator());
+
+    class_.def(ropname.c_str(), [&](H h, double x) {
+      return specialize(op(h, x));
+    }, py::is_operator());
+  }
+
+  template<black::hierarchy H, typename F>
+  void def_unary_op(py::class_<H> &class_, std::string name, F op) {
+    class_.def(("__" + name + "__").c_str(), [&](H h) {
       return specialize(op(h));
     }, py::is_operator());
   }
@@ -114,17 +115,17 @@ namespace pyblack
   template<internal::hierarchy H>
     requires (H::hierarchy == internal::hierarchy_type::term)
   void register_operators(py::class_<H> &class_) {
-    def_bin_op(class_, "__add__", std::plus<>{});
-    def_bin_op(class_, "__sub__", std::minus<>{});
-    def_bin_op(class_, "__mul__", std::multiplies<>{});
-    def_bin_op(class_, "__truediv__", std::divides<>{});
-    def_unary_op(class_, "__negate__", std::negate<>{});
-    def_bin_op(class_, "__eq__", std::equal_to<>{});
-    def_bin_op(class_, "__ne__", std::not_equal_to<>{});
-    def_bin_op(class_, "__lt__", std::less<>{});
-    def_bin_op(class_, "__le__", std::less_equal<>{});
-    def_bin_op(class_, "__gt__", std::greater<>{});
-    def_bin_op(class_, "__ge__", std::greater_equal<>{});
+    def_bin_op(class_, "add", [](auto x, auto y) { return x + y; });
+    def_bin_op(class_, "sub", [](auto x, auto y) { return x - y; });
+    def_bin_op(class_, "mul", [](auto x, auto y) { return x * y; });
+    def_bin_op(class_, "truediv", [](auto x, auto y) { return x / y; });
+    def_unary_op(class_, "negate", [](auto x) { return -x; });
+    def_bin_op(class_, "eq", [](auto x, auto y) { return x == y; });
+    def_bin_op(class_, "ne", [](auto x, auto y) { return x != y; });
+    def_bin_op(class_, "lt", [](auto x, auto y) { return x < y; });
+    def_bin_op(class_, "le", [](auto x, auto y) { return x <= y; });
+    def_bin_op(class_, "gt", [](auto x, auto y) { return x > y; });
+    def_bin_op(class_, "ge", [](auto x, auto y) { return x >= y; });
 
     if constexpr(H::storage == internal::storage_type::variable) {
       class_.def("__getitem__", [&](H var, black::sort s) {
@@ -136,10 +137,11 @@ namespace pyblack
   template<internal::hierarchy H>
     requires (H::hierarchy == internal::hierarchy_type::formula)
   void register_operators(py::class_<H> &class_) {
-    def_unary_op(class_, "__invert__", std::logical_not<>{});
-    def_bin_op(class_, "__and__", std::logical_and<>{});
-    def_bin_op(class_, "__or__", std::logical_or<>{});
-    def_bin_op(class_, "__eq__", std::equal_to<>{});
+    def_unary_op(class_, "invert", std::logical_not<>{});
+    def_bin_op_simple(class_, "and", std::logical_and<>{});
+    def_bin_op_simple(class_, "or", std::logical_or<>{});
+    def_bin_op_simple(class_, "eq", std::equal_to<>{});
+    def_bin_op_simple(class_, "ne", std::not_equal_to<>{});
   }
   
   template<internal::hierarchy H>
@@ -148,6 +150,17 @@ namespace pyblack
     class_.def("__call__", [](black::relation self, py::args args) {
       std::vector<black::term> terms;
       for(auto it = args.begin(); it != args.end(); ++it) {
+        try {
+          int64_t value = py::cast<int64_t>(*it);
+          terms.push_back(black::constant(self.sigma()->integer(value)));
+          continue;
+        } catch(...) { }
+        try {
+          double value = py::cast<double>(*it);
+          terms.push_back(black::constant(self.sigma()->real(value)));
+          continue;
+        } catch(...) { }
+
         terms.push_back(py::cast<black::term>(*it));
       }
       return black::atom(self, terms);
@@ -190,7 +203,6 @@ namespace pyblack
     m.def("T", [](H h1, H h2) { return specialize(T(h1, h2)); });
   }
 
-
   template<black::syntax_element Element, typename HClass>
   void register_hierarchy_element(
     std::string_view name, py::module &m, 
@@ -205,7 +217,6 @@ namespace pyblack
     using hierarchy_type = internal::hierarchy_type_of_t<syntax, hierarchy>;
 
     py::class_<element_type> class_{m, name.data()};
-
     hclass.def(py::init<element_type>());
 
     py::implicitly_convertible<element_type, hierarchy_type>();
@@ -240,7 +251,7 @@ namespace pyblack
     };
 
     class_.def("__str__", repr);
-    class_.def("__repr__", repr);
+    //class_.def("__repr__", repr);
 
     register_operators(class_);
   }

@@ -239,6 +239,48 @@ namespace black_internal::z3
     return result;
   }
 
+  tribool z3::value(equality e) const {
+    if(!_data->model)
+      return tribool::undef;
+
+    Z3_ast term = _data->to_z3(e);
+    Z3_ast res;
+
+    [[maybe_unused]] 
+    auto ok = 
+      Z3_model_eval(_data->context, *_data->model, term, false, &res);
+    black_assert(ok);
+
+    Z3_lbool lres = Z3_get_bool_value(_data->context, res);
+    
+    tribool result = 
+      lres == Z3_L_TRUE ? tribool{true} :
+      lres == Z3_L_FALSE ? tribool{false} : tribool::undef;
+
+    return result;
+  }
+
+  tribool z3::value(comparison c) const {
+    if(!_data->model)
+      return tribool::undef;
+
+    Z3_ast term = _data->to_z3(c);
+    Z3_ast res;
+
+    [[maybe_unused]] 
+    auto ok = 
+      Z3_model_eval(_data->context, *_data->model, term, false, &res);
+    black_assert(ok);
+
+    Z3_lbool lres = Z3_get_bool_value(_data->context, res);
+    
+    tribool result = 
+      lres == Z3_L_TRUE ? tribool{true} :
+      lres == Z3_L_FALSE ? tribool{false} : tribool::undef;
+
+    return result;
+  }
+
   void z3::clear() { 
     Z3_solver_reset(_data->context, _data->solver);
   }

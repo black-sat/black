@@ -23,11 +23,14 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/functional.h>
 
 #include <black/support/tribool.hpp>
 #include <black/support/identifier.hpp>
 #include <black/logic/logic.hpp>
+#include <black/logic/parser.hpp>
 #include <black/solver/solver.hpp>
+#include <black/solver/core.hpp>
 
 #include <black/python/support.hpp>
 #include <black/python/hierarchy.hpp>
@@ -38,13 +41,17 @@ namespace pyblack {
     using tribool = black::tribool;
     using identifier = black::identifier;
 
-    auto tribool_to_string = [](tribool b) {
+    auto tribool_str = [](tribool b) {
+      return b == true ? "True" : 
+             b == false ? "False" : "Undefined";
+    };
+    auto tribool_repr = [](tribool b) {
       return b == true ? "True" : 
              b == false ? "False" : "tribool.undef";
     };
 
     py::class_<black::tribool::undef_t>(m, "tribool_undef_t")
-      .def("__str__", [](tribool::undef_t) { return "tribool.undef"; })
+      .def("__str__", [](tribool::undef_t) { return "Undefined"; })
       .def("__repr__", [](tribool::undef_t) { return "tribool.undef"; })
       .def("__bool__", [](tribool::undef_t) { return false; });
 
@@ -53,8 +60,8 @@ namespace pyblack {
       .def(py::init<tribool::undef_t>())
       .def_readonly_static("undef", &tribool::undef)
       .def("__bool__", [](tribool b) { return b == true; })
-      .def("__str__", tribool_to_string)
-      .def("__repr__", tribool_to_string)
+      .def("__str__", tribool_str)
+      .def("__repr__", tribool_repr)
       .def("__eq__", [](tribool self, tribool other) {
         return self == other;
       }).def("__eq__", [](tribool self, bool b) {
@@ -175,7 +182,14 @@ namespace pyblack {
     });
     scope.def("domain", &logic::scope::domain);
     scope.def("type_check", [](logic::scope &self, black::formula f) {
-      return self.type_check(f, [](auto) { }); // TODO: handle error
+      return self.type_check(f, [](auto) { });
+    });
+    
+    scope.def("type_check", [](
+      logic::scope &self, black::formula f, 
+      std::function<void(std::string)> err
+    ) {
+      return self.type_check(f, err);
     });
 
     scope.def("is_rigid", [](logic::scope &self, logic::variable v) {
@@ -189,12 +203,74 @@ namespace pyblack {
     });
 
     py::class_<black::solver> solver{m, "solver"};
+    py::class_<black::model> model{m, "model"};
+    
     solver.def(py::init<>());
-    solver.def(
-      "solve", &black::solver::solve,
-      py::arg("xi"), py::arg("f"), py::arg("finite") = false,
-      py::arg("k_max") = std::numeric_limits<size_t>::max(),
-      py::arg("semi_decision") = false
+    solver.def("solve", 
+      [](black::solver &self, logic::scope const&xi, 
+         black::formula f, bool finite) 
+      {
+        if(f.is<logic::formula<logic::LTLP>>())
+          return self.solve(xi, f, finite);
+        return 
+          self.solve(xi, f, finite, std::numeric_limits<size_t>::max(), true);
+      },
+      py::arg("xi"), py::arg("f"), py::arg("finite") = false
+    );
+
+    solver.def_property_readonly("model", &black::solver::model);
+    model.def_property_readonly("size", &black::model::size);
+    model.def_property_readonly("loop", &black::model::loop);
+    model.def("value", [](
+      black::model const&self, logic::proposition p, size_t t) {
+        return self.value(p, t);
+      });
+    model.def("value", [](
+      black::model const&self, black::atom a, size_t t) {
+        return self.value(a, t);
+      });
+    model.def("value", [](
+      black::model const&self, black::equal e, size_t t) {
+        return self.value(e, t);
+      });
+    model.def("value", [](
+      black::model const&self, black::distinct e, size_t t) {
+        return self.value(e, t);
+      });
+    model.def("value", [](
+      black::model const&self, black::less_than c, size_t t) {
+        return self.value(c, t);
+      });
+    model.def("value", [](
+      black::model const&self, black::less_than_equal c, size_t t) {
+        return self.value(c, t);
+      });
+    model.def("value", [](
+      black::model const&self, black::greater_than c, size_t t) {
+        return self.value(c, t);
+      });
+    model.def("value", [](
+      black::model const&self, black::greater_than_equal c, size_t t) {
+        return self.value(c, t);
+      });
+
+    m.def("unsat_core",
+      [](logic::scope const& xi, black::formula f, bool finite) {
+        return specialize(black::unsat_core(xi, f, finite));
+      }, py::arg("xi"), py::arg("f"), py::arg("finite") = false
+    );
+
+    m.def("parse_formula", 
+      [](logic::alphabet &sigma, std::string const&s) { 
+        return specialize(black::parse_formula(sigma, s, [](auto) { }));
+      }
+    );
+    
+    m.def("parse_formula", 
+      [](logic::alphabet &sigma, std::string const&s,
+         std::function<void(std::string)> err) { 
+        return specialize(black::parse_formula(sigma, s, err));
+      }
     );
   }
 
