@@ -261,15 +261,15 @@ namespace pyblack {
     );
 
     m.def("parse_formula", 
-      [](logic::alphabet &sigma, std::string const&s) { 
-        return specialize(black::parse_formula(sigma, s, [](auto) { }));
+      [](logic::alphabet &sigma_, std::string const&s) { 
+        return specialize(black::parse_formula(sigma_, s, [](auto) { }));
       }
     );
     
     m.def("parse_formula", 
-      [](logic::alphabet &sigma, std::string const&s,
+      [](logic::alphabet &sigma_, std::string const&s,
          std::function<void(std::string)> err) { 
-        return specialize(black::parse_formula(sigma, s, err));
+        return specialize(black::parse_formula(sigma_, s, err));
       }
     );
   }

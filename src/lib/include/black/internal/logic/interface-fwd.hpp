@@ -47,7 +47,7 @@ namespace black_internal::logic {
   template<storage_type S, typename Derived>
   struct call_op_interface 
   {
-    template<hierarchy Arg, hierarchy ...Args>
+    template<typename Arg, typename ...Args>
     auto operator()(Arg, Args ...) const;
 
     template<std::ranges::range R>
