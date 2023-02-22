@@ -151,6 +151,36 @@ namespace black_internal::mathsat
     return tribool::undef; // LCOV_EXCL_LINE 
   }
 
+  tribool mathsat::value(equality e) const {
+    if(!_data->model)
+      return tribool::undef;
+
+    msat_term term = _data->to_mathsat(e);
+    msat_term result = msat_model_eval(*_data->model, term);
+
+    if(msat_term_is_true(_data->env, result))
+      return true;
+    if(msat_term_is_false(_data->env, result))
+      return false;
+
+    return tribool::undef; // LCOV_EXCL_LINE 
+  }
+
+  tribool mathsat::value(comparison c) const {
+    if(!_data->model)
+      return tribool::undef;
+
+    msat_term term = _data->to_mathsat(c);
+    msat_term result = msat_model_eval(*_data->model, term);
+
+    if(msat_term_is_true(_data->env, result))
+      return true;
+    if(msat_term_is_false(_data->env, result))
+      return false;
+
+    return tribool::undef; // LCOV_EXCL_LINE 
+  }
+
   void mathsat::clear() {
     msat_reset_env(_data->env);
   }

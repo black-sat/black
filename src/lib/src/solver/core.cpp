@@ -52,7 +52,7 @@ namespace black_internal::core {
         return 1;
       },
       [&](unary, formula arg) -> size_t {
-        K_data_t data = ks.contains(f) ? ks[f] : K_data_t{0, 0};
+        K_data_t data = ks.find(f) != ks.end() ? ks[f] : K_data_t{0, 0};
         if(data.size == 0)
           data.size = 1 + traverse_impl(arg, ks, next_placeholder);
         data.n += 1;
@@ -61,7 +61,7 @@ namespace black_internal::core {
         return data.size;
       },
       [&](binary, formula left, formula right) -> size_t {
-        K_data_t data = ks.contains(f) ? ks[f] : K_data_t{0, 0};
+        K_data_t data = ks.find(f) != ks.end() ? ks[f] : K_data_t{0, 0};
         if(data.size == 0)
           data.size = 1 + traverse_impl(left, ks, next_placeholder) 
                         + traverse_impl(right, ks, next_placeholder);
@@ -144,8 +144,9 @@ namespace black_internal::core {
   ) {
     using namespace std::literals;
 
-    if(dontcares.contains(f)) {
-      size_t index = indexes.contains(f) ? indexes[f] : next_index++;
+    if(dontcares.find(f) != dontcares.end()) {
+      size_t index = 
+        indexes.find(f) != indexes.end() ? indexes[f] : next_index++;
       indexes.insert_or_assign(f, index);
 
       return f.sigma()->proposition(core_placeholder_t{index, f});
@@ -202,7 +203,7 @@ namespace black_internal::core {
       [](boolean) { return true; },
       [&](proposition p) {
         if(auto l = p.name().to<core_placeholder_t>(); l.has_value()) {
-          if(formulas.contains(l->n) && formulas.at(l->n) != l->f)
+          if(formulas.find(l->n) != formulas.end() && formulas.at(l->n) != l->f)
             return false; // LCOV_EXCL_LINE
           formulas.insert({l->n, l->f});
         }

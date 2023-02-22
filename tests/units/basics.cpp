@@ -269,6 +269,12 @@ TEST_CASE("New API") {
     REQUIRE(bool(app == app3));
     REQUIRE(bool(app == app4));
     REQUIRE(bool(app == app5));
+
+    application<FO> app6 = f(1, 2, 3);
+
+    REQUIRE(app6.terms()[0] == 1);
+    REQUIRE(app6.terms()[1] == 2);
+    REQUIRE(app6.terms()[2] == 3);
   }
 
   SECTION("Quantifiers") {

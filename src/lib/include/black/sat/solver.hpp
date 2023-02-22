@@ -84,6 +84,18 @@ namespace black::sat
     // or if it is a don't care
     virtual tribool value(logic::atom<logic::FO> a) const = 0;
 
+    // gets the value of a term equality comparison from the solver.
+    // The result is tribool::undef if the value has not been decided
+    // e.g. before the first call to is_sat()
+    // or if it is a don't care
+    virtual tribool value(logic::equality<logic::FO> a) const = 0;
+
+    // gets the value of a term comparison from the solver.
+    // The result is tribool::undef if the value has not been decided
+    // e.g. before the first call to is_sat()
+    // or if it is a don't care
+    virtual tribool value(logic::comparison<logic::FO> a) const = 0;
+
     // clear the current context completely
     virtual void clear() = 0;
 

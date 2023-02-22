@@ -67,16 +67,27 @@ namespace black_internal::logic {
   // functions and relations. The declarations are in `interface-fwd.hpp`
   //
   template<typename T>
-  auto call_op_get_arg(T v) {
+  auto call_op_get_arg(alphabet *, T v) {
     return v;
   }
 
-  inline variable call_op_get_arg(var_decl x) {
+  inline variable call_op_get_arg(alphabet *, var_decl x) {
     return x.variable();
   }
 
+  template<std::integral T>
+  inline auto call_op_get_arg(alphabet *sigma, T x) {
+    return wrap_term_op_arg(sigma, x);
+  }
+
+  template<std::floating_point T>
+  inline auto call_op_get_arg(alphabet *sigma, T x) {
+    return wrap_term_op_arg(sigma, x);
+  }
+
   template<typename T>
-  using call_op_arg_t = decltype(call_op_get_arg(std::declval<T>()));
+  using call_op_arg_t = 
+    decltype(call_op_get_arg(std::declval<alphabet *>(), std::declval<T>()));
 
   template<storage_type S>
   struct call_op_return;
@@ -95,7 +106,7 @@ namespace black_internal::logic {
   };
 
   template<storage_type S, typename Derived>
-  template<hierarchy Arg, hierarchy ...Args>
+  template<typename Arg, typename ...Args>
   auto call_op_interface<S, Derived>::operator()(Arg arg, Args ...args) const {
     using common_t = std::common_type_t<
       call_op_arg_t<Arg>, call_op_arg_t<Args>...
@@ -109,10 +120,13 @@ namespace black_internal::logic {
     
     using return_t = storage_type_of_t<syntax, call_op_return_v<S>>;
 
+    Derived const&self = static_cast<Derived const&>(*this);
+
     std::vector<common_t> v{
-      common_t{call_op_get_arg(arg)}, common_t{call_op_get_arg(args)}...
+      common_t{call_op_get_arg(self.sigma(), arg)}, 
+      common_t{call_op_get_arg(self.sigma(), args)}...
     };
-    return return_t{static_cast<Derived const&>(*this), v};
+    return return_t{self, v};
   }
 
   template<storage_type S, typename Derived>

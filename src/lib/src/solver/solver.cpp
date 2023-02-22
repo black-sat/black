@@ -145,6 +145,24 @@ namespace black_internal::solver
     return _solver._data->sat->value(u);
   }
 
+  tribool model::value(equality e, size_t t) const {
+    if(!_solver._data->enc.has_value())
+      return tribool::undef;
+
+    logic::equality<logic::FO> u = _solver._data->enc->stepped(e, t);
+
+    return _solver._data->sat->value(u);
+  }
+
+  tribool model::value(comparison c, size_t t) const {
+    if(!_solver._data->enc.has_value())
+      return tribool::undef;
+
+    logic::comparison<logic::FO> u = _solver._data->enc->stepped(c, t);
+
+    return _solver._data->sat->value(u);
+  }
+
   void solver::_solver_t::trace(size_t k){
     tracer({nullptr, trace_t::stage, {k}});
   }

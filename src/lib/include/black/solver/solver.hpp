@@ -132,6 +132,8 @@ namespace black_internal::solver {
       size_t loop() const;
       tribool value(proposition a, size_t t) const;
       tribool value(atom a, size_t t) const;
+      tribool value(equality a, size_t t) const;
+      tribool value(comparison a, size_t t) const;
     private:
       friend class solver;
       model(solver const&s) : _solver{s} { }
@@ -144,6 +146,7 @@ namespace black_internal::solver {
 // Names exported to the user
 namespace black {
   using black_internal::solver::solver;
+  using black_internal::solver::model;
 }
 
 #endif // SOLVER_HPP

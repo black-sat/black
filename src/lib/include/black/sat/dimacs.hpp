@@ -67,6 +67,10 @@ namespace black_internal::dimacs
     
     virtual tribool value(logic::atom<logic::FO> a) const override;
     
+    virtual tribool value(logic::equality<logic::FO> a) const override;
+    
+    virtual tribool value(logic::comparison<logic::FO> a) const override;
+    
     // specialized DIMACS interface
 
     // allocate `n' new variables for the solver
