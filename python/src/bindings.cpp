@@ -82,6 +82,25 @@ namespace pyblack {
     sigma.def("top", &black::alphabet::top);
     sigma.def("bottom", &black::alphabet::bottom);
 
+    m.def("big_and", [](logic::alphabet &s, py::list args) {
+      std::vector<black::formula> formulas;
+      for(auto arg : args) {
+        black::formula f = py::cast<black::formula>(arg);
+        formulas.push_back(f);
+      }
+      return specialize(black::big_and(s, formulas));
+    });
+
+    m.def("big_or", [](logic::alphabet &s, py::list args) {
+      std::vector<black::formula> formulas;
+      for(auto arg : args) {
+        black::formula f = py::cast<black::formula>(arg);
+        formulas.push_back(f);
+      }
+      return specialize(black::big_or(s, formulas));
+    });
+
+
     py::class_<logic::domain, logic::domain_ref> domain{m, "domain"};
     domain.def(py::init(
       [](std::vector<black::variable> elements) {

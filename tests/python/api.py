@@ -141,3 +141,11 @@ p = sigma.proposition("p")
 h = G(p) & F(~p)
 
 assert not slv.solve(xi, h)
+
+prova = big_and(sigma, [p,p,p,p,p])
+
+print(prova)
+
+prova = big_or(sigma, [p,p,p,p,p])
+
+print(prova)
