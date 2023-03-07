@@ -71,7 +71,10 @@ namespace pyblack {
       });
     
     py::class_<identifier>(m, "identifier")
-      .def(py::init<std::string>());
+      .def(py::init<std::string>())
+      .def("__str__", [](identifier self) {
+        return to_string(self);
+      });
 
     py::implicitly_convertible<std::string, identifier>();
   }
