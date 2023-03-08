@@ -34,18 +34,21 @@ namespace black_internal::logic
 {
 
   static
-  bool does_need_parens(formula<LTLPFO> parent, formula<LTLPFO> arg) {
+  bool does_need_parens(
+    formula<universal_fragment_t> parent, formula<universal_fragment_t> arg
+  ) {
     bool parens = false;
     arg.match(
-      [&](binary<LTLPFO>) {
+      [&](binary<universal_fragment_t>) {
         parens = 
-        (!parent.is<conjunction<LTLPFO>>() && !parent.is<disjunction<LTLPFO>>())
-          || (parent.node_type() != arg.node_type());
+        (!parent.is<conjunction<universal_fragment_t>>() && 
+         !parent.is<disjunction<universal_fragment_t>>()
+        ) || (parent.node_type() != arg.node_type());
       },
-      [&](comparison<LTLPFO>) {
+      [&](comparison<universal_fragment_t>) {
         parens = true;
       },
-      [&](quantifier<LTLPFO>) {
+      [&](quantifier<universal_fragment_t>) {
         parens = true;
       },
       [&](otherwise) { }
@@ -55,56 +58,60 @@ namespace black_internal::logic
   }
 
   static
-  std::string to_string(unary<LTLPFO>::type t) {
+  std::string to_string(unary<universal_fragment_t>::type t) {
     return t.match(
-      [](unary<LTLPFO>::type::negation)     { return "!"; },
-      [](unary<LTLPFO>::type::tomorrow)     { return "X"; },
-      [](unary<LTLPFO>::type::w_tomorrow)   { return "wX"; },
-      [](unary<LTLPFO>::type::yesterday)    { return "Y"; },
-      [](unary<LTLPFO>::type::w_yesterday)  { return "Z"; },
-      [](unary<LTLPFO>::type::always)       { return "G"; },
-      [](unary<LTLPFO>::type::eventually)   { return "F"; },
-      [](unary<LTLPFO>::type::once)         { return "O"; },
-      [](unary<LTLPFO>::type::historically) { return "H"; }
+      [](unary<universal_fragment_t>::type::negation)     { return "!"; },
+      [](unary<universal_fragment_t>::type::tomorrow)     { return "X"; },
+      [](unary<universal_fragment_t>::type::w_tomorrow)   { return "wX"; },
+      [](unary<universal_fragment_t>::type::yesterday)    { return "Y"; },
+      [](unary<universal_fragment_t>::type::w_yesterday)  { return "Z"; },
+      [](unary<universal_fragment_t>::type::always)       { return "G"; },
+      [](unary<universal_fragment_t>::type::eventually)   { return "F"; },
+      [](unary<universal_fragment_t>::type::once)         { return "O"; },
+      [](unary<universal_fragment_t>::type::historically) { return "H"; }
     );
   }
 
   static
-  std::string to_string(binary<LTLPFO>::type t) {
+  std::string to_string(binary<universal_fragment_t>::type t) {
     return t.match(
-      [](binary<LTLPFO>::type::conjunction) { return "&"; },
-      [](binary<LTLPFO>::type::disjunction) { return "|"; },
-      [](binary<LTLPFO>::type::implication) { return "->"; },
-      [](binary<LTLPFO>::type::iff)         { return "<->"; },
-      [](binary<LTLPFO>::type::until)       { return "U"; },
-      [](binary<LTLPFO>::type::release)     { return "R"; },
-      [](binary<LTLPFO>::type::w_until)     { return "W"; },
-      [](binary<LTLPFO>::type::s_release)   { return "M"; },
-      [](binary<LTLPFO>::type::since)       { return "S"; },
-      [](binary<LTLPFO>::type::triggered)   { return "T"; }
+      [](binary<universal_fragment_t>::type::conjunction) { return "&"; },
+      [](binary<universal_fragment_t>::type::disjunction) { return "|"; },
+      [](binary<universal_fragment_t>::type::implication) { return "->"; },
+      [](binary<universal_fragment_t>::type::iff)         { return "<->"; },
+      [](binary<universal_fragment_t>::type::until)       { return "U"; },
+      [](binary<universal_fragment_t>::type::release)     { return "R"; },
+      [](binary<universal_fragment_t>::type::w_until)     { return "W"; },
+      [](binary<universal_fragment_t>::type::s_release)   { return "M"; },
+      [](binary<universal_fragment_t>::type::since)       { return "S"; },
+      [](binary<universal_fragment_t>::type::triggered)   { return "T"; }
     );
   }
 
   static
-  std::string to_string(equality<LTLPFO>::type t, bool binary) {
+  std::string to_string(equality<universal_fragment_t>::type t, bool binary) {
     if(binary)
       return t.match(
-        [](equality<LTLPFO>::type::equal)    { return "="; },
-        [](equality<LTLPFO>::type::distinct) { return "!="; }
+        [](equality<universal_fragment_t>::type::equal)    { return "="; },
+        [](equality<universal_fragment_t>::type::distinct) { return "!="; }
       );
     return t.match(
-      [](equality<LTLPFO>::type::equal)    { return "equal"; },
-      [](equality<LTLPFO>::type::distinct) { return "distinct"; }
+      [](equality<universal_fragment_t>::type::equal)    { return "equal"; },
+      [](equality<universal_fragment_t>::type::distinct) { return "distinct"; }
     );
   }
 
   static
-  std::string to_string(comparison<LTLPFO>::type t) {
+  std::string to_string(comparison<universal_fragment_t>::type t) {
     return t.match(
-      [](comparison<LTLPFO>::type::less_than)          { return "<"; },
-      [](comparison<LTLPFO>::type::less_than_equal)    { return "<="; },
-      [](comparison<LTLPFO>::type::greater_than)       { return ">"; },
-      [](comparison<LTLPFO>::type::greater_than_equal) { return ">="; }
+      [](comparison<universal_fragment_t>::type::less_than)
+        { return "<"; },
+      [](comparison<universal_fragment_t>::type::less_than_equal)
+        { return "<="; },
+      [](comparison<universal_fragment_t>::type::greater_than)
+        { return ">"; },
+      [](comparison<universal_fragment_t>::type::greater_than_equal)
+        { return ">="; }
     );
   }
 
@@ -148,12 +155,12 @@ namespace black_internal::logic
   }
 
   static
-  std::string term_parens(term<LTLPFO> t) {
+  std::string term_parens(term<universal_fragment_t> t) {
     return t.match(
       [&](variable) {
         return to_string(t);
       },
-      [&](constant<LTLPFO>) {
+      [&](constant<universal_fragment_t>) {
         return to_string(t);
       },
       [&](otherwise) {
@@ -162,19 +169,19 @@ namespace black_internal::logic
     );
   }
 
-  std::string to_string(term<LTLPFO> t)
+  std::string to_string(term<universal_fragment_t> t)
   {
     using namespace std::literals;
     using namespace black_internal;
 
     return t.match(
-      [&](constant<LTLPFO> c) {
+      [&](constant<universal_fragment_t> c) {
         return to_string(c.value());
       },
       [&](variable x) {
         return escape(to_string(x.name()));
       },
-      [&](application<LTLPFO> a) {
+      [&](application<universal_fragment_t> a) {
         std::string result = 
           escape(to_string(a.func().name())) + "(" + to_string(a.terms()[0]);
         for(size_t i = 1; i < a.terms().size(); ++i) {
@@ -184,46 +191,46 @@ namespace black_internal::logic
 
         return result;
       }, // LCOV_EXCL_LINE
-      [&](negative<LTLPFO>, auto arg) {
+      [&](negative<universal_fragment_t>, auto arg) {
         return fmt::format("-({})", to_string(arg));
       },
-      [&](to_integer<LTLPFO>, auto arg) {
+      [&](to_integer<universal_fragment_t>, auto arg) {
         return fmt::format("to_int({})", to_string(arg));
       },
-      [&](to_real<LTLPFO>, auto arg) {
+      [&](to_real<universal_fragment_t>, auto arg) {
         return fmt::format("to_real({})", to_string(arg));
       },
-      [&](next<LTLPFO>, auto arg) {
+      [&](next<universal_fragment_t>, auto arg) {
         return fmt::format("next({})", to_string(arg));
       },
-      [&](wnext<LTLPFO>, auto arg) {
+      [&](wnext<universal_fragment_t>, auto arg) {
         return fmt::format("wnext({})", to_string(arg));
       },
-      [&](prev<LTLPFO>, auto arg) {
+      [&](prev<universal_fragment_t>, auto arg) {
         return fmt::format("prev({})", to_string(arg));
       },
-      [&](wprev<LTLPFO>, auto arg) {
+      [&](wprev<universal_fragment_t>, auto arg) {
         return fmt::format("wprev({})", to_string(arg));
       },
-      [&](addition<LTLPFO>, auto left, auto right) {
+      [&](addition<universal_fragment_t>, auto left, auto right) {
         return fmt::format("{} + {}", term_parens(left), term_parens(right));
       },
-      [&](subtraction<LTLPFO>, auto left, auto right) {
+      [&](subtraction<universal_fragment_t>, auto left, auto right) {
         return fmt::format("{} - {}", term_parens(left), term_parens(right));
       },
-      [&](multiplication<LTLPFO>, auto left, auto right) {
+      [&](multiplication<universal_fragment_t>, auto left, auto right) {
         return fmt::format("{} * {}", term_parens(left), term_parens(right));
       },
-      [&](division<LTLPFO>, auto left, auto right) {
+      [&](division<universal_fragment_t>, auto left, auto right) {
         return fmt::format("{} / {}", term_parens(left), term_parens(right));
       },
-      [&](int_division<LTLPFO>, auto left, auto right) {
+      [&](int_division<universal_fragment_t>, auto left, auto right) {
         return fmt::format("{} div {}", term_parens(left), term_parens(right));
       }
     );
   }
 
-  std::string to_string(formula<LTLPFO> f)
+  std::string to_string(formula<universal_fragment_t> f)
   {
     using namespace std::literals;
     using namespace ::black_internal;
@@ -232,7 +239,7 @@ namespace black_internal::logic
       [&](proposition p) {
         return escape(to_string(p.name()));
       },
-      [&](atom<LTLPFO> a) {
+      [&](atom<universal_fragment_t> a) {
         std::string result = 
           escape(to_string(a.rel().name())) + "(" + to_string(a.terms()[0]);
         for(size_t i = 1; i < a.terms().size(); ++i) {
@@ -242,7 +249,7 @@ namespace black_internal::logic
 
         return result;
       }, // LCOV_EXCL_LINE
-      [](equality<LTLPFO> e, auto terms) {
+      [](equality<universal_fragment_t> e, auto terms) {
         black_assert(terms.size() > 0);
 
         if(terms.size() == 2) 
@@ -259,17 +266,18 @@ namespace black_internal::logic
         
         return fmt::format("{}({})", to_string(e.node_type(), false), args);
       },
-      [](comparison<LTLPFO> c, auto left, auto right) {
+      [](comparison<universal_fragment_t> c, auto left, auto right) {
         return fmt::format(
           "{} {} {}", 
           to_string(left), to_string(c.node_type()), to_string(right)
         );
       },
-      [](quantifier<LTLPFO> q) {
-        std::string qs = q.node_type() == quantifier<LTLPFO>::type::exists{} ?
-          "exists " : "forall ";
+      [](quantifier<universal_fragment_t> q) {
+        std::string qs = 
+          q.node_type() == quantifier<universal_fragment_t>::type::exists{} ?
+            "exists " : "forall ";
 
-        bool parens = q.matrix().is<binary<LTLPFO>>();
+        bool parens = q.matrix().is<binary<universal_fragment_t>>();
 
         for(var_decl d : q.variables()) {
           qs += 
@@ -278,24 +286,37 @@ namespace black_internal::logic
 
         return fmt::format("{}. {}", qs, parens_if_needed(q.matrix(), parens));
       }, // LCOV_EXCL_LINE
+      [](qbf<universal_fragment_t> q) {
+        std::string qs = 
+          q.node_type() == quantifier<universal_fragment_t>::type::exists{} ?
+            "thereis " : "foreach ";
+
+        bool parens = q.matrix().is<binary<universal_fragment_t>>();
+
+        for(proposition p : q.variables()) {
+          qs += to_string(p);
+        }
+
+        return fmt::format("{}. {}", qs, parens_if_needed(q.matrix(), parens));
+      }, // LCOV_EXCL_LINE
       [](boolean, bool b) {
         return b ? "True" : "False";
       },
-      [](negation<LTLPFO> n, auto arg) {
+      [](negation<universal_fragment_t> n, auto arg) {
         bool needs_parens = does_need_parens(n, arg);
         return fmt::format("{}{}", 
-          to_string(unary<LTLPFO>::type::negation{}), 
+          to_string(unary<universal_fragment_t>::type::negation{}), 
           parens_if_needed(arg, needs_parens)
         );
       },
-      [](unary<LTLPFO> u, auto arg) {
+      [](unary<universal_fragment_t> u, auto arg) {
         bool needs_parens = does_need_parens(u, arg);
         return fmt::format("{}{}{}",
                             to_string(u.node_type()),
                             needs_parens ? "" : " ",
                             parens_if_needed(arg, needs_parens));
       },
-      [](binary<LTLPFO> b, auto left, auto right) {
+      [](binary<universal_fragment_t> b, auto left, auto right) {
         return
           fmt::format("{} {} {}",
                       parens_if_needed(left, does_need_parens(b, left)),
@@ -305,7 +326,7 @@ namespace black_internal::logic
     );
   }
 
-  std::string to_string(symbol<LTLPFO> s) {
+  std::string to_string(symbol<universal_fragment_t> s) {
     return s.match(
       [](relation r) {
         return to_string(r.name());
@@ -316,7 +337,7 @@ namespace black_internal::logic
     );
   }
 
-  std::string to_string(number<LTLPFO> n) {
+  std::string to_string(number<universal_fragment_t> n) {
     return n.match(
       [](integer, int64_t value) {
         return fmt::format("{}", value);

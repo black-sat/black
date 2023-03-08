@@ -33,16 +33,16 @@ namespace black_internal::logic
 {
   
   BLACK_EXPORT
-  std::string to_string(formula<LTLPFO> f);
+  std::string to_string(formula<universal_fragment_t> f);
   
   BLACK_EXPORT
-  std::string to_string(term<LTLPFO> t);
+  std::string to_string(term<universal_fragment_t> t);
   
   BLACK_EXPORT
-  std::string to_string(symbol<LTLPFO> t);
+  std::string to_string(symbol<universal_fragment_t> t);
   
   BLACK_EXPORT
-  std::string to_string(number<LTLPFO> t);
+  std::string to_string(number<universal_fragment_t> t);
   
   BLACK_EXPORT
   std::string to_string(declaration t);
