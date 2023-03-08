@@ -162,6 +162,11 @@ namespace black {
   Element(implication) \
   Element(iff)
 
+#define enum_elements_QBF(Element) \
+  enum_elements_propositional(Element) \
+  Element(thereis) \
+  Element(foreach)
+
 #define enum_elements_FO(Element) \
   enum_elements_propositional(Element) \
   Element(atom) \
@@ -222,11 +227,15 @@ namespace black {
   Element(prev) \
   Element(wprev)
 
+
 //
 // By repeatedly including `declare_fragment.hpp` we actually declare the
 // fragments and their namespaces
 //
 #define FRAGMENT propositional
+#include <black/internal/logic/declare_fragment.hpp>
+#undef FRAGMENT
+#define FRAGMENT QBF
 #include <black/internal/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT FO
@@ -255,6 +264,7 @@ namespace black {
 }
 
 #undef enum_elements_propositional
+#undef enum_elements_QBF
 #undef enum_elements_FO
 #undef enum_elements_LTL
 #undef enum_elements_LTLP

@@ -404,6 +404,13 @@ declare_hierarchy(formula)
     declare_hierarchy_element(formula, quantifier, exists)
     declare_hierarchy_element(formula, quantifier, forall)
   end_storage_kind(formula, quantifier)
+
+  declare_storage_kind(formula, qbf)
+    declare_fields(formula, qbf, proposition, variables)
+    declare_child(formula, qbf, formula, matrix)
+    declare_hierarchy_element(formula, qbf, thereis)
+    declare_hierarchy_element(formula, qbf, foreach)
+  end_storage_kind(formula, qbf)
   
   declare_storage_kind(formula, unary)
     declare_child(formula, unary, formula, argument)
