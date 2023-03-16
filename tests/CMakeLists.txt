@@ -75,11 +75,13 @@ if(Catch2_FOUND)
     UNIT_TESTS
     units/support.cpp
     units/basics.cpp
+    units/bitset.cpp
     units/match.cpp
     units/namespaces.cpp
     units/parser.cpp
     units/past_remover.cpp
     units/solver.cpp
+    units/sorts.cpp
     units/sat.cpp
     units/cnf.cpp
   )
@@ -168,9 +170,9 @@ if(ENABLE_FORMULAS_TESTS)
 
     string(FIND "${FILE}" "LRA" LRA_FOUND)
     if((SMT_FOUND GREATER_EQUAL 0) AND (LRA_FOUND GREATER_EQUAL 0))
-      set(SMT_OPTS "${SMT_OPTS} -d reals")
+      set(SMT_OPTS "${SMT_OPTS} -d Real")
     else()
-      set(SMT_OPTS "${SMT_OPTS} -d integers")
+      set(SMT_OPTS "${SMT_OPTS} -d Int")
     endif()
     
     set(SHELL_CMD /bin/sh -c)

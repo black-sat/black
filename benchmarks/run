@@ -22,6 +22,13 @@ if [ -z "$(which parallel)" ]; then
   die "Please install the 'parallel' utility"
 fi
 
+if [ -z "$(which timeout)" ]; then
+  export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH"
+  if [ -z "$(which timeout)" ]; then
+    die "Please install the 'timeout' utility"
+  fi
+fi
+
 # timeout time in seconds
 if [ -z "$TIMEOUT" ]; then
   TIMEOUT=300 # five minutes
@@ -36,8 +43,13 @@ fi
 
 # disable memory cap by default
 if [ -z "$MCAP" ]; then
-  MCAP=true
-  export MCAP
+  if [ -z "$(which systemd-run)" ]; then
+    MCAP=false
+    export MCAP
+  else
+    MCAP=true
+    export MCAP
+  fi
 fi
 
 # filename of disabled solvers list
@@ -53,7 +65,7 @@ fi
 
 if $MCAP; then
   mcap() {
-    systemd-run --quiet --user --scope -p MemoryMax=$MEMORY_MAX -p MemorySwapMax=0 $@
+    systemd-run --quiet --user --scope -p MemoryMax=$MEMORY_MAX -p MemorySwapMax=0 "$@"
   }
 
   has_mcap() {
@@ -61,7 +73,7 @@ if $MCAP; then
   }
 else
   mcap() {
-    $@
+    "$@"
   }
   has_mcap() {
     return 1

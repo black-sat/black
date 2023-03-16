@@ -40,55 +40,28 @@ namespace black_internal::cvc5
     return f.sigma()->proposition(f);
   }
 
-  struct cvc5_decl_key {
-    std::string name;
-    unsigned arity;
-    bool is_relation;
-
-    friend 
-    bool operator==(cvc5_decl_key const&, cvc5_decl_key const&) = default; // LCOV_EXCL_LINE
-  };
-
-  } namespace std {
-  
-    template<>
-    struct hash<black_internal::cvc5::cvc5_decl_key> {
-      size_t operator()(black_internal::cvc5::cvc5_decl_key const& k) const {
-        using namespace black_internal;
-
-        size_t h1 = std::hash<std::string>{}(k.name);
-        size_t h2 = std::hash<unsigned>{}(k.arity);
-        size_t h3 = std::hash<bool>{}(k.is_relation);
-
-        return hash_combine(h1, hash_combine(h2, h3));
-      }
-    };
-
-  } namespace black_internal::cvc5 {
-
   namespace cvc = ::cvc5;
   struct cvc5::_cvc5_t {
+    class scope global_xi;
+    class scope xi;
+
+    _cvc5_t(logic::scope const& _xi) 
+      : global_xi{chain(_xi)}, xi{chain(global_xi)} { }
+
     cvc::Solver solver;
     bool sat_response = false;
 
-    tsl::hopscotch_map<variable, cvc::Term> vars;
     tsl::hopscotch_map<proposition, cvc::Term> props;
-    tsl::hopscotch_map<cvc5_decl_key, cvc::Term> decls;
 
-    cvc::Term to_cvc5(
-      formula, tsl::hopscotch_map<variable, cvc::Term> const&env
-    );
-    cvc::Term to_cvc5(
-      term, tsl::hopscotch_map<variable, cvc::Term> const&env
-    );
-    cvc::Sort to_cvc5(sort);
+    cvc::Term to_cvc5(formula);
+    cvc::Term to_cvc5(term);
+    cvc::Term to_cvc5(function);
+    cvc::Term to_cvc5(relation);
+    cvc::Sort to_cvc5(std::optional<sort>);
 
-    cvc::Term to_cvc5_func_decl(
-      alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
-    );
   };
 
-  cvc5::cvc5() : _data{std::make_unique<_cvc5_t>()}
+  cvc5::cvc5(class scope const&xi) : _data{std::make_unique<_cvc5_t>(xi)}
   {
     _data->solver.setLogic("ALL");
     _data->solver.setOption("produce-models", "true");
@@ -98,13 +71,13 @@ namespace black_internal::cvc5
   cvc5::~cvc5() = default;
 
   void cvc5::assert_formula(formula f) {
-    cvc::Term term = _data->to_cvc5(f, {});
+    cvc::Term term = _data->to_cvc5(f);
     _data->solver.assertFormula(term);
   }
 
   tribool cvc5::is_sat_with(formula f) 
   {
-    cvc::Term term = _data->to_cvc5(f, {});
+    cvc::Term term = _data->to_cvc5(f);
 
     cvc::Result res = _data->solver.checkSatAssuming(term);
     _data->sat_response = res.isSat();
@@ -142,56 +115,118 @@ namespace black_internal::cvc5
     return res.getBooleanValue();
   }
 
+  tribool cvc5::value(atom a) const 
+  {
+    if(!_data->sat_response)
+      return tribool::undef;
+    
+    cvc::Term term = _data->to_cvc5(a);
+    cvc::Term res = _data->solver.getValue(term);
+
+    if(res.isNull())
+      return tribool::undef; // LCOV_EXCL_LINE
+
+    return res.getBooleanValue();
+  }
+
+  tribool cvc5::value(equality e) const 
+  {
+    if(!_data->sat_response)
+      return tribool::undef;
+    
+    cvc::Term term = _data->to_cvc5(e);
+    cvc::Term res = _data->solver.getValue(term);
+
+    if(res.isNull())
+      return tribool::undef; // LCOV_EXCL_LINE
+
+    return res.getBooleanValue();
+  }
+
+  tribool cvc5::value(comparison c) const 
+  {
+    if(!_data->sat_response)
+      return tribool::undef;
+    
+    cvc::Term term = _data->to_cvc5(c);
+    cvc::Term res = _data->solver.getValue(term);
+
+    if(res.isNull())
+      return tribool::undef; // LCOV_EXCL_LINE
+
+    return res.getBooleanValue();
+  }
+
   void cvc5::clear() {
     _data->solver.resetAssertions();
   }
 
-  cvc::Sort cvc5::_cvc5_t::to_cvc5(sort s) {
-    return s.match(
+  cvc::Sort cvc5::_cvc5_t::to_cvc5(std::optional<sort> s) {
+    black_assert(s.has_value());
+    
+    if(auto cvcSort = global_xi.data<cvc::Sort>(*s); cvcSort.has_value())
+      return *cvcSort;
+
+    cvc::Sort result = s->match(
       [&](integer_sort) {
         return solver.getIntegerSort();
       },
       [&](real_sort) {
         return solver.getRealSort();
       },
-      [](otherwise) -> cvc::Sort { black_unreachable(); } // LCOV_EXCL_LINE
+      [&](named_sort n) {
+        auto d = global_xi.domain(n);
+        if(!d)
+          return solver.mkUninterpretedSort(to_string(n.unique_id()));
+        
+        auto decl = solver.mkDatatypeDecl(to_string(n.unique_id()));
+        
+        for(auto x : d->elements()) {
+          auto ctor = 
+            solver.mkDatatypeConstructorDecl(to_string(x.unique_id()));
+          decl.addConstructor(ctor);
+        }
+
+        return solver.mkDatatypeSort(decl);
+      }
     );
+
+    global_xi.set_data(*s, result);
+    return result;
   }
 
-  cvc::Term cvc5::_cvc5_t::to_cvc5(
-    formula f, tsl::hopscotch_map<variable, cvc::Term> const&env
-  ) {
+  cvc::Term cvc5::_cvc5_t::to_cvc5(formula f) {
     return f.match(
       [&](boolean b) { // LCOV_EXCL_LINE
         return b.value() ? solver.mkTrue() : solver.mkFalse();
       },
       [&](atom a) -> cvc::Term { // LCOV_EXCL_LINE
         std::vector<cvc::Term> cvc_terms;
-        for(term t : a.terms())
-          cvc_terms.push_back(to_cvc5(t, env));
+        cvc_terms.push_back(to_cvc5(a.rel()));
 
-        cvc::Term rel = 
-          to_cvc5_func_decl(
-            a.sigma(), to_string(a.rel().name()), 
-            unsigned(cvc_terms.size()), true);
-        
-        cvc_terms.insert(cvc_terms.begin(), rel);
+        for(term t : a.terms())
+          cvc_terms.push_back(to_cvc5(t));
+
         return solver.mkTerm(cvc::APPLY_UF, cvc_terms);
       },
-      [&](comparison c, auto left, auto right) {
-        std::vector<cvc::Term> terms = { 
-          to_cvc5(left, env), to_cvc5(right, env) 
-        };
-        
-        return c.match(
+      [&](equality e, auto args) {
+        std::vector<cvc::Term> terms;
+        for(auto t : args)
+          terms.push_back(to_cvc5(t));
+
+        return e.match(
           [&](equal) { 
             return solver.mkTerm(cvc::EQUAL, terms);
           },
-          [&](not_equal) { // LCOV_EXCL_LINE
-            return solver.mkTerm(cvc::NOT,
-              {solver.mkTerm(cvc::EQUAL, terms)}
-            );
-          },
+          [&](distinct) {
+            return solver.mkTerm(cvc::DISTINCT, terms);
+          }
+        );
+      },
+      [&](comparison c, auto left, auto right) {
+        std::vector<cvc::Term> terms = { to_cvc5(left), to_cvc5(right) };
+        
+        return c.match(
           [&](less_than) { 
             return solver.mkTerm(cvc::LT, terms);
           },
@@ -207,20 +242,26 @@ namespace black_internal::cvc5
         );
       },
       [&](quantifier q) { // LCOV_EXCL_LINE
-        cvc::Term var = solver.mkVar(
-          to_cvc5(q.sigma()->default_sort()), to_string(q.var().unique_id())
-        );
+        logic::nest_scope_t nest{xi};
         
-        cvc::Term varlist = solver.mkTerm(cvc::VARIABLE_LIST, {var});
+        std::vector<cvc::Term> vars;
+        for(auto decl : q.variables()) {
+          xi.declare(decl);
+          cvc::Term var = solver.mkVar(
+            to_cvc5(decl.sort()), to_string(decl.variable().unique_id())
+          );
+          xi.set_data(decl.variable(), var);
+          vars.push_back(var);
+        }
 
-        tsl::hopscotch_map<variable, cvc::Term> new_env = env;
-        new_env.insert({q.var(), var});
+        cvc::Term cvc5matrix = to_cvc5(q.matrix());
+        cvc::Term varlist = solver.mkTerm(cvc::VARIABLE_LIST, vars);
 
         if(q.node_type() == quantifier::type::forall{})
           return 
-            solver.mkTerm(cvc::FORALL, {varlist, to_cvc5(q.matrix(), new_env)});
+            solver.mkTerm(cvc::FORALL, {varlist, cvc5matrix});
         return 
-            solver.mkTerm(cvc::EXISTS, {varlist, to_cvc5(q.matrix(), new_env)});
+            solver.mkTerm(cvc::EXISTS, {varlist, cvc5matrix});
       },
       [&](proposition p) {
         if(auto it = props.find(p); it != props.end())
@@ -233,66 +274,77 @@ namespace black_internal::cvc5
         return term;
       },
       [&](negation, formula n) {
-        return solver.mkTerm(cvc::NOT, {to_cvc5(n, env)});
+        return solver.mkTerm(cvc::NOT, {to_cvc5(n)});
       },
       [&](conjunction c) { // LCOV_EXCL_LINE
         std::vector<cvc::Term> args;
         for(formula op : c.operands())
-          args.push_back(to_cvc5(op, env));
+          args.push_back(to_cvc5(op));
 
         return solver.mkTerm(cvc::AND, args);
       },
       [&](disjunction c) { // LCOV_EXCL_LINE
         std::vector<cvc::Term> args;
         for(formula op : c.operands())
-          args.push_back(to_cvc5(op, env));
+          args.push_back(to_cvc5(op));
 
         return solver.mkTerm(cvc::OR, args);
       },
       [&](implication, formula left, formula right) { // LCOV_EXCL_LINE
         return 
-          solver.mkTerm(cvc::IMPLIES,{to_cvc5(left, env), to_cvc5(right, env)});
+          solver.mkTerm(cvc::IMPLIES,{to_cvc5(left), to_cvc5(right)});
       },
       [&](iff, formula left, formula right) { // LCOV_EXCL_LINE
         return 
-          solver.mkTerm(cvc::EQUAL, {to_cvc5(left, env), to_cvc5(right, env)});
+          solver.mkTerm(cvc::EQUAL, {to_cvc5(left), to_cvc5(right)});
       }
     );
   }
 
-  cvc::Term cvc5::_cvc5_t::to_cvc5_func_decl(
-    alphabet *sigma, std::string const&name, unsigned arity, bool is_relation
-  ) {
-    black_assert(arity > 0);
+  cvc::Term cvc5::_cvc5_t::to_cvc5(function f) {
+    if(auto term = xi.data<cvc::Term>(f); term.has_value())
+      return *term;
 
-    if(auto it = decls.find({name, arity, is_relation}); it != decls.end())
-      return it->second;
+    auto signature = xi.signature(f);
+    black_assert(signature.has_value());
 
-    std::vector<cvc::Sort> sorts{arity};
-    std::fill(sorts.begin(), sorts.end(), to_cvc5(sigma->default_sort()));
+    size_t arity = signature->size();
+    std::vector<cvc::Sort> fsorts;
+    for(size_t i = 0; i < arity; ++i)
+      fsorts.push_back(to_cvc5(signature->at(i)));
 
-    cvc::Sort range = is_relation ? solver.getBooleanSort() : sorts[0];
+    cvc::Sort funcSort = solver.mkFunctionSort(fsorts, to_cvc5(xi.sort(f)));
 
-    cvc::Sort funcSort = solver.mkFunctionSort(sorts, range);
-
-    cvc::Term term = solver.mkConst(funcSort, name);
-    decls.insert({{name, arity, is_relation}, term});
+    cvc::Term term = solver.mkConst(funcSort, to_string(f.unique_id()));
+    global_xi.set_data(f, term);
     return term;
   }
 
-  cvc::Term cvc5::_cvc5_t::to_cvc5(
-    term t, tsl::hopscotch_map<variable, cvc::Term> const&env
-  ) {
-    alphabet *sigma = t.sigma();
+  cvc::Term cvc5::_cvc5_t::to_cvc5(relation r) {
+    if(auto term = xi.data<cvc::Term>(r); term.has_value())
+      return *term;
+
+    auto signature = xi.signature(r);
+    black_assert(signature.has_value());
+
+    size_t arity = signature->size();
+    std::vector<cvc::Sort> rsorts;
+    for(size_t i = 0; i < arity; ++i)
+      rsorts.push_back(to_cvc5(signature->at(i)));
+
+    cvc::Sort funcSort = solver.mkFunctionSort(rsorts, solver.getBooleanSort());
+
+    cvc::Term term = solver.mkConst(funcSort, to_string(r.unique_id()));
+    global_xi.set_data(r, term);
+    return term;
+  }
+
+  cvc::Term cvc5::_cvc5_t::to_cvc5(term t) {
     return t.match(
       [&](constant, auto n) { // LCOV_EXCL_LINE
         return n.match(
-          [&](zero) { return to_cvc5(constant(sigma->integer(0)), env); },
-          [&](one)  { return to_cvc5(constant(sigma->integer(1)), env); },
           [&](integer, int64_t value) {
-            if(sigma->default_sort().is<integer_sort>())
-              return solver.mkInteger(value);
-            return solver.mkReal(value);
+            return solver.mkInteger(value);
           },
           [&](real, double value) {
             auto [num,denum] = 
@@ -301,26 +353,42 @@ namespace black_internal::cvc5
           }
         );
       },
-      [&](variable v) { // LCOV_EXCL_LINE
-        if(auto it = env.find(v); it != env.end())
-          return it->second;
+      [&](variable v) {
+        // then we look up the variable in the scope
+        if(auto var = xi.data<cvc::Term>(v); var.has_value())
+          return *var;
 
-        if(auto it = vars.find(v); it != vars.end())
-          return it->second;
+        auto vSort = xi.sort(v); // we look up the sort of the variable
+        black_assert(vSort); 
+        cvc::Sort cvcSort = to_cvc5(*vSort);
 
-        sort s = t.sigma()->default_sort();
-        cvc::Term term = solver.mkConst(to_cvc5(s), to_string(v.unique_id()));
-        vars.insert({v, term});
+        // if the sort has an enumerated domain, the variable is rendered
+        // as a constructor application of the relevant datatype
+        if(auto d = xi.domain(*vSort); d) {
+          auto it = std::find(d->elements().begin(), d->elements().end(), v);
+          if(it != d->elements().end()) {
+            cvc::Term term = 
+              solver.mkTerm(
+                cvc::APPLY_CONSTRUCTOR, {
+                  cvcSort.getDatatype()[to_string(v.unique_id())].getTerm()
+                }
+              );
+            global_xi.set_data(v, term);
+            return term;
+          }
+        }
+
+        // if not, this is a normal variable
+        cvc::Term term = solver.mkConst(cvcSort, to_string(v.unique_id()));
+        xi.set_data(v, term);
         return term;
       },
       [&](application a) { // LCOV_EXCL_LINE
         std::vector<cvc::Term> cvc_terms;
         for(term t2 : a.terms())
-          cvc_terms.push_back(to_cvc5(t2, env));
+          cvc_terms.push_back(to_cvc5(t2));
 
-        cvc::Term func = to_cvc5_func_decl(
-          a.sigma(), to_string(a.func().name()), 
-          unsigned(cvc_terms.size()), false);
+        cvc::Term func = to_cvc5(a.func());
 
         cvc_terms.insert(cvc_terms.begin(), func);
         return solver.mkTerm(cvc::APPLY_UF, cvc_terms);
@@ -328,14 +396,18 @@ namespace black_internal::cvc5
       [&](unary_term u) {
         return u.match(
           [&](negative, auto arg) {
-            return solver.mkTerm(cvc::NEG, {to_cvc5(arg, env)});
+            return solver.mkTerm(cvc::NEG, {to_cvc5(arg)});
+          },
+          [&](to_integer, auto arg) {
+            return solver.mkTerm(cvc::TO_INTEGER, {to_cvc5(arg)});
+          },
+          [&](to_real, auto arg) {
+            return solver.mkTerm(cvc::TO_REAL, {to_cvc5(arg)});
           }
         );
       },
-      [&](binary_term b, auto left, auto right) {
-        std::vector<cvc::Term> terms = { 
-          to_cvc5(left, env), to_cvc5(right, env)
-        };
+      [&](binary_term b, term left, term right) {
+        std::vector<cvc::Term> terms = { to_cvc5(left), to_cvc5(right) };
 
         return b.match(
           [&](subtraction) {
@@ -349,6 +421,9 @@ namespace black_internal::cvc5
           },
           [&](division) {
             return solver.mkTerm(cvc::DIVISION, terms);
+          },
+          [&](int_division) {
+            return solver.mkTerm(cvc::INTS_DIVISION, terms);
           }
         );
       }

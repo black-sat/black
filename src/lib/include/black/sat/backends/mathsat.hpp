@@ -36,13 +36,16 @@ namespace black_internal::mathsat
   class BLACK_EXPORT mathsat : public ::black::sat::solver
   {
   public:
-    mathsat();
+    mathsat(scope const& xi);
     virtual ~mathsat() override;
 
     virtual void assert_formula(formula f) override;
     virtual tribool is_sat() override;
     virtual tribool is_sat_with(formula assumption) override;
     virtual tribool value(proposition a) const override;
+    virtual tribool value(atom a) const override;
+    virtual tribool value(equality a) const override;
+    virtual tribool value(comparison a) const override;
     virtual void clear() override;
     virtual std::optional<std::string> license() const override;
 

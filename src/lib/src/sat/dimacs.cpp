@@ -46,15 +46,19 @@ namespace black_internal::dimacs
     }
   };
 
-  solver::solver() : _data{ std::make_unique<_solver_t>() } { }
+  solver::solver() : 
+    _data{ std::make_unique<_solver_t>() } { }
+
+  solver::solver(scope const&) : solver() { }
 
   solver::~solver() = default;
 
   void solver::assert_formula(formula<FO> f) 
   {
-    black_assert(can_fragment_cast<propositional>(f));
+    auto pf = f.to<formula<propositional>>();
+    black_assert(pf.has_value());
     // conversion of the formula to CNF
-    cnf::cnf c = cnf::to_cnf(fragment_unsafe_cast<propositional>(f));
+    cnf::cnf c = cnf::to_cnf(*pf);
 
     // census of new variables
     size_t old_size = _data->vars.size();
@@ -99,6 +103,18 @@ namespace black_internal::dimacs
     uint32_t prop = it->second;
 
     return this->value(prop);
+  }
+
+  tribool solver::value(logic::atom<logic::FO>) const { // LCOV_EXCL_LINE
+    return tribool::undef; // LCOV_EXCL_LINE
+  }
+
+  tribool solver::value(logic::equality<logic::FO>) const { // LCOV_EXCL_LINE
+    return tribool::undef; // LCOV_EXCL_LINE
+  }
+
+  tribool solver::value(logic::comparison<logic::FO>) const { // LCOV_EXCL_LINE
+    return tribool::undef; // LCOV_EXCL_LINE
   }
 
   void solver::clear_vars() {

@@ -127,6 +127,7 @@ namespace black::frontend
       [](proposition) -> size_t { return 1; },
       [](atom) -> size_t { black_unreachable(); }, // LCOV_EXCL_LINE
       [](quantifier) -> size_t { black_unreachable(); }, // LCOV_EXCL_LINE
+      [](equality) -> size_t { black_unreachable(); }, // LCOV_EXCL_LINE
       [](comparison) -> size_t { black_unreachable(); }, // LCOV_EXCL_LINE
       [](yesterday, formula op) { return 1 + depth(op); },
       [](w_yesterday, formula op) { return 1 + depth(op); },
@@ -227,6 +228,7 @@ namespace black::frontend
       },
       [&](atom) -> bool { black_unreachable(); }, // LCOV_EXCL_LINE
       [&](quantifier) -> bool { black_unreachable(); }, // LCOV_EXCL_LINE
+      [&](equality) -> bool { black_unreachable(); }, // LCOV_EXCL_LINE
       [&](comparison) -> bool { black_unreachable(); }, // LCOV_EXCL_LINE
       [&](tomorrow, formula op) {
         return state_exists(trace, t + 1) && check(trace, op, t + 1);
@@ -331,12 +333,14 @@ namespace black::frontend
       if(!jmuc.is_null()) {
         std::string smuc = jmuc.get<std::string>();
         trace.muc =
-          black::parse_formula(sigma, smuc, [&](auto error) {
-            io::fatal(
-              status_code::syntax_error, "{}: malformed 'muc' field: {}", 
-              path, error
-            );
-          });
+          black::parse_formula(
+            sigma, smuc, [&](auto error) {
+              io::fatal(
+                status_code::syntax_error, "{}: malformed 'muc' field: {}", 
+                path, error
+              );
+            }
+          );
         black_assert(trace.muc.has_value());
       }
 
@@ -413,7 +417,7 @@ namespace black::frontend
     std::istream &tracefile
   ) {
     black::alphabet sigma;
-
+    
     std::optional<formula> f = 
       black::parse_formula(sigma, file, formula_syntax_error_handler(path));
 
@@ -432,9 +436,12 @@ namespace black::frontend
     }
 
     if(trace.muc.has_value()) {
+
+      scope xi{sigma};
+      xi.set_default_sort(sigma.named_sort("default"));
+      
       black::solver slv;
-      slv.set_formula(*trace.muc, cli::finite);
-      if(slv.solve() != false) {
+      if(slv.solve(xi, *trace.muc, cli::finite) != false) {
         io::println("SAT CORE");
         quit(status_code::failed_check);
       }

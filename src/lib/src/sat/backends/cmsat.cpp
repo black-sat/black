@@ -42,7 +42,8 @@ namespace black_internal::cmsat
     }
   };
 
-  cmsat::cmsat() : _data{std::make_unique<_cmsat_t>()} { }
+  cmsat::cmsat(black::logic::scope const&) 
+    : _data{std::make_unique<_cmsat_t>()} { }
 
   cmsat::~cmsat() = default;
 
