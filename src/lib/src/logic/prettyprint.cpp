@@ -287,14 +287,19 @@ namespace black_internal::logic
         return fmt::format("{}. {}", qs, parens_if_needed(q.matrix(), parens));
       }, // LCOV_EXCL_LINE
       [](qbf<universal_fragment_t> q) {
-        std::string qs = 
-          q.node_type() == quantifier<universal_fragment_t>::type::exists{} ?
-            "thereis " : "foreach ";
+        std::string qs = q.match(
+          [](thereis<universal_fragment_t>) {
+            return "thereis ";
+          },
+          [](foreach<universal_fragment_t>) {
+            return "foreach ";
+          }
+        );
 
         bool parens = q.matrix().is<binary<universal_fragment_t>>();
 
         for(proposition p : q.variables()) {
-          qs += to_string(p);
+          qs += to_string(p) + " ";
         }
 
         return fmt::format("{}. {}", qs, parens_if_needed(q.matrix(), parens));
@@ -571,7 +576,7 @@ namespace black_internal::logic
     tsl::hopscotch_set<relation> rels;
     tsl::hopscotch_set<function> funs;
 
-    logic::for_each_child_deep(f, [&](auto child) {
+    logic::transform(f, [&](auto child) {
       child.match(
         [&](proposition p) {
           props.insert(p);

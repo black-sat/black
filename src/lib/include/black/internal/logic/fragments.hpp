@@ -67,7 +67,7 @@ namespace black {
       using black_internal::logic::make_singleton_fragment_t;
       using black_internal::logic::make_combined_fragment_t;
       using black_internal::logic::for_each_child;
-      using black_internal::logic::for_each_child_deep;
+      using black_internal::logic::transform;
       using black_internal::logic::has_any_element_of;
       using black_internal::logic::big_and;
       using black_internal::logic::big_or;

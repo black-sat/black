@@ -2449,13 +2449,13 @@ namespace black_internal::logic {
   }
 
   //
-  // Recursive version of for_each_child, going all deep down the rabbit hole...
+  // Map-like function over the hierarchy tree
   //
   template<hierarchy H, typename F>
-  void for_each_child_deep(H h, F f) {
+  void transform(H h, F f) {
+    f(h);
     for_each_child(h, [&](auto child) {
-      f(child);
-      for_each_child_deep(child, f);
+      transform(child, f);
     });
   }
 
