@@ -13,8 +13,8 @@ is self-contained.
 
    * - |WindowsBadge|_
 
-.. |WindowsBadge| image:: https://badgen.net/badge/Download%20v0.9.2/.zip/green
-.. _WindowsBadge: https://github.com/black-sat/black/releases/download/v0.9.2/black-0.9.2-win-x64.zip
+.. |WindowsBadge| image:: https://badgen.net/badge/Download%20v0.10.0/.zip/green
+.. _WindowsBadge: https://github.com/black-sat/black/releases/download/v0.10.0/black-0.10.0-win-x64.zip
 
 
 The binary package includes the Z3 backend. To use other backends, BLACK needs
