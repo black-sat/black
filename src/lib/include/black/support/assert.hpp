@@ -33,51 +33,67 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <black/support/exceptions.hpp>
+
 namespace black::support::internal {
 
   template<typename Expr>
   constexpr void assert_handler(
-    Expr assertion, const char *expression, const char *filename, size_t line
-  ) noexcept 
+    Expr assertion, const char *filename, size_t line, const char *expression
+  )
   {
     if(assertion())
       return;
     
-    std::fprintf(stderr, "[black]: failed assert at %s:%zd, \"%s\"\n",
-                 filename, line, expression);
-    std::abort();
+    throw assert_error(filename, line, expression);
+  }
+  
+  template<typename Expr>
+  constexpr void assume_handler(
+    Expr assumption, 
+    const char *function,
+    const char *filename, size_t line,
+    const char *expression, const char *message
+  )
+  {
+    if(assumption())
+      return;
+    
+    throw assume_error(function, filename, line, expression, message);
   }
 
   constexpr 
   void unreachable_handler(bool dummy, const char *filename, size_t line) 
-  noexcept
   {
     if(dummy)
       return;
     
-    std::fprintf(stderr, 
-                 "[black]: unreachable code reached at %s:%zd\n",
-                 filename, line);
-    std::abort();
+    throw unreachable_error(filename, line);
   }
 
 }
 
 #ifndef BLACK_ASSERT_DISABLE
 
-  #define BLACK_ASSERT(Expr)                            \
-    black::support::internal::assert_handler(                    \
-      [&]() { return static_cast<bool>(Expr); }, #Expr, __FILE__, __LINE__ \
+  #define black_assert(Expr)                                               \
+    black::support::internal::assert_handler(                              \
+      [&]() { return static_cast<bool>(Expr); }, __FILE__, __LINE__, #Expr \
+    )
+  
+  #define black_assume(Expr, Message)                     \
+    black::support::internal::assume_handler(             \
+      [&]() { return static_cast<bool>(Expr); },          \
+      __PRETTY_FUNC__, __FILE__, __LINE__, #Expr, Message \
     )
 
-  #define BLACK_UNREACHABLE()                                        \
+  #define black_unreachable()                                                 \
     black::support::internal::unreachable_handler(false, __FILE__, __LINE__); \
     BLACK_MARK_UNREACHABLE
 
 #else 
   
-  #define BLACK_ASSERT(Expr)
-  #define BLACK_UNREACHABLE() BLACK_MARK_UNREACHABLE
+  #define black_assert(Expr)
+  #define black_unreachable() BLACK_MARK_UNREACHABLE
 
 #endif
 
@@ -92,11 +108,6 @@ namespace black::support::internal {
 # else
 #   define BLACK_MARK_UNREACHABLE
 # endif
-#endif
-
-#ifndef BLACK_NO_LOWERCASE_MACROS
-  #define black_assert BLACK_ASSERT
-  #define black_unreachable BLACK_UNREACHABLE
 #endif
 
 #endif // BLACK_ASSERT_HPP
