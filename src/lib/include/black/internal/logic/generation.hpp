@@ -47,7 +47,7 @@
 //
 
 
-namespace black_internal::logic
+namespace black::logic::internal
 {
   class alphabet;
 
@@ -738,7 +738,7 @@ namespace black_internal::logic
     friend class hierarchy_element_ctor_base;
 
     template<syntax_element, typename, typename>
-    friend struct ::black_internal::logic::alphabet_ctor_base_aux;
+    friend struct ::black::logic::internal::alphabet_ctor_base_aux;
 
   private:
     //

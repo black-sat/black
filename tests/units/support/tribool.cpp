@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2021 Nicola Gigante
+// (C) 2019 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,21 +21,52 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_FRONTEND_SOLVE_HPP
-#define BLACK_FRONTEND_SOLVE_HPP
+#include <catch.hpp>
 
-#include <black/logic/logic.hpp>
-#include <black/solver/solver.hpp>
+#include <black/support/tribool.hpp>
 
-#include <functional>
+using namespace black::support;
 
-namespace black::frontend 
+TEST_CASE("Testing tribool")
 {
-  //
-  // Main entry point of the tool in LTL solving mode
-  //
-  int solve();
+  tribool tb1 = tribool::undef;
+  tribool tb2 = true;
+  tribool tb3 = false;
+  
+  SECTION("Output stream") {
+    std::vector<std::pair<tribool, std::string>> tests = {
+      {tb1, "tribool::undef"},
+      {tb2, "true"},
+      {tb3, "false"}
+    };
+    
+    for(auto [b, res] : tests) {
+      std::stringstream s;
+      s << b;
 
+      REQUIRE(s.str() == res);
+    }
+  }
+
+  SECTION("Equalities") {
+    REQUIRE(tb1 == tb1);
+    REQUIRE(tb1 != tb2);
+    REQUIRE(tb1 != tb3);
+
+    REQUIRE(tb1 != true);
+    REQUIRE(true != tb1);
+    REQUIRE(tb1 != false);
+    REQUIRE(false != tb1);
+
+    REQUIRE(tb2 == true);
+    REQUIRE(tb2 != false);
+    REQUIRE(tb3 == false);
+    REQUIRE(tb3 != true);
+  }
+
+  SECTION("operator!") {
+    REQUIRE(!tb1);
+    REQUIRE(tb2);
+    REQUIRE(!tb3);
+  }
 }
-
-#endif // BLACK_FRONTEND_SOLVE_HPP

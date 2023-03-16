@@ -25,13 +25,13 @@
 #define BLACK_SUPPORT_HASH_HPP
 
 #include <black/support/assert.hpp>
-#include <black/support/to_string.hpp>
 
 #include <any>
 #include <tuple>
 #include <optional>
 #include <vector>
 #include <string_view>
+#include <string>
 
 //
 // Function to combine different hashe values into one.
@@ -39,7 +39,7 @@
 // and https://stackoverflow.com/questions/35985960
 // for an explanation of the algorithm
 //
-namespace black_internal {
+namespace black::support::internal {
   inline size_t hash_combine(size_t lhs, size_t rhs) {
     static_assert(sizeof(size_t) == 4 || sizeof(size_t) == 8);
 
@@ -59,11 +59,11 @@ namespace black_internal {
   };
 }
 
-namespace black_internal::identifier_details
+namespace black::support::internal
 {
   template<typename T>
   concept identifier_label = 
-    hashable<T> && stringable<T> && std::equality_comparable<T>;
+    hashable<T> && std::equality_comparable<T>;
 
   template<typename T>
   struct is_tuple : std::false_type { };
@@ -234,24 +234,25 @@ namespace black_internal::identifier_details
         T const *v = std::any_cast<T>(&me);
         black_assert(v != nullptr);
 
-        return to_string(*v);
+        if constexpr(std::is_same_v<std::string, std::remove_cvref_t<T>>)
+          return *v;
+        else
+          return std::to_string(*v);
       };
     }
   };
 }
 
-namespace black_internal {
-  using identifier_details::identifier;
-}
-namespace black {
-  using black_internal::identifier;
+namespace black::support {
+  using internal::identifier;
+  using internal::hash_combine;
 }
 
 // std::hash specialization for identifier
 namespace std {
   template<>
-  struct hash<black::identifier> {
-    size_t operator()(black::identifier const&h) const {
+  struct hash<black::support::identifier> {
+    size_t operator()(black::support::identifier const&h) const {
       return h.hash();
     }
   };

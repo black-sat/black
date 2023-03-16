@@ -25,47 +25,6 @@ find_package(Catch2 QUIET)
 
 set(BLACK_TESTS_SAT_BACKEND "z3" CACHE STRING "SAT backend used in tests")
 
-#
-# Formulas generators
-#
-add_executable(crscounter_generator
-        formulas_generators/crscounter/crscounter_generator.cpp)
-target_link_libraries(crscounter_generator PRIVATE black)
-
-add_executable(random_formulas_generator
-        formulas_generators/random_formulas/random_formulas_generator.cpp)
-target_link_libraries(random_formulas_generator PRIVATE black)
-
-add_custom_target(ltlfmt
-  DEPENDS lia lra euf euflia)
-
-add_executable(lia
-        formulas_generators/ltlfmt/lia.cpp)
-target_link_libraries(lia PRIVATE black fmt::fmt)
-
-add_executable(lra
-        formulas_generators/ltlfmt/lra.cpp)
-target_link_libraries(lra PRIVATE black fmt::fmt)
-
-add_executable(euf
-        formulas_generators/ltlfmt/euf.cpp)
-target_link_libraries(euf PRIVATE black fmt::fmt)
-
-add_executable(euflia
-        formulas_generators/ltlfmt/euf-lia.cpp)
-target_link_libraries(euflia PRIVATE black fmt::fmt)
-
-add_executable(rts
-        formulas_generators/ltlfmt/rts.cpp)
-target_link_libraries(rts PRIVATE black fmt::fmt)
-
-set_target_properties(
-  crscounter_generator random_formulas_generator ltlfmt lia lra euf euflia rts
-  PROPERTIES 
-  EXCLUDE_FROM_ALL TRUE
-)
-
-
 if(Catch2_FOUND)
 
   #
@@ -73,17 +32,7 @@ if(Catch2_FOUND)
   #
   set(
     UNIT_TESTS
-    units/support.cpp
-    units/basics.cpp
-    units/bitset.cpp
-    units/match.cpp
-    units/namespaces.cpp
-    units/parser.cpp
-    units/past_remover.cpp
-    units/solver.cpp
-    units/sorts.cpp
-    units/sat.cpp
-    units/cnf.cpp
+    units/support/tribool.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)
@@ -114,96 +63,4 @@ else()
   message(STATUS
     "Catch2 missing. Unit tests disabled (correctness test suite still enabled)"
   )
-endif()
-
-#
-# CLI tests
-#
-if(NOT WIN32)
-  add_test(
-    NAME "CLI"
-    COMMAND ${CMAKE_SOURCE_DIR}/tests/cli-tests.sh 
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-  )
-endif()
-
-#
-# Formulas test set
-#
-if(ENABLE_FORMULAS_TESTS)
-  message(STATUS "Configuring test suite...")
-
-  file(STRINGS formulas/tests.index TESTS)
-
-  list(LENGTH TESTS TESTSLENGTH)
-  message(STATUS "Found ${TESTSLENGTH} test formulas")
-
-  option(BLACK_TEST_TIMEOUT "Set a timeout for tests" OFF)
-  set(TEST_TIMEOUT_SECS 3 CACHE STRING "Seconds of timeout for tests")
-
-  if(BLACK_TEST_TIMEOUT)
-    message(STATUS "Tests timeout set to ${TEST_TIMEOUT_SECS} seconds")
-  endif()
-
-  foreach(TEST IN LISTS TESTS)
-    list(GET TEST 0 FILE)
-    list(GET TEST 1 RESULT)
-
-    set(TEST_NAME "black:${FILE}:${RESULT}")
-    
-    set(FINITE_OPT "")
-    string(FIND "${FILE}" "finite_models" FOUND)
-    if(FOUND GREATER_EQUAL 0)
-      set(FINITE_OPT "--finite")
-    endif()
-    
-    set(SMT_OPTS "")
-    set(MODEL_OPT "")
-    set(CORE_OPT "")
-    string(FIND "${FILE}" "ltlfmt" SMT_FOUND)
-    if(SMT_FOUND GREATER_EQUAL 0)
-      set(SMT_OPTS "-s")
-    else()
-      set(MODEL_OPT "-m")
-      set(CORE_OPT "-c")
-    endif()
-
-    string(FIND "${FILE}" "LRA" LRA_FOUND)
-    if((SMT_FOUND GREATER_EQUAL 0) AND (LRA_FOUND GREATER_EQUAL 0))
-      set(SMT_OPTS "${SMT_OPTS} -d Real")
-    else()
-      set(SMT_OPTS "${SMT_OPTS} -d Int")
-    endif()
-    
-    set(SHELL_CMD /bin/sh -c)
-    if(WIN32)
-      set(SHELL_CMD powershell -Command)
-    endif()
-
-    if(NOT (SMT_FOUND GREATER_EQUAL 0) OR 
-      (${BLACK_TESTS_SAT_BACKEND} STREQUAL "mathsat") OR
-      (${BLACK_TESTS_SAT_BACKEND} STREQUAL "z3") OR
-      (${BLACK_TESTS_SAT_BACKEND} STREQUAL "cvc5"))
-
-      add_test(
-        NAME "${TEST_NAME}"
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
-        COMMAND
-          ${SHELL_CMD}
-          "$<TARGET_FILE:frontend> solve \
-          ${MODEL_OPT} ${CORE_OPT} -o json ${FINITE_OPT} ${SMT_OPTS} \
-            -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
-          $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} \
-            -e ${RESULT} '${FILE}'"
-      )
-  
-      if(BLACK_TEST_TIMEOUT)
-        set_tests_properties(
-          "${TEST_NAME}" PROPERTIES TIMEOUT ${TEST_TIMEOUT_SECS}
-        )
-      endif()
-
-    endif()
-
-  endforeach()
 endif()

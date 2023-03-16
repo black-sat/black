@@ -32,7 +32,7 @@
 
 #include <string_view>
 
-namespace black {
+namespace black::support {
   inline std::string_view version = BLACK_VERSION;
 }
 

@@ -27,7 +27,7 @@
 #include <cstdint>
 #include <ostream>
 
-namespace black_internal 
+namespace black::support::internal 
 {
   class tribool {
     enum tribool_t : uint8_t {
@@ -84,8 +84,8 @@ namespace black_internal
   };
 }
 
-namespace black {
-  using black_internal::tribool;
+namespace black::support {
+  using internal::tribool;
 }
 
 #endif // BLACK_TRIBOOL_HPP

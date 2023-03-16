@@ -31,18 +31,7 @@ project(
 )
 
 # User options
-option(ENABLE_TESTS "Enable test suite" ON)
-option(ENABLE_FORMULAS_TESTS "Enable the formulas test suite" ON)
-option(ENABLE_CLANG_TIDY "Enable Clang Tidy invocation" OFF)
-
-set(CLANG_TIDY_PATH "clang-tidy" CACHE FILEPATH "PATH to clang-tidy executable")
-if(ENABLE_CLANG_TIDY)
-  message(STATUS "Clang Tidy enabled")
-  set(
-    CMAKE_CXX_CLANG_TIDY 
-    ${CLANG_TIDY_PATH} -header-filter=. -warnings-as-errors=* 
-    -checks=clang-analyzer-*,portability-*,bugprone-*,-bugprone-forwarding-reference-overload)
-endif()
+option(BLACK_ENABLE_TESTS "Enable test suite" ON)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "")
   message(STATUS "Build configuration not defined. Defaulting to Release")
@@ -66,8 +55,6 @@ include(EnableWarnings) # Common warnings to enable or disable
 include(CodeCoverage) # Code to enable code coverage instrumentation
 include(GNUInstallDirs) # Correct and portable installation paths
 include(CheckIPOSupported) # Check if we can do LTO
-
-update_git_submodules(FATAL) # Fetch git submodules
 
 find_package(Sanitizers) # Sanitizers
 
@@ -102,14 +89,10 @@ endif()
 
 # Black library and frontend
 add_subdirectory(src/lib)
-add_subdirectory(src/frontend)
-
-# Python bindings
-add_subdirectory(python)
 
 # Tests
 
-if (ENABLE_TESTS)
+if (BLACK_ENABLE_TESTS)
   
   enable_testing()
   add_subdirectory(tests)

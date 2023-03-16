@@ -33,7 +33,7 @@
 // formulas to ensure their correctness before being given to solvers or
 // printers.
 //
-namespace black_internal::logic {
+namespace black::logic::internal {
   
   //
   // The `domain` class represents a finite domain associated with a named sort.

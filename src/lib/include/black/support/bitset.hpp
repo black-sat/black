@@ -29,7 +29,7 @@
 #include <limits>
 #include <concepts>
 
-namespace black_internal::bitset {
+namespace black::support::internal {
   
   //
   // This is a simple replacement of the `std::bitset` class with the difference
@@ -151,8 +151,8 @@ namespace black_internal::bitset {
 
 }
 
-namespace black {
-  using black_internal::bitset::bitset;
+namespace black::support {
+  using black::support::internal::bitset;
 }
 
 #endif // BLACK_SUPPORT_BITSET_HPP

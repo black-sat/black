@@ -37,7 +37,7 @@
   using ssize_t = SSIZE_T;
 #endif
 
-namespace black_internal 
+namespace black::support::internal 
 {
   // Simple utility to get the overloading of multiple lambdas (for example)
   // not used for formula::match but useful to work with std::visit
@@ -62,8 +62,10 @@ namespace black_internal
   }
 }
 
-namespace black {
-  using black_internal::overloaded;
+namespace black::support {
+  using internal::overloaded;
+  using internal::to_underlying;
+  using internal::from_underlying;
 }
 
 #endif // BLACK_COMMON_H

@@ -26,13 +26,13 @@
 
 #include <string_view>
 
-namespace black {
-  inline std::string_view license =
+namespace black::support {
+  inline constexpr std::string_view license =
 R"(
 BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
 
-(C) 2019-2021 Luca Geatti
-    2019-2021 Nicola Gigante
+(C) 2019-2023 Nicola Gigante
+    2019-2021 Luca Geatti
     2020      Gabriele Venturato
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

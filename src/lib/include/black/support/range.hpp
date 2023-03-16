@@ -29,7 +29,7 @@
 
 #include <ranges>
 
-namespace black_internal 
+namespace black::support::internal 
 {
   class range_iterator;
 
@@ -103,10 +103,10 @@ namespace black_internal
 
   static_assert(std::input_or_output_iterator<range::iterator>);
   static_assert(std::ranges::range<range>);
-} // namespace black_internal
+} // namespace black::support::internal
 
-namespace black {
-  using black_internal::range;
+namespace black::support {
+  using internal::range;
 }
 
 #endif // BLACK_RANGE_HPP

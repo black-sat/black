@@ -28,7 +28,7 @@
 
 #include <any>
 
-namespace black_internal::logic {
+namespace black::logic::internal {
   
   struct scope::impl_t {
     

@@ -37,7 +37,7 @@
 // `hierarchy.hpp`, and not potentially reusable for other hierarchies, is
 // declared in this file separate from `core.hpp`.
 //
-namespace black_internal::logic {
+namespace black::logic::internal {
 
   //
   // As a first thing we define the real `alphabet` class, which derives from

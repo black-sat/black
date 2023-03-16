@@ -26,7 +26,7 @@
 
 #include <memory>
 
-namespace black_internal::logic {
+namespace black::logic::internal {
 
   class var_decl;
   

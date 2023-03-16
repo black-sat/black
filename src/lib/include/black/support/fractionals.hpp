@@ -21,17 +21,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_PYTHON_HIERARCHY_HPP
-#define BLACK_PYTHON_HIERARCHY_HPP
+#ifndef BLACK_SAT_BACKEND_FRACTIONALS_HPP
+#define BLACK_SAT_BACKEND_FRACTIONALS_HPP
 
-#include <black/python/support.hpp>
+#include <limits>
+#include <tuple>
+#include <cmath>
+#include <cstdint>
 
-namespace pyblack {
-  namespace py = pybind11;
+namespace black::support::internal {
+  //
+  // Thanks to Leonardo Taglialegne
+  //
+  inline std::pair<int, int> double_to_fraction(double n) {
+    uint64_t a = (uint64_t)floor(n), b = 1;
+    uint64_t c = (uint64_t)ceil(n), d = 1;
 
-  void register_hierarchies(
-    py::module &m, py::class_<black::alphabet> &alphabet
-  );
+    uint64_t num = 1;
+    uint64_t denum = 1;
+    while(
+      a + c <= (uint64_t)std::numeric_limits<int>::max() &&
+      b + d <= (uint64_t)std::numeric_limits<int>::max() &&
+      ((double)num/(double)denum != n)
+    ) {
+      num = a + c;
+      denum = b + d;
+
+      if((double)num/(double)denum > n) {
+        c = num;
+        d = denum;
+      } else {
+        a = num;
+        b = denum;
+      }
+    }
+
+    return {static_cast<int>(num), static_cast<int>(denum)};
+  }
 }
 
-#endif // BLACK_PYTHON_HIERARCHY_HPP
+#endif
