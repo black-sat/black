@@ -114,6 +114,42 @@ TEST_CASE("Solver")
     }
   }
 
+  SECTION("Querying the first-order models") {
+
+    auto x = sigma.variable("x");
+    auto y = sigma.variable("y");
+    auto r = sigma.relation("r");
+    auto s = sigma.relation("s");
+
+    xi.declare(x, sigma.integer_sort());
+    xi.declare(y, sigma.integer_sort());
+    xi.declare(r, {sigma.integer_sort()});
+    xi.declare(s, {sigma.integer_sort()});
+
+    std::vector<std::string> backends = {
+      "z3", "mathsat", "cvc5"
+    };
+
+    for(auto backend : backends) {
+      DYNAMIC_SECTION("Backend: " << backend) {
+        if(black::sat::solver::backend_exists(backend)) {
+          
+          black::solver slv;
+
+          slv.solve(xi, x == 10 && r(x) && !r(y));
+          REQUIRE(slv.model());
+
+          REQUIRE(slv.model()->value(x == 10, 0));
+          REQUIRE(!slv.model()->value(x == 11, 0));
+          REQUIRE(slv.model()->value(x > 9, 0));
+          REQUIRE(!slv.model()->value(x > 11, 0));
+          REQUIRE(slv.model()->value(r(x), 0));
+          REQUIRE(!slv.model()->value(r(y), 0));
+        }
+      }
+    }
+  }
+
   SECTION("Quantified formulas") {
 
     std::vector<std::string> backends = { "z3", "cvc5" };

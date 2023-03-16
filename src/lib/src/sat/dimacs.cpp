@@ -105,16 +105,16 @@ namespace black_internal::dimacs
     return this->value(prop);
   }
 
-  tribool solver::value(logic::atom<logic::FO>) const {
-    return tribool::undef;
+  tribool solver::value(logic::atom<logic::FO>) const { // LCOV_EXCL_LINE
+    return tribool::undef; // LCOV_EXCL_LINE
   }
 
-  tribool solver::value(logic::equality<logic::FO>) const {
-    return tribool::undef;
+  tribool solver::value(logic::equality<logic::FO>) const { // LCOV_EXCL_LINE
+    return tribool::undef; // LCOV_EXCL_LINE
   }
 
-  tribool solver::value(logic::comparison<logic::FO>) const {
-    return tribool::undef;
+  tribool solver::value(logic::comparison<logic::FO>) const { // LCOV_EXCL_LINE
+    return tribool::undef; // LCOV_EXCL_LINE
   }
 
   void solver::clear_vars() {

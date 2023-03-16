@@ -43,7 +43,7 @@ if(BLACK_ENABLE_PYTHON_BINDINGS)
 
     message(STATUS "Python and PyBind11 found! Enabling Python bindings...")
 
-    pybind11_add_module(pyblack src/bindings.cpp src/hierarchy.cpp)
+    pybind11_add_module(pyblack EXCLUDE_FROM_ALL src/bindings.cpp src/hierarchy.cpp)
 
     target_include_directories(
       pyblack PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -51,7 +51,7 @@ if(BLACK_ENABLE_PYTHON_BINDINGS)
     target_link_libraries(pyblack PUBLIC black)
     set_target_properties(pyblack PROPERTIES OUTPUT_NAME black_sat)
 
-    install(TARGETS pyblack DESTINATION "${Python3_SITELIB}")
+    # install(TARGETS pyblack DESTINATION "${Python3_SITELIB}")
   
   endif()
     
