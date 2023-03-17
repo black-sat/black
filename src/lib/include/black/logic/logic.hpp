@@ -24,6 +24,8 @@
 #ifndef BLACK_LOGIC_FORMULA_HPP
 #define BLACK_LOGIC_FORMULA_HPP
 
+#include <black/support.hpp>
+
 //
 // The files included here define BLACK's logic API: handling of logic formulas
 // and everything around formulas.

@@ -34,6 +34,7 @@ if(Catch2_FOUND)
     UNIT_TESTS
     units/support/assert.cpp
     units/support/tribool.cpp
+    units/support/hash.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)

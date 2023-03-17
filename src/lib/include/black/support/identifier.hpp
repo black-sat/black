@@ -21,10 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SUPPORT_HASH_HPP
-#define BLACK_SUPPORT_HASH_HPP
+#ifndef BLACK_SUPPORT_IDENTIFIER_HPP
+#define BLACK_SUPPORT_IDENTIFIER_HPP
 
-#include <black/support/assert.hpp>
+#include <black/support/hash.hpp>
 
 #include <any>
 #include <tuple>
@@ -32,32 +32,6 @@
 #include <vector>
 #include <string_view>
 #include <string>
-
-//
-// Function to combine different hashe values into one.
-// See https://stackoverflow.com/a/27952689/3206471
-// and https://stackoverflow.com/questions/35985960
-// for an explanation of the algorithm
-//
-namespace black::support::internal {
-  inline size_t hash_combine(size_t lhs, size_t rhs) {
-    static_assert(sizeof(size_t) == 4 || sizeof(size_t) == 8);
-
-    if constexpr(sizeof(size_t) == 4) {
-      lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
-    } else if constexpr(sizeof(size_t) == 8) {
-      lhs ^= rhs + 0x9e3779b97f4a7c15 + (lhs << 6) + (lhs >> 2);
-    }
-
-    return lhs;
-  }
-
-  template<typename T>
-  concept hashable = requires(T t1, T t2) {
-    std::hash<std::remove_cvref_t<T>>{}(t1);
-    t1 == t2;
-  };
-}
 
 namespace black::support::internal
 {
@@ -198,7 +172,7 @@ namespace black::support::internal
 
         return std::apply([](auto ...v) {
           size_t h = 0;
-          ((h = hash_combine(h, std::hash<decltype(v)>{}(v))), ...);
+          ((h = internal::hash_combine(h, std::hash<decltype(v)>{}(v))), ...);
           return h;
         }, *t);
       };
@@ -212,7 +186,7 @@ namespace black::support::internal
 
         size_t h1 = std::hash<T>{}(p->first);
         size_t h2 = std::hash<U>{}(p->second);
-        return hash_combine(h1, h2);
+        return internal::hash_combine(h1, h2);
       };
     }
 
@@ -245,7 +219,6 @@ namespace black::support::internal
 
 namespace black::support {
   using internal::identifier;
-  using internal::hash_combine;
 }
 
 // std::hash specialization for identifier

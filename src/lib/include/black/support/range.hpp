@@ -25,7 +25,7 @@
 #define BLACK_RANGE_HPP
 
 #include <black/support/assert.hpp>
-#include <black/support/common.hpp>
+#include <black/support/utils.hpp>
 
 #include <ranges>
 

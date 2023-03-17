@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2020 Nicola Gigante
+// (C) 2019 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,19 +21,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SUPPORT_HPP
-#define BLACK_SUPPORT_HPP
+#include <catch.hpp>
 
+#include <black/support.hpp>
 
-#include <black/support/config.hpp>
-#include <black/support/exceptions.hpp>
-#include <black/support/assert.hpp>
-#include <black/support/debug.hpp>
-#include <black/support/tribool.hpp>
-#include <black/support/hash.hpp>
-#include <black/support/identifier.hpp>
-#include <black/support/range.hpp>
-#include <black/support/bitset.hpp>
-#include <black/support/utils.hpp>
+using namespace black::support;
 
-#endif // BLACK_SUPPORT_HPP
+TEST_CASE("Testing the `hasher` class") {
+  
+  std::vector<int> v = {1, 2, 3};
+
+  hasher h1, h2;
+
+  h1 += 42;
+  h1 += "hello";
+  h1 += v;
+
+  h2 += 42;
+  h2 += "hello";
+  h2 += 1;
+  h2 += 2;
+  h2 += 3;
+
+  REQUIRE(h1.hash() == h2.hash());
+
+}

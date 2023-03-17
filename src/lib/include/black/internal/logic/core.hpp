@@ -24,9 +24,7 @@
 #ifndef BLACK_LOGIC_SUPPORT_HPP_
 #define BLACK_LOGIC_SUPPORT_HPP_
 
-#include <black/support/assert.hpp>
-#include <black/support/identifier.hpp>
-#include <black/support/bitset.hpp>
+#include <black/support.hpp>
 
 #include <functional>
 #include <numeric>
@@ -894,7 +892,7 @@ namespace black::logic::internal {
 
         size_t h = 0;
         std::apply([&]<typename ...Ts>(Ts const& ...values) { // LCOV_EXCL_LINE
-          ((h = hash_combine(h, std::hash<Ts>{}(values))), ...);
+          ((h = internal::hash_combine(h, std::hash<Ts>{}(values))), ...);
         }, data.values);
 
         return h;
@@ -1095,7 +1093,7 @@ namespace black::logic::internal {
         
         size_t type_hash = std::hash<syntax_element>{}(n.type);
         size_t data_hash = std::hash<storage_data_t<Storage>>{}(n.data);
-        return hash_combine(type_hash, data_hash);
+        return internal::hash_combine(type_hash, data_hash);
       }
     };
   } namespace black::logic::internal {
