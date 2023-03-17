@@ -25,6 +25,8 @@
 
 #include <black/support/tribool.hpp>
 
+#include <sstream>
+
 using namespace black::support;
 
 TEST_CASE("Testing tribool")

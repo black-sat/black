@@ -23,28 +23,36 @@
 
 #include <catch.hpp>
 
+#ifdef BLACK_ASSERT_DISABLE
+  #undef BLACK_ASSERT_DISABLE
+#endif
+
 #include <black/support.hpp>
 
 using namespace black::support;
 
-static double func(int x) {
-  if(x > 0)
-    return 3.14/x;
-  black_unreachable();
+static int divide(int x) {
+  black_assert(x != 0);
+  return 42/x;
 }
 
-static int divide(int x, source_location loc = source_location::current()) {
+static int divide2(int x, source_location loc = source_location::current()) {
   black_assume(x != 0, loc, "`x` cannot be zero");
   
   return 42/x;
 }
 
+static int divide3(int x) {
+  if(x != 0)
+    return 42/x;
+  black_unreachable();
+}
+
 TEST_CASE("Testing assert macros") {
   
   black_assert(true);
-  REQUIRE_THROWS_AS(black_assert(false), assert_error);
-  REQUIRE_THROWS_AS(func(-42), unreachable_error);
-
-  divide(0);
+  REQUIRE_THROWS_AS(divide(0), assert_error);
+  REQUIRE_THROWS_AS(divide2(0), assume_error);
+  REQUIRE_THROWS_AS(divide3(0), unreachable_error);
 
 }
