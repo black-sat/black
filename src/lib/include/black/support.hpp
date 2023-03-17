@@ -27,6 +27,8 @@
 #include <black/support/config.hpp>
 #include <black/support/exceptions.hpp>
 #include <black/support/assert.hpp>
+#include <black/support/debug.hpp>
 #include <black/support/tribool.hpp>
+#include <black/support/utils.hpp>
 
 #endif // BLACK_SUPPORT_HPP

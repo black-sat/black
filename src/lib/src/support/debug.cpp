@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2021 Nicola Gigante
+// (C) 2022 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,39 +21,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_PRETTY_PRINT_HPP
-#define BLACK_LOGIC_PRETTY_PRINT_HPP
+#include <black/support.hpp>
 
-#include <black/support/utils.hpp>
-#include <black/logic/logic.hpp>
 
-#include <string>
+#include <fmt/format.h>
+#include <fmt/color.h>
 
-namespace black::logic::internal
-{
-  
-  BLACK_EXPORT
-  std::string to_string(formula<LTLPFO> f);
-  
-  BLACK_EXPORT
-  std::string to_string(term<LTLPFO> t);
-  
-  BLACK_EXPORT
-  std::string to_string(symbol<LTLPFO> t);
-  
-  BLACK_EXPORT
-  std::string to_string(number<LTLPFO> t);
-  
-  BLACK_EXPORT
-  std::string to_string(declaration t);
-  
-  BLACK_EXPORT
-  std::string to_string(sort s);
+#include <cstdio>
+#include <optional>
 
-  BLACK_EXPORT
-  std::string to_smtlib2(formula<FO> f, scope const& xi);
+#ifdef _MSC_VER
+  #include <windows.h>
+  #define isatty _isatty
+#else
+  #include <unistd.h>
+#endif
+
+
+namespace black::support::internal {
+
+  std::optional<std::string> tag;
+
+  void report(
+    const char *filename, size_t line, const char *format, 
+    fmt::format_args args
+  ) {
+    black_assert(tag);
+
+    fmt::text_style style = {};
+
+    if(isatty(fileno(stderr)))
+      style = fmt::fg(fmt::color::orange) | fmt::emphasis::bold;
+
+    std::string message = fmt::vformat(format, args);
+
+    fmt::print(
+      stderr, "{}:{}: {}:{}: {}\n", 
+      *tag, fmt::styled("debug", style),
+      relative(filename), line, message
+    );
+  }
 
 }
-
-#endif // BLACK_LOGIC_PRETTY_PRINT_HPP
-

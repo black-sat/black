@@ -27,6 +27,7 @@
 #
 set (
   LIB_SRC
+  src/support/debug.cpp
   src/logic/logic.cpp
   src/logic/prettyprint.cpp
   src/logic/semantics.cpp

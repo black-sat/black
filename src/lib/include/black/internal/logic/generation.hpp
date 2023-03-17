@@ -24,7 +24,7 @@
 #ifndef BLACK_INTERNAL_FORMULA_INTERFACE_HPP
 #define BLACK_INTERNAL_FORMULA_INTERFACE_HPP
 
-#include <black/support/common.hpp>
+#include <black/support/utils.hpp>
 
 #include <memory>
 #include <variant>
