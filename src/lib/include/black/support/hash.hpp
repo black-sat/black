@@ -27,6 +27,7 @@
 
 #include <functional>
 #include <ranges>
+#include <tuple>
 
 namespace black::support::internal {
 
@@ -83,6 +84,16 @@ namespace black::support::internal {
       return h;
     }
 
+    template<typename T>
+      requires requires (T v) { std::get<0>(v); }
+    friend hasher operator+(hasher h, T const& t) {
+      std::apply([&](auto ...v) {
+        h = (h + ... + v);
+      }, t);
+      
+      return h;
+    }
+
     template<hashable T>
     friend hasher operator+(T&& v, hasher h) {
       return h + std::forward<T>(v);
@@ -94,6 +105,11 @@ namespace black::support::internal {
       return h + r;
     }
 
+    template<typename T>
+      requires requires (T v) { std::get<0>(v); }
+    friend hasher operator+(T const& t, hasher h) {
+      return h + t;
+    }
 
     template<hashable T>
     hasher &operator+=(T&& v) {
@@ -107,6 +123,14 @@ namespace black::support::internal {
     hasher &operator+=(R const& r) {
       *this = *this + r;
 
+      return *this;
+    }
+
+    template<typename T>
+      requires requires (T v) { std::get<0>(v); }
+    hasher &operator+=(T const& t) {
+      *this = *this + t;
+      
       return *this;
     }
 

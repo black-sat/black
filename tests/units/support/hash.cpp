@@ -25,11 +25,14 @@
 
 #include <black/support.hpp>
 
+#include <tuple>
+
 using namespace black::support;
 
 TEST_CASE("Testing the `hasher` class") {
   
   std::vector<int> v = {1, 2, 3};
+  std::tuple<int, int, int> t = {1, 2, 3};
 
   hasher h1, h2;
 
@@ -45,5 +48,6 @@ TEST_CASE("Testing the `hasher` class") {
 
   REQUIRE(h1.hash() == h2.hash());
   REQUIRE(hash(42, "hello", 1, 2, 3) == h1.hash());
+  REQUIRE(hash(42, "hello", t) == h1.hash());
 
 }
