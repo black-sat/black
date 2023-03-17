@@ -24,7 +24,10 @@
 #ifndef BLACK_SUPPORT_EXCEPTIONS_HPP
 #define BLACK_SUPPORT_EXCEPTIONS_HPP
 
+#include <black/support/config.hpp>
+
 #include <stdexcept>
+#include <cstring>
 
 //
 // This file declares the exception types used throught BLACK
@@ -44,6 +47,13 @@ namespace black::support::internal {
 
   };
 
+  inline const char *relative(const char *path) {
+    const char *rel = nullptr;
+    if((rel = strstr(path, BLACK_SOURCE_PATH)) == path)
+      return path + strlen(BLACK_SOURCE_PATH);
+    return path;
+  }
+
   //
   // exception thrown on failure of `black_unreachable()`
   //
@@ -51,7 +61,7 @@ namespace black::support::internal {
   {
   public:
     unreachable_error(const char *filename, size_t line) 
-      : _filename{filename}, _line{line} 
+      : _filename{relative(filename)}, _line{line} 
     { 
       std::snprintf(
         _what, 200, "unreachable code reached at %s:%zd",
@@ -79,7 +89,7 @@ namespace black::support::internal {
   public:
     assert_error(
       const char *filename, size_t line, const char *expression
-    ) : _filename{filename}, _line{line}, _expression{expression}
+    ) : _filename{relative(filename)}, _line{line}, _expression{expression}
     { 
       std::snprintf(
         _what, 200, "failed assertion at %s:%zd: %s",
@@ -138,12 +148,12 @@ namespace black::support::internal {
       const char *filename, size_t line, 
       source_location const& loc,
       const char *expression, const char *message
-    ) : assert_error(filename, line, expression), 
+    ) : assert_error(relative(filename), line, expression), 
         _function{function}, _message{message}
     { 
       if(loc.file_name() != nullptr) {
         function = loc.function_name();
-        filename = loc.file_name();
+        filename = relative(loc.file_name());
         line = loc.line();
       }
 

@@ -30,6 +30,8 @@
 
 #define BLACK_VERSION "${PROJECT_VERSION}"
 
+#define BLACK_SOURCE_PATH "${CMAKE_SOURCE_DIR}/"
+
 #include <string_view>
 
 namespace black::support {

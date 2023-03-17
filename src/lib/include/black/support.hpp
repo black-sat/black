@@ -24,6 +24,7 @@
 #ifndef BLACK_SUPPORT_HPP
 #define BLACK_SUPPORT_HPP
 
+#include <black/support/config.hpp>
 #include <black/support/exceptions.hpp>
 #include <black/support/assert.hpp>
 #include <black/support/tribool.hpp>

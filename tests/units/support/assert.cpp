@@ -29,7 +29,11 @@
 
 #include <black/support.hpp>
 
+#include <string>
+
 using namespace black::support;
+
+using namespace std::literals;
 
 static int divide(int x) {
   black_assert(x != 0);
@@ -54,5 +58,11 @@ TEST_CASE("Testing assert macros") {
   REQUIRE_THROWS_AS(divide(0), assert_error);
   REQUIRE_THROWS_AS(divide2(0), assume_error);
   REQUIRE_THROWS_AS(divide3(0), unreachable_error);
+
+  try {
+    divide(0);
+  } catch (assert_error const& e) {
+    REQUIRE(e.filename() == "tests/units/support/assert.cpp"s);
+  }
 
 }

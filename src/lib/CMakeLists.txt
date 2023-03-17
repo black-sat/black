@@ -32,6 +32,12 @@ set (
   src/logic/semantics.cpp
 )
 
+# configure config header
+configure_file(
+  include/black/support/config.hpp.in 
+  ${CMAKE_BINARY_DIR}/include/black/support/config.hpp
+)
+
 #
 # Main black library.
 #
