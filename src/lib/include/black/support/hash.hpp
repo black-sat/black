@@ -115,9 +115,9 @@ namespace black::support::internal {
     size_t _hash = 0;
   };
 
-  template<hashable ...Ts>
-  size_t hash(Ts ...args) {
-    return (hasher{} + ... + args);
+  template<typename ...Ts>
+  size_t hash(Ts&& ...args) {
+    return (hasher{} + ... + std::forward<Ts>(args)).hash();
   }
 
 }

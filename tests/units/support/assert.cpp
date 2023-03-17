@@ -65,7 +65,4 @@ TEST_CASE("Testing assert macros") {
     REQUIRE(e.filename() == "tests/units/support/assert.cpp"s);
   }
 
-  enable_reporting("test");
-  black_report("answer: {}", 42);
-
 }

@@ -44,5 +44,6 @@ TEST_CASE("Testing the `hasher` class") {
   h2 += 3;
 
   REQUIRE(h1.hash() == h2.hash());
+  REQUIRE(hash(42, "hello", 1, 2, 3) == h1.hash());
 
 }
