@@ -32,7 +32,8 @@
 set(
   CLANG_WARNINGS -Weverything -pedantic -Werror
   -Wno-c++98-compat -Wno-c++98-compat-pedantic
-  -Wno-c++98-c++11-c++14-compat
+  -Wno-c++98-c++11-c++14--compat
+  -Wno-c++20-compat
   -Wno-padded 
   -Wno-weak-vtables 
   -Wno-unknown-pragmas

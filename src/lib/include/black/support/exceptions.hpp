@@ -21,6 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#ifndef BLACK_SUPPORT_EXCEPTIONS_HPP
+#define BLACK_SUPPORT_EXCEPTIONS_HPP
+
 #include <stdexcept>
 
 //
@@ -32,19 +35,19 @@ namespace black::support::internal {
   // The error exception type is the base class of all the exceptions
   // thrown from within BLACK
   //
-  class error : public std::logic_error 
+  class exception : public std::logic_error 
   {
   public:
-    error() : logic_error("you should never see this error") { }
+    exception() : logic_error("you should never see this error") { }
     
-    virtual ~error() override = default;
+    virtual ~exception() override = default;
 
   };
 
   //
   // exception thrown on failure of `black_unreachable()`
   //
-  class unreachable_error : public error 
+  class unreachable_error : public exception 
   {
   public:
     unreachable_error(const char *filename, size_t line) 
@@ -71,7 +74,7 @@ namespace black::support::internal {
   //
   // exception thrown on failure of `black_assert()`
   //
-  class assert_error : public error 
+  class assert_error : public exception 
   {
   public:
     assert_error(
@@ -79,7 +82,7 @@ namespace black::support::internal {
     ) : _filename{filename}, _line{line}, _expression{expression}
     { 
       std::snprintf(
-        _what, 200, "failed assertion at %s:%zd: \"%s\"",
+        _what, 200, "failed assertion at %s:%zd: %s",
         filename, line, expression
       );
     }
@@ -98,7 +101,32 @@ namespace black::support::internal {
     size_t _line = 0;
     const char *_expression = nullptr;
   };
-  
+
+  //
+  // Work around for compilers not supporting std::source_location
+  //  
+  struct dummy_source_location 
+  {
+    consteval dummy_source_location() = default;
+    dummy_source_location(dummy_source_location const&) = default;
+    dummy_source_location(dummy_source_location &&) = default;
+
+    static consteval dummy_source_location current() noexcept { 
+      return dummy_source_location{};
+    }
+
+    constexpr std::uint_least32_t line() const noexcept { return 0; }
+    constexpr std::uint_least32_t column() const noexcept { return 0; }
+    constexpr const char* file_name() const noexcept { return nullptr; }
+    constexpr const char* function_name() const noexcept { return nullptr; }
+  };
+
+  #ifdef __cpp_lib_source_location
+    using source_location = std::source_location;
+  #else
+    using source_location = dummy_source_location;
+  #endif 
+
   //
   // exception thrown on failure of `black_assume()`
   //
@@ -108,18 +136,26 @@ namespace black::support::internal {
     assume_error(
       const char *function, 
       const char *filename, size_t line, 
+      source_location const& loc,
       const char *expression, const char *message
     ) : assert_error(filename, line, expression), 
         _function{function}, _message{message}
     { 
+      if(loc.file_name() != nullptr) {
+        function = loc.function_name();
+        filename = loc.file_name();
+        line = loc.line();
+      }
+
       std::snprintf(
-        _what, 200, "violated assumption calling function '%s': \"%s\"",
-        function, message
+        _what, 200, 
+        "violated assumption when calling function '%s' at %s:%zd: %s",
+        function, filename, line, message
       );
     }
     virtual ~assume_error() override = default;
 
-    const char *function() const { return _message; }
+    const char *function() const { return _function; }
     const char *message() const { return _message; }
 
   private:
@@ -128,3 +164,12 @@ namespace black::support::internal {
   };
 
 }
+
+namespace black::support {
+  using internal::exception;
+  using internal::unreachable_error;
+  using internal::assert_error;
+  using internal::assume_error;
+}
+
+#endif // BLACK_SUPPORT_EXCEPTIONS_HPP

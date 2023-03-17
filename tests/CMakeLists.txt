@@ -32,6 +32,7 @@ if(Catch2_FOUND)
   #
   set(
     UNIT_TESTS
+    units/support/assert.cpp
     units/support/tribool.cpp
   )
 

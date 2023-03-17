@@ -48,29 +48,31 @@ namespace black::support::internal {
     throw assert_error(filename, line, expression);
   }
   
+  [[noreturn]]
+  inline void unreachable_handler(const char *filename, size_t line) 
+  {
+    throw unreachable_error(filename, line);
+  }
+
   template<typename Expr>
   constexpr void assume_handler(
     Expr assumption, 
     const char *function,
     const char *filename, size_t line,
+    source_location const& loc,
     const char *expression, const char *message
   )
   {
     if(assumption())
       return;
     
-    throw assume_error(function, filename, line, expression, message);
+    throw assume_error(function, filename, line, loc, expression, message);
   }
 
-  constexpr 
-  void unreachable_handler(bool dummy, const char *filename, size_t line) 
-  {
-    if(dummy)
-      return;
-    
-    throw unreachable_error(filename, line);
-  }
+}
 
+namespace black::support {
+  using internal::source_location;
 }
 
 #ifndef BLACK_ASSERT_DISABLE
@@ -79,23 +81,22 @@ namespace black::support::internal {
     black::support::internal::assert_handler(                              \
       [&]() { return static_cast<bool>(Expr); }, __FILE__, __LINE__, #Expr \
     )
-  
-  #define black_assume(Expr, Message)                     \
-    black::support::internal::assume_handler(             \
-      [&]() { return static_cast<bool>(Expr); },          \
-      __PRETTY_FUNC__, __FILE__, __LINE__, #Expr, Message \
-    )
-
-  #define black_unreachable()                                                 \
-    black::support::internal::unreachable_handler(false, __FILE__, __LINE__); \
-    BLACK_MARK_UNREACHABLE
 
 #else 
   
   #define black_assert(Expr)
-  #define black_unreachable() BLACK_MARK_UNREACHABLE
 
 #endif
+
+#define black_unreachable()                                            \
+    black::support::internal::unreachable_handler(__FILE__, __LINE__); 
+
+
+#define black_assume(Expr, Loc, Message)                \
+  black::support::internal::assume_handler(             \
+    [&]() { return static_cast<bool>(Expr); },          \
+    __FUNCTION__, __FILE__, __LINE__, Loc, #Expr, Message \
+  )
 
 /*
  * borrowed from https://github.com/foonathan/debug_assert
