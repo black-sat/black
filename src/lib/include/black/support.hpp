@@ -31,7 +31,6 @@
 #include <black/support/debug.hpp>
 #include <black/support/tribool.hpp>
 #include <black/support/hash.hpp>
-#include <black/support/identifier.hpp>
 #include <black/support/range.hpp>
 #include <black/support/bitset.hpp>
 #include <black/support/utils.hpp>

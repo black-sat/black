@@ -43,15 +43,17 @@
 // - interface.hpp (interface-fwd.hpp are just needed forward declarations)
 // - fragments.hpp
 //
-#include <black/internal/logic/core.hpp>
-#include <black/internal/logic/interface-fwd.hpp>
-#include <black/internal/logic/generation.hpp>
-#include <black/internal/logic/interface.hpp>
-#include <black/internal/logic/fragments.hpp>
+#include <black/logic/core.hpp>
+#include <black/logic/interface-fwd.hpp>
+#include <black/logic/identifier.hpp>
+#include <black/logic/generation.hpp>
+#include <black/logic/interface.hpp>
+#include <black/logic/fragments.hpp>
 
 //
-// All things semantics
+// Other things
 //
-#include <black/internal/logic/semantics.hpp>
+#include <black/logic/semantics.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #endif // BLACK_LOGIC_FORMULA_HPP

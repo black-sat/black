@@ -98,7 +98,7 @@ namespace black::logic::fragments::FRAGMENT {
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     using Element = black::logic::Element;
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
 }
 

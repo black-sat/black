@@ -117,7 +117,7 @@ namespace black {
     #define declare_hierarchy_element(Base, Storage, Element) \
       using black::logic::internal::Element;
 
-    #include <black/internal/logic/hierarchy.hpp>
+    #include <black/logic/hierarchy.hpp>
   }
 
   //
@@ -227,22 +227,22 @@ namespace black {
 // fragments and their namespaces
 //
 #define FRAGMENT propositional
-#include <black/internal/logic/declare_fragment.hpp>
+#include <black/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT FO
-#include <black/internal/logic/declare_fragment.hpp>
+#include <black/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT LTL
-#include <black/internal/logic/declare_fragment.hpp>
+#include <black/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT LTLP
-#include <black/internal/logic/declare_fragment.hpp>
+#include <black/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT LTLFO
-#include <black/internal/logic/declare_fragment.hpp>
+#include <black/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT LTLPFO
-#include <black/internal/logic/declare_fragment.hpp>
+#include <black/logic/declare_fragment.hpp>
 #undef FRAGMENT
 
 //

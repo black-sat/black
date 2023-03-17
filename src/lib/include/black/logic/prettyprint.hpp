@@ -25,7 +25,7 @@
 #define BLACK_LOGIC_PRETTY_PRINT_HPP
 
 #include <black/support/utils.hpp>
-#include <black/logic/logic.hpp>
+#include <black/logic.hpp>
 
 #include <string>
 

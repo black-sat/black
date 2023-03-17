@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic/logic.hpp>
+#include <black/logic.hpp>
 
 #include <tsl/hopscotch_map.h>
 
@@ -103,11 +103,11 @@ namespace black::logic::internal {
   struct alphabet_base::alphabet_impl : std::monostate
   #define declare_storage_kind(Base, Storage) \
     , storage_allocator<storage_type::Storage>
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
   { 
     #define declare_storage_kind(Base, Storage) \
       using storage_allocator<storage_type::Storage>::allocate;
-    #include <black/internal/logic/hierarchy.hpp>
+    #include <black/logic/hierarchy.hpp>
   };
 
   //
@@ -139,6 +139,6 @@ namespace black::logic::internal {
       return impl()->allocate(std::move(node)); \
     }
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
 }

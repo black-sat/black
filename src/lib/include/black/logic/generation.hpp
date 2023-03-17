@@ -57,13 +57,13 @@ namespace black::logic::internal
   // `hierarchy_type` lists all the hierarchy type as per `declare_hierarchy`
   enum class hierarchy_type  : uint8_t {
     #define declare_hierarchy(Base) Base,
-    #include <black/internal/logic/hierarchy.hpp>
+    #include <black/logic/hierarchy.hpp>
   };
 
   // here we have all the storage kinds
   enum class storage_type  : uint8_t {
     #define declare_storage_kind(Base, Storage) Storage,
-    #include <black/internal/logic/hierarchy.hpp>
+    #include <black/logic/hierarchy.hpp>
   };
 
   // this is a bit more complex. Here we have to list all the hierarchy
@@ -74,7 +74,7 @@ namespace black::logic::internal
     #define has_no_hierarchy_elements(Base, Storage) Storage,
     #define declare_hierarchy_element(Base, Storage, Element) Element,
 
-    #include <black/internal/logic/hierarchy.hpp>
+    #include <black/logic/hierarchy.hpp>
   };
 
   //
@@ -87,7 +87,7 @@ namespace black::logic::internal
     #define has_no_hierarchy_elements(Base, Storage) + 1
     #define declare_hierarchy_element(Base, Storage, Element) + 1
 
-    #include <black/internal/logic/hierarchy.hpp>
+    #include <black/logic/hierarchy.hpp>
 
     ;
   }
@@ -105,7 +105,7 @@ namespace black::logic::internal
     switch(s) {
       #define declare_hierarchy(Base) \
         case hierarchy_type::Base: return #Base;
-      #include <black/internal/logic/hierarchy.hpp>
+      #include <black/logic/hierarchy.hpp>
     }
     black_unreachable();
   }
@@ -114,7 +114,7 @@ namespace black::logic::internal
     switch(s) {
       #define declare_storage_kind(Base, Storage) \
         case storage_type::Storage: return #Storage;
-      #include <black/internal/logic/hierarchy.hpp>
+      #include <black/logic/hierarchy.hpp>
     }
     black_unreachable();
   }
@@ -129,7 +129,7 @@ namespace black::logic::internal
     #define declare_hierarchy_element(Base, Storage, Element) \
       case syntax_element::Element: return #Element;
 
-    #include <black/internal/logic/hierarchy.hpp>
+    #include <black/logic/hierarchy.hpp>
 
     }
     black_unreachable();
@@ -142,7 +142,7 @@ namespace black::logic::internal
       case storage_type::Storage: \
         return hierarchy_type::Base;
 
-      #include <black/internal/logic/hierarchy.hpp> 
+      #include <black/logic/hierarchy.hpp> 
     }
     black_unreachable();
   }
@@ -164,7 +164,7 @@ namespace black::logic::internal
       #define declare_hierarchy_element(Base, Storage, Element) \
         declare_storage_of_element(Storage, Element)
       
-      #include <black/internal/logic/hierarchy.hpp>
+      #include <black/logic/hierarchy.hpp>
 
       #undef declare_storage_of_element 
     }
@@ -189,7 +189,7 @@ namespace black::logic::internal
   struct storage_has_children_trait<storage_type::Storage> : \
     std::false_type { };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   inline constexpr bool storage_has_children(storage_type storage) 
   {
@@ -198,7 +198,7 @@ namespace black::logic::internal
       case storage_type::Storage: \
         return storage_has_children_trait<storage_type::Storage>::value;
 
-      #include <black/internal/logic/hierarchy.hpp>
+      #include <black/logic/hierarchy.hpp>
     }
     black_unreachable();
   }
@@ -216,7 +216,7 @@ namespace black::logic::internal
   #define has_no_hierarchy_elements(Base, Storage) \
     declare_leaf_storage_kind(Base, Storage)
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Custom syntax filters for each hierarchy type, enumerating all its syntax
@@ -237,7 +237,7 @@ namespace black::logic::internal
   #define end_hierarchy(Base) \
         > { };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Same thing for the syntax predicate associated with storage kinds.
@@ -263,7 +263,7 @@ namespace black::logic::internal
 
   #define end_leaf_storage_kind(Base, Storage)
   
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Specialization of `fragment_enum_element` for each `syntax_element`. Each
@@ -283,7 +283,7 @@ namespace black::logic::internal
   #define declare_hierarchy_element(Base, Storage, Element) \
     declare_enum_element(Element)
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   #undef declare_enum_element
 
@@ -297,7 +297,7 @@ namespace black::logic::internal
   #define has_no_hierarchy_elements(Base, Storage) , syntax_element::Storage
   #define declare_hierarchy_element(Base, Storage, Element) \
     , syntax_element::Element
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
     > { };
 
@@ -325,7 +325,7 @@ namespace black::logic::internal
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     class Element;
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Specializations of `storage_data`. Here we define the internal layout of
@@ -350,7 +350,7 @@ namespace black::logic::internal
   #define end_storage_kind(Base, Storage) \
       > { };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Now we can declare the concrete hierarchy types. They derive from
@@ -388,7 +388,7 @@ namespace black::logic::internal
     template<typename T> \
     concept is_##Base = hierarchy<T> && T::hierarchy == hierarchy_type::Base;
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Here we specialize the trait `hierarchy_type_of`, which returns the
@@ -407,7 +407,7 @@ namespace black::logic::internal
       using type = Base; \
     };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Here we specialize `hierarchy_has_standard_equality`. Hierarchies that have
@@ -419,7 +419,7 @@ namespace black::logic::internal
     struct hierarchy_has_standard_equality<hierarchy_type::Base> \
       : std::false_type { };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Here we start to talk about storage kinds. This traits tells whether a
@@ -435,7 +435,7 @@ namespace black::logic::internal
     struct storage_has_hierarchy_elements<storage_type::Storage> \
       : std::false_type { };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // This is the base class of `storage_base` that exposes the member functions
@@ -455,7 +455,7 @@ namespace black::logic::internal
   #define end_storage_kind(Base, Storage) \
     };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // And this is the base class exposing the member functions named after the
@@ -475,7 +475,7 @@ namespace black::logic::internal
   #define end_storage_kind(Base, Storage) \
     };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Here we derived from the custom members type if specified by the
@@ -486,7 +486,7 @@ namespace black::logic::internal
     struct storage_custom_members<storage_type::Storage, Derived> \
       : Struct<storage_type::Storage, Derived> { };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Here we specialize the `storage_type_of` trait which returns the concrete
@@ -510,7 +510,7 @@ namespace black::logic::internal
       using type = Storage; \
     };
 
-  #include <black/internal/logic/hierarchy.hpp>  
+  #include <black/logic/hierarchy.hpp>  
 
   //
   // This is the type that defines which arguments are accepted by the
@@ -538,7 +538,7 @@ namespace black::logic::internal
   #define end_storage_kind(Base, Storage) \
       > { };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Here we define storage kinds. These are only non-leaf storage kinds, which
@@ -612,7 +612,7 @@ namespace black::logic::internal
       >::hierarchy_element_base; \
     };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Here we declare concrete types for hierarchy elements. Again, the non-leaf
@@ -657,7 +657,7 @@ namespace black::logic::internal
       >::hierarchy_element_base; \
     };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Trait to obtain the concrete type given a `syntax_element`. This works for
@@ -681,7 +681,7 @@ namespace black::logic::internal
   #define declare_leaf_storage_kind(Base, Storage) \
     declare_leaf_hierarchy_element(Base, Storage, Storage)
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Here it finally comes the `alphabet_base` class, which `alphabet` will
@@ -703,7 +703,7 @@ namespace black::logic::internal
     , public alphabet_ctor_base<syntax_element::Element, alphabet_base>
 
   class BLACK_EXPORT alphabet_base : std::monostate
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
   {
     template<syntax_element E>
     using base_t = alphabet_ctor_base<E, alphabet_base>;
@@ -729,7 +729,7 @@ namespace black::logic::internal
         return base_t<syntax_element::Element>::construct(args...); \
       }
 
-    #include <black/internal/logic/hierarchy.hpp>
+    #include <black/logic/hierarchy.hpp>
 
     template<storage_type, fragment, typename, typename>
     friend class storage_ctor_base;
@@ -749,7 +749,7 @@ namespace black::logic::internal
         storage_node<storage_type::Storage> node \
       );
 
-    #include <black/internal/logic/hierarchy.hpp>
+    #include <black/logic/hierarchy.hpp>
 
     struct alphabet_impl;
     
@@ -776,7 +776,7 @@ namespace black::logic::internal
   #define declare_children(Base, Storage, Hierarchy, Children) \
     declare_field(Base, Storage, Hierarchy, Children)
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Here we generate an array of string literals that maps the index of a
@@ -800,7 +800,7 @@ namespace black::logic::internal
   #define end_storage_kind(Base, Storage) \
     };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // This trait returns the declare hierarchy type of a children or children
@@ -820,7 +820,7 @@ namespace black::logic::internal
   #define declare_children(Base, Storage, Hierarchy, Children) \
     declare_child(Base, Storage, Hierarchy, Children)
   
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Here we define the actual accessor member functions of
@@ -872,7 +872,7 @@ namespace black::logic::internal
       return get_children<I, Syntax>(static_cast<H const&>(*this)); \
     }
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
   //
   // Lastly, two traits used by the get<>() function to know whether a given
@@ -905,7 +905,7 @@ namespace black::logic::internal
       storage_type::Storage \
     > : std::true_type { };
 
-  #include <black/internal/logic/hierarchy.hpp>
+  #include <black/logic/hierarchy.hpp>
 
 }
 
