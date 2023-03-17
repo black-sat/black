@@ -98,17 +98,4 @@ namespace black::support {
     __FUNCTION__, __FILE__, __LINE__, Loc, #Expr, Message \
   )
 
-/*
- * borrowed from https://github.com/foonathan/debug_assert
- */
-#ifndef BLACK_MARK_UNREACHABLE
-# ifdef __GNUC__
-#   define BLACK_MARK_UNREACHABLE __builtin_unreachable()
-# elif defined(_MSC_VER)
-#   define BLACK_MARK_UNREACHABLE __assume(0)
-# else
-#   define BLACK_MARK_UNREACHABLE
-# endif
-#endif
-
 #endif // BLACK_ASSERT_HPP
