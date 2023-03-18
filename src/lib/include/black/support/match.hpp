@@ -184,6 +184,10 @@ namespace black::support::internal {
   struct union_type : private std::variant<Cases...> {
     using std::variant<Cases...>::variant;
 
+    bool operator==(union_type const&) const = default;
+
+    static constexpr bool is_union_type = true;
+
     template<typename T>
     std::optional<T> to() const {
       if(std::holds_alternative<T>(*this))
@@ -197,7 +201,7 @@ namespace black::support::internal {
     }
 
     template<typename ...Handlers>
-    auto match(Handlers ...h) {
+    auto match(Handlers ...h) const {
       return matcher<
         union_type<Cases...>, std::tuple<Cases...>
       >::match(*this, h...);
@@ -206,9 +210,23 @@ namespace black::support::internal {
 
 }
 
-#define black_union_type(...) \
-  public black::support::union_type<__VA_ARGS__> { \
-    using black::support::union_type<__VA_ARGS__>::union_type; \
+namespace std {
+  template<typename T>
+    requires requires { T::is_union_type; }
+  struct hash<T> {
+    size_t operator()(T const& v) {
+      return v.match(
+        []<typename U>(U x) {
+          return std::hash<U>{}(x);
+        }
+      );
+    }
+  };
+}
+
+#define black_union_type(T1, ...) \
+  public black::support::union_type<T1, __VA_ARGS__> { \
+    using black::support::union_type<T1, __VA_ARGS__>::union_type; \
   }
 
 namespace black::support {

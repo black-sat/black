@@ -30,7 +30,7 @@
 
 using namespace black::support;
 
-struct test : black_union_type(int, std::tuple<std::string, float>);
+struct test : black_union_type(int, float);
 
 TEST_CASE("Match infrastructure") {
 
@@ -40,7 +40,7 @@ TEST_CASE("Match infrastructure") {
     [](int x) {
       return x * 2;
     },
-    [](std::tuple<std::string, float>, std::string, float) {
+    [](float) {
       return false;
     }
   );
@@ -49,4 +49,19 @@ TEST_CASE("Match infrastructure") {
 
   REQUIRE(b == 42);
 
+}
+
+TEST_CASE("Union types") {
+  test t = 21;
+
+  test t2 = t;
+
+  t2 = t;
+
+  REQUIRE(t2 == t);
+
+  size_t h1 = hash(t);
+  size_t h2 = hash(21);
+
+  REQUIRE(h1 == h2);
 }
