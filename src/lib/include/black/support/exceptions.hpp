@@ -41,10 +41,15 @@ namespace black::support::internal {
   class exception : public std::logic_error 
   {
   public:
-    exception() : logic_error("you should never see this error") { }
+    exception(const char *what = "you should never see this error") 
+      : logic_error(what) { }
     
     virtual ~exception() override = default;
 
+    virtual const char *what() const noexcept override { return _what; }
+
+  protected:
+    char _what[200];
   };
 
   inline const char *relative(const char *path) {
@@ -70,13 +75,10 @@ namespace black::support::internal {
     }
     virtual ~unreachable_error() override = default;
 
-    virtual const char *what() const noexcept override { return _what; }
-
     const char *filename() const { return _filename; }
     size_t line() const { return _line; }
 
   private:
-    char _what[200];
     const char *_filename = nullptr;
     size_t _line = 0;
   };
@@ -98,14 +100,10 @@ namespace black::support::internal {
     }
     virtual ~assert_error() override = default;
 
-    virtual const char *what() const noexcept override { return _what; }
-
     const char *filename() const { return _filename; }
     size_t line() const { return _line; }
     const char *expression() const { return _expression; }
 
-  protected:
-    char _what[200];
   private:
     const char *_filename = nullptr;
     size_t _line = 0;
@@ -171,6 +169,19 @@ namespace black::support::internal {
   private:
     const char *_function = nullptr;
     const char *_message = nullptr;
+  };
+
+  class pattern_error : public exception 
+  {
+  public:
+    pattern_error() { 
+      strncpy(_what, "non-exhaustive pattern", 200);
+    }
+
+    virtual ~pattern_error() override = default;
+
+  private:
+    source_location _loc;
   };
 
 }

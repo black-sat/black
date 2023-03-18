@@ -150,10 +150,9 @@ namespace black::support::internal {
   // The base case of the recursion above is the singleton list of cases. If we
   // reach this, and the main type cannot be casted to this last case, it means
   // it could not have been casted to any of the elements included in the list
-  // of cases, which is clearly a bug, so we raise an assertion.
+  // of cases, so we raise an exception.
   //
   template<typename H, typename Case>
-    //requires can_cast_to<H, Case>
   struct matcher<H, std::tuple<Case>>
   {
     template<typename ...Handlers>
@@ -166,7 +165,7 @@ namespace black::support::internal {
         return dispatch(
           *h.template to<Case>(), std::forward<Handlers>(handlers)...
         );
-      black_unreachable(); // LCOV_EXCL_LINE
+      throw pattern_error();
     }
   };
 
