@@ -178,11 +178,44 @@ namespace black::support::internal {
     otherwise(T const&) { }
   };
 
+  //
+  // Utility type to declare a simple union type from a list of alternatives
+  //
+  template<typename ...Cases>
+  struct union_type : private std::variant<Cases...> {
+    using std::variant<Cases...>::variant;
+
+    template<typename T>
+    std::optional<T> to() const {
+      if(std::holds_alternative<T>(*this))
+        return std::get<T>(*this);
+      return {};
+    }
+
+    template<typename T>
+    bool is() const {
+      return to<T>().has_value();
+    }
+
+    template<typename ...Handlers>
+    auto match(Handlers ...h) {
+      return matcher<
+        union_type<Cases...>, std::tuple<Cases...>
+      >::match(*this, h...);
+    }
+  };
+
 }
+
+#define black_union_type(...) \
+  public black::support::union_type<__VA_ARGS__> { \
+    using black::support::union_type<__VA_ARGS__>::union_type; \
+  }
 
 namespace black::support {
   using internal::matcher;
   using internal::otherwise;
+  using internal::union_type;
 }
 
 #endif // BLACK_SUPPORT_MATCH_HPP

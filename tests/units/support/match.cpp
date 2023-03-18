@@ -30,35 +30,7 @@
 
 using namespace black::support;
 
-class test 
-{
-public:
-  using case1 = int;
-  using case2 = std::tuple<std::string, float>;
-
-  test(int v) : _data{case1{v}} { }
-  test(std::string s, float f) : _data{case2{s, f}} { }
-
-  template<typename T>
-  std::optional<T> to() const {
-    if(std::holds_alternative<T>(_data))
-      return std::get<T>(_data);
-    return {};
-  }
-
-  template<typename T>
-  bool is() const {
-    return to<T>().has_value();
-  }
-
-  template<typename ...Handlers>
-  auto match(Handlers ...h) {
-    return matcher<test, std::tuple<case1, case2>>::match(*this, h...);
-  }
-
-private:
-  std::variant<case1, case2> _data;
-};
+struct test : black_union_type(int, std::tuple<std::string, float>);
 
 TEST_CASE("Match infrastructure") {
 
@@ -68,7 +40,7 @@ TEST_CASE("Match infrastructure") {
     [](int x) {
       return x * 2;
     },
-    [](test::case2, std::string, float) {
+    [](std::tuple<std::string, float>, std::string, float) {
       return false;
     }
   );
