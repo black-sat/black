@@ -2065,86 +2065,10 @@ namespace black::logic::internal {
 
   } namespace black::logic::internal {
 
-  //
-  // Here we declare the infrastructure for pattern matching. The machinery is
-  // based on the to<> function of hierarchy types, and on the list of
-  // `syntax_element`s provided by the hierarchy's fragment. For each syntax
-  // element we try to cast the formula to the corresponding type using
-  // `to<>()`, calling the corresponding lambda case if the cast succeeds. This
-  // is all made more complex because of the support for tuple-unpacking the
-  // hierarchy type to the lambda arguments.
-  //
-  // The first thing we need is a function to do this std::apply-like unpacking
-  // of the hierarchy to the called lambda. 
-
-  template<typename Handler, typename T, size_t ...I>
-    requires std::invocable<Handler, T, std::tuple_element_t<I, T>...>
-  auto unpack(
-    Handler&& handler, T h, std::index_sequence<I...>
-  ) {
-    return std::invoke(std::forward<Handler>(handler), h, get<I>(h)...);
-  }
+  using support::otherwise;
 
   //
-  // It is cumbersome to repeat everything both in the body and in `decltype()`
-  // but we need to remove the function from overload resolution if the handler
-  // is not callable.
-  //
-  template<typename Handler, typename T>
-  auto unpack(Handler&& handler, T h)
-  -> decltype(
-    unpack(
-      std::forward<Handler>(handler), h, 
-      std::make_index_sequence<std::tuple_size_v<T>>{}
-    )
-  ) {
-    return unpack(
-      std::forward<Handler>(handler), h, 
-      std::make_index_sequence<std::tuple_size_v<T>>{}
-    );
-  }
-
-  //
-  // This trait holds if the call to `unpack` is well-formed
-  //
-  template<typename H, typename Handler>
-  inline constexpr bool can_be_unpacked_v = requires { 
-    unpack(std::declval<Handler>(), std::declval<H>()); 
-  };
-
-  //
-  // The `dispatch()` function takes a hierarchy object and the list of handlers
-  // and calls the first handler that can be called either directly or by
-  // unpacking. Note that we check the unpacked case before to give it priority,
-  // so that e.g. a lambda such as `[](conjunction, auto ...args) { }` picks up
-  // the unpacked children in `args`.
-  //
-  template<typename T, typename Handler, typename ... Handlers>
-  auto dispatch(T obj, Handler&& handler, Handlers&& ...handlers) 
-  {
-    if constexpr(can_be_unpacked_v<T, Handler>) 
-      return unpack(std::forward<Handler>(handler), obj);
-    else if constexpr(std::is_invocable_v<Handler, T>)
-      return std::invoke(std::forward<Handler>(handler), obj);
-    else 
-      return dispatch(obj, std::forward<Handlers>(handlers)...);
-  }
-
-  //
-  // Finally, the `matcher` class, which calls the machinery above to do the
-  // trick. This is generic and works not only for hierarchy types but for any
-  // type that expose `to<>` and `is<>` functions (e.g. `fragment_type` above).
-  //
-  // At first we need a concept to test the usability of such functions
-  //
-  template<typename H, typename Case>
-  concept can_cast_to = requires(H h) {
-    { h.template to<Case>() } -> std::convertible_to<std::optional<Case>>;
-    { h.template is<Case>() } -> std::convertible_to<bool>;
-  };
-
-  //
-  // Then, this utility trait is useful in the usage of the `matcher` class in
+  // This utility trait is useful in the usage of the `matcher` class in
   // the common case of hierarchy types: it transform a `syntax_list` and a
   // fragment into a tuple of concrete hierarchy element types to pass to the
   // `matcher` class.
@@ -2160,77 +2084,6 @@ namespace black::logic::internal {
   template<fragment Syntax, typename List>
   using element_types_of_syntax_list_t = 
     typename element_types_of_syntax_list<Syntax, List>::type;
-
-  //
-  // Now the matcher class itself. The `H` paremeter is the main class from
-  // which one wants to match (e.g. `formula<Syntax>`). The `Cases` parameter is
-  // a tuple of types to try to match the matched object to. The default value
-  // for `Cases` is the correct one to use in the common case of `H` being a
-  // hierarchy type.
-  //
-  template<
-    typename H,
-    typename Cases = element_types_of_syntax_list_t<
-      typename H::syntax,
-      typename H::node_syntax::list
-    >
-  >
-  struct matcher;
-
-  template<typename H, typename Case, typename ...Cases>
-    //requires can_cast_to<H, Case>
-  struct matcher<H, std::tuple<Case, Cases...>>
-  {
-    //
-    // The return type of `match()` is computed with `std::common_type`, which
-    // has been specialized for hierarchies above. Again, it is cumbersome to
-    // repeat the body twice but there's no other way.
-    //
-    template<typename ...Handlers>
-    static auto match(H h, Handlers&& ...handlers) 
-      -> std::common_type_t<
-        decltype(dispatch(
-          *h.template to<Case>(), std::forward<Handlers>(handlers)...
-        )),
-        decltype(matcher<H, std::tuple<Cases...>>::match(
-          h, std::forward<Handlers>(handlers)...
-        ))
-      >
-    {
-      if(h.template is<Case>())
-        return dispatch(
-          *h.template to<Case>(), std::forward<Handlers>(handlers)...
-        );
-      
-      return matcher<H, std::tuple<Cases...>>::match(
-        h, std::forward<Handlers>(handlers)...
-      );
-    }
-  };
-
-  //
-  // The base case of the recursion above is the singleton list of cases. If we
-  // reach this, and the main type cannot be casted to this last case, it means
-  // it could not have been casted to any of the elements included in the list
-  // of cases, which is clearly a bug, so we raise an assertion.
-  //
-  template<typename H, typename Case>
-    //requires can_cast_to<H, Case>
-  struct matcher<H, std::tuple<Case>>
-  {
-    template<typename ...Handlers>
-    static auto match(H h, Handlers&& ...handlers) 
-      -> decltype(dispatch(
-        *h.template to<Case>(), std::forward<Handlers>(handlers)...
-      )) 
-    {
-      if(h.template is<Case>())
-        return dispatch(
-          *h.template to<Case>(), std::forward<Handlers>(handlers)...
-        );
-      black_unreachable(); // LCOV_EXCL_LINE
-    }
-  };
 
   //
   // Now we can implement the various `match()` functions declared until now.
@@ -2251,7 +2104,7 @@ namespace black::logic::internal {
   template<typename Owner, fragment Syntax>
   template<typename ...Handlers>
   auto fragment_type<Owner, Syntax>::match(Handlers ...hs) const {
-    return matcher<fragment_type,
+    return support::matcher<fragment_type,
       fragment_enum_values_of_elements_t<typename Syntax::list>
     >{}.match(*this, hs...);
   }
@@ -2262,18 +2115,16 @@ namespace black::logic::internal {
   template<hierarchy_type H, fragment Syntax, typename Derived>
   template<typename ...Handlers>
   auto hierarchy_base<H, Syntax, Derived>::match(Handlers ...handlers) const {
-    return matcher<Derived>{}.match(
+    using matcher = support::matcher<Derived,
+      element_types_of_syntax_list_t<
+        typename Derived::syntax,
+        typename Derived::node_syntax::list
+      >
+    >;
+    return matcher{}.match(
       static_cast<Derived const&>(*this), handlers...
     );
   }
-
-  //
-  // Little catch-all type used as a wildcard in patter matching 
-  //
-  struct otherwise {
-    template<typename T>
-    otherwise(T const&) { }
-  };
 
   //
   // A useful addition to the pattern matching infrastructure is the `only<>`
@@ -2378,7 +2229,7 @@ namespace black::logic::internal {
     template<typename ...Handlers>
     auto match(Handlers ...handlers) const {
       return 
-        matcher<base_t, 
+        support::matcher<base_t, 
           element_types_of_syntax_list_t<Syntax, typename TopLevel::list>
         >{}.match(*this, handlers...);
     }

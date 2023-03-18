@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2020 Nicola Gigante
+// (C) 2019 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,19 +21,60 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SUPPORT_HPP
-#define BLACK_SUPPORT_HPP
+#include <catch.hpp>
 
+#include <black/support.hpp>
 
-#include <black/support/config.hpp>
-#include <black/support/exceptions.hpp>
-#include <black/support/assert.hpp>
-#include <black/support/debug.hpp>
-#include <black/support/tribool.hpp>
-#include <black/support/hash.hpp>
-#include <black/support/match.hpp>
-#include <black/support/range.hpp>
-#include <black/support/bitset.hpp>
-#include <black/support/utils.hpp>
+#include <variant>
+#include <string>
 
-#endif // BLACK_SUPPORT_HPP
+using namespace black::support;
+
+class test 
+{
+public:
+  using case1 = std::tuple<int, std::string>;
+  using case2 = std::tuple<std::string, float>;
+
+  test(int v, std::string s) : _data{case1{v, s}} { }
+  test(std::string s, float f) : _data{case2{s, f}} { }
+
+  template<typename T>
+  std::optional<T> to() const {
+    if(std::holds_alternative<T>(_data))
+      return std::get<T>(_data);
+    return {};
+  }
+
+  template<typename T>
+  bool is() const {
+    return to<T>().has_value();
+  }
+
+  template<typename ...Handlers>
+  auto match(Handlers ...h) {
+    return matcher<test, std::tuple<case1, case2>>::match(*this, h...);
+  }
+
+private:
+  std::variant<case1, case2> _data;
+};
+
+TEST_CASE("Match infrastructure") {
+  
+  test t = {1, "hello"};
+
+  auto b = t.match(
+    [](test::case1, int, std::string) {
+      return 42;
+    },
+    [](test::case2, std::string, float) {
+      return false;
+    }
+  );
+
+  STATIC_REQUIRE(std::is_same_v<decltype(b), int>);
+
+  REQUIRE(b == 42);
+
+}

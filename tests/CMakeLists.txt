@@ -35,6 +35,8 @@ if(Catch2_FOUND)
     units/support/assert.cpp
     units/support/tribool.cpp
     units/support/hash.cpp
+    units/support/match.cpp
+    units/logic/stub.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)
