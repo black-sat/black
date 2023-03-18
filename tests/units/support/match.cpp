@@ -33,10 +33,10 @@ using namespace black::support;
 class test 
 {
 public:
-  using case1 = std::tuple<int, std::string>;
+  using case1 = int;
   using case2 = std::tuple<std::string, float>;
 
-  test(int v, std::string s) : _data{case1{v, s}} { }
+  test(int v) : _data{case1{v}} { }
   test(std::string s, float f) : _data{case2{s, f}} { }
 
   template<typename T>
@@ -61,12 +61,12 @@ private:
 };
 
 TEST_CASE("Match infrastructure") {
-  
-  test t = {1, "hello"};
+
+  test t = 21;
 
   auto b = t.match(
-    [](test::case1, int, std::string) {
-      return 42;
+    [](int x) {
+      return x * 2;
     },
     [](test::case2, std::string, float) {
       return false;

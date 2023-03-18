@@ -57,21 +57,21 @@ namespace black::support::internal {
   -> decltype(
     unpack(
       std::forward<Handler>(handler), h, 
-      std::make_index_sequence<std::tuple_size_v<T>>{}
+      std::make_index_sequence<std::tuple_size<T>::value>{}
     )
   ) {
     return unpack(
       std::forward<Handler>(handler), h, 
-      std::make_index_sequence<std::tuple_size_v<T>>{}
+      std::make_index_sequence<std::tuple_size<T>::value>{}
     );
   }
 
   //
-  // This trait holds if the call to `unpack` is well-formed
+  // This concept holds if the call to `unpack` is well-formed
   //
   template<typename H, typename Handler>
-  inline constexpr bool can_be_unpacked_v = requires { 
-    unpack(std::declval<Handler>(), std::declval<H>()); 
+  concept unpackable = requires(Handler handler, H h) {
+    unpack(handler, h);    
   };
 
   //
@@ -84,7 +84,7 @@ namespace black::support::internal {
   template<typename T, typename Handler, typename ... Handlers>
   auto dispatch(T obj, Handler&& handler, Handlers&& ...handlers) 
   {
-    if constexpr(can_be_unpacked_v<T, Handler>) 
+    if constexpr(unpackable<T, Handler>) 
       return unpack(std::forward<Handler>(handler), obj);
     else if constexpr(std::is_invocable_v<Handler, T>)
       return std::invoke(std::forward<Handler>(handler), obj);
