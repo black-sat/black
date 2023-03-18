@@ -40,13 +40,14 @@
 
 namespace black::support::internal {
 
-  std::optional<std::string> tag;
+  std::optional<std::string> debug_msgs_tag;
 
-  void report(
+  void debug(
     const char *filename, size_t line, const char *format, 
     fmt::format_args args
   ) {
-    black_assert(tag);
+    if(!debug_msgs_tag)
+      return;
 
     fmt::text_style style = {};
 
@@ -57,7 +58,7 @@ namespace black::support::internal {
 
     fmt::print(
       stderr, "{}:{}: {}:{}: {}\n", 
-      *tag, fmt::styled("debug", style),
+      *debug_msgs_tag, fmt::styled("debug", style),
       relative(filename), line, message
     );
   }

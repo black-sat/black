@@ -54,100 +54,40 @@ namespace black::support::internal {
     std::hash<std::remove_cvref_t<T>>{}(t);
   };
 
-  class hasher 
-  {
-  public:
-    hasher() = default;
-    hasher(hasher const&) = default;
-
-    hasher &operator=(hasher const&) = default;
-
-    size_t hash() const { return _hash; }
-
-    template<hashable T>
-    friend hasher operator+(hasher h, T&& v) {
-      return hasher{
-        hash_combine(
-          h.hash(), 
-          std::hash<std::remove_cvref_t<T>>{}(std::forward<T>(v))
-        )
-      };
-    }
-
-    template<std::ranges::range R>
-      requires hashable<std::ranges::range_value_t<R>>
-    friend hasher operator+(hasher h, R const&r) {
-      for(auto v : r) {
-        h += v;
-      }
-
-      return h;
-    }
-
-    template<typename T>
-      requires requires (T v) { std::get<0>(v); }
-    friend hasher operator+(hasher h, T const& t) {
-      std::apply([&](auto ...v) {
-        h = (h + ... + v);
-      }, t);
-      
-      return h;
-    }
-
-    template<hashable T>
-    friend hasher operator+(T&& v, hasher h) {
-      return h + std::forward<T>(v);
-    }
-
-    template<std::ranges::range R>
-      requires hashable<std::ranges::range_value_t<R>>
-    friend hasher operator+(R const& r, hasher h) {
-      return h + r;
-    }
-
-    template<typename T>
-      requires requires (T v) { std::get<0>(v); }
-    friend hasher operator+(T const& t, hasher h) {
-      return h + t;
-    }
-
-    template<hashable T>
-    hasher &operator+=(T&& v) {
-      *this = *this + v;
-
-      return *this;
-    }
-
-    template<std::ranges::range R>
-      requires hashable<std::ranges::range_value_t<R>>
-    hasher &operator+=(R const& r) {
-      *this = *this + r;
-
-      return *this;
-    }
-
-    template<typename T>
-      requires requires (T v) { std::get<0>(v); }
-    hasher &operator+=(T const& t) {
-      *this = *this + t;
-      
-      return *this;
-    }
-
-  private:
-    hasher(size_t h) : _hash{h} { }
-    size_t _hash = 0;
-  };
-
-  template<typename ...Ts>
-  size_t hash(Ts&& ...args) {
-    return (hasher{} + ... + std::forward<Ts>(args)).hash();
+  template<typename T>
+  size_t hash(T const& arg) {
+    return std::hash<T>{}(arg);
   }
 
+  template<std::ranges::range R>
+    requires hashable<std::ranges::range_value_t<R>>
+  size_t hash(R const& r) {
+    size_t h = 0;
+    for(auto elem : r)
+      h = hash_combine(h, hash(elem));
+    return h;
+  }
+
+  template<typename T>
+    requires requires (T v) { std::get<0>(v); }
+  size_t hash(T const& v) {
+    return std::apply(
+      [](auto arg, auto ...args) {
+        size_t h = hash(arg);
+        ((h = hash_combine(h, hash(args))), ...);
+        return h;
+      }, v);
+  }
+
+  template<typename Arg, typename ...Args>
+  size_t hash(Arg const& arg, Args const& ...args) {
+    size_t h = hash(arg);
+    ((h = hash_combine(h, hash(args))), ...);
+    return h;
+  }
 }
 
 namespace black::support {
-  using internal::hasher;
   using internal::hash;
   using internal::hashable;
 }

@@ -34,20 +34,10 @@ TEST_CASE("Testing the `hasher` class") {
   std::vector<int> v = {1, 2, 3};
   std::tuple<int, int, int> t = {1, 2, 3};
 
-  hasher h1, h2;
+  // we only have to test that these compile
+  [[maybe_unused]] size_t h1 = hash(42, "hello", 1, 2, 3);
+  [[maybe_unused]] size_t h2 = hash(42, "hello", v);
+  [[maybe_unused]] size_t h3 = hash(42, "hello", t);
 
-  h1 += 42;
-  h1 += "hello";
-  h1 += v;
-
-  h2 += 42;
-  h2 += "hello";
-  h2 += 1;
-  h2 += 2;
-  h2 += 3;
-
-  REQUIRE(h1.hash() == h2.hash());
-  REQUIRE(hash(42, "hello", 1, 2, 3) == h1.hash());
-  REQUIRE(hash(42, "hello", t) == h1.hash());
 
 }

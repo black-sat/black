@@ -28,31 +28,28 @@
 
 namespace black::support::internal {
   
-  extern std::optional<std::string> tag;
+  extern std::optional<std::string> debug_msgs_tag;
 
-  inline void enable_reporting(std::string t) { tag = t; }
-  inline void disable_reporting() { tag = {}; }
-  inline bool is_reporting_enabled() { return tag.has_value(); }
+  inline void enable_debug_msgs(std::string t) { debug_msgs_tag = t; }
+  inline void disable_debug_msgs() { debug_msgs_tag = {}; }
+  inline bool are_debug_msgs_enabled() { return debug_msgs_tag.has_value(); }
 
-  void report(
+  void debug(
     const char *filename, size_t line, const char *format, 
     fmt::format_args args
   );
 
 }
 
-#define black_report(Message, ...)                                      \
-  do {                                                                  \
-    if(black::support::internal::tag)                                   \
-      black::support::internal::report(                                 \
-        __FILE__, __LINE__, Message, fmt::make_format_args(__VA_ARGS__) \
-      );                                                                \
-  } while(false)
+#define black_debug(Message, ...)                                   \
+  black::support::internal::debug (                                 \
+    __FILE__, __LINE__, Message, fmt::make_format_args(__VA_ARGS__) \
+  )
 
 namespace black::support {
-  using internal::enable_reporting;
-  using internal::disable_reporting;
-  using internal::is_reporting_enabled;
+  using internal::enable_debug_msgs;
+  using internal::disable_debug_msgs;
+  using internal::are_debug_msgs_enabled;
 }
 
 #endif // BLACK_SUPPORT_DEBUG_HPP

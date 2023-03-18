@@ -217,7 +217,7 @@ namespace std {
     size_t operator()(T const& v) {
       return v.match(
         []<typename U>(U x) {
-          return std::hash<U>{}(x);
+          return ::black::support::hash(x);
         }
       );
     }
