@@ -36,6 +36,9 @@ TEST_CASE("Match infrastructure") {
 
   test t = 21;
 
+  STATIC_REQUIRE(matchable<test>);
+  STATIC_REQUIRE(!matchable<int>);
+
   auto b = t.match(
     [](int x) {
       return x * 2;

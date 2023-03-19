@@ -29,12 +29,26 @@ namespace black::support::internal {
 
   //
   // Here we declare the infrastructure for pattern matching. The machinery is
-  // based on the to<> function of hierarchy types, and on the list of
-  // `syntax_element`s provided by the hierarchy's fragment. For each syntax
-  // element we try to cast the formula to the corresponding type using
-  // `to<>()`, calling the corresponding lambda case if the cast succeeds. This
-  // is all made more complex because of the support for tuple-unpacking the
-  // hierarchy type to the lambda arguments.
+  // based on three elements which have to be provided by matchable types:
+  // - a T::alternatives tuple with the list of alternative types
+  // - a T::to<U>() function that performs the downcast
+  // - a T::is<U>() function that tells if the downcast is possible
+  template<typename T>
+  concept matchable = requires (T t) {
+    typename T::alternatives;
+    { std::tuple_size<typename T::alternatives>::value };
+    requires (std::tuple_size<typename T::alternatives>::value > 0);
+    
+    t.template to<
+      typename std::tuple_element<0, typename T::alternatives>::type
+    >();
+
+    t.template is<
+      typename std::tuple_element<0, typename T::alternatives>::type
+    >();
+  };
+
+
   //
   // The first thing we need is a function to do this std::apply-like unpacking
   // of the hierarchy to the called lambda. 
@@ -112,7 +126,7 @@ namespace black::support::internal {
   // for `Cases` is the correct one to use in the common case of `H` being a
   // hierarchy type.
   //
-  template<typename H, typename Cases>
+  template<typename H, typename Cases = typename H::alternatives>
   struct matcher;
 
   template<typename H, typename Case, typename ...Cases>
@@ -184,6 +198,8 @@ namespace black::support::internal {
   struct union_type : private std::variant<Cases...> {
     using std::variant<Cases...>::variant;
 
+    using alternatives = std::tuple<Cases...>;
+
     bool operator==(union_type const&) const = default;
 
     static constexpr bool is_union_type = true;
@@ -202,9 +218,7 @@ namespace black::support::internal {
 
     template<typename ...Handlers>
     auto match(Handlers ...h) const {
-      return matcher<
-        union_type<Cases...>, std::tuple<Cases...>
-      >::match(*this, h...);
+      return matcher<union_type<Cases...>>::match(*this, h...);
     }
   };
 
@@ -231,6 +245,7 @@ namespace std {
 
 namespace black::support {
   using internal::matcher;
+  using internal::matchable;
   using internal::otherwise;
   using internal::union_type;
 }

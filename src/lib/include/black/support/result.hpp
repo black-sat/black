@@ -21,20 +21,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SUPPORT_ERROR_HPP
-#define BLACK_SUPPORT_ERROR_HPP
+#ifndef BLACK_SUPPORT_RESULT_HPP
+#define BLACK_SUPPORT_RESULT_HPP
 
 #include <fmt/format.h>
 #include <system_error>
+#include <type_traits>
 
 namespace black::support {
 
-  struct user_error {
-    const char *msg = nullptr;
+  struct error_base {
+    const char *msg_format = nullptr;
     fmt::format_args msg_args;
   }
 
-  struct syntax_error : user_error {
+  struct syntax_error : error_base {
     std::optional<std::string> filename;
     size_t line = 0;
     size_t column = 0;
@@ -42,17 +43,17 @@ namespace black::support {
     fmt::format_args msg_args;
   };
 
-  struct type_error : user_error { };
+  struct type_error : error_base { };
 
-  struct backend_error : user_error { };
+  struct backend_error : error_base { };
 
-  struct io_error : user_error {
+  struct io_error : error_base {
     std::optional<std::string> filename;
     std::error_code error;
   };
 
-  struct error = black_union_type(syntax_error, io_error);
+  struct error = black_union_type(syntax_error, io_error);  
 
 }
 
-#endif // BLACK_SUPPORT_ERROR_HPP
+#endif // BLACK_SUPPORT_RESULT_HPP
