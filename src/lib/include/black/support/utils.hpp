@@ -26,6 +26,8 @@
 
 #include <type_traits>
 #include <string_view>
+#include <variant>
+#include <tuple>
 
 #ifdef _MSC_VER
   #define BLACK_EXPORT __declspec(dllexport)
@@ -60,6 +62,53 @@ namespace black::support::internal
     requires std::is_enum_v<E>
   constexpr E from_underlying(std::underlying_type_t<E> v) noexcept {
     return static_cast<E>(v);
+  }
+
+  //
+  // Misc metaprogramming utilities
+  //
+
+  template<typename T, typename U>
+  struct tuple_cons;
+
+  template<typename T, typename ...Us>
+  struct tuple_cons<T, std::tuple<Us...>> {
+    using type = std::tuple<T, Us...>;
+  };
+
+  template<typename T, typename ...Us>
+  using tuple_cons_t = typename tuple_cons<T, Us...>::type;
+
+  template<typename T, typename U>
+  struct tuple_contains : std::false_type { };
+
+  template<typename ...Ts, typename U>
+  struct tuple_contains<std::tuple<Ts...>, U> : 
+    std::disjunction<std::is_same<Ts, U>...> { };
+
+  template<typename T, typename U>
+  inline constexpr bool tuple_contains_v = tuple_contains<T, U>::value;
+
+  template<typename T, typename ...Args>
+    requires (std::is_same_v<T, Args> || ...)
+  bool variant_is(std::variant<Args...> const& v) {
+    return std::holds_alternative<T>(v);
+  }
+
+  template<typename T, typename ...Args>
+  bool variant_is(std::variant<Args...> const&) {
+    return false;
+  }
+
+  template<typename T, typename ...Args>
+    requires (std::is_same_v<T, Args> || ...)
+  std::optional<T> variant_get(std::variant<Args...> const& v) {
+    return std::get<T>(v);
+  }
+
+  template<typename T, typename ...Args>
+  std::optional<T> variant_get(std::variant<Args...> const&) {
+    return {};
   }
 
   //
@@ -123,6 +172,10 @@ namespace black::support {
   using internal::overloaded;
   using internal::to_underlying;
   using internal::from_underlying;
+  using internal::tuple_cons;
+  using internal::tuple_cons_t;
+  using internal::tuple_contains;
+  using internal::tuple_contains_v;
   using internal::double_to_fraction;
   using internal::license;
 }

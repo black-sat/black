@@ -36,6 +36,7 @@ if(Catch2_FOUND)
     units/support/tribool.cpp
     units/support/hash.cpp
     units/support/match.cpp
+    units/support/result.cpp
     units/logic/stub.cpp
   )
 
@@ -48,7 +49,7 @@ if(Catch2_FOUND)
 
   add_executable(unit_tests ${UNIT_TESTS})
   target_include_directories(unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/units)
-  target_link_libraries(unit_tests PRIVATE black ${CATCH_TARGET})
+  target_link_libraries(unit_tests PRIVATE black fmt::fmt ${CATCH_TARGET})
   target_enable_warnings(unit_tests)
   target_code_coverage(unit_tests)
   add_sanitizers(unit_tests)

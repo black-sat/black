@@ -49,7 +49,8 @@ namespace black::support::internal {
     virtual const char *what() const noexcept override { return _what; }
 
   protected:
-    char _what[200];
+    static constexpr size_t _what_size = 200;
+    char _what[_what_size];
   };
 
   inline const char *relative(const char *path) {
@@ -69,7 +70,7 @@ namespace black::support::internal {
       : _filename{relative(filename)}, _line{line} 
     { 
       std::snprintf(
-        _what, 200, "unreachable code reached at %s:%zd",
+        _what, _what_size, "unreachable code reached at %s:%zd",
         filename, line
       );
     }
@@ -94,7 +95,7 @@ namespace black::support::internal {
     ) : _filename{relative(filename)}, _line{line}, _expression{expression}
     { 
       std::snprintf(
-        _what, 200, "failed assertion at %s:%zd: %s",
+        _what, _what_size, "failed assertion at %s:%zd: %s",
         filename, line, expression
       );
     }
@@ -156,7 +157,7 @@ namespace black::support::internal {
       }
 
       std::snprintf(
-        _what, 200, 
+        _what, _what_size, 
         "violated assumption when calling function '%s' at %s:%zd: %s",
         function, filename, line, message
       );
@@ -175,7 +176,7 @@ namespace black::support::internal {
   {
   public:
     pattern_error() { 
-      strncpy(_what, "non-exhaustive pattern", 200);
+      strncpy(_what, "non-exhaustive pattern", _what_size);
     }
 
     virtual ~pattern_error() override = default;

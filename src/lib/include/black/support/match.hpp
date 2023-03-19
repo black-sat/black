@@ -206,8 +206,8 @@ namespace black::support::internal {
 
     template<typename T>
     std::optional<T> to() const {
-      if(std::holds_alternative<T>(*this))
-        return std::get<T>(*this);
+      if(variant_is<T>(*this))
+        return variant_get<T>(*this);
       return {};
     }
 
@@ -218,7 +218,7 @@ namespace black::support::internal {
 
     template<typename ...Handlers>
     auto match(Handlers ...h) const {
-      return matcher<union_type<Cases...>>::match(*this, h...);
+      return matcher<union_type>::match(*this, h...);
     }
   };
 

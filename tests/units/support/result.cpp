@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2020 Nicola Gigante
+// (C) 2019 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,20 +21,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SUPPORT_HPP
-#define BLACK_SUPPORT_HPP
+#include <catch.hpp>
 
+#include <black/support.hpp>
 
-#include <black/support/config.hpp>
-#include <black/support/utils.hpp>
-#include <black/support/exceptions.hpp>
-#include <black/support/assert.hpp>
-#include <black/support/debug.hpp>
-#include <black/support/tribool.hpp>
-#include <black/support/hash.hpp>
-#include <black/support/match.hpp>
-#include <black/support/result.hpp>
-#include <black/support/range.hpp>
-#include <black/support/bitset.hpp>
+using namespace black::support;
 
-#endif // BLACK_SUPPORT_HPP
+static result<int> divide(int x) {
+  if(x == 0)
+    return backend_error("Z3 cannot divide by {}", 0);
+  
+  return 84/x;
+}
+
+TEST_CASE("`result<T, E>` result type") {
+
+  auto r = divide(2);
+
+  r.match(
+    [](int x) {
+      REQUIRE(x == 42);
+    },
+    [](otherwise) {
+      FAIL();
+    }
+  );
+
+  auto r2 = divide(0);
+
+  r2.match(
+    [](int) { FAIL(); },
+    [](error) { SUCCEED(); }
+  );
+
+  r2.match(
+    [](int) { FAIL(); },
+    [](backend_error e) { 
+      REQUIRE(e.message == "Z3 cannot divide by 0");
+    },
+    [](otherwise) { FAIL(); }
+  );
+
+}
