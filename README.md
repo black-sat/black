@@ -1,4 +1,4 @@
-# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black) ![appveyor](https://ci.appveyor.com/api/projects/status/github/black-sat/black?branch=master&svg=true) ![MIT](https://img.shields.io/badge/license-MIT-brightgreen) [![Latest release](https://badgen.net/github/release/black-sat/black)](https://github.com/black-sat/black/releases/tag/v0.10.0) [![codecov](https://codecov.io/gh/black-sat/black/branch/master/graph/badge.svg?token=ZETQF5NZ6X)](https://codecov.io/gh/black-sat/black)
+# BLACK [![Build Status](https://api.cirrus-ci.com/github/black-sat/black.svg)](https://cirrus-ci.com/github/black-sat/black) ![appveyor](https://ci.appveyor.com/api/projects/status/github/black-sat/black?branch=master&svg=true) ![MIT](https://img.shields.io/badge/license-MIT-brightgreen) [![Latest release](https://badgen.net/github/release/black-sat/black)](https://github.com/black-sat/black/releases/tag/v0.10.1) [![codecov](https://codecov.io/gh/black-sat/black/branch/master/graph/badge.svg?token=ZETQF5NZ6X)](https://codecov.io/gh/black-sat/black)
 
 BLACK (short for Bounded Lᴛʟ sAtisfiability ChecKer) is a tool for testing the
 satisfiability of formulas in Linear Temporal Logic and related logics.
@@ -24,7 +24,7 @@ See the [Documentation page][Doc] for further information on BLACK's installatio
 
 | Ubuntu ≥ 22.04             | Fedora 36 |
 |----------------------------|------------------------------|
-| [![Download](https://badgen.net/badge/Download%20v0.10.0/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.10.0/.rpm/green)][pkg.rpm]   |
+| [![Download](https://badgen.net/badge/Download%20v0.10.1/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v0.10.1/.rpm/green)][pkg.rpm]   |
 | `sudo apt install ⟨file⟩` | `sudo dnf install ⟨file⟩` |
 
 
@@ -40,10 +40,10 @@ $ brew install black-sat/black/black-sat
 
 Download the self-contained ZIP archive.
 
-[![Download](https://badgen.net/badge/Download%20v0.10.0/.zip/green)][pkg.win]
+[![Download](https://badgen.net/badge/Download%20v0.10.1/.zip/green)][pkg.win]
 
 [Doc]: https://www.black-sat.org
 [brew]: https://brew.sh
-[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.10.0/black-sat-0.10.0-1.x86_64.deb
-[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.10.0/black-sat-0.10.0-1.x86_64.rpm
-[pkg.win]: https://github.com/black-sat/black/releases/download/v0.10.0/black-0.10.0-win-x64.zip
+[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.10.1/black-sat-0.10.1-1.x86_64.deb
+[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.10.1/black-sat-0.10.1-1.x86_64.rpm
+[pkg.win]: https://github.com/black-sat/black/releases/download/v0.10.1/black-0.10.1-win-x64.zip

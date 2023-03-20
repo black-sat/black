@@ -26,10 +26,10 @@ the packages should work but do not, please open a GitHub `issue
 <https://github.com/black-sat/black/issues>`_.
 
 
-.. |UbuntuBadge| image:: https://badgen.net/badge/Download%20v0.10.0/.deb/green
-.. _UbuntuBadge: https://github.com/black-sat/black/releases/download/v0.10.0/black-sat-0.10.0-1.x86_64.deb
-.. |FedoraBadge| image:: https://badgen.net/badge/Download%20v0.10.0/.rpm/green
-.. _FedoraBadge: https://github.com/black-sat/black/releases/download/v0.10.0/black-sat-0.10.0-1.x86_64.rpm
+.. |UbuntuBadge| image:: https://badgen.net/badge/Download%20v0.10.1/.deb/green
+.. _UbuntuBadge: https://github.com/black-sat/black/releases/download/v0.10.1/black-sat-0.10.1-1.x86_64.deb
+.. |FedoraBadge| image:: https://badgen.net/badge/Download%20v0.10.1/.rpm/green
+.. _FedoraBadge: https://github.com/black-sat/black/releases/download/v0.10.1/black-sat-0.10.1-1.x86_64.rpm
 
 Compilation from source
 ------------------------
