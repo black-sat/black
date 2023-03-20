@@ -85,6 +85,9 @@ namespace black::frontend
     // set whether formulas are to be interpreted as LTLf
     inline bool finite = false;
 
+    // set whether formulas have to be checked for validity
+    inline bool validity = false;
+
     // whether we are in trace checking mode
     inline bool trace_checking = false;
 

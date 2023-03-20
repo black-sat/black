@@ -86,6 +86,21 @@ namespace black_internal::solver
     return _data->solve(xi, f, finite, k_max, semi_decision);
   }
 
+  
+  tribool solver::is_valid(
+    scope const& xi, logic::formula<logic::LTLPFO> f, 
+    bool finite, size_t k_max, bool semi_decision
+  ) {
+    tribool res = _data->solve(xi, !f, finite, k_max, semi_decision);
+    if(res == true)
+      return false;
+    if(res == false)
+      return true;
+    return tribool::undef;
+  }
+
+
+
   std::optional<model> solver::model() const {
     if(!_data->model)
       return {};

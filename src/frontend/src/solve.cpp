@@ -187,8 +187,12 @@ namespace black::frontend {
 
     size_t bound = 
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
-    black::tribool res = 
-      slv.solve(xi, *f, cli::finite, bound, cli::semi_decision);
+    black::tribool res = black::tribool::undef;
+    
+    if(cli::validity) 
+      res = slv.is_valid(xi, *f, cli::finite, bound, cli::semi_decision);
+    else
+      res = slv.solve(xi, *f, cli::finite, bound, cli::semi_decision);
 
     std::optional<formula> muc;
     if(res == false && cli::unsat_core) {
@@ -249,8 +253,15 @@ namespace black::frontend {
       return;
     }
 
-    if(result == false) {
-      io::println("UNSAT");
+    std::string result_str[] = { 
+      cli::validity ? "VALID" : "UNSAT",
+      cli::validity ? "NOT VALID" : "SAT"
+    };
+
+    bool model_exists = (cli::validity ? !result : result) == true;
+
+    if(!model_exists) {
+      io::println(result_str[model_exists]);
       if(cli::unsat_core) {
         black_assert(muc.has_value());
         io::println("MUC: {}", to_string(*muc));
@@ -266,15 +277,15 @@ namespace black::frontend {
     }
 
     black_assert(solver.model().has_value());
-    io::println("SAT");
+    io::println(result_str[model_exists]);
 
     if(!cli::print_model)
       return;
 
     if(cli::finite)
-      io::println("Finite model:");
+      io::println(cli::validity ? "Finite counterexample:" : "Finite model:");
     else
-      io::println("Model:");
+      io::println(cli::validity ? "Counterexample:" : "Model:");
 
     std::unordered_set<proposition> props;
     relevant_props(f, props);
@@ -306,25 +317,34 @@ namespace black::frontend {
   void json(
     tribool result, solver &solver, formula f, std::optional<formula> muc
   ) {
+
+    std::string result_str[] = { 
+      cli::validity ? "VALID" : "UNSAT",
+      cli::validity ? "NOT VALID" : "SAT"
+    };
+
+    bool model_exists = (cli::validity ? !result : result) == true;
+
     io::println("{{");
-    
+
     io::println("    \"result\": \"{}\",", 
-      result == tribool::undef ? "UNKNOWN" : // LCOV_EXCL_LINE
-      result == true  ? "SAT" : "UNSAT"
+      model_exists == tribool::undef ? "UNKNOWN" : // LCOV_EXCL_LINE
+      model_exists == true  ? 
+        result_str[model_exists] : result_str[model_exists]
     );
 
     io::println("    \"k\": {}{}", 
       solver.last_bound(),
-      (cli::print_model && result == true) || 
-      (cli::unsat_core && result == false) ? "," : ""
+      (cli::print_model && model_exists == true) || 
+      (cli::unsat_core && model_exists == false) ? "," : ""
     );
 
-    if(result == false && cli::unsat_core) {
+    if(model_exists == false && cli::unsat_core) {
       black_assert(muc.has_value());
       io::println("    \"muc\": \"{}\"", to_string(*muc));
     }
 
-    if(result == true && cli::print_model) {
+    if(model_exists == true && cli::print_model) {
       auto model = solver.model();
       std::unordered_set<proposition> props;
       relevant_props(f, props);

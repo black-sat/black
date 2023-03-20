@@ -140,6 +140,8 @@ namespace black::frontend
         % "translate LTL+Past formulas into LTL before checking satisfiability",
       option("--finite").set(cli::finite)
         % "treat formulas as LTLf and look for finite models",
+      option("-v", "--validity").set(cli::validity)
+        % "check validity of the formula instead of satisfiability",
       option("-m", "--model").set(cli::print_model)
         % "print the model of the formula, if any",
       option("-c", "--unsat-core").set(cli::unsat_core)

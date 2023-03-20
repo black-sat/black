@@ -79,6 +79,17 @@ namespace black_internal::solver {
         size_t k_max = std::numeric_limits<size_t>::max(),
         bool semi_decision = false
       );
+      
+      //
+      // Same as `solve` but for validity. The arguments are the same.
+      //
+      tribool is_valid(
+        scope const& xi,
+        formula f,
+        bool finite = false,
+        size_t k_max = std::numeric_limits<size_t>::max(),
+        bool semi_decision = false
+      );
 
       
 
