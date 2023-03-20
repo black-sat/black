@@ -239,6 +239,17 @@ namespace pyblack {
       },
       py::arg("xi"), py::arg("f"), py::arg("finite") = false
     );
+    solver.def("is_valid", 
+      [](black::solver &self, logic::scope const&xi, 
+         black::formula f, bool finite) 
+      {
+        if(f.is<logic::formula<logic::LTLP>>())
+          return self.is_valid(xi, f, finite);
+        return 
+          self.solve(xi, f, finite, std::numeric_limits<size_t>::max(), true);
+      },
+      py::arg("xi"), py::arg("f"), py::arg("finite") = false
+    );
 
     solver.def_property_readonly("model", &black::solver::model);
     model.def_property_readonly("size", &black::model::size);
