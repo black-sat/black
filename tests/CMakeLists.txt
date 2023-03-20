@@ -47,20 +47,20 @@ if(Catch2_FOUND)
     set(UNIT_TESTS ${UNIT_TESTS} units/main.cpp)
   endif()
 
-  add_executable(unit_tests ${UNIT_TESTS})
-  target_include_directories(unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/units)
-  target_link_libraries(unit_tests PRIVATE black fmt::fmt ${CATCH_TARGET})
-  target_enable_warnings(unit_tests)
-  target_code_coverage(unit_tests)
-  add_sanitizers(unit_tests)
+  add_executable(units ${UNIT_TESTS})
+  target_include_directories(units PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/units)
+  target_link_libraries(units PRIVATE black fmt::fmt ${CATCH_TARGET})
+  target_enable_warnings(units)
+  target_code_coverage(units)
+  add_sanitizers(units)
 
   add_test(
-    NAME unit_tests 
-    COMMAND "$<TARGET_FILE:unit_tests>"
+    NAME units 
+    COMMAND "$<TARGET_FILE:units>"
   )
 
   set_property(
-    TARGET unit_tests PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+    TARGET units PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
   )
 
   message(STATUS "Unit tests enabled")

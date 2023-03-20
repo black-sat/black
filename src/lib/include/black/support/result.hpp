@@ -80,24 +80,6 @@ namespace black::support::internal {
 
 
   //
-  // Exception thrown by some members of the `result` class below.
-  //
-  template<typename Error>
-  class bad_result_access : exception 
-  {
-    bad_result_access(Error err) : _error{std::move(err)} { 
-      snprintf(_what, _what_size, "bad access to a `result<T, E>` object");
-    }
-
-    virtual ~bad_result_access() override = default;
-
-    Error const&error() const { return _error; }
-
-  private:
-    Error _error;
-  };
-
-  //
   // Expected-like result type for operations that may generate user-facing
   // errors (e.g. parsing, type checking, etc...).
   //

@@ -172,6 +172,9 @@ namespace black::support::internal {
     const char *_message = nullptr;
   };
 
+  //
+  // Exception thrown on non-exhaustive pattern matches
+  //
   class pattern_error : public exception 
   {
   public:
@@ -180,9 +183,25 @@ namespace black::support::internal {
     }
 
     virtual ~pattern_error() override = default;
+  };
+
+
+  //
+  // Exception thrown by some members of the `result` class below.
+  //
+  template<typename Error>
+  class bad_result_access : exception 
+  {
+    bad_result_access(Error err) : _error{std::move(err)} { 
+      snprintf(_what, _what_size, "bad access to a `result<T, E>` object");
+    }
+
+    virtual ~bad_result_access() override = default;
+
+    Error const&error() const { return _error; }
 
   private:
-    source_location _loc;
+    Error _error;
   };
 
 }
