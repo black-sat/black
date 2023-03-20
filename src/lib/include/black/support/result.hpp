@@ -64,15 +64,22 @@ namespace black::support::internal {
   };
 
   struct io_error : error_base {
+    enum operation {
+      opening,
+      reading,
+      writing
+    };
+
     std::optional<std::string> filename;
-    std::error_code error;
+    operation op;
+    int error;
 
     template<typename ...Args>
     io_error(
-      std::optional<std::string> _filename, std::error_code const& _error,
+      std::optional<std::string> _filename, operation _op, int _error,
       const char *format, Args const& ...args
     ) : error_base{format, args...}, 
-        filename{_filename}, error{_error} { }
+        filename{_filename}, op{_op}, error{_error} { }
   };
 
   struct error : 
@@ -80,13 +87,27 @@ namespace black::support::internal {
 
 
   //
+  // Utility for the next type below
+  //
+  template<typename T>
+  struct alternatives : std::type_identity<std::tuple<>> { };
+
+  template<matchable T>
+  struct alternatives<T> : std::type_identity<typename T::alternatives> { };
+
+  template<typename T>
+  using alternatives_t = typename alternatives<T>::type;
+
+  //
   // Expected-like result type for operations that may generate user-facing
   // errors (e.g. parsing, type checking, etc...).
   //
-  template<typename T, matchable Error = error>
+  template<typename Type, typename Error = error>
   class result {
+    using T = std::conditional_t<std::is_void_v<Type>, std::monostate, Type>;
+
   public:
-    using alternatives = tuple_cons_t<T, typename Error::alternatives>;
+    using alternatives = tuple_cons_t<T, alternatives_t<Error>>;
 
     result() = default;
 
@@ -108,6 +129,7 @@ namespace black::support::internal {
     // Matching interface
     //
     template<typename To>
+      requires matchable<Error>
     std::optional<To> to() const {
       if(variant_is<To>(_data))
         return variant_get<To>(_data);
@@ -115,6 +137,13 @@ namespace black::support::internal {
         Error err = *variant_get<Error>(_data);
         return err.template to<To>();
       }
+      return {};
+    }
+    
+    template<typename To>
+    std::optional<To> to() const {
+      if(variant_is<To>(_data))
+        return variant_get<To>(_data);
       return {};
     }
 

@@ -37,6 +37,7 @@ if(Catch2_FOUND)
     units/support/hash.cpp
     units/support/match.cpp
     units/support/result.cpp
+    units/support/serialize.cpp
     units/logic/stub.cpp
   )
 

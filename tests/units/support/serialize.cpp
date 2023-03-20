@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2020 Nicola Gigante
+// (C) 2019 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,21 +21,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SUPPORT_HPP
-#define BLACK_SUPPORT_HPP
+#include <catch.hpp>
 
+#include <black/support.hpp>
 
-#include <black/support/config.hpp>
-#include <black/support/utils.hpp>
-#include <black/support/exceptions.hpp>
-#include <black/support/assert.hpp>
-#include <black/support/debug.hpp>
-#include <black/support/tribool.hpp>
-#include <black/support/hash.hpp>
-#include <black/support/match.hpp>
-#include <black/support/result.hpp>
-#include <black/support/serialize.hpp>
-#include <black/support/range.hpp>
-#include <black/support/bitset.hpp>
+#include <sstream>
+#include <string>
 
-#endif // BLACK_SUPPORT_HPP
+using namespace black::support;
+
+TEST_CASE("Serialization") {
+
+  std::tuple<std::string, float> t = {"pi", 3.14f};
+  std::tuple<std::string, float> t2;
+
+  std::stringstream str;
+
+  auto res = serialize(t, str);
+  REQUIRE(res.has_value());
+
+  std::stringstream str2{str.str()};
+
+  res = deserialize(t2, str2);
+  REQUIRE(res.has_value());
+
+  REQUIRE(t == t2);
+
+}
