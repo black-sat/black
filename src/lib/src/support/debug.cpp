@@ -58,7 +58,7 @@ namespace black::support::internal {
 
     fmt::print(
       stderr, "{}:{}: {}:{}: {}\n", 
-      *debug_msgs_tag, fmt::styled("debug", style),
+      *debug_msgs_tag, styled("debug", style),
       relative(filename), line, message
     );
   }

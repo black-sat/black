@@ -28,6 +28,11 @@
 #include <string_view>
 #include <variant>
 #include <tuple>
+#include <optional>
+#include <limits>
+#include <cmath>
+
+#include <fmt/color.h>
 
 #ifdef _MSC_VER
   #define BLACK_EXPORT __declspec(dllexport)
@@ -139,6 +144,21 @@ namespace black::support::internal
 
     return {static_cast<int>(num), static_cast<int>(denum)};
   }
+
+  //
+  // Util to abstract whether {fmt} has the `styled()` function
+  //
+  template<typename T>
+    requires requires (T v, fmt::text_style s) { fmt::styled(v, s); }
+  auto styled(T&& v, fmt::text_style s) {
+    return styled(std::forward<T>(v), s);
+  }
+  
+  template<typename T>
+  decltype(auto) styled(T&& v, fmt::text_style) {
+    return std::forward<T>(v);
+  }
+
   
   inline constexpr std::string_view license =
 R"(
@@ -177,6 +197,7 @@ namespace black::support {
   using internal::tuple_contains;
   using internal::tuple_contains_v;
   using internal::double_to_fraction;
+  using internal::styled;
   using internal::license;
 }
 
