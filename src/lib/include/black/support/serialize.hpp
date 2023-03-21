@@ -47,7 +47,6 @@ namespace black::support::internal {
   };
 
   template<serializable T>
-  [[nodiscard("please check the error status")]]
   result<void, io_error> serialize(T const &obj, std::ostream &stream) {
     cereal::JSONOutputArchive archive{stream};
 
@@ -65,7 +64,6 @@ namespace black::support::internal {
   }
 
   template<serializable T>
-  [[nodiscard("please check the error status")]]
   result<void, io_error> serialize(T const &obj, std::string const&filename) {
 
     std::ofstream stream{filename};
@@ -82,7 +80,6 @@ namespace black::support::internal {
   }
 
   template<serializable T>
-  [[nodiscard("please check the error status")]]
   result<void, io_error> deserialize(T &obj, std::istream &stream) {
     cereal::JSONInputArchive archive{stream};
 
@@ -100,7 +97,6 @@ namespace black::support::internal {
   }
 
   template<serializable T>
-  [[nodiscard("please check the error status")]]
   result<void, io_error> deserialize(T &obj, std::string const&filename) {
 
     std::ifstream stream{filename};

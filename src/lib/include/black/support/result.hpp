@@ -102,8 +102,10 @@ namespace black::support::internal {
   // Expected-like result type for operations that may generate user-facing
   // errors (e.g. parsing, type checking, etc...).
   //
+  
   template<typename Type, typename Error = error>
-  class result {
+  class [[nodiscard("ignored result<T,E>, please check the error status")]] 
+  result {
     using T = std::conditional_t<std::is_void_v<Type>, std::monostate, Type>;
 
   public:
