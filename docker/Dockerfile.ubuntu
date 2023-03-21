@@ -23,9 +23,4 @@ WORKDIR /catch2/build
 RUN cmake -DBUILD_TESTING=OFF ..
 RUN make install
 
-RUN git clone https://github.com/nlohmann/json.git /json
-WORKDIR /json/build
-RUN cmake -DJSON_BuildTests=OFF -DBUILD_TESTING=OFF ..
-RUN make install
-
 ENTRYPOINT ["/usr/bin/env", "--"]
