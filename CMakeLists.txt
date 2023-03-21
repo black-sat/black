@@ -74,7 +74,7 @@ endif()
 #
 find_package(tsl-hopscotch-map REQUIRED)
 find_package(fmt REQUIRED)
-find_package(Cereal REQUIRED)
+find_package(cereal REQUIRED)
 
 add_subdirectory(external/clipp EXCLUDE_FROM_ALL)
 
