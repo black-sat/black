@@ -31,12 +31,14 @@ using namespace black::support;
 
 TEST_CASE("Testing tribool")
 {
+  tribool tb0;
   tribool tb1 = tribool::undef;
   tribool tb2 = true;
   tribool tb3 = false;
   
   SECTION("Output stream") {
     std::vector<std::pair<tribool, std::string>> tests = {
+      {tb0, "tribool::undef"},
       {tb1, "tribool::undef"},
       {tb2, "true"},
       {tb3, "false"}
@@ -67,8 +69,8 @@ TEST_CASE("Testing tribool")
   }
 
   SECTION("operator!") {
-    REQUIRE(!tb1);
-    REQUIRE(tb2);
-    REQUIRE(!tb3);
+    REQUIRE((!tb1) == tb1);
+    REQUIRE((!tb2) == tb3);
+    REQUIRE((!tb3) == tb2);
   }
 }

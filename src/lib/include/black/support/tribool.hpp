@@ -36,18 +36,19 @@ namespace black::support::internal
       _undef = 2,
     };
   
-  public:
     struct undef_t { };
+
+  public:
     static constexpr undef_t undef = {};
 
+    constexpr tribool() = default;
     constexpr tribool(undef_t) : _value{_undef} { }
     constexpr tribool(bool b) : _value{ b ? _true : _false } { }
 
     tribool(tribool const&) = default;
     tribool &operator=(tribool const&) = default;
 
-    bool operator==(tribool t) const { return _value == t._value; }
-    bool operator!=(tribool t) const { return _value != t._value; }
+    bool operator==(tribool const &t) const = default;
     
     bool operator==(bool b) const { 
       return b ? _value == _true : _value == _false; 
@@ -65,9 +66,18 @@ namespace black::support::internal
       return b ? t._value != _true : t._value != _false;
     }
     
-    explicit operator bool() const { return _value == _true; }
-    bool operator !() const { return _value != _true; }
+    tribool operator !() const { 
+      tribool neg{undef};
+      if(_value == _true)
+        neg._value = _false;
+      if(_value == _false)
+        neg._value = _true;
+      
+      return neg;
+    }
 
+    explicit operator bool() const { return _value == _true; }
+    
     // GCOV false negatives
     friend std::ostream &
     operator<<(std::ostream &s, tribool b) { // LCOV_EXCL_LINE
@@ -80,7 +90,7 @@ namespace black::support::internal
     }
 
   private:
-    tribool_t _value = _false;
+    tribool_t _value = _undef;
   };
 }
 
