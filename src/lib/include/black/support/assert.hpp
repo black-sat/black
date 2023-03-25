@@ -71,10 +71,6 @@ namespace black::support::internal {
 
 }
 
-namespace black::support {
-  using internal::source_location;
-}
-
 #ifndef BLACK_ASSERT_DISABLE
 
   #define black_assert(Expr)                                               \

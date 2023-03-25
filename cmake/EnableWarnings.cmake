@@ -55,6 +55,7 @@ set(
   -Wno-extra-semi-stmt
   -Wno-missing-braces
   -Wno-zero-as-null-pointer-constant
+  -Wno-unsafe-buffer-usage
 )
 
 # GCC

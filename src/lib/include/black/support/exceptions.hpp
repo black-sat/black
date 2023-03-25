@@ -28,6 +28,11 @@
 
 #include <stdexcept>
 #include <cstring>
+#include <version>
+
+#if __has_include(<source_location>)
+  #include <source_location>
+#endif
 
 //
 // This file declares the exception types used throught BLACK
@@ -151,7 +156,6 @@ namespace black::support::internal {
         _function{function}, _message{message}
     { 
       if(loc.file_name() != nullptr) {
-        function = loc.function_name();
         filename = relative(loc.file_name());
         line = loc.line();
       }
@@ -211,6 +215,7 @@ namespace black::support {
   using internal::unreachable_error;
   using internal::assert_error;
   using internal::assume_error;
+  using internal::source_location;
 }
 
 #endif // BLACK_SUPPORT_EXCEPTIONS_HPP
