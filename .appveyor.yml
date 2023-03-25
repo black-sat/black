@@ -92,7 +92,7 @@ build_script:
   - cd C:\
   - copy C:\Projects\black\build\src\lib\black.lib C:\BLACK
   - copy C:\Projects\black\build\black.dll C:\BLACK
-  - copy C:\Projects\black\build\black.exe C:\BLACK
+#  - copy C:\Projects\black\build\black.exe C:\BLACK
   - xcopy C:\Projects\black\src\lib\include C:\BLACK\include\ /E /H
   - copy C:\Projects\z3\bin\libz3.dll C:\BLACK
   - 7z a -tzip black-win-x64.zip C:\BLACK
