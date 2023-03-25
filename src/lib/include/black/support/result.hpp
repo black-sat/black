@@ -25,7 +25,6 @@
 #define BLACK_SUPPORT_RESULT_HPP
 
 #include <fmt/format.h>
-#include <fmt/args.h>
 #include <system_error>
 #include <type_traits>
 #include <variant>

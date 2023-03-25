@@ -50,7 +50,7 @@ if(Catch2_FOUND)
 
   add_executable(units ${UNIT_TESTS})
   target_include_directories(units PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/units)
-  target_link_libraries(units PRIVATE black fmt::fmt ${CATCH_TARGET})
+  target_link_libraries(units PRIVATE black ${CATCH_TARGET})
   target_enable_warnings(units)
   target_code_coverage(units)
   add_sanitizers(units)
