@@ -31,7 +31,7 @@
 #include <optional>
 
 #ifdef _MSC_VER
-  #include <windows.h>
+  #include <io.h>
   #define isatty _isatty
 #else
   #include <unistd.h>
