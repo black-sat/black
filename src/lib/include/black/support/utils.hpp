@@ -148,16 +148,17 @@ namespace black::support::internal
   //
   // Util to abstract whether {fmt} has the `styled()` function
   //
+#if FMT_VERSION >= 90000
   template<typename T>
-    requires requires (T v, fmt::text_style s) { fmt::styled(v, s); }
   auto styled(T&& v, fmt::text_style s) {
     return styled(std::forward<T>(v), s);
   }
-  
+#else
   template<typename T>
   decltype(auto) styled(T&& v, fmt::text_style) {
     return std::forward<T>(v);
   }
+#endif
 
   
   inline constexpr std::string_view license =
