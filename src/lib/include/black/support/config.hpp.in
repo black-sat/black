@@ -30,7 +30,11 @@
 
 #define BLACK_VERSION "${PROJECT_VERSION}"
 
-#define BLACK_SOURCE_PATH "${CMAKE_SOURCE_DIR}/"
+#ifdef _MSC_VER
+  #define BLACK_SOURCE_PATH "${CMAKE_SOURCE_DIR}\\"
+#else
+  #define BLACK_SOURCE_PATH "${CMAKE_SOURCE_DIR}/"
+#endif
 
 #include <string_view>
 

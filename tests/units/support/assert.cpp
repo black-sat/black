@@ -62,7 +62,11 @@ TEST_CASE("Testing assert macros") {
   try {
     divide(0);
   } catch (assert_error const& e) {
-    REQUIRE(e.filename() == "tests/units/support/assert.cpp"s);
+#ifdef _MSC_VER
+  REQUIRE(e.filename() == "tests\\units\\support\\assert.cpp"s);
+#else
+  REQUIRE(e.filename() == "tests/units/support/assert.cpp"s);
+#endif
   }
 
 }
