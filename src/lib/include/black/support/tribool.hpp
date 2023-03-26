@@ -36,9 +36,8 @@ namespace black::support::internal
       _undef = 2,
     };
   
-    struct undef_t { };
-
   public:
+    struct undef_t { };
     static constexpr undef_t undef = {};
 
     constexpr tribool() = default;

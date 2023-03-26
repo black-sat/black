@@ -90,6 +90,7 @@ endif()
 
 # Black library and frontend
 add_subdirectory(src/lib)
+add_subdirectory(python)
 
 # Tests
 
