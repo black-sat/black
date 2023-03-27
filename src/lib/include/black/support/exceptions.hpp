@@ -28,6 +28,7 @@
 
 #include <stdexcept>
 #include <cstring>
+#include <cctype>
 #include <version>
 
 #if __has_include(<source_location>)
