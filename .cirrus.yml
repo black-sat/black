@@ -39,12 +39,12 @@ task:
 
 
 task:
-  name: macOS (Homebrew clang 13)
+  name: macOS (Homebrew clang)
   osx_instance:
     image: ghcr.io/cirruslabs/macos-monterey-xcode:13.4
   download_dependencies_script:
     - brew update
-    - brew install llvm cmake fmt catch2 z3 cryptominisat nlohmann-json
+    - brew install llvm cmake fmt catch2 z3 cryptominisat cereal
     - brew install black-sat/black/hopscotch-map
     - ./download-mathsat.sh
   release_build_script:

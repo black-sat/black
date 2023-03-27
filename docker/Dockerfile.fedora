@@ -10,7 +10,7 @@ RUN pip3 install toml
 
 RUN git clone https://github.com/cvc5/cvc5.git /cvc5
 WORKDIR /cvc5
-RUN git checkout cvc5-1.0.0
+RUN git checkout cvc5-1.0.5
 RUN ./configure.sh production --no-python-bindings --no-java-bindings --auto-download
 
 WORKDIR /cvc5/build
