@@ -58,10 +58,20 @@ namespace black::support::internal {
     char _what[_what_size];
   };
 
-  inline const char *relative(const char *path) {
-    const char *rel = nullptr;
-    if((rel = strstr(path, BLACK_SOURCE_PATH)) == path)
-      return path + strlen(BLACK_SOURCE_PATH);
+  inline const char *relative(const char *path) 
+  {
+    const char *p = path;
+    const char *bp = BLACK_SOURCE_PATH;
+    while(*bp != 0 && *path != 0) {
+      if(tolower(*bp) != tolower(*p))
+        return path;
+      bp++;
+      p++;
+    }
+
+    if(*bp == 0)
+      return p;
+
     return path;
   }
 
