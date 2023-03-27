@@ -29,14 +29,9 @@ task:
     - mkdir build && cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ..
     - make
-  always:
-    binaries_artifacts:
-      path: "build/black"
-      path: "build/src/lib/libblack.so"
   test_script:
     - cd build
-    - ./unit_tests
-    - ../tests/cli-tests.sh
+    - ./units
     - ctest -j2 -R black --output-on-failure
   coverage_script:
     - cd build
@@ -104,8 +99,7 @@ task:
     - make
   test_script:
     - cd build 
-    - ./unit_tests
-    - ../tests/cli-tests.sh
+    - ./units
     - ctest -j2 -R black
   coverage_script:
     - cd build
