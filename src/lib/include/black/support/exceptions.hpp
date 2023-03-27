@@ -64,8 +64,8 @@ namespace black::support::internal {
     const char *p = path;
     const char *bp = BLACK_SOURCE_PATH;
     while(*bp != 0 && *path != 0) {
-      char c = *p == '\\' ? '/' : tolower(*p);
-      char bc = *bp == '\\' ? '/' : tolower(*bp);
+      char c = *p == '\\' ? '/' : (char)tolower(*p);
+      char bc = *bp == '\\' ? '/' : (char)tolower(*bp);
       if(bc != c)
         return path;
       bp++;
