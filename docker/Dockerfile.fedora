@@ -2,7 +2,7 @@ ARG VERSION=36
 FROM fedora:$VERSION
 RUN echo 'fastestmirror=1' >> /etc/dnf/dnf.conf
 RUN yum update -y
-RUN yum install -y make cmake gcc gcc-c++ python3-pip java 
+RUN yum install -y make cmake gcc gcc-c++ python3-pip java flex
 RUN yum install -y zlib-devel fmt-devel catch-devel git wget rpm-build m4
 RUN yum install -y z3-devel cryptominisat-devel gmp-devel gmp-c++ cereal-devel
 
