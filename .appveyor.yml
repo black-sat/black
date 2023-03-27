@@ -77,14 +77,14 @@ install:
 platform: x64
 
 build_script:
-  - cd C:\Projects\black
+  - cd C:\projects\black
   - mkdir build
   - cd build
   - set CC=cl
   - set CXX=cl
-  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies \
-    -DCMAKE_BUILD_TYPE=Release -DENABLE_FORMULAS_TESTS=NO \
-    -DZ3_LIBRARY=C:\Projects\z3\bin\libz3.lib \
+  - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies
+    -DCMAKE_BUILD_TYPE=Release -DENABLE_FORMULAS_TESTS=NO
+    -DZ3_LIBRARY=C:\Projects\z3\bin\libz3.lib
     -DZ3_INCLUDE_DIR=C:\Projects\z3\include ..
   - cmake --build .
   - copy C:\Projects\z3\bin\libz3.dll .
