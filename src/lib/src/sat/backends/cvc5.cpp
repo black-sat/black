@@ -263,6 +263,9 @@ namespace black_internal::cvc5
         return 
             solver.mkTerm(cvc::EXISTS, {varlist, cvc5matrix});
       },
+      [&](qbf) -> cvc::Term {
+        black_unreachable();
+      },
       [&](proposition p) {
         if(auto it = props.find(p); it != props.end())
           return it->second;

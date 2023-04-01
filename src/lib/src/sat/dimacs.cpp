@@ -53,7 +53,7 @@ namespace black_internal::dimacs
 
   solver::~solver() = default;
 
-  void solver::assert_formula(formula<FO> f) 
+  void solver::assert_formula(formula<QBFO> f) 
   {
     auto pf = f.to<formula<propositional>>();
     black_assert(pf.has_value());
@@ -86,7 +86,7 @@ namespace black_internal::dimacs
   }
 
   // TODO: optimize corner cases (e.g. if assumption is already a literal)
-  tribool solver::is_sat_with(logic::formula<logic::FO> assumption) 
+  tribool solver::is_sat_with(logic::formula<logic::QBFO> assumption) 
   { 
     proposition fresh = assumption.sigma()->proposition(assumption);
 
@@ -105,15 +105,15 @@ namespace black_internal::dimacs
     return this->value(prop);
   }
 
-  tribool solver::value(logic::atom<logic::FO>) const {
+  tribool solver::value(logic::atom<logic::QBFO>) const {
     return tribool::undef;
   }
 
-  tribool solver::value(logic::equality<logic::FO>) const {
+  tribool solver::value(logic::equality<logic::QBFO>) const {
     return tribool::undef;
   }
 
-  tribool solver::value(logic::comparison<logic::FO>) const {
+  tribool solver::value(logic::comparison<logic::QBFO>) const {
     return tribool::undef;
   }
 

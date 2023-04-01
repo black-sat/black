@@ -250,6 +250,7 @@ namespace black_internal::mathsat
       },
       // mathsat does not support quantifiers
       [](quantifier) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
+      [](qbf) -> msat_term { black_unreachable(); }, // LCOV_EXCL_LINE
       [this](proposition p) { // LCOV_EXCL_LINE
         msat_decl msat_prop =
           msat_declare_function(env, to_string(p.unique_id()).c_str(),

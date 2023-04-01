@@ -195,6 +195,11 @@ namespace black {
   Element(relation) \
   Element(function)
 
+#define enum_elements_QBFO(Element) \
+  enum_elements_FO(Element) \
+  Element(thereis) \
+  Element(foreach)
+
 #define enum_elements_LTL(Element) \
   enum_elements_propositional(Element) \
   Element(tomorrow) \
@@ -239,6 +244,9 @@ namespace black {
 #include <black/internal/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT FO
+#include <black/internal/logic/declare_fragment.hpp>
+#undef FRAGMENT
+#define FRAGMENT QBFO
 #include <black/internal/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT LTL

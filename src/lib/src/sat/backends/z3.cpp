@@ -495,7 +495,29 @@ namespace black_internal::z3
 
         return result;
       },
+      [&](qbf q) -> Z3_ast {
+        bool forall = q.node_type() == qbf::type::foreach{};
+
+        nest_scope_t next{xi};
+
+        std::vector<Z3_app> z3_apps;
+
+        for(auto prop : q.variables()) {
+          Z3_ast var = to_z3(prop);
+          xi.set_data(prop, var);
+          z3_apps.push_back(Z3_to_app(context, var));
+        }
+
+        auto result = Z3_mk_quantifier_const(
+          context, forall, 0, unsigned(z3_apps.size()), 
+          z3_apps.data(), 0, nullptr, to_z3(q.matrix())
+        );
+
+        return result;
+      },
       [&](proposition p) {
+        if(auto prop = xi.data<Z3_ast>(p); prop)
+          return *prop;
         if(auto it = props.find(p); it != props.end())
           return it->second;
 

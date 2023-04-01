@@ -59,17 +59,17 @@ namespace black_internal::dimacs
     virtual ~solver() override;
 
     // sat::solver interface
-    virtual void assert_formula(logic::formula<logic::FO> f) override;
+    virtual void assert_formula(logic::formula<logic::QBFO> f) override;
     
-    virtual tribool is_sat_with(logic::formula<logic::FO> assumption) override;
+    virtual tribool is_sat_with(logic::formula<logic::QBFO> asmptns) override;
     
     virtual tribool value(logic::proposition a) const override;
     
-    virtual tribool value(logic::atom<logic::FO> a) const override;
+    virtual tribool value(logic::atom<logic::QBFO> a) const override;
     
-    virtual tribool value(logic::equality<logic::FO> a) const override;
+    virtual tribool value(logic::equality<logic::QBFO> a) const override;
     
-    virtual tribool value(logic::comparison<logic::FO> a) const override;
+    virtual tribool value(logic::comparison<logic::QBFO> a) const override;
     
     // specialized DIMACS interface
 

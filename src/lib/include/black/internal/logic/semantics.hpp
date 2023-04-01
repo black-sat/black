@@ -185,10 +185,12 @@ namespace black_internal::logic {
 
 
   private:
+    void set_data_inner(proposition, std::any);
     void set_data_inner(variable, std::any);
     void set_data_inner(relation, std::any);
     void set_data_inner(function, std::any);
     void set_data_inner(class sort, std::any);
+    std::any data_inner(proposition) const;
     std::any data_inner(variable) const;
     std::any data_inner(relation) const;
     std::any data_inner(function) const;

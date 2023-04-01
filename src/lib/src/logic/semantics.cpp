@@ -57,6 +57,7 @@ namespace black_internal::logic {
       tsl::hopscotch_map<function, func_record_t> funcs;
       tsl::hopscotch_map<named_sort, size_t> sorts;
       
+      tsl::hopscotch_map<proposition, std::any> props_data;
       tsl::hopscotch_map<variable, std::any> vars_data;
       tsl::hopscotch_map<relation, std::any> rels_data;
       tsl::hopscotch_map<function, std::any> funcs_data;
@@ -246,6 +247,10 @@ namespace black_internal::logic {
     return false;
   }
 
+  void scope::set_data_inner(proposition p, std::any data) {
+    _impl->frame->props_data.insert({p, std::move(data)});
+  }
+
   void scope::set_data_inner(variable x, std::any data) {
     _impl->frame->vars_data.insert({x, std::move(data)});
   }
@@ -260,6 +265,18 @@ namespace black_internal::logic {
 
   void scope::set_data_inner(class sort s, std::any data) {
     _impl->frame->sorts_data.insert({s, std::move(data)});
+  }
+
+  std::any scope::data_inner(proposition p) const {
+    std::shared_ptr<const impl_t::frame_t> current = _impl->frame;
+
+    while(current) {
+      if(auto it = current->props_data.find(p); it != current->props_data.end())
+        return it->second;
+      current = current->next;
+    }
+
+    return {};
   }
 
   std::any scope::data_inner(variable x) const {
