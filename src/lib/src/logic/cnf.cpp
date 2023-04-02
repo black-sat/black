@@ -133,6 +133,16 @@ namespace black_internal::cnf
     );
   }
 
+  formula remove_booleans_shallow(formula f) {
+    return f.match(
+      [](boolean b)     -> formula { return b; },
+      [](proposition p) -> formula { return p; },
+      [](auto op, auto ...args) -> formula {
+        return remove_booleans(op, args...);
+      }
+    );
+  }
+
   static void tseitin(
     formula f, 
     std::vector<clause> &clauses, 

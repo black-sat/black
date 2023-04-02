@@ -60,6 +60,10 @@ namespace black_internal::cnf
   BLACK_EXPORT
   logic::formula<logic::propositional> 
   remove_booleans(logic::formula<logic::propositional> f);
+  
+  BLACK_EXPORT
+  logic::formula<logic::propositional> 
+  remove_booleans_shallow(logic::formula<logic::propositional> f);
 
   // Tseitin conversion to CNF
   BLACK_EXPORT
@@ -86,6 +90,8 @@ namespace black {
   using black_internal::cnf::cnf;
   using black_internal::cnf::to_cnf;
   using black_internal::cnf::to_formula;
+  using black_internal::cnf::remove_booleans;
+  using black_internal::cnf::remove_booleans_shallow;
 }
 
 #endif // BLACK_CNF_HPP_
