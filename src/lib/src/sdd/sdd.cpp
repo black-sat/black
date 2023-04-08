@@ -73,6 +73,14 @@ namespace black::sdd {
     return result;
   }
 
+  std::vector<class variable> 
+  manager::variables(std::vector<proposition> props) {
+    std::vector<class variable> result;
+    for(auto prop : props)
+      result.push_back(variable(prop));
+    return result;
+  }
+
   node manager::top() {
     return node{this, sdd_manager_true(handle())};
   }

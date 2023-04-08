@@ -181,6 +181,7 @@ set (
   src/solver/solver.cpp
   src/solver/core.cpp
   src/sdd/sdd.cpp
+  src/automata/automaton.cpp
   src/debug/random_formula.cpp
 )
 

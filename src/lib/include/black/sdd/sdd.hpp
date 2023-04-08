@@ -48,6 +48,7 @@ namespace black::sdd {
     manager &operator=(manager &&);
 
     class variable variable(proposition p);
+    std::vector<class variable> variables(std::vector<proposition> props);
     node top();
     node bottom();
 
