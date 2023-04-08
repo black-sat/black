@@ -34,6 +34,7 @@ struct wmc_manager_t;
 namespace black::sdd {
 
   class variable;
+  class literal;
   class node;
 
   class manager {
@@ -50,7 +51,16 @@ namespace black::sdd {
     node top();
     node bottom();
 
+    sdd_manager_t *handle() const;
+
+    node to_node(black::logic::formula<black::logic::QBF>);
+    logic::formula<logic::propositional> to_formula(node);
+
   private:
+    friend class variable;
+    friend class literal;
+    friend class node;
+
     struct impl_t;
     std::unique_ptr<impl_t> _impl;
   };
@@ -58,6 +68,7 @@ namespace black::sdd {
   class variable 
   {
   public:
+    variable(class manager *, unsigned);
     variable(variable const&) = default;
     variable(variable &&) = default;
     
@@ -68,6 +79,10 @@ namespace black::sdd {
 
     proposition name() const { return _name; }
     class manager *manager() const { return _mgr; }
+
+    literal operator!() const;
+
+    unsigned handle() const { return _var; }
 
   private:
     friend class manager;
@@ -80,6 +95,134 @@ namespace black::sdd {
     unsigned _var;
   };
 
-}
+  class literal 
+  {
+  public:
+    literal(class variable var, bool sign = true) : _var{var}, _sign{sign} { }
+    literal(class manager *, long lit);
+
+    class variable variable() const { return _var; }
+    proposition name() const { return _var.name(); }
+    bool sign() const { return _sign; }
+    class manager *manager() const { return _var.manager(); }
+
+    literal operator!() const {
+      return literal{_var, !_sign};
+    }
+
+    long handle() const {
+      return _sign ? long(_var.handle()) : -long(_var.handle());
+    }
+
+  private:
+    class variable _var;
+    bool _sign = true;
+  };
+
+  struct element;
+
+  class node {
+  public:
+    node(node const&) = default;
+    node(node &&) = default;
+    node(class manager *, sdd_node_t *);
+    
+    node &operator=(node const&) = default;
+    node &operator=(node &&) = default;
+
+    class manager *manager() const { return _mgr; }
+    sdd_node_t *handle() const { return _node.get(); }
+
+    std::vector<variable> variables() const;
+
+    bool operator==(node const&other) const = default;
+
+    bool is_valid() const;
+    bool is_unsat() const;
+    bool is_sat() const;
+    
+    bool is_literal() const;
+    bool is_decision() const;
+
+    std::optional<class literal> literal() const;
+    std::vector<element> elements() const;
+
+    node rename(std::function<sdd::variable(sdd::variable)> renaming);
+
+  private:
+    friend class manager;
+    
+    class manager *_mgr;
+    std::shared_ptr<sdd_node_t> _node;
+  };
+
+  struct element {
+    node prime;
+    node sub;
+  };
+
+  inline node to_node(node n) { return n; }
+  node to_node(literal);
+  node to_node(variable);
+
+  node operator!(node n);
+  node operator&&(node n1, node n2);
+  node operator||(node n1, node n2);
+  
+  node exists(variable var, node n);
+  node forall(variable var, node n);
+  node exists(std::vector<variable> const& vars, node n);
+  node forall(std::vector<variable> const& vars, node n);
+
+  node implies(node n1, node n2);
+  node iff(node n1, node n2);
+
+  template<typename T>
+  concept node_like = requires(T v) {
+    { to_node(v) } -> std::convertible_to<node>;
+  };
+
+  template<node_like T1, node_like T2>
+  node operator&&(T1 v1, T2 v2) {
+    return to_node(v1) && to_node(v2);
+  }
+  
+  template<node_like T1, node_like T2>
+  node operator||(T1 v1, T2 v2) {
+    return to_node(v1) || to_node(v2);
+  }
+
+  template<node_like T1, node_like T2>
+  node implies(T1 v1, T2 v2) {
+    return implies(to_node(v1), to_node(v2));
+  }
+  
+  template<node_like T1, node_like T2>
+  node iff(T1 v1, T2 v2) {
+    return iff(to_node(v1), to_node(v2));
+  }
+
+};
+
+template<>
+struct std::hash<black::sdd::variable> {
+  size_t operator()(black::sdd::variable var) const {
+    return std::hash<black::proposition>{}(var.name());
+  }
+};
+
+template<>
+struct std::hash<black::sdd::literal> {
+  size_t operator()(black::sdd::literal lit) const {
+    return std::hash<black::proposition>{}(lit.name());
+  }
+};
+
+template<>
+struct std::hash<black::sdd::node> {
+  size_t operator()(black::sdd::node node) const {
+    return std::hash<sdd_node_t *>{}(node.handle());
+  }
+};
 
 #endif // BLACK_SDD_HPP
