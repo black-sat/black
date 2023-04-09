@@ -26,6 +26,8 @@
 
 #include <black/solver/encoding.hpp>
 
+#include <black/logic/renamings.hpp>
+
 #include <tsl/hopscotch_set.h>
 
 namespace black_internal {
@@ -85,10 +87,12 @@ namespace black_internal {
         [&](yesterday y) {
           _variables.insert(ground(y));
           _yreqs.insert(y);
+          _xreqs.insert(X(!y));
         },
         [&](w_yesterday z) {
           _variables.insert(ground(z));
           _zreqs.insert(z);
+          _xreqs.insert(X(z));
         },
         [&](until u) {
           _variables.insert(ground(X(u)));
@@ -114,18 +118,22 @@ namespace black_internal {
         [&](since s) {
           _variables.insert(ground(Y(s)));
           _yreqs.insert(Y(s));
+          _xreqs.insert(X(!Y(s)));
         },
         [&](triggered s) {
           _variables.insert(ground(Z(s)));
           _zreqs.insert(Z(s));
+          _xreqs.insert(X(Z(s)));
         },
         [&](once o) {
           _variables.insert(ground(Y(o)));
           _yreqs.insert(Y(o));
+          _xreqs.insert(X(!Y(o)));
         },
         [&](historically h) {
           _variables.insert(ground(Z(h)));
           _zreqs.insert(Z(h));
+          _xreqs.insert(X(Z(h)));
         },
         [](otherwise) { }
       );
@@ -152,7 +160,7 @@ namespace black_internal {
   logic::formula<logic::propositional>
   to_automaton_t::snf(formula f, bool p) {
     auto _primed = [&](proposition prop){ 
-      return p ? prop : prop; // TODO: primed
+      return p ? make_primed(prop, 1) : prop;
     };
     return f.match(
       [](boolean b) { return b; },
@@ -223,9 +231,10 @@ namespace black_internal {
     
     collect();
 
-    auto init = ground(X(frm)) && 
-                big_and(sigma, yreqs, [](auto req) { return !ground(req); }) &&
-                big_and(sigma, zreqs, [](auto req) { return ground(req); });
+    auto init = 
+      ground(X(frm)) && 
+      big_and(sigma, yreqs, [](auto req) { return ground(X(!req)); }) &&
+      big_and(sigma, zreqs, [](auto req) { return ground(X(req)); });
 
     auto finals = big_and(sigma, xreqs, [](auto req) { 
       return !ground(req); 
@@ -235,7 +244,7 @@ namespace black_internal {
       auto phi = lift(x);
       bool primed = true;
       if(phi.is<yesterday>() || phi.is<w_yesterday>()) {
-        // x = primed(x); TODO
+        x = make_primed(x, 1);
         primed = false;
       }
       return logic::iff<logic::propositional>(x, snf(phi, primed));
