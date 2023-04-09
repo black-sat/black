@@ -28,6 +28,7 @@
 #include <tsl/hopscotch_map.h>
 
 #include <cstdlib>
+#include <random>
 
 namespace black::sdd {
 
@@ -41,11 +42,12 @@ namespace black::sdd {
   //
   struct manager::impl_t {
     impl_t(alphabet *_sigma) 
-      : sigma{_sigma}, mgr{sdd_manager_create(1, false)} { }
+      : sigma{_sigma}, mgr{sdd_manager_create(1, 0)} { }
 
     tsl::hopscotch_map<proposition, sdd::variable> map;
     std::vector<sdd::variable> vars;
     tsl::hopscotch_map<node, logic::formula<logic::propositional>> formulas;
+    
     alphabet *sigma;
     SddManager *mgr;
   };
@@ -208,6 +210,10 @@ namespace black::sdd {
         result.push_back(manager()->_impl->vars[i - 1]);
     }
     return result;
+  }
+
+  size_t node::count() const {
+    return sdd_count(handle());
   }
 
   bool node::is_valid() const {

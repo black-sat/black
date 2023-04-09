@@ -144,6 +144,8 @@ namespace black::sdd {
 
     bool operator==(node const&other) const = default;
 
+    size_t count() const;
+
     bool is_valid() const;
     bool is_unsat() const;
     bool is_sat() const;
@@ -230,12 +232,12 @@ namespace black::sdd {
     return iff(to_node(v1), to_node(v2));
   }
 
-  inline sdd::variable make_primed(sdd::variable var, size_t n) {
-    return var.manager()->variable(black_internal::make_primed(var.name(), n));
+  inline sdd::variable prime(sdd::variable var, size_t n) {
+    return var.manager()->variable(black_internal::prime(var.name(), n));
   }
 
-  inline sdd::variable make_stepped(sdd::variable var, size_t n) {
-    return var.manager()->variable(black_internal::make_stepped(var.name(), n));
+  inline sdd::variable step(sdd::variable var, size_t n) {
+    return var.manager()->variable(black_internal::step(var.name(), n));
   }
 
 };

@@ -30,20 +30,23 @@
 #include <black/support/identifier.hpp>
 
 #include <unordered_set>
+#include <string>
 
 namespace black_internal::renamings {
 
   struct tag_t {
     black::proposition base;
     size_t primes = 0;
-    size_t steps = 0;
+    int64_t steps = -1;
 
     bool operator==(tag_t const&t) const = default;
   };
 
   inline std::string to_string(tag_t t) {
-    return to_string(t.base) + ":" + 
-           std::to_string(t.primes) + ":" + std::to_string(t.steps);
+    using namespace std::literals;
+    return to_string(t.base) + 
+          (t.primes > 0 ? ":" + std::to_string(t.primes) : ""s) + 
+          (t.steps >= 0 ? ":" + std::to_string(t.steps) : ""s);
   }
 
 }
@@ -54,7 +57,7 @@ struct std::hash<black_internal::renamings::tag_t> {
     return 
       black_internal::hash_combine(
         std::hash<black::proposition>{}(t.base),
-        std::hash<size_t>{}(t.primes + t.steps)
+        std::hash<int64_t>{}(int64_t(t.primes) + t.steps)
       );
   }
 };
@@ -77,25 +80,51 @@ namespace black_internal::renamings {
   }
 
   inline std::optional<black::proposition>
-  is_stepped(black::proposition p, size_t n) {
+  is_primed(black::proposition p) {
     if(auto tag = p.name().to<tag_t>(); tag.has_value())
-      if(tag->steps == n)
-        return tag->base;
+      if(tag->primes > 0)
+        return p;
     return {};
   }
 
-  inline black::proposition make_primed(black::proposition p, size_t n) {
+  inline std::optional<black::proposition>
+  is_stepped(black::proposition p, size_t n) {
     if(auto tag = p.name().to<tag_t>(); tag.has_value())
-      return 
-        p.sigma()->proposition(tag_t{tag->base, n, tag->steps});
-    return p.sigma()->proposition(tag_t{p, n, 0});
+      if(tag->steps == int64_t(n))
+        return tag->base;
+    return {};
+  }
+  
+  inline std::optional<black::proposition>
+  is_stepped(black::proposition p) {
+    if(auto tag = p.name().to<tag_t>(); tag.has_value())
+      if(tag->steps >= 0)
+        return p;
+    return {};
   }
 
-  inline black::proposition make_stepped(black::proposition p, size_t n) {
-    if(auto tag = p.name().to<tag_t>(); tag.has_value())
-      return 
-        p.sigma()->proposition(tag_t{tag->base, tag->primes, n});
-    return p.sigma()->proposition(tag_t{p, 0, n});
+  inline black::proposition prime(black::proposition p, size_t n) {
+    tag_t tag = p.name().to<tag_t>().value_or(tag_t{p});
+    tag.primes = n;
+    return p.sigma()->proposition(tag);
+  }
+
+  inline black::proposition step(black::proposition p, size_t n) {
+    tag_t tag = p.name().to<tag_t>().value_or(tag_t{p});
+    tag.steps = int64_t(n);
+    return p.sigma()->proposition(tag);
+  }
+  
+  inline black::proposition prime(black::proposition p) {
+    tag_t tag = p.name().to<tag_t>().value_or(tag_t{p});
+    tag.primes++;
+    return p.sigma()->proposition(tag);
+  }
+
+  inline black::proposition step(black::proposition p) {
+    tag_t tag = p.name().to<tag_t>().value_or(tag_t{p});
+    tag.steps++;
+    return p.sigma()->proposition(tag);
   }
 
   //
@@ -132,10 +161,10 @@ namespace black_internal::renamings {
 
       result_t(M1 const& _m1_, M2 const& _m2_) : _m1{_m1_}, _m2{_m2_} { }
 
-      std::optional<black::proposition> match(black::proposition p) {
-        if(auto base2 = _m2.match(p); base2)
-          if(auto base1 = _m1.match(*base2); base1)
-            return *base1;
+      std::optional<black::proposition> match(black::proposition p) const {
+        if(auto base1 = _m1.match(p); base1)
+          if(auto base2 = _m2.match(*base1); base2)
+            return *base2;
         return {};
       }
 
@@ -153,7 +182,7 @@ namespace black_internal::renamings {
 
       result_t(M1 const& _m1_, M2 const& _m2_) : _m1{_m1_}, _m2{_m2_} { }
 
-      std::optional<black::proposition> match(black::proposition p) {
+      std::optional<black::proposition> match(black::proposition p) const {
         if(auto base = _m1.match(p); base)
           return *base;
         if(auto base = _m2.match(p); base)
@@ -217,32 +246,42 @@ namespace black_internal::renamings {
 
   struct primed {
 
+    primed() { }
     primed(size_t _n) : n{_n} { }
 
     std::optional<black::proposition> match(black::proposition p) const {
-      return is_primed(p, n);
+      if(n)
+        return is_primed(p, *n);
+      return is_primed(p);
     }
 
     black::proposition rename(black::proposition p) const {
-      return make_primed(p, n);
+      if(n)
+        return prime(p, *n);
+      return prime(p);
     }
 
-    size_t n;
+    std::optional<size_t> n;
   };
 
   struct stepped {
 
+    stepped() { }
     stepped(size_t _n) : n{_n} { }
 
     std::optional<black::proposition> match(black::proposition p) const {
-      return is_stepped(p, n);
+      if(n)
+        return is_stepped(p, *n);
+      return is_stepped(p);
     }
 
     black::proposition rename(black::proposition p) const {
-      return make_stepped(p, n);
+      if(n)
+        return step(p, *n);
+      return step(p);
     }
 
-    size_t n;
+    std::optional<size_t> n;
   };
 
 }

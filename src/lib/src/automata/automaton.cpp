@@ -160,7 +160,7 @@ namespace black_internal {
   logic::formula<logic::propositional>
   to_automaton_t::snf(formula f, bool p) {
     auto _primed = [&](proposition prop){ 
-      return p ? make_primed(prop, 1) : prop;
+      return p ? prime(prop, 1) : prop;
     };
     return f.match(
       [](boolean b) { return b; },
@@ -248,7 +248,7 @@ namespace black_internal {
       auto phi = lift(x);
       bool primed = true;
       if(phi.is<yesterday>() || phi.is<w_yesterday>()) {
-        x = make_primed(x, 1);
+        x = prime(x, 1);
         primed = false;
       }
       return logic::iff<logic::propositional>(x, snf(phi, primed));

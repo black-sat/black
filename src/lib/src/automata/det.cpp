@@ -58,6 +58,7 @@ namespace black_internal {
     sdd::variable eps();
     sdd::node T_eps();
     sdd::node T_step(sdd::node last, size_t n);
+    sdd::node equiv(sdd::node t_step);
     automaton determinize();
 
     automaton aut;
@@ -72,7 +73,7 @@ namespace black_internal {
     sdd::node equals = mgr->top();
     for(auto prop : aut.variables) {
       sdd::variable var = mgr->variable(prop);
-      equals = equals && iff(var, make_primed(var, 1));
+      equals = equals && iff(var, prime(var, 1));
     }
 
     return (implies(eps(), equals) && implies(!eps(), aut.trans));
@@ -83,9 +84,17 @@ namespace black_internal {
       return T_eps()[any_of(aut.letters) / stepped(0)];
 
     return exists(primed(2),
-      last[primed(1) / primed(2)] && 
+      last[primed(1) * any_of(aut.variables) / primed(2)] && 
       aut.trans[any_of(aut.variables) / primed(2)]
                [any_of(aut.letters) / stepped(n)]
+    );
+  }
+
+  sdd::node det_t::equiv(sdd::node t_step) {
+    return forall(any_of(aut.variables),
+      forall(primed(1) * any_of(aut.variables),
+        iff(t_step, t_step[stepped() / primed()])
+      )
     );
   }
 
@@ -94,6 +103,8 @@ namespace black_internal {
     for(size_t i = 0; i < 200; i++) {
       std::cerr << "- k = " << i << "\n";
       last = T_step(last, i);
+      last = equiv(last);
+      std::cerr << "- count = " << last.count() << "\n";
     }
 
     aut.trans = last;
