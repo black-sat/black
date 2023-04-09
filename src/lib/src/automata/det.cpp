@@ -82,8 +82,6 @@ namespace black_internal {
     if(n == 0)
       return T_eps()[any_of(aut.letters) / stepped(0)];
 
-    std::vector<black::proposition> temps = aut.variables; // TODO
-    
     return exists(primed(2),
       last[primed(1) / primed(2)] && 
       aut.trans[any_of(aut.variables) / primed(2)]
