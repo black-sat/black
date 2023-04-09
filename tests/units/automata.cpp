@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2023 Nicola Gigante
+// (C) 2022 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,30 +20,35 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-//
 
-#ifndef BLACK_AUTOMATON_HPP
-#define BLACK_AUTOMATON_HPP
+#include <black/logic/logic.hpp>
+#include <black/logic/prettyprint.hpp>
+#include <black/automata/automaton.hpp>
+#include <black/internal/debug/random_formula.hpp>
 
-#include <black/sdd/sdd.hpp>
+#include <catch.hpp>
 
-namespace black_internal {
+#include <random>
+#include <iostream>
 
-  struct automaton {
-    black::sdd::manager *manager;
+using namespace black;
 
-    std::vector<black::proposition> letters;
-    std::vector<black::proposition> variables;
+TEST_CASE("automata") {
+  alphabet sigma;
 
-    black::sdd::node init;
-    black::sdd::node trans;
-    black::sdd::node finals;
-  };
+  std::mt19937 gen(std::random_device{}());
 
-  automaton to_automaton(black::sdd::manager *, logic::formula<logic::LTLP>);
+  auto f = random_ltl_formula(gen, sigma, 10, {"p", "q", "r", "s", "t"});
 
-  automaton determinize(automaton);
+  std::cerr << "formula: " << to_string(f) << "\n";
+  
+  sdd::manager mgr{&sigma};
+  
+  std::cerr << "Starting encoding...\n";
+  auto aut = black_internal::to_automaton(&mgr, f);
+  std::cerr << "done!\n";
 
+  std::cerr << "Starting determinization...\n";
+  aut = determinize(aut);
+  std::cerr << "done!\n";
 }
-
-#endif // BLACK_AUTOMATON_HPP

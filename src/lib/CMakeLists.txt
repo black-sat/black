@@ -182,6 +182,7 @@ set (
   src/solver/core.cpp
   src/sdd/sdd.cpp
   src/automata/automaton.cpp
+  src/automata/det.cpp
   src/debug/random_formula.cpp
 )
 

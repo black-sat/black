@@ -26,6 +26,7 @@
 #define BLACK_SDD_HPP
 
 #include <black/logic/logic.hpp>
+#include <black/logic/renamings.hpp>
 
 struct sdd_node_t;
 struct sdd_manager_t;
@@ -52,6 +53,7 @@ namespace black::sdd {
     node top();
     node bottom();
 
+    alphabet *sigma() const;
     sdd_manager_t *handle() const;
 
     node to_node(black::logic::formula<black::logic::QBF>);
@@ -120,6 +122,10 @@ namespace black::sdd {
     bool _sign = true;
   };
 
+  inline literal variable::operator!() const {
+    return literal{*this, false};
+  }
+
   struct element;
 
   class node {
@@ -149,6 +155,11 @@ namespace black::sdd {
     std::vector<element> elements() const;
 
     node rename(std::function<sdd::variable(sdd::variable)> renaming);
+    node operator[](std::function<black::proposition(black::proposition)> map) {
+      return rename([&](sdd::variable var) {
+        return manager()->variable(map(var.name()));
+      });
+    }
 
   private:
     friend class manager;
@@ -174,6 +185,22 @@ namespace black::sdd {
   node forall(variable var, node n);
   node exists(std::vector<variable> const& vars, node n);
   node forall(std::vector<variable> const& vars, node n);
+
+  template<black_internal::matcher M>
+  node exists(M const& m, node n) {
+    auto node_vars = n.variables();
+    auto it = std::remove_if(begin(node_vars), end(node_vars), [&](auto v) {
+      return !m.match(v.name());
+    });
+    node_vars.erase(it, end(node_vars));
+    
+    return exists(node_vars, n);
+  }
+
+  template<black_internal::matcher M>
+  node forall(M const& m, node n) {
+    return !exists(m, !n);
+  }
 
   node implies(node n1, node n2);
   node iff(node n1, node n2);
@@ -201,6 +228,14 @@ namespace black::sdd {
   template<node_like T1, node_like T2>
   node iff(T1 v1, T2 v2) {
     return iff(to_node(v1), to_node(v2));
+  }
+
+  inline sdd::variable make_primed(sdd::variable var, size_t n) {
+    return var.manager()->variable(black_internal::make_primed(var.name(), n));
+  }
+
+  inline sdd::variable make_stepped(sdd::variable var, size_t n) {
+    return var.manager()->variable(black_internal::make_stepped(var.name(), n));
   }
 
 };

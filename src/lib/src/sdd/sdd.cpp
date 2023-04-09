@@ -89,6 +89,10 @@ namespace black::sdd {
     return node{this, sdd_manager_false(handle())};
   }
 
+  alphabet *manager::sigma() const {
+    return _impl->sigma;
+  }
+
   SddManager *manager::handle() const {
     return _impl->mgr;
   }
@@ -252,19 +256,24 @@ namespace black::sdd {
   }
 
   node node::rename(std::function<sdd::variable(sdd::variable)> renaming) {
+    
+    tsl::hopscotch_map<unsigned, sdd::variable> map;
+    for(auto var : variables())
+      map.insert({var.handle(), renaming(var)});
+
     SddLiteral n = sdd_manager_var_count(manager()->handle());
-    auto map = std::make_unique<SddLiteral[]>(size_t(n) + 1);
+    auto array = std::make_unique<SddLiteral[]>(size_t(n) + 1);
 
     for(unsigned i = 1; i <= n; i++) {
-      sdd::variable var = manager()->_impl->vars[i - 1];
-      map[i] = sdd::literal{renaming(var)}.handle();
+      if(map.contains(i))
+        array[i] = sdd::literal{map.at(i)}.handle();
+      else
+        array[i] = SddLiteral(i);
     }
-
-    black_assert(sdd_manager_var_count(manager()->handle()) == n);
 
     return node{
       manager(),
-      sdd_rename_variables(handle(), map.get(), manager()->handle())
+      sdd_rename_variables(handle(), array.get(), manager()->handle())
     };
   }
 

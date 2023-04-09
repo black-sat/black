@@ -84,6 +84,7 @@ if(Catch2_FOUND)
     units/sorts.cpp
     units/sat.cpp
     units/cnf.cpp
+    units/automata.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)

@@ -168,11 +168,15 @@ namespace black_internal {
       [&](negation, auto arg) { 
         return !snf(arg, p);
       },
-      [&](disjunction, auto left, auto right) {
-        return snf(left, p) || snf(right, p);
+      [&](disjunction d) {
+        return big_or(*f.sigma(), d.operands(), [&](auto op) {
+          return snf(op, p);
+        });
       },
-      [&](conjunction, auto left, auto right) {
-        return snf(left, p) && snf(right, p);
+      [&](conjunction c) {
+        return big_and(*f.sigma(), c.operands(), [&](auto op) {
+          return snf(op, p);
+        });
       },
       [&](tomorrow y) {
         return _primed(ground(y));
@@ -252,8 +256,8 @@ namespace black_internal {
 
     return automaton {
       .manager = manager,
-      .letters = manager->variables(letters),
-      .variables = manager->variables(variables),
+      .letters = letters,
+      .variables = variables,
       .init = manager->to_node(init),
       .trans = manager->to_node(trans),
       .finals = manager->to_node(finals)

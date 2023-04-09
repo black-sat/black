@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2021 Nicola Gigante
+// (C) 2023 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -147,6 +147,29 @@ namespace black_internal::renamings {
     return result;
   }
 
+  template<matcher M1, matcher M2>
+  auto operator+(M1 const& m1, M2 const& m2) {
+    struct result_t {
+
+      result_t(M1 const& _m1_, M2 const& _m2_) : _m1{_m1_}, _m2{_m2_} { }
+
+      std::optional<black::proposition> match(black::proposition p) {
+        if(auto base = _m1.match(p); base)
+          return *base;
+        if(auto base = _m2.match(p); base)
+          return *base;
+          
+        return {};
+      }
+
+      M1 const& _m1;
+      M2 const& _m2;
+
+    } result{m1, m2};
+
+    return result;
+  }
+
   struct any_of {
     
     any_of(std::vector<black::proposition> vec) {
@@ -162,6 +185,21 @@ namespace black_internal::renamings {
 
     std::unordered_set<black::proposition> set;
   };
+
+  template<matcher M>
+  auto operator*(M const& m, black::proposition p) {
+    return m * any_of({p});
+  }
+
+  template<matcher M>
+  auto operator+(M const& m, black::proposition p) {
+    return m + any_of({p});
+  }
+
+  template<matcher M>
+  auto operator+(black::proposition p, M const& m) {
+    return any_of({p}) + m;
+  }
 
   struct plain {
 
@@ -192,20 +230,20 @@ namespace black_internal::renamings {
     size_t n;
   };
 
-  inline void test() {
-    size_t n = 42;
-    std::vector<black::proposition> vars;
+  struct stepped {
 
-    [[maybe_unused]]
-    auto r = primed(n) * any_of(vars) / primed(n + 1);
+    stepped(size_t _n) : n{_n} { }
 
-    black::alphabet sigma;
-    auto p = sigma.proposition("p");
+    std::optional<black::proposition> match(black::proposition p) const {
+      return is_stepped(p, n);
+    }
 
-    auto q = r(p);
+    black::proposition rename(black::proposition p) const {
+      return make_stepped(p, n);
+    }
 
-    black_assert(is_primed(q, n + 1) == p);
-  }
+    size_t n;
+  };
 
 }
 
