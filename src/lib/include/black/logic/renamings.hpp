@@ -46,7 +46,7 @@ namespace black_internal::renamings {
     using namespace std::literals;
     return to_string(t.base) + 
           (t.primes > 0 ? ":" + std::to_string(t.primes) : ""s) + 
-          (t.steps >= 0 ? ":" + std::to_string(t.steps) : ""s);
+          (t.steps >= 0 ? "@" + std::to_string(t.steps) : ""s);
   }
 
 }

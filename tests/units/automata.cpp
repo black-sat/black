@@ -23,6 +23,7 @@
 
 #include <black/logic/logic.hpp>
 #include <black/logic/prettyprint.hpp>
+#include <black/logic/parser.hpp>
 #include <black/automata/automaton.hpp>
 #include <black/internal/debug/random_formula.hpp>
 
@@ -38,7 +39,10 @@ TEST_CASE("automata") {
 
   std::mt19937 gen(std::random_device{}());
 
-  auto f = random_ltl_formula(gen, sigma, 10, {"p", "q", "r", "s", "t"});
+  auto f = black::parse_formula(
+    sigma, "F(((t <-> (p W (q R q))) <-> F q) -> X G F(r | F wX p))", 
+    [](auto) { }
+  ).value().to<black::logic::formula<black::logic::LTL>>().value();
 
   std::cerr << "formula: " << to_string(f) << "\n";
   

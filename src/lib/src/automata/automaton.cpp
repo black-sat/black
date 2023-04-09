@@ -30,6 +30,8 @@
 
 #include <tsl/hopscotch_set.h>
 
+#include <iostream>
+
 namespace black_internal {
 
   using namespace black::logic::fragments::LTLP;
@@ -245,14 +247,26 @@ namespace black_internal {
     });
 
     auto trans = big_and(sigma, variables, [](proposition x) {
-      auto phi = lift(x);
+      auto req = lift(x).to<unary>();
       bool primed = true;
-      if(phi.is<yesterday>() || phi.is<w_yesterday>()) {
-        x = prime(x, 1);
-        primed = false;
-      }
-      return logic::iff<logic::propositional>(x, snf(phi, primed));
+      auto psi = req->argument();
+
+      req->match(
+        [&](yesterday) {
+          primed = false;
+          x = prime(x, 1);
+        },
+        [&](w_yesterday) {
+          primed = false;
+          x = prime(x, 1);
+        },
+        [](otherwise) { }
+      );
+
+      return logic::iff<logic::propositional>(x, snf(psi, primed));
     });
+
+    std::cerr << "aut.trans: " << black::to_string(trans) << "\n";
 
     return automaton {
       .manager = manager,

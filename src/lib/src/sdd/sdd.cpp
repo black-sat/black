@@ -29,6 +29,7 @@
 
 #include <cstdlib>
 #include <random>
+#include <iostream>
 
 namespace black::sdd {
 
@@ -44,9 +45,9 @@ namespace black::sdd {
     impl_t(alphabet *_sigma) 
       : sigma{_sigma}, mgr{sdd_manager_create(1, 0)} { }
 
-    tsl::hopscotch_map<proposition, sdd::variable> map;
+    std::unordered_map<proposition, sdd::variable> map;
     std::vector<sdd::variable> vars;
-    tsl::hopscotch_map<node, logic::formula<logic::propositional>> formulas;
+    std::unordered_map<node, logic::formula<logic::propositional>> formulas;
     
     alphabet *sigma;
     SddManager *mgr;
@@ -71,6 +72,10 @@ namespace black::sdd {
     
     sdd::variable result{this, name, unsigned(var)};
     _impl->vars.push_back(result);
+
+    std::cerr << "allocating var " << var << " for proposition " 
+              << black::to_string(name) << ", id:" 
+              << black::to_string(name.unique_id()) << "\n";
 
     return result;
   }
@@ -259,6 +264,33 @@ namespace black::sdd {
     }
 
     return result;
+  }
+
+  node node::condition(class literal lit) const {
+    return node{
+      manager(), sdd_condition(lit.handle(), handle(), manager()->handle())
+    };
+  }
+
+  node node::condition(std::vector<class literal> const& lits) const {
+    node n = *this;
+    for(auto lit : lits) {
+      n = n.condition(lit);
+      if(n.is_valid() || n.is_unsat())
+        break;
+    }
+    return n;
+  }
+
+  node node::condition(std::vector<class variable> const& v, bool sign) const 
+  {
+    node n = *this;
+    for(auto var : v) {
+      n = n.condition(sign ? var : !var);
+      if(n.is_valid() || n.is_unsat())
+        break;
+    }
+    return n;
   }
 
   node node::rename(std::function<sdd::variable(sdd::variable)> renaming) {

@@ -59,6 +59,8 @@ namespace black_internal {
     sdd::node T_eps();
     sdd::node T_step(sdd::node last, size_t n);
     sdd::node equiv(sdd::node t_step);
+    sdd::node T_quot(sdd::node equiv, size_t n);
+    bool is_total(sdd::node t_quot);
     automaton determinize();
 
     automaton aut;
@@ -76,6 +78,10 @@ namespace black_internal {
       equals = equals && iff(var, prime(var, 1));
     }
 
+    std::cerr << " - aut.trans: " << "\n";
+    for(auto v : aut.trans.variables())
+      std::cerr << "   - " << black::to_string(v.name()) << "\n";
+
     return (implies(eps(), equals) && implies(!eps(), aut.trans));
   }
 
@@ -83,10 +89,17 @@ namespace black_internal {
     if(n == 0)
       return T_eps()[any_of(aut.letters) / stepped(0)];
 
-    return exists(primed(2),
+    sdd::node matrix = 
       last[primed(1) * any_of(aut.variables) / primed(2)] && 
       aut.trans[any_of(aut.variables) / primed(2)]
-               [any_of(aut.letters) / stepped(n)]
+               [any_of(aut.letters) / stepped(n)];
+
+    std::cerr << " - matrix: " << matrix.count() << "\n";
+    for(auto v : matrix.variables())
+      std::cerr << "   - " << black::to_string(v.name()) << "\n";
+
+    return exists(primed(2),
+      matrix
     );
   }
 
@@ -98,16 +111,43 @@ namespace black_internal {
     );
   }
 
-  automaton det_t::determinize() {
-    sdd::node last = mgr->top();
-    for(size_t i = 0; i < 200; i++) {
-      std::cerr << "- k = " << i << "\n";
-      last = T_step(last, i);
-      last = equiv(last);
-      std::cerr << "- count = " << last.count() << "\n";
+  sdd::node det_t::T_quot(sdd::node equiv, size_t n) {
+    std::vector<sdd::literal> lastepsilon = { step(eps(), n) };
+    for(auto p : aut.letters) {
+      sdd::variable var = mgr->variable(step(p, n));
+      lastepsilon.push_back(!var);
     }
+    return 
+      equiv.condition(step(eps(), n)).condition(!prime(step(eps(), n)))
+      [stepped(n) * any_of(aut.letters) / plain()];
+  }
 
-    aut.trans = last;
+  bool det_t::is_total(sdd::node t_quot) {
+    return exists(primed() * stepped(), t_quot).is_valid();
+  }
+
+  automaton det_t::determinize() {
+    sdd::node trans = mgr->top();
+    sdd::node t_step = T_step(mgr->top(), 0);
+
+    std::cerr << "t_step(0): " << t_step.count() << "\n";
+    for(auto v : t_step.variables())
+      std::cerr << " - " << black::to_string(v.name()) << "\n";
+
+    size_t n = 1;
+    do {
+      t_step = T_step(t_step, n);
+
+      std::cerr << "t_step(" << n << "): " << t_step.count() << "\n";
+
+      trans = T_quot(equiv(t_step), n);
+
+      std::cerr << "t_quot(" << n << "): " << t_step.count() << "\n";
+
+      n++;
+      std::cerr << "k: " << n << "\n";
+    } while(n < 2 && !is_total(trans));
+
     return aut;
   }
 

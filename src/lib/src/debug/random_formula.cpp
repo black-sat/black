@@ -130,7 +130,7 @@ namespace black_internal::random {
     ) : _gen{gen}, _sigma{sigma},
         _binary_ops(binary_ops(Syntax{})), _unary_ops(unary_ops(Syntax{}))
     {
-      _ap = {_sigma.top(), _sigma.bottom()};
+      //_ap = {_sigma.top(), _sigma.bottom()};
       for (const std::string& s : symbols) {
         _ap.push_back(_sigma.proposition(s));
       }

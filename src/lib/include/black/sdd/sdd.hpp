@@ -156,6 +156,10 @@ namespace black::sdd {
     std::optional<class literal> literal() const;
     std::vector<element> elements() const;
 
+    node condition(class literal lit) const;
+    node condition(std::vector<class literal> const& lits) const;
+    node condition(std::vector<class variable> const& lits, bool sign) const;
+
     node rename(std::function<sdd::variable(sdd::variable)> renaming);
     node operator[](std::function<black::proposition(black::proposition)> map) {
       return rename([&](sdd::variable var) {
@@ -238,6 +242,14 @@ namespace black::sdd {
 
   inline sdd::variable step(sdd::variable var, size_t n) {
     return var.manager()->variable(black_internal::step(var.name(), n));
+  }
+  
+  inline sdd::variable prime(sdd::variable var) {
+    return var.manager()->variable(black_internal::prime(var.name()));
+  }
+
+  inline sdd::variable step(sdd::variable var) {
+    return var.manager()->variable(black_internal::step(var.name()));
   }
 
 };
