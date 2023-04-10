@@ -77,11 +77,6 @@ namespace black_internal {
       sdd::variable var = mgr->variable(prop);
       equals = equals && iff(var, prime(var, 1));
     }
-
-    std::cerr << " - aut.trans: " << "\n";
-    for(auto v : aut.trans.variables())
-      std::cerr << "   - " << black::to_string(v.name()) << "\n";
-
     return (implies(eps(), equals) && implies(!eps(), aut.trans));
   }
 
@@ -89,17 +84,10 @@ namespace black_internal {
     if(n == 0)
       return T_eps()[any_of(aut.letters) / stepped(0)];
 
-    sdd::node matrix = 
+    return exists(primed(2),
       last[primed(1) * any_of(aut.variables) / primed(2)] && 
       aut.trans[any_of(aut.variables) / primed(2)]
-               [any_of(aut.letters) / stepped(n)];
-
-    std::cerr << " - matrix: " << matrix.count() << "\n";
-    for(auto v : matrix.variables())
-      std::cerr << "   - " << black::to_string(v.name()) << "\n";
-
-    return exists(primed(2),
-      matrix
+               [any_of(aut.letters) / stepped(n)]
     );
   }
 
@@ -130,23 +118,20 @@ namespace black_internal {
     sdd::node trans = mgr->top();
     sdd::node t_step = T_step(mgr->top(), 0);
 
-    std::cerr << "t_step(0): " << t_step.count() << "\n";
-    for(auto v : t_step.variables())
-      std::cerr << " - " << black::to_string(v.name()) << "\n";
+    std::cerr << "T_step(0): " << t_step.count() << "\n";
 
     size_t n = 1;
     do {
-      t_step = T_step(t_step, n);
-
-      std::cerr << "t_step(" << n << "): " << t_step.count() << "\n";
-
-      trans = T_quot(equiv(t_step), n);
-
-      std::cerr << "t_quot(" << n << "): " << t_step.count() << "\n";
-
-      n++;
       std::cerr << "k: " << n << "\n";
-    } while(n < 2 && !is_total(trans));
+      std::cerr << "T_step(" << n << "): " << std::flush;
+      t_step = T_step(t_step, n);
+      std::cerr << t_step.count() << "\n";
+
+      std::cerr << "T_quot(" << n << "): " << std::flush;
+      trans = T_quot(equiv(t_step), n);
+      std::cerr << trans.count() << "\n";
+      n++;
+    } while(!is_total(trans));
 
     return aut;
   }

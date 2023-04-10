@@ -34,6 +34,59 @@
 
 namespace black_internal::renamings {
 
+  using rename_cache_t = std::unordered_map<
+    logic::formula<logic::propositional>,
+    logic::formula<logic::propositional>
+  >;
+
+  inline logic::formula<logic::propositional> 
+  rename(
+    logic::formula<logic::propositional> f, 
+    std::function<logic::proposition(logic::proposition)> map,
+    rename_cache_t &cache
+  ) {
+    using namespace black::logic::fragments::propositional;
+    if(cache.contains(f))
+      return cache.at(f);
+
+    auto result = f.match(
+      [](boolean b) { return b; },
+      [&](proposition p) {
+        return map(p);
+      },
+      [&](unary u, auto arg) {
+        return unary(u.node_type(), rename(arg, map, cache));
+      },
+      [&](conjunction c) {
+        return big_and(*c.sigma(), c.operands(), [&](auto op) {
+          return rename(op, map, cache);
+        });
+      },
+      [&](disjunction d) {
+        return big_or(*d.sigma(), d.operands(), [&](auto op) {
+          return rename(op, map, cache);
+        });
+      },
+      [&](binary b, auto left, auto right) {
+        return binary(
+          b.node_type(), rename(left, map, cache), rename(right, map, cache)
+        );
+      }
+    );
+
+    cache.insert({f, result});
+    return result;
+  }
+
+  inline logic::formula<logic::propositional> 
+  rename(
+    logic::formula<logic::propositional> f, 
+    std::function<logic::proposition(logic::proposition)> map
+  ) {
+    rename_cache_t cache;
+    return rename(f, map, cache);
+  }
+  
   struct tag_t {
     black::proposition base;
     size_t primes = 0;

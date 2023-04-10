@@ -32,21 +32,55 @@
 #include <random>
 #include <iostream>
 
-using namespace black;
+//using namespace black;
+namespace ltl = black::logic::fragments::LTL;
+namespace sdd = black::sdd;
+
+using vars_t = std::unordered_set<ltl::proposition>;
+
+static void nvars(ltl::formula f, vars_t &set) {
+  using namespace ltl;
+
+  f.match(
+    [](boolean) { },
+    [&](proposition p) { set.insert(p); },
+    [&](unary, auto arg) {
+      nvars(arg, set);
+    },
+    [&](binary, auto left, auto right) {
+      nvars(left, set);
+      nvars(right, set);
+    }
+  );
+}
+
+static size_t nvars(ltl::formula f) {
+  vars_t set;
+  nvars(f, set);
+  return set.size();
+}
 
 TEST_CASE("automata") {
-  alphabet sigma;
+  black::alphabet sigma;
 
   std::mt19937 gen(std::random_device{}());
 
+  // auto f = black::parse_formula(
+  //   sigma, 
+  //   "(G(p1)) & (F(p2)) & (F(p3)) & (F(p4)) & (F(p5)) & (F(p6)) & (F(p7)) & (F(p8)) & (F(p9)) & (F(p10)) & (F(p11)) & (F(p12)) & (F(p13)) & (F(p14)) & (F(p15)) & (F(p16)) & (F(p17)) & (F(p18)) & (F(p19)) & (F(p20))", 
+  //   [](auto) { }
+  // ).value().to<black::logic::formula<black::logic::LTL>>().value();
   auto f = black::parse_formula(
-    sigma, "F(((t <-> (p W (q R q))) <-> F q) -> X G F(r | F wX p))", 
+    sigma, 
+    "F p", 
     [](auto) { }
   ).value().to<black::logic::formula<black::logic::LTL>>().value();
 
+  //auto f = black::random_ltl_formula(gen, sigma, 30, {"p", "q", "r", "s", "t"});
+
   std::cerr << "formula: " << to_string(f) << "\n";
   
-  sdd::manager mgr{&sigma};
+  sdd::manager mgr{&sigma, nvars(f)};
   
   std::cerr << "Starting encoding...\n";
   auto aut = black_internal::to_automaton(&mgr, f);

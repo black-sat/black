@@ -266,8 +266,6 @@ namespace black_internal {
       return logic::iff<logic::propositional>(x, snf(psi, primed));
     });
 
-    std::cerr << "aut.trans: " << black::to_string(trans) << "\n";
-
     return automaton {
       .manager = manager,
       .letters = letters,

@@ -40,7 +40,7 @@ namespace black::sdd {
 
   class manager {
   public:
-    manager(alphabet *sigma);
+    manager(alphabet *sigma, size_t vars);
     manager(manager const&) = delete;
     manager(manager &&);
     ~manager();
@@ -138,7 +138,8 @@ namespace black::sdd {
     node &operator=(node &&) = default;
 
     class manager *manager() const { return _mgr; }
-    sdd_node_t *handle() const { return _node.get(); }
+    //sdd_node_t *handle() const { return _node.get(); }
+    sdd_node_t *handle() const { return _node; }
 
     std::vector<variable> variables() const;
 
@@ -160,18 +161,17 @@ namespace black::sdd {
     node condition(std::vector<class literal> const& lits) const;
     node condition(std::vector<class variable> const& lits, bool sign) const;
 
-    node rename(std::function<sdd::variable(sdd::variable)> renaming);
+    node rename(std::function<black::proposition(black::proposition)> map);
     node operator[](std::function<black::proposition(black::proposition)> map) {
-      return rename([&](sdd::variable var) {
-        return manager()->variable(map(var.name()));
-      });
+      return rename(map);
     }
 
   private:
     friend class manager;
     
     class manager *_mgr;
-    std::shared_ptr<sdd_node_t> _node;
+    //std::shared_ptr<sdd_node_t> _node;
+    sdd_node_t *_node;
   };
 
   struct element {

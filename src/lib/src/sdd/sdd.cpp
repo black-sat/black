@@ -42,8 +42,10 @@ namespace black::sdd {
   // manager
   //
   struct manager::impl_t {
-    impl_t(alphabet *_sigma) 
-      : sigma{_sigma}, mgr{sdd_manager_create(1, 0)} { }
+    impl_t(alphabet *_sigma, size_t nvars) 
+      : sigma{_sigma}, mgr{sdd_manager_create(SddLiteral(nvars), 1)} { 
+        black_assert(nvars > 0)
+      }
 
     std::unordered_map<proposition, sdd::variable> map;
     std::vector<sdd::variable> vars;
@@ -51,9 +53,15 @@ namespace black::sdd {
     
     alphabet *sigma;
     SddManager *mgr;
+    SddLiteral next_var = 1;
+    std::unordered_map<
+      black::logic::formula<black::logic::QBF>, 
+      node
+    > to_node_cache;
   };
 
-  manager::manager(alphabet *sigma) : _impl{std::make_unique<impl_t>(sigma)} { }
+  manager::manager(alphabet *sigma, size_t vars) 
+    : _impl{std::make_unique<impl_t>(sigma, vars)} { }
 
   manager::manager(manager &&) = default;
   manager &manager::operator=(manager &&) = default;
@@ -67,15 +75,14 @@ namespace black::sdd {
       _impl->vars.size() == size_t(sdd_manager_var_count(_impl->mgr) - 1)
     );
 
-    SddLiteral var = sdd_manager_var_count(_impl->mgr);
-    sdd_manager_add_var_after_last(_impl->mgr);
+    while(_impl->next_var > sdd_manager_var_count(_impl->mgr))
+      sdd_manager_add_var_after_last(_impl->mgr);
+
+    SddLiteral var = _impl->next_var++;
     
     sdd::variable result{this, name, unsigned(var)};
     _impl->vars.push_back(result);
-
-    std::cerr << "allocating var " << var << " for proposition " 
-              << black::to_string(name) << ", id:" 
-              << black::to_string(name.unique_id()) << "\n";
+    _impl->map.insert({name, result});
 
     return result;
   }
@@ -107,7 +114,10 @@ namespace black::sdd {
   node manager::to_node(black::logic::formula<black::logic::QBF> f) {
     using logic::QBF;
 
-    return f.match(
+    if(_impl->to_node_cache.contains(f))
+      return _impl->to_node_cache.at(f);
+
+    auto result = f.match(
       [&](boolean, bool value) {
         return value ? top() : bottom();
       },
@@ -118,16 +128,16 @@ namespace black::sdd {
         return !to_node(arg);
       },
       [&](logic::conjunction<QBF> c) {
-        sdd::node result = top();
+        sdd::node acc = top();
         for(auto op : c.operands())
-          result = result && to_node(op);
-        return result;
+          acc = acc && to_node(op);
+        return acc;
       },
       [&](logic::disjunction<QBF> c) {
-        sdd::node result = bottom();
+        sdd::node acc = bottom();
         for(auto op : c.operands())
-          result = result || to_node(op);
-        return result;
+          acc = acc || to_node(op);
+        return acc;
       },
       [&](logic::implication<QBF>, auto left, auto right) {
         return sdd::implies(to_node(left), to_node(right));
@@ -151,9 +161,12 @@ namespace black::sdd {
           [&](logic::qbf<QBF>::type::foreach) {
             return sdd::forall(vars, sddmatrix);
           }
-        );     
+        );
       }
     );
+
+    _impl->to_node_cache.insert({f, result});
+    return result;
   }
 
   logic::formula<logic::propositional> manager::to_formula(node n) {
@@ -197,14 +210,16 @@ namespace black::sdd {
   //
   // node
   //
+  // node::node(class manager *mgr, SddNode *n) 
+  //   : _mgr{mgr}, _node{
+  //     std::shared_ptr<SddNode>{
+  //       sdd_ref(n, mgr->handle()), [=](SddNode *_n) {
+  //         sdd_deref(_n, mgr->handle());
+  //       }
+  //     }
+  //   } { }
   node::node(class manager *mgr, SddNode *n) 
-    : _mgr{mgr}, _node{
-      std::shared_ptr<SddNode>{
-        sdd_ref(n, mgr->handle()), [=](SddNode *_n) {
-          sdd_deref(_n, mgr->handle());
-        }
-      }
-    } { }
+    : _mgr{mgr}, _node{sdd_ref(n, mgr->handle())} { }  
 
   std::vector<variable> node::variables() const {
     auto array = free_later(sdd_variables(handle(), manager()->handle()));
@@ -293,26 +308,11 @@ namespace black::sdd {
     return n;
   }
 
-  node node::rename(std::function<sdd::variable(sdd::variable)> renaming) {
-    
-    tsl::hopscotch_map<unsigned, sdd::variable> map;
-    for(auto var : variables())
-      map.insert({var.handle(), renaming(var)});
-
-    SddLiteral n = sdd_manager_var_count(manager()->handle());
-    auto array = std::make_unique<SddLiteral[]>(size_t(n) + 1);
-
-    for(unsigned i = 1; i <= n; i++) {
-      if(map.contains(i))
-        array[i] = sdd::literal{map.at(i)}.handle();
-      else
-        array[i] = SddLiteral(i);
-    }
-
-    return node{
-      manager(),
-      sdd_rename_variables(handle(), array.get(), manager()->handle())
-    };
+  node node::rename(std::function<black::proposition(black::proposition)> map) 
+  {
+    auto f = manager()->to_formula(*this);
+    auto renamed = black_internal::rename(f, map);
+    return manager()->to_node(renamed);
   }
 
   node to_node(literal lit) {
