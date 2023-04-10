@@ -70,23 +70,18 @@ TEST_CASE("automata") {
   //   "(G(p1)) & (F(p2)) & (F(p3)) & (F(p4)) & (F(p5)) & (F(p6)) & (F(p7)) & (F(p8)) & (F(p9)) & (F(p10)) & (F(p11)) & (F(p12)) & (F(p13)) & (F(p14)) & (F(p15)) & (F(p16)) & (F(p17)) & (F(p18)) & (F(p19)) & (F(p20))", 
   //   [](auto) { }
   // ).value().to<black::logic::formula<black::logic::LTL>>().value();
-  auto f = black::parse_formula(
-    sigma, 
-    "F p", 
-    [](auto) { }
-  ).value().to<black::logic::formula<black::logic::LTL>>().value();
-
-  //auto f = black::random_ltl_formula(gen, sigma, 30, {"p", "q", "r", "s", "t"});
+  
+  auto f = black::random_ltl_formula(gen, sigma, 15, {"p", "q", "r", "s", "t"});
 
   std::cerr << "formula: " << to_string(f) << "\n";
   
   sdd::manager mgr{&sigma, nvars(f)};
   
-  std::cerr << "Starting encoding...\n";
+  std::cerr << "Starting encoding... " << std::flush;
   auto aut = black_internal::to_automaton(&mgr, f);
   std::cerr << "done!\n";
 
-  std::cerr << "Starting determinization...\n";
+  std::cerr << "Starting determinization... " << std::flush;
   aut = determinize(aut);
   std::cerr << "done!\n";
 }

@@ -57,9 +57,8 @@ namespace black_internal {
 
     sdd::variable eps();
     sdd::node T_eps();
-    sdd::node T_step(sdd::node last, size_t n);
-    sdd::node equiv(sdd::node t_step);
-    sdd::node T_quot(sdd::node equiv, size_t n);
+    sdd::node T_step(sdd::node last, size_t k);
+    sdd::node T_quot(sdd::node t_k1, sdd::node t_k, size_t k);
     bool is_total(sdd::node t_quot);
     automaton determinize();
 
@@ -80,34 +79,27 @@ namespace black_internal {
     return (implies(eps(), equals) && implies(!eps(), aut.trans));
   }
 
-  sdd::node det_t::T_step(sdd::node last, size_t n) {
-    if(n == 0)
+  sdd::node det_t::T_step(sdd::node last, size_t k) {
+    if(k == 0)
       return T_eps()[any_of(aut.letters) / stepped(0)];
 
     return exists(primed(2),
       last[primed(1) * any_of(aut.variables) / primed(2)] && 
       aut.trans[any_of(aut.variables) / primed(2)]
-               [any_of(aut.letters) / stepped(n)]
+               [any_of(aut.letters) / stepped(k)]
     );
   }
 
-  sdd::node det_t::equiv(sdd::node t_step) {
-    return forall(any_of(aut.variables),
-      forall(primed(1) * any_of(aut.variables),
-        iff(t_step, t_step[stepped() / primed()])
-      )
-    );
-  }
-
-  sdd::node det_t::T_quot(sdd::node equiv, size_t n) {
-    std::vector<sdd::literal> lastepsilon = { step(eps(), n) };
-    for(auto p : aut.letters) {
-      sdd::variable var = mgr->variable(step(p, n));
-      lastepsilon.push_back(!var);
-    }
+  sdd::node det_t::T_quot(sdd::node t_k1, sdd::node t_k, size_t k) {
     return 
-      equiv.condition(step(eps(), n)).condition(!prime(step(eps(), n)))
-      [stepped(n) * any_of(aut.letters) / plain()];
+      forall(any_of(aut.variables),
+        forall(primed(1) * any_of(aut.variables),
+          iff(
+            t_k1[stepped(k+1) / plain()].condition(!eps()),
+            t_k[stepped() / primed()]
+          )
+        )
+      );
   }
 
   bool det_t::is_total(sdd::node t_quot) {
@@ -116,21 +108,17 @@ namespace black_internal {
 
   automaton det_t::determinize() {
     sdd::node trans = mgr->top();
-    sdd::node t_step = T_step(mgr->top(), 0);
-
-    std::cerr << "T_step(0): " << t_step.count() << "\n";
-
-    size_t n = 1;
+    sdd::node t_k = T_step(mgr->top(), 0);
+    sdd::node t_k1 = T_step(t_k, 1);
+    
+    size_t k = 0;
     do {
-      std::cerr << "k: " << n << "\n";
-      std::cerr << "T_step(" << n << "): " << std::flush;
-      t_step = T_step(t_step, n);
-      std::cerr << t_step.count() << "\n";
+      trans = T_quot(t_k1, t_k, k);
 
-      std::cerr << "T_quot(" << n << "): " << std::flush;
-      trans = T_quot(equiv(t_step), n);
-      std::cerr << trans.count() << "\n";
-      n++;
+      t_k = t_k1;
+      t_k1 = T_step(t_k, k+1);
+      
+      k++;
     } while(!is_total(trans));
 
     return aut;
