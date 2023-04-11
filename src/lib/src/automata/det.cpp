@@ -60,6 +60,9 @@ namespace black_internal {
     sdd::node T_step(sdd::node last, size_t k);
     sdd::node T_quot(sdd::node t_k1, sdd::node t_k, size_t k);
     bool is_total(sdd::node t_quot);
+    std::vector<black::proposition> variables(sdd::node trans);
+    sdd::node init(size_t k);
+    sdd::node finals(sdd::node t_k);
     automaton determinize();
 
     automaton aut;
@@ -106,6 +109,34 @@ namespace black_internal {
     return exists(primed() * stepped(), t_quot).is_valid();
   }
 
+  std::vector<black::proposition> det_t::variables(sdd::node trans) {
+    std::vector<black::proposition> result;
+    std::vector<sdd::variable> vars;
+
+    black_assert(std::find(begin(vars), end(vars), eps()) == end(vars));
+
+    for(auto var : trans.variables())
+      result.push_back(var.name());
+
+    return result;
+  }
+
+  sdd::node det_t::init(size_t k) {
+    sdd::node result = mgr->top();
+    for(size_t i = 0; i <= k; i++) {
+      result = result && step(eps(), k);
+    }
+    return result;
+  }
+  
+  sdd::node det_t::finals(sdd::node t_k) {
+    return exists(any_of(aut.variables),
+      exists(primed(1) * any_of(aut.variables),
+        aut.init && t_k && aut.finals
+      )
+    );
+  }
+
   automaton det_t::determinize() {
     sdd::node trans = mgr->top();
     sdd::node t_k = T_step(mgr->top(), 0);
@@ -121,7 +152,13 @@ namespace black_internal {
       k++;
     } while(!is_total(trans));
 
-    return aut;
+    return automaton {
+      .letters = aut.letters,
+      .variables = variables(trans),
+      .init = init(k - 1),
+      .trans = trans,
+      .finals = finals(t_k)
+    };
   }
 
   automaton determinize(automaton aut) {
