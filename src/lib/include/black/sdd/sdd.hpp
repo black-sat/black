@@ -268,7 +268,7 @@ namespace black::sdd {
     return acc;
   }
 
-};
+}
 
 template<>
 struct std::hash<black::sdd::variable> {

@@ -88,6 +88,8 @@ set(
 
 add_library(sdd STATIC ${SDD_SRC})
 
+set_property(TARGET sdd PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 option(SDD_ENABLE_FULL_DEBUG OFF)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")

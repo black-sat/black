@@ -43,7 +43,7 @@ if(BLACK_ENABLE_PYTHON_BINDINGS)
 
     message(STATUS "Python and PyBind11 found! Enabling Python bindings...")
 
-    pybind11_add_module(pyblack src/bindings.cpp src/hierarchy.cpp)
+    pybind11_add_module(pyblack EXCLUDE_FROM_ALL src/bindings.cpp src/hierarchy.cpp)
 
     target_include_directories(
       pyblack PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
