@@ -121,7 +121,18 @@ namespace black_internal::synth {
 
   automata_spec to_automata_spec(black::sdd::manager *mgr, ltlp_spec spec) {
     black_assert(mgr);
-    automaton aut = semideterminize(to_automaton(mgr, spec.spec));
+
+    automaton aut = to_automaton(mgr, spec.spec);
+    aut = semideterminize(aut);
+    std::cerr << "automaton variables:\n";
+    for(auto p : aut.variables) {
+      std::cerr << "- " << to_string(p) << "\n";
+    }
+    
+    std::cerr << "automaton letters:\n";
+    for(auto p : aut.letters) {
+      std::cerr << "- " << to_string(p) << "\n";
+    }
 
     return automata_spec {
       .inputs = spec.inputs,

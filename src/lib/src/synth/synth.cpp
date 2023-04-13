@@ -62,7 +62,9 @@ namespace black_internal::synth {
       synth_t(logic::alphabet &_sigma, automata_spec const& _spec)
         : sigma{_sigma}, spec{_spec}, aut{spec.spec} { }
 
-      bformula to_formula(sdd::node n) { return aut.manager->to_formula(n); }
+      bformula to_formula(sdd::node n) { 
+        return cover(aut.manager->to_formula(n)); 
+      }
 
       bformula win(player_t player, game_t type, size_t n);
       qbformula unravel(size_t n);
@@ -177,18 +179,31 @@ namespace black_internal::synth {
         synth_t{sigma, spec}.encode(player_t::environment, type, n);
       qdimacs qdE = clausify(formulaE);
 
+      std::cerr << to_string(formulaC) << "\n";
       if(is_sat(qdC))
         return true;
       
-      if(is_sat(qdE))
-        return false;
+      // std::cerr << to_string(formulaE) << "\n";
+      // if(is_sat(qdE))
+      //   return false;
       
       n++;
     }
   }
 
   black::tribool is_realizable(automata_spec const& spec) {
-    return solve(spec, game_t::eventually{});
+    automata_spec covered = spec;
+
+    for(auto &p : covered.inputs)
+      p = cover(p);
+    for(auto &p : covered.outputs)
+      p = cover(p);
+    for(auto &p : covered.spec.letters)
+      p = cover(p);
+    for(auto &p : covered.spec.variables)
+      p = cover(p);
+
+    return solve(covered, game_t::eventually{});
   }
 
 

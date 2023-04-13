@@ -46,6 +46,7 @@ namespace black_internal::synth {
       );
     
     fstr << to_string(qd) << "\n";
+    std::cerr << to_string(qd) << "\n";
   }
 
   bool is_sat(qdimacs const& qd) {

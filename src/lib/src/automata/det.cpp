@@ -154,11 +154,17 @@ namespace black_internal {
     } while(!is_total(trans));
 
     std::cerr << "done!\n";
+    aut.letters.pop_back(); // remove eps()
 
+    std::vector<black::proposition> vars;
+    for(auto v : variables(trans))
+      if(!is_plain(v))
+        vars.push_back(v);
+    
     return automaton {
       .manager = aut.manager,
       .letters = aut.letters,
-      .variables = variables(trans),
+      .variables = vars,
       .init = init(k - 1),
       .trans = trans,
       .finals = finals(t_k)
