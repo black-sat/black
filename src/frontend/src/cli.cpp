@@ -170,11 +170,10 @@ namespace black::frontend
       (option("-f", "--formula") & value("formula", cli::formula))
         % "LTL formula to solve",
       (option("-i", "--inputs") & values("inputs", cli::inputs))
-        % "input variables (default: none)" ,
+        % "input variables (default: none )" ,
       option("--debug") & value("debug", cli::debug),
       value("file", cli::filename).required(false)
-          % "input formula file name.\n"
-            "If '-', reads from standard input."
+          % "input formula file name."
     ) |
     "trace checking mode: " % (
       command("check").set(cli::trace_checking), 

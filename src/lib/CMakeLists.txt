@@ -183,6 +183,7 @@ set (
   src/sdd/sdd.cpp
   src/automata/automaton.cpp
   src/automata/det.cpp
+  src/synth/synth.cpp
   src/debug/random_formula.cpp
 )
 

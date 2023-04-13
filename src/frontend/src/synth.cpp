@@ -31,13 +31,16 @@
 #include <black/logic/prettyprint.hpp>
 
 #include <black/automata/automaton.hpp>
+#include <black/synth/synth.hpp>
 
 #include <sstream>
 #include <iostream>
+#include <filesystem>
 
 namespace black::frontend {
 
-  int synth(std::optional<std::string> const&path, std::istream &file);
+  int synth(std::string const&path, std::istream &file, std::istream& partfile);
+  int synth(std::istream &file, std::vector<std::string> inputs);
 
   int synth() {
     if(!cli::filename && !cli::formula) {
@@ -54,36 +57,69 @@ namespace black::frontend {
 
     if(cli::formula) {
       std::istringstream str{*cli::formula};
-      return synth(std::nullopt, str);
+      return synth(str, cli::inputs);
     }
 
-    if(*cli::filename == "-")
-      return synth(std::nullopt, std::cin);
+    std::filesystem::path filepath{*cli::filename};
+    std::filesystem::path partpath{*cli::filename};
+    if(partpath.extension() == ".ltlf")
+      partpath.replace_extension("part");
+    else
+      partpath += ".part";
 
-    std::ifstream file = open_file(*cli::filename);
-    return synth(cli::filename, file);
+    std::ifstream file = open_file(filepath.string());
+    std::ifstream part = open_file(partpath.string());
+    return synth(filepath.string(), file, part);
   }
 
-  int synth(std::optional<std::string> const&path, std::istream &file)
+  int synth(std::string const&path, std::istream &file, std::istream& partfile)
   {
     black::alphabet sigma;
 
-    auto parsed = 
-      black::parse_formula(sigma, file, formula_syntax_error_handler(path));
-    black_assert(parsed.has_value());
+    auto spec = parse_ltlp_spec(
+      sigma, file, partfile, formula_syntax_error_handler(path)
+    );
 
-    if(!parsed->is<logic::formula<logic::LTLP>>()) {
-      io::errorln(
-        "{}: the `synth` command is supported only for propositional LTL+P "
-        "formulas", cli::command_name
-      );
-      quit(status_code::syntax_error);
+    io::println("{}", to_string(*spec));
+
+    return 0;
+  }
+  
+  int synth(std::istream &file, std::vector<std::string> inputs) {
+    black::alphabet sigma;
+
+    auto error = formula_syntax_error_handler({});
+    auto parsed = parse_formula(sigma, file, error);
+    if(!parsed->is<black::logic::formula<black::logic::LTLP>>()) {
+      error("synthesis is only supported for LTL+P formulas");
+      return {};
     }
-    
-    
-    auto f = parsed->to<logic::formula<logic::LTLP>>().value();
 
-    io::println("formula: {}", to_string(f));
+    auto f = *parsed->to<black::logic::formula<black::logic::LTLP>>();
+
+    ltlp_spec spec = { {}, {}, f };
+    
+    for(auto str : inputs)
+      spec.inputs.push_back(sigma.proposition(str));
+
+    std::unordered_set<black::proposition> outputset;
+    transform(f, [&](auto child) {
+      child.match(
+        [&](proposition p) {
+          if(
+            std::find(begin(spec.inputs), end(spec.inputs), p) == 
+            end(spec.inputs)
+          ) {
+            outputset.insert(p);
+          }
+        },
+        [](otherwise) { }
+      );
+    });
+
+    spec.outputs.insert(end(spec.outputs), begin(outputset), end(outputset));
+    
+    io::println("{}", to_string(spec));
 
     return 0;
   }
