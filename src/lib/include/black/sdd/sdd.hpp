@@ -252,6 +252,22 @@ namespace black::sdd {
     return var.manager()->variable(black_internal::step(var.name()));
   }
 
+  template<typename R, typename F>
+  sdd::node big_and(sdd::manager *mgr, R const& r, F f) {
+    sdd::node acc = mgr->top();
+    for(auto v : r)
+      acc = acc && f(v);
+    return acc;
+  }
+
+  template<typename R, typename F>
+  sdd::node big_or(sdd::manager *mgr, R const& r, F f) {
+    sdd::node acc = mgr->bottom();
+    for(auto v : r)
+      acc = acc || f(v);
+    return acc;
+  }
+
 };
 
 template<>

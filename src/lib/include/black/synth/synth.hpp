@@ -27,6 +27,8 @@
 
 #include <black/logic/logic.hpp>
 #include <black/logic/parser.hpp>
+#include <black/support/tribool.hpp>
+#include <black/support/range.hpp>
 
 #include <black/automata/automaton.hpp>
 #include <black/sdd/sdd.hpp>
@@ -58,12 +60,15 @@ namespace black_internal::synth {
 
   automata_spec to_automata_spec(black::sdd::manager *mgr, ltlp_spec spec);
 
+  black::tribool is_realizable(automata_spec const&);
+
 }
 
 namespace black {
   using black_internal::synth::ltlp_spec;
   using black_internal::synth::automata_spec;
   using black_internal::synth::parse_ltlp_spec;
+  using black_internal::synth::is_realizable;
 }
 
 #endif // BLACK_SYNTH_HPP

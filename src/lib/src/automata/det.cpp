@@ -156,6 +156,7 @@ namespace black_internal {
     std::cerr << "done!\n";
 
     return automaton {
+      .manager = aut.manager,
       .letters = aut.letters,
       .variables = variables(trans),
       .init = init(k - 1),

@@ -51,7 +51,9 @@ namespace black_internal {
       automaton encode();
 
       to_automaton_t(sdd::manager *mgr, formula f) 
-        : manager{mgr}, frm{f} { }
+        : manager{mgr}, frm{f} { 
+          black_assert(mgr);
+        }
 
       sdd::manager *manager;
       formula frm;

@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Nicola Gigante
+// (C) 2023 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,110 +23,196 @@
 //
 
 #include <black/synth/synth.hpp>
-
-#include <black/logic/lex.hpp>
-#include <black/logic/parser.hpp>
-#include <black/logic/prettyprint.hpp>
+#include <black/sdd/sdd.hpp>
 
 #include <iostream>
-#include <sstream>
+#include <algorithm>
 
 namespace black_internal::synth {
 
-  std::optional<ltlp_spec> parse_ltlp_spec(
-    logic::alphabet &sigma, std::istream &fstr, std::istream &partstr,
-    parser::error_handler error
-  ) {
-    auto parsed = parse_formula(sigma, fstr, error);
-    if(!parsed->is<black::logic::formula<black::logic::LTLP>>()) {
-      error("synthesis is only supported for LTL+P formulas");
-      return {};
-    }
+  namespace sdd = black::sdd;
+  using formula = black::logic::fragments::propositional::formula;
 
-    auto spec = *parsed->to<black::logic::formula<black::logic::LTLP>>();
+  struct synth_t 
+  {
+    synth_t(automata_spec _spec) 
+      : spec{_spec}, aut{cover(spec.spec)}, mgr{aut.manager} { }
 
-    std::vector<black::proposition> inputs;
-    std::vector<black::proposition> outputs;
+    black::proposition cover(black::proposition p);
+    formula cover(formula f);
+    sdd::node cover(sdd::node n);
+    automaton cover(automaton a);
 
-    using black_internal::lexer;
-    using black_internal::token;
+    sdd::node unravel(sdd::node last, size_t k);
+    sdd::node winC(sdd::node last, size_t k);
+    sdd::node winE(sdd::node last, size_t k);
+    sdd::node encodeC(sdd::node n_unravel, sdd::node n_win, size_t n);
+    sdd::node encodeE(sdd::node n_unravel, sdd::node n_win, size_t n);
 
-    lexer lex{partstr, error};
+    black::tribool is_realizable();  
 
-    bool inputsdone = false;
-    bool outputsdone = false;
+    automata_spec spec;
+    automaton aut;
+    sdd::manager *mgr;
+    std::unordered_map<formula, formula> cover_cache;
+  };
 
-    lex.get();
-    while(!inputsdone || !outputsdone) {
-      auto tok = lex.peek();
-      if(tok->data<token::punctuation>() != token::punctuation::dot) {
-        error("expected '.', found '" + to_string(*tok) + "'");
-        return {};
-      }
-      
-      std::vector<black::proposition> *target = nullptr;
-      lex.get();
-      if(lex.peek() && lex.peek()->data<std::string>() == "inputs") {
-        inputsdone = true;
-        target = &inputs;
-      } else if(lex.peek() && lex.peek()->data<std::string>() == "outputs") {
-        outputsdone = true;
-        target = &outputs;
-      } else {
-        error(
-          "expected .inputs or .outputs, found: ." + to_string(*lex.peek())
-        );
-        return {};
-      }
-
-      lex.get();
-      if(
-        !lex.peek() || 
-        lex.peek()->data<token::punctuation>() != token::punctuation::colon
-      ) {
-        error("expected ':'");
-        return {}; 
-      }
-
-      while(lex.get()) {        
-        if(!lex.peek()->data<std::string>())
-          break;
-        
-        target->push_back(sigma.proposition(*lex.peek()->data<std::string>()));
-        
-      }
-    }
-
-    return ltlp_spec{
-      .inputs = inputs,
-      .outputs = outputs,
-      .spec = spec
-    };
+  black::proposition synth_t::cover(black::proposition p) {
+    return p.sigma()->proposition(p);
   }
 
-  std::string to_string(ltlp_spec const& spec) {
-    std::stringstream str;
+  formula synth_t::cover(formula f) {
+    using namespace black::logic::fragments::propositional;
+    if(cover_cache.contains(f))
+      return cover_cache.at(f);
+
+    formula result = f.match(
+      [](boolean b) { return b; },
+      [&](proposition p) { return cover(p); },
+      [&](unary u, auto arg) {
+        return unary(u.node_type(), cover(arg));
+      },
+      [&](conjunction c) {
+        return big_and(*c.sigma(), c.operands(), [&](auto op) {
+          return cover(op);
+        });
+      },
+      [&](disjunction c) {
+        return big_or(*c.sigma(), c.operands(), [&](auto op) {
+          return cover(op);
+        });
+      },
+      [&](binary b, auto left, auto right) {
+        return binary(b.node_type(), cover(left), cover(right));
+      }
+    );
+
+    cover_cache.insert({f, result});
+    return result;
+  }
+
+  sdd::node synth_t::cover(sdd::node n) {
+    return n.manager()->to_node(cover(n.manager()->to_formula(n)));
+  }
+
+  automaton synth_t::cover(automaton a) {
+    std::transform(begin(a.letters), end(a.letters), begin(a.letters), 
+      [&](auto p) {
+        return cover(p);
+      }
+    );
+    std::transform(begin(a.variables), end(a.variables), begin(a.variables), 
+      [&](auto p) {
+        return cover(p);
+      }
+    );
+
+    a.init = cover(a.init);
+    a.trans = cover(a.trans);
+    a.finals = cover(a.finals);
+
+    return a;
+  }
+
+  sdd::node synth_t::unravel(sdd::node last, size_t k) {
+    if(k == 0)
+      return aut.init[any_of(aut.variables) / stepped(0)];
     
-    str << "spec parsed:\n";
-    str << "- formula: " <<  to_string(spec.spec) << "\n";
-    str << "- inputs:\n";
-    for(auto p : spec.inputs)
-      str << "  - " << to_string(p) << "\n";
-    str << "- outputs:\n";
-    for(auto p : spec.outputs)
-      str << "  - " << to_string(p) << "\n";
-
-    return str.str();
+    return 
+      last && 
+      aut.trans[any_of(aut.variables) / stepped(k)]
+               [primed() * any_of(aut.variables) / stepped(k+1)];
   }
 
-  automata_spec to_automata_spec(black::sdd::manager *mgr, ltlp_spec spec) {
-    automaton aut = semideterminize(to_automaton(mgr, spec.spec));
-
-    return automata_spec {
-      .inputs = spec.inputs,
-      .outputs = spec.outputs,
-      .spec = aut
-    };
+  sdd::node synth_t::winC(sdd::node last, size_t k) {
+    return last || aut.finals[any_of(aut.variables) / stepped(k)];
   }
+
+  sdd::node synth_t::winE(sdd::node last, size_t k) {
+    using namespace black::logic::fragments::propositional;
+    return last || (
+      big_or(mgr, range(0, k), [&](size_t j) {
+        return big_and(mgr, aut.letters, [&](auto p) {
+          return mgr->to_node(iff(step(p, j), step(p, k)));
+        });
+      }) &&
+      big_and(mgr, range(0, k+1), [&](size_t w) {
+        return !aut.finals[any_of(aut.variables) / stepped(w)];
+      })
+    );
+  }
+
+  sdd::node synth_t::encodeC(sdd::node n_unravel, sdd::node n_win, size_t n) {
+    sdd::node result = 
+      exists(stepped(n) * any_of(aut.variables), n_unravel && n_win);
+
+    for(size_t i = 0; i < n; i++) {
+      size_t k = n - i - 1;
+      
+      result = exists(stepped(k) * any_of(aut.variables),
+        exists(stepped(k) * any_of(spec.outputs), 
+          forall(stepped(k) * any_of(spec.inputs),
+            result
+          )
+        )
+      );
+    }
+
+    return result;
+  }
+
+  sdd::node synth_t::encodeE(sdd::node n_unravel, sdd::node n_win, size_t n) {
+    sdd::node result = 
+      forall(stepped(n) * any_of(aut.variables), n_unravel && n_win);
+
+    for(size_t i = 0; i < n; i++) {
+      size_t k = n - i - 1;
+      
+      result = forall(stepped(k) * any_of(aut.variables),
+        forall(stepped(k) * any_of(spec.outputs), 
+          exists(stepped(k) * any_of(spec.inputs),
+            result
+          )
+        )
+      );
+    }
+
+    return result;
+  }
+
+  black::tribool synth_t::is_realizable() {
+    black_assert(mgr);
+    sdd::node n_unravel = mgr->top();
+    sdd::node n_winC = mgr->bottom();
+    sdd::node n_winE = mgr->bottom();
+
+    size_t n = 0;
+    while(true) {
+      std::cerr << "n = " << n << "\n";
+      
+      n_unravel = unravel(n_unravel, n);
+      n_winC = winC(n_winC, n);
+      n_winE = winE(n_winE, n);
+      std::cerr << " - unravel: " << n_unravel.count() << "\n";
+      std::cerr << " - winC: " << n_winC.count() << "\n";
+      std::cerr << " - winE: " << n_winE.count() << "\n";
+      
+      sdd::node testC = encodeC(n_unravel, n_winC, n);
+      if(testC.is_valid())
+        return true;
+      
+      sdd::node testE = encodeE(n_unravel, n_winE, n);
+      if(testE.is_valid())
+        return true;
+
+      n++; 
+    }
+  }
+
+
+  black::tribool is_realizable(automata_spec const& spec) {
+    return synth_t{spec}.is_realizable();
+  }
+
 
 }
