@@ -23,6 +23,8 @@
 //
 
 #include <black/synth/synth.hpp>
+#include <black/qbf/qbf.hpp>
+#include <black/qbf/backend.hpp>
 #include <black/sdd/sdd.hpp>
 
 #include <iostream>
@@ -31,187 +33,162 @@
 namespace black_internal::synth {
 
   namespace sdd = black::sdd;
-  using formula = black::logic::fragments::propositional::formula;
 
-  struct synth_t 
-  {
-    synth_t(automata_spec _spec) 
-      : spec{_spec}, aut{cover(spec.spec)}, mgr{aut.manager} { }
+  using FG = logic::make_fragment_t<
+    logic::syntax_list<
+      logic::syntax_element::eventually,
+      logic::syntax_element::always
+    >
+  >;
 
-    black::proposition cover(black::proposition p);
-    formula cover(formula f);
-    sdd::node cover(sdd::node n);
-    automaton cover(automaton a);
+  template<typename T>
+  using formula = logic::formula<T>;
 
-    sdd::node unravel(sdd::node last, size_t k);
-    sdd::node winC(sdd::node last, size_t k);
-    sdd::node winE(sdd::node last, size_t k);
-    sdd::node encodeC(sdd::node n_unravel, sdd::node n_win, size_t n);
-    sdd::node encodeE(sdd::node n_unravel, sdd::node n_win, size_t n);
+  using bformula = black::logic::fragments::propositional::formula;
+  using qbformula = black::logic::fragments::QBF::formula;
 
-    black::tribool is_realizable();  
+  using game_t = formula<FG>::type;
 
-    automata_spec spec;
-    automaton aut;
-    sdd::manager *mgr;
-    std::unordered_map<formula, formula> cover_cache;
+  using quantifier_t = logic::qbf<logic::QBF>::type;
+
+  enum class player_t {
+    controller,
+    environment
   };
 
-  black::proposition synth_t::cover(black::proposition p) {
-    return p.sigma()->proposition(p);
-  }
+  namespace {
+    struct synth_t {
 
-  formula synth_t::cover(formula f) {
-    using namespace black::logic::fragments::propositional;
-    if(cover_cache.contains(f))
-      return cover_cache.at(f);
+      synth_t(logic::alphabet &_sigma, automata_spec const& _spec)
+        : sigma{_sigma}, spec{_spec}, aut{spec.spec} { }
 
-    formula result = f.match(
-      [](boolean b) { return b; },
-      [&](proposition p) { return cover(p); },
-      [&](unary u, auto arg) {
-        return unary(u.node_type(), cover(arg));
-      },
-      [&](conjunction c) {
-        return big_and(*c.sigma(), c.operands(), [&](auto op) {
-          return cover(op);
-        });
-      },
-      [&](disjunction c) {
-        return big_or(*c.sigma(), c.operands(), [&](auto op) {
-          return cover(op);
-        });
-      },
-      [&](binary b, auto left, auto right) {
-        return binary(b.node_type(), cover(left), cover(right));
-      }
-    );
+      bformula to_formula(sdd::node n) { return aut.manager->to_formula(n); }
 
-    cover_cache.insert({f, result});
-    return result;
-  }
+      bformula win(player_t player, game_t type, size_t n);
+      qbformula unravel(size_t n);
 
-  sdd::node synth_t::cover(sdd::node n) {
-    return n.manager()->to_node(cover(n.manager()->to_formula(n)));
-  }
+      qbformula encode(player_t player, game_t type, size_t n);
 
-  automaton synth_t::cover(automaton a) {
-    std::transform(begin(a.letters), end(a.letters), begin(a.letters), 
-      [&](auto p) {
-        return cover(p);
-      }
-    );
-    std::transform(begin(a.variables), end(a.variables), begin(a.variables), 
-      [&](auto p) {
-        return cover(p);
-      }
-    );
+      logic::alphabet &sigma;
+      automata_spec spec;
+      automaton &aut;
+    };
 
-    a.init = cover(a.init);
-    a.trans = cover(a.trans);
-    a.finals = cover(a.finals);
+    bformula synth_t::win(player_t player, game_t type, size_t n) {
+      using namespace logic;
 
-    return a;
-  }
+      bformula finals = 
+        player == player_t::controller ? 
+          to_formula(aut.finals) : !to_formula(aut.finals);
 
-  sdd::node synth_t::unravel(sdd::node last, size_t k) {
-    if(k == 0)
-      return aut.init[any_of(aut.variables) / stepped(0)];
-    
-    return 
-      last && 
-      aut.trans[any_of(aut.variables) / stepped(k)]
-               [primed() * any_of(aut.variables) / stepped(k+1)];
-  }
-
-  sdd::node synth_t::winC(sdd::node last, size_t k) {
-    return last || aut.finals[any_of(aut.variables) / stepped(k)];
-  }
-
-  sdd::node synth_t::winE(sdd::node last, size_t k) {
-    using namespace black::logic::fragments::propositional;
-    return last || (
-      big_or(mgr, range(0, k), [&](size_t j) {
-        return big_and(mgr, aut.letters, [&](auto p) {
-          return mgr->to_node(iff(step(p, j), step(p, k)));
-        });
-      }) &&
-      big_and(mgr, range(0, k+1), [&](size_t w) {
-        return !aut.finals[any_of(aut.variables) / stepped(w)];
-      })
-    );
-  }
-
-  sdd::node synth_t::encodeC(sdd::node n_unravel, sdd::node n_win, size_t n) {
-    sdd::node result = 
-      exists(stepped(n) * any_of(aut.variables), n_unravel && n_win);
-
-    for(size_t i = 0; i < n; i++) {
-      size_t k = n - i - 1;
-      
-      result = exists(stepped(k) * any_of(aut.variables),
-        exists(stepped(k) * any_of(spec.outputs), 
-          forall(stepped(k) * any_of(spec.inputs),
-            result
-          )
-        )
+      bool reach = type.match(
+        [&](game_t::eventually) {
+          return player == player_t::controller;
+        },
+        [&](game_t::always) {
+          return player == player_t::environment;
+        }
       );
+
+      if(reach)
+        return big_or(sigma, black::range(0, n + 1), [&](auto i) {
+          return rename(finals, any_of(aut.variables) / stepped(i));
+        });
+      
+      return big_or(sigma, black::range(0, n), [&](auto k) {
+        auto loop = big_or(sigma, black::range(0, k), [&](auto j) {
+          auto ell = [&](auto p) {
+            return iff(step(p, k), step(p, j));
+          };
+          return big_and(sigma, aut.letters, ell);
+        });
+
+        auto safety = big_and(sigma, black::range(0, k + 1), [&](auto w) {
+          return rename(finals, any_of(aut.variables) / stepped(w));
+        });
+
+        return loop && safety;
+      });
     }
 
-    return result;
-  }
-
-  sdd::node synth_t::encodeE(sdd::node n_unravel, sdd::node n_win, size_t n) {
-    sdd::node result = 
-      forall(stepped(n) * any_of(aut.variables), n_unravel && n_win);
-
-    for(size_t i = 0; i < n; i++) {
-      size_t k = n - i - 1;
-      
-      result = forall(stepped(k) * any_of(aut.variables),
-        forall(stepped(k) * any_of(spec.outputs), 
-          exists(stepped(k) * any_of(spec.inputs),
-            result
-          )
-        )
-      );
+    qbformula synth_t::unravel(size_t n) {
+      using namespace black::logic::fragments::QBF;
+      return 
+        rename(to_formula(aut.init), any_of(aut.variables) / stepped(0)) &&
+        big_and(sigma, black::range(0, n), [&](auto i) {
+          return 
+            rename(to_formula(aut.trans), any_of(aut.variables) / stepped(i));
+        });
     }
 
-    return result;
+    qbformula synth_t::encode(player_t player, game_t type, size_t n) 
+    {
+      using namespace black::logic::fragments::QBF;
+
+      auto stepvars = [&](auto const& vars, size_t s) {
+        std::vector<black::proposition> result;
+        for(auto var : vars)
+          result.push_back(step(var, s));
+        return result;
+      };
+
+      qbformula result = thereis(stepvars(aut.variables, n), 
+        unravel(n) && win(player, type, n)
+      );
+
+      // defaults for Controller
+      quantifier_t qfirst = quantifier_t::thereis{};
+      quantifier_t qsecond = quantifier_t::foreach{};
+
+      if(player == player_t::environment) {
+        qfirst = quantifier_t::foreach{};
+        qsecond = quantifier_t::thereis{};
+      }
+
+      for(size_t i = 0; i < n; i++) {
+        size_t step = n - i - 1;
+        
+        result = 
+          thereis(stepvars(aut.variables, step),
+            qbf(qfirst, stepvars(spec.outputs, step),
+              qbf(qsecond, stepvars(spec.inputs, step),
+                result
+              )
+            )
+          );
+      }
+
+      return result;
+    }
   }
 
-  black::tribool synth_t::is_realizable() {
-    black_assert(mgr);
-    sdd::node n_unravel = mgr->top();
-    sdd::node n_winC = mgr->bottom();
-    sdd::node n_winE = mgr->bottom();
+  static black::tribool solve(automata_spec spec, game_t type) {
+    logic::alphabet &sigma = *spec.spec.init.manager()->sigma();
 
-    size_t n = 0;
+    size_t n = 3;
     while(true) {
-      std::cerr << "n = " << n << "\n";
+      [[maybe_unused]]
+      qbformula formulaC = 
+        synth_t{sigma, spec}.encode(player_t::controller, type, n);
+      qdimacs qdC = clausify(formulaC);
       
-      n_unravel = unravel(n_unravel, n);
-      n_winC = winC(n_winC, n);
-      n_winE = winE(n_winE, n);
-      std::cerr << " - unravel: " << n_unravel.count() << "\n";
-      std::cerr << " - winC: " << n_winC.count() << "\n";
-      std::cerr << " - winE: " << n_winE.count() << "\n";
-      
-      sdd::node testC = encodeC(n_unravel, n_winC, n);
-      if(testC.is_valid())
-        return true;
-      
-      sdd::node testE = encodeE(n_unravel, n_winE, n);
-      if(testE.is_valid())
-        return true;
+      [[maybe_unused]]
+      qbformula formulaE = 
+        synth_t{sigma, spec}.encode(player_t::environment, type, n);
+      qdimacs qdE = clausify(formulaE);
 
-      n++; 
+      if(is_sat(qdC))
+        return true;
+      
+      if(is_sat(qdE))
+        return false;
+      
+      n++;
     }
   }
-
 
   black::tribool is_realizable(automata_spec const& spec) {
-    return synth_t{spec}.is_realizable();
+    return solve(spec, game_t::eventually{});
   }
 
 

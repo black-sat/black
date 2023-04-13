@@ -185,6 +185,8 @@ set (
   src/automata/det.cpp
   src/synth/spec.cpp
   src/synth/synth.cpp
+  src/qbf/qbf.cpp
+  src/qbf/backend.cpp
   src/debug/random_formula.cpp
 )
 

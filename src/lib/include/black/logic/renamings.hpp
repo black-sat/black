@@ -86,6 +86,36 @@ namespace black_internal::renamings {
     rename_cache_t cache;
     return rename(f, map, cache);
   }
+
+  inline std::vector<logic::proposition>
+  rename(
+    std::vector<logic::proposition> const&props, 
+    std::function<logic::proposition(logic::proposition)> map
+  ) {
+    std::vector<logic::proposition> result;
+    for(auto p : props)
+      result.push_back(map(p));
+    return result;
+  }
+  
+  inline logic::proposition cover(logic::proposition p) {
+    return p.sigma()->proposition(p);
+  }
+
+  inline std::vector<logic::proposition>
+  cover(std::vector<logic::proposition> const&props) {
+    std::vector<logic::proposition> result;
+    for(auto p : props)
+      result.push_back(cover(p));
+    return result;
+  }
+
+  inline logic::formula<logic::propositional> 
+  cover(logic::formula<logic::propositional> f) {
+    return rename(f, [](auto p) {
+      return cover(p);
+    });
+  }
   
   struct tag_t {
     black::proposition base;
