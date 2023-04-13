@@ -71,10 +71,6 @@ namespace black::sdd {
     if(_impl->map.contains(name))
       return _impl->map.at(name);
 
-    black_assert(
-      _impl->vars.size() == size_t(sdd_manager_var_count(_impl->mgr) - 1)
-    );
-
     while(_impl->next_var > sdd_manager_var_count(_impl->mgr))
       sdd_manager_add_var_after_last(_impl->mgr);
 

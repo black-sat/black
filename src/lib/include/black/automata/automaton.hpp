@@ -42,7 +42,7 @@ namespace black_internal {
 
   automaton to_automaton(black::sdd::manager *, logic::formula<logic::LTLP>);
 
-  automaton determinize(automaton);
+  automaton semideterminize(automaton);
 
 }
 

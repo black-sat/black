@@ -63,7 +63,7 @@ namespace black_internal {
     std::vector<black::proposition> variables(sdd::node trans);
     sdd::node init(size_t k);
     sdd::node finals(sdd::node t_k);
-    automaton determinize();
+    automaton semideterminize();
 
     automaton aut;
     sdd::manager *mgr;
@@ -137,11 +137,12 @@ namespace black_internal {
     );
   }
 
-  automaton det_t::determinize() {
+  automaton det_t::semideterminize() {
     sdd::node trans = mgr->top();
     sdd::node t_k = T_step(mgr->top(), 0);
     sdd::node t_k1 = T_step(t_k, 1);
     
+    std::cerr << "Start semi-determinization... " << std::flush;
     size_t k = 0;
     do {
       trans = T_quot(t_k1, t_k, k);
@@ -152,6 +153,8 @@ namespace black_internal {
       k++;
     } while(!is_total(trans));
 
+    std::cerr << "done!\n";
+
     return automaton {
       .letters = aut.letters,
       .variables = variables(trans),
@@ -161,8 +164,8 @@ namespace black_internal {
     };
   }
 
-  automaton determinize(automaton aut) {
-    return det_t{aut}.determinize();
+  automaton semideterminize(automaton aut) {
+    return det_t{aut}.semideterminize();
   }
 
 }

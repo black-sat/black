@@ -119,4 +119,14 @@ namespace black_internal::synth {
     return str.str();
   }
 
+  automata_spec to_automata_spec(black::sdd::manager *mgr, ltlp_spec spec) {
+    automaton aut = semideterminize(to_automaton(mgr, spec.spec));
+
+    return automata_spec {
+      .inputs = spec.inputs,
+      .outputs = spec.outputs,
+      .spec = aut
+    };
+  }
+
 }

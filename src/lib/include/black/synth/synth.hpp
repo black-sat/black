@@ -28,6 +28,9 @@
 #include <black/logic/logic.hpp>
 #include <black/logic/parser.hpp>
 
+#include <black/automata/automaton.hpp>
+#include <black/sdd/sdd.hpp>
+
 #include <istream>
 
 namespace black_internal::synth {
@@ -46,10 +49,20 @@ namespace black_internal::synth {
 
   std::string to_string(ltlp_spec const& spec);
 
+  struct automata_spec {
+    std::vector<black::proposition> inputs;
+    std::vector<black::proposition> outputs;
+
+    automaton spec;
+  };
+
+  automata_spec to_automata_spec(black::sdd::manager *mgr, ltlp_spec spec);
+
 }
 
 namespace black {
   using black_internal::synth::ltlp_spec;
+  using black_internal::synth::automata_spec;
   using black_internal::synth::parse_ltlp_spec;
 }
 

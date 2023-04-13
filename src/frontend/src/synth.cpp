@@ -80,7 +80,11 @@ namespace black::frontend {
       sigma, file, partfile, formula_syntax_error_handler(path)
     );
 
-    io::println("{}", to_string(*spec));
+    black::sdd::manager manager{&sigma, 1};
+
+    automata_spec autspec = to_automata_spec(&manager, *spec);
+
+    io::println("Automata specification created\n");
 
     return 0;
   }
@@ -118,8 +122,12 @@ namespace black::frontend {
     });
 
     spec.outputs.insert(end(spec.outputs), begin(outputset), end(outputset));
-    
-    io::println("{}", to_string(spec));
+
+    black::sdd::manager manager{&sigma, 1};
+
+    automata_spec autspec = to_automata_spec(&manager, spec);
+
+    io::println("Automata specification created\n");
 
     return 0;
   }
