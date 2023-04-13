@@ -44,7 +44,7 @@ namespace black::sdd {
   struct manager::impl_t {
     impl_t(alphabet *_sigma, size_t nvars) 
       : sigma{_sigma}, mgr{sdd_manager_create(SddLiteral(nvars), 1)} { 
-        black_assert(nvars > 0)
+        black_assert(nvars > 0);
       }
 
     std::unordered_map<proposition, sdd::variable> map;

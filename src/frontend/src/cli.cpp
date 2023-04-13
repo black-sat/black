@@ -165,6 +165,17 @@ namespace black::frontend
           % "input formula file name.\n"
             "If '-', reads from standard input."
     ) |
+    "synthesis mode: " % (
+      command("synth").set(cli::synthesis),
+      (option("-f", "--formula") & value("formula", cli::formula))
+        % "LTL formula to solve",
+      (option("-i", "--inputs") & values("inputs", cli::inputs))
+        % "input variables (default: none)" ,
+      option("--debug") & value("debug", cli::debug),
+      value("file", cli::filename).required(false)
+          % "input formula file name.\n"
+            "If '-', reads from standard input."
+    ) |
     "trace checking mode: " % (
       command("check").set(cli::trace_checking), 
       (required("-t","--trace") & value("trace", cli::trace))

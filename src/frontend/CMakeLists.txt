@@ -31,6 +31,7 @@ set(
   src/main.cpp
   src/cli.cpp
   src/solve.cpp
+  src/synth.cpp
   src/tracecheck.cpp
   src/support.cpp
 )

@@ -67,7 +67,7 @@ TEST_CASE("automata") {
 
   // auto f = black::parse_formula(
   //   sigma, 
-  //   "(G(p1)) & (F(p2)) & (F(p3)) & (F(p4)) & (F(p5)) & (F(p6)) & (F(p7)) & (F(p8)) & (F(p9)) & (F(p10)) & (F(p11)) & (F(p12)) & (F(p13)) & (F(p14)) & (F(p15)) & (F(p16)) & (F(p17)) & (F(p18)) & (F(p19)) & (F(p20))", 
+  //   "!X G(X G p W G X((F t M r) <-> t))", 
   //   [](auto) { }
   // ).value().to<black::logic::formula<black::logic::LTL>>().value();
   

@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Nicola Gigante
+// (C) 2021 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,22 +21,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/frontend/cli.hpp>
-#include <black/frontend/solve.hpp>
-#include <black/frontend/synth.hpp>
-#include <black/frontend/tracecheck.hpp>
+#ifndef BLACK_FRONTEND_SYNTH_HPP
+#define BLACK_FRONTEND_SYNTH_HPP
 
-using namespace black::frontend;
+#include <black/logic/logic.hpp>
+#include <black/solver/solver.hpp>
 
-int main(int argc, char **argv)
+#include <functional>
+
+namespace black::frontend 
 {
-  parse_command_line(argc, argv);
+  //
+  // Main entry point of the tool in LTLf synthesis mode
+  //
+  int synth();
 
-  if(cli::synthesis)
-    return synth();
-  
-  if(cli::trace_checking)
-    return trace_check();
-  
-  return solve();
 }
+
+#endif // BLACK_FRONTEND_SYNTH_HPP

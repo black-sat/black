@@ -85,6 +85,15 @@ namespace black::frontend
     // set whether formulas are to be interpreted as LTLf
     inline bool finite = false;
 
+    // whether we are in synthesis mode
+    inline bool synthesis = false;
+
+    // input variables in `synth` mode
+    inline std::vector<std::string> inputs;
+
+    // output variables in `synth` mode
+    inline std::vector<std::string> outputs;
+
     // whether we are in trace checking mode
     inline bool trace_checking = false;
 
