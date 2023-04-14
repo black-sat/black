@@ -54,16 +54,18 @@ namespace black_internal {
   struct det_t {
 
     det_t(automaton _aut) 
-      : aut{std::move(_aut)}, mgr{_aut.manager}, sigma{*mgr->sigma()} { }
+      : aut{std::move(_aut)}, mgr{aut.manager}, sigma{*mgr->sigma()} { }
 
     automaton totalize(automaton t);
     sdd::variable eps();
     sdd::variable x_sink();
     sdd::node T_eps();
     sdd::node T_step(sdd::node last, size_t k);
+    sdd::node phi_bullet(size_t k);
+    sdd::node phi_tilde(sdd::node t_k1, sdd::node t_k);
+    sdd::node trans(sdd::node t_k1, sdd::node t_k, size_t k);
     sdd::node T_quot(sdd::node t_k1, sdd::node t_k, size_t k);
     bool is_total(sdd::node t_quot);
-    std::vector<black::proposition> variables(sdd::node trans);
     sdd::node init(size_t k);
     sdd::node finals(sdd::node t_k);
     automaton semideterminize();
@@ -79,15 +81,19 @@ namespace black_internal {
     if(part.is_valid())
       return a;
 
-    a.variables.push_back(x_sink().name());
+    // a.variables.push_back(x_sink().name());
+    // a.trans = 
+    //   (!x_sink() && a.trans && !prime(x_sink())) || 
+    //   ((x_sink() || !part) && prime(x_sink()));
+    // a.init = a.init && !x_sink();
+    // a.finals = a.finals && !x_sink();
+
+    // black_assert(exists(primed(), a.trans).is_valid());
 
     a.trans = 
-      (!x_sink() && a.trans && !prime(x_sink())) || 
-      ((x_sink() || !part) && prime(x_sink()));
+      (a.trans || prime(x_sink())) && (implies(x_sink(), prime(x_sink())));
     a.init = a.init && !x_sink();
     a.finals = a.finals && !x_sink();
-
-    black_assert(exists(primed(), a.trans).is_valid());
 
     return a;
   }
@@ -120,6 +126,35 @@ namespace black_internal {
     );
   }
 
+  sdd::node det_t::phi_tilde(sdd::node t_k1, sdd::node t_k) {
+    return 
+      forall(any_of(aut.variables),
+        forall(primed(1) * any_of(aut.variables), 
+          iff(
+            t_k,
+            t_k1[stepped() / primed()]
+          )
+        )
+      );
+  }
+
+  sdd::node det_t::phi_bullet(size_t k) {
+    using namespace black::logic::fragments::propositional;
+
+    return big_and(mgr, range(0, k+1), [&](size_t i) {
+      return big_and(mgr, aut.letters, [&](auto p) {
+        return mgr->to_node(iff(step(p, i), prime(step(p, i))));
+      });
+    }) &&
+    !step(eps(), k + 1)
+    &&
+    big_and(mgr, aut.letters, [&](auto p){
+      if(p == eps().name())
+        return mgr->top();
+      return mgr->to_node(iff(p, prime(step(p, k + 1))));
+    });
+  }
+
   sdd::node det_t::T_quot(sdd::node t_k1, sdd::node t_k, size_t k) {
     auto newtk = 
       t_k1.condition(!step(eps(), k + 1))[stepped(k + 1) / plain()]
@@ -139,6 +174,13 @@ namespace black_internal {
       );
   }
 
+  sdd::node det_t::trans(sdd::node t_k1, sdd::node t_k, size_t k) {
+    return 
+      exists(primed(2),
+        phi_bullet(k)[primed() / primed(2)] &&
+        phi_tilde(t_k1, t_k)[primed() / primed(2)]
+      );
+  }
 
   [[maybe_unused]]
   static void enumerate(sdd::node n) {
@@ -150,8 +192,8 @@ namespace black_internal {
     }
   }
 
-  bool det_t::is_total(sdd::node t_quot) {
-    sdd::node result = exists(primed() * stepped(), t_quot);
+  bool det_t::is_total(sdd::node trans) {
+    sdd::node result = exists(primed() * stepped(), trans);
     if(result.is_valid())
       return true;
 
@@ -159,18 +201,6 @@ namespace black_internal {
     enumerate(!result);
 
     return false;
-  }
-
-  std::vector<black::proposition> det_t::variables(sdd::node trans) {
-    std::vector<black::proposition> result;
-    std::vector<sdd::variable> vars;
-
-    black_assert(std::find(begin(vars), end(vars), eps()) == end(vars));
-
-    for(auto var : trans.variables())
-      result.push_back(var.name());
-
-    return result;
   }
 
   sdd::node det_t::init(size_t k) {
@@ -209,7 +239,7 @@ namespace black_internal {
       t_k = t_k1;
       t_k1 = T_step(t_k, k + 1);
       
-      trans = T_quot(t_k1, t_k, k);
+      trans = this->trans(t_k1, t_k, k);
       
       std::cerr << "trans models:\n";
       enumerate(trans);
