@@ -244,6 +244,35 @@ namespace black::sdd {
     return !is_unsat();
   }
 
+  std::optional<std::vector<literal>> node::model() const 
+  {
+    std::vector<sdd::literal> model;
+
+    auto vars = variables();
+    
+    node n = *this;
+    size_t i = 0;
+    while(true) { // vars.size() iterations max anyway
+      if(n.is_unsat())
+        return {};
+      if(n.is_valid())
+        return model;
+      
+      class literal lit = vars.at(i);
+      node choice = n.condition(lit);
+      
+      if(choice.is_unsat()) {
+        lit = !lit;
+        choice = n.condition(lit);
+      }
+
+      // arbitrary choice now
+      model.push_back(lit);
+      n = choice;
+      ++i;
+    }
+  }
+
   bool node::is_literal() const {
     return sdd_node_is_literal(handle());
   }
@@ -309,6 +338,30 @@ namespace black::sdd {
     auto f = manager()->to_formula(*this);
     auto renamed = black_internal::rename(f, map);
     return manager()->to_node(renamed);
+  }
+
+  std::ostream &operator<<(std::ostream &str, literal const& lit) {
+    if(lit.sign())
+      str << black::to_string(lit.variable().name());
+    else
+      str << "!" << black::to_string(lit.variable().name());
+    return str;
+  }
+
+  std::ostream &operator<<(std::ostream &str, std::vector<literal> const&lits) {
+    if(lits.empty()) {
+      str << "{ }";
+      return str;
+    }
+      
+    str << "{ ";
+    for(size_t i = 0; i < lits.size() - 1; i++) {
+      str << lits[i] << ", ";
+    }
+    str << lits.back();
+    str << " }";
+
+    return str;
   }
 
   node to_node(literal lit) {

@@ -28,6 +28,8 @@
 #include <black/logic/logic.hpp>
 #include <black/logic/renamings.hpp>
 
+#include <ostream>
+
 struct sdd_node_t;
 struct sdd_manager_t;
 struct wmc_manager_t;
@@ -150,6 +152,8 @@ namespace black::sdd {
     bool is_valid() const;
     bool is_unsat() const;
     bool is_sat() const;
+
+    std::optional<std::vector<class literal>> model() const;
     
     bool is_literal() const;
     bool is_decision() const;
@@ -178,6 +182,9 @@ namespace black::sdd {
     node prime;
     node sub;
   };
+
+  std::ostream &operator<<(std::ostream &str, literal const&);
+  std::ostream &operator<<(std::ostream &str, std::vector<literal> const&);
 
   inline node to_node(node n) { return n; }
   node to_node(literal);
