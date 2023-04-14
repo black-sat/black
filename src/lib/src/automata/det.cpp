@@ -74,11 +74,7 @@ namespace black_internal {
   };
 
   automaton det_t::totalize(automaton a) {
-    sdd::node part = forall(any_of(a.variables),
-      forall(any_of(a.letters),
-        exists(primed(), a.trans)
-      )
-    );
+    sdd::node part = exists(primed(), a.trans);
 
     if(part.is_valid())
       return a;
@@ -90,6 +86,8 @@ namespace black_internal {
       ((x_sink() || !part) && prime(x_sink()));
     a.init = a.init && !x_sink();
     a.finals = a.finals && !x_sink();
+
+    black_assert(exists(primed(), a.trans).is_valid());
 
     return a;
   }
@@ -123,20 +121,44 @@ namespace black_internal {
   }
 
   sdd::node det_t::T_quot(sdd::node t_k1, sdd::node t_k, size_t k) {
+    auto newtk = 
+      t_k1.condition(!step(eps(), k + 1))[stepped(k + 1) / plain()]
+      [stepped() / primed()];
+
+    std::cerr << "newtk variables:\n";
+    for(auto var : newtk.variables())
+      std::cerr << " - " << black::to_string(var.name()) << "\n";
     return 
       forall(any_of(aut.variables),
         forall(primed(1) * any_of(aut.variables),
           iff(
             t_k,
-            t_k1[stepped(k + 1) / plain()].condition(!step(eps(), k + 1))
-                [stepped() / primed()]
+            newtk
           )
         )
       );
   }
 
+
+  [[maybe_unused]]
+  static void enumerate(sdd::node n) {
+    while(!n.is_unsat()) {
+      auto model = n.model();
+      black_assert(model.has_value());
+      std::cerr << " - " << *model << "\n";
+      n = n && !big_and(n.manager(), *model, [](auto lit) { return lit; });
+    }
+  }
+
   bool det_t::is_total(sdd::node t_quot) {
-    return exists(primed() * stepped(), t_quot).is_valid();
+    sdd::node result = exists(primed() * stepped(), t_quot);
+    if(result.is_valid())
+      return true;
+
+    std::cerr << "totality models:\n";
+    enumerate(!result);
+
+    return false;
   }
 
   std::vector<black::proposition> det_t::variables(sdd::node trans) {
@@ -165,21 +187,16 @@ namespace black_internal {
     );
   }
 
-  static void enumerate(sdd::node n) {
-    while(!n.is_unsat()) {
-      auto model = n.model();
-      black_assert(model.has_value());
-      std::cerr << " - " << *model << "\n";
-      n = n && !big_and(n.manager(), *model, [](auto lit) { return lit; });
-    }
-  }
+  automaton det_t::semideterminize() 
+  {
+    std::cerr << "original models:\n";
+    enumerate(aut.trans);
 
-  automaton det_t::semideterminize() {
-    aut = totalize(std::move(aut));
+    // aut = totalize(std::move(aut));
     aut.letters.push_back(eps().name());
 
-    std::cerr << "trans models:\n";
-    enumerate(aut.trans);
+    // std::cerr << "totalized models:\n";
+    // enumerate(aut.trans);
 
     sdd::node trans = mgr->top();
     sdd::node t_k = mgr->top();
