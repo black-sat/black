@@ -134,15 +134,23 @@ namespace black_internal::synth {
         return result;
       };
 
-      qbformula result = thereis(stepvars(aut.variables, n), 
-        unravel(n) && win(player, type, n)
-      );
+      qbformula result = sigma.top();
+      if(player == player_t::controller) 
+        result = thereis(stepvars(aut.variables, n), 
+          unravel(n) && win(player, type, n)
+        );
+      else
+        result = foreach(stepvars(aut.variables, n), 
+          implies(unravel(n), win(player, type, n))
+        );
 
       // defaults for Controller
+      quantifier_t qvars = quantifier_t::thereis{};
       quantifier_t qfirst = quantifier_t::thereis{};
       quantifier_t qsecond = quantifier_t::foreach{};
 
       if(player == player_t::environment) {
+        qvars = quantifier_t::foreach{};
         qfirst = quantifier_t::foreach{};
         qsecond = quantifier_t::thereis{};
       }
@@ -151,7 +159,7 @@ namespace black_internal::synth {
         size_t step = n - i - 1;
         
         result = 
-          thereis(stepvars(aut.variables, step),
+          qbf(qvars, stepvars(aut.variables, step),
             qbf(qfirst, stepvars(spec.outputs, step),
               qbf(qsecond, stepvars(spec.inputs, step),
                 result
@@ -183,9 +191,9 @@ namespace black_internal::synth {
       if(is_sat(qdC))
         return true;
       
-      // std::cerr << to_string(formulaE) << "\n";
-      // if(is_sat(qdE))
-      //   return false;
+      std::cerr << to_string(formulaE) << "\n";
+      if(is_sat(qdE))
+        return false;
       
       n++;
     }

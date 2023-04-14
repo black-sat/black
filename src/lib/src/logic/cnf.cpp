@@ -26,6 +26,8 @@
 
 #include <tsl/hopscotch_set.h>
 
+#include <iostream>
+
 namespace black_internal::cnf
 { 
   using namespace black::logic::fragments::propositional;

@@ -23,6 +23,7 @@
 //
 
 #include <black/automata/automaton.hpp>
+#include <black/support/range.hpp>
 
 #include <iostream>
 
@@ -51,7 +52,8 @@ namespace black_internal {
 
   struct det_t {
 
-    det_t(automaton _aut) : aut{std::move(_aut)}, mgr{_aut.manager} { 
+    det_t(automaton _aut) 
+      : aut{std::move(_aut)}, mgr{_aut.manager}, sigma{*mgr->sigma()} { 
       aut.letters.push_back(eps().name());
     }
 
@@ -67,6 +69,7 @@ namespace black_internal {
 
     automaton aut;
     sdd::manager *mgr;
+    black::alphabet &sigma;
   };
 
   sdd::variable det_t::eps() {
@@ -98,8 +101,9 @@ namespace black_internal {
       forall(any_of(aut.variables),
         forall(primed(1) * any_of(aut.variables),
           iff(
-            t_k1[stepped(k+1) / plain()].condition(!eps()),
-            t_k[stepped() / primed()]
+            t_k,
+            t_k1[stepped(k + 1) / plain()].condition(!step(eps(), k + 1))
+                [stepped() / primed()]
           )
         )
       );
@@ -122,52 +126,57 @@ namespace black_internal {
   }
 
   sdd::node det_t::init(size_t k) {
-    sdd::node result = mgr->top();
-    for(size_t i = 0; i <= k; i++) {
-      result = result && step(eps(), k);
-    }
-    return result;
+    return big_and(mgr, range(0, k + 1), [&](size_t i) {
+      return step(eps(), i);
+    });
   }
   
   sdd::node det_t::finals(sdd::node t_k) {
     return exists(any_of(aut.variables),
       exists(primed(1) * any_of(aut.variables),
-        aut.init && t_k && aut.finals
+        aut.init && t_k && aut.finals[any_of(aut.variables) / primed(1)]
       )
     );
   }
 
   automaton det_t::semideterminize() {
     sdd::node trans = mgr->top();
-    sdd::node t_k = T_step(mgr->top(), 0);
-    sdd::node t_k1 = T_step(t_k, 1);
+    sdd::node t_k = mgr->top();
+    sdd::node t_k1 = T_step(mgr->top(), 0);
     
     std::cerr << "Start semi-determinization... " << std::flush;
     size_t k = 0;
     do {
+      std::cerr << "k = " << k << "\n";
+      t_k = t_k1;
+      t_k1 = T_step(t_k, k + 1);
+      
       trans = T_quot(t_k1, t_k, k);
 
-      t_k = t_k1;
-      t_k1 = T_step(t_k, k+1);
-      
       k++;
     } while(!is_total(trans));
 
     std::cerr << "done!\n";
-    aut.letters.pop_back(); // remove eps()
+
+    sdd::node init = this->init(k - 1);
+    sdd::node finals = this->finals(t_k);
 
     std::vector<black::proposition> vars;
-    for(auto v : variables(trans))
-      if(!is_plain(v))
-        vars.push_back(v);
-    
+    for(size_t i = 0; i < k; i++) {
+      for(auto p : aut.letters) {
+        vars.push_back(step(p, i));
+        vars.push_back(prime(step(p, i)));
+      }
+    }
+
+    aut.letters.pop_back(); // remove eps()
     return automaton {
       .manager = aut.manager,
       .letters = aut.letters,
       .variables = vars,
-      .init = init(k - 1),
+      .init = init,
       .trans = trans,
-      .finals = finals(t_k)
+      .finals = finals
     };
   }
 

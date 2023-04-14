@@ -128,6 +128,16 @@ namespace black_internal::synth {
     for(auto p : aut.variables) {
       std::cerr << "- " << to_string(p) << "\n";
     }
+    if(aut.finals.count() < 10)
+      std::cerr << "finals: " << to_string(mgr->to_formula(aut.finals)) << "\n";
+    else {
+      std::cerr << "finals too large:\n";
+      for(auto p : aut.finals.variables()) {
+        std::cerr << "- " << to_string(p.name()) << "\n";
+      }
+    }
+    if(aut.init.count() < 5)
+      std::cerr << "init: " << to_string(mgr->to_formula(aut.init)) << "\n";
     
     std::cerr << "automaton letters:\n";
     for(auto p : aut.letters) {
