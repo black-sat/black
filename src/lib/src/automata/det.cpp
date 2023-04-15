@@ -146,7 +146,7 @@ namespace black_internal {
         return mgr->to_node(iff(step(p, i), prime(step(p, i))));
       });
     }) &&
-    !step(eps(), k + 1)
+    !prime(step(eps(), k + 1))
     &&
     big_and(mgr, aut.letters, [&](auto p){
       if(p == eps().name())
@@ -240,6 +240,10 @@ namespace black_internal {
       t_k1 = T_step(t_k, k + 1);
       
       trans = this->trans(t_k1, t_k, k);
+
+      std::cerr << "trans variables:\n";
+      for(auto var : trans.variables())
+      std::cerr << " - " << black::to_string(var.name()) << "\n";
       
       std::cerr << "trans models:\n";
       enumerate(trans);
