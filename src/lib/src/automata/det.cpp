@@ -110,26 +110,26 @@ namespace black_internal {
     sdd::node equals = mgr->top();
     for(auto prop : aut.variables) {
       sdd::variable var = mgr->variable(prop);
-      equals = equals && iff(var, prime(var, 1));
+      equals = equals && iff(var, prime(var));
     }
-    return (implies(eps(), equals) && implies(!eps(), aut.trans));
+    return (eps() && equals) || (!eps() && aut.trans);
   }
 
   sdd::node det_t::T_step(sdd::node last, size_t k) {
     if(k == 0)
-      return T_eps()[any_of(aut.letters) / stepped(0)];
+      return T_eps()[aut.letters / stepped(0)];
 
     return exists(primed(2),
-      last[primed(1) * any_of(aut.variables) / primed(2)] && 
-      aut.trans[any_of(aut.variables) / primed(2)]
-               [any_of(aut.letters) / stepped(k)]
+      last[primed(1) * aut.variables / primed(2)] && 
+      aut.trans[aut.variables / primed(2)]
+               [aut.letters / stepped(k)]
     );
   }
 
   sdd::node det_t::phi_tilde(sdd::node t_k1, sdd::node t_k) {
     return 
-      forall(any_of(aut.variables),
-        forall(primed(1) * any_of(aut.variables), 
+      forall(aut.variables,
+        forall(primed(1) * aut.variables, 
           iff(
             t_k,
             t_k1[stepped() / primed()]
@@ -164,8 +164,8 @@ namespace black_internal {
     for(auto var : newtk.variables())
       std::cerr << " - " << black::to_string(var.name()) << "\n";
     return 
-      forall(any_of(aut.variables),
-        forall(primed(1) * any_of(aut.variables),
+      forall(aut.variables,
+        forall(primed(1) * aut.variables,
           iff(
             t_k,
             newtk
@@ -175,10 +175,21 @@ namespace black_internal {
   }
 
   sdd::node det_t::trans(sdd::node t_k1, sdd::node t_k, size_t k) {
+    auto bullet = phi_bullet(k);
+    auto tilde = phi_tilde(t_k1, t_k);
+
+    std::cerr << "bullet variables:\n";
+    for(auto var : bullet.variables())
+      std::cerr << " - " << black::to_string(var.name()) << "\n";
+    
+    std::cerr << "tilde variables:\n";
+    for(auto var : tilde.variables())
+      std::cerr << " - " << black::to_string(var.name()) << "\n";
+
     return 
       exists(primed(2),
-        phi_bullet(k)[primed() / primed(2)] &&
-        phi_tilde(t_k1, t_k)[primed() / primed(2)]
+        bullet[primed() / primed(2)] &&
+        tilde[primed() / primed(2)][!primed() / primed(1)]
       );
   }
 
@@ -210,9 +221,9 @@ namespace black_internal {
   }
   
   sdd::node det_t::finals(sdd::node t_k) {
-    return exists(any_of(aut.variables),
-      exists(primed(1) * any_of(aut.variables),
-        aut.init && t_k && aut.finals[any_of(aut.variables) / primed(1)]
+    return exists(aut.variables,
+      exists(primed(1) * aut.variables,
+        aut.init && t_k && aut.finals[aut.variables / primed(1)]
       )
     );
   }
@@ -241,6 +252,7 @@ namespace black_internal {
       
       trans = this->trans(t_k1, t_k, k);
 
+      std::cerr << "trans: " << black::to_string(mgr->to_formula(trans)) << "\n";
       std::cerr << "trans variables:\n";
       for(auto var : trans.variables())
       std::cerr << " - " << black::to_string(var.name()) << "\n";

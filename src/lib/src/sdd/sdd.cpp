@@ -417,6 +417,13 @@ namespace black::sdd {
     };
   }
 
+  node exists(std::vector<black::proposition> const& vars, node n) {
+    std::vector<sdd::variable> sddvars;
+    for(auto v : vars)
+      sddvars.push_back(n.manager()->variable(v));
+    return exists(sddvars, n);
+  }
+
   node forall(variable var, node n) {
     return node{
       n.manager(), 
@@ -426,6 +433,13 @@ namespace black::sdd {
 
   node forall(std::vector<variable> const& vars, node n) {
     return !exists(vars, !n);
+  }
+
+  node forall(std::vector<black::proposition> const& vars, node n) {
+    std::vector<sdd::variable> sddvars;
+    for(auto v : vars)
+      sddvars.push_back(n.manager()->variable(v));
+    return forall(sddvars, n);
   }
 
   node implies(node n1, node n2) {

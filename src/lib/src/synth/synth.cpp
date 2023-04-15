@@ -94,7 +94,7 @@ namespace black_internal::synth {
 
       if(reach)
         return big_or(sigma, black::range(0, n + 1), [&](auto i) {
-          return rename(finals, any_of(aut.variables) / stepped(i));
+          return rename(finals, aut.variables / stepped(i));
         });
       
       return big_or(sigma, black::range(0, n), [&](auto k) {
@@ -106,7 +106,7 @@ namespace black_internal::synth {
         });
 
         auto safety = big_and(sigma, black::range(0, k + 1), [&](auto w) {
-          return rename(finals, any_of(aut.variables) / stepped(w));
+          return rename(finals, aut.variables / stepped(w));
         });
 
         return loop && safety;
@@ -116,10 +116,13 @@ namespace black_internal::synth {
     qbformula synth_t::unravel(size_t n) {
       using namespace black::logic::fragments::QBF;
       return 
-        rename(to_formula(aut.init), any_of(aut.variables) / stepped(0)) &&
+        rename(to_formula(aut.init), aut.variables / stepped(0)) &&
         big_and(sigma, black::range(0, n), [&](auto i) {
           return 
-            rename(to_formula(aut.trans), any_of(aut.variables) / stepped(i));
+            rename(
+              rename(to_formula(aut.trans), aut.variables / stepped(i)),
+              primed() * aut.variables / stepped(i + 1)
+            );
         });
     }
 

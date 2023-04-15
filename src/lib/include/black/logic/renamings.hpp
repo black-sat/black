@@ -31,6 +31,8 @@
 
 #include <unordered_set>
 #include <string>
+#include <ranges>
+#include <iostream>
 
 namespace black_internal::renamings {
 
@@ -147,43 +149,43 @@ struct std::hash<black_internal::renamings::tag_t> {
 
 namespace black_internal::renamings {
 
-  inline std::optional<black::proposition>
-  is_plain(black::proposition p) {
+  inline bool is_plain(black::proposition p) {
     if(auto tag = p.name().to<tag_t>(); tag.has_value())
-      return {};
-    return p;
+      return true;
+    return false;
   }
 
-  inline std::optional<black::proposition>
-  is_primed(black::proposition p, size_t n) {
+  inline bool is_primed(black::proposition p, size_t n) {
     if(auto tag = p.name().to<tag_t>(); tag.has_value())
       if(tag->primes == n)
-        return tag->base;
-    return {};
+        return true;
+    return false;
   }
 
-  inline std::optional<black::proposition>
-  is_primed(black::proposition p) {
+  inline bool is_primed(black::proposition p) {
     if(auto tag = p.name().to<tag_t>(); tag.has_value())
       if(tag->primes > 0)
-        return p;
-    return {};
+        return true;
+    return false;
   }
 
-  inline std::optional<black::proposition>
-  is_stepped(black::proposition p, size_t n) {
+  inline bool is_stepped(black::proposition p, size_t n) {
     if(auto tag = p.name().to<tag_t>(); tag.has_value())
       if(tag->steps == int64_t(n))
-        return tag->base;
-    return {};
+        return true;
+    return false;
   }
   
-  inline std::optional<black::proposition>
-  is_stepped(black::proposition p) {
+  inline bool is_stepped(black::proposition p) {
     if(auto tag = p.name().to<tag_t>(); tag.has_value())
       if(tag->steps >= 0)
-        return p;
-    return {};
+        return true;
+    return false;
+  }
+
+  inline black::proposition untag(black::proposition p) {
+    tag_t tag = p.name().to<tag_t>().value_or(tag_t{p});
+    return tag.base;
   }
 
   inline black::proposition prime(black::proposition p, size_t n) {
@@ -211,8 +213,8 @@ namespace black_internal::renamings {
   }
 
   //
-  // f[stepped(n) * any_of(vars) / plain()]
-  // f[stepped(n) * any_of(vars) / stepped(n + 1)]
+  // f[stepped(n) * vars / plain()]
+  // f[stepped(n) * vars / stepped(n + 1)]
   //
   // in the above, the first replaces any variable that is the n-th stepped
   // version of a variable from the vector `vars`, with its plain version and
@@ -225,104 +227,107 @@ namespace black_internal::renamings {
   };
 
   template<typename M>
-  concept matcher = requires(M m, black::proposition p) {
-    { m.match(p) } -> std::convertible_to<std::optional<black::proposition>>;
+  concept filter = requires(M m, black::proposition p) {
+    { m.filter(p) } -> std::convertible_to<bool>;
   };
 
-  template<matcher M, renamer R>
-  auto operator/(M&& m, R&& r) {
-    return [&](black::proposition p) {
-      if(auto base = std::forward<M>(m).match(p); base)
-        return std::forward<R>(r).rename(*base);
+  template<filter M, renamer R>
+  auto operator/(M const& m, R const &r) {
+    return [=](black::proposition p) {
+      if(m.filter(p))
+        return r.rename(p);
       return p;
     };
   }
 
-  template<matcher M1, matcher M2>
-  auto operator*(M1 const& m1, M2 const& m2) {
+  template<filter M1, filter M2>
+  auto operator *(M1 const& m1, M2 const& m2) {
     struct result_t {
 
       result_t(M1 const& _m1_, M2 const& _m2_) : _m1{_m1_}, _m2{_m2_} { }
 
-      std::optional<black::proposition> match(black::proposition p) const {
-        if(auto base1 = _m1.match(p); base1)
-          if(auto base2 = _m2.match(*base1); base2)
-            return *base2;
-        return {};
+      bool filter(black::proposition p) const {
+        return _m1.filter(p) && _m2.filter(p);
       }
 
-      M1 const& _m1;
-      M2 const& _m2;
+      M1 _m1;
+      M2 _m2;
 
     } result{m1, m2};
 
     return result;
   }
 
-  template<matcher M1, matcher M2>
-  auto operator+(M1 const& m1, M2 const& m2) {
+  template<filter M>
+  auto operator!(M const& m) {
     struct result_t {
 
-      result_t(M1 const& _m1_, M2 const& _m2_) : _m1{_m1_}, _m2{_m2_} { }
+      result_t(M const& _m_) : _m{_m_} { }
 
-      std::optional<black::proposition> match(black::proposition p) const {
-        if(auto base = _m1.match(p); base)
-          return *base;
-        if(auto base = _m2.match(p); base)
-          return *base;
-          
-        return {};
+      bool filter(black::proposition p) const {
+        return !_m.filter(p);
       }
 
-      M1 const& _m1;
-      M2 const& _m2;
+      M _m;
 
-    } result{m1, m2};
+    } result{m};
 
     return result;
   }
 
-  struct any_of {
+  struct of_kind {
     
-    any_of(std::vector<black::proposition> vec) {
+    of_kind(std::vector<black::proposition> const& vec) {
       for(auto p : vec)
         set.insert(p);
     }
 
-    std::optional<black::proposition> match(black::proposition p) const {
-      if(set.contains(p))
-        return p;
-      return {};
+    bool filter(black::proposition p) const {
+      return set.contains(untag(p));
+    }
+
+    std::unordered_set<black::proposition> set;
+  };
+  
+  struct exactly {
+    
+    exactly(std::vector<black::proposition> const&vec) {
+      for(auto p : vec)
+        set.insert(p);
+    }
+
+    bool filter(black::proposition p) const {
+      return set.contains(p);
     }
 
     std::unordered_set<black::proposition> set;
   };
 
-  template<matcher M>
-  auto operator*(M const& m, black::proposition p) {
-    return m * any_of({p});
+  template<std::ranges::range T, renamer R>
+  auto operator/(T&& v, R&& r) {
+    return exactly(std::forward<T>(v)) / std::forward<R>(r);
   }
 
-  template<matcher M>
-  auto operator+(M const& m, black::proposition p) {
-    return m + any_of({p});
+  template<filter M1, std::ranges::range T2>
+  auto operator *(M1 const& m1, T2 const& v2) {
+    return m1 * of_kind(v2);
   }
 
-  template<matcher M>
-  auto operator+(black::proposition p, M const& m) {
-    return any_of({p}) + m;
+  template<filter M2, std::ranges::range T1>
+  auto operator *(T1 const& v1, M2 const& m2) {
+    return of_kind(v1) * m2;
   }
 
   struct plain {
 
     plain() = default;
 
-    std::optional<black::proposition> match(black::proposition p) const {
+    bool filter(black::proposition p) const {
       return is_plain(p);
     }
 
     black::proposition rename(black::proposition p) const {
-      return p;
+      return untag(p);
     }
 
   };
@@ -332,7 +337,7 @@ namespace black_internal::renamings {
     primed() { }
     primed(size_t _n) : n{_n} { }
 
-    std::optional<black::proposition> match(black::proposition p) const {
+    bool filter(black::proposition p) const {
       if(n)
         return is_primed(p, *n);
       return is_primed(p);
@@ -352,7 +357,7 @@ namespace black_internal::renamings {
     stepped() { }
     stepped(size_t _n) : n{_n} { }
 
-    std::optional<black::proposition> match(black::proposition p) const {
+    bool filter(black::proposition p) const {
       if(n)
         return is_stepped(p, *n);
       return is_stepped(p);

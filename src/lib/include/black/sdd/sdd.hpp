@@ -198,19 +198,21 @@ namespace black::sdd {
   node forall(variable var, node n);
   node exists(std::vector<variable> const& vars, node n);
   node forall(std::vector<variable> const& vars, node n);
+  node exists(std::vector<black::proposition> const& vars, node n);
+  node forall(std::vector<black::proposition> const& vars, node n);
 
-  template<black_internal::matcher M>
+  template<black_internal::filter M>
   node exists(M const& m, node n) {
     auto node_vars = n.variables();
     auto it = std::remove_if(begin(node_vars), end(node_vars), [&](auto v) {
-      return !m.match(v.name());
+      return !m.filter(v.name());
     });
     node_vars.erase(it, end(node_vars));
     
     return exists(node_vars, n);
   }
 
-  template<black_internal::matcher M>
+  template<black_internal::filter M>
   node forall(M const& m, node n) {
     return !exists(m, !n);
   }
