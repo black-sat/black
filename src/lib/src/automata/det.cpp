@@ -88,12 +88,13 @@ namespace black_internal {
     // a.init = a.init && !x_sink();
     // a.finals = a.finals && !x_sink();
 
-    // black_assert(exists(primed(), a.trans).is_valid());
-
+    a.variables.push_back(x_sink().name());
     a.trans = 
       (a.trans || prime(x_sink())) && (implies(x_sink(), prime(x_sink())));
     a.init = a.init && !x_sink();
     a.finals = a.finals && !x_sink();
+
+    black_assert(exists(primed(), a.trans).is_valid());
 
     return a;
   }
