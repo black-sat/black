@@ -78,9 +78,23 @@ namespace black_internal::synth {
     return str.str();
   }
 
-  qdimacs clausify(qbformula f) {
+  qdimacs clausify(qbformula f)
+  {
+    std::cerr << "f to clausify: " << black::to_string(f) << "\n";
 
     prenex_qbf qbformula = extract_prenex(f);
+
+    std::cerr << "blocks: \n";
+    for(auto q : qbformula.blocks) {
+      if(q.node_type() == logic::qbf<logic::QBF>::type::thereis{})
+        std::cerr << "thereis ";
+      else
+        std::cerr << "foreach ";
+      for(auto v : q.variables()) {
+        std::cerr << black::to_string(v) << " ";
+      }
+      std::cerr << "\n";
+    }
 
     black::cnf cnf = black::to_cnf(qbformula.matrix);
 
@@ -113,6 +127,8 @@ namespace black_internal::synth {
 
     // quantifiers
     for(auto block : qbformula.blocks) {
+      if(block.variables().empty())
+        continue;
       
       std::vector<var_t> block_vars;
       for(auto p : block.variables()) {
@@ -123,10 +139,19 @@ namespace black_internal::synth {
         block_vars.push_back(vars[p]);
       }
 
-      if(block.node_type() == quantifier_t::thereis{})
+      if(block.node_type() == quantifier_t::thereis{}) {
+        std::cerr << "existential block:\n";
+        for(auto var : block_vars) {
+          std::cerr << "- var: " << var << "\n";
+        }
         blocks.push_back(qdimacs_block{qdimacs_block::existential, block_vars});
-      else
+      } else {
+        std::cerr << "universal block:\n";
+        for(auto var : block_vars) {
+          std::cerr << "- var: " << var << "\n";
+        }
         blocks.push_back(qdimacs_block{qdimacs_block::universal, block_vars});
+      }
 
     }
 

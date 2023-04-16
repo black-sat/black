@@ -60,10 +60,16 @@ namespace black_internal::synth {
     struct synth_t {
 
       synth_t(logic::alphabet &_sigma, automata_spec const& _spec)
-        : sigma{_sigma}, spec{_spec}, aut{spec.spec} { }
+        : sigma{_sigma}, spec{_spec}, aut{spec.spec}, 
+        coverset{begin(aut.variables), end(aut.variables)} { 
+          std::cerr << "coverset:\n";
+          for(auto v : coverset)
+            std::cerr << " - " << black::to_string(v) << "\n";
+          aut.variables = cover(aut.variables, coverset);
+        }
 
       bformula to_formula(sdd::node n) { 
-        return cover(aut.manager->to_formula(n)); 
+        return cover(aut.manager->to_formula(n), coverset); 
       }
 
       bformula win(player_t player, game_t type, size_t n);
@@ -74,6 +80,7 @@ namespace black_internal::synth {
       logic::alphabet &sigma;
       automata_spec spec;
       automaton &aut;
+      std::unordered_set<black::proposition> coverset;
     };
 
     bformula synth_t::win(player_t player, game_t type, size_t n) {
@@ -120,7 +127,10 @@ namespace black_internal::synth {
         big_and(sigma, black::range(0, n), [&](auto i) {
           return 
             rename(
-              rename(to_formula(aut.trans), aut.variables / stepped(i)),
+              rename(
+                rename(to_formula(aut.trans), aut.letters / stepped(i)), 
+                aut.variables / stepped(i)
+              ),
               primed() * aut.variables / stepped(i + 1)
             );
         });
@@ -184,17 +194,15 @@ namespace black_internal::synth {
       qbformula formulaC = 
         synth_t{sigma, spec}.encode(player_t::controller, type, n);
       qdimacs qdC = clausify(formulaC);
-      
+
+      if(is_sat(qdC))
+        return true;
+
       [[maybe_unused]]
       qbformula formulaE = 
         synth_t{sigma, spec}.encode(player_t::environment, type, n);
       qdimacs qdE = clausify(formulaE);
-
-      std::cerr << to_string(formulaC) << "\n";
-      if(is_sat(qdC))
-        return true;
       
-      std::cerr << to_string(formulaE) << "\n";
       if(is_sat(qdE))
         return false;
       
@@ -203,18 +211,7 @@ namespace black_internal::synth {
   }
 
   black::tribool is_realizable(automata_spec const& spec) {
-    automata_spec covered = spec;
-
-    for(auto &p : covered.inputs)
-      p = cover(p);
-    for(auto &p : covered.outputs)
-      p = cover(p);
-    for(auto &p : covered.spec.letters)
-      p = cover(p);
-    for(auto &p : covered.spec.variables)
-      p = cover(p);
-
-    return solve(covered, game_t::eventually{});
+    return solve(spec, game_t::eventually{});
   }
 
 

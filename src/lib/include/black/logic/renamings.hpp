@@ -100,22 +100,30 @@ namespace black_internal::renamings {
     return result;
   }
   
-  inline logic::proposition cover(logic::proposition p) {
-    return p.sigma()->proposition(p);
+  inline logic::proposition cover(
+    logic::proposition p, std::unordered_set<logic::proposition> const& set
+  ) {
+    if(set.contains(p))
+      return p.sigma()->proposition(p);
+    return p;
   }
 
-  inline std::vector<logic::proposition>
-  cover(std::vector<logic::proposition> const&props) {
+  inline std::vector<logic::proposition> cover(
+    std::vector<logic::proposition> const&props, 
+    std::unordered_set<logic::proposition> const& set
+  ) {
     std::vector<logic::proposition> result;
     for(auto p : props)
-      result.push_back(cover(p));
+      result.push_back(cover(p, set));
     return result;
   }
 
-  inline logic::formula<logic::propositional> 
-  cover(logic::formula<logic::propositional> f) {
-    return rename(f, [](auto p) {
-      return cover(p);
+  inline logic::formula<logic::propositional> cover(
+    logic::formula<logic::propositional> f,
+    std::unordered_set<logic::proposition> const& set
+  ) {
+    return rename(f, [&](auto p) {
+      return cover(p, set);
     });
   }
   
