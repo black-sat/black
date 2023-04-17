@@ -170,7 +170,9 @@ namespace black::frontend
       (option("-f", "--formula") & value("formula", cli::formula))
         % "LTL formula to solve",
       (option("-i", "--inputs") & values("inputs", cli::inputs))
-        % "input variables (default: none )" ,
+        % "input variables (default: none )",
+      (option("-t", "--tableau").set(cli::tableau))
+        % "use tableau-based reachability game algorithm (default: NO)",
       option("--debug") & value("debug", cli::debug),
       value("file", cli::filename).required(false)
           % "input formula file name."

@@ -195,32 +195,70 @@ namespace black_internal::cnf
     f.match(
       [](boolean)     { }, // LCOV_EXCL_LINE
       [](proposition) { },
-      [&](conjunction, auto l, auto r) 
-      {
-        tseitin(l, clauses, memo);
-        tseitin(r, clauses, memo);
+      [&](conjunction c) {
+        for(auto op : c.operands())
+          tseitin(op, clauses, memo);
 
         // clausal form for conjunctions:
         //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ r) ∧ (!l ∨ !r ∨ f)
-        clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
-          {{false, fresh(f)}, {true, fresh(l)}},
-          {{false, fresh(f)}, {true, fresh(r)}},
-          {{false, fresh(l)}, {false, fresh(r)}, {true, fresh(f)}}
-        });
+
+        for(auto op : c.operands())
+          clauses.insert(clauses.end(), {
+            {{false, fresh(f)}, {true, fresh(op)}}
+          });
+
+        std::vector<literal> final;
+        for(auto op : c.operands())
+          final.push_back({false, fresh(op)});
+        final.push_back({true, fresh(f)});
+        
+        clauses.insert(clauses.end(), {final});
       },
-      [&](disjunction, auto l, auto r) 
-      {
-        tseitin(l, clauses, memo);
-        tseitin(r, clauses, memo);
+      [&](disjunction c) {
+        for(auto op : c.operands())
+          tseitin(op, clauses, memo);
 
         // clausal form for disjunctions:
         //   f <-> (l ∨ r) == (f ∨ !l) ∧ (f ∨ !r) ∧ (l ∨ r ∨ !f)
-        clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
-          {{true, fresh(f)}, {false, fresh(l)}},
-          {{true, fresh(f)}, {false, fresh(r)}},
-          {{true, fresh(l)}, {true, fresh(r)}, {false, fresh(f)}}
-        });
+
+        for(auto op : c.operands())
+          clauses.insert(clauses.end(), {
+            {{true, fresh(f)}, {false, fresh(op)}}
+          });
+
+        std::vector<literal> final;
+        for(auto op : c.operands())
+          final.push_back({true, fresh(op)});
+        final.push_back({false, fresh(f)});
+        
+        clauses.insert(clauses.end(), {final});
       },
+      // [&](conjunction, auto l, auto r) 
+      // {
+      //   tseitin(l, clauses, memo);
+      //   tseitin(r, clauses, memo);
+
+      //   // clausal form for conjunctions:
+      //   //   f <-> (l ∧ r) == (!f ∨ l) ∧ (!f ∨ r) ∧ (!l ∨ !r ∨ f)
+      //   clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
+      //     {{false, fresh(f)}, {true, fresh(l)}},
+      //     {{false, fresh(f)}, {true, fresh(r)}},
+      //     {{false, fresh(l)}, {false, fresh(r)}, {true, fresh(f)}}
+      //   });
+      // },
+      // [&](disjunction, auto l, auto r) 
+      // {
+      //   tseitin(l, clauses, memo);
+      //   tseitin(r, clauses, memo);
+
+      //   // clausal form for disjunctions:
+      //   //   f <-> (l ∨ r) == (f ∨ !l) ∧ (f ∨ !r) ∧ (l ∨ r ∨ !f)
+      //   clauses.insert(clauses.end(), { // LCOV_EXCL_LINE
+      //     {{true, fresh(f)}, {false, fresh(l)}},
+      //     {{true, fresh(f)}, {false, fresh(r)}},
+      //     {{true, fresh(l)}, {true, fresh(r)}, {false, fresh(f)}}
+      //   });
+      // },
       [&](implication, auto l, auto r) 
       {
         tseitin(l, clauses, memo);

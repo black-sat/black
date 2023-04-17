@@ -100,33 +100,6 @@ namespace black_internal::renamings {
     return result;
   }
   
-  inline logic::proposition cover(
-    logic::proposition p, std::unordered_set<logic::proposition> const& set
-  ) {
-    if(set.contains(p))
-      return p.sigma()->proposition(p);
-    return p;
-  }
-
-  inline std::vector<logic::proposition> cover(
-    std::vector<logic::proposition> const&props, 
-    std::unordered_set<logic::proposition> const& set
-  ) {
-    std::vector<logic::proposition> result;
-    for(auto p : props)
-      result.push_back(cover(p, set));
-    return result;
-  }
-
-  inline logic::formula<logic::propositional> cover(
-    logic::formula<logic::propositional> f,
-    std::unordered_set<logic::proposition> const& set
-  ) {
-    return rename(f, [&](auto p) {
-      return cover(p, set);
-    });
-  }
-  
   struct tag_t {
     black::proposition base;
     size_t primes = 0;
@@ -378,6 +351,41 @@ namespace black_internal::renamings {
     }
 
     std::optional<size_t> n;
+  };
+
+  struct only {
+
+    template<renamer R>
+    only(R const& r) 
+      : base{[=](black::proposition p) {
+        return r.rename(p);
+      }} { }
+
+    black::proposition rename(black::proposition p) const {
+      return base(untag(p));
+    }
+
+    std::function<black::proposition(black::proposition)> base;
+  };
+
+  struct covered {
+
+    template<filter M>
+    covered(M const& m) 
+      : base{[=](black::proposition p) {
+        return m.filter(p);
+      }} { }
+    
+    template<std::ranges::range R>
+    covered(R const& r) : covered{exactly(r)} { }
+
+    bool filter(black::proposition p) const {
+      if(auto n = p.name().to<black::proposition>())
+        return base(*n);
+      return false;
+    }
+
+    std::function<bool(black::proposition)> base;
   };
 
 }

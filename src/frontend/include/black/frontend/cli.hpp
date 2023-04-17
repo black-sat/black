@@ -92,8 +92,8 @@ namespace black::frontend
     // input variables in `synth` mode
     inline std::vector<std::string> inputs;
 
-    // output variables in `synth` mode
-    inline std::vector<std::string> outputs;
+    // use tableau based algorithm in `synth` mode
+    inline bool tableau = false;
 
     // whether we are in trace checking mode
     inline bool trace_checking = false;

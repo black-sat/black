@@ -54,7 +54,10 @@ namespace black_internal {
   struct det_t {
 
     det_t(automaton _aut) 
-      : aut{std::move(_aut)}, mgr{aut.manager}, sigma{*mgr->sigma()} { }
+      : aut{std::move(_aut)}, 
+        mgr{aut.manager}, 
+        sigma{*mgr->sigma()}, 
+        t_eps{T_eps()} { }
 
     automaton totalize(automaton t);
     sdd::variable eps();
@@ -64,7 +67,6 @@ namespace black_internal {
     sdd::node phi_bullet(size_t k);
     sdd::node phi_tilde(sdd::node t_k1, sdd::node t_k);
     sdd::node trans(sdd::node t_k1, sdd::node t_k, size_t k);
-    sdd::node T_quot(sdd::node t_k1, sdd::node t_k, size_t k);
     bool is_total(sdd::node t_quot);
     sdd::node init(size_t k);
     sdd::node finals(sdd::node t_k);
@@ -73,6 +75,7 @@ namespace black_internal {
     automaton aut;
     sdd::manager *mgr;
     black::alphabet &sigma;
+    sdd::node t_eps;
   };
 
   automaton det_t::totalize(automaton a) {
@@ -118,12 +121,12 @@ namespace black_internal {
 
   sdd::node det_t::T_step(sdd::node last, size_t k) {
     if(k == 0)
-      return T_eps()[aut.letters / stepped(0)];
+      return t_eps[aut.letters / stepped(0)];
 
     return exists(primed(2),
       last[primed(1) * aut.variables / primed(2)] && 
-      aut.trans[aut.variables / primed(2)]
-               [aut.letters / stepped(k)]
+      t_eps[aut.variables / primed(2)]
+           [aut.letters / stepped(k)]
     );
   }
 
@@ -156,41 +159,11 @@ namespace black_internal {
     });
   }
 
-  sdd::node det_t::T_quot(sdd::node t_k1, sdd::node t_k, size_t k) {
-    auto newtk = 
-      t_k1.condition(!step(eps(), k + 1))[stepped(k + 1) / plain()]
-      [stepped() / primed()];
-
-    std::cerr << "newtk variables:\n";
-    for(auto var : newtk.variables())
-      std::cerr << " - " << black::to_string(var.name()) << "\n";
-    return 
-      forall(aut.variables,
-        forall(primed(1) * aut.variables,
-          iff(
-            t_k,
-            newtk
-          )
-        )
-      );
-  }
-
   sdd::node det_t::trans(sdd::node t_k1, sdd::node t_k, size_t k) {
-    auto bullet = phi_bullet(k);
-    auto tilde = phi_tilde(t_k1, t_k);
-
-    std::cerr << "bullet variables:\n";
-    for(auto var : bullet.variables())
-      std::cerr << " - " << black::to_string(var.name()) << "\n";
-    
-    std::cerr << "tilde variables:\n";
-    for(auto var : tilde.variables())
-      std::cerr << " - " << black::to_string(var.name()) << "\n";
-
     return 
       exists(primed(2),
-        bullet[primed() / primed(2)] &&
-        tilde[primed() / primed(2)][!primed() / primed(1)]
+        phi_bullet(k)[primed() / primed(2)] &&
+        phi_tilde(t_k1, t_k)[primed() / primed(2)][!primed() / primed(1)]
       );
   }
 
@@ -208,10 +181,6 @@ namespace black_internal {
     sdd::node result = exists(primed() * stepped(), trans);
     if(result.is_valid())
       return true;
-
-    std::cerr << "totality models:\n";
-    enumerate(!result);
-
     return false;
   }
 
@@ -231,14 +200,7 @@ namespace black_internal {
 
   automaton det_t::semideterminize() 
   {
-    std::cerr << "original models:\n";
-    enumerate(aut.trans);
-
-    // aut = totalize(std::move(aut));
     aut.letters.push_back(eps().name());
-
-    // std::cerr << "totalized models:\n";
-    // enumerate(aut.trans);
 
     sdd::node trans = mgr->top();
     sdd::node t_k = mgr->top();
@@ -247,24 +209,21 @@ namespace black_internal {
     std::cerr << "Start semi-determinization... " << std::flush;
     size_t k = 0;
     do {
-      std::cerr << "k = " << k << "\n";
+      if(k == 0)
+        std::cerr << "k = " << std::flush;
+      else 
+        std::cerr << ", " << std::flush;
+      std::cerr << k << std::flush;
+
       t_k = t_k1;
       t_k1 = T_step(t_k, k + 1);
-      
+
       trans = this->trans(t_k1, t_k, k);
-
-      std::cerr << "trans: " << black::to_string(mgr->to_formula(trans)) << "\n";
-      std::cerr << "trans variables:\n";
-      for(auto var : trans.variables())
-      std::cerr << " - " << black::to_string(var.name()) << "\n";
       
-      std::cerr << "trans models:\n";
-      enumerate(trans);
-
       k++;
     } while(!is_total(trans));
 
-    std::cerr << "done!\n";
+    std::cerr << ", done!\n";
 
     sdd::node init = this->init(k - 1);
     sdd::node finals = this->finals(t_k);

@@ -248,25 +248,17 @@ namespace black_internal {
       return !ground(req); 
     });
 
-    auto trans = big_and(sigma, variables, [](proposition x) {
-      auto req = lift(x).to<unary>();
-      bool primed = true;
-      auto psi = req->argument();
+    auto trans = big_and(sigma, variables, 
+      [](proposition x) -> logic::formula<logic::propositional> {
+        auto req = lift(x).to<unary>();
+        bool past = req->is<yesterday>() || req->is<w_yesterday>();
+        auto psi = req->argument();
 
-      req->match(
-        [&](yesterday) {
-          primed = false;
-          x = prime(x, 1);
-        },
-        [&](w_yesterday) {
-          primed = false;
-          x = prime(x, 1);
-        },
-        [](otherwise) { }
-      );
-
-      return logic::iff<logic::propositional>(x, snf(psi, primed));
-    });
+        if(past)
+          return logic::iff(prime(x), snf(psi, false));
+        return logic::implies(x, snf(psi, true));
+      }
+    );
 
     std::cerr << "automaton:\n";
     std::cerr << "- init: " << black::to_string(init) << "\n";

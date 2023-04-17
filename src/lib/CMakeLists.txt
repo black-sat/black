@@ -183,8 +183,9 @@ set (
   src/sdd/sdd.cpp
   src/automata/automaton.cpp
   src/automata/det.cpp
-  src/synth/spec.cpp
   src/synth/synth.cpp
+  src/synth/tableau.cpp
+  src/synth/fixpoint.cpp
   src/qbf/qbf.cpp
   src/qbf/backend.cpp
   src/debug/random_formula.cpp

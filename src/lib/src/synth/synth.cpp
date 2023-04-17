@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2023 Nicola Gigante
+// (C) 2019 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,196 +23,110 @@
 //
 
 #include <black/synth/synth.hpp>
-#include <black/qbf/qbf.hpp>
-#include <black/qbf/backend.hpp>
-#include <black/sdd/sdd.hpp>
+
+#include <black/logic/lex.hpp>
+#include <black/logic/parser.hpp>
+#include <black/logic/prettyprint.hpp>
 
 #include <iostream>
-#include <algorithm>
+#include <sstream>
 
 namespace black_internal::synth {
 
-  namespace sdd = black::sdd;
+  std::optional<ltlp_spec> parse_ltlp_spec(
+    logic::alphabet &sigma, std::istream &fstr, std::istream &partstr,
+    parser::error_handler error
+  ) {
+    auto parsed = parse_formula(sigma, fstr, error);
+    if(!parsed->is<black::logic::formula<black::logic::LTLP>>()) {
+      error("synthesis is only supported for LTL+P formulas");
+      return {};
+    }
 
-  using FG = logic::make_fragment_t<
-    logic::syntax_list<
-      logic::syntax_element::eventually,
-      logic::syntax_element::always
-    >
-  >;
+    auto spec = *parsed->to<black::logic::formula<black::logic::LTLP>>();
 
-  template<typename T>
-  using formula = logic::formula<T>;
+    std::vector<black::proposition> inputs;
+    std::vector<black::proposition> outputs;
 
-  using bformula = black::logic::fragments::propositional::formula;
-  using qbformula = black::logic::fragments::QBF::formula;
+    using black_internal::lexer;
+    using black_internal::token;
 
-  using game_t = formula<FG>::type;
+    lexer lex{partstr, error};
 
-  using quantifier_t = logic::qbf<logic::QBF>::type;
+    bool inputsdone = false;
+    bool outputsdone = false;
 
-  enum class player_t {
-    controller,
-    environment
-  };
-
-  namespace {
-    struct synth_t {
-
-      synth_t(logic::alphabet &_sigma, automata_spec const& _spec)
-        : sigma{_sigma}, spec{_spec}, aut{spec.spec}, 
-        coverset{begin(aut.variables), end(aut.variables)} { 
-          std::cerr << "coverset:\n";
-          for(auto v : coverset)
-            std::cerr << " - " << black::to_string(v) << "\n";
-          aut.variables = cover(aut.variables, coverset);
-        }
-
-      bformula to_formula(sdd::node n) { 
-        return cover(aut.manager->to_formula(n), coverset); 
+    lex.get();
+    while(!inputsdone || !outputsdone) {
+      auto tok = lex.peek();
+      if(tok->data<token::punctuation>() != token::punctuation::dot) {
+        error("expected '.', found '" + to_string(*tok) + "'");
+        return {};
       }
-
-      bformula win(player_t player, game_t type, size_t n);
-      qbformula unravel(size_t n);
-
-      qbformula encode(player_t player, game_t type, size_t n);
-
-      logic::alphabet &sigma;
-      automata_spec spec;
-      automaton &aut;
-      std::unordered_set<black::proposition> coverset;
-    };
-
-    bformula synth_t::win(player_t player, game_t type, size_t n) {
-      using namespace logic;
-
-      bformula finals = 
-        player == player_t::controller ? 
-          to_formula(aut.finals) : !to_formula(aut.finals);
-
-      bool reach = type.match(
-        [&](game_t::eventually) {
-          return player == player_t::controller;
-        },
-        [&](game_t::always) {
-          return player == player_t::environment;
-        }
-      );
-
-      if(reach)
-        return big_or(sigma, black::range(0, n + 1), [&](auto i) {
-          return rename(finals, aut.variables / stepped(i));
-        });
       
-      return big_or(sigma, black::range(0, n), [&](auto k) {
-        auto loop = big_or(sigma, black::range(0, k), [&](auto j) {
-          auto ell = [&](auto p) {
-            return iff(step(p, k), step(p, j));
-          };
-          return big_and(sigma, aut.letters, ell);
-        });
-
-        auto safety = big_and(sigma, black::range(0, k + 1), [&](auto w) {
-          return rename(finals, aut.variables / stepped(w));
-        });
-
-        return loop && safety;
-      });
-    }
-
-    qbformula synth_t::unravel(size_t n) {
-      using namespace black::logic::fragments::QBF;
-      return 
-        rename(to_formula(aut.init), aut.variables / stepped(0)) &&
-        big_and(sigma, black::range(0, n), [&](auto i) {
-          return 
-            rename(
-              rename(
-                rename(to_formula(aut.trans), aut.letters / stepped(i)), 
-                aut.variables / stepped(i)
-              ),
-              primed() * aut.variables / stepped(i + 1)
-            );
-        });
-    }
-
-    qbformula synth_t::encode(player_t player, game_t type, size_t n) 
-    {
-      using namespace black::logic::fragments::QBF;
-
-      auto stepvars = [&](auto const& vars, size_t s) {
-        std::vector<black::proposition> result;
-        for(auto var : vars)
-          result.push_back(step(var, s));
-        return result;
-      };
-
-      qbformula result = sigma.top();
-      if(player == player_t::controller) 
-        result = thereis(stepvars(aut.variables, n), 
-          unravel(n) && win(player, type, n)
+      std::vector<black::proposition> *target = nullptr;
+      lex.get();
+      if(lex.peek() && lex.peek()->data<std::string>() == "inputs") {
+        inputsdone = true;
+        target = &inputs;
+      } else if(lex.peek() && lex.peek()->data<std::string>() == "outputs") {
+        outputsdone = true;
+        target = &outputs;
+      } else {
+        error(
+          "expected .inputs or .outputs, found: ." + to_string(*lex.peek())
         );
-      else
-        result = foreach(stepvars(aut.variables, n), 
-          implies(unravel(n), win(player, type, n))
-        );
-
-      // defaults for Controller
-      quantifier_t qvars = quantifier_t::thereis{};
-      quantifier_t qfirst = quantifier_t::thereis{};
-      quantifier_t qsecond = quantifier_t::foreach{};
-
-      if(player == player_t::environment) {
-        qvars = quantifier_t::foreach{};
-        qfirst = quantifier_t::foreach{};
-        qsecond = quantifier_t::thereis{};
+        return {};
       }
 
-      for(size_t i = 0; i < n; i++) {
-        size_t step = n - i - 1;
+      lex.get();
+      if(
+        !lex.peek() || 
+        lex.peek()->data<token::punctuation>() != token::punctuation::colon
+      ) {
+        error("expected ':'");
+        return {}; 
+      }
+
+      while(lex.get()) {        
+        if(!lex.peek()->data<std::string>())
+          break;
         
-        result = 
-          qbf(qvars, stepvars(aut.variables, step),
-            qbf(qfirst, stepvars(spec.outputs, step),
-              qbf(qsecond, stepvars(spec.inputs, step),
-                result
-              )
-            )
-          );
+        target->push_back(sigma.proposition(*lex.peek()->data<std::string>()));
+        
       }
-
-      return result;
     }
+
+    return ltlp_spec{
+      .inputs = inputs,
+      .outputs = outputs,
+      .spec = spec
+    };
   }
 
-  static black::tribool solve(automata_spec spec, game_t type) {
-    logic::alphabet &sigma = *spec.spec.init.manager()->sigma();
+  std::string to_string(ltlp_spec const& spec) {
+    std::stringstream str;
+    
+    str << "spec parsed:\n";
+    str << "- formula: " <<  to_string(spec.spec) << "\n";
+    str << "- inputs:\n";
+    for(auto p : spec.inputs)
+      str << "  - " << to_string(p) << "\n";
+    str << "- outputs:\n";
+    for(auto p : spec.outputs)
+      str << "  - " << to_string(p) << "\n";
 
-    size_t n = 3;
-    while(true) {
-      [[maybe_unused]]
-      qbformula formulaC = 
-        synth_t{sigma, spec}.encode(player_t::controller, type, n);
-      qdimacs qdC = clausify(formulaC);
-
-      if(is_sat(qdC))
-        return true;
-
-      [[maybe_unused]]
-      qbformula formulaE = 
-        synth_t{sigma, spec}.encode(player_t::environment, type, n);
-      qdimacs qdE = clausify(formulaE);
-      
-      if(is_sat(qdE))
-        return false;
-      
-      n++;
-    }
+    return str.str();
   }
 
-  black::tribool is_realizable(automata_spec const& spec) {
-    return solve(spec, game_t::eventually{});
-  }
+  automata_spec to_automata_spec(black::sdd::manager *mgr, ltlp_spec spec) {
+    black_assert(mgr);
 
+    return automata_spec {
+      .inputs = spec.inputs,
+      .outputs = spec.outputs,
+      .spec = semideterminize(to_automaton(mgr, spec.spec))
+    };
+  }
 
 }
