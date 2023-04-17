@@ -135,8 +135,8 @@ namespace black_internal {
       forall(aut.variables,
         forall(primed(1) * aut.variables, 
           iff(
-            t_k,
-            t_k1[stepped() / primed()]
+            t_k[stepped() / primed(1)],
+            t_k1[stepped() / primed(2)]
           )
         )
       );
@@ -147,23 +147,23 @@ namespace black_internal {
 
     return big_and(mgr, range(0, k+1), [&](size_t i) {
       return big_and(mgr, aut.letters, [&](auto p) {
-        return mgr->to_node(iff(step(p, i), prime(step(p, i))));
+        return mgr->to_node(iff(step(p, i), prime(step(p, i), 2)));
       });
     }) &&
-    !prime(step(eps(), k + 1))
+    !prime(step(eps(), k + 1), 2)
     &&
     big_and(mgr, aut.letters, [&](auto p){
       if(p == eps().name())
         return mgr->top();
-      return mgr->to_node(iff(p, prime(step(p, k + 1))));
+      return mgr->to_node(iff(p, prime(step(p, k + 1), 2)));
     });
   }
 
   sdd::node det_t::trans(sdd::node t_k1, sdd::node t_k, size_t k) {
     return 
       exists(primed(2),
-        phi_bullet(k)[primed() / primed(2)] &&
-        phi_tilde(t_k1, t_k)[primed() / primed(2)][!primed() / primed(1)]
+        phi_bullet(k) &&
+        phi_tilde(t_k1, t_k)
       );
   }
 
