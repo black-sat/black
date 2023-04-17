@@ -166,8 +166,10 @@ namespace black::sdd {
     node condition(std::vector<class variable> const& lits, bool sign) const;
 
     node rename(std::function<black::proposition(black::proposition)> map);
+
+    node change(std::function<black::proposition(black::proposition)> map);
     node operator[](std::function<black::proposition(black::proposition)> map) {
-      return rename(map);
+      return change(map);
     }
 
   private:

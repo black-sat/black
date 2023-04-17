@@ -31,6 +31,8 @@
 #include <sstream>
 #include <iostream>
 
+#include <tsl/hopscotch_map.h>
+
 namespace black_internal::synth {
 
   using bformula = black::logic::formula<black::logic::propositional>;

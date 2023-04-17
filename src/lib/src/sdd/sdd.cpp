@@ -47,14 +47,14 @@ namespace black::sdd {
         black_assert(nvars > 0);
       }
 
-    std::unordered_map<proposition, sdd::variable> map;
+    tsl::hopscotch_map<proposition, sdd::variable> map;
     std::vector<sdd::variable> vars;
-    std::unordered_map<node, logic::formula<logic::propositional>> formulas;
+    tsl::hopscotch_map<node, logic::formula<logic::propositional>> formulas;
     
     alphabet *sigma;
     SddManager *mgr;
     SddLiteral next_var = 1;
-    std::unordered_map<
+    tsl::hopscotch_map<
       black::logic::formula<black::logic::QBF>, 
       node
     > to_node_cache;
@@ -338,6 +338,22 @@ namespace black::sdd {
     auto f = manager()->to_formula(*this);
     auto renamed = black_internal::rename(f, map);
     return manager()->to_node(renamed);
+  }
+
+  node node::change(std::function<black::proposition(black::proposition)> map)
+  {
+    sdd::node changes = manager()->top();
+    std::vector<sdd::variable> old;
+    
+    for(auto v : variables()) {
+      auto p = map(v.name());
+      if(p != v.name()) {
+        old.push_back(v);
+        changes = changes && iff(v, manager()->variable(p));
+      }
+    }
+
+    return exists(old, changes && *this);
   }
 
   std::ostream &operator<<(std::ostream &str, literal const& lit) {
