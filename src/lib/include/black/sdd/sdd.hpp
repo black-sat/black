@@ -50,6 +50,8 @@ namespace black::sdd {
     manager &operator=(manager const&) = delete;
     manager &operator=(manager &&);
 
+    void minimize() const;
+
     class variable variable(proposition p);
     std::vector<class variable> variables(std::vector<proposition> props);
     node top();
@@ -142,6 +144,8 @@ namespace black::sdd {
     class manager *manager() const { return _mgr; }
     //sdd_node_t *handle() const { return _node.get(); }
     sdd_node_t *handle() const { return _node; }
+
+    void minimize() const;
 
     std::vector<variable> variables() const;
 

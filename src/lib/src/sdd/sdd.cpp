@@ -67,6 +67,10 @@ namespace black::sdd {
   manager &manager::operator=(manager &&) = default;
   manager::~manager() = default;
 
+  void manager::minimize() const {
+    sdd_manager_minimize(handle());
+  }
+
   variable manager::variable(proposition name) {
     if(_impl->map.contains(name))
       return _impl->map.at(name);
@@ -216,6 +220,14 @@ namespace black::sdd {
   //   } { }
   node::node(class manager *mgr, SddNode *n) 
     : _mgr{mgr}, _node{sdd_ref(n, mgr->handle())} { }  
+
+  void node::minimize() const {
+    Vtree *tree = sdd_vtree_of(handle());
+    if(!tree)
+      return;
+    
+    sdd_vtree_minimize(tree, manager()->handle());
+  }
 
   std::vector<variable> node::variables() const {
     auto array = free_later(sdd_variables(handle(), manager()->handle()));

@@ -160,11 +160,7 @@ namespace black_internal {
   }
 
   sdd::node det_t::trans(sdd::node t_k1, sdd::node t_k, size_t k) {
-    return 
-      exists(primed(2),
-        phi_bullet(k) &&
-        phi_tilde(t_k1, t_k)
-      );
+    return exists(primed(2), phi_bullet(k) && phi_tilde(t_k1, t_k));
   }
 
   [[maybe_unused]]
@@ -219,7 +215,7 @@ namespace black_internal {
       t_k1 = T_step(t_k, k + 1);
 
       trans = this->trans(t_k1, t_k, k);
-      
+
       k++;
     } while(!is_total(trans));
 
