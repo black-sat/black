@@ -66,7 +66,7 @@ namespace black_internal {
     sdd::node trans(sdd::node t_k);
     bool is_total(sdd::node t_quot);
     sdd::node init(size_t k);
-    sdd::node finals(sdd::node t_k, size_t k);
+    sdd::node finals(sdd::node t_k);
     automaton semideterminize();
 
     automaton aut;
@@ -132,16 +132,12 @@ namespace black_internal {
     });
   }
   
-  sdd::node det_t::finals(sdd::node t_k, size_t k) {
-    std::vector<sdd::literal> conditions;
-    for(auto l : aut.letters)
-      conditions.push_back(mgr->variable(step(l, k - 1)));
-
-    sdd::node t_km1 = t_k.condition(conditions);
-
+  sdd::node det_t::finals(sdd::node t_k) {
     return exists(aut.variables,
       exists(primed(1) * aut.variables,
-        aut.init && t_km1 && aut.finals[aut.variables / primed(1)]
+        aut.init && 
+        t_k.condition(aut.letters, true) && 
+        aut.finals[aut.variables / primed(1)]
       )
     );
   }
@@ -172,7 +168,7 @@ namespace black_internal {
     std::cerr << ", done!\n";
 
     sdd::node init = this->init(k);
-    sdd::node finals = this->finals(t_k, k);
+    sdd::node finals = this->finals(t_k);
 
     std::vector<black::proposition> vars;
     for(size_t i = 0; i < k - 1; i++) {

@@ -33,6 +33,7 @@
 #include <optional>
 #include <variant>
 #include <vector>
+#include <array>
 
 namespace black_internal::lexer_details
 {
@@ -128,8 +129,16 @@ namespace black_internal::lexer_details
   public:
     using error_handler = std::function<void(std::string)>;
 
+    enum class syntax {
+      black,
+      spin
+    };
+
     explicit lexer(std::istream &stream, error_handler error) 
       : _stream(stream), _error{error} {}  
+    
+    explicit lexer(std::istream &stream, syntax s, error_handler error) 
+      : _stream(stream), _error{error}, _syntax{s} {}  
     
     std::optional<token> get() { return _token = _lex(); }
     std::optional<token> peek() const { return _token; }
@@ -139,7 +148,10 @@ namespace black_internal::lexer_details
     static bool is_keyword(std::string_view s);
 
   private:
-    static std::pair<std::string_view, token> _keywords[35];
+    static 
+      std::optional<std::array<std::pair<std::string_view, token>, 35>> 
+      _keywords;
+    static std::optional<token> _keyword(std::string_view key);
     std::optional<token> _lex();
     std::optional<token> _identifier();
     std::optional<token> _raw_identifier();
@@ -147,6 +159,7 @@ namespace black_internal::lexer_details
     std::optional<token> _token = std::nullopt;
     std::istream &_stream;
     error_handler _error;
+    syntax _syntax = syntax::black;
   };
 
   std::ostream &operator<<(std::ostream &s, token const &t);
@@ -155,6 +168,11 @@ namespace black_internal::lexer_details
 namespace black_internal {
   using lexer_details::lexer;
   using lexer_details::token;
+}
+
+namespace black {
+  using black_internal::lexer;
+  using black_internal::token;
 }
 
 #endif // LEX_H_

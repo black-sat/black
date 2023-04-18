@@ -56,6 +56,17 @@ namespace black_internal
     return p.parse();
   }
 
+  // Easy entry-point for parsing formulas
+  std::optional<formula>
+  parse_formula(
+    alphabet &sigma, std::istream &stream, lexer::syntax syntax, 
+    parser::error_handler error
+  ) {
+    parser p{sigma, stream, syntax, std::move(error)};
+
+    return p.parse();
+  }
+
   struct parser::_parser_t {
     alphabet &_alphabet;
     lexer _lex;
@@ -64,7 +75,10 @@ namespace black_internal
     std::vector<token> _tokens;
     size_t _pos = 0;
 
-    _parser_t(alphabet &sigma, std::istream &stream, error_handler error);
+    _parser_t(
+      alphabet &sigma, std::istream &stream, lexer::syntax syntax,
+      error_handler error
+    );
 
     template<typename F>
     auto try_parse(F f);
@@ -99,8 +113,13 @@ namespace black_internal
     std::optional<term> parse_term_parens();
   };
 
+  parser::parser(
+    logic::alphabet &sigma, std::istream &stream, lexer::syntax syntax, 
+    error_handler error
+  ) : _data(std::make_unique<_parser_t>(sigma, stream, syntax, error)) { }
+
   parser::parser(alphabet &sigma, std::istream &stream, error_handler error)
-    : _data(std::make_unique<_parser_t>(sigma, stream, error)) { }
+    : parser(sigma, stream, lexer::syntax::black, error) { }
 
   parser::~parser() = default;
 
@@ -118,8 +137,9 @@ namespace black_internal
   }
 
   parser::_parser_t::_parser_t(
-    alphabet &sigma, std::istream &stream, error_handler error
-  ) : _alphabet(sigma), _lex(stream, error), _error(error)
+    alphabet &sigma, std::istream &stream, lexer::syntax syntax,
+    error_handler error
+  ) : _alphabet(sigma), _lex(stream, syntax, error), _error(error)
   {
     std::optional<token> tok = _lex.get();
     if(tok)    

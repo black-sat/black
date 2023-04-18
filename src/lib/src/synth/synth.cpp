@@ -37,7 +37,7 @@ namespace black_internal::synth {
     logic::alphabet &sigma, std::istream &fstr, std::istream &partstr,
     parser::error_handler error
   ) {
-    auto parsed = parse_formula(sigma, fstr, error);
+    auto parsed = parse_formula(sigma, fstr, lexer::syntax::spin, error);
     if(!parsed->is<black::logic::formula<black::logic::LTLP>>()) {
       error("synthesis is only supported for LTL+P formulas");
       return {};

@@ -101,7 +101,7 @@ namespace black::frontend {
     black::alphabet sigma;
 
     auto error = formula_syntax_error_handler({});
-    auto parsed = parse_formula(sigma, file, error);
+    auto parsed = parse_formula(sigma, file, lexer::syntax::spin, error);
     if(!parsed->is<black::logic::formula<black::logic::LTLP>>()) {
       error("synthesis is only supported for LTL+P formulas");
       return {};
@@ -130,8 +130,6 @@ namespace black::frontend {
     });
 
     spec.outputs.insert(end(spec.outputs), begin(outputset), end(outputset));
-
-    io::println("{}", to_string(spec));
 
     black::sdd::manager manager{&sigma, 1};
 

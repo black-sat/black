@@ -30,6 +30,7 @@
 #include <cstdlib>
 #include <random>
 #include <iostream>
+#include <random>
 
 namespace black::sdd {
 
@@ -43,7 +44,8 @@ namespace black::sdd {
   //
   struct manager::impl_t {
     impl_t(alphabet *_sigma, size_t nvars) 
-      : sigma{_sigma}, mgr{sdd_manager_create(SddLiteral(nvars), 0)} { 
+      : sigma{_sigma}, mgr{sdd_manager_create(SddLiteral(nvars), 0)}
+      { 
         black_assert(nvars > 0);
       }
 

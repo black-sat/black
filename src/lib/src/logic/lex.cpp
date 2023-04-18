@@ -320,49 +320,59 @@ namespace black_internal::lexer_details
     return isalpha(c) || c == '_' || c == '{';
   }
 
-  std::pair<std::string_view, token> lexer::_keywords[35] = {
-    {"True",     token{true}},
-    {"False",    token{false}},
-    {"Int",      token{arithmetic_sort::type::integer_sort{}}},
-    {"Real",     token{arithmetic_sort::type::real_sort{}}},
-    {"to_int",   token{unary_term::type::to_integer{}}},
-    {"to_real",  token{unary_term::type::to_real{}}},
-    {"next",     token{unary_term::type::next{}}},
-    {"wnext",    token{unary_term::type::wnext{}}},
-    {"prev",     token{unary_term::type::prev{}}},
-    {"wprev",    token{unary_term::type::wprev{}}},
-    {"div",      token{binary_term::type::int_division{}}},
-    {"exists",   token{quantifier::type::exists{}}},
-    {"forall",   token{quantifier::type::forall{}}},
-    {"equal",    token{{equality::type::equal{}, false}}},
-    {"distinct", token{{equality::type::distinct{}, false}}},
-    {"NOT",      token{unary::type::negation{}}},
-    {"X",        token{unary::type::tomorrow{}}},
-    {"wX",       token{unary::type::w_tomorrow{}}},
-    {"Y",        token{unary::type::yesterday{}}},
-    {"Z",        token{unary::type::w_yesterday{}}},
-    {"F",        token{unary::type::eventually{}}},
-    {"G",        token{unary::type::always{}}},
-    {"O",        token{unary::type::once{}}},
-    {"H",        token{unary::type::historically{}}},
-    {"AND",      token{binary::type::conjunction{}}},
-    {"OR",       token{binary::type::disjunction{}}},
-    {"THEN",     token{binary::type::implication{}}},
-    {"IFF",      token{binary::type::iff{}}},
-    {"U",        token{binary::type::until{}}},
-    {"R",        token{binary::type::release{}}},
-    {"V",        token{binary::type::release{}}},
-    {"W",        token{binary::type::w_until{}}},
-    {"M",        token{binary::type::s_release{}}},
-    {"S",        token{binary::type::since{}}},
-    {"T",        token{binary::type::triggered{}}}
-  };
+  std::optional<std::array<std::pair<std::string_view, token>, 35>> 
+  lexer::_keywords;
+
+  std::optional<token> lexer::_keyword(std::string_view key) {
+    if(!_keywords)
+      _keywords = {{
+        {"True",     token{true}},
+        {"False",    token{false}},
+        {"Int",      token{arithmetic_sort::type::integer_sort{}}},
+        {"Real",     token{arithmetic_sort::type::real_sort{}}},
+        {"to_int",   token{unary_term::type::to_integer{}}},
+        {"to_real",  token{unary_term::type::to_real{}}},
+        {"next",     token{unary_term::type::next{}}},
+        {"wnext",    token{unary_term::type::wnext{}}},
+        {"prev",     token{unary_term::type::prev{}}},
+        {"wprev",    token{unary_term::type::wprev{}}},
+        {"div",      token{binary_term::type::int_division{}}},
+        {"exists",   token{quantifier::type::exists{}}},
+        {"forall",   token{quantifier::type::forall{}}},
+        {"equal",    token{{equality::type::equal{}, false}}},
+        {"distinct", token{{equality::type::distinct{}, false}}},
+        {"NOT",      token{unary::type::negation{}}},
+        {"X",        token{unary::type::tomorrow{}}},
+        {"wX",       token{unary::type::w_tomorrow{}}},
+        {"Y",        token{unary::type::yesterday{}}},
+        {"Z",        token{unary::type::w_yesterday{}}},
+        {"F",        token{unary::type::eventually{}}},
+        {"G",        token{unary::type::always{}}},
+        {"O",        token{unary::type::once{}}},
+        {"H",        token{unary::type::historically{}}},
+        {"AND",      token{binary::type::conjunction{}}},
+        {"OR",       token{binary::type::disjunction{}}},
+        {"THEN",     token{binary::type::implication{}}},
+        {"IFF",      token{binary::type::iff{}}},
+        {"U",        token{binary::type::until{}}},
+        {"R",        token{binary::type::release{}}},
+        {"V",        token{binary::type::release{}}},
+        {"W",        token{binary::type::w_until{}}},
+        {"M",        token{binary::type::s_release{}}},
+        {"S",        token{binary::type::since{}}},
+        {"T",        token{binary::type::triggered{}}}
+      }};
+
+    auto it = std::find_if(begin(*_keywords), end(*_keywords), [&](auto p) {
+      return p.first == key;
+    });
+    if(it != end(*_keywords))
+      return it->second;
+    return {}; 
+  }
 
   bool lexer::is_keyword(std::string_view s) {
-    return
-      std::find_if(std::begin(_keywords), std::end(_keywords), [&](auto p) {
-        return p.first == s;
-      }) != std::end(_keywords);
+    return _keyword(s).has_value();
   }
 
   std::optional<token> lexer::_identifier()
@@ -386,13 +396,25 @@ namespace black_internal::lexer_details
     }
     black_assert(!id.empty());
 
-    auto it = 
-      std::find_if(std::begin(_keywords), std::end(_keywords), [&](auto p) {
-        return p.first == id;
-      });
+    if(_syntax == syntax::spin && id == "X") {
+      if(_stream.good() && _stream.get() == '[') {
+        if(_stream.good() && _stream.get() == '!') {
+          if(_stream.good() && _stream.get() == ']') {
+            return token{unary::type::tomorrow{}};
+          }
+        }
+        _error(
+          std::string{"Error while reading strong tomorrow operator: '"} + 
+            (char)_stream.peek() + "'"
+        );
+        return token{};
+      }
+      return token{unary::type::w_tomorrow{}};
+    }
 
-    if(it != std::end(_keywords))
-      return {it->second};
+    if(auto t = _keyword(id); t) {
+      return t;
+    }
 
     return token{std::move(id)};
   }
