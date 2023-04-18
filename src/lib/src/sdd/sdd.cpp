@@ -345,6 +345,15 @@ namespace black::sdd {
     return n;
   }
 
+  node node::condition(
+    std::vector<black::proposition> const& props, bool sign
+  ) const {
+    std::vector<variable> vars;
+    for(auto p : props)
+      vars.push_back(manager()->variable(p));
+    return condition(vars, sign);
+  }
+
   node node::rename(std::function<black::proposition(black::proposition)> map) 
   {
     auto f = manager()->to_formula(*this);

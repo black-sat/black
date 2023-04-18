@@ -26,6 +26,7 @@
 #include <black/support/range.hpp>
 
 #include <iostream>
+#include <cmath>
 
 namespace black_internal::eps {
 
@@ -56,26 +57,26 @@ namespace black_internal {
     det_t(automaton _aut) 
       : aut{std::move(_aut)}, 
         mgr{aut.manager}, 
-        sigma{*mgr->sigma()}, 
+        sigma{*mgr->sigma()},
         t_eps{T_eps()} { }
 
     automaton totalize(automaton t);
     sdd::variable eps();
     sdd::variable x_sink();
     sdd::node T_eps();
+    sdd::node T_double(sdd::node last, size_t k);
     sdd::node T_step(sdd::node last, size_t k);
-    sdd::node phi_bullet(size_t k);
-    sdd::node phi_tilde(sdd::node t_k1, sdd::node t_k);
-    sdd::node trans(sdd::node t_k1, sdd::node t_k, size_t k);
+    sdd::node trans(sdd::node t_k);
     bool is_total(sdd::node t_quot);
     sdd::node init(size_t k);
-    sdd::node finals(sdd::node t_k);
+    sdd::node finals(sdd::node t_k, size_t k);
     automaton semideterminize();
 
     automaton aut;
     sdd::manager *mgr;
     black::alphabet &sigma;
     sdd::node t_eps;
+    std::optional<sdd::node> t_eps2;
   };
 
   automaton det_t::totalize(automaton a) {
@@ -111,56 +112,46 @@ namespace black_internal {
   }
 
   sdd::node det_t::T_eps() {
-    sdd::node equals = mgr->top();
-    for(auto prop : aut.variables) {
+    sdd::node frame = big_and(mgr, aut.variables, [&](auto prop) {
       sdd::variable var = mgr->variable(prop);
-      equals = equals && iff(var, prime(var));
-    }
-    return (eps() && equals) || (!eps() && aut.trans);
+      return iff(var, prime(var));
+    });
+
+    return (eps() && frame) || (!eps() && aut.trans);
   }
 
-  sdd::node det_t::T_step(sdd::node last, size_t k) {
-    if(k == 0)
-      return t_eps[aut.letters / stepped(0)];
+  sdd::node det_t::T_double(sdd::node last, size_t k) {
+    black_assert(k >= 2);
+    black_assert(k % 2 == 0);
 
     return exists(primed(2),
       last[primed(1) * aut.variables / primed(2)] && 
-      t_eps[aut.variables / primed(2)]
-           [aut.letters / stepped(k)]
+      last[aut.variables / primed(2)]
+           [stepped() * aut.letters / +stepped(k / 2)]
     );
   }
 
-  sdd::node det_t::phi_tilde(sdd::node t_k1, sdd::node t_k) {
-    return 
-      forall(aut.variables,
-        forall(primed(1) * aut.variables, 
-          iff(
-            t_k[stepped() / primed(1)],
-            t_k1[stepped() / primed(2)]
-          )
+  sdd::node det_t::T_step(sdd::node last, size_t k) {
+    black_assert(k >= 2);
+
+    if(!t_eps2)
+      t_eps2 = t_eps[aut.variables / primed(2)];
+
+    return exists(primed(2),
+      last[aut.letters / stepped(k - 2)]
+          [primed(1) * aut.variables / primed(2)] && *t_eps2
+    );
+  }
+
+  sdd::node det_t::trans(sdd::node t_k) {
+    return forall(aut.variables,
+      forall(primed() * aut.variables,
+        iff(
+          t_k.condition(!eps()),
+          t_k.condition(aut.letters, true)[stepped() / primed()]
         )
-      );
-  }
-
-  sdd::node det_t::phi_bullet(size_t k) {
-    using namespace black::logic::fragments::propositional;
-
-    return big_and(mgr, range(0, k+1), [&](size_t i) {
-      return big_and(mgr, aut.letters, [&](auto p) {
-        return mgr->to_node(iff(step(p, i), prime(step(p, i), 2)));
-      });
-    }) &&
-    !prime(step(eps(), k + 1), 2)
-    &&
-    big_and(mgr, aut.letters, [&](auto p){
-      if(p == eps().name())
-        return mgr->top();
-      return mgr->to_node(iff(p, prime(step(p, k + 1), 2)));
-    });
-  }
-
-  sdd::node det_t::trans(sdd::node t_k1, sdd::node t_k, size_t k) {
-    return exists(primed(2), phi_bullet(k) && phi_tilde(t_k1, t_k));
+      )
+    );
   }
 
   [[maybe_unused]]
@@ -174,22 +165,25 @@ namespace black_internal {
   }
 
   bool det_t::is_total(sdd::node trans) {
-    sdd::node result = exists(primed() * stepped(), trans);
-    if(result.is_valid())
-      return true;
-    return false;
+    return exists(primed() * stepped(), trans).is_valid();
   }
 
   sdd::node det_t::init(size_t k) {
-    return big_and(mgr, range(0, k + 1), [&](size_t i) {
+    return big_and(mgr, range(0, k - 1), [&](size_t i) {
       return step(eps(), i);
     });
   }
   
-  sdd::node det_t::finals(sdd::node t_k) {
+  sdd::node det_t::finals(sdd::node t_k, size_t k) {
+    std::vector<sdd::literal> conditions;
+    for(auto l : aut.letters)
+      conditions.push_back(mgr->variable(step(l, k - 1)));
+
+    sdd::node t_km1 = t_k.condition(conditions);
+
     return exists(aut.variables,
       exists(primed(1) * aut.variables,
-        aut.init && t_k && aut.finals[aut.variables / primed(1)]
+        aut.init && t_km1 && aut.finals[aut.variables / primed(1)]
       )
     );
   }
@@ -198,34 +192,31 @@ namespace black_internal {
   {
     aut.letters.push_back(eps().name());
 
+    size_t k = 1;
+    sdd::node t_k = t_eps;
     sdd::node trans = mgr->top();
-    sdd::node t_k = mgr->top();
-    sdd::node t_k1 = T_step(mgr->top(), 0);
     
     std::cerr << "Start semi-determinization... " << std::flush;
-    size_t k = 0;
     do {
-      if(k == 0)
-        std::cerr << "k = " << std::flush;
-      else 
-        std::cerr << ", " << std::flush;
-      std::cerr << k << std::flush;
-
-      t_k = t_k1;
-      t_k1 = T_step(t_k, k + 1);
-
-      trans = this->trans(t_k1, t_k, k);
-
       k++;
+      if(k == 2)
+        std::cerr << "k = " << k << std::flush;
+      else 
+        std::cerr << ", " << k << std::flush;
+
+      t_k = T_step(t_k, k);
+
+      trans = this->trans(t_k);
+
     } while(!is_total(trans));
 
     std::cerr << ", done!\n";
 
-    sdd::node init = this->init(k - 1);
-    sdd::node finals = this->finals(t_k);
+    sdd::node init = this->init(k);
+    sdd::node finals = this->finals(t_k, k);
 
     std::vector<black::proposition> vars;
-    for(size_t i = 0; i < k; i++) {
+    for(size_t i = 0; i < k - 1; i++) {
       for(auto p : aut.letters) {
         vars.push_back(step(p, i));
         vars.push_back(prime(step(p, i)));

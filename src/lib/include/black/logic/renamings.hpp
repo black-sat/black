@@ -345,12 +345,26 @@ namespace black_internal::renamings {
     }
 
     black::proposition rename(black::proposition p) const {
-      if(n)
-        return step(p, *n);
+      if(n) {
+        if(!add)
+          return step(p, *n);
+        
+        tag_t tag = p.name().to<tag_t>().value_or(tag_t{p});
+        tag.steps += *n;
+
+        return p.sigma()->proposition(tag);
+      }
       return step(p);
     }
 
+    stepped operator+() const {
+      stepped copy = *this;
+      copy.add = true;
+      return copy;
+    }
+
     std::optional<size_t> n;
+    bool add = false;
   };
 
   struct only {
@@ -366,26 +380,6 @@ namespace black_internal::renamings {
     }
 
     std::function<black::proposition(black::proposition)> base;
-  };
-
-  struct covered {
-
-    template<filter M>
-    covered(M const& m) 
-      : base{[=](black::proposition p) {
-        return m.filter(p);
-      }} { }
-    
-    template<std::ranges::range R>
-    covered(R const& r) : covered{exactly(r)} { }
-
-    bool filter(black::proposition p) const {
-      if(auto n = p.name().to<black::proposition>())
-        return base(*n);
-      return false;
-    }
-
-    std::function<bool(black::proposition)> base;
   };
 
 }
