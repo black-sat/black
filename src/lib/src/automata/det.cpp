@@ -60,11 +60,8 @@ namespace black_internal {
         sigma{*mgr->sigma()},
         t_eps{T_eps()} { }
 
-    automaton totalize(automaton t);
     sdd::variable eps();
-    sdd::variable x_sink();
     sdd::node T_eps();
-    sdd::node T_double(sdd::node last, size_t k);
     sdd::node T_step(sdd::node last, size_t k);
     sdd::node trans(sdd::node t_k);
     bool is_total(sdd::node t_quot);
@@ -79,36 +76,8 @@ namespace black_internal {
     std::optional<sdd::node> t_eps2;
   };
 
-  automaton det_t::totalize(automaton a) {
-    sdd::node part = exists(primed(), a.trans);
-
-    if(part.is_valid())
-      return a;
-
-    // a.variables.push_back(x_sink().name());
-    // a.trans = 
-    //   (!x_sink() && a.trans && !prime(x_sink())) || 
-    //   ((x_sink() || !part) && prime(x_sink()));
-    // a.init = a.init && !x_sink();
-    // a.finals = a.finals && !x_sink();
-
-    a.variables.push_back(x_sink().name());
-    a.trans = 
-      (a.trans || prime(x_sink())) && (implies(x_sink(), prime(x_sink())));
-    a.init = a.init && !x_sink();
-    a.finals = a.finals && !x_sink();
-
-    black_assert(exists(primed(), a.trans).is_valid());
-
-    return a;
-  }
-
   sdd::variable det_t::eps() {
     return mgr->variable(mgr->sigma()->proposition(eps::fresh_t{"eps"}));
-  }
-  
-  sdd::variable det_t::x_sink() {
-    return mgr->variable(mgr->sigma()->proposition(eps::fresh_t{"sink"}));
   }
 
   sdd::node det_t::T_eps() {
@@ -118,17 +87,6 @@ namespace black_internal {
     });
 
     return (eps() && frame) || (!eps() && aut.trans);
-  }
-
-  sdd::node det_t::T_double(sdd::node last, size_t k) {
-    black_assert(k >= 2);
-    black_assert(k % 2 == 0);
-
-    return exists(primed(2),
-      last[primed(1) * aut.variables / primed(2)] && 
-      last[aut.variables / primed(2)]
-           [stepped() * aut.letters / +stepped(k / 2)]
-    );
   }
 
   sdd::node det_t::T_step(sdd::node last, size_t k) {
@@ -192,11 +150,12 @@ namespace black_internal {
   {
     aut.letters.push_back(eps().name());
 
+    std::cerr << "Starting semi-determinization... " << std::flush;
+
     size_t k = 1;
     sdd::node t_k = t_eps;
     sdd::node trans = mgr->top();
     
-    std::cerr << "Start semi-determinization... " << std::flush;
     do {
       k++;
       if(k == 2)

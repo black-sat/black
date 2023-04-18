@@ -265,7 +265,9 @@ namespace black_internal {
     std::cerr << "- trans: " << black::to_string(trans) << "\n";
     std::cerr << "- finals: " << black::to_string(finals) << "\n";
 
-    return automaton {
+    std::cerr << "Converting to SDD... " << std::flush;
+
+    automaton aut{
       .manager = manager,
       .letters = letters,
       .variables = variables,
@@ -273,6 +275,10 @@ namespace black_internal {
       .trans = manager->to_node(trans),
       .finals = manager->to_node(finals)
     };
+
+    std::cerr << "done!\n";
+
+    return aut;
   } 
 
   automaton to_automaton(sdd::manager *mgr, formula f) {
