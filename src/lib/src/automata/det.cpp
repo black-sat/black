@@ -149,7 +149,16 @@ namespace black_internal {
   {
     aut.letters.push_back(eps().name());
 
-    std::cerr << "Starting semi-determinization... " << std::flush;
+    // std::cerr << "Starting semi-determinization... " << std::flush;
+    
+    // std::cerr << "automaton:\n";
+    // std::cerr << " - init: " 
+    //           << black::to_string(mgr->to_formula(aut.init)) << "\n";
+    // std::cerr << " - trans: " 
+    //           << black::to_string(mgr->to_formula(aut.trans)) << "\n";
+    // std::cerr << " - finals: " 
+    //           << black::to_string(mgr->to_formula(aut.finals)) << "\n";
+
 
     size_t k = 1;
     sdd::node t_k = T_step(mgr->top(), k);
@@ -157,18 +166,29 @@ namespace black_internal {
     
     do {
       k++;
-      if(k == 2)
-        std::cerr << "k = " << k << std::flush;
-      else 
-        std::cerr << ", " << k << std::flush;
+      // if(k == 2)
+      //   std::cerr << "k = " << k << std::flush;
+      // else 
+      //   std::cerr << ", " << k << std::flush;
 
+      sdd::node prev = t_k;
       t_k = T_step(t_k, k);
+
+      if(iff(prev, t_k).is_valid()) {
+        std::cerr << "T_step did not evolve!\n";
+        std::cerr << "- variables:\n";
+        for(auto v : t_k.variables())
+          std::cerr << "   - " << black::to_string(v.name()) << "\n";
+        throw std::runtime_error("t_k did not evolve");
+      }
+
+      
 
       trans = this->trans(t_k);
 
     } while(!is_total(trans));
 
-    std::cerr << ", done!\n";
+    //std::cerr << ", done!\n";
 
     sdd::node init = this->init(k);
     sdd::node finals = this->finals(t_k);

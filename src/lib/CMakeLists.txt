@@ -183,6 +183,7 @@ set (
   src/sdd/sdd.cpp
   src/automata/automaton.cpp
   src/automata/det.cpp
+  src/automata/incremental.cpp
   src/synth/synth.cpp
   src/synth/tableau.cpp
   src/synth/fixpoint.cpp

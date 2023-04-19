@@ -137,6 +137,9 @@ namespace black::sdd {
     node(node const&) = default;
     node(node &&) = default;
     node(class manager *, sdd_node_t *);
+
+    node(class literal lit);
+    node(variable lit);
     
     node &operator=(node const&) = default;
     node &operator=(node &&) = default;
@@ -145,7 +148,7 @@ namespace black::sdd {
     //sdd_node_t *handle() const { return _node.get(); }
     sdd_node_t *handle() const { return _node; }
 
-    void minimize() const;
+    sdd::node minimize() const;
 
     std::vector<variable> variables() const;
 
@@ -194,10 +197,6 @@ namespace black::sdd {
 
   std::ostream &operator<<(std::ostream &str, literal const&);
   std::ostream &operator<<(std::ostream &str, std::vector<literal> const&);
-
-  inline node to_node(node n) { return n; }
-  node to_node(literal);
-  node to_node(variable);
 
   node operator!(node n);
   node operator&&(node n1, node n2);

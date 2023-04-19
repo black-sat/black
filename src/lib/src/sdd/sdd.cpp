@@ -124,7 +124,7 @@ namespace black::sdd {
         return value ? top() : bottom();
       },
       [&](proposition p) {
-        return sdd::to_node(variable(p));
+        return sdd::node(variable(p));
       },
       [&](logic::negation<QBF>, auto arg) {
         return !to_node(arg);
@@ -223,12 +223,20 @@ namespace black::sdd {
   node::node(class manager *mgr, SddNode *n) 
     : _mgr{mgr}, _node{sdd_ref(n, mgr->handle())} { }  
 
-  void node::minimize() const {
+  node::node(class literal lit) : _mgr{lit.manager()}, _node{
+    sdd_manager_literal(lit.handle(), _mgr->handle())
+  } { }
+
+  node::node(variable var) : node{(class literal)(var)} { }
+
+  sdd::node node::minimize() const {
     Vtree *tree = sdd_vtree_of(handle());
     if(!tree)
-      return;
+      return *this;
     
     sdd_vtree_minimize(tree, manager()->handle());
+
+    return *this;
   }
 
   std::vector<variable> node::variables() const {
@@ -401,17 +409,6 @@ namespace black::sdd {
     str << " }";
 
     return str;
-  }
-
-  node to_node(literal lit) {
-    return node{
-      lit.manager(),
-      sdd_manager_literal(lit.handle(), lit.manager()->handle())
-    };
-  }
-
-  node to_node(variable var) {
-    return to_node(literal{var});
   }
 
   node operator!(node n) {

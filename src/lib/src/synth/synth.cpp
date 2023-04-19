@@ -122,10 +122,20 @@ namespace black_internal::synth {
   automata_spec to_automata_spec(black::sdd::manager *mgr, ltlp_spec spec) {
     black_assert(mgr);
 
+    auto f = spec.spec.to<logic::formula<LTLXFG>>();
+
+    std::cerr << "Building the automaton... " << std::flush;
+    automaton aut = f ? 
+      to_automaton_incremental(mgr, *f) : 
+      semideterminize(to_automaton(mgr, spec.spec));
+    std::cerr << "done!\n";
+
+    //automaton aut = semideterminize(to_automaton(mgr, spec.spec));
+
     return automata_spec {
       .inputs = spec.inputs,
       .outputs = spec.outputs,
-      .spec = semideterminize(to_automaton(mgr, spec.spec))
+      .spec = aut
     };
   }
 
