@@ -90,7 +90,10 @@ namespace black_internal {
   }
 
   sdd::node det_t::T_step(sdd::node last, size_t k) {
-    black_assert(k >= 2);
+    black_assert(k >= 1);
+
+    if(k == 1)
+      return aut.trans;
 
     if(!t_eps2)
       t_eps2 = t_eps[aut.variables / primed(2)];
@@ -149,7 +152,7 @@ namespace black_internal {
     std::cerr << "Starting semi-determinization... " << std::flush;
 
     size_t k = 1;
-    sdd::node t_k = t_eps;
+    sdd::node t_k = T_step(mgr->top(), k);
     sdd::node trans = mgr->top();
     
     do {
