@@ -57,6 +57,16 @@ namespace black_internal {
   using formula = logic::formula<LTLXFG>;
   namespace sdd = black::sdd;
 
+  struct XBool : logic::make_combined_fragment_t<
+    logic::propositional,
+    logic::make_fragment_t<
+      logic::syntax_list<
+        logic::syntax_element::tomorrow,
+        logic::syntax_element::w_tomorrow
+      >
+    >
+  > { };
+
   struct incremental_t {
     
     incremental_t(sdd::manager *_mgr) 
@@ -80,10 +90,12 @@ namespace black_internal {
     automaton sum(automaton, automaton);
     automaton negation(automaton);
     automaton not_empty(automaton);
+    formula preprocess(formula f);
 
     automaton encode(formula f);
 
     automaton to_automaton(logic::formula<logic::propositional> f);
+    //automaton to_automaton(logic::formula<XBool> f);
     automaton to_automaton(logic::negation<LTLXFG>, formula arg);
     automaton to_automaton(logic::conjunction<LTLXFG>, formula, formula);
     automaton to_automaton(logic::disjunction<LTLXFG>, formula, formula);
@@ -128,7 +140,8 @@ namespace black_internal {
     std::cerr << " - formulas:\n";
     std::cerr << "   - init: "
               << black::to_string(aut.manager->to_formula(aut.init)) << "\n";
-    std::cerr << "   - trans: <snip>\n";
+    std::cerr << "   - trans:\n"
+              << black::to_string(aut.manager->to_formula(aut.trans)) << "\n";
     std::cerr << "   - finals: "
               << black::to_string(aut.manager->to_formula(aut.finals)) << "\n";
 
@@ -227,11 +240,12 @@ namespace black_internal {
     std::cerr << indent << "computing trans1 && trans2...\n";
     sdd::node trans = a1.trans && a2.trans;
     std::cerr << indent << " - size: " << trans.count() << "\n";
-    std::cerr << indent << " - minimizing...\n";
 
-    trans.minimize();
+    // std::cerr << indent << " - minimizing...\n";
 
-    std::cerr << indent << " - minimized: " << trans.count() << "\n";
+    // trans.minimize();
+
+    // std::cerr << indent << " - minimized: " << trans.count() << "\n";
 
     return automaton {
       .manager = mgr,
@@ -263,9 +277,50 @@ namespace black_internal {
     };
   }
 
+  formula incremental_t::preprocess(formula f) {
+    using namespace logic;
+
+    return f.match(
+      [](boolean b) { return b; },
+      [](proposition p) { return p; },
+      [&](always<LTLXFG>, auto arg) {
+        return arg.match(
+          [&](conjunction<LTLXFG> c) {
+            return big_and(sigma, c.operands(), [&](auto op) {
+              return preprocess(G(op));
+            });
+          },
+          [&](otherwise) {
+            return G(preprocess(arg));
+          }
+        );
+      },
+      [&](eventually<LTLXFG>, auto arg) {
+        return arg.match(
+          [&](disjunction<LTLXFG> c) {
+            return big_or(sigma, c.operands(), [&](auto op) {
+              return preprocess(F(op));
+            });
+          },
+          [&](otherwise) {
+            return F(preprocess(arg));
+          }
+        );
+      },
+      [&](unary<LTLXFG> u, auto arg) {
+        return unary<LTLXFG>(u.node_type(), preprocess(arg));
+      },
+      [&](binary<LTLXFG> b, auto left, auto right) {
+        return binary<LTLXFG>(
+          b.node_type(), preprocess(left), preprocess(right)
+        );
+      }
+    );
+  }
+
   automaton incremental_t::encode(formula f) {
     collect_letters(f);
-    return not_empty(to_automaton(f));
+    return not_empty(to_automaton(preprocess(f)));
   }
 
   automaton incremental_t::to_automaton(formula f) {
@@ -392,7 +447,7 @@ namespace black_internal {
 
     sdd::node trans = 
       (!var && aut.trans && !prime(var)) || 
-      (!prime(var) && aut.init[aut.variables / primed()]);
+      (var && !prime(var) && aut.init[aut.variables / primed()]);
 
     return automaton {
       .manager = mgr,
