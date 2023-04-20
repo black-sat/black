@@ -186,13 +186,13 @@ namespace black_internal::synth {
 
       // defaults for Controller
       quantifier_t qvars = quantifier_t::thereis{};
-      quantifier_t qfirst = quantifier_t::thereis{};
-      quantifier_t qsecond = quantifier_t::foreach{};
+      quantifier_t qfirst = quantifier_t::foreach{};
+      quantifier_t qsecond = quantifier_t::thereis{};
 
       if(player == player_t::environment) {
         qvars = quantifier_t::foreach{};
-        qfirst = quantifier_t::foreach{};
-        qsecond = quantifier_t::thereis{};
+        qfirst = quantifier_t::thereis{};
+        qsecond = quantifier_t::foreach{};
       }
 
       for(size_t i = 0; i < n; i++) {
@@ -200,8 +200,8 @@ namespace black_internal::synth {
         
         result = 
           qbf(qvars, stepvars(aut.variables, step),
-            qbf(qfirst, stepvars(spec.outputs, step),
-              qbf(qsecond, stepvars(spec.inputs, step),
+            qbf(qfirst, stepvars(spec.inputs, step),
+              qbf(qsecond, stepvars(spec.outputs, step),
                 result
               )
             )

@@ -92,8 +92,8 @@ namespace black_internal::synth {
 
       sdd::node previous = *base;
       return previous ||
-        exists(spec.outputs,
-          forall(spec.inputs,
+        forall(spec.inputs,
+          exists(spec.outputs,
             exists(primed() * aut.variables,
               aut.trans && previous[aut.variables / primed()]
             )

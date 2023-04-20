@@ -428,6 +428,7 @@ namespace black_internal {
     std::cerr << indent << "semideterminizing...\n";
     std::cerr << indent << " - vars: " << xf.variables.size() << "\n";
     std::cerr << indent << " - size: " << xf.trans.count() << "\n";
+    std::cerr << indent << " - " << std::flush;
     automaton semixf = semideterminize(xf);
 
     return sum(aut, cover(semixf)); // aut || xf

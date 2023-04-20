@@ -145,7 +145,7 @@ namespace black_internal {
   {
     aut.letters.push_back(eps().name());
 
-    // std::cerr << "Starting semi-determinization... " << std::flush;
+    //std::cerr << "Starting semi-determinization... " << std::flush;
     
     // std::cerr << "automaton:\n";
     // std::cerr << " - init: " 
@@ -162,10 +162,10 @@ namespace black_internal {
     
     do {
       k++;
-      // if(k == 2)
-      //   std::cerr << "k = " << k << std::flush;
-      // else 
-      //   std::cerr << ", " << k << std::flush;
+      if(k == 2)
+        std::cerr << "k = " << k << std::flush;
+      else 
+        std::cerr << ", " << k << std::flush;
 
       sdd::node prev = t_k;
       t_k = T_step(t_k, k);
@@ -178,16 +178,16 @@ namespace black_internal {
         throw std::runtime_error("t_k did not evolve");
       }
 
-      
-
       trans = this->trans(t_k);
 
     } while(!is_total(trans));
 
-    //std::cerr << ", done!\n";
+    std::cerr << ", computing init and finals... " << std::flush;
 
     sdd::node init = this->init(k);
     sdd::node finals = this->finals(t_k);
+
+    std::cerr << "done!\n";
 
     std::vector<black::proposition> vars;
     for(size_t i = 0; i < k - 1; i++) {
