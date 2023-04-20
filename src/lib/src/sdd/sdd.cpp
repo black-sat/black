@@ -468,7 +468,9 @@ namespace black::sdd {
   }
 
   node forall(std::vector<variable> const& vars, node n) {
-    return !exists(vars, !n);
+    for(auto v : vars)
+      n = forall(v, n);
+    return n;
   }
 
   node forall(std::vector<black::proposition> const& vars, node n) {

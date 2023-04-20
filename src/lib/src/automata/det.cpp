@@ -105,12 +105,10 @@ namespace black_internal {
   }
 
   sdd::node det_t::trans(sdd::node t_k) {
-    return forall(aut.variables,
-      forall(primed() * aut.variables,
-        iff(
-          t_k.condition(!eps()),
-          t_k.condition(aut.letters, true)[stepped() / primed()]
-        )
+    return forall(of_kind(aut.variables),
+      iff(
+        t_k.condition(!eps()),
+        t_k.condition(aut.letters, true)[stepped() / primed()]
       )
     );
   }
@@ -136,12 +134,10 @@ namespace black_internal {
   }
   
   sdd::node det_t::finals(sdd::node t_k) {
-    return exists(aut.variables,
-      exists(primed(1) * aut.variables,
-        aut.init && 
-        t_k.condition(aut.letters, true) && 
-        aut.finals[aut.variables / primed(1)]
-      )
+    return exists(of_kind(aut.variables),
+      aut.init && 
+      t_k.condition(aut.letters, true) && 
+      aut.finals[aut.variables / primed(1)]
     );
   }
 

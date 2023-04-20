@@ -239,6 +239,24 @@ namespace black_internal::renamings {
     return result;
   }
 
+  template<filter M1, filter M2>
+  auto operator+(M1 const& m1, M2 const& m2) {
+    struct result_t {
+
+      result_t(M1 const& _m1_, M2 const& _m2_) : _m1{_m1_}, _m2{_m2_} { }
+
+      bool filter(black::proposition p) const {
+        return _m1.filter(p) || _m2.filter(p);
+      }
+
+      M1 _m1;
+      M2 _m2;
+
+    } result{m1, m2};
+
+    return result;
+  }
+
   template<filter M>
   auto operator!(M const& m) {
     struct result_t {
