@@ -93,7 +93,7 @@ namespace black_internal {
     black_assert(k >= 1);
 
     if(k == 1)
-      return aut.trans;
+      return t_eps;
 
     if(!t_eps2)
       t_eps2 = t_eps[aut.variables / primed(2)];
