@@ -136,7 +136,6 @@ namespace black_internal {
   sdd::node det_t::finals(sdd::node t_k) {
     return exists(of_kind(aut.variables),
       aut.init && 
-      !step(eps(), 0) &&
       t_k.condition(aut.letters, true) && 
       aut.finals[aut.variables / primed(1)]
     );
