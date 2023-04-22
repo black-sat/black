@@ -103,7 +103,7 @@ namespace black_internal::renamings {
   struct tag_t {
     black::proposition base;
     size_t primes = 0;
-    int64_t steps = -1;
+    size_t tag = 0;
 
     bool operator==(tag_t const&t) const = default;
   };
@@ -111,7 +111,7 @@ namespace black_internal::renamings {
   inline std::string to_string(tag_t t) {
     using namespace std::literals;
     return to_string(t.base) + 
-          (t.steps >= 0 ? "@" + std::to_string(t.steps) : ""s) +
+          (t.tag > 0 ? "@" + std::to_string(t.tag) : ""s) +
           (t.primes > 0 ? ":" + std::to_string(t.primes) : ""s);
   }
 
@@ -123,18 +123,12 @@ struct std::hash<black_internal::renamings::tag_t> {
     return 
       black_internal::hash_combine(
         std::hash<black::proposition>{}(t.base),
-        std::hash<int64_t>{}(int64_t(t.primes) + t.steps)
+        std::hash<size_t>{}(t.primes + t.tag)
       );
   }
 };
 
 namespace black_internal::renamings {
-
-  inline bool is_plain(black::proposition p) {
-    if(auto tag = p.name().to<tag_t>(); tag.has_value())
-      return true;
-    return false;
-  }
 
   inline bool is_primed(black::proposition p, size_t n) {
     if(auto tag = p.name().to<tag_t>(); tag.has_value())
@@ -150,23 +144,20 @@ namespace black_internal::renamings {
     return false;
   }
 
-  inline bool is_stepped(black::proposition p, size_t n) {
-    if(auto tag = p.name().to<tag_t>(); tag.has_value())
-      if(tag->steps == int64_t(n))
-        return true;
-    return false;
-  }
-  
-  inline bool is_stepped(black::proposition p) {
-    if(auto tag = p.name().to<tag_t>(); tag.has_value())
-      if(tag->steps >= 0)
-        return true;
-    return false;
+  inline bool is_plain(black::proposition p) {
+    return !is_primed(p);
   }
 
-  inline black::proposition untag(black::proposition p) {
-    tag_t tag = p.name().to<tag_t>().value_or(tag_t{p});
-    return tag.base;
+  inline black::proposition plain(black::proposition p) {
+    auto tag = p.name().to<tag_t>();
+    if(!tag)
+      return p;
+    
+    if(tag->tag == 0)
+      return tag->base;
+    
+    tag->primes = 0;
+    return p.sigma()->proposition(*tag);
   }
 
   inline black::proposition prime(black::proposition p, size_t n) {
@@ -175,21 +166,15 @@ namespace black_internal::renamings {
     return p.sigma()->proposition(tag);
   }
 
-  inline black::proposition step(black::proposition p, size_t n) {
-    tag_t tag = p.name().to<tag_t>().value_or(tag_t{p});
-    tag.steps = int64_t(n);
-    return p.sigma()->proposition(tag);
-  }
-  
   inline black::proposition prime(black::proposition p) {
     tag_t tag = p.name().to<tag_t>().value_or(tag_t{p});
     tag.primes++;
     return p.sigma()->proposition(tag);
   }
 
-  inline black::proposition step(black::proposition p) {
+  inline black::proposition freshed(black::proposition p) {
     tag_t tag = p.name().to<tag_t>().value_or(tag_t{p});
-    tag.steps++;
+    tag.tag = p.sigma()->nonce();
     return p.sigma()->proposition(tag);
   }
 
@@ -274,6 +259,39 @@ namespace black_internal::renamings {
     return result;
   }
 
+  template<renamer R1, renamer R2>
+  auto operator|(R1 const& r1, R2 const& r2) {
+    struct result_t {
+
+      result_t(R1 const& _r1_, R2 const& _r2_) : _r1{_r1_}, _r2{_r2_} { }
+
+      black::proposition rename(black::proposition p) const {
+        return _r2.rename(_r1.rename(p));
+      }
+
+      R1 _r1;
+      R2 _r2;
+
+    } result{r1, r2};
+
+    return result;
+  }
+
+  template<typename F>
+  inline auto make_renamer(F f) {
+    struct result_t {
+      result_t(F _f_) : _f{_f_} { }
+
+      black::proposition rename(black::proposition p) const {
+        return _f(p);
+      }
+
+      F _f;
+    } result{f};
+
+    return result;
+  }
+
   struct of_kind {
     
     of_kind(std::vector<black::proposition> const& vec) {
@@ -282,7 +300,7 @@ namespace black_internal::renamings {
     }
 
     bool filter(black::proposition p) const {
-      return set.contains(untag(p));
+      return set.contains(plain(p));
     }
 
     std::unordered_set<black::proposition> set;
@@ -317,20 +335,6 @@ namespace black_internal::renamings {
     return of_kind(v1) * m2;
   }
 
-  struct plain {
-
-    plain() = default;
-
-    bool filter(black::proposition p) const {
-      return is_plain(p);
-    }
-
-    black::proposition rename(black::proposition p) const {
-      return untag(p);
-    }
-
-  };
-
   struct primed {
 
     primed() { }
@@ -350,54 +354,13 @@ namespace black_internal::renamings {
 
     std::optional<size_t> n;
   };
-
-  struct stepped {
-
-    stepped() { }
-    stepped(size_t _n) : n{_n} { }
-
-    bool filter(black::proposition p) const {
-      if(n)
-        return is_stepped(p, *n);
-      return is_stepped(p);
-    }
+  
+  struct fresh {
 
     black::proposition rename(black::proposition p) const {
-      if(n) {
-        if(!add)
-          return step(p, *n);
-        
-        tag_t tag = p.name().to<tag_t>().value_or(tag_t{p});
-        tag.steps += *n;
-
-        return p.sigma()->proposition(tag);
-      }
-      return step(p);
+      return freshed(p);
     }
 
-    stepped operator+() const {
-      stepped copy = *this;
-      copy.add = true;
-      return copy;
-    }
-
-    std::optional<size_t> n;
-    bool add = false;
-  };
-
-  struct only {
-
-    template<renamer R>
-    only(R const& r) 
-      : base{[=](black::proposition p) {
-        return r.rename(p);
-      }} { }
-
-    black::proposition rename(black::proposition p) const {
-      return base(untag(p));
-    }
-
-    std::function<black::proposition(black::proposition)> base;
   };
 
 }

@@ -29,12 +29,12 @@
 
 namespace black_internal::synth {
 
-  black::tribool is_realizable_fixpoint(automata_spec const&);
+  black::tribool is_realizable(automata_spec const&);
 
 }
 
 namespace black {
-  using black_internal::synth::is_realizable_fixpoint;
+  using black_internal::synth::is_realizable;
 }
 
 #endif // BLACK_SYNTH_FIXPOINT_HPP

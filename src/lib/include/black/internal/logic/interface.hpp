@@ -60,6 +60,11 @@ namespace black_internal::logic {
     class boolean bottom() {
       return this->boolean(false);
     }
+
+    size_t nonce() { return next_nonce++; }
+
+  private:
+    size_t next_nonce = 1;
   };
  
   //

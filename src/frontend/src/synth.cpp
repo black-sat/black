@@ -32,7 +32,6 @@
 
 #include <black/automata/automaton.hpp>
 #include <black/synth/synth.hpp>
-#include <black/synth/tableau.hpp>
 #include <black/synth/fixpoint.hpp>
 
 #include <sstream>
@@ -86,8 +85,7 @@ namespace black::frontend {
 
     automata_spec autspec = to_automata_spec(&manager, *spec);
 
-    black::tribool result = cli::tableau ? 
-      is_realizable_tableau(autspec) : is_realizable_fixpoint(autspec);
+    black::tribool result = is_realizable(autspec);
 
     if(result)
       io::println("REALIZABLE\n");
@@ -137,8 +135,7 @@ namespace black::frontend {
 
     black_assert(autspec.spec.manager);
 
-    black::tribool result = cli::tableau ? 
-      is_realizable_tableau(autspec) : is_realizable_fixpoint(autspec);
+    black::tribool result = is_realizable(autspec);
 
     if(result)
       io::println("REALIZABLE\n");

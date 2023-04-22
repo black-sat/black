@@ -59,6 +59,36 @@ namespace black_internal {
 
   automaton semideterminize(automaton);
 
+  template<black::fragment S>
+  inline automaton print(logic::formula<S> f, automaton aut) {
+    std::cerr << "\nautomaton for: " << black::to_string(f) << "\n";
+    std::cerr << " - letters:\n";
+    for(auto v : aut.letters)
+      std::cerr << "   - " << black::to_string(v) << "\n";
+    std::cerr << " - declared vars:\n";
+    for(auto v : aut.variables)
+      std::cerr << "   - " << black::to_string(v) << "\n";
+    std::cerr << " - used vars:\n";
+    std::cerr << "   - init:\n";
+    for(auto v : aut.init.variables())
+      std::cerr << "     - " << black::to_string(v.name()) << "\n";
+    std::cerr << "   - trans:\n";
+    for(auto v : aut.trans.variables())
+      std::cerr << "     - " << black::to_string(v.name()) << "\n";
+    std::cerr << "   - finals:\n";
+    for(auto v : aut.finals.variables())
+      std::cerr << "     - " << black::to_string(v.name()) << "\n";
+    std::cerr << " - formulas:\n";
+    std::cerr << "   - init: "
+              << black::to_string(aut.manager->to_formula(aut.init)) << "\n";
+    std::cerr << "   - trans:\n"
+              << black::to_string(aut.manager->to_formula(aut.trans)) << "\n";
+    std::cerr << "   - finals: "
+              << black::to_string(aut.manager->to_formula(aut.finals)) << "\n";
+
+    return aut;
+  }
+
 }
 
 #endif // BLACK_AUTOMATON_HPP

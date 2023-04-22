@@ -137,7 +137,7 @@ namespace black_internal::synth {
     return enc.win(fp).is_valid();
   }
 
-  black::tribool is_realizable_fixpoint(automata_spec const& spec)
+  black::tribool is_realizable(automata_spec const& spec)
   {
     return solve(spec);
   }

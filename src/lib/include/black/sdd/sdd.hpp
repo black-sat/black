@@ -257,16 +257,8 @@ namespace black::sdd {
     return var.manager()->variable(black_internal::prime(var.name(), n));
   }
 
-  inline sdd::variable step(sdd::variable var, size_t n) {
-    return var.manager()->variable(black_internal::step(var.name(), n));
-  }
-  
   inline sdd::variable prime(sdd::variable var) {
     return var.manager()->variable(black_internal::prime(var.name()));
-  }
-
-  inline sdd::variable step(sdd::variable var) {
-    return var.manager()->variable(black_internal::step(var.name()));
   }
 
   template<typename R, typename F>
