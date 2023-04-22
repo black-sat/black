@@ -105,7 +105,6 @@ namespace black_internal {
     std::vector<logic::proposition> letters;
     size_t next_fresh = 0;
     size_t indentn = 0;
-    //tsl::hopscotch_map<formula, automaton> cache;
   };
 
   void incremental_t::collect_letters(formula f) {
@@ -150,12 +149,6 @@ namespace black_internal {
     std::cerr << indent << "computing trans1 && trans2...\n";
     sdd::node trans = a1.trans && a2.trans;
     std::cerr << indent << " - size: " << trans.count() << "\n";
-
-    // std::cerr << indent << " - minimizing...\n";
-
-    // trans.minimize();
-
-    // std::cerr << indent << " - minimized: " << trans.count() << "\n";
 
     return automaton {
       .manager = mgr,
@@ -230,7 +223,7 @@ namespace black_internal {
 
   automaton incremental_t::encode(formula f) {
     collect_letters(f);
-    return not_empty(to_automaton(preprocess(f)));
+    return to_automaton(preprocess(f));
   }
 
   automaton incremental_t::to_automaton(formula f) {
