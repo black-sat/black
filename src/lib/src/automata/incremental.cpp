@@ -73,18 +73,7 @@ namespace black_internal {
       : mgr{_mgr}, sigma{*_mgr->sigma()} { }
 
     void collect_letters(formula f);
-    sdd::variable fresh(black::identifier id = "fresh");
-
-    black::proposition cover(
-      black::proposition p,
-      tsl::hopscotch_set<black::proposition> const& coverset
-    );
-    std::vector<black::proposition> cover(
-      std::vector<black::proposition> ps,
-      tsl::hopscotch_set<black::proposition> const& coverset
-    );
-    sdd::node cover(sdd::node f, tsl::hopscotch_set<black::proposition> const&);
-    automaton cover(automaton f);
+    sdd::variable fresh();
 
     automaton product(automaton, automaton);
     automaton sum(automaton, automaton);
@@ -116,55 +105,8 @@ namespace black_internal {
     std::vector<logic::proposition> letters;
     size_t next_fresh = 0;
     size_t indentn = 0;
+    //tsl::hopscotch_map<formula, automaton> cache;
   };
-
-  black::proposition incremental_t::cover(
-    black::proposition p, tsl::hopscotch_set<black::proposition> const& coverset
-  ) {
-    tag_t tag = p.name().to<tag_t>().value_or(tag_t{p});
-    if(tag.primes == 0) {
-      if(coverset.contains(p))
-        return p.sigma()->proposition(p);
-      return p;
-    }
-    size_t primes = tag.primes;
-    tag.primes = 0;
-    return prime(cover(p.sigma()->proposition(tag), coverset), primes);
-  }
-
-  std::vector<black::proposition> 
-  incremental_t::cover(
-    std::vector<black::proposition> ps,
-    tsl::hopscotch_set<black::proposition> const& coverset
-  ) {
-    for(auto &p : ps)
-      p = cover(p, coverset);
-
-    return ps;
-  }
-
-  sdd::node incremental_t::cover(
-    sdd::node f, tsl::hopscotch_set<black::proposition> const& coverset
-  ) {
-    return f.change([&](black::proposition p) {
-      return cover(p, coverset);
-    });
-  }
-
-  automaton incremental_t::cover(automaton aut) {
-    tsl::hopscotch_set<black::proposition> coverset(
-      begin(aut.variables), end(aut.variables)
-    );
-
-    return automaton {
-      .manager = aut.manager,
-      .letters = aut.letters,
-      .variables = cover(aut.variables, coverset),
-      .init = cover(aut.init, coverset),
-      .trans = cover(aut.trans, coverset),
-      .finals = cover(aut.finals, coverset)
-    };
-  }
 
   void incremental_t::collect_letters(formula f) {
     tsl::hopscotch_set<logic::proposition> props;
@@ -180,13 +122,11 @@ namespace black_internal {
     letters.insert(begin(letters), begin(props), end(props));
   }
 
-  sdd::variable incremental_t::fresh(black::identifier id) {
+  sdd::variable incremental_t::fresh() {
     std::string indent(indentn * 3, ' ');
     std::cerr << indent << "allocating fresh variable\n";
     return mgr->variable(
-      sigma.proposition(
-        fresh::fresh_t{sigma.proposition(id), next_fresh++}
-      )
+      renamings::freshed(sigma.proposition("fresh"))
     );
   }
 
@@ -399,9 +339,8 @@ namespace black_internal {
     std::cerr << indent << " - vars: " << xf.variables.size() << "\n";
     std::cerr << indent << " - size: " << xf.trans.count() << "\n";
     std::cerr << indent << " - " << std::flush;
-    automaton semixf = semideterminize(xf);
 
-    return sum(aut, cover(semixf)); // aut || xf
+    return sum(aut, semideterminize(xf)); // aut || xf
   }
   
   automaton incremental_t::to_automaton(logic::always<LTLXFG>, formula arg) {
