@@ -185,7 +185,6 @@ set (
   src/automata/det.cpp
   src/automata/incremental.cpp
   src/synth/synth.cpp
-  src/synth/tableau.cpp
   src/synth/fixpoint.cpp
   src/qbf/qbf.cpp
   src/qbf/backend.cpp
