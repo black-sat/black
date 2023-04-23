@@ -32,7 +32,7 @@ SddNode* apply(SddNode* node1, SddNode* node2, BoolOp op, SddManager* manager, i
 //(p1,s1)*(p2,s2) is defined as (p1 and p2,s1 op s2) when p1 and p2 is consistent
 //calls function fn on each element of the product
 
-#define SIZE_THR 1024
+#define SIZE_THR 50
 
 //returns 1 if time limit is not exceeded, 0 otherwise
 //

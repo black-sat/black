@@ -276,8 +276,6 @@ namespace black_internal {
       .finals = manager->to_node(finals)
     };
 
-    std::cerr << "done!\n";
-
     return aut;
   } 
 
