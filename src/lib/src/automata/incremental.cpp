@@ -316,41 +316,72 @@ namespace black_internal {
     return negation(to_automaton(nonce, arg));
   }
 
+  template<typename It, typename F>
+  auto binreduce(It begin, It end, F op) {
+    auto d = std::distance(begin, end);
+
+    black_assert(d > 0);
+    if(d == 1)
+      return *begin;
+    if(d == 2)
+      return op(*begin, *(begin + 1));
+    
+    auto pivot = begin + (d / 2);
+    return op(binreduce(begin, pivot, op), binreduce(pivot, end, op));
+  }
+
   automaton incremental_t::to_automaton(
     size_t nonce, logic::conjunction<LTLXFG> conj, formula, formula
   ) {
     using namespace std;
 
-    std::string indent(indentn * 3, ' ');
+    std::vector<automaton> partials;
 
     std::vector<formula> operands(begin(conj.operands()), end(conj.operands()));
     auto temp = std::partition(begin(operands), end(operands), [](formula op) {
       return op.is<logic::formula<logic::propositional>>();
     });
 
-    std::cerr << indent << "found " << std::distance(begin(operands), temp)
-              << " boolean subformulas in conjunction\n";
+    if(temp != begin(operands))
+      partials.push_back(
+        to_automaton(nonce, 
+          big_and(sigma, std::ranges::subrange(begin(operands), temp))
+        )
+      );
 
-    formula booleanf = 
-      big_and(sigma, std::ranges::subrange(begin(operands), temp));
-
-    std::cerr << indent << "building the boolean part...\n";
-    automaton aut = to_automaton(nonce, booleanf);
-    std::cerr << indent << "done!\n";
-    for(auto it = temp; it != end(operands); ++it) {
-      std::cerr << indent << "building a product ...\n";
-      indentn++;
-      aut = product(aut, to_automaton(nonce, *it));
-      indentn--;
-      std::cerr << indent << "done!\n";
-    }
-    return aut;
+    for(auto v : std::ranges::subrange(temp, end(operands)))
+      partials.push_back(to_automaton(nonce, v));
+    
+    return binreduce(begin(partials), end(partials), [&](auto a, auto b) {
+      return product(a,b);
+    });
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::disjunction<LTLXFG>, formula l, formula r
+    size_t nonce, logic::disjunction<LTLXFG> conj, formula, formula
   ) {
-    return sum(to_automaton(nonce, l), to_automaton(nonce, r));
+    using namespace std;
+
+    std::vector<automaton> partials;
+
+    std::vector<formula> operands(begin(conj.operands()), end(conj.operands()));
+    auto temp = std::partition(begin(operands), end(operands), [](formula op) {
+      return op.is<logic::formula<logic::propositional>>();
+    });
+
+    if(temp != begin(operands))
+      partials.push_back(
+        to_automaton(nonce, 
+          big_and(sigma, std::ranges::subrange(begin(operands), temp))
+        )
+      );
+
+    for(auto v : std::ranges::subrange(temp, end(operands)))
+      partials.push_back(to_automaton(nonce, v));
+    
+    return binreduce(begin(partials), end(partials), [&](auto a, auto b) {
+      return sum(a,b);
+    });
   }
 
   automaton incremental_t::to_automaton(
