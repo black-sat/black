@@ -42,13 +42,14 @@ namespace black::sdd {
   // manager
   //
   struct manager::impl_t {
-    impl_t(alphabet *_sigma) : sigma{_sigma}, mgr{new Cudd} { }
+    impl_t(alphabet *_sigma) : sigma{_sigma} { }
 
     alphabet *sigma;
-    Cudd *mgr;
+    Cudd mgr;
 
     tsl::hopscotch_map<proposition, DdNode *> prop_to_var;
     tsl::hopscotch_map<DdNode *, proposition> var_to_prop;
+    tsl::hopscotch_map<DdNode *, int> var_to_index;
     std::vector<cudd_ptr> index_to_var;
 
     int next_var = 0;
@@ -70,25 +71,34 @@ namespace black::sdd {
       return sdd::variable{this, name, _impl->prop_to_var.at(name)};
 
     int index = _impl->next_var++;
-    DdNode * var = _impl->mgr->bddVar(index).getNode();
+    DdNode * var = _impl->mgr.bddVar(index).getNode();
     Cudd_Ref(var);
-    cudd_ptr var_ptr = cudd_ptr{var, [&](DdNode *n) {
-      Cudd_RecursiveDeref(handle()->getManager(), n);
+    DdManager *manager = handle()->getManager();
+    cudd_ptr var_ptr = cudd_ptr{var, [=](DdNode *n) {
+      Cudd_RecursiveDeref(manager, n);
     }};
     
     _impl->prop_to_var.insert({name, var});
     _impl->var_to_prop.insert({var, name});
+    _impl->var_to_index.insert({var, index});
     _impl->index_to_var.push_back(std::move(var_ptr));
 
     return sdd::variable{this, name, var};
   }
 
   node manager::top() {
-    return node{this, _impl->mgr->bddOne().getNode()};
+    return node{this, _impl->mgr.bddOne().getNode()};
   }
 
   node manager::bottom() {
-    return node{this, _impl->mgr->bddZero().getNode()};
+    return node{this, _impl->mgr.bddZero().getNode()};
+  }
+
+  std::vector<class variable> manager::variables() {
+    std::vector<class variable> result;
+    for(auto &ddnode : _impl->index_to_var)
+      result.push_back({this, ddnode.get()});
+    return result;
   }
 
   alphabet *manager::sigma() const {
@@ -96,7 +106,7 @@ namespace black::sdd {
   }
 
   Cudd *manager::handle() const {
-    return _impl->mgr;
+    return &_impl->mgr;
   }
 
   node manager::to_node(black::logic::formula<black::logic::QBF> f) {
@@ -284,20 +294,20 @@ namespace black::sdd {
     return condition(vars, sign);
   }
 
-  node node::change(std::function<black::proposition(black::proposition)> map)
+  node node::rename(std::function<black::proposition(black::proposition)> map)
   {
-    sdd::node changes = manager()->top();
-    std::vector<sdd::variable> old;
-    
-    for(auto v : variables()) {
-      auto p = map(v.name());
-      if(p != v.name()) {
-        old.push_back(v);
-        changes = changes && iff(v, manager()->variable(p));
-      }
+    auto vars = manager()->variables();
+    auto indices = std::make_unique<int[]>(vars.size());
+    for(size_t i = 0; i < vars.size(); i++) {
+      auto changed = manager()->variable(map(vars.at(i).name()));
+      indices[i] = 
+        manager()->_impl->var_to_index.at(changed.handle().getNode());
     }
 
-    return exists(old, changes && *this);
+    return node{
+      manager(),
+      handle().Permute(indices.get()).getNode()
+    };
   }
 
   node operator!(node n) {

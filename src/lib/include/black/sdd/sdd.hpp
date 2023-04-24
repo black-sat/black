@@ -53,6 +53,8 @@ namespace black::sdd {
     node top();
     node bottom();
 
+    std::vector<class variable> variables();
+
     alphabet *sigma() const;
     Cudd *handle() const;
 
@@ -127,9 +129,9 @@ namespace black::sdd {
       std::vector<black::proposition> const& props, bool sign
     ) const;
 
-    node change(std::function<black::proposition(black::proposition)> map);
+    node rename(std::function<black::proposition(black::proposition)> map);
     node operator[](std::function<black::proposition(black::proposition)> map) {
-      return change(map);
+      return rename(map);
     }
 
   private:

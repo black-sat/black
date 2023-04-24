@@ -79,10 +79,6 @@ namespace black_internal {
       return iff(var, prime(var));
     });
 
-    std::cerr << "aut.trans vars:\n";
-    for(auto v : aut.trans.variables())
-      std::cerr << " - " << black::to_string(v.name()) << "\n";
-
     return (eps() && frame) || (!eps() && aut.trans);
   }
 
@@ -122,21 +118,11 @@ namespace black_internal {
   }
 
   bool det_t::is_total(sdd::node trans) {
-    sdd::node result = forall(of_kind(aut.variables), 
+    return forall(of_kind(aut.variables), 
       forall(!of_kind(aut.variables),
         exists(primed(), trans) 
       )
-    );
-
-    std::cerr << "totality formula:\n";
-    std::cerr << " - size: " << result.count() << "\n";
-    if(result.is_zero())
-      std::cerr << " - is zero\n";
-    std::cerr << " - vars:\n";
-    for(auto v : result.variables())
-      std::cerr << "   - " << black::to_string(v.name()) << "\n";
-    
-    return result.is_one();
+    ).is_one();
   }
 
   std::vector<black::proposition> det_t::vars(sdd::node trans) {
@@ -184,27 +170,15 @@ namespace black_internal {
     sdd::node t_kp = T_eps[0];
     sdd::node trans = mgr->top();
 
-    std::cerr << "t_k vars:\n";
-    for(auto v : t_k.variables())
-      std::cerr << " - " << black::to_string(v.name()) << "\n";
-
     do {
       k++;
       primes = other(primes);
 
-      std::cerr << "k = " << k << "\n";
+      std::cerr << ", " << k << std::flush;
 
       std::tie(t_kp, t_k) = T_step(t_kp, t_k, primes);
 
-      std::cerr << "t_k vars:\n";
-      for(auto v : t_k.variables())
-        std::cerr << " - " << black::to_string(v.name()) << "\n";
-
       trans = this->trans(t_kp, t_k);
-
-      std::cerr << "trans vars:\n";
-      for(auto v : trans.variables())
-        std::cerr << " - " << black::to_string(v.name()) << "\n";
 
     } while(!is_total(trans));
 
