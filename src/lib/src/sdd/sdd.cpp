@@ -36,10 +36,7 @@
 
 namespace black::sdd {
 
-  template<typename T>
-  auto free_later(T *ptr) {
-    return std::unique_ptr<T[], void(*)(void*)>(ptr, &free);
-  }
+  using cudd_ptr = std::unique_ptr<DdNode, std::function<void(DdNode *)>>;
 
   //
   // manager
@@ -47,13 +44,13 @@ namespace black::sdd {
   struct manager::impl_t {
     impl_t(alphabet *_sigma) : sigma{_sigma}, mgr{new Cudd} { }
 
-    tsl::hopscotch_map<proposition, DdNode *> prop_to_var;
-    tsl::hopscotch_map<DdNode *, proposition> var_to_prop;
-    tsl::hopscotch_map<size_t, DdNode *> index_to_var;
-    tsl::hopscotch_map<node, logic::formula<logic::propositional>> formulas;
-    
     alphabet *sigma;
     Cudd *mgr;
+
+    tsl::hopscotch_map<proposition, DdNode *> prop_to_var;
+    tsl::hopscotch_map<DdNode *, proposition> var_to_prop;
+    std::vector<cudd_ptr> index_to_var;
+
     int next_var = 0;
     tsl::hopscotch_map<
       black::logic::formula<black::logic::QBF>, 
@@ -74,10 +71,14 @@ namespace black::sdd {
 
     int index = _impl->next_var++;
     DdNode * var = _impl->mgr->bddVar(index).getNode();
+    Cudd_Ref(var);
+    cudd_ptr var_ptr = cudd_ptr{var, [&](DdNode *n) {
+      Cudd_RecursiveDeref(handle()->getManager(), n);
+    }};
     
     _impl->prop_to_var.insert({name, var});
     _impl->var_to_prop.insert({var, name});
-    _impl->index_to_var.insert({index, var});
+    _impl->index_to_var.push_back(std::move(var_ptr));
 
     return sdd::variable{this, name, var};
   }
@@ -162,11 +163,11 @@ namespace black::sdd {
   struct variable::impl_t {
     class manager *_mgr;
     proposition _name;
-    DdNode * _var;
+    BDD _var;
   };
 
   variable::variable(class manager *mgr, proposition name, DdNode * var) 
-      : _impl{std::make_unique<impl_t>(mgr, name, var)} { }
+      : _impl{std::make_unique<impl_t>(mgr, name, BDD(*mgr->handle(), var))} { }
 
   variable::variable(class manager *mgr, DdNode * var) 
     : variable{mgr, mgr->_impl->var_to_prop.at(var), var} { }
@@ -187,11 +188,14 @@ namespace black::sdd {
   proposition variable::name() const { return _impl->_name; }
   class manager *variable::manager() const { return _impl->_mgr; }
   BDD variable::handle() const { 
-    return BDD(*manager()->handle(), _impl->_var); 
+    return _impl->_var;
   }
 
   node variable::operator!() const {
-    return node{ manager(), _impl->_var };
+    return node{ 
+      manager(), 
+      (!handle()).getNode()
+    };
   }
 
   //
@@ -199,11 +203,11 @@ namespace black::sdd {
   //
   struct node::impl_t {
     class manager *_mgr;
-    DdNode * _node;
+    BDD _node;
   };
 
   node::node(class manager *mgr, DdNode * n) 
-    : _impl{std::make_unique<impl_t>(mgr, n)} { }  
+    : _impl{std::make_unique<impl_t>(mgr, BDD(*mgr->handle(), n))} { }  
 
   node::node(variable var) : node{var.manager(), var.handle().getNode()} { }
 
@@ -223,11 +227,15 @@ namespace black::sdd {
 
   class manager *node::manager() const { return _impl->_mgr; }
   BDD node::handle() const { 
-    return BDD(*manager()->handle(), _impl->_node); 
+    return _impl->_node; 
   }
 
   size_t node::hash() const {
     return std::hash<DdNode *>{}(handle().getNode());
+  }
+
+  size_t node::count() const {
+    return size_t(handle().nodeCount());
   }
 
   std::vector<variable> node::variables() const {
@@ -236,42 +244,35 @@ namespace black::sdd {
     for(auto i : support)
       vars.insert(variable{
         manager(),
-        manager()->_impl->index_to_var.at(i)
+        manager()->_impl->index_to_var.at(i).get()
       });
     
     return std::vector<variable>(begin(vars), end(vars));
   }
 
-  bool node::is_valid() const {
-    return !(*this).handle().IsZero();
+  bool node::is_one() const {
+    return handle().IsOne();
   }
 
-  bool node::is_unsat() const {
+  bool node::is_zero() const {
     return handle().IsZero();
-  }
-
-  bool node::is_sat() const {
-    return !is_unsat();
   }
 
   node node::condition(variable var, bool sign) const {
     BDD literal = sign ? var.handle() : (!var).handle();
     return node{
       manager(),
-      handle().Constrain(literal).getNode()
+      handle().Cofactor(literal).getNode()
     };
   }
 
   node node::condition(std::vector<class variable> const& v, bool sign) const 
   {
-    node cube = manager()->top();
+    node result = *this;
     for(auto var : v)
-      cube = cube && (sign ? var : !var);
-
-    return node{
-      manager(),
-      handle().Constrain(cube.handle()).getNode()
-    };
+      result = result.condition(var, sign);
+    
+    return result;
   }
 
   node node::condition(
@@ -366,10 +367,7 @@ namespace black::sdd {
   }
 
   node iff(node n1, node n2) {
-    return node{
-      n1.manager(),
-      n1.handle().Xnor(n2.handle()).getNode()
-    };
+    return implies(n1, n2) && implies(n2, n1);
   }  
 
 }

@@ -122,7 +122,21 @@ namespace black_internal {
   }
 
   bool det_t::is_total(sdd::node trans) {
-    return exists(primed(), trans).is_valid();
+    sdd::node result = forall(of_kind(aut.variables), 
+      forall(!of_kind(aut.variables),
+        exists(primed(), trans) 
+      )
+    );
+
+    std::cerr << "totality formula:\n";
+    std::cerr << " - size: " << result.count() << "\n";
+    if(result.is_zero())
+      std::cerr << " - is zero\n";
+    std::cerr << " - vars:\n";
+    for(auto v : result.variables())
+      std::cerr << "   - " << black::to_string(v.name()) << "\n";
+    
+    return result.is_one();
   }
 
   std::vector<black::proposition> det_t::vars(sdd::node trans) {

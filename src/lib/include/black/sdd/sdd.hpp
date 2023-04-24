@@ -112,13 +112,14 @@ namespace black::sdd {
 
     size_t hash() const;
 
+    size_t count() const;
+
     std::vector<variable> variables() const;
 
     bool operator==(node const&other) const = default;
 
-    bool is_valid() const;
-    bool is_unsat() const;
-    bool is_sat() const;
+    bool is_one() const;
+    bool is_zero() const;
     
     node condition(variable lit, bool sign) const;
     node condition(std::vector<class variable> const& lits, bool sign) const;
@@ -162,7 +163,13 @@ namespace black::sdd {
 
   template<black_internal::filter M>
   node forall(M const& m, node n) {
-    return !exists(m, !n);
+    auto node_vars = n.variables();
+    auto it = std::remove_if(begin(node_vars), end(node_vars), [&](auto v) {
+      return !m.filter(v.name());
+    });
+    node_vars.erase(it, end(node_vars));
+    
+    return forall(node_vars, n);
   }
 
   node implies(node n1, node n2);

@@ -156,6 +156,7 @@ namespace black_internal {
 
     std::cerr << indent << "computing trans1 && trans2...\n";
     sdd::node trans = a1.trans && a2.trans;
+    std::cerr << indent << " - size: " << trans.count() << "\n";
 
     return automaton {
       .manager = mgr,
@@ -176,7 +177,7 @@ namespace black_internal {
 
     std::cerr << indent << "computing trans1 && trans2...\n";
     sdd::node trans = a1.trans && a2.trans;
-    //std::cerr << indent << " - size: " << trans.count() << "\n";
+    std::cerr << indent << " - size: " << trans.count() << "\n";
 
     return automaton {
       .manager = mgr,
@@ -197,7 +198,7 @@ namespace black_internal {
 
     std::cerr << indent << "computing trans1 && trans2...\n";
     sdd::node trans = a1.trans && a2.trans;
-    //std::cerr << indent << " - size: " << trans.count() << "\n";
+    std::cerr << indent << " - size: " << trans.count() << "\n";
 
     return automaton {
       .manager = mgr,

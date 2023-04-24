@@ -120,7 +120,7 @@ namespace black_internal::synth {
 
     sdd::node prevfp = enc.fixpoint();
     sdd::node fp = enc.fixpoint(prevfp);
-    while(!enc.test(fp, prevfp).is_valid()) {
+    while(!enc.test(fp, prevfp).is_one()) {
       if(k == 0)
         std::cerr << "k = " << std::flush;
       else 
@@ -134,7 +134,7 @@ namespace black_internal::synth {
     }
     std::cerr << (k > 1 ? ", " : "") << "done!\n";
 
-    return enc.win(fp).is_valid();
+    return enc.win(fp).is_one();
   }
 
   black::tribool is_realizable(automata_spec const& spec)

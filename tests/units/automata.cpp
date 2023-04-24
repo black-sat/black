@@ -22,7 +22,9 @@
 // SOFTWARE.
 
 #include <black/logic/logic.hpp>
+#include <black/logic/prettyprint.hpp>
 #include <black/sdd/sdd.hpp>
+#include <black/cudd/cuddObj.hh>
 
 #include <catch.hpp>
 
@@ -38,18 +40,17 @@ TEST_CASE("automata") {
 
   sdd::variable p = mgr->variable(sigma.proposition("p"));
   sdd::variable q = mgr->variable(sigma.proposition("q"));
+  sdd::variable r = mgr->variable(sigma.proposition("r"));
 
-  sdd::node n = p && !p;
-  sdd::node v = p || !p;
+  sdd::node n = p && q && r || !p && !q && !r;
 
-  sdd::node n2 = p && !p;
+  std::cerr << "vars:\n";
+  for(auto v : n.variables())
+    std::cerr << " - " << black::to_string(v.name()) << "\n";
 
-  sdd::node n3 = p && q;
-
-  REQUIRE(n.is_unsat());
-  REQUIRE(v.is_valid());
-  REQUIRE(iff(n,n2).is_valid());
-  REQUIRE(exists(p, n3).is_sat());
-  REQUIRE(forall(p, n3).is_unsat());
+  REQUIRE(n.condition({p, q}, true).condition(r, true).is_one());
+  REQUIRE(n.condition({p, q}, true).condition(r, false).is_zero());
+  REQUIRE(!exists({p, q}, n).is_zero());
+  REQUIRE(forall({p, q}, n).is_zero());
 
 }
