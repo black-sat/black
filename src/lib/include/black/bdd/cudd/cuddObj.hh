@@ -54,7 +54,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
-#include "cudd.h"
+#include <black/bdd/cudd/cudd.h>
 
 /*---------------------------------------------------------------------------*/
 /* Type definitions                                                          */

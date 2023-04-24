@@ -31,7 +31,7 @@
 #include <black/support/range.hpp>
 
 #include <black/automata/automaton.hpp>
-#include <black/sdd/sdd.hpp>
+#include <black/bdd/bdd.hpp>
 
 #include <istream>
 
@@ -58,7 +58,7 @@ namespace black_internal::synth {
     automaton spec;
   };
 
-  automata_spec to_automata_spec(black::sdd::manager *mgr, ltlp_spec spec);
+  automata_spec to_automata_spec(black::bdd::manager *mgr, ltlp_spec spec);
 
 }
 

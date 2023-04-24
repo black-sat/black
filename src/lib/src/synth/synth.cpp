@@ -119,7 +119,7 @@ namespace black_internal::synth {
     return str.str();
   }
 
-  automata_spec to_automata_spec(black::sdd::manager *mgr, ltlp_spec spec) {
+  automata_spec to_automata_spec(black::bdd::manager *mgr, ltlp_spec spec) {
     black_assert(mgr);
 
     auto f = spec.spec.to<logic::formula<LTLXFG>>();

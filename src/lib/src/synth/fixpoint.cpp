@@ -26,7 +26,7 @@
 
 namespace black_internal::synth {
 
-  namespace sdd = black::sdd;
+  namespace bdd = black::bdd;
 
   namespace { 
 
@@ -43,16 +43,16 @@ namespace black_internal::synth {
 
       // black::proposition cover(black::proposition);
       // std::vector<black::proposition> cover(std::vector<black::proposition>);
-      // sdd::node cover(sdd::node);
+      // bdd::node cover(bdd::node);
 
       [[maybe_unused]]
-      sdd::node fixpoint(std::optional<sdd::node> previous = {});
+      bdd::node fixpoint(std::optional<bdd::node> previous = {});
 
       [[maybe_unused]]
-      sdd::node test(sdd::node fp, sdd::node prevfp);
+      bdd::node test(bdd::node fp, bdd::node prevfp);
 
       [[maybe_unused]]
-      sdd::node win(sdd::node fp);
+      bdd::node win(bdd::node fp);
 
       automata_spec spec;
       automaton &aut;
@@ -80,17 +80,17 @@ namespace black_internal::synth {
     //   return ps;
     // }
 
-    // sdd::node encoder::cover(sdd::node f) {
+    // bdd::node encoder::cover(bdd::node f) {
     //   return f.rename([&](black::proposition p) {
     //     return cover(p);
     //   });
     // }
 
-    sdd::node encoder::fixpoint(std::optional<sdd::node> base) {
+    bdd::node encoder::fixpoint(std::optional<bdd::node> base) {
       if(!base)
         return aut.finals;
 
-      sdd::node previous = *base;
+      bdd::node previous = *base;
       return previous ||
         forall(spec.inputs,
           exists(spec.outputs,
@@ -101,11 +101,11 @@ namespace black_internal::synth {
         );
     }
 
-    sdd::node encoder::test(sdd::node fp, sdd::node prevfp) {
+    bdd::node encoder::test(bdd::node fp, bdd::node prevfp) {
       return forall(aut.variables, implies(fp, prevfp));
     }
 
-    sdd::node encoder::win(sdd::node fp) {
+    bdd::node encoder::win(bdd::node fp) {
       return exists(aut.variables, fp && aut.init);
     }
 
@@ -118,8 +118,8 @@ namespace black_internal::synth {
 
     std::cerr << "Solving the game (fixpoint)... " << std::flush;
 
-    sdd::node prevfp = enc.fixpoint();
-    sdd::node fp = enc.fixpoint(prevfp);
+    bdd::node prevfp = enc.fixpoint();
+    bdd::node fp = enc.fixpoint(prevfp);
     while(!enc.test(fp, prevfp).is_one()) {
       if(k == 0)
         std::cerr << "k = " << std::flush;

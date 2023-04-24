@@ -25,19 +25,19 @@
 #ifndef BLACK_AUTOMATON_HPP
 #define BLACK_AUTOMATON_HPP
 
-#include <black/sdd/sdd.hpp>
+#include <black/bdd/bdd.hpp>
 
 namespace black_internal {
 
   struct automaton {
-    black::sdd::manager *manager;
+    black::bdd::manager *manager;
 
     std::vector<black::proposition> letters;
     std::vector<black::proposition> variables;
 
-    black::sdd::node init;
-    black::sdd::node trans;
-    black::sdd::node finals;
+    black::bdd::node init;
+    black::bdd::node trans;
+    black::bdd::node finals;
   };
 
   struct LTLXFG : logic::make_combined_fragment_t<
@@ -52,9 +52,9 @@ namespace black_internal {
     >
   > { };
 
-  automaton to_automaton(black::sdd::manager *, logic::formula<logic::LTLP>);
+  automaton to_automaton(black::bdd::manager *, logic::formula<logic::LTLP>);
   automaton to_automaton_incremental(
-    black::sdd::manager *, logic::formula<LTLXFG>
+    black::bdd::manager *, logic::formula<LTLXFG>
   );
 
   automaton semideterminize(automaton);

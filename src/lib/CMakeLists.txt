@@ -161,8 +161,6 @@ endif()
 # configure config header
 configure_file(include/black/support/config.hpp.in ${CMAKE_BINARY_DIR}/include/black/support/config.hpp)
 
-add_subdirectory(src/sdd/lib)
-
 #
 # black library
 #
@@ -180,7 +178,7 @@ set (
   src/solver/encoding.cpp
   src/solver/solver.cpp
   src/solver/core.cpp
-  src/sdd/sdd.cpp
+  src/bdd/bdd.cpp
   src/automata/automaton.cpp
   src/automata/det.cpp
   src/automata/incremental.cpp
@@ -254,7 +252,7 @@ set (
 #
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PRIVATE fmt::fmt tsl::hopscotch_map sdd cudd)
+target_link_libraries(black PRIVATE fmt::fmt tsl::hopscotch_map cudd)
 target_include_directories(black PUBLIC  
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>

@@ -35,7 +35,7 @@
 namespace black_internal {
 
   using namespace black::logic::fragments::LTLP;
-  namespace sdd = black::sdd;
+  namespace bdd = black::bdd;
 
   namespace {
     struct to_automaton_t 
@@ -50,12 +50,12 @@ namespace black_internal {
 
       automaton encode();
 
-      to_automaton_t(sdd::manager *mgr, formula f) 
+      to_automaton_t(bdd::manager *mgr, formula f) 
         : manager{mgr}, frm{f} { 
           black_assert(mgr);
         }
 
-      sdd::manager *manager;
+      bdd::manager *manager;
       formula frm;
       std::vector<proposition> variables;
       std::vector<proposition> letters;
@@ -265,7 +265,7 @@ namespace black_internal {
     // std::cerr << "trans: " << black::to_string(trans) << "\n";
     // std::cerr << "finals: " << black::to_string(finals) << "\n";
 
-    std::cerr << "converting to SDD... " << std::flush;
+    std::cerr << "converting to BDD... " << std::flush;
 
     automaton aut{
       .manager = manager,
@@ -279,7 +279,7 @@ namespace black_internal {
     return aut;
   } 
 
-  automaton to_automaton(sdd::manager *mgr, formula f) {
+  automaton to_automaton(bdd::manager *mgr, formula f) {
     logic::scope xi{*f.sigma()};
     auto nnf = encoder::encoder{f, xi, true}.to_nnf(f).to<formula>().value();
 

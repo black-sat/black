@@ -33,7 +33,7 @@
 
 namespace black_internal {
 
-  namespace sdd = black::sdd;
+  namespace bdd = black::bdd;
 
   struct det_t {
 
@@ -46,44 +46,44 @@ namespace black_internal {
 
     size_t other(size_t primes);
 
-    sdd::variable eps();
-    sdd::node make_t_eps();
-    std::pair<sdd::node, sdd::node> T_step(
-      sdd::node last, sdd::node lastp, size_t primes
+    bdd::variable eps();
+    bdd::node make_t_eps();
+    std::pair<bdd::node, bdd::node> T_step(
+      bdd::node last, bdd::node lastp, size_t primes
     );
-    sdd::node trans(sdd::node t_kp, sdd::node t_k);
-    bool is_total(sdd::node t_quot);
-    std::vector<black::proposition> vars(sdd::node trans);
-    sdd::node init(std::vector<black::proposition> const &vars);
-    sdd::node finals(sdd::node t_k, size_t primes);
+    bdd::node trans(bdd::node t_kp, bdd::node t_k);
+    bool is_total(bdd::node t_quot);
+    std::vector<black::proposition> vars(bdd::node trans);
+    bdd::node init(std::vector<black::proposition> const &vars);
+    bdd::node finals(bdd::node t_k, size_t primes);
     automaton semideterminize();
 
     automaton aut;
-    sdd::manager *mgr;
+    bdd::manager *mgr;
     black::alphabet &sigma;
-    sdd::variable _eps;
-    sdd::node T_eps[3];
+    bdd::variable _eps;
+    bdd::node T_eps[3];
   };
 
   size_t det_t::other(size_t p) {
     return 3 - p; // 3 - 1 = 2, 3 - 2 = 1
   }
 
-  sdd::variable det_t::eps() {
+  bdd::variable det_t::eps() {
     return _eps;
   }
 
-  sdd::node det_t::make_t_eps() {
-    sdd::node frame = big_and(mgr, aut.variables, [&](auto prop) {
-      sdd::variable var = mgr->variable(prop);
+  bdd::node det_t::make_t_eps() {
+    bdd::node frame = big_and(mgr, aut.variables, [&](auto prop) {
+      bdd::variable var = mgr->variable(prop);
       return iff(var, prime(var));
     });
 
     return (eps() && frame) || (!eps() && aut.trans);
   }
 
-  std::pair<sdd::node, sdd::node> det_t::T_step(
-    sdd::node lastp, sdd::node last, size_t primes
+  std::pair<bdd::node, bdd::node> det_t::T_step(
+    bdd::node lastp, bdd::node last, size_t primes
   ) {
     tsl::hopscotch_map<black::proposition, black::proposition> freshes;
     for(auto p : aut.letters)
@@ -95,11 +95,11 @@ namespace black_internal {
       return p;
     });
 
-    sdd::node tp = 
+    bdd::node tp = 
       exists(primed(other(primes)) * aut.variables,
         lastp[aut.letters / (f | primed())] && T_eps[primes]
       );
-    sdd::node t =
+    bdd::node t =
       exists(primed(other(primes)) * aut.variables,
         last[aut.letters / f] && T_eps[primes]
       );
@@ -107,7 +107,7 @@ namespace black_internal {
     return std::pair{tp, t};
   }
 
-  sdd::node det_t::trans(sdd::node t_kp, sdd::node t_k) {
+  bdd::node det_t::trans(bdd::node t_kp, bdd::node t_k) {
     return 
       forall(of_kind(aut.variables),
         iff(
@@ -117,7 +117,7 @@ namespace black_internal {
       );
   }
 
-  bool det_t::is_total(sdd::node trans) {
+  bool det_t::is_total(bdd::node trans) {
     return forall(of_kind(aut.variables), 
       forall(!of_kind(aut.variables),
         exists(primed(), trans) 
@@ -125,7 +125,7 @@ namespace black_internal {
     ).is_one();
   }
 
-  std::vector<black::proposition> det_t::vars(sdd::node trans) {
+  std::vector<black::proposition> det_t::vars(bdd::node trans) {
     tsl::hopscotch_set<black::proposition> result;
     auto varf = of_kind(aut.variables);
     auto lettersf = of_kind(aut.letters);
@@ -139,13 +139,13 @@ namespace black_internal {
     return std::vector<black::proposition>(begin(result), end(result));
   }
 
-  sdd::node det_t::init(std::vector<black::proposition> const &vars) {
+  bdd::node det_t::init(std::vector<black::proposition> const &vars) {
     return big_and(mgr, vars, [&](auto p) {
       return mgr->variable(p);
     });
   }
   
-  sdd::node det_t::finals(sdd::node t_k, size_t primes) {
+  bdd::node det_t::finals(bdd::node t_k, size_t primes) {
     return exists(of_kind(aut.variables),
       aut.init && 
       t_k.condition(aut.letters, true) && 
@@ -166,9 +166,9 @@ namespace black_internal {
 
     size_t k = 1;
     size_t primes = 1;
-    sdd::node t_k = T_eps[0];
-    sdd::node t_kp = T_eps[0];
-    sdd::node trans = mgr->top();
+    bdd::node t_k = T_eps[0];
+    bdd::node t_kp = T_eps[0];
+    bdd::node trans = mgr->top();
 
     do {
       k++;
@@ -185,8 +185,8 @@ namespace black_internal {
     std::cerr << ", computing init and finals... " << std::flush;
 
     std::vector<black::proposition> vars = this->vars(trans);
-    sdd::node init = this->init(vars);
-    sdd::node finals = this->finals(t_k, primes);
+    bdd::node init = this->init(vars);
+    bdd::node finals = this->finals(t_k, primes);
 
     std::cerr << "done!\n";
 

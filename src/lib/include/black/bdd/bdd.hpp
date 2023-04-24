@@ -22,8 +22,8 @@
 // SOFTWARE.
 //
 
-#ifndef BLACK_SDD_HPP
-#define BLACK_SDD_HPP
+#ifndef BLACK_BDD_HPP
+#define BLACK_BDD_HPP
 
 #include <black/logic/logic.hpp>
 #include <black/logic/renamings.hpp>
@@ -34,7 +34,7 @@ class BDD;
 class Cudd;
 struct DdNode;
 
-namespace black::sdd {
+namespace black::bdd {
 
   class variable;
   class node;
@@ -204,25 +204,25 @@ namespace black::sdd {
     return iff(to_node(v1), to_node(v2));
   }
 
-  inline sdd::variable prime(sdd::variable var, size_t n) {
+  inline bdd::variable prime(bdd::variable var, size_t n) {
     return var.manager()->variable(black_internal::prime(var.name(), n));
   }
 
-  inline sdd::variable prime(sdd::variable var) {
+  inline bdd::variable prime(bdd::variable var) {
     return var.manager()->variable(black_internal::prime(var.name()));
   }
 
   template<typename R, typename F>
-  sdd::node big_and(sdd::manager *mgr, R const& r, F f) {
-    sdd::node acc = mgr->top();
+  bdd::node big_and(bdd::manager *mgr, R const& r, F f) {
+    bdd::node acc = mgr->top();
     for(auto v : r)
       acc = acc && f(v);
     return acc;
   }
 
   template<typename R, typename F>
-  sdd::node big_or(sdd::manager *mgr, R const& r, F f) {
-    sdd::node acc = mgr->bottom();
+  bdd::node big_or(bdd::manager *mgr, R const& r, F f) {
+    bdd::node acc = mgr->bottom();
     for(auto v : r)
       acc = acc || f(v);
     return acc;
@@ -231,17 +231,17 @@ namespace black::sdd {
 }
 
 template<>
-struct std::hash<black::sdd::variable> {
-  size_t operator()(black::sdd::variable var) const {
+struct std::hash<black::bdd::variable> {
+  size_t operator()(black::bdd::variable var) const {
     return std::hash<black::proposition>{}(var.name());
   }
 };
 
 template<>
-struct std::hash<black::sdd::node> {
-  size_t operator()(black::sdd::node node) const {
+struct std::hash<black::bdd::node> {
+  size_t operator()(black::bdd::node node) const {
     return node.hash();
   }
 };
 
-#endif // BLACK_SDD_HPP
+#endif // BLACK_BDD_HPP

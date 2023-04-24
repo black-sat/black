@@ -53,7 +53,7 @@ struct std::hash<black_internal::cache_key_t> {
 namespace black_internal {
   
   using formula = logic::formula<LTLXFG>;
-  namespace sdd = black::sdd;
+  namespace bdd = black::bdd;
 
   struct XBool : logic::make_combined_fragment_t<
     logic::propositional,
@@ -67,11 +67,11 @@ namespace black_internal {
 
   struct incremental_t {
     
-    incremental_t(sdd::manager *_mgr) 
+    incremental_t(bdd::manager *_mgr) 
       : mgr{_mgr}, sigma{*_mgr->sigma()} { }
 
     void collect_letters(formula f);
-    sdd::variable fresh();
+    bdd::variable fresh();
 
     formula nnf(formula);
 
@@ -100,7 +100,7 @@ namespace black_internal {
       black_unreachable();
     }
 
-    sdd::manager *mgr;
+    bdd::manager *mgr;
     logic::alphabet &sigma;
     std::vector<logic::proposition> letters;
     size_t next_fresh = 0;
@@ -123,7 +123,7 @@ namespace black_internal {
     letters.insert(begin(letters), begin(props), end(props));
   }
 
-  sdd::variable incremental_t::fresh() {
+  bdd::variable incremental_t::fresh() {
     std::string indent(indentn * 3, ' ');
     std::cerr << indent << "allocating fresh variable\n";
     return mgr->variable(
@@ -155,7 +155,7 @@ namespace black_internal {
     std::string indent(indentn * 3, ' ');
 
     std::cerr << indent << "computing trans1 && trans2...\n";
-    sdd::node trans = a1.trans && a2.trans;
+    bdd::node trans = a1.trans && a2.trans;
     std::cerr << indent << " - size: " << trans.count() << "\n";
 
     return automaton {
@@ -176,7 +176,7 @@ namespace black_internal {
     std::string indent(indentn * 3, ' ');
 
     std::cerr << indent << "computing trans1 && trans2...\n";
-    sdd::node trans = a1.trans && a2.trans;
+    bdd::node trans = a1.trans && a2.trans;
     std::cerr << indent << " - size: " << trans.count() << "\n";
 
     return automaton {
@@ -197,7 +197,7 @@ namespace black_internal {
     std::string indent(indentn * 3, ' ');
 
     std::cerr << indent << "computing trans1 && trans2...\n";
-    sdd::node trans = a1.trans && a2.trans;
+    bdd::node trans = a1.trans && a2.trans;
     std::cerr << indent << " - size: " << trans.count() << "\n";
 
     return automaton {
@@ -211,7 +211,7 @@ namespace black_internal {
   }
 
   automaton incremental_t::not_empty(automaton aut) {
-    sdd::variable var = fresh();
+    bdd::variable var = fresh();
 
     std::vector<logic::proposition> variables = aut.variables;
     variables.push_back(var.name());
@@ -303,7 +303,7 @@ namespace black_internal {
   automaton incremental_t::to_automaton(
     size_t, logic::formula<logic::propositional> f
   ) {
-    sdd::variable var = fresh();
+    bdd::variable var = fresh();
 
     return automaton{
       .manager = mgr,
@@ -412,12 +412,12 @@ namespace black_internal {
     }
 
     automaton aut = to_automaton(nonce, arg);
-    sdd::variable var = fresh();
+    bdd::variable var = fresh();
 
     std::vector<black::proposition> xfvars = aut.variables;
     xfvars.push_back(var.name());
 
-    sdd::node trans = 
+    bdd::node trans = 
       (var && prime(var)) || 
       (!var && aut.trans && !prime(var)) || 
       (var && !prime(var) && aut.init[aut.variables / primed()]);
@@ -453,7 +453,7 @@ namespace black_internal {
   ) {
     automaton aut = to_automaton(sigma.nonce(), arg);
 
-    sdd::variable var = fresh();
+    bdd::variable var = fresh();
 
     std::vector<black::proposition> vars = aut.variables;
     vars.push_back(var.name());
@@ -461,7 +461,7 @@ namespace black_internal {
     std::string indent(indentn * 3, ' ');
     //std::cerr << indent << "aut.init size: " << aut.init.count() << "\n";
 
-    sdd::node trans = 
+    bdd::node trans = 
       (!var && aut.trans && !prime(var)) || 
       (var && !prime(var) && aut.init[aut.variables / primed()]);
 
@@ -480,12 +480,12 @@ namespace black_internal {
   ) {
     automaton aut = to_automaton(sigma.nonce(), arg);
 
-    sdd::variable var = fresh();
+    bdd::variable var = fresh();
 
     std::vector<black::proposition> vars = aut.variables;
     vars.push_back(var.name());
 
-    sdd::node trans = 
+    bdd::node trans = 
       (!var && aut.trans && !prime(var)) || 
       (var && !prime(var) && aut.init[aut.variables / primed()]);
 
@@ -499,7 +499,7 @@ namespace black_internal {
     };
   }
 
-  automaton to_automaton_incremental(sdd::manager *mgr, formula f) {
+  automaton to_automaton_incremental(bdd::manager *mgr, formula f) {
     return incremental_t{mgr}.encode(f);
   }
 

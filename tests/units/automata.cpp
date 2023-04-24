@@ -23,8 +23,7 @@
 
 #include <black/logic/logic.hpp>
 #include <black/logic/prettyprint.hpp>
-#include <black/sdd/sdd.hpp>
-#include <black/cudd/cuddObj.hh>
+#include <black/bdd/bdd.hpp>
 
 #include <catch.hpp>
 
@@ -33,16 +32,16 @@
 
 TEST_CASE("automata") {
 
-  namespace sdd = black::sdd;
+  namespace bdd = black::bdd;
 
   black::alphabet sigma;
-  sdd::manager *mgr = new sdd::manager{&sigma};
+  bdd::manager *mgr = new bdd::manager{&sigma};
 
-  sdd::variable p = mgr->variable(sigma.proposition("p"));
-  sdd::variable q = mgr->variable(sigma.proposition("q"));
-  sdd::variable r = mgr->variable(sigma.proposition("r"));
+  bdd::variable p = mgr->variable(sigma.proposition("p"));
+  bdd::variable q = mgr->variable(sigma.proposition("q"));
+  bdd::variable r = mgr->variable(sigma.proposition("r"));
 
-  sdd::node n = p && q && r || !p && !q && !r;
+  bdd::node n = p && q && r || !p && !q && !r;
 
   std::cerr << "vars:\n";
   for(auto v : n.variables())

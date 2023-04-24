@@ -22,9 +22,9 @@
 // SOFTWARE.
 //
 
-#include <black/sdd/sdd.hpp>
+#include <black/bdd/bdd.hpp>
 
-#include <black/cudd/cuddObj.hh>
+#include <black/bdd/cudd/cuddObj.hh>
 
 #include <tsl/hopscotch_map.h>
 #include <tsl/hopscotch_set.h>
@@ -34,7 +34,7 @@
 #include <iostream>
 #include <random>
 
-namespace black::sdd {
+namespace black::bdd {
 
   using cudd_ptr = std::unique_ptr<DdNode, std::function<void(DdNode *)>>;
 
@@ -75,7 +75,7 @@ namespace black::sdd {
 
   variable manager::variable(proposition name) {
     if(_impl->prop_to_var.contains(name))
-      return sdd::variable{this, name, _impl->prop_to_var.at(name)};
+      return bdd::variable{this, name, _impl->prop_to_var.at(name)};
 
     int index = _impl->next_var++;
     DdNode * var = _impl->mgr.bddVar(index).getNode();
@@ -90,7 +90,7 @@ namespace black::sdd {
     _impl->var_to_index.insert({var, index});
     _impl->index_to_var.push_back(std::move(var_ptr));
 
-    return sdd::variable{this, name, var};
+    return bdd::variable{this, name, var};
   }
 
   node manager::top() {
@@ -131,44 +131,44 @@ namespace black::sdd {
         return value ? top() : bottom();
       },
       [&](proposition p) {
-        return sdd::node(variable(p));
+        return bdd::node(variable(p));
       },
       [&](logic::negation<QBF>, auto arg) {
         return !to_node(arg);
       },
       [&](logic::conjunction<QBF> c) {
-        sdd::node acc = top();
+        bdd::node acc = top();
         for(auto op : c.operands())
           acc = acc && to_node(op);
         return acc;
       },
       [&](logic::disjunction<QBF> c) {
-        sdd::node acc = bottom();
+        bdd::node acc = bottom();
         for(auto op : c.operands())
           acc = acc || to_node(op);
         return acc;
       },
       [&](logic::implication<QBF>, auto left, auto right) {
-        return sdd::implies(to_node(left), to_node(right));
+        return bdd::implies(to_node(left), to_node(right));
       },
       [&](logic::iff<QBF>, auto left, auto right) {
-        return sdd::iff(to_node(left), to_node(right));
+        return bdd::iff(to_node(left), to_node(right));
       },
       [&](logic::qbf<QBF> q, auto qvars, auto matrix) {
-        sdd::node sddmatrix = to_node(matrix);
+        bdd::node bddmatrix = to_node(matrix);
         if(qvars.empty())
-          return sddmatrix;
+          return bddmatrix;
         
-        std::vector<sdd::variable> vars;
+        std::vector<bdd::variable> vars;
         for(auto qvar : qvars)
           vars.push_back(variable(qvar));
 
         return q.node_type().match(
           [&](logic::qbf<QBF>::type::thereis) {
-            return sdd::exists(vars, sddmatrix);
+            return bdd::exists(vars, bddmatrix);
           },
           [&](logic::qbf<QBF>::type::foreach) {
-            return sdd::forall(vars, sddmatrix);
+            return bdd::forall(vars, bddmatrix);
           }
         );
       }
@@ -352,10 +352,10 @@ namespace black::sdd {
   }
 
   node exists(std::vector<black::proposition> const& vars, node n) {
-    std::vector<sdd::variable> sddvars;
+    std::vector<bdd::variable> bddvars;
     for(auto v : vars)
-      sddvars.push_back(n.manager()->variable(v));
-    return exists(sddvars, n);
+      bddvars.push_back(n.manager()->variable(v));
+    return exists(bddvars, n);
   }
 
   node forall(variable var, node n) {
@@ -377,10 +377,10 @@ namespace black::sdd {
   }
 
   node forall(std::vector<black::proposition> const& vars, node n) {
-    std::vector<sdd::variable> sddvars;
+    std::vector<bdd::variable> bddvars;
     for(auto v : vars)
-      sddvars.push_back(n.manager()->variable(v));
-    return forall(sddvars, n);
+      bddvars.push_back(n.manager()->variable(v));
+    return forall(bddvars, n);
   }
 
   node implies(node n1, node n2) {
