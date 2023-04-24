@@ -79,6 +79,10 @@ namespace black_internal {
       return iff(var, prime(var));
     });
 
+    std::cerr << "aut.trans vars:\n";
+    for(auto v : aut.trans.variables())
+      std::cerr << " - " << black::to_string(v.name()) << "\n";
+
     return (eps() && frame) || (!eps() && aut.trans);
   }
 
@@ -112,7 +116,7 @@ namespace black_internal {
       forall(of_kind(aut.variables),
         iff(
           t_kp.condition(aut.letters, true),
-          t_k.condition(!eps())
+          t_k.condition(eps(), false)
         )
       );
   }
@@ -166,15 +170,27 @@ namespace black_internal {
     sdd::node t_kp = T_eps[0];
     sdd::node trans = mgr->top();
 
+    std::cerr << "t_k vars:\n";
+    for(auto v : t_k.variables())
+      std::cerr << " - " << black::to_string(v.name()) << "\n";
+
     do {
       k++;
       primes = other(primes);
 
-      std::cerr << ", " << k << std::flush;
+      std::cerr << "k = " << k << "\n";
 
       std::tie(t_kp, t_k) = T_step(t_kp, t_k, primes);
 
+      std::cerr << "t_k vars:\n";
+      for(auto v : t_k.variables())
+        std::cerr << " - " << black::to_string(v.name()) << "\n";
+
       trans = this->trans(t_kp, t_k);
+
+      std::cerr << "trans vars:\n";
+      for(auto v : trans.variables())
+        std::cerr << " - " << black::to_string(v.name()) << "\n";
 
     } while(!is_total(trans));
 

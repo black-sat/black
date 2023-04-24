@@ -22,10 +22,7 @@
 // SOFTWARE.
 
 #include <black/logic/logic.hpp>
-#include <black/logic/prettyprint.hpp>
-#include <black/logic/parser.hpp>
-#include <black/automata/automaton.hpp>
-#include <black/internal/debug/random_formula.hpp>
+#include <black/sdd/sdd.hpp>
 
 #include <catch.hpp>
 
@@ -33,5 +30,26 @@
 #include <iostream>
 
 TEST_CASE("automata") {
-  
+
+  namespace sdd = black::sdd;
+
+  black::alphabet sigma;
+  sdd::manager *mgr = new sdd::manager{&sigma};
+
+  sdd::variable p = mgr->variable(sigma.proposition("p"));
+  sdd::variable q = mgr->variable(sigma.proposition("q"));
+
+  sdd::node n = p && !p;
+  sdd::node v = p || !p;
+
+  sdd::node n2 = p && !p;
+
+  sdd::node n3 = p && q;
+
+  REQUIRE(n.is_unsat());
+  REQUIRE(v.is_valid());
+  REQUIRE(iff(n,n2).is_valid());
+  REQUIRE(exists(p, n3).is_sat());
+  REQUIRE(forall(p, n3).is_unsat());
+
 }

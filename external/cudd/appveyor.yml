@@ -1,0 +1,16 @@
+platform:
+    - x64
+
+install:
+    - set PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
+
+before_build:
+    - md build
+    - cd build
+
+build_script:
+    - cmake -G "MSYS Makefiles" ..
+    - make -j 2
+
+# test_script:
+#     - make check

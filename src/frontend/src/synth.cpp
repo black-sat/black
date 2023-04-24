@@ -81,7 +81,7 @@ namespace black::frontend {
       sigma, file, partfile, formula_syntax_error_handler(path)
     );
 
-    black::sdd::manager manager{&sigma, 1};
+    black::sdd::manager manager{&sigma};
 
     automata_spec autspec = to_automata_spec(&manager, *spec);
 
@@ -129,7 +129,7 @@ namespace black::frontend {
 
     spec.outputs.insert(end(spec.outputs), begin(outputset), end(outputset));
 
-    black::sdd::manager manager{&sigma, 1};
+    black::sdd::manager manager{&sigma};
 
     automata_spec autspec = to_automata_spec(&manager, spec);
 

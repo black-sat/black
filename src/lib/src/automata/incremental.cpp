@@ -156,7 +156,6 @@ namespace black_internal {
 
     std::cerr << indent << "computing trans1 && trans2...\n";
     sdd::node trans = a1.trans && a2.trans;
-    std::cerr << indent << " - size: " << trans.count() << "\n";
 
     return automaton {
       .manager = mgr,
@@ -177,7 +176,7 @@ namespace black_internal {
 
     std::cerr << indent << "computing trans1 && trans2...\n";
     sdd::node trans = a1.trans && a2.trans;
-    std::cerr << indent << " - size: " << trans.count() << "\n";
+    //std::cerr << indent << " - size: " << trans.count() << "\n";
 
     return automaton {
       .manager = mgr,
@@ -198,7 +197,7 @@ namespace black_internal {
 
     std::cerr << indent << "computing trans1 && trans2...\n";
     sdd::node trans = a1.trans && a2.trans;
-    std::cerr << indent << " - size: " << trans.count() << "\n";
+    //std::cerr << indent << " - size: " << trans.count() << "\n";
 
     return automaton {
       .manager = mgr,
@@ -436,7 +435,7 @@ namespace black_internal {
     std::cerr << indent << "semideterminizing (" 
               << black::to_string(f) << ") ...\n";
     std::cerr << indent << " - vars: " << xf.variables.size() << "\n";
-    std::cerr << indent << " - size: " << xf.trans.count() << "\n";
+    //std::cerr << indent << " - size: " << xf.trans.count() << "\n";
     std::cerr << indent << " - " << std::flush;
 
     return sum(aut, semideterminize(xf)); // aut || xf
@@ -459,7 +458,7 @@ namespace black_internal {
     vars.push_back(var.name());
 
     std::string indent(indentn * 3, ' ');
-    std::cerr << indent << "aut.init size: " << aut.init.count() << "\n";
+    //std::cerr << indent << "aut.init size: " << aut.init.count() << "\n";
 
     sdd::node trans = 
       (!var && aut.trans && !prime(var)) || 

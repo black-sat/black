@@ -30,19 +30,18 @@
 
 #include <ostream>
 
-struct sdd_node_t;
-struct sdd_manager_t;
-struct wmc_manager_t;
+class BDD;
+class Cudd;
+struct DdNode;
 
 namespace black::sdd {
 
   class variable;
-  class literal;
   class node;
 
   class manager {
   public:
-    manager(alphabet *sigma, size_t vars);
+    manager(alphabet *sigma);
     manager(manager const&) = delete;
     manager(manager &&);
     ~manager();
@@ -50,22 +49,17 @@ namespace black::sdd {
     manager &operator=(manager const&) = delete;
     manager &operator=(manager &&);
 
-    void minimize() const;
-
     class variable variable(proposition p);
-    std::vector<class variable> variables(std::vector<proposition> props);
     node top();
     node bottom();
 
     alphabet *sigma() const;
-    sdd_manager_t *handle() const;
+    Cudd *handle() const;
 
     node to_node(black::logic::formula<black::logic::QBF>);
-    logic::formula<logic::propositional> to_formula(node);
 
   private:
     friend class variable;
-    friend class literal;
     friend class node;
 
     struct impl_t;
@@ -75,107 +69,62 @@ namespace black::sdd {
   class variable 
   {
   public:
-    variable(class manager *, unsigned);
-    variable(variable const&) = default;
-    variable(variable &&) = default;
+    variable(class manager *, DdNode *);
+    variable(variable const&);
+    variable(variable &&);
+    ~variable();
     
-    variable &operator=(variable const&) = default;
-    variable &operator=(variable &&) = default;
+    variable &operator=(variable const&);
+    variable &operator=(variable &&);
     
     bool operator==(variable const&) const = default;
 
-    proposition name() const { return _name; }
-    class manager *manager() const { return _mgr; }
+    proposition name() const;
+    class manager *manager() const;
+    BDD handle() const;
 
-    literal operator!() const;
-
-    unsigned handle() const { return _var; }
+    node operator!() const;
 
   private:
     friend class manager;
+    variable(class manager *mgr, proposition name, DdNode * var);
 
-    variable(class manager *mgr, proposition name, unsigned var) 
-      : _mgr{mgr}, _name{name}, _var{var} { }
-
-    class manager *_mgr;
-    proposition _name;
-    unsigned _var;
+    struct impl_t;
+    std::unique_ptr<impl_t> _impl;
   };
-
-  class literal 
-  {
-  public:
-    literal(class variable var, bool sign = true) : _var{var}, _sign{sign} { }
-    literal(class manager *, long lit);
-
-    class variable variable() const { return _var; }
-    proposition name() const { return _var.name(); }
-    bool sign() const { return _sign; }
-    class manager *manager() const { return _var.manager(); }
-
-    literal operator!() const {
-      return literal{_var, !_sign};
-    }
-
-    long handle() const {
-      return _sign ? long(_var.handle()) : -long(_var.handle());
-    }
-
-  private:
-    class variable _var;
-    bool _sign = true;
-  };
-
-  inline literal variable::operator!() const {
-    return literal{*this, false};
-  }
 
   struct element;
 
   class node {
   public:
-    node(node const&) = default;
-    node(node &&) = default;
-    node(class manager *, sdd_node_t *);
+    node(node const&);
+    node(node &&);
+    node(class manager *, DdNode *);
+    ~node();
 
-    node(class literal lit);
     node(variable lit);
     
-    node &operator=(node const&) = default;
-    node &operator=(node &&) = default;
+    node &operator=(node const&);
+    node &operator=(node &&);
 
-    class manager *manager() const { return _mgr; }
-    //sdd_node_t *handle() const { return _node.get(); }
-    sdd_node_t *handle() const { return _node; }
+    class manager *manager() const;
+    BDD handle() const;
 
-    sdd::node minimize() const;
+    size_t hash() const;
 
     std::vector<variable> variables() const;
 
     bool operator==(node const&other) const = default;
 
-    size_t count() const;
-
     bool is_valid() const;
     bool is_unsat() const;
     bool is_sat() const;
-
-    std::optional<std::vector<class literal>> model() const;
     
-    bool is_literal() const;
-    bool is_decision() const;
-
-    std::optional<class literal> literal() const;
-    std::vector<element> elements() const;
-
-    node condition(class literal lit) const;
-    node condition(std::vector<class literal> const& lits) const;
+    node condition(variable lit, bool sign) const;
     node condition(std::vector<class variable> const& lits, bool sign) const;
     node condition(
       std::vector<black::proposition> const& props, bool sign
     ) const;
-
-    node rename(std::function<black::proposition(black::proposition)> map);
 
     node change(std::function<black::proposition(black::proposition)> map);
     node operator[](std::function<black::proposition(black::proposition)> map) {
@@ -185,18 +134,9 @@ namespace black::sdd {
   private:
     friend class manager;
     
-    class manager *_mgr;
-    //std::shared_ptr<sdd_node_t> _node;
-    sdd_node_t *_node;
+    struct impl_t;
+    std::unique_ptr<impl_t> _impl;
   };
-
-  struct element {
-    node prime;
-    node sub;
-  };
-
-  std::ostream &operator<<(std::ostream &str, literal const&);
-  std::ostream &operator<<(std::ostream &str, std::vector<literal> const&);
 
   node operator!(node n);
   node operator&&(node n1, node n2);
@@ -287,16 +227,9 @@ struct std::hash<black::sdd::variable> {
 };
 
 template<>
-struct std::hash<black::sdd::literal> {
-  size_t operator()(black::sdd::literal lit) const {
-    return std::hash<black::proposition>{}(lit.name());
-  }
-};
-
-template<>
 struct std::hash<black::sdd::node> {
   size_t operator()(black::sdd::node node) const {
-    return std::hash<sdd_node_t *>{}(node.handle());
+    return node.hash();
   }
 };
 

@@ -78,13 +78,6 @@ namespace black_internal {
     std::cerr << "   - finals:\n";
     for(auto v : aut.finals.variables())
       std::cerr << "     - " << black::to_string(v.name()) << "\n";
-    std::cerr << " - formulas:\n";
-    std::cerr << "   - init: "
-              << black::to_string(aut.manager->to_formula(aut.init)) << "\n";
-    std::cerr << "   - trans:\n"
-              << black::to_string(aut.manager->to_formula(aut.trans)) << "\n";
-    std::cerr << "   - finals: "
-              << black::to_string(aut.manager->to_formula(aut.finals)) << "\n";
 
     return aut;
   }

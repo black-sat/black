@@ -23,9 +23,11 @@
 //
 
 #include <black/sdd/sdd.hpp>
-#include <black/sdd/sdd.h>
+
+#include <black/cudd/cuddObj.hh>
 
 #include <tsl/hopscotch_map.h>
+#include <tsl/hopscotch_set.h>
 
 #include <cstdlib>
 #include <random>
@@ -43,73 +45,56 @@ namespace black::sdd {
   // manager
   //
   struct manager::impl_t {
-    impl_t(alphabet *_sigma, size_t nvars) 
-      : sigma{_sigma}, mgr{sdd_manager_create(SddLiteral(nvars), 0)}
-      { 
-        black_assert(nvars > 0);
-      }
+    impl_t(alphabet *_sigma) : sigma{_sigma}, mgr{new Cudd} { }
 
-    tsl::hopscotch_map<proposition, sdd::variable> map;
-    std::vector<sdd::variable> vars;
+    tsl::hopscotch_map<proposition, DdNode *> prop_to_var;
+    tsl::hopscotch_map<DdNode *, proposition> var_to_prop;
+    tsl::hopscotch_map<size_t, DdNode *> index_to_var;
     tsl::hopscotch_map<node, logic::formula<logic::propositional>> formulas;
     
     alphabet *sigma;
-    SddManager *mgr;
-    SddLiteral next_var = 1;
+    Cudd *mgr;
+    int next_var = 0;
     tsl::hopscotch_map<
       black::logic::formula<black::logic::QBF>, 
       node
     > to_node_cache;
   };
 
-  manager::manager(alphabet *sigma, size_t vars) 
-    : _impl{std::make_unique<impl_t>(sigma, vars)} { }
+  manager::manager(alphabet *sigma) 
+    : _impl{std::make_unique<impl_t>(sigma)} { }
 
   manager::manager(manager &&) = default;
   manager &manager::operator=(manager &&) = default;
   manager::~manager() = default;
 
-  void manager::minimize() const {
-    sdd_manager_minimize(handle());
-  }
-
   variable manager::variable(proposition name) {
-    if(_impl->map.contains(name))
-      return _impl->map.at(name);
+    if(_impl->prop_to_var.contains(name))
+      return sdd::variable{this, name, _impl->prop_to_var.at(name)};
 
-    while(_impl->next_var > sdd_manager_var_count(_impl->mgr))
-      sdd_manager_add_var_after_last(_impl->mgr);
-
-    SddLiteral var = _impl->next_var++;
+    int index = _impl->next_var++;
+    DdNode * var = _impl->mgr->bddVar(index).getNode();
     
-    sdd::variable result{this, name, unsigned(var)};
-    _impl->vars.push_back(result);
-    _impl->map.insert({name, result});
+    _impl->prop_to_var.insert({name, var});
+    _impl->var_to_prop.insert({var, name});
+    _impl->index_to_var.insert({index, var});
 
-    return result;
-  }
-
-  std::vector<class variable> 
-  manager::variables(std::vector<proposition> props) {
-    std::vector<class variable> result;
-    for(auto prop : props)
-      result.push_back(variable(prop));
-    return result;
+    return sdd::variable{this, name, var};
   }
 
   node manager::top() {
-    return node{this, sdd_manager_true(handle())};
+    return node{this, _impl->mgr->bddOne().getNode()};
   }
 
   node manager::bottom() {
-    return node{this, sdd_manager_false(handle())};
+    return node{this, _impl->mgr->bddZero().getNode()};
   }
 
   alphabet *manager::sigma() const {
     return _impl->sigma;
   }
 
-  SddManager *manager::handle() const {
+  Cudd *manager::handle() const {
     return _impl->mgr;
   }
 
@@ -171,188 +156,122 @@ namespace black::sdd {
     return result;
   }
 
-  logic::formula<logic::propositional> manager::to_formula(node n) {
-    if(_impl->formulas.contains(n))
-      return _impl->formulas.at(n);
-    
-    auto result = [&]() -> logic::formula<logic::propositional> {
-      if(n.is_valid())
-        return _impl->sigma->top();
-      else if(n.is_unsat())
-        return _impl->sigma->bottom();
-      else if(n.is_literal()) {
-        sdd::literal lit = n.literal().value();
-        auto prop = _impl->vars[lit.variable().handle() - 1].name();
-        if(lit.sign())
-          return prop;
-        return !prop;
-      } else {
-        black_assert(n.is_decision());
-
-        auto elements = n.elements();
-        return big_or(*_impl->sigma, elements, [&](auto elem) {
-          return to_formula(elem.prime) && to_formula(elem.sub);
-        });
-      }
-    }();
-    
-    _impl->formulas.insert({n, result});
-    return result;
-  }
-
   //
   // variable and literal
   //
-  variable::variable(class manager *mgr, unsigned var) 
-    : _mgr{mgr}, _name{_mgr->_impl->vars[var - 1].name()}, _var{var} { }
+  struct variable::impl_t {
+    class manager *_mgr;
+    proposition _name;
+    DdNode * _var;
+  };
 
-  literal::literal(class manager *mgr, SddLiteral lit)
-    : _var{mgr, unsigned(std::abs(lit))}, _sign{lit > 0} { }
+  variable::variable(class manager *mgr, proposition name, DdNode * var) 
+      : _impl{std::make_unique<impl_t>(mgr, name, var)} { }
+
+  variable::variable(class manager *mgr, DdNode * var) 
+    : variable{mgr, mgr->_impl->var_to_prop.at(var), var} { }
+
+  variable::variable(variable const& other) 
+    : _impl{std::make_unique<impl_t>(*other._impl)} { }
+    
+  variable &variable::operator=(variable const& other) {
+    _impl = std::make_unique<impl_t>(*other._impl);
+    return *this;
+  }
+
+  variable::~variable() = default;
+  
+  variable::variable(variable &&) = default;
+  variable &variable::operator=(variable &&) = default;
+
+  proposition variable::name() const { return _impl->_name; }
+  class manager *variable::manager() const { return _impl->_mgr; }
+  BDD variable::handle() const { 
+    return BDD(*manager()->handle(), _impl->_var); 
+  }
+
+  node variable::operator!() const {
+    return node{ manager(), _impl->_var };
+  }
 
   //
   // node
   //
-  // node::node(class manager *mgr, SddNode *n) 
-  //   : _mgr{mgr}, _node{
-  //     std::shared_ptr<SddNode>{
-  //       sdd_ref(n, mgr->handle()), [=](SddNode *_n) {
-  //         sdd_deref(_n, mgr->handle());
-  //       }
-  //     }
-  //   } { }
-  node::node(class manager *mgr, SddNode *n) 
-    : _mgr{mgr}, _node{sdd_ref(n, mgr->handle())} { }  
+  struct node::impl_t {
+    class manager *_mgr;
+    DdNode * _node;
+  };
 
-  node::node(class literal lit) : _mgr{lit.manager()}, _node{
-    sdd_manager_literal(lit.handle(), _mgr->handle())
-  } { }
+  node::node(class manager *mgr, DdNode * n) 
+    : _impl{std::make_unique<impl_t>(mgr, n)} { }  
 
-  node::node(variable var) : node{(class literal)(var)} { }
+  node::node(variable var) : node{var.manager(), var.handle().getNode()} { }
 
-  sdd::node node::minimize() const {
-    Vtree *tree = sdd_vtree_of(handle());
-    if(!tree)
-      return *this;
-    
-    sdd_vtree_minimize(tree, manager()->handle());
+  node::~node() = default; 
 
+  node::node(node const& other) 
+    : _impl{std::make_unique<impl_t>(*other._impl)} { }
+
+  node &node::operator=(node const& other) {
+    _impl = std::make_unique<impl_t>(*other._impl);
     return *this;
   }
 
-  std::vector<variable> node::variables() const {
-    auto array = free_later(sdd_variables(handle(), manager()->handle()));
-    
-    std::vector<variable> result;
-    for(unsigned i = 1; i <= sdd_manager_var_count(manager()->handle()); ++i) {
-      if(array[i])
-        result.push_back(manager()->_impl->vars[i - 1]);
-    }
-    return result;
+  
+  node::node(node &&) = default;
+  node &node::operator=(node &&) = default;
+
+  class manager *node::manager() const { return _impl->_mgr; }
+  BDD node::handle() const { 
+    return BDD(*manager()->handle(), _impl->_node); 
   }
 
-  size_t node::count() const {
-    return sdd_count(handle());
+  size_t node::hash() const {
+    return std::hash<DdNode *>{}(handle().getNode());
+  }
+
+  std::vector<variable> node::variables() const {
+    tsl::hopscotch_set<variable> vars;
+    std::vector<unsigned int> support = handle().SupportIndices();
+    for(auto i : support)
+      vars.insert(variable{
+        manager(),
+        manager()->_impl->index_to_var.at(i)
+      });
+    
+    return std::vector<variable>(begin(vars), end(vars));
   }
 
   bool node::is_valid() const {
-    return sdd_node_is_true(handle());
+    return !(*this).handle().IsZero();
   }
 
   bool node::is_unsat() const {
-    return sdd_node_is_false(handle());
+    return handle().IsZero();
   }
 
   bool node::is_sat() const {
     return !is_unsat();
   }
 
-  std::optional<std::vector<literal>> node::model() const 
-  {
-    std::vector<sdd::literal> model;
-
-    auto vars = variables();
-    
-    node n = *this;
-    size_t i = 0;
-    while(true) { // vars.size() iterations max anyway
-      if(n.is_unsat())
-        return {};
-      if(n.is_valid())
-        return model;
-      
-      class literal lit = vars.at(i);
-      node choice = n.condition(lit);
-      
-      if(choice.is_unsat()) {
-        lit = !lit;
-        choice = n.condition(lit);
-      }
-
-      // arbitrary choice now
-      model.push_back(lit);
-      n = choice;
-      ++i;
-    }
-  }
-
-  bool node::is_literal() const {
-    return sdd_node_is_literal(handle());
-  }
-
-  bool node::is_decision() const {
-    return sdd_node_is_decision(handle());
-  }
-
-  std::optional<literal> node::literal() const {
-    if(!is_literal())
-      return {};
-    
-    return sdd::literal{manager(), sdd_node_literal(handle())};
-  }
-
-  std::vector<element> node::elements() const {
-    if(!is_decision())
-      return {};
-
-    SddNode **elems = sdd_node_elements(handle());
-    size_t nelems = sdd_node_size(handle());
-
-    std::vector<element> result;
-    for(size_t i = 0; i < nelems; i++) {
-      result.push_back(element{
-        node{manager(), elems[2 * i]},
-        node{manager(), elems[2 * i + 1]}
-      });
-    }
-
-    return result;
-  }
-
-  node node::condition(class literal lit) const {
+  node node::condition(variable var, bool sign) const {
+    BDD literal = sign ? var.handle() : (!var).handle();
     return node{
-      manager(), sdd_condition(lit.handle(), handle(), manager()->handle())
+      manager(),
+      handle().Constrain(literal).getNode()
     };
-  }
-
-  node node::condition(std::vector<class literal> const& lits) const {
-    node n = *this;
-    for(auto lit : lits) {
-      n = n.condition(lit);
-      if(n.is_valid() || n.is_unsat())
-        break;
-    }
-    return n;
   }
 
   node node::condition(std::vector<class variable> const& v, bool sign) const 
   {
-    node n = *this;
-    for(auto var : v) {
-      n = n.condition(sign ? var : !var);
-      if(n.is_valid() || n.is_unsat())
-        break;
-    }
-    return n;
+    node cube = manager()->top();
+    for(auto var : v)
+      cube = cube && (sign ? var : !var);
+
+    return node{
+      manager(),
+      handle().Constrain(cube.handle()).getNode()
+    };
   }
 
   node node::condition(
@@ -362,13 +281,6 @@ namespace black::sdd {
     for(auto p : props)
       vars.push_back(manager()->variable(p));
     return condition(vars, sign);
-  }
-
-  node node::rename(std::function<black::proposition(black::proposition)> map) 
-  {
-    auto f = manager()->to_formula(*this);
-    auto renamed = black_internal::rename(f, map);
-    return manager()->to_node(renamed);
   }
 
   node node::change(std::function<black::proposition(black::proposition)> map)
@@ -387,69 +299,33 @@ namespace black::sdd {
     return exists(old, changes && *this);
   }
 
-  std::ostream &operator<<(std::ostream &str, literal const& lit) {
-    if(lit.sign())
-      str << black::to_string(lit.variable().name());
-    else
-      str << "!" << black::to_string(lit.variable().name());
-    return str;
-  }
-
-  std::ostream &operator<<(std::ostream &str, std::vector<literal> const&lits) {
-    if(lits.empty()) {
-      str << "{ }";
-      return str;
-    }
-      
-    str << "{ ";
-    for(size_t i = 0; i < lits.size() - 1; i++) {
-      str << lits[i] << ", ";
-    }
-    str << lits.back();
-    str << " }";
-
-    return str;
-  }
-
   node operator!(node n) {
-    return node{
-      n.manager(),
-      sdd_negate(n.handle(), n.manager()->handle())
-    };
+    return node{ n.manager(), (!n.handle()).getNode() };
   }
 
   node operator&&(node n1, node n2) {
-    return node{
-      n1.manager(),
-      sdd_conjoin(n1.handle(), n2.handle(), n1.manager()->handle())
-    };
+    return node{ n1.manager(), (n1.handle() & n2.handle()).getNode() };
   }
 
   node operator||(node n1, node n2) {
-    return node{
-      n1.manager(),
-      sdd_disjoin(n1.handle(), n2.handle(), n1.manager()->handle())
-    };
+    return node{ n1.manager(), (n1.handle() | n2.handle()).getNode() };
   }
 
   node exists(variable var, node n) {
     return node{
       n.manager(), 
-      sdd_exists(literal{var}.handle(), n.handle(), n.manager()->handle())
+      n.handle().ExistAbstract(var.handle()).getNode()
     };
   }
    
   node exists(std::vector<variable> const& vars, node n) {
-    std::vector<int> map(
-      size_t(sdd_manager_var_count(n.manager()->handle()) + 1), 0
-    );
-
-    for(auto var : vars)
-      map[var.handle()] = 1;
+    node cube = n.manager()->top();
+    for(auto v : vars)
+      cube = cube && v;
     
     return node{
-      n.manager(), 
-      sdd_exists_multiple(map.data(), n.handle(), n.manager()->handle())
+      n.manager(),
+      n.handle().ExistAbstract(cube.handle()).getNode()
     };
   }
 
@@ -463,14 +339,19 @@ namespace black::sdd {
   node forall(variable var, node n) {
     return node{
       n.manager(), 
-      sdd_forall(literal{var}.handle(), n.handle(), n.manager()->handle())
+      n.handle().UnivAbstract(var.handle()).getNode()
     };
   }
-
+   
   node forall(std::vector<variable> const& vars, node n) {
+    node cube = n.manager()->top();
     for(auto v : vars)
-      n = forall(v, n);
-    return n;
+      cube = cube && v;
+    
+    return node{
+      n.manager(),
+      n.handle().UnivAbstract(cube.handle()).getNode()
+    };
   }
 
   node forall(std::vector<black::proposition> const& vars, node n) {
@@ -485,7 +366,10 @@ namespace black::sdd {
   }
 
   node iff(node n1, node n2) {
-    return implies(n1, n2) && implies(n2, n1);
+    return node{
+      n1.manager(),
+      n1.handle().Xnor(n2.handle()).getNode()
+    };
   }  
 
 }

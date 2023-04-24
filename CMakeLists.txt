@@ -89,6 +89,7 @@ find_package(tsl-hopscotch-map REQUIRED)
 find_package(fmt REQUIRED)
 
 add_subdirectory(external/clipp EXCLUDE_FROM_ALL)
+add_subdirectory(external/cudd EXCLUDE_FROM_ALL)
 
 # mark the depenencies to ignore warnings from their interface headers
 target_mark_as_system(clipp)

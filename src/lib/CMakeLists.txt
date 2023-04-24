@@ -254,7 +254,7 @@ set (
 #
 add_library (black ${LIB_SRC} ${LIB_HEADERS})
 
-target_link_libraries(black PRIVATE fmt::fmt tsl::hopscotch_map sdd)
+target_link_libraries(black PRIVATE fmt::fmt tsl::hopscotch_map sdd cudd)
 target_include_directories(black PUBLIC  
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
