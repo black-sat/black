@@ -269,7 +269,7 @@ namespace black_internal {
 
   automaton incremental_t::encode(formula f) {
     collect_letters(f);
-    return not_empty(to_automaton(0, preprocess(nnf(f))));
+    return to_automaton(0, preprocess(nnf(f)));
   }
 
   automaton incremental_t::to_automaton(size_t nonce, formula f) {
@@ -287,7 +287,12 @@ namespace black_internal {
       return to_automaton(nonce, *b);
 
     automaton result = f.match(
-      [&](auto ...args) { return to_automaton(nonce, args...); }
+      [&](auto ...args) { 
+        indentn++;
+        automaton r = to_automaton(nonce, args...); 
+        indentn--;
+        return r;
+      }
     );
 
     cache.insert({{f, nonce}, result});

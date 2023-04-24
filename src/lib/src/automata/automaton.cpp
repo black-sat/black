@@ -265,7 +265,7 @@ namespace black_internal {
     // std::cerr << "trans: " << black::to_string(trans) << "\n";
     // std::cerr << "finals: " << black::to_string(finals) << "\n";
 
-    std::cerr << "Converting to SDD... " << std::flush;
+    std::cerr << "converting to SDD... " << std::flush;
 
     automaton aut{
       .manager = manager,

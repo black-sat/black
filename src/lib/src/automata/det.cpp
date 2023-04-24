@@ -153,7 +153,7 @@ namespace black_internal {
   {
     aut.letters.push_back(eps().name());
 
-    std::cerr << "k = 1" << std::flush;
+    std::cerr << "semideterminizing... k = 1" << std::flush;
 
     T_eps[0] = make_t_eps();
     T_eps[1] = T_eps[0][aut.variables / primed(2)];
