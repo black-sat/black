@@ -55,6 +55,8 @@ namespace black::sdd {
 
     std::vector<class variable> variables();
 
+    void minimize();
+
     alphabet *sigma() const;
     Cudd *handle() const;
 

@@ -60,7 +60,14 @@ namespace black::sdd {
   };
 
   manager::manager(alphabet *sigma) 
-    : _impl{std::make_unique<impl_t>(sigma)} { }
+    : _impl{std::make_unique<impl_t>(sigma)} 
+  { 
+    // Best so far:
+    // - CUDD_REORDER_WINDOW2
+    // - CUDD_REORDER_WINDOW3
+    // - CUDD_REORDER_WINDOW2_CONV
+    _impl->mgr.AutodynEnable(CUDD_REORDER_WINDOW2_CONV);
+  }
 
   manager::manager(manager &&) = default;
   manager &manager::operator=(manager &&) = default;
@@ -92,6 +99,10 @@ namespace black::sdd {
 
   node manager::bottom() {
     return node{this, _impl->mgr.bddZero().getNode()};
+  }
+
+  void manager::minimize() {
+    _impl->mgr.ReduceHeap(CUDD_REORDER_WINDOW2, 3000);
   }
 
   std::vector<class variable> manager::variables() {

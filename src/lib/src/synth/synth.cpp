@@ -129,8 +129,13 @@ namespace black_internal::synth {
       to_automaton_incremental(mgr, *f) : 
       semideterminize(to_automaton(mgr, spec.spec));
     std::cerr << "done!\n";
+    
+    std::cerr << "Minimizing the BDDs... " << std::flush;
+    mgr->minimize();
+    std::cerr << "done!\n";
 
     //automaton aut = semideterminize(to_automaton(mgr, spec.spec));
+
 
     return automata_spec {
       .inputs = spec.inputs,
