@@ -186,12 +186,13 @@ python-build-one() {
 
   rm -rf "$SRC_DIR/build"
   mkdir "$SRC_DIR/build"
-  fedora 36 cmake \
-    -DENABLE_CMSAT=NO -DENABLE_CVC5=NO -DPython3_EXECUTABLE=$python .. || die
-  fedora 36 make -j $(cat /proc/cpuinfo | grep processor | wc -l) || die
-  fedora 36 root \
+  ubuntu 20.04 cmake \
+    -DENABLE_CMSAT=NO -DENABLE_CVC5=NO \
+    -DPython3_EXECUTABLE=$python -DPYTHON_EXECUTABLE=$python .. || die
+  ubuntu 20.04 make -j $(cat /proc/cpuinfo | grep processor | wc -l) || die
+  ubuntu 20.04 root \
     bash -c "make install && $python python/setup.py bdist_wheel" || die
-  fedora 36 root chown -R $(id -u):$(id -u) /black/build || die
+  ubuntu 20.04 root chown -R $(id -u):$(id -u) /black/build || die
   
   wheel=$(echo "$SRC_DIR"/build/dist/*.whl)
   manylinux=$(echo $wheel | sed 's/linux/manylinux1/g')
