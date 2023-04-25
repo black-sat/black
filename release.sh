@@ -9,10 +9,11 @@ die() {
 }
 
 dependencies() {
-  which wget || die "Missing wget"
-  which curl || die "Missing curl"
-  which jq   || die "Missing jq"
-  which gh   || die "Missing gh"
+  which wget  || die "Missing wget"
+  which curl  || die "Missing curl"
+  which jq    || die "Missing jq"
+  which gh    || die "Missing gh"
+  which twine || die "Missing twine"
 }
 
 setup() {
@@ -24,13 +25,19 @@ setup() {
 
 images() {
   docker build docker \
-    -f docker/Dockerfile.ubuntu -t black:ubuntu
+    -f docker/Dockerfile.ubuntu -t black:ubuntu20.04 \
+    --build-arg VERSION=20.04 --build-arg GCC_VERSION=10
   docker build docker \
-    -f docker/Dockerfile.fedora -t black:fedora
+    -f docker/Dockerfile.ubuntu -t black:ubuntu22.04 \
+    --build-arg VERSION=22.04 --build-arg GCC_VERSION=12
+  docker build docker \
+    -f docker/Dockerfile.fedora -t black:fedora36 --build-arg VERSION=36
 }
 
 launch() {
   image=$1
+  shift
+  ver=$1
   shift
   if [ "$1" = "root" ]; then
     user=''
@@ -39,7 +46,7 @@ launch() {
     user="-u $(id -u)"
   fi
 
-  docker run -it --rm -v $SRC_DIR:/black -w /black/build $user $image "$@"
+  docker run -it --rm -v $SRC_DIR:/black -w /black/build $user $image$ver "$@"
 }
 
 ubuntu() {
@@ -51,7 +58,8 @@ fedora() {
 }
 
 build() {
-  env=$1
+  distro=$1
+  ver=$2
   case $1 in 
     ubuntu)
     gen=DEB
@@ -63,29 +71,33 @@ build() {
     ;;
   esac
 
+  env="$distro $ver"
+
   rm -rf "$SRC_DIR/build"
   mkdir build
   $env cmake -DENABLE_CMSAT=NO -DENABLE_CVC5=NO .. || die
   $env make -j || die
   $env cpack -G $gen || die
 
-  mkdir -p "$SRC_DIR/packages"
+  mkdir -p "$SRC_DIR/packages/$VERSION"
   mv "$SRC_DIR/build/black-sat-$VERSION-Linux.$ext" \
-     "$SRC_DIR/packages/black-sat-$VERSION-1.$(uname -m).$ext" 
+     "$SRC_DIR/packages/$VERSION/black-sat-$VERSION.$distro$ver.$(uname -m).$ext" 
 }
 
 test_pkg() {
-  env=$1
-  case $1 in
+  distro=$1
+  ver=$2
+
+  case $distro in
     ubuntu)
-      cmd="apt update && apt install /black/packages/black-sat-$VERSION-1.$(uname -m).deb && black --help"
+      cmd="apt update && apt install /black/packages/$VERSION/black-sat-$VERSION.$distro$ver.$(uname -m).deb && black --help"
     ;;
     fedora)
-      cmd="yum -y install /black/packages/black-sat-$VERSION-1.$(uname -m).rpm && black --help"
+      cmd="yum -y install /black/packages/$VERSION/black-sat-$VERSION.$distro$ver.$(uname -m).rpm && black --help"
     ;;
   esac
 
-  $env root bash -c "$cmd" || die
+  $distro $ver root bash -c "$cmd" || die
 }
 
 appveyor() {
@@ -113,7 +125,8 @@ appveyor() {
     echo No artifact available in Appveyor. Aborting...
     die
   fi
-  api "$AV_ARTIFACTS_URL"/black-win-x64.zip -o packages/black-$VERSION-win-x64.zip
+  api "$AV_ARTIFACTS_URL"/black-win-x64.zip \
+    -o packages/$VERSION/black-$VERSION-win-x64.zip
 }
 
 release() {
@@ -125,9 +138,9 @@ release() {
     exit 0
   fi
   gh release create --notes-file $temp -p -t v$VERSION --target master v$VERSION
-  gh release upload v$VERSION packages/black-sat-$VERSION-1.x86_64.deb
-  gh release upload v$VERSION packages/black-sat-$VERSION-1.x86_64.rpm
-  gh release upload v$VERSION packages/black-$VERSION-win-x64.zip
+  gh release upload v$VERSION packages/$VERSION/black-sat-$VERSION.x86_64.deb
+  gh release upload v$VERSION packages/$VERSION/black-sat-$VERSION.x86_64.rpm
+  gh release upload v$VERSION packages/$VERSION/black-$VERSION-win-x64.zip
 }
 
 homebrew() {
@@ -135,7 +148,7 @@ homebrew() {
   wget -O "$temp" "https://github.com/black-sat/black/archive/v$VERSION.tar.gz"
   sum=$(shasum -a 256 "$temp" | awk '{print $1}')
   
-  cat <<END > $SRC_DIR/packages/black-sat.rb
+  cat <<END > $SRC_DIR/packages/$VERSION/black-sat.rb
 class BlackSat < Formula
   desc "BLACK (Bounded Lᴛʟ sAtisfiability ChecKer)"
   homepage "https://www.black-sat.org"
@@ -168,17 +181,79 @@ end
 END
 }
 
-main () {
+python-build-one() {
+  python=/usr/bin/python$1
+
+  rm -rf "$SRC_DIR/build"
+  mkdir "$SRC_DIR/build"
+  fedora 36 cmake \
+    -DENABLE_CMSAT=NO -DENABLE_CVC5=NO -DPython3_EXECUTABLE=$python .. || die
+  fedora 36 make -j $(cat /proc/cpuinfo | grep processor | wc -l) || die
+  fedora 36 root \
+    bash -c "make install && $python python/setup.py bdist_wheel" || die
+  fedora 36 root chown -R $(id -u):$(id -u) /black/build || die
+  
+  wheel=$(echo "$SRC_DIR"/build/dist/*.whl)
+  manylinux=$(echo $wheel | sed 's/linux/manylinux1/g')
+  mv $wheel $manylinux
+  
+  mkdir -p "$SRC_DIR/packages/$VERSION"
+  cp "$manylinux" "$SRC_DIR/packages/$VERSION" || die
+}
+
+python-build() {
+  # python-build-one 3.8
+  python-build-one 3.9
+  # python-build-one 3.10
+  # python-build-one 3.11
+}
+
+python-upload() {
+  PASSWORD_FILE=~/.pypi-password.txt
+  if [ ! -f $PASSWORD_FILE ]; then
+    die "Missing $PASSWORD_FILE file"
+  fi
+
+  export TWINE_PASSWORD=$(cat $PASSWORD_FILE)
+  for whl in "$SRC_DIR"/packages/$VERSION/*.whl; do
+    twine upload -u gignico $whl
+  done
+}
+
+main () { 
   dependencies
   setup
   images
-  build ubuntu 
-  test_pkg ubuntu
-  build fedora
-  test_pkg fedora
-  appveyor
-  release
-  homebrew
+
+  arg=$1
+
+  case "$1" in
+    build-only)
+      build ubuntu 20.04
+      test_pkg ubuntu 20.04
+      build ubuntu 22.04
+      test_pkg ubuntu 22.04
+      build fedora 36
+      test_pkg fedora 36
+    ;;
+    python)
+      python-build
+      python-upload
+    ;;
+    python-upload)
+      python-upload
+    ;;
+    release)
+      build ubuntu 20.04
+      test_pkg ubuntu 20.04
+      build ubuntu 22.04
+      test_pkg ubuntu 22.04
+      build fedora 36
+      test_pkg fedora 36
+      appveyor
+      release
+      homebrew
+  esac
 }
 
 main "$@"

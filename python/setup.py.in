@@ -20,12 +20,12 @@ def cmake_paths(path):
 
 
 setup(name='black_sat',
-  version='0.10.3',
+  version='${CMAKE_PROJECT_VERSION}',
   description='BLACK Python API',
   author='Nicola Gigante',
   author_email='nicola.gigante@unibz.it',
   url='https://www.black-sat.org',
-  licence = 'MIT',
+  license = 'MIT',
   license_files = ('LICENSE.txt',),
   py_modules=[],
 #   data_files=[('', ['mpir.dll', 'mathsat.dll'])] if sys.platform == "win32" else [],
@@ -46,6 +46,7 @@ setup(name='black_sat',
     )
     ],
   classifiers=[
-      'License :: MIT'
+      'License :: OSI Approved :: MIT License',
+      'Topic :: Scientific/Engineering :: Artificial Intelligence'
   ]
 )
