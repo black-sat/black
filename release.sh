@@ -31,7 +31,9 @@ images() {
     -f docker/Dockerfile.ubuntu -t black:ubuntu22.04 \
     --build-arg VERSION=22.04 --build-arg GCC_VERSION=12
   docker build docker \
-    -f docker/Dockerfile.fedora -t black:fedora36 --build-arg VERSION=36
+    -f docker/Dockerfile.fedora -t black:fedora36 --build-arg VERSION=37
+  docker build docker \
+    -f docker/Dockerfile.fedora -t black:fedora36 --build-arg VERSION=38
 }
 
 launch() {
@@ -235,8 +237,10 @@ main () {
       test_pkg ubuntu 20.04
       build ubuntu 22.04
       test_pkg ubuntu 22.04
-      build fedora 36
-      test_pkg fedora 36
+      build fedora 37
+      test_pkg fedora 37
+      build fedora 38
+      test_pkg fedora 38
       appveyor
     ;;
     upload-only)
@@ -255,8 +259,10 @@ main () {
       test_pkg ubuntu 20.04
       build ubuntu 22.04
       test_pkg ubuntu 22.04
-      build fedora 36
-      test_pkg fedora 36
+      build fedora 37
+      test_pkg fedora 37
+      build fedora 38
+      test_pkg fedora 38
       appveyor
       release
       homebrew
