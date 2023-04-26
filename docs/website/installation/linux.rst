@@ -6,17 +6,22 @@ Installation on Linux
 Binary packages
 ----------------
 
-We provide binary packages for **Ubuntu 22.04** (the latest LTS) and
-**Fedora 36** (the latest version).
+We provide binary packages for **Ubuntu 20.04**, **Ubuntu 22.04** (the latest LTS) and **Fedora 37** and **38** (the latest versions).
 
 .. list-table::
    :header-rows: 1
 
-   * - Ubuntu 22.04
-     - Fedora 36
-   * - |UbuntuBadge|_
-     - |FedoraBadge|_
+   * - Ubuntu 20.04
+     - Ubuntu 22.04
+     - Fedora 37
+     - Fedora 38
+   * - |Ubuntu20.04Badge|_
+     - |Ubuntu22.04Badge|_
+     - |Fedora37Badge|_
+     - |Fedora38Badge|_
    * - ``sudo apt install ⟨file⟩``
+     - ``sudo apt install ⟨file⟩``
+     - ``sudo dnf install ⟨file⟩``
      - ``sudo dnf install ⟨file⟩``
 
 These packages should work on other Debian-based and RedHat-based distributions
@@ -26,10 +31,14 @@ the packages should work but do not, please open a GitHub `issue
 <https://github.com/black-sat/black/issues>`_.
 
 
-.. |UbuntuBadge| image:: https://badgen.net/badge/Download%20v0.10.3/.deb/green
-.. _UbuntuBadge: https://github.com/black-sat/black/releases/download/v0.10.3/black-sat-0.10.3-1.x86_64.deb
-.. |FedoraBadge| image:: https://badgen.net/badge/Download%20v0.10.3/.rpm/green
-.. _FedoraBadge: https://github.com/black-sat/black/releases/download/v0.10.3/black-sat-0.10.3-1.x86_64.rpm
+.. |Ubuntu20.04Badge| image:: https://badgen.net/badge/Download%20v0.10.3/.deb/green
+.. _Ubuntu20.04Badge: https://github.com/black-sat/black/releases/download/v0.10.3/black-sat-0.10.3.ubuntu20.04.x86_64.deb
+.. |Ubuntu22.04Badge| image:: https://badgen.net/badge/Download%20v0.10.3/.deb/green
+.. _Ubuntu22.04Badge: https://github.com/black-sat/black/releases/download/v0.10.3/black-sat-0.10.3.ubuntu22.04.x86_64.deb
+.. |Fedora37Badge| image:: https://badgen.net/badge/Download%20v0.10.3/.rpm/green
+.. _Fedora37Badge: https://github.com/black-sat/black/releases/download/v0.10.3/black-sat-0.10.3.fedora37.x86_64.rpm
+.. |Fedora38Badge| image:: https://badgen.net/badge/Download%20v0.10.3/.rpm/green
+.. _Fedora38Badge: https://github.com/black-sat/black/releases/download/v0.10.3/black-sat-0.10.3.fedora38.x86_64.rpm
 
 Compilation from source
 ------------------------
