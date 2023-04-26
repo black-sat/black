@@ -203,10 +203,10 @@ python-build-one() {
 }
 
 python-build() {
-  # python-build-one 3.8
+  python-build-one 3.8
   python-build-one 3.9
-  # python-build-one 3.10
-  # python-build-one 3.11
+  python-build-one 3.10
+  python-build-one 3.11
 }
 
 python-upload() {
