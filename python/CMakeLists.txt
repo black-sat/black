@@ -52,6 +52,20 @@ if(BLACK_ENABLE_PYTHON_BINDINGS)
     set_target_properties(pyblack PROPERTIES OUTPUT_NAME black_sat)
 
     # install(TARGETS pyblack DESTINATION "${Python3_SITELIB}")
+
+    get_target_property(
+      PYBLACK_INCLUDE_DIRS 
+      pyblack 
+      INCLUDE_DIRECTORIES
+    )
+    
+    get_target_property(
+      BLACK_INCLUDE_DIRS 
+      black 
+      INCLUDE_DIRECTORIES
+    )
+
+    configure_file(setup.py.in setup.py)
   
   endif()
     
