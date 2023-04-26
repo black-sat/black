@@ -31,9 +31,9 @@ images() {
     -f docker/Dockerfile.ubuntu -t black:ubuntu22.04 \
     --build-arg VERSION=22.04 --build-arg GCC_VERSION=12
   docker build docker \
-    -f docker/Dockerfile.fedora -t black:fedora36 --build-arg VERSION=37
+    -f docker/Dockerfile.fedora -t black:fedora37 --build-arg VERSION=37
   docker build docker \
-    -f docker/Dockerfile.fedora -t black:fedora36 --build-arg VERSION=38
+    -f docker/Dockerfile.fedora -t black:fedora38 --build-arg VERSION=38
 }
 
 launch() {
@@ -141,7 +141,7 @@ release() {
   fi
   gh release create --notes-file $temp -p -t v$VERSION --target master v$VERSION
 
-  for file in packages/$VERSION/*; do
+  for file in packages/$VERSION/*.{rpm,deb,zip}; do
     gh release upload v$VERSION $file
   done
 }
