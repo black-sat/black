@@ -102,7 +102,7 @@ test_pkg() {
 
 appveyor() {
   AV_API=https://ci.appveyor.com/api
-  AV_TOKEN=$(cat appveyor.token)
+  AV_TOKEN=$(cat ~/.appveyor.token)
   AV_USER=nicola-gigante
   AV_REPO=black
   AV_PROJECTS_URL=$AV_API/projects/$AV_USER/$AV_REPO
@@ -130,7 +130,7 @@ appveyor() {
 }
 
 release() {
-  cat gh.token | gh auth login -p ssh --with-token
+  cat ~/.github.token | gh auth login -p ssh --with-token
   temp=$(mktemp)
   vim $temp
   if [ -z "$(cat $temp)" ]; then 
@@ -138,9 +138,10 @@ release() {
     exit 0
   fi
   gh release create --notes-file $temp -p -t v$VERSION --target master v$VERSION
-  gh release upload v$VERSION packages/$VERSION/black-sat-$VERSION.x86_64.deb
-  gh release upload v$VERSION packages/$VERSION/black-sat-$VERSION.x86_64.rpm
-  gh release upload v$VERSION packages/$VERSION/black-$VERSION-win-x64.zip
+
+  for file in packages/$VERSION/*; do
+    gh release upload v$VERSION $file
+  done
 }
 
 homebrew() {
@@ -236,6 +237,11 @@ main () {
       test_pkg ubuntu 22.04
       build fedora 36
       test_pkg fedora 36
+      appveyor
+    ;;
+    upload-only)
+      release
+      homebrew
     ;;
     python)
       python-build
@@ -244,7 +250,7 @@ main () {
     python-upload)
       python-upload
     ;;
-    release)
+    all)
       build ubuntu 20.04
       test_pkg ubuntu 20.04
       build ubuntu 22.04
