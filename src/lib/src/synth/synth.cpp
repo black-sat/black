@@ -122,12 +122,10 @@ namespace black_internal::synth {
   automata_spec to_automata_spec(black::bdd::manager *mgr, ltlp_spec spec) {
     black_assert(mgr);
 
-    auto f = spec.spec.to<logic::formula<LTLXFG>>();
+    //auto f = spec.spec.to<logic::formula<LTLXFG>>();
 
     std::cerr << "Building the automaton... " << std::flush;
-    automaton aut = f ? 
-      to_automaton_incremental(mgr, *f) : 
-      semideterminize(to_automaton(mgr, spec.spec));
+    automaton aut = to_automaton_incremental(mgr, spec.spec);
     std::cerr << "done!\n";
     
     std::cerr << "Minimizing the BDDs... " << std::flush;

@@ -40,21 +40,21 @@ namespace black_internal {
     black::bdd::node finals;
   };
 
-  struct LTLXFG : logic::make_combined_fragment_t<
-    logic::propositional,
-    logic::make_fragment_t<
-      logic::syntax_list<
-        logic::syntax_element::eventually,
-        logic::syntax_element::always,
-        logic::syntax_element::tomorrow,
-        logic::syntax_element::w_tomorrow
-      >
-    >
-  > { };
+  // struct LTLXFG : logic::make_combined_fragment_t<
+  //   logic::propositional,
+  //   logic::make_fragment_t<
+  //     logic::syntax_list<
+  //       logic::syntax_element::eventually,
+  //       logic::syntax_element::always,
+  //       logic::syntax_element::tomorrow,
+  //       logic::syntax_element::w_tomorrow
+  //     >
+  //   >
+  // > { };
 
   automaton to_automaton(black::bdd::manager *, logic::formula<logic::LTLP>);
   automaton to_automaton_incremental(
-    black::bdd::manager *, logic::formula<LTLXFG>
+    black::bdd::manager *, logic::formula<logic::LTLP>
   );
 
   automaton semideterminize(automaton);

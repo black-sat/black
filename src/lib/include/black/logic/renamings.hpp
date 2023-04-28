@@ -363,6 +363,12 @@ namespace black_internal::renamings {
 
   };
 
+  struct to_plain {
+    black::proposition rename(black::proposition p) const {
+      return plain(p);
+    }
+  };
+
 }
 
 namespace black_internal {
