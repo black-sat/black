@@ -42,32 +42,26 @@ namespace black_internal {
         mgr{aut.manager}, 
         sigma{*mgr->sigma()},
         _eps{mgr->variable(freshed(sigma.proposition("eps")))},
-        T_eps{mgr->top(), mgr->top(), mgr->top()} { }
-
-    size_t other(size_t primes);
+        T_eps{mgr->top()},
+        T_eps2{mgr->top()} { }
 
     bdd::variable eps();
     bdd::node make_t_eps();
-    std::pair<bdd::node, bdd::node> T_step(
-      bdd::node last, bdd::node lastp, size_t primes
-    );
-    bdd::node trans(bdd::node t_kp, bdd::node t_k);
-    bool is_total(bdd::node t_quot);
+    bdd::node T_step(bdd::node last);
+    bdd::node trans(bdd::node t_k);
+    bool is_total(bdd::node t);
     std::vector<black::proposition> vars(bdd::node trans);
     bdd::node init(std::vector<black::proposition> const &vars);
-    bdd::node finals(bdd::node t_k, size_t primes);
+    bdd::node finals(bdd::node t_k);
     automaton semideterminize();
 
     automaton aut;
     bdd::manager *mgr;
     black::alphabet &sigma;
     bdd::variable _eps;
-    bdd::node T_eps[3];
+    bdd::node T_eps;
+    bdd::node T_eps2;
   };
-
-  size_t det_t::other(size_t p) {
-    return 3 - p; // 3 - 1 = 2, 3 - 2 = 1
-  }
 
   bdd::variable det_t::eps() {
     return _eps;
@@ -82,37 +76,18 @@ namespace black_internal {
     return (eps() && frame) || (!eps() && aut.trans);
   }
 
-  std::pair<bdd::node, bdd::node> det_t::T_step(
-    bdd::node lastp, bdd::node last, size_t primes
-  ) {
-    tsl::hopscotch_map<black::proposition, black::proposition> freshes;
-    for(auto p : aut.letters)
-      freshes.insert({p, freshed(p)});
-    
-    auto f = make_renamer([&](black::proposition p) {
-      if(freshes.contains(p))
-        return freshes.at(p);
-      return p;
-    });
-
-    bdd::node tp = 
-      exists(primed(other(primes)) * aut.variables,
-        lastp[aut.letters / (f | primed())] && T_eps[primes]
-      );
-    bdd::node t =
-      exists(primed(other(primes)) * aut.variables,
-        last[aut.letters / f] && T_eps[primes]
-      );
-
-    return std::pair{tp, t};
+  bdd::node det_t::T_step(bdd::node last) {
+    return exists(primed(2) * aut.variables,
+      T_eps2[aut.letters / fresh()] && last[aut.variables / primed(2)]
+    );
   }
 
-  bdd::node det_t::trans(bdd::node t_kp, bdd::node t_k) {
+  bdd::node det_t::trans(bdd::node t_k) {
     return 
       forall(of_kind(aut.variables),
         iff(
-          t_kp.condition(aut.letters, true),
-          t_k.condition(eps(), false)
+          t_k.condition(eps(), false),
+          t_k.condition(aut.letters, true)[!of_kind(aut.variables) / primed()]
         )
       );
   }
@@ -145,11 +120,11 @@ namespace black_internal {
     });
   }
   
-  bdd::node det_t::finals(bdd::node t_k, size_t primes) {
+  bdd::node det_t::finals(bdd::node t_k) {
     return exists(of_kind(aut.variables),
       aut.init && 
       t_k.condition(aut.letters, true) && 
-      aut.finals[aut.variables / primed(primes)]
+      aut.finals[aut.variables / primed()]
     );
   }
 
@@ -159,26 +134,21 @@ namespace black_internal {
 
     std::cerr << "semideterminizing... k = 1" << std::flush;
 
-    T_eps[0] = make_t_eps();
-    T_eps[1] = T_eps[0][aut.variables / primed(2)];
-    T_eps[2] = T_eps[0][primed(1) * aut.variables / primed(2)]
-                       [aut.variables / primed(1)];
+    T_eps = make_t_eps();
+    T_eps2 = T_eps[primed() * aut.variables / primed(2)];
 
     size_t k = 1;
-    size_t primes = 1;
-    bdd::node t_k = T_eps[0];
-    bdd::node t_kp = T_eps[0];
+    bdd::node t_k = T_eps;
     bdd::node trans = mgr->top();
 
     do {
       k++;
-      primes = other(primes);
 
       std::cerr << ", " << k << std::flush;
 
-      std::tie(t_kp, t_k) = T_step(t_kp, t_k, primes);
+      t_k = T_step(t_k);
 
-      trans = this->trans(t_kp, t_k);
+      trans = this->trans(t_k);
 
     } while(!is_total(trans));
 
@@ -186,7 +156,7 @@ namespace black_internal {
 
     std::vector<black::proposition> vars = this->vars(trans);
     bdd::node init = this->init(vars);
-    bdd::node finals = this->finals(t_k, primes);
+    bdd::node finals = this->finals(t_k);
 
     std::cerr << "done!\n";
 
