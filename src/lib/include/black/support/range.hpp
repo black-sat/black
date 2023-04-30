@@ -28,40 +28,47 @@
 #include <black/support/utils.hpp>
 
 #include <ranges>
+#include <cstdint>
 
 namespace black::support::internal 
 {
   class range_iterator;
 
+  //
+  // range type providing an integer sequence [begin, end], extrema included.
+  //
+  // The range is empty if `end < begin`.
+  //
   class range 
   {
   public:
-    using value_type = size_t;
-    using reference = size_t const&;
+    using value_type = int64_t;
+    using reference = int64_t const&;
     using const_reference = size_t const&;
     using iterator = range_iterator;
     using const_iterator = range_iterator;
 
-    range(size_t begin, size_t end) : _begin{begin}, _end{end} { }
+    range(int64_t begin, int64_t end) : _begin{begin}, _end{end} { }
 
     range_iterator begin() const;
     std::default_sentinel_t end() const { return std::default_sentinel; }
 
   private:
-    size_t _begin;
-    size_t _end;
+    int64_t _begin;
+    int64_t _end;
   };
 
   class range_iterator 
   {
   public:
-    using value_type = size_t;
-    using difference_type = ssize_t;
-    using reference = size_t const&;
-    using const_reference = size_t const&;
+    using value_type = int64_t;
+    using difference_type = int64_t;
+    using reference = int64_t const&;
+    using const_reference = int64_t const&;
 
     range_iterator() = default;
-    range_iterator(size_t value, size_t end) : _value{value}, _end{end} { }
+    range_iterator(int64_t value, int64_t end) 
+      : _value{value}, _end{end} { }
 
     // ForwardIterator requirements
     reference operator*() const {
@@ -82,16 +89,16 @@ namespace black::support::internal
     bool operator==(range_iterator const&other) const = default;
 
     friend bool operator==(range_iterator it, std::default_sentinel_t) {
-      return it._value == it._end;
+      return it._value > it._end;
     }
     
     friend bool operator==(std::default_sentinel_t, range_iterator it) {
-      return it._value == it._end;
+      return it._value > it._end;
     }
     
   private:
-    size_t _value = 0;
-    size_t _end = 0;
+    int64_t _value = 0;
+    int64_t _end = 0;
   };
 
   inline auto begin(range r) { return r.begin(); } 

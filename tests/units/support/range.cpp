@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2020 Nicola Gigante
+// (C) 2019 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,35 +21,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SUPPORT_DEBUG_HPP
-#define BLACK_SUPPORT_DEBUG_HPP
+#include <catch.hpp>
 
-#include <fmt/format.h>
+#include <black/support.hpp>
 
-namespace black::support::internal {
+TEST_CASE("range() utility type") {
   
-  extern std::optional<std::string> debug_msgs_tag;
+  using namespace black::support;
 
-  inline void enable_debug_msgs(std::string const &t) { debug_msgs_tag = t; }
-  inline void disable_debug_msgs() { debug_msgs_tag = {}; }
-  inline bool are_debug_msgs_enabled() { return debug_msgs_tag.has_value(); }
+  size_t x = 0;
 
-  void debug(
-    const char *filename, size_t line, const char *format, 
-    fmt::format_args args
-  );
+  for(int64_t i : range(1, 10))
+    x += i;
+  
+  REQUIRE(x == 55);
+
+  for(int64_t i : range(1, 1))
+    x += i;
+
+  REQUIRE(x == 56);
+
+  for(int64_t i : range(10, 5))
+    x += i;
+
+  REQUIRE(x == 56);
 
 }
-
-#define black_debug(Message, ...)                                   \
-  black::support::internal::debug (                                 \
-    __FILE__, __LINE__, Message, fmt::make_format_args(__VA_ARGS__) \
-  )
-
-namespace black::support {
-  using internal::enable_debug_msgs;
-  using internal::disable_debug_msgs;
-  using internal::are_debug_msgs_enabled;
-}
-
-#endif // BLACK_SUPPORT_DEBUG_HPP

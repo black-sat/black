@@ -56,12 +56,15 @@ set(
   -Wno-missing-braces
   -Wno-zero-as-null-pointer-constant
   -Wno-unsafe-buffer-usage
+  -Wno-sign-conversion
+  -Wno-newline-eof
 )
 
 # GCC
 set(
   GNU_WARNINGS -Wall -Wextra -pedantic -Werror
   -Wno-pragmas -Wno-unknown-pragmas -Wno-unused-but-set-parameter
+  -Wno-sign-conversion
 )
 
 # MSVC

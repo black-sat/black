@@ -38,6 +38,7 @@ if(Catch2_FOUND)
     units/support/match.cpp
     units/support/result.cpp
     units/support/serialize.cpp
+    units/support/range.cpp
     units/logic/stub.cpp
   )
 

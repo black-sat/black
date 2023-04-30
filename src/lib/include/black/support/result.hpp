@@ -199,7 +199,7 @@ namespace black::support::internal {
     T value_or(U&& else_) {
       if(has_value())
         return value();
-      return else_;
+      return std::forward<U>(else_);
     }
 
     Error const&error() const {
