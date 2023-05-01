@@ -73,6 +73,10 @@ namespace black::bdd {
   manager &manager::operator=(manager &&) = default;
   manager::~manager() = default;
 
+  size_t manager::varcount() {
+    return _impl->index_to_var.size();
+  }
+
   variable manager::variable(proposition name) {
     if(_impl->prop_to_var.contains(name))
       return bdd::variable{this, name, _impl->prop_to_var.at(name)};
@@ -256,7 +260,7 @@ namespace black::bdd {
   }
 
   size_t node::count() const {
-    return size_t(handle().nodeCount());
+    return size_t(manager()->handle()->nodeCount({handle()}));
   }
 
   std::vector<variable> node::variables() const {
@@ -305,19 +309,19 @@ namespace black::bdd {
     return condition(vars, sign);
   }
 
-  node node::rename(std::function<black::proposition(black::proposition)> map)
+  node node::swapvars(std::function<black::proposition(black::proposition)> map)
   {
-    auto vars = manager()->variables();
-    auto indices = std::make_unique<int[]>(vars.size());
-    for(size_t i = 0; i < vars.size(); i++) {
-      auto changed = manager()->variable(map(vars.at(i).name()));
-      indices[i] = 
-        manager()->_impl->var_to_index.at(changed.handle().getNode());
+    std::vector<BDD> vars;
+    std::vector<BDD> mapped;
+
+    for(auto v : variables()) {
+      vars.push_back(v.handle());
+      mapped.push_back(manager()->variable(map(v.name())).handle());
     }
 
-    return node{
+    return node {
       manager(),
-      handle().Permute(indices.get()).getNode()
+      handle().SwapVariables(vars, mapped).getNode()
     };
   }
 

@@ -408,7 +408,9 @@ namespace black_internal {
     size_t, logic::until<LTL> f, formula, formula
   ) {
     std::string indent(indentn * 3, ' ');
-    std::cerr << indent << "bailing to monolithic procedure: " << std::flush;
+    std::cerr << indent << "bailing out to monolithic procedure... "
+              << "vars: " << mgr->varcount() << " "
+              << std::flush;
     return semideterminize(black_internal::to_automaton(mgr, f));
   }
 
@@ -416,7 +418,9 @@ namespace black_internal {
     size_t, logic::release<LTL> f, formula, formula
   ) {
     std::string indent(indentn * 3, ' ');
-    std::cerr << indent << "bailing to monolithic procedure: " << std::flush;
+    std::cerr << indent << "bailing out to monolithic procedure: " 
+              << "vars: " << mgr->varcount() << " "
+              << std::flush;
     return semideterminize(black_internal::to_automaton(mgr, f));
   }
 
@@ -427,7 +431,9 @@ namespace black_internal {
     std::string indent(indentn * 3, ' ');
 
     if(arg.is<logic::formula<XBool>>()) { // TODO: come up with other criteria
-      std::cerr << indent << "bailing to monolithic procedure: " << std::flush;
+      std::cerr << indent << "bailing out to monolithic procedure: " 
+                << "vars: " << mgr->varcount() << " "
+                << std::flush;
       return semideterminize(black_internal::to_automaton(mgr, f));
     }
 

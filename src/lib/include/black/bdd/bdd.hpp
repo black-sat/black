@@ -49,6 +49,8 @@ namespace black::bdd {
     manager &operator=(manager const&) = delete;
     manager &operator=(manager &&);
 
+    size_t varcount();
+
     class variable variable(proposition p);
     node top();
     node bottom();
@@ -131,9 +133,9 @@ namespace black::bdd {
       std::vector<black::proposition> const& props, bool sign
     ) const;
 
-    node rename(std::function<black::proposition(black::proposition)> map);
+    node swapvars(std::function<black::proposition(black::proposition)> map);
     node operator[](std::function<black::proposition(black::proposition)> map) {
-      return rename(map);
+      return swapvars(map);
     }
 
   private:
