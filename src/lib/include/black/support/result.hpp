@@ -24,66 +24,10 @@
 #ifndef BLACK_SUPPORT_RESULT_HPP
 #define BLACK_SUPPORT_RESULT_HPP
 
-#include <fmt/format.h>
-#include <system_error>
 #include <type_traits>
 #include <variant>
 
 namespace black::support::internal {
-
-  struct error_base {
-    std::string message;
-
-    template<typename ...Args>
-    error_base(const char *format, Args&& ...args)
-      : message{
-        fmt::vformat(format, fmt::make_format_args(std::forward<Args>(args)...))
-      } { }
-  };
-
-  struct syntax_error : error_base {
-    std::optional<std::string> filename;
-    size_t line = 0;
-    size_t column = 0;
-
-    template<typename ...Args>
-    syntax_error(
-      std::optional<std::string> _filename, size_t _line, size_t _col,
-      const char *format, Args const& ...args
-    ) : error_base{format, args...}, 
-        filename{_filename}, line{_line}, column{_col} { }
-  };
-
-  struct type_error : error_base { 
-    using error_base::error_base;
-  };
-
-  struct backend_error : error_base { 
-    using error_base::error_base;
-  };
-
-  struct io_error : error_base {
-    enum operation {
-      opening,
-      reading,
-      writing
-    };
-
-    std::optional<std::string> filename;
-    operation op;
-    int error;
-
-    template<typename ...Args>
-    io_error(
-      std::optional<std::string> _filename, operation _op, int _error,
-      const char *format, Args const& ...args
-    ) : error_base{format, args...}, 
-        filename{_filename}, op{_op}, error{_error} { }
-  };
-
-  struct error : 
-    black_union_type(syntax_error, type_error, backend_error, io_error);
-
 
   //
   // Utility for the next type below

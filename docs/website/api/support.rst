@@ -6,6 +6,10 @@ Support module
    :caption: Contents
 
    support/assert
+   support/debug
    support/exceptions
+   support/errors
+   support/match
+   support/hash
 
    

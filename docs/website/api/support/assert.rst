@@ -1,6 +1,10 @@
 Assertion macros
 ====================
 
+.. c:macro:: BLACK_ASSERT_DISABLE
+
+   If defined, disables the :c:macro:`black_assert` macro.
+
 .. c:macro:: black_assert(Expr)
 
    Asserts that `Expr` must evaluate to `true`.

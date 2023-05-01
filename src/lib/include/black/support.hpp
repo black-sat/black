@@ -33,6 +33,7 @@
 #include <black/support/tribool.hpp>
 #include <black/support/hash.hpp>
 #include <black/support/match.hpp>
+#include <black/support/errors.hpp>
 #include <black/support/result.hpp>
 #include <black/support/serialize.hpp>
 #include <black/support/range.hpp>

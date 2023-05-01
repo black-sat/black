@@ -21,8 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_RANGE_HPP
-#define BLACK_RANGE_HPP
+#ifndef BLACK_SUPPORT_RANGE_HPP
+#define BLACK_SUPPORT_RANGE_HPP
 
 #include <black/support/assert.hpp>
 #include <black/support/utils.hpp>
@@ -116,4 +116,4 @@ namespace black::support {
   using internal::range;
 }
 
-#endif // BLACK_RANGE_HPP
+#endif // BLACK_SUPPORT_RANGE_HPP
