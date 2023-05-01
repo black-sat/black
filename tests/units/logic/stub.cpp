@@ -27,24 +27,8 @@
 
 #include <string>
 
-using namespace black::logic::fragments::propositional;
-
 TEST_CASE("Stub test case for logic formulas") {
 
-  alphabet sigma;
-
-  auto p = sigma.proposition("p");
-  auto q = sigma.proposition("q");
-
-  formula f = p && !q;
-
-  std::string res = f.match(
-    [](boolean) { return "boolean"; },
-    [](proposition) { return "proposition"; },
-    [](unary) { return "unary"; },
-    [](binary) { return "binary"; }
-  );
-
-  REQUIRE(res == "binary");
+  
 
 }

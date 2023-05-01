@@ -887,15 +887,7 @@ namespace black::logic::internal {
       size_t operator()(
         black::logic::internal::make_storage_data_t<Types...> const& data
       ) {
-        using namespace black::logic::internal;
-        using namespace black::support;
-
-        size_t h = 0;
-        std::apply([&]<typename ...Ts>(Ts const& ...values) { // LCOV_EXCL_LINE
-          ((h = internal::hash_combine(h, std::hash<Ts>{}(values))), ...);
-        }, data.values);
-
-        return h;
+        return black::support::hash(data);
       }
     };
 
@@ -1088,12 +1080,7 @@ namespace black::logic::internal {
       size_t operator()(
         black::logic::internal::storage_node<Storage> const&n
       ) const {
-        using namespace black::logic::internal;
-        using namespace black::support;
-        
-        size_t type_hash = std::hash<syntax_element>{}(n.type);
-        size_t data_hash = std::hash<storage_data_t<Storage>>{}(n.data);
-        return internal::hash_combine(type_hash, data_hash);
+        return black::support::hash(n.type, n.data);
       }
     };
   } namespace black::logic::internal {
@@ -1474,6 +1461,51 @@ namespace black::logic::internal {
         >
       )
     storage_base(S s) : base_t{s.sigma(), s.node()} { }
+  };
+
+  //
+  // The `alphabet` class keeps an hash table from nodes to pointer to nodes.
+  // When we insert a node, if it already exists, we get the existing copy of it
+  // from the hash table. If it does not, we insert it in the hash table. This
+  // mechanism is implemented in the following class, which will be indirectly
+  // inherited by the pimpl class `alphabet_impl`.
+  //
+  template<storage_type Storage>
+  struct storage_allocator {
+    std::deque<storage_node<Storage>> _store;
+    support::map<storage_node<Storage>, storage_node<Storage> *> _map;
+   
+    storage_node<Storage> *allocate(storage_node<Storage> const& node) {
+      auto it = _map.find(node);
+      if(it != _map.end())
+        return it->second;
+     
+      storage_node<Storage> *obj = &_store.emplace_back(node);
+      _map.insert({node, obj});
+
+      return obj;
+    }
+  };
+
+  //
+  // We specialize the case of a single boolean field (i.e. the `boolean`
+  // storage kind). Other optimized specializations could be possible in the
+  // future.
+  //
+  template<storage_type Storage>
+    requires (std::is_same_v<
+      typename storage_data_t<Storage>::tuple_type, std::tuple<bool>
+    >)
+  struct storage_allocator<Storage> 
+  {  
+    storage_node<Storage> _true{element_of_storage_v<Storage>, true};
+    storage_node<Storage> _false{element_of_storage_v<Storage>, false};
+    
+    storage_node<Storage> *allocate(storage_node<Storage> node) {
+      if(std::get<0>(node.data.values))
+        return &_true;
+      return &_false;
+    }
   };
 
   //

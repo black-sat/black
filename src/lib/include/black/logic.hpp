@@ -40,20 +40,12 @@
 // - hierarchy.hpp (which is not included from here)
 // - core.hpp
 // - generation.hpp
-// - interface.hpp (interface-fwd.hpp are just needed forward declarations)
-// - fragments.hpp
+// - interface.hpp (interface-fwd.hpp are just some needed forward declarations)
 //
+#include <black/logic/identifier.hpp>
 #include <black/logic/core.hpp>
 #include <black/logic/interface-fwd.hpp>
-#include <black/logic/identifier.hpp>
 #include <black/logic/generation.hpp>
 #include <black/logic/interface.hpp>
-#include <black/logic/fragments.hpp>
-
-//
-// Other things
-//
-#include <black/logic/semantics.hpp>
-#include <black/logic/prettyprint.hpp>
 
 #endif // BLACK_LOGIC_FORMULA_HPP

@@ -16,3 +16,11 @@ Hashing utilities
    1. a variadic list of :cpp:any:`hashable` arguments
    2. a range of :cpp:any:`hashable` types
    3. a tuple-like object whose components are :cpp:any:`hashable`
+
+.. cpp:type:: template<typename Key, typename Value> map
+
+   Alias for `tsl::hopscotch_map<Key, Value>`.
+
+.. cpp:type:: template<typename T> set
+
+   Alias for `tsl::hopscotch_set<T>`.

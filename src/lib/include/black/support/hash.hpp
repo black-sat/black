@@ -29,6 +29,9 @@
 #include <ranges>
 #include <tuple>
 
+#include <tsl/hopscotch_map.h>
+#include <tsl/hopscotch_set.h>
+
 namespace black::support::internal {
 
   //
@@ -85,11 +88,22 @@ namespace black::support::internal {
     ((h = hash_combine(h, hash(args))), ...);
     return h;
   }
+
+  //
+  // Short aliases for hopscotch map/set
+  //
+  template<typename Key, typename Value>
+  using map = tsl::hopscotch_map<Key, Value>;
+  
+  template<typename T>
+  using set = tsl::hopscotch_set<T>;
 }
 
 namespace black::support {
   using internal::hash;
   using internal::hashable;
+  using internal::map;
+  using internal::set;
 }
 
 #endif // BLACK_SUPPORT_HASH_HPP

@@ -698,9 +698,12 @@ namespace black::logic::internal
   // `alphabet_impl`.
   //
   #define declare_leaf_storage_kind(Base, Storage) \
-    , public alphabet_ctor_base<syntax_element::Storage, alphabet_base>
+    , public alphabet_ctor_base<syntax_element::Storage, alphabet_base> \
+    , storage_allocator<storage_type::Storage>
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     , public alphabet_ctor_base<syntax_element::Element, alphabet_base>
+  #define declare_storage_kind(Base, Storage) \
+    , storage_allocator<storage_type::Storage>
 
   class BLACK_EXPORT alphabet_base : std::monostate
   #include <black/logic/hierarchy.hpp>
@@ -708,14 +711,12 @@ namespace black::logic::internal
     template<syntax_element E>
     using base_t = alphabet_ctor_base<E, alphabet_base>;
   public:
-    alphabet_base();
-    ~alphabet_base();
-
+    alphabet_base() = default;
     alphabet_base(alphabet_base const&) = delete;
-    alphabet_base(alphabet_base &&);
+    alphabet_base(alphabet_base &&) = default;
 
     alphabet_base &operator=(alphabet_base const&) = delete;
-    alphabet_base &operator=(alphabet_base &&);
+    alphabet_base &operator=(alphabet_base &&) = default;
 
     #define declare_leaf_storage_kind(Base, Storage) \
       template<typename ...Args> \
@@ -741,22 +742,19 @@ namespace black::logic::internal
     friend struct ::black::logic::internal::alphabet_ctor_base_aux;
 
   private:
-    //
-    // These member functions are defined out-of-line in `logic.cpp`.
-    //
+
+    #define declare_storage_kind(Base, Storage) \
+      using storage_allocator<storage_type::Storage>::allocate;
+    #include <black/logic/hierarchy.hpp>
+
     #define declare_storage_kind(Base, Storage) \
       storage_node<storage_type::Storage> *unique( \
         storage_node<storage_type::Storage> node \
-      );
+      ) { \
+        return allocate(std::move(node)); \
+      }
 
     #include <black/logic/hierarchy.hpp>
-
-    struct alphabet_impl;
-    
-    alphabet_impl *impl();
-
-    // pimpl pointer to `alphabet_impl`, defined in `logic.cpp`.
-    std::unique_ptr<alphabet_impl> _impl;
   };
 
   //
