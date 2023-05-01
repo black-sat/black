@@ -25,10 +25,24 @@
 
 #include <black/logic.hpp>
 
-#include <string>
+#include <fmt/format.h>
 
-TEST_CASE("Stub test case for logic formulas") {
+TEST_CASE("identifiers") {
 
-  
+  using namespace black::logic;
+
+  identifier id = "hello";
+  identifier id2 = 42;
+
+  identifier id3 = id;
+
+  REQUIRE(id3 == id);
+  REQUIRE(id3 != id2);
+
+  std::string str1 = fmt::format("{}", id);
+  std::string str2 = fmt::format("{}", id2);
+
+  REQUIRE(str1 == "hello");
+  REQUIRE(str2 == "42");
 
 }

@@ -28,7 +28,6 @@
 set (
   LIB_SRC
   src/support/debug.cpp
-  src/logic/logic.cpp
 )
 
 # configure config header
@@ -42,8 +41,7 @@ configure_file(
 #
 add_library (black ${LIB_SRC})
 
-target_link_libraries(black PRIVATE tsl::hopscotch_map)
-target_link_libraries(black PUBLIC fmt::fmt cereal)
+target_link_libraries(black PUBLIC fmt::fmt cereal tsl::hopscotch_map)
 target_include_directories(black PUBLIC  
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>

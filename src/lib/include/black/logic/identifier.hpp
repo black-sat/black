@@ -26,6 +26,8 @@
 
 #include <black/support/hash.hpp>
 
+#include <fmt/format.h>
+
 #include <any>
 #include <tuple>
 #include <optional>
@@ -33,23 +35,17 @@
 #include <string_view>
 #include <string>
 
-namespace black::support::internal
+namespace black::logic::internal
 {
-  template<typename T>
-  concept identifier_label = 
-    hashable<T> && std::equality_comparable<T>;
+  class identifier;
 
   template<typename T>
-  struct is_tuple : std::false_type { };
-
-  template<typename ...Args>
-  struct is_tuple<std::tuple<Args...>> : std::true_type { };
-  
-  template<typename T, typename U>
-  struct is_tuple<std::pair<T, U>> : std::true_type { };
+  concept formattable = std::is_constructible<fmt::formatter<T>>::value;
 
   template<typename T>
-  inline constexpr bool is_tuple_v = is_tuple<T>::value;
+  concept identifiable = 
+    !std::is_same_v<std::remove_cvref_t<T>, identifier> &&
+    support::hashable<T> && std::equality_comparable<T> && formattable<T>;
 
   //
   // Type-erased hashable, comparable and printable value
@@ -61,30 +57,12 @@ namespace black::support::internal
     identifier(identifier const&) = default;
     identifier(identifier&&) = default;
 
-    template<typename T>
-      requires (
-        !std::is_same_v<std::remove_cvref_t<T>, identifier> &&
-        !is_tuple_v<std::remove_cvref_t<T>>
-      )
+    template<identifiable T>
     identifier(T&& value)
       : _any(std::forward<T>(value)),
         _hash(make_hasher(value)),
         _cmp(make_cmp(value)),
         _printer(make_printer(value)) { }
-
-    template<typename ...T>
-    identifier(std::tuple<T...> const& t) 
-      : _any(t),
-        _hash(make_tuple_hasher(t)),
-        _cmp(make_cmp(t)),
-        _printer(make_printer(t)) { }
-
-    template<typename T, typename U>
-    identifier(std::pair<T, U> const& t) 
-      : _any(t),
-        _hash(make_pair_hasher(t)),
-        _cmp(make_cmp(t)),
-        _printer(make_printer(t)) { }
 
     identifier(std::string_view view) 
       : identifier{std::string{view}} { }
@@ -138,8 +116,8 @@ namespace black::support::internal
 
     std::any const&any() const { return _any; }
 
-    friend std::string to_string(identifier const&id) {
-      return id._printer(id._any);
+    std::string to_string() const {
+      return _printer(_any);
     }
 
   private:
@@ -164,32 +142,6 @@ namespace black::support::internal
       };
     }
     
-    template<typename ...T>
-    hasher_t make_tuple_hasher(std::tuple<T...> const&) {
-      return [](std::any const&me) -> size_t {
-        std::tuple<T...> const *t = std::any_cast<std::tuple<T...>>(&me);
-        black_assert(t != nullptr);
-
-        return std::apply([](auto ...v) {
-          size_t h = 0;
-          ((h = internal::hash_combine(h, std::hash<decltype(v)>{}(v))), ...);
-          return h;
-        }, *t);
-      };
-    }
-    
-    template<typename T, typename U>
-    hasher_t make_pair_hasher(std::pair<T, U> const&) {
-      return [](std::any const&me) -> size_t {
-        std::pair<T, U> const *p = std::any_cast<std::pair<T, U>>(&me);
-        black_assert(p != nullptr);
-
-        size_t h1 = std::hash<T>{}(p->first);
-        size_t h2 = std::hash<U>{}(p->second);
-        return internal::hash_combine(h1, h2);
-      };
-    }
-
     template<typename T>
     comparator_t make_cmp(T const&) { // LCOV_EXCL_LINE
       return [](std::any const&me, identifier const&other) -> bool { // LCOV_EXCL_LINE
@@ -204,31 +156,37 @@ namespace black::support::internal
 
     template<typename T>
     printer_t make_printer(T const&) {
-      return [](std::any const&me) -> std::string {
+      return [](std::any const& me) {
         T const *v = std::any_cast<T>(&me);
         black_assert(v != nullptr);
 
-        if constexpr(std::is_same_v<std::string, std::remove_cvref_t<T>>)
-          return *v;
-        else
-          return std::to_string(*v);
+        return fmt::format("{}", *v);
       };
     }
   };
 }
 
-namespace black::support {
-  using internal::identifier;
-}
+template<> 
+struct fmt::formatter<black::logic::internal::identifier> 
+  : fmt::formatter<string_view>
+{
+  template <typename FormatContext>
+  auto 
+  format(black::logic::internal::identifier const& p, FormatContext& ctx) const 
+  {
+    return formatter<string_view>::format(p.to_string(), ctx);
+  }
+};
 
-// std::hash specialization for identifier
-namespace std {
-  template<>
-  struct hash<black::support::identifier> {
-    size_t operator()(black::support::identifier const&h) const {
-      return h.hash();
-    }
-  };
+template<>
+struct std::hash<black::logic::internal::identifier> {
+  size_t operator()(black::logic::internal::identifier const&h) const {
+    return h.hash();
+  }
+};
+
+namespace black::logic {
+  using internal::identifier;
 }
 
 #endif
