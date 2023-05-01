@@ -34,7 +34,7 @@
 
 namespace black_internal {
   struct cache_key_t {
-    logic::formula<LTLXFG> formula;
+    logic::formula<logic::LTL> formula;
     size_t nonce = 0;
 
     bool operator==(cache_key_t const&) const = default;
@@ -45,14 +45,15 @@ template<>
 struct std::hash<black_internal::cache_key_t> {
   size_t operator()(black_internal::cache_key_t l) const {
     return 
-      std::hash<black::logic::formula<black_internal::LTLXFG>>{}(l.formula) 
+      std::hash<black::logic::formula<black::logic::LTL>>{}(l.formula) 
       + l.nonce;
   }
 };
 
 namespace black_internal {
   
-  using formula = logic::formula<LTLXFG>;
+  using LTL = logic::LTL;
+  using formula = logic::formula<LTL>;
   namespace bdd = black::bdd;
 
   struct XBool : logic::make_combined_fragment_t<
@@ -85,15 +86,17 @@ namespace black_internal {
     automaton encode(formula f);
 
     automaton to_automaton(size_t, logic::formula<logic::propositional> f);
-    automaton to_automaton(size_t, logic::negation<LTLXFG>, formula);
-    automaton to_automaton(size_t, logic::conjunction<LTLXFG>,formula, formula);
-    automaton to_automaton(size_t, logic::disjunction<LTLXFG>,formula, formula);
-    automaton to_automaton(size_t, logic::implication<LTLXFG>,formula, formula);
-    automaton to_automaton(size_t, logic::iff<LTLXFG>, formula, formula);
-    automaton to_automaton(size_t, logic::eventually<LTLXFG>, formula);
-    automaton to_automaton(size_t, logic::always<LTLXFG>, formula);
-    automaton to_automaton(size_t, logic::tomorrow<LTLXFG>, formula);
-    automaton to_automaton(size_t, logic::w_tomorrow<LTLXFG>, formula);
+    automaton to_automaton(size_t, logic::negation<LTL>, formula);
+    automaton to_automaton(size_t, logic::conjunction<LTL>,formula, formula);
+    automaton to_automaton(size_t, logic::disjunction<LTL>,formula, formula);
+    automaton to_automaton(size_t, logic::implication<LTL>,formula, formula);
+    automaton to_automaton(size_t, logic::iff<LTL>, formula, formula);
+    automaton to_automaton(size_t, logic::until<LTL>, formula, formula);
+    automaton to_automaton(size_t, logic::release<LTL>, formula, formula);
+    automaton to_automaton(size_t, logic::eventually<LTL>, formula);
+    automaton to_automaton(size_t, logic::always<LTL>, formula);
+    automaton to_automaton(size_t, logic::tomorrow<LTL>, formula);
+    automaton to_automaton(size_t, logic::w_tomorrow<LTL>, formula);
     automaton to_automaton(size_t, formula f);
     
     automaton to_automaton(size_t, logic::otherwise, auto ...) {
@@ -232,9 +235,9 @@ namespace black_internal {
     return f.match(
       [](boolean b) { return b; },
       [](proposition p) { return p; },
-      [&](always<LTLXFG>, auto arg) {
+      [&](always<LTL>, auto arg) {
         return arg.match(
-          [&](conjunction<LTLXFG> c) {
+          [&](conjunction<LTL> c) {
             return big_and(sigma, c.operands(), [&](auto op) {
               return preprocess(G(op));
             });
@@ -244,9 +247,9 @@ namespace black_internal {
           }
         );
       },
-      [&](eventually<LTLXFG>, auto arg) {
+      [&](eventually<LTL>, auto arg) {
         return arg.match(
-          [&](disjunction<LTLXFG> c) {
+          [&](disjunction<LTL> c) {
             return big_or(sigma, c.operands(), [&](auto op) {
               return preprocess(F(op));
             });
@@ -256,11 +259,11 @@ namespace black_internal {
           }
         );
       },
-      [&](unary<LTLXFG> u, auto arg) {
-        return unary<LTLXFG>(u.node_type(), preprocess(arg));
+      [&](unary<LTL> u, auto arg) {
+        return unary<LTL>(u.node_type(), preprocess(arg));
       },
-      [&](binary<LTLXFG> b, auto left, auto right) {
-        return binary<LTLXFG>(
+      [&](binary<LTL> b, auto left, auto right) {
+        return binary<LTL>(
           b.node_type(), preprocess(left), preprocess(right)
         );
       }
@@ -316,7 +319,7 @@ namespace black_internal {
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::negation<LTLXFG>, formula arg
+    size_t nonce, logic::negation<LTL>, formula arg
   ) { 
     return negation(to_automaton(nonce, arg));
   }
@@ -336,7 +339,7 @@ namespace black_internal {
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::conjunction<LTLXFG> conj, formula, formula
+    size_t nonce, logic::conjunction<LTL> conj, formula, formula
   ) {
     using namespace std;
 
@@ -363,7 +366,7 @@ namespace black_internal {
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::disjunction<LTLXFG> conj, formula, formula
+    size_t nonce, logic::disjunction<LTL> conj, formula, formula
   ) {
     using namespace std;
 
@@ -390,19 +393,36 @@ namespace black_internal {
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::implication<LTLXFG>, formula l, formula r
+    size_t nonce, logic::implication<LTL>, formula l, formula r
   ) {
     return implication(to_automaton(nonce, l), to_automaton(nonce, r));
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::iff<LTLXFG>, formula l, formula r
+    size_t nonce, logic::iff<LTL>, formula l, formula r
   ) {
     return to_automaton(nonce, implies(l, r) && implies(r, l));
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::eventually<LTLXFG> f, formula arg
+    size_t, logic::until<LTL> f, formula, formula
+  ) {
+    std::string indent(indentn * 3, ' ');
+    std::cerr << indent << "bailing to monolithic procedure: " << std::flush;
+    return semideterminize(black_internal::to_automaton(mgr, f));
+  }
+
+  automaton incremental_t::to_automaton(
+    size_t, logic::release<LTL> f, formula, formula
+  ) {
+    std::string indent(indentn * 3, ' ');
+    std::cerr << indent << "bailing to monolithic procedure: " << std::flush;
+    return semideterminize(black_internal::to_automaton(mgr, f));
+  }
+
+
+  automaton incremental_t::to_automaton(
+    size_t nonce, logic::eventually<LTL> f, formula arg
   ) {
     std::string indent(indentn * 3, ' ');
 
@@ -443,13 +463,13 @@ namespace black_internal {
   }
   
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::always<LTLXFG>, formula arg
+    size_t nonce, logic::always<LTL>, formula arg
   ) {
     return to_automaton(nonce, !F(nnf(!arg)));
   }
 
   automaton incremental_t::to_automaton(
-    size_t, logic::tomorrow<LTLXFG>, formula arg
+    size_t, logic::tomorrow<LTL>, formula arg
   ) {
     automaton aut = to_automaton(sigma.nonce(), arg);
 
@@ -476,7 +496,7 @@ namespace black_internal {
   }
 
   automaton incremental_t::to_automaton(
-    size_t, logic::w_tomorrow<LTLXFG>, formula arg
+    size_t, logic::w_tomorrow<LTL>, formula arg
   ) {
     automaton aut = to_automaton(sigma.nonce(), arg);
 
