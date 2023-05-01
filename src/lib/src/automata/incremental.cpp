@@ -34,7 +34,7 @@
 
 namespace black_internal {
   struct cache_key_t {
-    logic::formula<logic::LTLP> formula;
+    logic::formula<LTLXFG> formula;
     size_t nonce = 0;
 
     bool operator==(cache_key_t const&) const = default;
@@ -45,15 +45,14 @@ template<>
 struct std::hash<black_internal::cache_key_t> {
   size_t operator()(black_internal::cache_key_t l) const {
     return 
-      std::hash<black::logic::formula<black::logic::LTLP>>{}(l.formula) 
+      std::hash<black::logic::formula<black_internal::LTLXFG>>{}(l.formula) 
       + l.nonce;
   }
 };
 
 namespace black_internal {
   
-  using LTLP = logic::LTLP;
-  using formula = logic::formula<LTLP>;
+  using formula = logic::formula<LTLXFG>;
   namespace bdd = black::bdd;
 
   struct XBool : logic::make_combined_fragment_t<
@@ -81,34 +80,24 @@ namespace black_internal {
     automaton negation(automaton);
     automaton implication(automaton a1, automaton a2);
     automaton not_empty(automaton);
-    automaton reverse(automaton);
-    formula reverse(formula);
     formula preprocess(formula f);
 
     automaton encode(formula f);
 
     automaton to_automaton(size_t, logic::formula<logic::propositional> f);
-    automaton to_automaton(size_t, logic::negation<LTLP>, formula);
-    automaton to_automaton(size_t, logic::conjunction<LTLP>,formula, formula);
-    automaton to_automaton(size_t, logic::disjunction<LTLP>,formula, formula);
-    automaton to_automaton(size_t, logic::implication<LTLP>,formula, formula);
-    automaton to_automaton(size_t, logic::iff<LTLP>, formula, formula);
-    automaton to_automaton(size_t, logic::eventually<LTLP>, formula);
-    automaton to_automaton(size_t, logic::always<LTLP>, formula);
-    automaton to_automaton(size_t, logic::tomorrow<LTLP>, formula);
-    automaton to_automaton(size_t, logic::w_tomorrow<LTLP>, formula);
-    automaton to_automaton(size_t, logic::until<LTLP>, formula, formula);
-    // automaton to_automaton(size_t, logic::release<LTLP>, formula, formula);
-    // automaton to_automaton(size_t, logic::since<LTLP>, formula, formula);
-    // automaton to_automaton(size_t, logic::triggered<LTLP>, formula, formula);
-    automaton to_automaton(size_t, logic::once<LTLP>, formula);
-    automaton to_automaton(size_t, logic::historically<LTLP>, formula);
-    // automaton to_automaton(size_t, logic::yesterday<LTLP>, formula);
-    // automaton to_automaton(size_t, logic::w_yesterday<LTLP>, formula);
+    automaton to_automaton(size_t, logic::negation<LTLXFG>, formula);
+    automaton to_automaton(size_t, logic::conjunction<LTLXFG>,formula, formula);
+    automaton to_automaton(size_t, logic::disjunction<LTLXFG>,formula, formula);
+    automaton to_automaton(size_t, logic::implication<LTLXFG>,formula, formula);
+    automaton to_automaton(size_t, logic::iff<LTLXFG>, formula, formula);
+    automaton to_automaton(size_t, logic::eventually<LTLXFG>, formula);
+    automaton to_automaton(size_t, logic::always<LTLXFG>, formula);
+    automaton to_automaton(size_t, logic::tomorrow<LTLXFG>, formula);
+    automaton to_automaton(size_t, logic::w_tomorrow<LTLXFG>, formula);
     automaton to_automaton(size_t, formula f);
     
     automaton to_automaton(size_t, logic::otherwise, auto ...) {
-      throw std::runtime_error("unimplemented");
+      black_unreachable();
     }
 
     bdd::manager *mgr;
@@ -237,95 +226,15 @@ namespace black_internal {
     };
   }
 
-  automaton incremental_t::reverse(automaton aut) {
-    return semideterminize(automaton {
-      .manager = mgr,
-      .letters = letters,
-      .variables = aut.variables,
-      .init = aut.finals,
-      .trans = aut.trans[aut.variables / primed(2)]
-                        [primed(1) * aut.variables / to_plain()]
-                        [primed(2) * aut.variables / primed(1)],
-      .finals = aut.init
-    });
-  }
-
-  formula incremental_t::reverse(formula f) {
-    //using namespace logic;
-
-    return f.match(
-      [](logic::boolean b) { return b; },
-      [](logic::proposition p) { return p; },
-      [&](logic::negation<LTLP>, auto arg) {
-        return !reverse(arg);
-      },
-      [&](logic::conjunction<LTLP> c) {
-        return big_and(*c.sigma(), c.operands(), [&](auto op) {
-          return reverse(op);
-        });
-      },
-      [&](logic::disjunction<LTLP> c) {
-        return big_or(*c.sigma(), c.operands(), [&](auto op) {
-          return reverse(op);
-        });
-      },
-      [&](logic::implication<LTLP>, auto left, auto right) {
-        return implies(reverse(left), reverse(right));
-      },
-      [&](logic::iff<LTLP>, auto left, auto right) {
-        return logic::iff(reverse(left), reverse(right));
-      },
-      [&](logic::tomorrow<LTLP>, auto arg) {
-        return Y(reverse(arg));
-      },
-      [&](logic::w_tomorrow<LTLP>, auto arg) {
-        return Z(reverse(arg));
-      },
-      [&](logic::always<LTLP>, auto arg) {
-        return H(reverse(arg));
-      },
-      [&](logic::eventually<LTLP>, auto arg) {
-        return O(reverse(arg));
-      },
-      [&](logic::until<LTLP>, auto left, auto right) {
-        return S(reverse(left), reverse(right));
-      },
-      [&](logic::release<LTLP>, auto left, auto right) {
-        return T(reverse(left), reverse(right));
-      },
-      [&](logic::yesterday<LTLP>, auto arg) {
-        return X(reverse(arg));
-      },
-      [&](logic::w_yesterday<LTLP>, auto arg) {
-        return wX(reverse(arg));
-      },
-      [&](logic::once<LTLP>, auto arg) {
-        return F(reverse(arg));
-      },
-      [&](logic::historically<LTLP>, auto arg) {
-        return G(reverse(arg));
-      },
-      [&](logic::since<LTLP>, auto left, auto right) {
-        return U(reverse(left), reverse(right));
-      },
-      [&](logic::triggered<LTLP>, auto left, auto right) {
-        return R(reverse(left), reverse(right));
-      },
-      [](logic::otherwise) -> logic::formula<LTLP> {
-        black_unreachable();
-      }
-    );
-  }
-
   formula incremental_t::preprocess(formula f) {
     using namespace logic;
 
     return f.match(
       [](boolean b) { return b; },
       [](proposition p) { return p; },
-      [&](always<LTLP>, auto arg) {
+      [&](always<LTLXFG>, auto arg) {
         return arg.match(
-          [&](conjunction<LTLP> c) {
+          [&](conjunction<LTLXFG> c) {
             return big_and(sigma, c.operands(), [&](auto op) {
               return preprocess(G(op));
             });
@@ -335,9 +244,9 @@ namespace black_internal {
           }
         );
       },
-      [&](eventually<LTLP>, auto arg) {
+      [&](eventually<LTLXFG>, auto arg) {
         return arg.match(
-          [&](disjunction<LTLP> c) {
+          [&](disjunction<LTLXFG> c) {
             return big_or(sigma, c.operands(), [&](auto op) {
               return preprocess(F(op));
             });
@@ -347,11 +256,11 @@ namespace black_internal {
           }
         );
       },
-      [&](unary<LTLP> u, auto arg) {
-        return unary<LTLP>(u.node_type(), preprocess(arg));
+      [&](unary<LTLXFG> u, auto arg) {
+        return unary<LTLXFG>(u.node_type(), preprocess(arg));
       },
-      [&](binary<LTLP> b, auto left, auto right) {
-        return binary<LTLP>(
+      [&](binary<LTLXFG> b, auto left, auto right) {
+        return binary<LTLXFG>(
           b.node_type(), preprocess(left), preprocess(right)
         );
       }
@@ -407,7 +316,7 @@ namespace black_internal {
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::negation<LTLP>, formula arg
+    size_t nonce, logic::negation<LTLXFG>, formula arg
   ) { 
     return negation(to_automaton(nonce, arg));
   }
@@ -427,7 +336,7 @@ namespace black_internal {
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::conjunction<LTLP> conj, formula, formula
+    size_t nonce, logic::conjunction<LTLXFG> conj, formula, formula
   ) {
     using namespace std;
 
@@ -454,7 +363,7 @@ namespace black_internal {
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::disjunction<LTLP> conj, formula, formula
+    size_t nonce, logic::disjunction<LTLXFG> conj, formula, formula
   ) {
     using namespace std;
 
@@ -481,19 +390,19 @@ namespace black_internal {
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::implication<LTLP>, formula l, formula r
+    size_t nonce, logic::implication<LTLXFG>, formula l, formula r
   ) {
     return implication(to_automaton(nonce, l), to_automaton(nonce, r));
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::iff<LTLP>, formula l, formula r
+    size_t nonce, logic::iff<LTLXFG>, formula l, formula r
   ) {
     return to_automaton(nonce, implies(l, r) && implies(r, l));
   }
 
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::eventually<LTLP> f, formula arg
+    size_t nonce, logic::eventually<LTLXFG> f, formula arg
   ) {
     std::string indent(indentn * 3, ' ');
 
@@ -534,13 +443,13 @@ namespace black_internal {
   }
   
   automaton incremental_t::to_automaton(
-    size_t nonce, logic::always<LTLP>, formula arg
+    size_t nonce, logic::always<LTLXFG>, formula arg
   ) {
     return to_automaton(nonce, !F(nnf(!arg)));
   }
 
   automaton incremental_t::to_automaton(
-    size_t, logic::tomorrow<LTLP>, formula arg
+    size_t, logic::tomorrow<LTLXFG>, formula arg
   ) {
     automaton aut = to_automaton(sigma.nonce(), arg);
 
@@ -567,7 +476,7 @@ namespace black_internal {
   }
 
   automaton incremental_t::to_automaton(
-    size_t, logic::w_tomorrow<LTLP>, formula arg
+    size_t, logic::w_tomorrow<LTLXFG>, formula arg
   ) {
     automaton aut = to_automaton(sigma.nonce(), arg);
 
@@ -589,53 +498,6 @@ namespace black_internal {
       .finals = !var || aut.finals
     };
   }
-
-  automaton incremental_t::to_automaton(
-    size_t nonce, logic::until<LTLP>, formula left, formula right
-  ) {
-    return 
-      reverse(to_automaton(nonce, F(reverse(right) && wX(G(reverse(left))))));
-  }
-
-  automaton incremental_t::to_automaton(
-    size_t nonce, logic::once<LTLP>, formula arg
-  ) {
-    automaton aut = to_automaton(nonce, arg);
-    
-    bdd::variable var = fresh();
-
-    std::vector<black::proposition> vars = aut.variables;
-    vars.push_back(var.name());
-
-    bdd::node trans = aut.trans && iff(prime(var), aut.finals);
-
-    return automaton {
-      .manager = mgr,
-      .letters = letters,
-      .variables = vars,
-      .init = !var && aut.init,
-      .trans = trans,
-      .finals = var
-    }; 
-  }
-
-  automaton incremental_t::to_automaton(
-    size_t nonce, logic::historically<LTLP>, formula arg
-  ) {
-    return to_automaton(nonce, !O(!arg));
-  }
-
-  // automaton incremental_t::to_automaton(
-  //   size_t nonce, logic::yesterday<LTLP>, formula arg
-  // ) {
-
-  // }
-
-  // automaton incremental_t::to_automaton(
-  //   size_t nonce, logic::w_yesterday<LTLP>, formula arg
-  // ) {
-
-  // }
 
   automaton to_automaton_incremental(bdd::manager *mgr, formula f) {
     return incremental_t{mgr}.encode(f);
