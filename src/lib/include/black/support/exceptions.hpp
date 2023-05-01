@@ -206,9 +206,12 @@ namespace black::support::internal {
   //
   // Exception thrown by some members of the `result` class below.
   //
-  template<typename Error>
+  struct error;
+
+  template<typename Error = error>
   class bad_result_access : exception 
   {
+  public:
     bad_result_access(Error err) : _error{std::move(err)} { 
       snprintf(_what, _what_size, "bad access to a `result<T, E>` object");
     }
@@ -221,6 +224,9 @@ namespace black::support::internal {
     Error _error;
   };
 
+  template<typename Error>
+  bad_result_access(Error) -> bad_result_access<Error>;
+
 }
 
 namespace black::support {
@@ -229,6 +235,7 @@ namespace black::support {
   using internal::assert_error;
   using internal::assume_error;
   using internal::source_location;
+  using internal::bad_result_access;
 }
 
 #endif // BLACK_SUPPORT_EXCEPTIONS_HPP

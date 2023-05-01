@@ -112,18 +112,18 @@ namespace black::support::internal {
     T const&value() const {
       if(!has_value())
         throw bad_result_access(error());
-      return *std::get<T>(_data);
+      return std::get<T>(_data);
     }
     
     T &value() {
       if(!has_value())
         throw bad_result_access(error());
-      return *std::get<T>(_data);
+      return std::get<T>(_data);
     }
 
     T const&operator*() const {
       black_assert(has_value());
-      return *std::get<T>(_data);
+      return std::get<T>(_data);
     }
     
     T &operator*() {

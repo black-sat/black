@@ -38,6 +38,8 @@ TEST_CASE("`result<T, E>` result type") {
 
   auto r = divide(2);
 
+  REQUIRE_THROWS_AS(r.error(), assume_error); 
+  
   r.match(
     [](int x) {
       REQUIRE(x == 42);
@@ -48,6 +50,8 @@ TEST_CASE("`result<T, E>` result type") {
   );
 
   auto r2 = divide(0);
+
+  REQUIRE_THROWS_AS(r2.value(), bad_result_access<>);
 
   r2.match(
     [](int) { FAIL(); },
