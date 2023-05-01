@@ -146,14 +146,14 @@ namespace black::support::internal {
       return std::forward<U>(else_);
     }
 
-    Error const&error() const {
-      black_assert(!has_value());
-      return *std::get<Error>(_data);
+    Error const&error(source_location loc = source_location::current()) const {
+      black_assume(!has_value(), loc, "missing error value");
+      return std::get<Error>(_data);
     }
     
-    Error &error() {
-      black_assert(!has_value());
-      return *std::get<Error>(_data);
+    Error &error(source_location loc = source_location::current()) {
+      black_assume(!has_value(), loc, "missing error value");
+      return std::get<Error>(_data);
     }
 
   private:
