@@ -76,6 +76,8 @@ namespace black_internal {
 
     formula nnf(formula);
 
+    automaton closure(automaton);
+
     automaton product(automaton, automaton);
     automaton sum(automaton, automaton);
     automaton negation(automaton);
@@ -137,6 +139,31 @@ namespace black_internal {
   formula incremental_t::nnf(formula f) {
     logic::scope xi{sigma};
     return encoder::encoder{f, xi, true}.to_nnf(f).to<formula>().value();
+  }
+
+  automaton incremental_t::closure(automaton aut) 
+  {
+    bdd::node prev = mgr->top();
+    bdd::node cl = exists(aut.letters, aut.trans);
+    do {
+      prev = cl;
+      cl = exists(primed(2),
+        cl[primed() * aut.variables / primed(2)] && 
+        cl[aut.variables / primed(2)]
+      );
+    } while(!(forall(of_kind(aut.variables), iff(prev, cl))).is_one());
+
+    bdd::node reachablep = exists(aut.variables, aut.init && cl);
+    bdd::node reachable = aut.init || reachablep[primed() / to_plain()];
+
+    return automaton {
+      .manager = mgr,
+      .letters = letters,
+      .variables = aut.variables,
+      .init = aut.init,
+      .trans = aut.trans && reachable,
+      .finals = aut.finals
+    };
   }
 
   automaton incremental_t::negation(automaton arg) {
@@ -411,7 +438,7 @@ namespace black_internal {
     std::cerr << indent << "bailing out to monolithic procedure... "
               << "vars: " << mgr->varcount() << " "
               << std::flush;
-    return semideterminize(black_internal::to_automaton(mgr, f));
+    return closure(semideterminize(black_internal::to_automaton(mgr, f)));
   }
 
   automaton incremental_t::to_automaton(
@@ -421,7 +448,7 @@ namespace black_internal {
     std::cerr << indent << "bailing out to monolithic procedure: " 
               << "vars: " << mgr->varcount() << " "
               << std::flush;
-    return semideterminize(black_internal::to_automaton(mgr, f));
+    return closure(semideterminize(black_internal::to_automaton(mgr, f)));
   }
 
 
@@ -434,7 +461,7 @@ namespace black_internal {
       std::cerr << indent << "bailing out to monolithic procedure: " 
                 << "vars: " << mgr->varcount() << " "
                 << std::flush;
-      return semideterminize(black_internal::to_automaton(mgr, f));
+      return closure(semideterminize(black_internal::to_automaton(mgr, f)));
     }
 
     automaton aut = to_automaton(nonce, arg);
@@ -465,7 +492,7 @@ namespace black_internal {
     //std::cerr << indent << " - size: " << xf.trans.count() << "\n";
     std::cerr << indent << " - " << std::flush;
 
-    return sum(aut, semideterminize(xf)); // aut || xf
+    return sum(aut, closure(semideterminize(xf))); // aut || xf
   }
   
   automaton incremental_t::to_automaton(

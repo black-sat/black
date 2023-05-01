@@ -355,6 +355,14 @@ namespace black_internal::renamings {
     std::optional<size_t> n;
   };
   
+  struct to_plain {
+    to_plain() { }
+
+    black::proposition rename(black::proposition p) const {
+      return plain(p);
+    }
+  };
+
   struct fresh {
 
     black::proposition rename(black::proposition p) const {
