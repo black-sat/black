@@ -21,172 +21,159 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SUPPORT_IDENTIFIER_HPP
-#define BLACK_SUPPORT_IDENTIFIER_HPP
+#ifndef BLACK_LOGIC_IDENTIFIER_HPP
+#define BLACK_LOGIC_IDENTIFIER_HPP
 
-#include <black/support/hash.hpp>
+#include <black/support.hpp>
 
-#include <fmt/format.h>
+#include <ranges>
 
-#include <any>
-#include <tuple>
-#include <optional>
-#include <vector>
-#include <string_view>
-#include <string>
+namespace black::logic::internal {
 
-namespace black::logic::internal
-{
-  class identifier;
+  struct root_id_t { };
 
-  template<typename T>
-  concept formattable = std::is_constructible<fmt::formatter<T>>::value;
-
-  template<typename T>
-  concept identifiable = 
-    !std::is_same_v<std::remove_cvref_t<T>, identifier> &&
-    support::hashable<T> && std::equality_comparable<T> && formattable<T>;
-
-  //
-  // Type-erased hashable, comparable and printable value
-  //
-  class identifier
+  class identifier 
   {
   public:
-    identifier() = default;
+    template<typename T, typename ...Args>
+      requires (
+        std::is_constructible_v<label, T> &&
+        (std::is_constructible_v<label, Args> && ...)
+      )
+    identifier(T&& v, Args&& ...args) 
+      : _labels{std::forward<T>(v), std::forward<Args>(args)...} { }
+
+    template<size_t N>
+    identifier(const char (&str)[N])
+      : _labels{label{str}} { }
+
+    template<std::ranges::range R>
+      requires std::is_constructible_v<label, std::ranges::range_value_t<R>>
+    identifier(
+      R const& r, 
+      support::source_location loc = support::source_location::current()
+    ) : _labels(begin(r), end(r)) { 
+      black_assume(
+        !_labels.empty(), loc, 
+        "Cannot create an empty `identifier::component`. "
+        "Use `path::root` instead"
+      );
+    }
+
     identifier(identifier const&) = default;
-    identifier(identifier&&) = default;
-
-    template<identifiable T>
-    identifier(T&& value)
-      : _any(std::forward<T>(value)),
-        _hash(make_hasher(value)),
-        _cmp(make_cmp(value)),
-        _printer(make_printer(value)) { }
-
-    identifier(std::string_view view) 
-      : identifier{std::string{view}} { }
-
-    identifier(char const* c_str) 
-      : identifier{std::string{c_str}} { }
-
-    size_t hash() const {
-      black_assert(_any.has_value());
-      return _hash(_any);
-    }
-
+    identifier(identifier &&) = default;
     identifier &operator=(identifier const&) = default;
-    identifier &operator=(identifier&&) = default;
+    identifier &operator=(identifier &&) = default;
 
-    bool operator==(identifier const&other) const {
-      return _cmp(_any, other);
+    bool operator==(identifier const&) const = default;
+
+    bool is_root() const {
+      return _labels.empty();
     }
 
-    template<typename T>
-    identifier &operator=(T&& value)
-    {
-      *this = identifier(std::forward<T>(value));
-      return *this;
-    }
-
-    template<typename T>
-    bool is() const {
-      return std::any_cast<T>(&_any) != nullptr;
-    }
-
-    template<typename T>
-    std::optional<T> to() const & {
-      if(T const*ptr = std::any_cast<T>(&_any); ptr)
-        return std::optional<T>{*ptr};
-      return std::nullopt;
-    }
-
-    template<typename T>
-    std::optional<T> to() && {
-      if(T const*ptr = std::any_cast<T>(&_any); ptr)
-        return std::optional<T>{std::move(*ptr)};
-      return std::nullopt;
-    }
-
-    template<typename T>
-    T const* get() const & { return std::any_cast<T>(&_any); }
-
-    template<typename T>
-    T *get() & { return std::any_cast<T>(&_any); }
-
-    std::any const&any() const { return _any; }
-
-    std::string to_string() const {
-      return _printer(_any);
-    }
+    std::vector<label> const& labels() const;
 
   private:
-    using hasher_t = size_t (*)(std::any const&);
-    using comparator_t = bool (*)(std::any const&, identifier const&);
-    using printer_t = std::string (*)(std::any const&);
+    friend class path;
+    constexpr identifier(root_id_t) { }
 
-    std::any _any;
-    hasher_t _hash;
-    comparator_t _cmp;
-    printer_t _printer;
-
-    //
-    // note: these two function templates cause gcov false negatives
-    template<typename T>
-    hasher_t make_hasher(T const&) { // LCOV_EXCL_LINE
-      return [](std::any const&me) -> size_t { // LCOV_EXCL_LINE
-        T const *v = std::any_cast<T>(&me); // LCOV_EXCL_LINE
-        black_assert(v != nullptr); // LCOV_EXCL_LINE
-
-        return std::hash<T>{}(*v); // LCOV_EXCL_LINE
-      };
-    }
-    
-    template<typename T>
-    comparator_t make_cmp(T const&) { // LCOV_EXCL_LINE
-      return [](std::any const&me, identifier const&other) -> bool { // LCOV_EXCL_LINE
-        T const* v = std::any_cast<T>(&me); // LCOV_EXCL_LINE
-        T const* otherv = other.get<T>(); // LCOV_EXCL_LINE
-
-        black_assert(v != nullptr); // LCOV_EXCL_LINE
-
-        return otherv != nullptr && *v == *otherv; // LCOV_EXCL_LINE
-      };
-    }
-
-    template<typename T>
-    printer_t make_printer(T const&) {
-      return [](std::any const& me) {
-        T const *v = std::any_cast<T>(&me);
-        black_assert(v != nullptr);
-
-        return fmt::format("{}", *v);
-      };
-    }
+    std::vector<label> _labels;
   };
-}
 
-template<> 
-struct fmt::formatter<black::logic::internal::identifier> 
-  : fmt::formatter<string_view>
-{
-  template <typename FormatContext>
-  auto 
-  format(black::logic::internal::identifier const& p, FormatContext& ctx) const 
-  {
-    return formatter<string_view>::format(p.to_string(), ctx);
-  }
-};
+}
 
 template<>
 struct std::hash<black::logic::internal::identifier> {
-  size_t operator()(black::logic::internal::identifier const&h) const {
-    return h.hash();
+  size_t 
+  operator()(black::logic::internal::identifier const& c) const {
+    return black::support::hash(c.labels());
   }
 };
 
-namespace black::logic {
-  using internal::identifier;
+namespace black::logic::internal {
+
+  class path 
+  {
+  public:
+    static constexpr identifier root{root_id_t{}};
+
+    template<typename ...Args>
+      requires std::is_constructible_v<identifier, Args...>
+    path(Args&& ...args) : _ids{{std::forward<Args>(args)...}} { }
+
+    template<size_t N>
+    path(const char (&str)[N])
+      : _ids{identifier{str}} { }
+
+    template<std::ranges::range R>
+      requires 
+        std::is_constructible_v<identifier, std::ranges::range_value_t<R>>
+    path(
+      R const& r, 
+      support::source_location loc = support::source_location::current()
+    ) { 
+      black_assume(
+        !std::empty(r), loc, 
+        "Cannot create an `path` with no identifiers."
+      );
+
+      for(auto it = begin(r); it != end(r); ++it)
+        if(it == begin(r) || !it->is_root())
+          _ids.push_back(*it);
+    }
+
+    template<typename ...Args>
+      requires (std::is_same_v<std::remove_cvref_t<Args>, identifier> && ...)
+    path(identifier id1, Args&& ...args) 
+      : path{std::vector{std::move(id1), std::forward<Args>(args)...}} { }
+
+    path(path const&) = default;
+    path(path &&) = default;
+    path &operator=(path const&) = default;
+    path &operator=(path &&) = default;
+
+    bool operator==(path const&) const = default;
+
+    bool is_absolute() const {
+      black_assert(_ids.size() > 0);
+      return _ids[0] == root;
+    }
+
+    bool is_relative() const {
+      return !is_absolute();
+    }
+
+    std::vector<identifier> const& identifiers() const {
+      return _ids;
+    }
+
+  private:
+    std::vector<identifier> _ids;
+
+  };
+
 }
 
-#endif
+template<>
+struct std::hash<black::logic::internal::path> {
+  size_t operator()(black::logic::internal::path const& id) const {
+    return black::support::hash(id.identifiers());
+  }
+};
+
+namespace black::logic::internal {
+  inline path operator/(path const &path1, path const &path2) {
+    std::vector<identifier> ids = path1.identifiers();
+    ids.insert(end(ids), begin(path2.identifiers()), end(path2.identifiers()));
+
+    return path{ids};
+  }
+}
+
+
+namespace black::logic {
+  using internal::identifier;
+  using internal::path;
+}
+
+#endif // BLACK_LOGIC_IDENTIFIER_HPP

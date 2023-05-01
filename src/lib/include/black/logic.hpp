@@ -42,6 +42,7 @@
 // - generation.hpp
 // - interface.hpp (interface-fwd.hpp are just some needed forward declarations)
 //
+#include <black/logic/label.hpp>
 #include <black/logic/identifier.hpp>
 #include <black/logic/core.hpp>
 #include <black/logic/interface-fwd.hpp>

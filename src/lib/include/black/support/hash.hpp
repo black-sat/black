@@ -35,7 +35,7 @@
 namespace black::support::internal {
 
   //
-  // Function to combine different hashe values into one.
+  // Function to combine different hash values into one.
   // See https://stackoverflow.com/a/27952689/3206471
   // and https://stackoverflow.com/questions/35985960
   // for an explanation of the algorithm

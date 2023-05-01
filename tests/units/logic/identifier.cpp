@@ -23,18 +23,20 @@
 
 #include <catch.hpp>
 
+#include <black/support.hpp>
 #include <black/logic.hpp>
 
 #include <fmt/format.h>
 
-TEST_CASE("identifiers") {
+using namespace black::logic;
+using namespace black::support;
 
-  using namespace black::logic;
+TEST_CASE("labels") {
 
-  identifier id = "hello";
-  identifier id2 = 42;
+  label id = "hello";
+  label id2 = 42;
 
-  identifier id3 = id;
+  label id3 = id;
 
   REQUIRE(id3 == id);
   REQUIRE(id3 != id2);
@@ -44,5 +46,43 @@ TEST_CASE("identifiers") {
 
   REQUIRE(str1 == "hello");
   REQUIRE(str2 == "42");
+
+}
+
+TEST_CASE("identifiers and paths") {
+
+  enable_debug_msgs("test");
+
+  REQUIRE_THROWS_AS(identifier{std::vector<int>{}}, assume_error);
+
+  identifier id1 = {"hello", 42};
+  identifier id2 = {"hi", 0};
+
+  identifier id3 = "hello";
+
+  path p = "hello";
+
+  path p2 = {id1, id2};
+
+  path p3{path::root, path::root, id1};
+
+  REQUIRE(p.identifiers().size() == 1);
+  REQUIRE(p2.identifiers().size() == 2);
+  REQUIRE(p3.identifiers().size() == 2);
+
+  REQUIRE(p.identifiers()[0] == "hello");
+  REQUIRE(p2.identifiers()[0] == id1);
+  REQUIRE(p2.identifiers()[1] == id2);
+  REQUIRE(p3.identifiers()[0].is_root());
+  REQUIRE(p3.identifiers()[1] == id1);
+
+  path p4 = p3 / p;
+  path p5 = p / p3;
+
+  REQUIRE(p4.identifiers().size() == 3);
+  REQUIRE(p5.identifiers().size() == 2);
+
+  REQUIRE(p4.is_absolute());
+  REQUIRE(!p5.is_absolute());
 
 }

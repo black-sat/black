@@ -203,11 +203,11 @@ namespace black::support::internal {
   };
 
 
-  //
-  // Exception thrown by some members of the `result` class below.
-  //
   struct error;
 
+  //
+  // Exception thrown by some members of the `result` class.
+  //
   template<typename Error = error>
   class bad_result_access : exception 
   {
