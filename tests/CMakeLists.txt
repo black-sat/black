@@ -39,6 +39,7 @@ if(Catch2_FOUND)
     units/support/result.cpp
     units/support/serialize.cpp
     units/support/range.cpp
+    units/logic/logic.cpp
     units/logic/identifier.cpp
   )
 

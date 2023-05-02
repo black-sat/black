@@ -572,10 +572,22 @@ namespace black::logic::internal {
     explicit operator syntax_element() const { return Element; }
   };
 
+  template<typename Elements>
+  struct fragment_enum_values_of_syntax_list;
+
+  template<syntax_element ...Elements>
+  struct fragment_enum_values_of_syntax_list<syntax_list<Elements...>> {
+    using type = std::tuple<fragment_enum_value<Elements>...>;
+  };
+
+  template<typename Elements>
+  using fragment_enum_values_of_syntax_list_t =
+    typename fragment_enum_values_of_syntax_list<Elements>::type;
+
   //
-  // Because `fragment_enum_value` is supposed to be used in pattern matching expressions
-  // against `fragment_type` objects (see below), we need to define the
-  // Tuple-like interface. In this case, only `tuple_size` since there is no
+  // Because `fragment_enum_value` is supposed to be used in pattern matching
+  // expressions against `fragment_type` objects (see below), we need to define
+  // the Tuple-like interface. In this case, only `tuple_size` since there is no
   // field to unpack.
   //
   } namespace std {
@@ -632,6 +644,9 @@ namespace black::logic::internal {
   public:
     using syntax = Syntax;
 
+    using alternatives = 
+      fragment_enum_values_of_syntax_list_t<typename Syntax::list>;
+
     fragment_type() = delete;
 
     fragment_type(fragment_type const&) = default;
@@ -678,7 +693,9 @@ namespace black::logic::internal {
     }
 
     template<typename ...Handlers>
-    auto match(Handlers ...) const;
+    auto match(Handlers ...handlers) const {
+      return support::matcher<fragment_type>{}.match(*this, handlers...);
+    }
 
     syntax_element element() const { return _element; }
 
@@ -887,7 +904,7 @@ namespace black::logic::internal {
       size_t operator()(
         black::logic::internal::make_storage_data_t<Types...> const& data
       ) {
-        return black::support::hash(data);
+        return black::support::hash(data.values);
       }
     };
 
@@ -1102,11 +1119,73 @@ namespace black::logic::internal {
   };
 
   //
+  // We can obtain the hierarchy type from the `hierarchy_type` value with the
+  // following trait, which will be specialized in the preprocessing code.
+  //
+  template<fragment Syntax, hierarchy_type H>
+  struct hierarchy_type_of;
+
+  template<fragment Syntax, hierarchy_type H>
+  using hierarchy_type_of_t = 
+    typename hierarchy_type_of<Syntax, H>::type;
+
+  //
+  // Similarly to `hierarchy_type_of`, we can obtain the concrete storage type
+  // of a `storage_type` with this trait, specialized later. Note that the
+  // `Syntax` parameter will be ignored if a leaf storage kind is requested.
+  //
+  template<fragment Syntax, storage_type H>
+  struct storage_type_of;
+
+  template<fragment Syntax, storage_type H>
+  using storage_type_of_t = 
+    typename storage_type_of<Syntax, H>::type;
+
+  //
+  // Similarly to `hierarchy_type_of` and `storage_type_of`, we can obtain the
+  // concrete type of a `syntax_element` with this trait, specialized later.
+  // Note that the `Syntax` parameter will be ignored if a leaf hierarchy
+  // element is requested. Note also that the returned type might not be a
+  // `hierarchy_element_base` but only a `storage_base`, in the case of leaf
+  // storage kinds or storage kinds with no hierarchy element.
+  //
+  template<fragment Syntax, syntax_element E>
+  struct element_type_of;
+
+  template<fragment Syntax, syntax_element E>
+  using element_type_of_t = 
+    typename element_type_of<Syntax, E>::type;
+
+  //
+  // This is a version of `element_type_of` extended to `syntax_list`s
+  //
+  template<fragment Syntax, typename List>
+  struct element_types_of_syntax_list;
+  
+  template<fragment Syntax, syntax_element ...Elements>
+  struct element_types_of_syntax_list<Syntax, syntax_list<Elements...>> {
+    using type = std::tuple<element_type_of_t<Syntax, Elements>...>;
+  };
+
+  template<fragment Syntax, typename List>
+  using element_types_of_syntax_list_t = 
+    typename element_types_of_syntax_list<Syntax, List>::type;
+
+  //
   // We also forward declare an empty CRTP class that can be specialized by user
   // code to provide custom members to `hierarchy_base` defined below.
   //
   template<hierarchy_type Hierarchy, typename Derived>
   struct hierarchy_custom_members { };
+
+  template<fragment Syntax, fragment NodeSyntax>
+  struct hierarchy_alternatives : element_types_of_syntax_list<
+    Syntax, typename NodeSyntax::list
+  > { };
+
+  template<fragment Syntax, fragment NodeSyntax>
+  using hierarchy_alternatives_t = 
+    typename hierarchy_alternatives<Syntax, NodeSyntax>::type;
 
   //
   // We can now declare the base class for all the hierarchy types. This class
@@ -1128,6 +1207,8 @@ namespace black::logic::internal {
     >;
     using type = fragment_type<hierarchy_base, node_syntax>;
     static constexpr auto hierarchy = Hierarchy;
+
+    using alternatives = hierarchy_alternatives_t<syntax, node_syntax>;
 
     // hierarchy types are not default constructible but are
     // copy/move/constructible/assignable
@@ -1187,9 +1268,12 @@ namespace black::logic::internal {
       return {};
     }
 
-    // implemented later
     template<typename ...Handlers>
-    auto match(Handlers ...handlers) const;
+    auto match(Handlers ...handlers) const {
+      return support::matcher<Derived>{}.match(
+        static_cast<Derived const&>(*this), handlers...
+      );
+    }
 
     auto unique_id() const {
       return hierarchy_unique_id_t<hierarchy>{
@@ -1216,17 +1300,6 @@ namespace black::logic::internal {
     alphabet_base *_sigma;
     hierarchy_node const *_node;
   };
-
-  //
-  // We can obtain the hierarchy type from the `hierarchy_type` value with the
-  // following trait, which will be specialized in the preprocessing code.
-  //
-  template<fragment Syntax, hierarchy_type H>
-  struct hierarchy_type_of;
-
-  template<fragment Syntax, hierarchy_type H>
-  using hierarchy_type_of_t = 
-    typename hierarchy_type_of<Syntax, H>::type;
 
   //
   // In general, hierarchy types are equality comparable in a standard way, but
@@ -1266,18 +1339,6 @@ namespace black::logic::internal {
   //
   template<storage_type Storage, fragment Syntax, typename Derived>
   class storage_base;
-
-  //
-  // Similarly to `hierarchy_type_of`, we can obtain the concrete storage type
-  // of a `storage_type` with this trait, specialized later. Note that the
-  // `Syntax` parameter will be ignored if a leaf storage kind is requested.
-  //
-  template<fragment Syntax, storage_type H>
-  struct storage_type_of;
-
-  template<fragment Syntax, storage_type H>
-  using storage_type_of_t = 
-    typename storage_type_of<Syntax, H>::type;
 
   //
   // This small trait tells us whether a storage kind has hierarchy elements.
@@ -1361,6 +1422,8 @@ namespace black::logic::internal {
     >;
     using type = fragment_type<storage_ctor_base, node_syntax>;
     static constexpr storage_type storage = Storage;
+
+    using alternatives = hierarchy_alternatives_t<Syntax, node_syntax>;
 
     // the wrapping constructor delegates to the base's one
     storage_ctor_base(alphabet_base *sigma, hierarchy_node const*node) 
@@ -1615,6 +1678,8 @@ namespace black::logic::internal {
     using type = fragment_type<hierarchy_element_ctor_base, node_syntax>;
     static constexpr syntax_element element = Element;
 
+    using alternatives = hierarchy_alternatives_t<Syntax, node_syntax>;
+
     // the wrapping constructor delegates to the base's one
     hierarchy_element_ctor_base(
       alphabet_base *sigma, hierarchy_node const*node
@@ -1680,21 +1745,6 @@ namespace black::logic::internal {
     hierarchy_element_base(E e) 
       : hierarchy_element_base{e.sigma(), e.node()} { }
   };
-
-  //
-  // Similarly to `hierarchy_type_of` and `storage_type_of`, we can obtain the
-  // concrete type of a `syntax_element` with this trait, specialized later.
-  // Note that the `Syntax` parameter will be ignored if a leaf hierarchy
-  // element is requested. Note also that the returned type might not be a
-  // `hierarchy_element_base` but only a `storage_base`, in the case of leaf
-  // storage kinds or storage kinds with no hierarchy element.
-  //
-  template<fragment Syntax, syntax_element E>
-  struct element_type_of;
-
-  template<fragment Syntax, syntax_element E>
-  using element_type_of_t = 
-    typename element_type_of<Syntax, E>::type;
 
   //
   // Similarly to `hierarchy_ctor_base`, we declare factory functions to be
@@ -2033,8 +2083,8 @@ namespace black::logic::internal {
 
   //
   // Since `fragment_type` is designed as well to be used in pattern matching,
-  // we need to implement `common_type` for it and for `fragment_enum_value` as well, so
-  // to ease their use in pattern matching structures.
+  // we need to implement `common_type` for it and for `fragment_enum_value` as
+  // well, so to ease their use in pattern matching structures.
   //
   struct dummy_owner_t { }; 
 
@@ -2100,65 +2150,6 @@ namespace black::logic::internal {
   using support::otherwise;
 
   //
-  // This utility trait is useful in the usage of the `matcher` class in
-  // the common case of hierarchy types: it transform a `syntax_list` and a
-  // fragment into a tuple of concrete hierarchy element types to pass to the
-  // `matcher` class.
-  //
-  template<fragment Syntax, typename List>
-  struct element_types_of_syntax_list;
-  
-  template<fragment Syntax, syntax_element ...Elements>
-  struct element_types_of_syntax_list<Syntax, syntax_list<Elements...>> {
-    using type = std::tuple<element_type_of_t<Syntax, Elements>...>;
-  };
-
-  template<fragment Syntax, typename List>
-  using element_types_of_syntax_list_t = 
-    typename element_types_of_syntax_list<Syntax, List>::type;
-
-  //
-  // Now we can implement the various `match()` functions declared until now.
-  //
-  // The first is for `fragment_type`.
-  template<typename Elements>
-  struct fragment_enum_values_of_elements;
-
-  template<syntax_element ...Elements>
-  struct fragment_enum_values_of_elements<syntax_list<Elements...>> {
-    using type = std::tuple<fragment_enum_value<Elements>...>;
-  };
-
-  template<typename Elements>
-  using fragment_enum_values_of_elements_t =
-    typename fragment_enum_values_of_elements<Elements>::type;
-
-  template<typename Owner, fragment Syntax>
-  template<typename ...Handlers>
-  auto fragment_type<Owner, Syntax>::match(Handlers ...hs) const {
-    return support::matcher<fragment_type,
-      fragment_enum_values_of_elements_t<typename Syntax::list>
-    >{}.match(*this, hs...);
-  }
-
-  //
-  // Then for hierarchy types
-  //
-  template<hierarchy_type H, fragment Syntax, typename Derived>
-  template<typename ...Handlers>
-  auto hierarchy_base<H, Syntax, Derived>::match(Handlers ...handlers) const {
-    using matcher = support::matcher<Derived,
-      element_types_of_syntax_list_t<
-        typename Derived::syntax,
-        typename Derived::node_syntax::list
-      >
-    >;
-    return matcher{}.match(
-      static_cast<Derived const&>(*this), handlers...
-    );
-  }
-
-  //
   // A useful addition to the pattern matching infrastructure is the `only<>`
   // class. It allows the user to match only a selected list of syntax elements
   // independently of their storage kind etc...
@@ -2214,6 +2205,9 @@ namespace black::logic::internal {
   {
     using base_t = only_base_t<TopLevel, Syntax>;
 
+    using alternatives = 
+      element_types_of_syntax_list_t<Syntax, typename TopLevel::list>;
+
     only() = delete;
     only(only const&) = default;
     only(only &&) = default;
@@ -2260,10 +2254,7 @@ namespace black::logic::internal {
     //
     template<typename ...Handlers>
     auto match(Handlers ...handlers) const {
-      return 
-        support::matcher<base_t, 
-          element_types_of_syntax_list_t<Syntax, typename TopLevel::list>
-        >{}.match(*this, handlers...);
+      return support::matcher<only>{}.match(*this, handlers...);
     }
   };
 

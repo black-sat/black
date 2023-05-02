@@ -57,13 +57,13 @@ namespace black::support::internal {
     std::hash<std::remove_cvref_t<T>>{}(t);
   };
 
-  template<typename T>
+  template<hashable T>
   size_t hash(T const& arg) {
     return std::hash<T>{}(arg);
   }
 
   template<std::ranges::range R>
-    requires hashable<std::ranges::range_value_t<R>>
+    requires (!hashable<R> && hashable<std::ranges::range_value_t<R>>)
   size_t hash(R const& r) {
     size_t h = 0;
     for(auto elem : r)
@@ -71,15 +71,14 @@ namespace black::support::internal {
     return h;
   }
 
-  template<typename T>
-    requires requires (T v) { std::get<0>(v); }
-  size_t hash(T const& v) {
+  template<typename Arg, typename ...Args>
+  size_t hash(std::tuple<Arg, Args...> const& t) {
     return std::apply(
       [](auto arg, auto ...args) {
         size_t h = hash(arg);
         ((h = hash_combine(h, hash(args))), ...);
         return h;
-      }, v);
+      }, t);
   }
 
   template<typename Arg, typename ...Args>

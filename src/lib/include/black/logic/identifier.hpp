@@ -71,11 +71,11 @@ namespace black::logic::internal {
       return _labels.empty();
     }
 
-    std::vector<label> const& labels() const;
+    std::vector<label> const& labels() const { return _labels; }
 
   private:
     friend class path;
-    constexpr identifier(root_id_t) { }
+    identifier(root_id_t) { }
 
     std::vector<label> _labels;
   };

@@ -328,6 +328,74 @@ namespace black::logic::internal
   #include <black/logic/hierarchy.hpp>
 
   //
+  // Here we specialize the trait `hierarchy_type_of`, which returns the
+  // concrete hierarchy type given a value of the `hierarchy_type` enum and a
+  // fragment.
+  //
+  #define declare_hierarchy(Base) \
+    template<fragment Syntax> \
+    struct hierarchy_type_of<Syntax, hierarchy_type::Base> { \
+      using type = Base<Syntax>; \
+    };
+  
+  #define declare_simple_hierarchy(Base) \
+    template<fragment Syntax> \
+    struct hierarchy_type_of<Syntax, hierarchy_type::Base> { \
+      using type = Base; \
+    };
+
+  #include <black/logic/hierarchy.hpp>
+
+
+  //
+  // `storage_type_of` trait which returns the concrete type for a given
+  // `storage_type` and a given fragment.
+  //
+  #define declare_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    struct storage_type_of<Syntax, storage_type::Storage> { \
+      using type = Storage<Syntax>; \
+    };
+  
+  #define declare_simple_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    struct storage_type_of<Syntax, storage_type::Storage> { \
+      using type = Storage; \
+    };
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    template<fragment Syntax> \
+    struct storage_type_of<Syntax, storage_type::Storage> { \
+      using type = Storage; \
+    };
+
+  #include <black/logic/hierarchy.hpp>  
+
+  //
+  // Trait to obtain the concrete type given a `syntax_element`. This works for
+  // hierarchy elements but also for leaf storage kinds and storage kinds
+  // without hierarchy elements, which all have their specific `syntax_element`.
+  //
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    template<fragment Syntax> \
+    struct element_type_of<Syntax, syntax_element::Element> { \
+      using type = Element<Syntax>; \
+    };
+  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
+    template<fragment Syntax> \
+    struct element_type_of<Syntax, syntax_element::Element> { \
+      using type = Element; \
+    };
+  
+  #define has_no_hierarchy_elements(Base, Storage) \
+    declare_hierarchy_element(Base, Storage, Storage)
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+    declare_leaf_hierarchy_element(Base, Storage, Storage)
+
+  #include <black/logic/hierarchy.hpp>
+
+  //
   // Specializations of `storage_data`. Here we define the internal layout of
   // all the fields, children and children vectors of a storage kind.
   //
@@ -387,25 +455,6 @@ namespace black::logic::internal
     \
     template<typename T> \
     concept is_##Base = hierarchy<T> && T::hierarchy == hierarchy_type::Base;
-
-  #include <black/logic/hierarchy.hpp>
-
-  //
-  // Here we specialize the trait `hierarchy_type_of`, which returns the
-  // concrete hierarchy type given a value of the `hierarchy_type` enum and a
-  // fragment.
-  //
-  #define declare_hierarchy(Base) \
-    template<fragment Syntax> \
-    struct hierarchy_type_of<Syntax, hierarchy_type::Base> { \
-      using type = Base<Syntax>; \
-    };
-  
-  #define declare_simple_hierarchy(Base) \
-    template<fragment Syntax> \
-    struct hierarchy_type_of<Syntax, hierarchy_type::Base> { \
-      using type = Base; \
-    };
 
   #include <black/logic/hierarchy.hpp>
 
@@ -487,30 +536,6 @@ namespace black::logic::internal
       : Struct<storage_type::Storage, Derived> { };
 
   #include <black/logic/hierarchy.hpp>
-
-  //
-  // Here we specialize the `storage_type_of` trait which returns the concrete
-  // type for a given `storage_type` and a given fragment.
-  //
-  #define declare_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    struct storage_type_of<Syntax, storage_type::Storage> { \
-      using type = Storage<Syntax>; \
-    };
-  
-  #define declare_simple_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    struct storage_type_of<Syntax, storage_type::Storage> { \
-      using type = Storage; \
-    };
-
-  #define declare_leaf_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    struct storage_type_of<Syntax, storage_type::Storage> { \
-      using type = Storage; \
-    };
-
-  #include <black/logic/hierarchy.hpp>  
 
   //
   // This is the type that defines which arguments are accepted by the
@@ -656,30 +681,6 @@ namespace black::logic::internal
         Element \
       >::hierarchy_element_base; \
     };
-
-  #include <black/logic/hierarchy.hpp>
-
-  //
-  // Trait to obtain the concrete type given a `syntax_element`. This works for
-  // hierarchy elements but also for leaf storage kinds and storage kinds
-  // without hierarchy elements, which all have their specific `syntax_element`.
-  //
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    template<fragment Syntax> \
-    struct element_type_of<Syntax, syntax_element::Element> { \
-      using type = Element<Syntax>; \
-    };
-  #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    template<fragment Syntax> \
-    struct element_type_of<Syntax, syntax_element::Element> { \
-      using type = Element; \
-    };
-  
-  #define has_no_hierarchy_elements(Base, Storage) \
-    declare_hierarchy_element(Base, Storage, Storage)
-
-  #define declare_leaf_storage_kind(Base, Storage) \
-    declare_leaf_hierarchy_element(Base, Storage, Storage)
 
   #include <black/logic/hierarchy.hpp>
 

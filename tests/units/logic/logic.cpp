@@ -23,66 +23,40 @@
 
 #include <catch.hpp>
 
-#include <black/support.hpp>
 #include <black/logic.hpp>
 
-#include <fmt/format.h>
-
-using namespace black::logic;
+using namespace black::logic::internal;
 using namespace black::support;
 
-TEST_CASE("labels") {
+struct Bool : make_fragment_t<
+  syntax_list<
+    syntax_element::proposition,
+    syntax_element::conjunction,
+    syntax_element::negation
+  >
+> { };
 
-  label id = "hello";
-  label id2 = 42;
+TEST_CASE("Terms hierarchy") {
+  
+  alphabet sigma;
 
-  label id3 = id;
+  proposition p = sigma.proposition("p");
+  proposition q = sigma.proposition("q");
 
-  REQUIRE(id3 == id);
-  REQUIRE(id3 != id2);
+  formula<Bool> f = p && !q;
 
-  std::string str1 = fmt::format("{}", id);
-  std::string str2 = fmt::format("{}", id2);
+  STATIC_REQUIRE(matchable<formula<Bool>>);
+  STATIC_REQUIRE(matchable<formula<Bool>::type>);
 
-  REQUIRE(str1 == "hello");
-  REQUIRE(str2 == "42");
+  std::string s = f.match(
+    [](conjunction<Bool>) {
+      return "Ok";
+    },
+    [](otherwise) {
+      return "Not Ok";
+    }
+  );
 
-}
-
-TEST_CASE("identifiers and paths") {
-
-  enable_debug_msgs("test");
-
-  REQUIRE_THROWS_AS(identifier{std::vector<int>{}}, assume_error);
-
-  identifier id1 = {"hello", 42};
-  identifier id2 = {"hi", 0};
-
-  identifier id3 = "hello";
-
-  path p = "hello";
-
-  path p2 = {id1, id2};
-
-  path p3{path::root, path::root, id1};
-
-  REQUIRE(p.identifiers().size() == 1);
-  REQUIRE(p2.identifiers().size() == 2);
-  REQUIRE(p3.identifiers().size() == 2);
-
-  REQUIRE(p.identifiers()[0] == "hello");
-  REQUIRE(p2.identifiers()[0] == id1);
-  REQUIRE(p2.identifiers()[1] == id2);
-  REQUIRE(p3.identifiers()[0].is_root());
-  REQUIRE(p3.identifiers()[1] == id1);
-
-  path p4 = p3 / p;
-  path p5 = p / "world";
-
-  REQUIRE(p4.identifiers().size() == 3);
-  REQUIRE(p5.identifiers().size() == 2);
-
-  REQUIRE(p4.is_absolute());
-  REQUIRE(!p5.is_absolute());
+  REQUIRE(s == "Ok");
 
 }
