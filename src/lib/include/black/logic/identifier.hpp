@@ -95,7 +95,7 @@ namespace black::logic::internal {
   class path 
   {
   public:
-    static constexpr identifier root{root_id_t{}};
+    static const identifier root; // cannot be `constexpr` in G++10
 
     template<typename ...Args>
       requires std::is_constructible_v<identifier, Args...>
@@ -151,6 +151,8 @@ namespace black::logic::internal {
     std::vector<identifier> _ids;
 
   };
+
+  inline const identifier path::root{root_id_t{}};
 
 }
 
