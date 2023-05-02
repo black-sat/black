@@ -77,7 +77,7 @@ TEST_CASE("identifiers and paths") {
   REQUIRE(p3.identifiers()[1] == id1);
 
   path p4 = p3 / p;
-  path p5 = p / p3;
+  path p5 = p / "world";
 
   REQUIRE(p4.identifiers().size() == 3);
   REQUIRE(p5.identifiers().size() == 2);
