@@ -973,11 +973,13 @@ namespace black::logic::internal {
   // that have a `syntax_element` of a storage kind with children will inherit
   // from `fragment_holder_base`, so we cast the node only in that case.
   //
-  inline syntax_mask_t fragment_of(hierarchy_node const *child) {
+  inline syntax_mask_t fragment_of(
+    std::shared_ptr<hierarchy_node const> child
+  ) {
     storage_type storage = storage_of_element(child->type);
     if(storage_has_children(storage))
       return 
-        static_cast<fragment_holder_base const*>(child)->_fragment;
+        std::static_pointer_cast<fragment_holder_base const>(child)->_fragment;
     
     return syntax_mask_t{static_cast<size_t>(child->type)};
   }
@@ -1220,8 +1222,9 @@ namespace black::logic::internal {
     hierarchy_base &operator=(hierarchy_base &&) = default;
 
     // this constructor is for internal use but has to be public (for now)
-    hierarchy_base(alphabet_base *sigma, hierarchy_node const*node)
-      : _sigma{sigma}, _node{node} 
+    hierarchy_base(
+      alphabet_base *sigma, std::shared_ptr<hierarchy_node const> node
+    ) : _sigma{sigma}, _node{node} 
     { 
       black_assert(Syntax::mask.contains(fragment_of(node)));
     }
@@ -1277,12 +1280,12 @@ namespace black::logic::internal {
 
     auto unique_id() const {
       return hierarchy_unique_id_t<hierarchy>{
-        reinterpret_cast<uintptr_t>(_node)
+        reinterpret_cast<uintptr_t>(_node.get())
       };
     }
 
     size_t hash() const {
-      return std::hash<hierarchy_node const*>{}(_node);
+      return std::hash<std::shared_ptr<hierarchy_node const>>{}(_node);
     }
 
     type node_type() const {
@@ -1294,11 +1297,11 @@ namespace black::logic::internal {
     template<typename A = alphabet>
     A *sigma() const { return static_cast<A *>(_sigma); }
 
-    hierarchy_node const *node() const { return _node; }
+    std::shared_ptr<hierarchy_node const> node() const { return _node; }
 
   private:
     alphabet_base *_sigma;
-    hierarchy_node const *_node;
+    std::shared_ptr<hierarchy_node const> _node;
   };
 
   //
@@ -1426,8 +1429,9 @@ namespace black::logic::internal {
     using alternatives = hierarchy_alternatives_t<Syntax, node_syntax>;
 
     // the wrapping constructor delegates to the base's one
-    storage_ctor_base(alphabet_base *sigma, hierarchy_node const*node) 
-      : base_t{sigma, node} 
+    storage_ctor_base(
+      alphabet_base *sigma, std::shared_ptr<hierarchy_node const> node
+    ) : base_t{sigma, node} 
     { 
       black_assert(Syntax::mask.contains(fragment_of(node)));
     }
@@ -1535,15 +1539,25 @@ namespace black::logic::internal {
   //
   template<storage_type Storage>
   struct storage_allocator {
-    std::deque<storage_node<Storage>> _store;
-    support::map<storage_node<Storage>, storage_node<Storage> *> _map;
+    support::map<
+      storage_node<Storage>, std::weak_ptr<storage_node<Storage>>
+    > _map;
    
-    storage_node<Storage> *allocate(storage_node<Storage> const& node) {
+    std::shared_ptr<storage_node<Storage>> 
+    allocate(storage_node<Storage> const& node) 
+    {
       auto it = _map.find(node);
-      if(it != _map.end())
-        return it->second;
+      if(it != _map.end()) {
+        auto shared = it->second.lock();
+        if(shared)
+          return shared;
+      }
      
-      storage_node<Storage> *obj = &_store.emplace_back(node);
+      // we do not use `make_shared` to separate the control block from the
+      // object, to ensure memory is reclaimed when only weak_ptr's are alive
+      auto obj = std::shared_ptr<storage_node<Storage>>(
+        std::make_unique<storage_node<Storage>>(node)
+      );
       _map.insert({node, obj});
 
       return obj;
@@ -1561,13 +1575,21 @@ namespace black::logic::internal {
     >)
   struct storage_allocator<Storage> 
   {  
-    storage_node<Storage> _true{element_of_storage_v<Storage>, true};
-    storage_node<Storage> _false{element_of_storage_v<Storage>, false};
+    std::shared_ptr<storage_node<Storage>> _true =
+      std::make_shared<storage_node<Storage>>(
+        storage_node<Storage>{element_of_storage_v<Storage>, true}
+      );
     
-    storage_node<Storage> *allocate(storage_node<Storage> node) {
+    std::shared_ptr<storage_node<Storage>> _false =
+      std::make_shared<storage_node<Storage>>(
+        storage_node<Storage>{element_of_storage_v<Storage>, false}
+      );
+    
+    std::shared_ptr<storage_node<Storage>> allocate(storage_node<Storage> node) 
+    {
       if(std::get<0>(node.data.values))
-        return &_true;
-      return &_false;
+        return _true;
+      return _false;
     }
   };
 
@@ -1682,7 +1704,7 @@ namespace black::logic::internal {
 
     // the wrapping constructor delegates to the base's one
     hierarchy_element_ctor_base(
-      alphabet_base *sigma, hierarchy_node const*node
+      alphabet_base *sigma, std::shared_ptr<hierarchy_node const> node
     ) : base_t{sigma, node} {
       black_assert(node_syntax::mask.contains(node->type));
     }
@@ -1794,11 +1816,11 @@ namespace black::logic::internal {
       requires (H::hierarchy == Hierarchy)
     child_arg(H h) : child{h.node()}, sigma{h.sigma()} { }
 
-    operator hierarchy_node const*() const {
+    operator std::shared_ptr<hierarchy_node const> () const {
       return child;
     }
     
-    hierarchy_node const *child;
+    std::shared_ptr<hierarchy_node const> child;
     alphabet *sigma;
   };
 
@@ -1818,11 +1840,11 @@ namespace black::logic::internal {
         children.push_back(h.node());
     }
 
-    operator std::vector<hierarchy_node const*>() const {
+    operator std::vector<std::shared_ptr<hierarchy_node const>>() const {
       return children;
     }
 
-    std::vector<hierarchy_node const*> children;
+    std::vector<std::shared_ptr<hierarchy_node const>> children;
     alphabet *sigma;
   };
 
@@ -1911,7 +1933,9 @@ namespace black::logic::internal {
   template<size_t I, storage_kind H>
   auto const &get_field(H h) {
     return std::get<I>(
-      static_cast<storage_node<H::storage> const *>(h.node())->data.values
+      std::static_pointer_cast<
+        storage_node<H::storage> const
+      >(h.node())->data.values
     );
   }
 
@@ -1924,7 +1948,9 @@ namespace black::logic::internal {
     return ChildH{
       h.sigma(), 
       std::get<I>(
-        static_cast<storage_node<H::storage> const *>(h.node())->data.values
+        std::static_pointer_cast<
+          storage_node<H::storage> const
+        >(h.node())->data.values
       )
     };
   }

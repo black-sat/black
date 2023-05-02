@@ -410,10 +410,10 @@ namespace black::logic::internal
     , std::vector<Type>
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
-    , hierarchy_node const *
+    , std::shared_ptr<hierarchy_node const>
   
   #define declare_children(Base, Storage, Hierarchy, Children) \
-    , std::vector<hierarchy_node const*>
+    , std::vector<std::shared_ptr<hierarchy_node const>>
 
   #define end_storage_kind(Base, Storage) \
       > { };
@@ -749,7 +749,7 @@ namespace black::logic::internal
     #include <black/logic/hierarchy.hpp>
 
     #define declare_storage_kind(Base, Storage) \
-      storage_node<storage_type::Storage> *unique( \
+      std::shared_ptr<storage_node<storage_type::Storage>> unique( \
         storage_node<storage_type::Storage> node \
       ) { \
         return allocate(std::move(node)); \
