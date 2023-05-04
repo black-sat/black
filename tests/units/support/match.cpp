@@ -30,25 +30,12 @@
 
 using namespace black::support;
 
-struct test : black_union_type(int, std::tuple<std::string, float>);
+struct test : black_sum_type(int, std::tuple<std::string, float>);
 
 struct nil { };
 
 template<typename T>
-struct cons;
-
-template<typename T>
-struct list : black_rec_union_type(nil, cons<T>);
-
-template<typename T>
-struct cons {
-
-  cons(T h) : head{h}, tail{nil{}} { }
-  cons(T h, list<T> t) : head{h}, tail{t} { }
-
-  T head;
-  list<T> tail;
-};
+struct list : black_rec_sum_type(nil, std::pair<T, list<T>>);
 
 TEST_CASE("Match infrastructure") {
 
@@ -72,7 +59,7 @@ TEST_CASE("Match infrastructure") {
 
 }
 
-TEST_CASE("Union types") {
+TEST_CASE("Sum types") {
   test t = 21;
 
   test t2 = t; // copy ctor
@@ -88,17 +75,19 @@ TEST_CASE("Union types") {
   REQUIRE(h1 == h2);
 }
 
-TEST_CASE("Recursive union types") {
-  list<int> l = cons(21);
+TEST_CASE("Recursive sum types") {
+  using std::pair;
 
-  list<int> l2 = cons(42, l);
+  list<int> l = pair(21, list<int>(nil{}));
+
+  list<int> l2 = pair(42, l);
 
   std::vector<int> values;
   std::function<void(list<int>)> f = [&](list<int> arg) {
     arg.match(
-      [&](cons<int> c) {
-        values.push_back(c.head);
-        f(c.tail);
+      [&](pair<int, list<int>> c) {
+        values.push_back(get<0>(c));
+        f(get<1>(c));
       },
       [](nil) { }
     );

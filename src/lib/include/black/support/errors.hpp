@@ -79,7 +79,7 @@ namespace black::support::internal {
   };
 
   struct error : 
-    black_union_type(syntax_error, type_error, backend_error, io_error);
+    black_sum_type(syntax_error, type_error, backend_error, io_error);
   
 }
 

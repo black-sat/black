@@ -60,3 +60,44 @@ TEST_CASE("Terms hierarchy") {
   REQUIRE(s == "Ok");
 
 }
+
+TEST_CASE("New syntax checking") {
+
+  // using namespace black::logic;
+
+  // // idea...
+  // alphabet sigma;
+
+  // auto p = sigma.proposition("p");
+  // auto q = sigma.proposition("q");
+  // auto r = sigma.proposition("r");
+
+  // formula<cnf> f1 = (p || !q || r) && (!p || q || r); // good
+  // formula<cnf> f2 = (p && !q && r) || (!p && q && r); // bad
+
+  // black_assert(f1.is<conjunction<clause>>());
+
+  // f1.match(
+  //   [](conjunction<clause>, auto clauses) {
+  //     for(auto c : clauses) {
+  //       c.match(
+  //         [](disjunction<literal>, auto literals) {
+  //           for(auto l : literals) {
+  //             l.match(
+  //               [](proposition p) { 
+  //                 // ...
+  //               },
+  //               [](negation<proposition>, auto arg) {
+  //                 black_assert(arg.is<proposition>());
+  //               }
+  //             )
+  //           }
+  //         }
+  //       )
+  //     }
+  //   }
+  // );
+
+
+
+}

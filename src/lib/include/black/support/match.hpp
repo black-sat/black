@@ -195,13 +195,13 @@ namespace black::support::internal {
   // Utility type to declare a simple union type from a list of alternatives
   //
   template<typename ...Cases>
-  struct union_type : private std::variant<Cases...> {
+  struct sum_type : private std::variant<Cases...> {
     using std::variant<Cases...>::variant;
 
     using alternatives = std::tuple<Cases...>;
-    static constexpr bool is_union_type = true;
+    static constexpr bool is_sum_type = true;
 
-    bool operator==(union_type const&) const = default;
+    bool operator==(sum_type const&) const = default;
 
     template<typename T>
     std::optional<T> to() const {
@@ -217,29 +217,29 @@ namespace black::support::internal {
 
     template<typename ...Handlers>
     auto match(Handlers ...h) const {
-      return matcher<union_type>::match(*this, h...);
+      return matcher<sum_type>::match(*this, h...);
     }
   };
 
   template<typename ...Cases>
-  struct rec_union_type
+  struct rec_sum_type
   {
     using base_t = std::variant<std::shared_ptr<Cases>...>;
     using alternatives = std::tuple<Cases...>;
-    static constexpr bool is_union_type = true;
+    static constexpr bool is_sum_type = true;
 
     template<typename Case>
       requires (std::is_same_v<std::remove_cvref_t<Case>, Cases> || ...)
-    rec_union_type(Case&& c)
+    rec_sum_type(Case&& c)
       : _data{std::make_shared<Case>(std::forward<Case>(c))} { }
 
-    rec_union_type(rec_union_type const&) = default;
-    rec_union_type(rec_union_type &&) = default;
+    rec_sum_type(rec_sum_type const&) = default;
+    rec_sum_type(rec_sum_type &&) = default;
     
-    rec_union_type &operator=(rec_union_type const&) = default;
-    rec_union_type &operator=(rec_union_type &&) = default;
+    rec_sum_type &operator=(rec_sum_type const&) = default;
+    rec_sum_type &operator=(rec_sum_type &&) = default;
     
-    bool operator==(rec_union_type const&other) const {
+    bool operator==(rec_sum_type const&other) const {
       return _data == other._data;
     }
 
@@ -257,7 +257,7 @@ namespace black::support::internal {
 
     template<typename ...Handlers>
     auto match(Handlers ...h) const {
-      return matcher<rec_union_type>::match(*this, h...);
+      return matcher<rec_sum_type>::match(*this, h...);
     }
 
   private:
@@ -267,7 +267,7 @@ namespace black::support::internal {
 }
 
 template<typename T>
-  requires requires { T::is_union_type; }
+  requires requires { T::is_sum_type; }
 struct std::hash<T> {
   size_t operator()(T const& v) const {
     return v.match(
@@ -278,22 +278,22 @@ struct std::hash<T> {
   }
 };
 
-#define black_union_type(T1, ...) \
-  public black::support::union_type<T1, __VA_ARGS__> { \
-    using black::support::union_type<T1, __VA_ARGS__>::union_type; \
+#define black_sum_type(T1, ...) \
+  public black::support::sum_type<T1, __VA_ARGS__> { \
+    using black::support::sum_type<T1, __VA_ARGS__>::sum_type; \
   }
 
-#define black_rec_union_type(T1, ...) \
-  public black::support::rec_union_type<T1, __VA_ARGS__> { \
-    using black::support::rec_union_type<T1, __VA_ARGS__>::rec_union_type; \
+#define black_rec_sum_type(T1, ...) \
+  public black::support::rec_sum_type<T1, __VA_ARGS__> { \
+    using black::support::rec_sum_type<T1, __VA_ARGS__>::rec_sum_type; \
   }
 
 namespace black::support {
   using internal::matcher;
   using internal::matchable;
   using internal::otherwise;
-  using internal::union_type;
-  using internal::rec_union_type;
+  using internal::sum_type;
+  using internal::rec_sum_type;
 }
 
 #endif // BLACK_SUPPORT_MATCH_HPP
