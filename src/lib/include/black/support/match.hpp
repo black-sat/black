@@ -221,6 +221,49 @@ namespace black::support::internal {
     }
   };
 
+  template<typename ...Cases>
+  struct rec_union_type
+  {
+    using base_t = std::variant<std::shared_ptr<Cases>...>;
+    using alternatives = std::tuple<Cases...>;
+    static constexpr bool is_union_type = true;
+
+    template<typename Case>
+      requires (std::is_same_v<std::remove_cvref_t<Case>, Cases> || ...)
+    rec_union_type(Case&& c)
+      : _data{std::make_shared<Case>(std::forward<Case>(c))} { }
+
+    rec_union_type(rec_union_type const&) = default;
+    rec_union_type(rec_union_type &&) = default;
+    
+    rec_union_type &operator=(rec_union_type const&) = default;
+    rec_union_type &operator=(rec_union_type &&) = default;
+    
+    bool operator==(rec_union_type const&other) const {
+      return _data == other._data;
+    }
+
+    template<typename T>
+    std::optional<T> to() const {
+      if(variant_is<std::shared_ptr<T>>(_data))
+        return **variant_get<std::shared_ptr<T>>(_data);
+      return {};
+    }
+
+    template<typename T>
+    bool is() const {
+      return to<T>().has_value();
+    }
+
+    template<typename ...Handlers>
+    auto match(Handlers ...h) const {
+      return matcher<rec_union_type>::match(*this, h...);
+    }
+
+  private:
+    std::variant<std::shared_ptr<Cases>...> _data;
+  };
+
 }
 
 template<typename T>
@@ -240,11 +283,17 @@ struct std::hash<T> {
     using black::support::union_type<T1, __VA_ARGS__>::union_type; \
   }
 
+#define black_rec_union_type(T1, ...) \
+  public black::support::rec_union_type<T1, __VA_ARGS__> { \
+    using black::support::rec_union_type<T1, __VA_ARGS__>::rec_union_type; \
+  }
+
 namespace black::support {
   using internal::matcher;
   using internal::matchable;
   using internal::otherwise;
   using internal::union_type;
+  using internal::rec_union_type;
 }
 
 #endif // BLACK_SUPPORT_MATCH_HPP

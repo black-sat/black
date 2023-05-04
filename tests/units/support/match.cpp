@@ -32,6 +32,24 @@ using namespace black::support;
 
 struct test : black_union_type(int, std::tuple<std::string, float>);
 
+struct nil { };
+
+template<typename T>
+struct cons;
+
+template<typename T>
+struct list : black_rec_union_type(nil, cons<T>);
+
+template<typename T>
+struct cons {
+
+  cons(T h) : head{h}, tail{nil{}} { }
+  cons(T h, list<T> t) : head{h}, tail{t} { }
+
+  T head;
+  list<T> tail;
+};
+
 TEST_CASE("Match infrastructure") {
 
   test t = 21;
@@ -68,4 +86,25 @@ TEST_CASE("Union types") {
   size_t h2 = hash(21);
 
   REQUIRE(h1 == h2);
+}
+
+TEST_CASE("Recursive union types") {
+  list<int> l = cons(21);
+
+  list<int> l2 = cons(42, l);
+
+  std::vector<int> values;
+  std::function<void(list<int>)> f = [&](list<int> arg) {
+    arg.match(
+      [&](cons<int> c) {
+        values.push_back(c.head);
+        f(c.tail);
+      },
+      [](nil) { }
+    );
+  };
+
+  f(l2);
+
+  REQUIRE(values == std::vector{42, 21});
 }

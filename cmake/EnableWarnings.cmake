@@ -58,6 +58,7 @@ set(
   -Wno-unsafe-buffer-usage
   -Wno-sign-conversion
   -Wno-newline-eof
+  -Wno-ctad-maybe-unsupported
 )
 
 # GCC
