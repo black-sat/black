@@ -63,41 +63,45 @@ TEST_CASE("Terms hierarchy") {
 
 TEST_CASE("New syntax checking") {
 
-  // using namespace black::logic;
+  using namespace black::logic::internal;
 
-  // // idea...
-  // alphabet sigma;
+  using test1 = syntax_list<
+    syntax_element::proposition, 
+    syntax_element::negation, 
+    syntax_element::conjunction, 
+    syntax_element::disjunction,
+    syntax_element::implication,
+    syntax_element::iff
+  >;
 
-  // auto p = sigma.proposition("p");
-  // auto q = sigma.proposition("q");
-  // auto r = sigma.proposition("r");
+  using test2 = syntax_list<
+    syntax_element::proposition, 
+    syntax_element::conjunction, 
+    syntax_element::disjunction,
+    syntax_element::implication,
+    syntax_element::iff
+  >;
 
-  // formula<cnf> f1 = (p || !q || r) && (!p || q || r); // good
-  // formula<cnf> f2 = (p && !q && r) || (!p && q && r); // bad
+  static_assert(
+    std::is_same_v<
+      syntax_list_subtract_t<test1, test2>,
+      syntax_list<syntax_element::negation>
+    >
+  );
 
-  // black_assert(f1.is<conjunction<clause>>());
+  static_assert(
+    rules_imply_v<
+      typename Literal::rules,
+      typename Boolean::rules
+    >
+  );
 
-  // f1.match(
-  //   [](conjunction<clause>, auto clauses) {
-  //     for(auto c : clauses) {
-  //       c.match(
-  //         [](disjunction<literal>, auto literals) {
-  //           for(auto l : literals) {
-  //             l.match(
-  //               [](proposition p) { 
-  //                 // ...
-  //               },
-  //               [](negation<proposition>, auto arg) {
-  //                 black_assert(arg.is<proposition>());
-  //               }
-  //             )
-  //           }
-  //         }
-  //       )
-  //     }
-  //   }
-  // );
-
+  static_assert(
+    !rules_imply_v<
+      typename Boolean::rules,
+      typename NNF::rules
+    >
+  );
 
 
 }
