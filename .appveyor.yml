@@ -69,7 +69,7 @@ install:
   - cmake -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DBUILD_TESTING=OFF ..
   - cmake --build .
   - cmake --build . --target install
-  - python3.11 -m pip install pybind11[global]
+  - python -m pip install pybind11[global]
 
 platform: x64
 
