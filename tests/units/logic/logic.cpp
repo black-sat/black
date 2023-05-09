@@ -89,19 +89,10 @@ TEST_CASE("New syntax checking") {
     >
   );
 
-  static_assert(
-    rules_imply_v<
-      typename Literal::rules,
-      typename Boolean::rules
-    >
-  );
+  static_assert(is_new_subfragment_of_v<Literal, Boolean>);
 
-  static_assert(
-    !rules_imply_v<
-      typename Boolean::rules,
-      typename NNF::rules
-    >
-  );
+  static_assert(is_new_subfragment_of_v<NNF, Boolean>);
+  static_assert(!is_new_subfragment_of_v<Boolean, NNF>);
 
 
 }

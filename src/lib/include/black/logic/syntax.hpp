@@ -37,7 +37,7 @@ namespace black::logic::internal {
   // * rule-based system
   //
   // * a fragment is a *disjunction* of rules among the following:
-  //   - set: a list of admitted types for the node and its children
+  //   - node: a list of admitted types for the node and its children
   //   - head: a list of admitted types for the node
   //     children: a fragment for the children
   //
@@ -46,10 +46,10 @@ namespace black::logic::internal {
   //   - intersection of fragments -> see tablet
   //
   // * example: literal
-  //   - set: proposition
+  //   - node: proposition
   //   - head: negation
   //     children: 
-  //     - set: proposition
+  //     - node: proposition
   //
   // * example: CNF
   //   - head: conjunction
@@ -58,24 +58,24 @@ namespace black::logic::internal {
   //       children: literal
   //
   // * example: NNF
-  //   - set: everything except negation
+  //   - node: everything except negation
   //   - head: negation
   //     children:
-  //     - set: proposition
+  //     - node: proposition
   //
   // * example: LTL
-  //   - set: every boolean and future temporal operator
+  //   - node: every boolean and future temporal operator
   //
   // * example: G(pLTL)
   //   - head: globally
   //     children:
-  //     - set: every boolean and past temporal operator
+  //     - node: every boolean and past temporal operator
   //
   // * example: SafetyLTL
   //   - intersection of:
   //     - LTL
   //     - NNF
-  //     - set: boolean + X, G, R
+  //     - node: boolean + X, G, R
   // 
   // * needed queries:
   //   - satisfaction of a fragment by a specific node at runtime
@@ -103,20 +103,20 @@ namespace black::logic::internal {
   };
 
   template<typename List>
-  struct set_rule;
+  struct node_rule;
 
   template<syntax_element ...Elements>
-  struct set_rule<syntax_list<Elements...>> {
+  struct node_rule<syntax_list<Elements...>> {
     static constexpr syntax_mask_t mask {
       static_cast<size_t>(Elements)...
     };
   };
 
   template<typename HeadList, typename Children>
-  struct head_rule;
+  struct tree_rule;
   
   template<syntax_element ...Elements,  typename ...Children>
-  struct head_rule<syntax_list<Elements...>, std::tuple<Children...>> {
+  struct tree_rule<syntax_list<Elements...>, std::tuple<Children...>> {
     static constexpr syntax_mask_t mask {
       static_cast<size_t>(Elements)...
     };
@@ -126,10 +126,10 @@ namespace black::logic::internal {
   struct is_rule : std::false_type { };
 
   template<typename List>
-  struct is_rule<set_rule<List>> : is_syntax_list<List> { };
+  struct is_rule<node_rule<List>> : is_syntax_list<List> { };
 
   template<typename List, typename ...Rules>
-  struct is_rule<head_rule<List, std::tuple<Rules...>>>
+  struct is_rule<tree_rule<List, std::tuple<Rules...>>>
     : std::conjunction<is_syntax_list<List>, is_rule<Rules>...> { };
 
   template<typename T>
@@ -186,50 +186,50 @@ namespace black::logic::internal {
     typename List2, syntax_rule ...Rules2
   >
   struct rules_imply<
-    head_rule<List1, std::tuple<Rules1...>>,
-    std::tuple<head_rule<List2, std::tuple<Rules2...>>>
+    tree_rule<List1, std::tuple<Rules1...>>,
+    std::tuple<tree_rule<List2, std::tuple<Rules2...>>>
   > : std::conjunction<
         syntax_list_includes<List2, List1>,
         rules_imply<std::tuple<Rules1...>, std::tuple<Rules2...>>
       > { };
   
   //
-  // set(S) ⊆ [set(S')]
+  // node(S) ⊆ [node(S')]
   //
   template<typename List1, typename List2>
   struct rules_imply<
-    set_rule<List1>,
-    std::tuple<set_rule<List2>>
+    node_rule<List1>,
+    std::tuple<node_rule<List2>>
   > : syntax_list_includes<List2, List1> { };
   
   //
-  // set(S) ⊆ [head(S',C')]
+  // node(S) ⊆ [head(S',C')]
   //
   template<
     typename List1,
     typename List2, syntax_rule ...Rules2
   >
   struct rules_imply<
-    set_rule<List1>,
-    std::tuple<head_rule<List2, std::tuple<Rules2...>>>
+    node_rule<List1>,
+    std::tuple<tree_rule<List2, std::tuple<Rules2...>>>
   > : rules_imply<
-        head_rule<List1, std::tuple<set_rule<List1>>>, 
-        std::tuple<head_rule<List2, std::tuple<Rules2...>>>
+        tree_rule<List1, std::tuple<node_rule<List1>>>, 
+        std::tuple<tree_rule<List2, std::tuple<Rules2...>>>
       > { };
   
   //
-  // head(S,C) ⊆ [set(S')]
+  // head(S,C) ⊆ [node(S')]
   //
   template<
     typename List1, syntax_rule ...Rules1,
     typename List2
   >
   struct rules_imply<
-    head_rule<List1, std::tuple<Rules1...>>,
-    std::tuple<set_rule<List2>>
+    tree_rule<List1, std::tuple<Rules1...>>,
+    std::tuple<node_rule<List2>>
   > : rules_imply<
-        head_rule<List1, std::tuple<Rules1...>>, 
-        std::tuple<head_rule<List2, std::tuple<set_rule<List2>>>>
+        tree_rule<List1, std::tuple<Rules1...>>, 
+        std::tuple<tree_rule<List2, std::tuple<node_rule<List2>>>>
       > { };
 
   //
@@ -241,13 +241,13 @@ namespace black::logic::internal {
     syntax_rule...Others
   >
   struct rules_imply<
-    head_rule<List1, std::tuple<Rules1...>>, 
-    std::tuple<head_rule<List2, std::tuple<Rules2...>>, Others...>
+    tree_rule<List1, std::tuple<Rules1...>>, 
+    std::tuple<tree_rule<List2, std::tuple<Rules2...>>, Others...>
   > : std::conjunction<
         rules_imply<std::tuple<Rules1...>, std::tuple<Rules2...>>,
         rules_imply<
           std::tuple<
-            head_rule<
+            tree_rule<
               syntax_list_subtract_t<List1, List2>, std::tuple<Rules1...>
             >
           >,
@@ -256,7 +256,7 @@ namespace black::logic::internal {
       > { };
 
   //
-  // head(S,C) ⊆ [set(S'), ...]
+  // head(S,C) ⊆ [node(S'), ...]
   //
   template<
     typename List1, syntax_rule ...Rules1,
@@ -264,40 +264,36 @@ namespace black::logic::internal {
     syntax_rule...Others
   >
   struct rules_imply<
-    head_rule<List1, std::tuple<Rules1...>>, 
-    std::tuple<set_rule<List2>, Others...>
+    tree_rule<List1, std::tuple<Rules1...>>, 
+    std::tuple<node_rule<List2>, Others...>
   > : rules_imply<
-        head_rule<List1, std::tuple<Rules1...>>,
-        std::tuple<head_rule<List2, std::tuple<set_rule<List2>>>, Others...>
+        tree_rule<List1, std::tuple<Rules1...>>,
+        std::tuple<tree_rule<List2, std::tuple<node_rule<List2>>>, Others...>
       > { };
 
   //
-  // set(S) ⊆ [...]
+  // node(S) ⊆ [...]
   //
   template<typename List1, syntax_rule ...Rules>
-  struct rules_imply<set_rule<List1>, std::tuple<Rules...>> 
+  struct rules_imply<node_rule<List1>, std::tuple<Rules...>> 
     : rules_imply<
-        head_rule<List1, std::tuple<set_rule<List1>>>, 
+        tree_rule<List1, std::tuple<node_rule<List1>>>, 
         std::tuple<Rules...>
       > { };
 
-  // template<typename List2, syntax_rule Rule1, syntax_rule ...Others>
-  // struct rules_imply<Rule1, std::tuple<set_rule<List2>, Others...>>
-  //   : rules_imply<
-  //       Rule1, std::tuple<
-  //         head_rule<List2, std::tuple<set_rule<List2>>>, Others...
-  //       >
-  //     > { };
+  template<new_fragment Fragment, new_fragment Allowed>
+  struct is_new_subfragment_of 
+    : rules_imply<typename Fragment::rules, typename Allowed::rules> { };
 
-  // template<new_fragment Fragment, new_fragment Allowed>
-  // struct is_new_subfragment_of 
-  //   : rules_imply<typename Fragment::rules, typename Allowed::rules> { };
+  template<new_fragment Fragment, new_fragment Allowed>
+  inline constexpr bool is_new_subfragment_of_v = 
+    is_new_subfragment_of<Fragment, Allowed>::value;
 
   //
   // Examples
   //
   struct Boolean : make_new_fragment_t<
-    set_rule<
+    node_rule<
       syntax_list<
         syntax_element::proposition, 
         syntax_element::negation, 
@@ -310,19 +306,19 @@ namespace black::logic::internal {
   > { };
 
   struct Literal : make_new_fragment_t<
-    set_rule<syntax_list<syntax_element::proposition>>,
-    head_rule<
+    node_rule<syntax_list<syntax_element::proposition>>,
+    tree_rule<
       syntax_list<syntax_element::negation>,
-      std::tuple<set_rule<syntax_list<syntax_element::proposition>>>
+      std::tuple<node_rule<syntax_list<syntax_element::proposition>>>
     >
   > { };
 
   struct NNF : make_new_fragment_t<
-    head_rule<
+    tree_rule<
       syntax_list<syntax_element::negation>,
       typename Literal::rules
     >,
-    set_rule<
+    node_rule<
         syntax_list<
           syntax_element::proposition, 
           syntax_element::conjunction, 
