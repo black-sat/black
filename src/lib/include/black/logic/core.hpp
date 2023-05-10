@@ -171,16 +171,23 @@ namespace black::logic::internal {
   //
   // Trait to concatenate two syntax lists
   //
-  template<typename T, typename U>
+  template<typename ...Lists>
   struct syntax_list_concat;
+
+  template<typename ...Lists>
+  using syntax_list_concat_t = typename syntax_list_concat<Lists...>::type;
+
+  template<typename List>
+  struct syntax_list_concat<List> : std::type_identity<List> { };
+
+  template<typename List1, typename List2, typename ...Lists>
+  struct syntax_list_concat<List1, List2, Lists...>
+    : syntax_list_concat<syntax_list_concat_t<List1, List2>, Lists...> { };
 
   template<syntax_element ...E1, syntax_element ...E2>
   struct syntax_list_concat<syntax_list<E1...>, syntax_list<E2...>> {
     using type = syntax_list<E1..., E2...>;
   };
-
-  template<typename T, typename U>
-  using syntax_list_concat_t = typename syntax_list_concat<T,U>::type;
 
   //
   // Trait to remove duplicates from a `syntax_list`. This is useful later when
@@ -226,14 +233,22 @@ namespace black::logic::internal {
     syntax_list_contains<List, Element>::value;
 
   //
-  // Trait to compute the intersection of two syntax lists.
+  // Trait to compute the intersection of some syntax lists.
   //
-  template<typename List1, typename List2>
+  template<typename ...Lists>
   struct syntax_list_intersect;
 
-  template<typename List1, typename List2>
+  template<typename ...Lists>
   using syntax_list_intersect_t = 
-    typename syntax_list_intersect<List1, List2>::type;
+    typename syntax_list_intersect<Lists...>::type;
+
+  template<typename List>
+  struct syntax_list_intersect<List> : std::type_identity<List> { };
+
+  template<typename List1, typename List2, typename ...Lists>
+  struct syntax_list_intersect<List1, List2, Lists...>
+    : syntax_list_intersect<syntax_list_intersect_t<List1, List2>, Lists...> 
+      { };
 
   template<typename List2>
   struct syntax_list_intersect<syntax_list<>, List2> 
@@ -253,6 +268,15 @@ namespace black::logic::internal {
         > 
       >{ };
 
+  //
+  // Trait to compute the set union of some syntax lists.
+  //
+  template<typename ...Lists>
+  struct syntax_list_union 
+    : syntax_list_unique<syntax_list_concat_t<Lists...>> { };
+
+  template<typename ...Lists>
+  using syntax_list_union_t = typename syntax_list_union<Lists...>::type;
 
   //
   // Trait to check whether a syntax list in included in another

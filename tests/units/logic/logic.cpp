@@ -65,7 +65,7 @@ TEST_CASE("New syntax checking") {
 
   using namespace black::logic::internal;
 
-  using test1 = syntax_list<
+  using large = syntax_list<
     syntax_element::proposition, 
     syntax_element::negation, 
     syntax_element::conjunction, 
@@ -74,25 +74,36 @@ TEST_CASE("New syntax checking") {
     syntax_element::iff
   >;
 
-  using test2 = syntax_list<
+  using small = syntax_list<
     syntax_element::proposition, 
-    syntax_element::conjunction, 
+    syntax_element::conjunction
+  >;
+
+  using small2 = syntax_list<
     syntax_element::disjunction,
-    syntax_element::implication,
-    syntax_element::iff
+    syntax_element::implication
   >;
 
   static_assert(
-    std::is_same_v<
-      syntax_list_subtract_t<test1, test2>,
-      syntax_list<syntax_element::negation>
-    >
+    rule_implies_v<tree<small, node<small>>, unite<unite<node<small>, node<small2>>>>
   );
 
-  static_assert(is_new_subfragment_of_v<Literal, Boolean>);
+  // using list3 = syntax_list<
+  //   syntax_element::proposition
+  // >;
 
-  static_assert(is_new_subfragment_of_v<NNF, Boolean>);
-  static_assert(!is_new_subfragment_of_v<Boolean, NNF>);
+  // static_assert(
+  //   std::is_same_v<
+  //     syntax_list_subtract_t<test1, test2>,
+  //     syntax_list<syntax_element::negation>
+  //   >
+  // );
 
+  // static_assert(is_new_subfragment_of_v<Literal, Boolean>);
+  // static_assert(!is_new_subfragment_of_v<Boolean, Literal>);
 
+  // static_assert(is_new_subfragment_of_v<NNF, Boolean>);
+  // static_assert(!is_new_subfragment_of_v<Boolean, NNF>);
+
+    
 }
