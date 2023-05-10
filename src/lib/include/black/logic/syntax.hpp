@@ -335,7 +335,7 @@ namespace black::logic::internal {
       syntax_list_includes_v<ListL, syntax_list_union_t<head_t<RulesR>...>> &&
       rule_implies_aux<
         expand_t<ChildrenL>, 
-        unite<child_t<head_t<RulesR>, RulesR>...>
+        simplify_t<unite<simplify_t<child_t<head_t<RulesR>, RulesR>>...>>
       >::value;
   };
 

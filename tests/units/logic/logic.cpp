@@ -85,7 +85,12 @@ TEST_CASE("New syntax checking") {
   >;
 
   static_assert(
-    rule_implies_v<tree<small, node<small>>, unite<unite<node<small>, node<small2>>>>
+    rule_implies_v<
+      tree<small, node<small>>, 
+        unite<
+          unite<node<small>, node<small2>>
+        >
+    >
   );
 
   // using list3 = syntax_list<
