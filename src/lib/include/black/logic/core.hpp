@@ -177,6 +177,9 @@ namespace black::logic::internal {
   template<typename ...Lists>
   using syntax_list_concat_t = typename syntax_list_concat<Lists...>::type;
 
+  template<>
+  struct syntax_list_concat<> : std::type_identity<syntax_list<>> { };
+
   template<typename List>
   struct syntax_list_concat<List> : std::type_identity<List> { };
 

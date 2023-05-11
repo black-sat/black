@@ -127,37 +127,185 @@ namespace black::logic::internal {
   concept syntax_rule = is_rule_v<T>;  
 
   //
+  // Utilities to construct intersect and unite rules from tuples
+  //
+  template<typename Tuple>
+  struct intersect_tuple;
+  
+  template<typename Tuple>
+  using intersect_tuple_t = typename intersect_tuple<Tuple>::type;
+
+  template<syntax_rule ...Rules>
+  struct intersect_tuple<std::tuple<Rules...>> 
+    : std::type_identity<intersect<Rules...>> { };
+  
+  template<typename Tuple>
+  struct unite_tuple;
+  
+  template<typename Tuple>
+  using unite_tuple_t = typename unite_tuple<Tuple>::type;
+
+  template<syntax_rule ...Rules>
+  struct unite_tuple<std::tuple<Rules...>> 
+    : std::type_identity<unite<Rules...>> { };
+
+  //
+  // An utility to filter repeated entries from a tuple
+  //
+  template <typename T, typename List>
+  struct tuple_unique_ { 
+    using type = T;
+  };
+
+  template <typename... T1, typename T, typename... T2>
+  struct tuple_unique_<std::tuple<T1...>, std::tuple<T, T2...>>
+    : std::conditional_t<
+        (std::is_same_v<T, T1> || ...),
+        tuple_unique_<std::tuple<T1...>, std::tuple<T2...>>,
+        tuple_unique_<std::tuple<T1..., T>, std::tuple<T2...>>
+    > { };
+
+  template<typename List>
+  struct tuple_unique : tuple_unique_<std::tuple<>, List> { };
+
+  template <typename List>
+  using tuple_unique_t = typename tuple_unique<List>::type;
+
+  //
+  // A normalized rule does not have repeated entries
+  //
+  template<syntax_rule Rule>
+  struct normalize : std::type_identity<Rule> { };
+
+  template<syntax_rule ...Rules>
+  struct normalize<intersect<Rules...>> 
+    : std::type_identity<
+        intersect_tuple_t<tuple_unique_t<std::tuple<Rules...>>>
+      > { };
+  
+  template<syntax_rule ...Rules>
+  struct normalize<unite<Rules...>> 
+    : std::type_identity<
+        unite_tuple_t<tuple_unique_t<std::tuple<Rules...>>>
+      > { };
+
+  //
   // Merging of node(S) rules as far as possible
   //
   template<syntax_rule Rule>
-  struct simplify
-    : std::type_identity<Rule> { };
+  struct simplify_fold : std::type_identity<Rule> { };
   
+  template<syntax_rule Rule>
+  using simplify_fold_t = typename simplify_fold<Rule>::type;
+
   template<typename List1, typename List2, syntax_rule ...Rules>
-  struct simplify<intersect<node<List1>, node<List2>, Rules...>> 
-    : simplify<
-        intersect<node<syntax_list_intersect_t<List1, List2>>, Rules...>
-      > { };
-  
-  template<typename List>
-  struct simplify<intersect<node<List>>> 
-    : std::type_identity<node<List>> { };
-    
-  template<typename List1, typename List2, syntax_rule ...Rules>
-  struct simplify<unite<node<List1>, node<List2>, Rules...>> 
-    : simplify<
-        unite<
-          node<syntax_list_unique_t<syntax_list_concat_t<List1, List2>>>, 
-          Rules...
+  struct simplify_fold<intersect<node<List1>, node<List2>, Rules...>> 
+    : normalize<
+        simplify_fold_t<
+          intersect<node<syntax_list_intersect_t<List1, List2>>, Rules...>
         >
       > { };
   
+  template<syntax_rule Rule2, syntax_rule ...Rules>
+  struct simplify_fold<intersect<node<syntax_list<>>, Rule2, Rules...>> 
+    : std::type_identity<node<syntax_list<>>> { };
+  
+  template<syntax_rule Rule1, syntax_rule ...Rules>
+  struct simplify_fold<intersect<Rule1, node<syntax_list<>>, Rules...>> 
+    : std::type_identity<node<syntax_list<>>> { };
+
+  template<syntax_rule ...Rules>
+  struct simplify_fold<
+    intersect<node<syntax_list<>>, node<syntax_list<>>, Rules...>
+  >
+    : std::type_identity<node<syntax_list<>>> { };
+  
+  template<syntax_rule Rule2, syntax_rule ...RulesI, syntax_rule ...Rules>
+  struct simplify_fold<intersect<intersect<RulesI...>, Rule2, Rules...>> 
+    : normalize<simplify_fold_t<intersect<RulesI..., Rule2, Rules...>>> { };
+  
+  template<syntax_rule Rule1, syntax_rule ...RulesI, syntax_rule ...Rules>
+  struct simplify_fold<intersect<Rule1, intersect<RulesI...>, Rules...>> 
+    : normalize<simplify_fold_t<intersect<Rule1, RulesI..., Rules...>>> { };
+  
+  template<syntax_rule ...RulesI1, syntax_rule ...RulesI2, syntax_rule ...Rules>
+  struct simplify_fold<
+    intersect<intersect<RulesI1...>, intersect<RulesI2...>, Rules...>
+  > 
+    : normalize<simplify_fold_t<intersect<RulesI1..., RulesI2..., Rules...>>> 
+      { };
+  
+  template<typename List1, typename List2, syntax_rule ...Rules>
+  struct simplify_fold<unite<node<List1>, node<List2>, Rules...>> 
+    : normalize<
+        simplify_fold_t<
+          unite<
+            node<syntax_list_unique_t<syntax_list_concat_t<List1, List2>>>, 
+            Rules...
+          >
+        > 
+      > { };
+
+  template<syntax_rule Rule2, syntax_rule ...Rules>
+  struct simplify_fold<unite<node<syntax_list<>>, Rule2, Rules...>> 
+    : normalize<simplify_fold_t<unite<Rule2, Rules...>>> { };
+  
+  template<syntax_rule Rule1, syntax_rule ...Rules>
+  struct simplify_fold<unite<Rule1, node<syntax_list<>>, Rules...>> 
+    : normalize<simplify_fold_t<unite<Rule1, Rules...>>> { };
+  
+  template<syntax_rule ...Rules>
+  struct simplify_fold<
+    unite<node<syntax_list<>>, node<syntax_list<>>, Rules...>
+  > 
+    : normalize<simplify_fold_t<unite<Rules...>>> { };
+
+  template<syntax_rule Rule2, syntax_rule ...RulesI, syntax_rule ...Rules>
+  struct simplify_fold<unite<unite<RulesI...>, Rule2, Rules...>> 
+    : normalize<simplify_fold_t<unite<RulesI..., Rule2, Rules...>>> { };
+  
+  template<syntax_rule Rule1, syntax_rule ...RulesI, syntax_rule ...Rules>
+  struct simplify_fold<unite<Rule1, unite<RulesI...>, Rules...>> 
+    : normalize<simplify_fold_t<unite<Rule1, RulesI..., Rules...>>> { };
+
+  template<syntax_rule ...RulesI1, syntax_rule ...RulesI2, syntax_rule ...Rules>
+  struct simplify_fold<
+    unite<unite<RulesI1...>, unite<RulesI2...>, Rules...>
+  > 
+    : normalize<simplify_fold_t<unite<RulesI1..., RulesI2..., Rules...>>> 
+      { };
+
+  template<syntax_rule ...Rules>
+  struct simplify_fold<intersect<intersect<Rules...>>> 
+    : normalize<simplify_fold_t<intersect<Rules...>>> { };
+  
+  template<syntax_rule ...Rules>
+  struct simplify_fold<unite<unite<Rules...>>> 
+    : normalize<simplify_fold_t<unite<Rules...>>> { };
+  
   template<typename List>
-  struct simplify<unite<node<List>>> 
+  struct simplify_fold<intersect<node<List>>> 
     : std::type_identity<node<List>> { };
-    
+  
+  template<typename List>
+  struct simplify_fold<unite<node<List>>> 
+    : std::type_identity<node<List>> { };
+
+  
+  template<syntax_rule Rule>
+  struct simplify
+    : std::type_identity<Rule> { };
+
   template<syntax_rule Rule>
   using simplify_t = typename simplify<Rule>::type;
+
+  template<syntax_rule ...Rules>
+  struct simplify<unite<Rules...>>
+    : simplify_fold<unite<simplify_t<Rules>...>> { };
+  
+  template<syntax_rule ...Rules>
+  struct simplify<intersect<Rules...>>
+    : simplify_fold<intersect<simplify_t<Rules>...>> { };  
 
 
   //
@@ -309,6 +457,27 @@ namespace black::logic::internal {
   struct rule_implies_aux<
     node<ListL>, tree<ListR, ChildrenR>
   > : rule_implies_aux<tree<ListL, node<ListL>>, tree<ListR, ChildrenR>> { };
+  
+
+  template<typename ListL, syntax_rule ...RulesR>
+  struct rule_implies_aux<
+    node<ListL>, unite<RulesR...>
+  > : rule_implies_aux<tree<ListL, node<ListL>>, unite<RulesR...>> { };
+  
+  template<typename ListL, syntax_rule ...RulesR>
+  struct rule_implies_aux<
+    node<ListL>, intersect<RulesR...>
+  > : rule_implies_aux<tree<ListL, node<ListL>>, intersect<RulesR...>> { };
+
+  template<syntax_rule ...RulesL, typename ListR>
+  struct rule_implies_aux<
+    unite<RulesL...>, node<ListR>
+  > : rule_implies_aux<unite<RulesL...>, tree<ListR, node<ListR>>> { };
+  
+  template<syntax_rule ...RulesL, typename ListR>
+  struct rule_implies_aux<
+    intersect<RulesL...>, node<ListR>
+  > : rule_implies_aux<intersect<RulesL...>, tree<ListR, node<ListR>>> { };
 
   //
   // tree(S,C) -> node(S')
@@ -331,12 +500,19 @@ namespace black::logic::internal {
   struct rule_implies_aux<
     tree<ListL, ChildrenL>, unite<RulesR...>
   > { 
-    static constexpr bool value = 
-      syntax_list_includes_v<ListL, syntax_list_union_t<head_t<RulesR>...>> &&
-      rule_implies_aux<
-        expand_t<ChildrenL>, 
-        simplify_t<unite<simplify_t<child_t<head_t<RulesR>, RulesR>>...>>
-      >::value;
+    using simplified = simplify_t<unite<child_t<head_t<RulesR>, RulesR>...>>;
+
+    static constexpr bool recursive = 
+      std::is_same_v<simplified, unite<RulesR...>>;
+
+    static constexpr bool value = std::conjunction_v<
+      syntax_list_includes<syntax_list_union_t<head_t<RulesR>...>, ListL>,
+      std::conditional_t<
+        recursive,
+        std::true_type,
+        rule_implies_aux<ChildrenL, simplified>
+      >
+    >;
   };
 
   //
@@ -351,20 +527,26 @@ namespace black::logic::internal {
   >
   struct rule_implies_aux<
     intersect<RulesL...>, tree<ListR, ChildrenR>
-  > : std::conjunction<
-        syntax_list_includes<
-          syntax_list_intersect_t<head_t<RulesL>...>, ListR
-        >,
-        rule_implies_aux<
-          intersect<child_t<head_t<RulesL>, RulesL>...>, 
-          expand_t<ChildrenR>
-        >
-      > { };
+  > { 
+    using simplified = 
+      simplify_t<intersect<child_t<head_t<RulesL>, RulesL>...>>;
 
+    static constexpr bool recursive = 
+      std::is_same_v<simplified, intersect<RulesL...>>;
+
+    static constexpr bool value = std::conjunction_v<
+      syntax_list_includes<ListR, syntax_list_intersect_t<head_t<RulesL>...>>,
+      std::conditional_t<
+        recursive,
+        std::true_type,
+        rule_implies_aux<simplified, ChildrenR>
+      >
+    >;
+  };
 
   template<syntax_rule Rule1, syntax_rule Rule2>
   struct rule_implies 
-    : rule_implies_aux<expand_t<simplify_t<Rule1>>, expand_t<simplify_t<Rule2>>>
+    : rule_implies_aux<simplify_t<expand_t<Rule1>>, simplify_t<expand_t<Rule2>>>
       { };
   
   template<syntax_rule Rule1, syntax_rule Rule2>
@@ -401,50 +583,7 @@ namespace black::logic::internal {
   inline constexpr bool is_new_subfragment_of_v
     = is_new_subfragment_of<Syntax1, Syntax2>::value;
 
-  //
-  // Examples
-  //
-  struct Boolean : make_new_fragment_t<
-    node<
-      syntax_list<
-        syntax_element::proposition, 
-        syntax_element::negation, 
-        syntax_element::conjunction, 
-        syntax_element::disjunction,
-        syntax_element::implication,
-        syntax_element::iff
-      >
-    >
-  > { };
-
-  struct Literal : make_new_fragment_t<
-    unite<
-      node<syntax_list<syntax_element::proposition>>,
-      tree<
-        syntax_list<syntax_element::negation>,
-        node<syntax_list<syntax_element::proposition>>
-      >
-    >
-  > { };
-
-  struct NNF : make_new_fragment_t<
-    unite<
-      tree<
-        syntax_list<syntax_element::negation>,
-        typename Literal::rule
-      >,
-      node<
-        syntax_list<
-          syntax_element::proposition, 
-          syntax_element::conjunction, 
-          syntax_element::disjunction,
-          syntax_element::implication,
-          syntax_element::iff
-        >
-      >
-    >
-  > { };
-
+  
 }
 
 #endif // BLACK_LOGIC_SYNTAX_HPP
