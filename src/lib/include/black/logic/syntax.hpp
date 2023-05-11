@@ -382,172 +382,41 @@ namespace black::logic::internal {
   struct child<Head, tree<List, Children>>
     : std::conditional<
         syntax_list_includes_v<List, Head>,
-        expand_t<Children>,
+        Children,
         node<syntax_list<>>
       > { };
 
   template<typename Head, syntax_rule ...Rules>
   struct child<Head, intersect<Rules...>>
-    : std::type_identity<intersect<child_t<Head, Rules>...>> { };
+    : simplify<intersect<child_t<Head, Rules>...>> { };
 
   template<typename Head, syntax_rule ...Rules>
   struct child<Head, unite<Rules...>>
-    : std::type_identity<unite<child_t<Head, Rules>...>> { };
+    : simplify<unite<child_t<Head, Rules>...>> { };
 
   //
   // Inclusion of rules.
   //
-  //
   template<syntax_rule Rule1, syntax_rule Rule2>
-  struct rule_implies_aux;
-  
-  template<syntax_rule Rule1, syntax_rule Rule2>
-  inline constexpr bool rule_implies_aux_v = 
-    rule_implies_aux<Rule1, Rule2>::value;
+  struct rule_implies {
+    using ERule1 = Rule1;
+    using ERule2 = Rule2;
 
-  //
-  // R1 or ... or Rn -> R
-  // iff
-  // R1 -> R and ... and Rn -> R
-  //
-  template<syntax_rule ...Rules1, syntax_rule Rule2>
-  struct rule_implies_aux<unite<Rules1...>, Rule2>
-    : std::conjunction<rule_implies_aux<Rules1, Rule2>...> { };
-  
-  //
-  // R -> R1 and ... and Rn
-  // iff
-  // R -> R1 and ... and R -> Rn
-  //
-  template<syntax_rule Rule1, syntax_rule ...Rules2>
-  struct rule_implies_aux<Rule1, intersect<Rules2...>>
-    : std::conjunction<rule_implies_aux<Rule1, Rules2>...> { };
-
-  //
-  // node(S) -> node(S')
-  // iff
-  // S ⊆ S'
-  //
-  template<typename List1, typename List2>
-  struct rule_implies_aux<node<List1>, node<List2>>
-    : syntax_list_includes<List2, List1> { };
-
-  //
-  // tree(S, C) -> tree(S',C')
-  // iff
-  // S ⊆ S'  and C -> C'
-  //
-  template<
-    typename ListL, syntax_rule ChildrenL, 
-    typename ListR, syntax_rule ChildrenR
-  >
-  struct rule_implies_aux<
-    tree<ListL, ChildrenL>, tree<ListR, ChildrenR>
-  > : std::conjunction<
-        syntax_list_includes<ListR, ListL>,
-        rule_implies_aux<ChildrenL, ChildrenR>
-      > { };
-
-  //
-  // node(S) -> tree(S',C')
-  // iff
-  // tree(S, node(S)) -> tree(S', C')
-  //
-  template<typename ListL, typename ListR, syntax_rule ChildrenR>
-  struct rule_implies_aux<
-    node<ListL>, tree<ListR, ChildrenR>
-  > : rule_implies_aux<tree<ListL, node<ListL>>, tree<ListR, ChildrenR>> { };
-  
-
-  template<typename ListL, syntax_rule ...RulesR>
-  struct rule_implies_aux<
-    node<ListL>, unite<RulesR...>
-  > : rule_implies_aux<tree<ListL, node<ListL>>, unite<RulesR...>> { };
-  
-  template<typename ListL, syntax_rule ...RulesR>
-  struct rule_implies_aux<
-    node<ListL>, intersect<RulesR...>
-  > : rule_implies_aux<tree<ListL, node<ListL>>, intersect<RulesR...>> { };
-
-  template<syntax_rule ...RulesL, typename ListR>
-  struct rule_implies_aux<
-    unite<RulesL...>, node<ListR>
-  > : rule_implies_aux<unite<RulesL...>, tree<ListR, node<ListR>>> { };
-  
-  template<syntax_rule ...RulesL, typename ListR>
-  struct rule_implies_aux<
-    intersect<RulesL...>, node<ListR>
-  > : rule_implies_aux<intersect<RulesL...>, tree<ListR, node<ListR>>> { };
-
-  //
-  // tree(S,C) -> node(S')
-  // iff
-  // tree(S,C) -> tree(S', node(S'))
-  //
-  template<typename ListL, syntax_rule ChildrenL, typename ListR>
-  struct rule_implies_aux<
-    tree<ListL, ChildrenL>, node<ListR>
-  > : rule_implies_aux<tree<ListL, ChildrenL>, tree<ListR, node<ListR>>> { };
-
-  //
-  // tree(S, C) -> R1 or ... or Rn
-  // iff
-  // S ⊆ head(R1) ∪ .. ∪ head(Rn) and expand(C) -> child(C1) or ... or child(Cn)
-  //
-  template<
-    typename ListL, syntax_rule ChildrenL, syntax_rule ...RulesR
-  >
-  struct rule_implies_aux<
-    tree<ListL, ChildrenL>, unite<RulesR...>
-  > { 
-    using simplified = simplify_t<unite<child_t<head_t<RulesR>, RulesR>...>>;
-
-    static constexpr bool recursive = 
-      std::is_same_v<simplified, unite<RulesR...>>;
+    using recurrence = 
+      rule_implies<
+        child_t<head_t<ERule1>, ERule1>,  child_t<head_t<ERule2>, ERule2>
+      >;
 
     static constexpr bool value = std::conjunction_v<
-      syntax_list_includes<syntax_list_union_t<head_t<RulesR>...>, ListL>,
+      syntax_list_includes<head_t<ERule2>, head_t<ERule1>>,
       std::conditional_t<
-        recursive,
+        std::is_same_v<rule_implies, recurrence>,
         std::true_type,
-        rule_implies_aux<ChildrenL, simplified>
+        recurrence
       >
     >;
   };
 
-  //
-  // R1 and ... and Rn -> tree(S, C)
-  // iff
-  // head(R1) ∩ .. ∩ head(Rn) ⊆ S and 
-  // child(C1) and ... and child(Cn) -> expand(C)
-  //
-  template<
-    syntax_rule ...RulesL, 
-    typename ListR, syntax_rule ChildrenR
-  >
-  struct rule_implies_aux<
-    intersect<RulesL...>, tree<ListR, ChildrenR>
-  > { 
-    using simplified = 
-      simplify_t<intersect<child_t<head_t<RulesL>, RulesL>...>>;
-
-    static constexpr bool recursive = 
-      std::is_same_v<simplified, intersect<RulesL...>>;
-
-    static constexpr bool value = std::conjunction_v<
-      syntax_list_includes<ListR, syntax_list_intersect_t<head_t<RulesL>...>>,
-      std::conditional_t<
-        recursive,
-        std::true_type,
-        rule_implies_aux<simplified, ChildrenR>
-      >
-    >;
-  };
-
-  template<syntax_rule Rule1, syntax_rule Rule2>
-  struct rule_implies 
-    : rule_implies_aux<simplify_t<expand_t<Rule1>>, simplify_t<expand_t<Rule2>>>
-      { };
   
   template<syntax_rule Rule1, syntax_rule Rule2>
   inline constexpr bool rule_implies_v = rule_implies<Rule1, Rule2>::value;

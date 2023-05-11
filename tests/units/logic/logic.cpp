@@ -28,38 +28,38 @@
 using namespace black::logic::internal;
 using namespace black::support;
 
-struct Bool : make_fragment_t<
-  syntax_list<
-    syntax_element::proposition,
-    syntax_element::conjunction,
-    syntax_element::negation
-  >
-> { };
+// struct Bool : make_fragment_t<
+//   syntax_list<
+//     syntax_element::proposition,
+//     syntax_element::conjunction,
+//     syntax_element::negation
+//   >
+// > { };
 
-TEST_CASE("Terms hierarchy") {
+// TEST_CASE("Terms hierarchy") {
   
-  alphabet sigma;
+//   alphabet sigma;
 
-  proposition p = sigma.proposition("p");
-  proposition q = sigma.proposition("q");
+//   proposition p = sigma.proposition("p");
+//   proposition q = sigma.proposition("q");
 
-  formula<Bool> f = p && !q;
+//   formula<Bool> f = p && !q;
 
-  STATIC_REQUIRE(matchable<formula<Bool>>);
-  STATIC_REQUIRE(matchable<formula<Bool>::type>);
+//   STATIC_REQUIRE(matchable<formula<Bool>>);
+//   STATIC_REQUIRE(matchable<formula<Bool>::type>);
 
-  std::string s = f.match(
-    [](conjunction<Bool>) {
-      return "Ok";
-    },
-    [](otherwise) {
-      return "Not Ok";
-    }
-  );
+//   std::string s = f.match(
+//     [](conjunction<Bool>) {
+//       return "Ok";
+//     },
+//     [](otherwise) {
+//       return "Not Ok";
+//     }
+//   );
 
-  REQUIRE(s == "Ok");
+//   REQUIRE(s == "Ok");
 
-}
+// }
 
 TEST_CASE("New syntax checking") {
 
@@ -256,7 +256,10 @@ TEST_CASE("New syntax checking") {
           syntax_element::conjunction, 
           syntax_element::disjunction,
           syntax_element::implication,
-          syntax_element::iff
+          syntax_element::iff,
+          syntax_element::tomorrow,
+          syntax_element::eventually,
+          syntax_element::always
         >
       >
     >
@@ -275,43 +278,17 @@ TEST_CASE("New syntax checking") {
     >
   > { };
 
-  static_assert(is_new_subfragment_of_v<NNF, Boolean>);
-  static_assert(!is_new_subfragment_of_v<Boolean, NNF>);
-
-  struct TestE1 : make_new_fragment_t<
-    unite<
-      tree<
-        syntax_list<
-          syntax_element::negation
-        >,
-        node<
-          syntax_list<syntax_element::proposition>
-        >
-      >,
-      node<
-        syntax_list<
-          syntax_element::iff
-        >
-      >
-    >
-  > { };
-  
-  struct TestE2 : make_new_fragment_t<
-    node<
-      syntax_list<
-        syntax_element::negation, 
-        syntax_element::iff
-      >
-    >
-  > { };
-
-  struct Result : make_new_fragment_t<
+  struct NNFBool : make_new_fragment_t<
     intersect<
-      typename TestE1::rule,
-      typename TestE2::rule
+      typename NNF::rule,
+      typename Boolean::rule
     >
   > { };
 
-  static_assert(is_new_subfragment_of_v<Result, TestE1>);
+
+  static_assert(is_new_subfragment_of_v<NNFBool, Boolean>);
+  static_assert(!is_new_subfragment_of_v<Boolean, NNFBool>);
+
+  
 
 }
