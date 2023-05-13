@@ -52,31 +52,39 @@ namespace black::support::internal {
   //
   // The first thing we need is a function to do this std::apply-like unpacking
   // of the hierarchy to the called lambda. 
-
-  template<typename Handler, typename T, size_t ...I>
-    requires std::invocable<Handler, T, std::tuple_element_t<I, T>...>
+  // If the argument is a pointer, we unpack the pointee.
+  //
+  template<
+    typename Handler, typename T, typename Base = std::remove_pointer_t<T>,
+    size_t ...I
+  >
+    requires std::invocable<Handler, T, std::tuple_element_t<I, Base>...>
   auto unpack(
     Handler&& handler, T h, std::index_sequence<I...>
   ) {
-    return std::invoke(std::forward<Handler>(handler), h, get<I>(h)...);
+    if constexpr(std::is_pointer_v<T>)
+      return std::invoke(std::forward<Handler>(handler), h, get<I>(*h)...);
+    else
+      return std::invoke(std::forward<Handler>(handler), h, get<I>(h)...);
   }
 
   //
-  // It is cumbersome to repeat everything both in the body and in `decltype()`
-  // but we need to remove the function from overload resolution if the handler
-  // is not callable.
+  // Entry function to unpack the index sequence.
+  // If the argument is a pointer, we unpack the pointee.
   //
-  template<typename Handler, typename T>
+  template<
+    typename Handler, typename T, typename Base = std::remove_pointer_t<T>
+  >
   auto unpack(Handler&& handler, T h)
   -> decltype(
     unpack(
       std::forward<Handler>(handler), h, 
-      std::make_index_sequence<std::tuple_size<T>::value>{}
+      std::make_index_sequence<std::tuple_size<Base>::value>{}
     )
   ) {
     return unpack(
       std::forward<Handler>(handler), h, 
-      std::make_index_sequence<std::tuple_size<T>::value>{}
+      std::make_index_sequence<std::tuple_size<Base>::value>{}
     );
   }
 
@@ -224,14 +232,12 @@ namespace black::support::internal {
   template<typename ...Cases>
   struct rec_sum_type
   {
-    using base_t = std::variant<std::shared_ptr<Cases>...>;
-    using alternatives = std::tuple<Cases...>;
+    using alternatives = std::tuple<Cases const * ...> ;
     static constexpr bool is_sum_type = true;
 
     template<typename Case>
       requires (std::is_same_v<std::remove_cvref_t<Case>, Cases> || ...)
-    rec_sum_type(Case&& c)
-      : _data{std::make_shared<Case>(std::forward<Case>(c))} { }
+    rec_sum_type(std::shared_ptr<Case> const& c) : _data{c} { }
 
     rec_sum_type(rec_sum_type const&) = default;
     rec_sum_type(rec_sum_type &&) = default;
@@ -243,10 +249,12 @@ namespace black::support::internal {
       return _data == other._data;
     }
 
-    template<typename T>
-    std::optional<T> to() const {
-      if(variant_is<std::shared_ptr<T>>(_data))
-        return **variant_get<std::shared_ptr<T>>(_data);
+    template<
+      typename T, typename Base = std::remove_cvref_t<std::remove_pointer_t<T>>
+    >
+    std::optional<Base const*> to() const {
+      if(variant_is<std::shared_ptr<Base const>>(_data))
+        return variant_get<std::shared_ptr<Base const>>(_data)->get();
       return {};
     }
 
@@ -261,7 +269,7 @@ namespace black::support::internal {
     }
 
   private:
-    std::variant<std::shared_ptr<Cases>...> _data;
+    std::variant<std::shared_ptr<std::remove_cvref_t<Cases> const>...> _data;
   };
 
 }

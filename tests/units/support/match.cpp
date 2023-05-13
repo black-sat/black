@@ -78,18 +78,20 @@ TEST_CASE("Sum types") {
 TEST_CASE("Recursive sum types") {
   using std::pair;
 
-  list<int> l = pair(21, list<int>(nil{}));
+  list<int> l = std::make_shared<std::pair<int, list<int>>>(
+    21, list<int>(std::make_shared<nil>())
+  );
 
-  list<int> l2 = pair(42, l);
+  list<int> l2 = std::make_shared<std::pair<int, list<int>>>(42, l);
 
   std::vector<int> values;
   std::function<void(list<int>)> f = [&](list<int> arg) {
     arg.match(
-      [&](pair<int, list<int>> c) {
-        values.push_back(get<0>(c));
-        f(get<1>(c));
+      [&](pair<int, list<int>> const *, auto head, auto tail) {
+        values.push_back(head);
+        f(tail);
       },
-      [](nil) { }
+      [](nil const *) { }
     );
   };
 

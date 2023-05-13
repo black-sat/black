@@ -49,6 +49,4 @@
 #include <black/logic/generation.hpp>
 #include <black/logic/interface.hpp>
 
-#include <black/logic/syntax.hpp>
-
 #endif // BLACK_LOGIC_FORMULA_HPP
