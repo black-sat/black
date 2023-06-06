@@ -161,6 +161,8 @@ namespace black_internal::cvc5
     _data->solver.resetAssertions();
   }
 
+  void cvc5::interrupt() { }
+
   cvc::Sort cvc5::_cvc5_t::to_cvc5(std::optional<sort> s) {
     black_assert(s.has_value());
     

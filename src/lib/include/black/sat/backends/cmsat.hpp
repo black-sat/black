@@ -39,6 +39,7 @@ namespace black_internal::cmsat
       is_sat_with(std::vector<dimacs::literal> const& assumptions) override;
     virtual tribool value(uint32_t v) const override;
     virtual void clear() override;
+    virtual void interrupt() override;
     virtual std::optional<std::string> license() const override;
 
   private:

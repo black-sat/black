@@ -99,6 +99,10 @@ namespace black::sat
     // clear the current context completely
     virtual void clear() = 0;
 
+    // interrupts the current call to is_sat() or is_sat_with(),
+    // if supported by the backend
+    virtual void interrupt() = 0;
+
     // License note for whatever third-party software lies under the hood
     virtual std::optional<std::string> license() const = 0;
   };

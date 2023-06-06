@@ -277,6 +277,7 @@ namespace black_internal::solver
 
   void solver::_solver_t::interrupt() {
     interrupt_flag = true;
+    sat->interrupt();
   }
 
   template<hierarchy H, typename F>

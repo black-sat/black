@@ -285,6 +285,10 @@ namespace black_internal::z3
     Z3_solver_reset(_data->context, _data->solver);
   }
 
+  void z3::interrupt() {
+    Z3_interrupt(_data->context);
+  }
+
   void z3::_z3_t::upgrade_solver() {
     // gcov false negative
     if(solver_upgraded)
