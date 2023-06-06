@@ -288,9 +288,9 @@ namespace black::logic::internal
   #undef declare_enum_element
 
   //
-  // Declaration of `universal_fragment_t`, one fragment to rule them all.
+  // Declaration of `Everything`, one fragment to rule them all.
   //
-  struct universal_fragment_t \
+  struct Everything \
     : make_fragment_cpp_t<0  
 
   #define declare_leaf_storage_kind(Base, Storage) , syntax_element::Storage
@@ -445,11 +445,11 @@ namespace black::logic::internal
   #define declare_simple_hierarchy(Base) \
     class Base \
       : public \
-          hierarchy_base<hierarchy_type::Base, universal_fragment_t, Base>, \
+          hierarchy_base<hierarchy_type::Base, Everything, Base>, \
         public hierarchy_custom_members<hierarchy_type::Base, Base> \
     { \
       using hierarchy_base< \
-        hierarchy_type::Base, universal_fragment_t, Base \
+        hierarchy_type::Base, Everything, Base \
       >::hierarchy_base; \
     }; \
     \
@@ -594,10 +594,10 @@ namespace black::logic::internal
   #define declare_simple_storage_kind(Base, Storage) \
     class Storage : \
       public \
-        storage_base<storage_type::Storage, universal_fragment_t, Storage> \
+        storage_base<storage_type::Storage, Everything, Storage> \
     { \
       using base_t = \
-        storage_base<storage_type::Storage, universal_fragment_t, Storage>; \
+        storage_base<storage_type::Storage, Everything, Storage>; \
     public: \
       using base_t::base_t; \
     };

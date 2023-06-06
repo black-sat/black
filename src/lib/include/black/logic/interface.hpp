@@ -112,7 +112,7 @@ namespace black::logic::internal {
       call_op_arg_t<Arg>, call_op_arg_t<Args>...
     >;
 
-    using syntax = make_combined_fragment_t<
+    using syntax = make_fragment_union_t<
       make_singleton_fragment_t<element_of_storage_v<S>>,
       make_singleton_fragment_t<element_of_storage_v<call_op_return_v<S>>>,
       typename common_t::syntax
@@ -136,7 +136,7 @@ namespace black::logic::internal {
       !std::is_same_v<std::ranges::range_value_t<R>, var_decl>
     )
   auto call_op_interface<S, Derived>::operator()(R const& v) const {
-    using syntax = make_combined_fragment_t<
+    using syntax = make_fragment_union_t<
       make_singleton_fragment_t<element_of_storage_v<S>>,
       make_singleton_fragment_t<element_of_storage_v<call_op_return_v<S>>>,
       typename std::ranges::range_value_t<R>::syntax
@@ -480,7 +480,7 @@ namespace black::logic::internal {
     auto id = element_type_of_t<typename R::syntax, Op>::identity(&sigma);
     
     using H = hierarchy_type_of_t<
-      make_combined_fragment_t<
+      make_fragment_union_t<
         typename R::syntax, make_singleton_fragment_t<Op>, 
         typename decltype(id)::syntax
       >,
