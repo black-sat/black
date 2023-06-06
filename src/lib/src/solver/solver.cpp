@@ -231,11 +231,10 @@ namespace black_internal::solver
     last_bound = 0;
 
     if(timeout)
-      (void)std::async(std::launch::async,
-        [timeout, self = this->shared_from_this()]() {
-          std::this_thread::sleep_for(*timeout);
-          self->interrupt();
-        });
+      std::thread([timeout, self = this->shared_from_this()]() {
+        std::this_thread::sleep_for(*timeout);
+        self->interrupt();
+      }).detach();
 
     for(size_t k = 0; !interrupt_flag && k <= k_max; last_bound = k++)
     {
