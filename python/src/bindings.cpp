@@ -24,6 +24,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
+#include <pybind11/chrono.h>
 
 #include <black/support/tribool.hpp>
 #include <black/support/identifier.hpp>
@@ -38,37 +39,7 @@
 namespace pyblack {
 
   static void register_basic_types(py::module &m) {
-    using tribool = black::tribool;
     using identifier = black::identifier;
-
-    auto tribool_str = [](tribool b) {
-      return b == true ? "True" : 
-             b == false ? "False" : "Undefined";
-    };
-    auto tribool_repr = [](tribool b) {
-      return b == true ? "True" : 
-             b == false ? "False" : "tribool.undef";
-    };
-
-    py::class_<black::tribool::undef_t>(m, "tribool_undef_t")
-      .def("__str__", [](tribool::undef_t) { return "Undefined"; })
-      .def("__repr__", [](tribool::undef_t) { return "tribool.undef"; })
-      .def("__bool__", [](tribool::undef_t) { return false; });
-
-    py::class_<tribool>(m, "tribool")
-      .def(py::init<bool>())
-      .def(py::init<tribool::undef_t>())
-      .def_readonly_static("undef", &tribool::undef)
-      .def("__bool__", [](tribool b) { return b == true; })
-      .def("__str__", tribool_str)
-      .def("__repr__", tribool_repr)
-      .def("__eq__", [](tribool self, tribool other) {
-        return self == other;
-      }).def("__eq__", [](tribool self, bool b) {
-        return self == b;
-      }).def("__req__", [](tribool self, bool b) {
-        return self == b;
-      });
     
     py::class_<identifier>(m, "identifier")
       .def(py::init<std::string>())
@@ -230,25 +201,41 @@ namespace pyblack {
     solver.def(py::init<>());
     solver.def("solve", 
       [](black::solver &self, logic::scope const&xi, 
-         black::formula f, bool finite) 
+         black::formula f, bool finite, std::optional<size_t> timeout) 
       {
-        if(f.is<logic::formula<logic::LTLP>>())
-          return self.solve(xi, f, finite);
-        return 
-          self.solve(xi, f, finite, std::numeric_limits<size_t>::max(), true);
+        std::optional<std::chrono::seconds> seconds;
+        if(timeout)
+          seconds = std::chrono::seconds(*timeout);
+
+        bool semi_decision = !f.is<logic::formula<logic::LTLP>>();
+        return tribool_to_py(
+          self.solve(
+            xi, f, finite, std::numeric_limits<size_t>::max(), 
+            seconds, semi_decision
+          )
+        );
       },
-      py::arg("xi"), py::arg("f"), py::arg("finite") = false
+      py::arg("xi"), py::arg("f"), py::arg("finite") = false,
+      py::arg("timeout") = py::none{}
     );
     solver.def("is_valid", 
       [](black::solver &self, logic::scope const&xi, 
-         black::formula f, bool finite) 
+         black::formula f, bool finite, std::optional<size_t> timeout)
       {
-        if(f.is<logic::formula<logic::LTLP>>())
-          return self.is_valid(xi, f, finite);
-        return 
-          self.solve(xi, f, finite, std::numeric_limits<size_t>::max(), true);
+        std::optional<std::chrono::seconds> seconds;
+        if(timeout)
+          seconds = std::chrono::seconds(*timeout);
+
+        bool semi_decision = !f.is<logic::formula<logic::LTLP>>();
+        return tribool_to_py(
+          self.is_valid(
+            xi, f, finite, std::numeric_limits<size_t>::max(), 
+            seconds, semi_decision
+          )
+        );
       },
-      py::arg("xi"), py::arg("f"), py::arg("finite") = false
+      py::arg("xi"), py::arg("f"), py::arg("finite") = false,
+      py::arg("timeout") = py::none{}
     );
 
     solver.def_property_readonly("model", &black::solver::model);
