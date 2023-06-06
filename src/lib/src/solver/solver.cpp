@@ -30,13 +30,16 @@
 #include <black/sat/solver.hpp>
 
 #include <numeric>
+#include <atomic>
+#include <memory>
+#include <future>
 
 namespace black_internal::solver
 {
   /*
    * Private implementation of the solver class.
    */
-  struct solver::_solver_t 
+  struct solver::_solver_t : std::enable_shared_from_this<solver::_solver_t>
   {
     // whether a model has been found 
     // i.e., whether solve() has been called and returned true
@@ -60,6 +63,10 @@ namespace black_internal::solver
     // the name of the currently chosen sat backend
     std::string sat_backend = BLACK_DEFAULT_BACKEND; // sensible default
 
+    // the flag for `interrupt()`
+    std::atomic<bool> interrupt_flag = false;
+
+    // tracer
     std::function<void(trace_t)> tracer = [](trace_t){};
 
     void trace(size_t k);
@@ -69,8 +76,11 @@ namespace black_internal::solver
     // Main algorithm
     tribool solve(
       scope const& xi, logic::formula<logic::LTLPFO> f, 
-      bool finite, size_t k_max, bool semi_decision
+      bool finite, size_t k_max, std::optional<std::chrono::seconds> timeout, 
+      bool semi_decision
     );
+
+    void interrupt();
   };
 
   solver::solver() : _data{std::make_unique<_solver_t>()} { }
@@ -81,17 +91,19 @@ namespace black_internal::solver
 
   tribool solver::solve(
     scope const& xi, logic::formula<logic::LTLPFO> f, 
-    bool finite, size_t k_max, bool semi_decision
+    bool finite, size_t k_max, std::optional<std::chrono::seconds> timeout,
+    bool semi_decision
   ) {
-    return _data->solve(xi, f, finite, k_max, semi_decision);
+    return _data->solve(xi, f, finite, k_max, timeout, semi_decision);
   }
 
   
   tribool solver::is_valid(
     scope const& xi, logic::formula<logic::LTLPFO> f, 
-    bool finite, size_t k_max, bool semi_decision
+    bool finite, size_t k_max, std::optional<std::chrono::seconds> timeout,
+    bool semi_decision
   ) {
-    tribool res = _data->solve(xi, !f, finite, k_max, semi_decision);
+    tribool res = _data->solve(xi, !f, finite, k_max, timeout, semi_decision);
     if(res == true)
       return false;
     if(res == false)
@@ -99,6 +111,9 @@ namespace black_internal::solver
     return tribool::undef;
   }
 
+  void solver::interrupt() {
+    _data->interrupt();
+  }
 
 
   std::optional<model> solver::model() const {
@@ -200,7 +215,8 @@ namespace black_internal::solver
    */
   tribool solver::_solver_t::solve(
     scope const& s, logic::formula<logic::LTLPFO> f, bool finite, 
-    size_t k_max, bool semi_decision
+    size_t k_max, std::optional<std::chrono::seconds> timeout, 
+    bool semi_decision
   ) {
     scope xi = chain(s);
     
@@ -213,7 +229,15 @@ namespace black_internal::solver
     model = false;
     model_size = 0;
     last_bound = 0;
-    for(size_t k = 0; k <= k_max; last_bound = k++)
+
+    if(timeout)
+      (void)std::async(std::launch::async,
+        [timeout, self = this->shared_from_this()]() {
+          std::this_thread::sleep_for(*timeout);
+          self->interrupt();
+        });
+
+    for(size_t k = 0; !interrupt_flag && k <= k_max; last_bound = k++)
     {
       trace(k);
       // Generating the k-unraveling.
@@ -247,8 +271,13 @@ namespace black_internal::solver
           return res;
       }
     } // end for
+    interrupt_flag = false;
 
     return tribool::undef;
+  }
+
+  void solver::_solver_t::interrupt() {
+    interrupt_flag = true;
   }
 
   template<hierarchy H, typename F>

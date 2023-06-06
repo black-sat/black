@@ -35,6 +35,8 @@
 #include <unordered_set>
 #include <string>
 #include <numeric>
+#include <chrono>
+#include <memory>
 
 namespace black_internal::solver {
 
@@ -77,6 +79,7 @@ namespace black_internal::solver {
         formula f,
         bool finite = false,
         size_t k_max = std::numeric_limits<size_t>::max(),
+        std::optional<std::chrono::seconds> timeout = {},
         bool semi_decision = false
       );
       
@@ -88,10 +91,13 @@ namespace black_internal::solver {
         formula f,
         bool finite = false,
         size_t k_max = std::numeric_limits<size_t>::max(),
+        std::optional<std::chrono::seconds> timeout = {},
         bool semi_decision = false
       );
 
-      
+      // interrupts the execution of the current solve() or is_valid() 
+      // calls, which will return tribool::undef
+      void interrupt();
 
       // Returns the model of the formula, if the last call to solve() 
       // returned true
@@ -132,7 +138,7 @@ namespace black_internal::solver {
 
     private:
       struct _solver_t;
-      std::unique_ptr<_solver_t> _data;
+      std::shared_ptr<_solver_t> _data;
 
   }; // end class Black Solver
 

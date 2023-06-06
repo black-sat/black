@@ -160,6 +160,9 @@ namespace black::frontend
         % "Output format.\n"
           "Accepted formats: readable, json\n"
           "Default: readable",
+      (option("-t", "--timeout")
+        & value("timeout", cli::timeout))
+        % "Timeout (in seconds)",
       (option("-f", "--formula") & value("formula", cli::formula))
         % "LTL formula to solve",
       option("--debug") & value("debug", cli::debug),

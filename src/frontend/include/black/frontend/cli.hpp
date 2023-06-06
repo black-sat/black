@@ -76,6 +76,9 @@ namespace black::frontend
     // domain for first-order variables
     inline std::optional<std::string> default_sort;
 
+    // solve timeout, in seconds
+    inline std::optional<uint64_t> timeout;
+
     // disable the PRUNE rule
     inline bool semi_decision = false;
 
