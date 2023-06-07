@@ -117,13 +117,19 @@ namespace black_internal::z3
     }
   }
   
-  [[noreturn]]
   static void error_handler(Z3_context c, Z3_error_code e) { // LCOV_EXCL_LINE
     using namespace z3_compat_wrap;
+    const char *errmsg = nullptr;
+    
     if constexpr (z3_is_old())
-      fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(e)); // LCOV_EXCL_LINE
+      errmsg = Z3_get_error_msg(e); // LCOV_EXCL_LINE
     else
-      fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(c, e)); // LCOV_EXCL_LINE
+      errmsg = Z3_get_error_msg(c, e); // LCOV_EXCL_LINE
+    
+    if(strcmp(errmsg, "canceled"))
+      return;
+    
+    fprintf(stderr, "Z3 error %d: %s\n", (int)e, errmsg);
     std::abort(); // LCOV_EXCL_LINE
   }
 
