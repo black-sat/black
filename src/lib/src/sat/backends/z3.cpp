@@ -127,7 +127,7 @@ namespace black_internal::z3
     else
       errmsg = Z3_get_error_msg(c, e); // LCOV_EXCL_LINE
     
-    if(strcmp(errmsg, "canceled"))
+    if(strcmp(errmsg, "canceled") == 0)
       return;
     
     fprintf(stderr, "Z3 error %d: %s\n", (int)e, errmsg);
