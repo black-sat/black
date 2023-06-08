@@ -36,6 +36,7 @@
 #include <optional>
 #include <string>
 #include <memory>
+#include <cstring>
 
 BLACK_REGISTER_SAT_BACKEND(z3, {
   black::sat::feature::smt, black::sat::feature::quantifiers
