@@ -29,32 +29,10 @@
 
 #include <string>
 #include <vector>
-#include <sstream>
 
 namespace black_internal
 {
-  using namespace black::logic::fragments::LTLPFO;
-
-  // Easy entry-point for parsing formulas
-  std::optional<formula>
-  parse_formula(
-    alphabet &sigma, std::string const&s, parser::error_handler error
-  ) {
-    std::stringstream stream{s, std::stringstream::in};
-    parser p{sigma, stream, std::move(error)};
-
-    return p.parse();
-  }
-
-  // Easy entry-point for parsing formulas
-  std::optional<formula>
-  parse_formula(
-    alphabet &sigma, std::istream &stream, parser::error_handler error
-  ) {
-    parser p{sigma, stream, std::move(error)};
-
-    return p.parse();
-  }
+  using namespace black::logic::fragments::Everything;
 
   struct parser::_parser_t {
     alphabet &_alphabet;
@@ -83,6 +61,7 @@ namespace black_internal
     std::optional<formula> parse_atom();
     std::optional<formula> parse_quantifier();
     std::optional<formula> parse_unary();
+    std::optional<formula> parse_hs_op();
     std::optional<formula> parse_parens();
     std::optional<formula> parse_primary();
 
@@ -414,6 +393,19 @@ namespace black_internal
     return unary(*op->data<unary::type>(), *formula);
   }
 
+  std::optional<formula> parser::_parser_t::parse_hs_op()
+  {
+    std::optional<token> op = consume(); // consume unary op
+    black_assert(op && op->is<token::hs_op_t>());  // LCOV_EXCL_LINE
+
+    std::optional<formula> formula = parse_primary();
+    if(!formula)
+      return {};
+
+    auto tokdata = *op->data<token::hs_op_t>();
+    return interval_op(tokdata.first, tokdata.second, *formula);
+  }
+
   std::optional<formula> parser::_parser_t::parse_parens() {
     black_assert(peek());
     black_assert(
@@ -458,6 +450,8 @@ namespace black_internal
       return parse_quantifier();
     if(peek()->is<unary::type>())
       return parse_unary();
+    if(peek()->is<token::hs_op_t>())
+      return parse_hs_op();
     if(peek()->data<token::punctuation>() == token::punctuation::left_paren)
        return parse_parens();
 

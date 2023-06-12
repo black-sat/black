@@ -216,7 +216,7 @@ TEST_CASE("Solver")
       {
         xi.set_default_sort(sigma.integer_sort());
 
-        auto result = parse_formula(sigma, s);
+        auto result = parse_formula<logic::LTLPFO>(sigma, s);
 
         REQUIRE(result.has_value());
 

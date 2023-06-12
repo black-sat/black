@@ -53,6 +53,7 @@ namespace black_internal::lexer_details
       binary_term_operator,
       unary_operator,
       binary_operator,
+      hs_operator,
       punctuation
     };
 
@@ -67,21 +68,27 @@ namespace black_internal::lexer_details
     };
 
     using equality_t = 
-      std::pair<logic::equality<logic::LTLPFO>::type, bool /* binary */>;
+      std::pair<logic::equality<logic::Everything>::type, bool /* binary */>;
+
+    using hs_op_t = 
+      std::pair<
+        logic::interval_op<logic::Everything>::type, bool /* existential */
+      >;
 
              token()              : _data{std::monostate{}} { }
     explicit token(bool b)        : _data{b} { }
     explicit token(int64_t c)     : _data{c} { }
     explicit token(double d)      : _data{d} { }
     explicit token(std::string s) : _data{std::move(s)} { }
-    explicit token(logic::quantifier<logic::LTLPFO>::type k)  : _data{k} { }
+    explicit token(logic::quantifier<logic::Everything>::type k)  : _data{k} { }
     explicit token(equality_t t)                              : _data{t} { }
-    explicit token(logic::comparison<logic::LTLPFO>::type t)  : _data{t} { }
+    explicit token(logic::comparison<logic::Everything>::type t)  : _data{t} { }
     explicit token(logic::arithmetic_sort::type t)            : _data{t} { }
-    explicit token(logic::unary_term<logic::LTLPFO>::type t)  : _data{t} { }
-    explicit token(logic::binary_term<logic::LTLPFO>::type t) : _data{t} { }
-    explicit token(logic::unary<logic::LTLPFO>::type t)       : _data{t} { }
-    explicit token(logic::binary<logic::LTLPFO>::type t)      : _data{t} { }
+    explicit token(logic::unary_term<logic::Everything>::type t)  : _data{t} { }
+    explicit token(logic::binary_term<logic::Everything>::type t) : _data{t} { }
+    explicit token(logic::unary<logic::Everything>::type t)       : _data{t} { }
+    explicit token(logic::binary<logic::Everything>::type t)      : _data{t} { }
+    explicit token(hs_op_t t) : _data{t} { }
     explicit token(punctuation s) : _data{s} { }
 
     template<typename T>
@@ -108,14 +115,15 @@ namespace black_internal::lexer_details
       int64_t,                   // integers
       double,                    // reals
       std::string,               // identifiers
-      logic::quantifier<logic::LTLPFO>::type,  // exists/forall
+      logic::quantifier<logic::Everything>::type,  // exists/forall
       equality_t,                              // =, !=, equal(), distinct()
-      logic::comparison<logic::LTLPFO>::type,  // <, >, <=, >= 
+      logic::comparison<logic::Everything>::type,  // <, >, <=, >= 
       logic::arithmetic_sort::type,            // Int, Real
-      logic::unary_term<logic::LTLPFO>::type,  // unary minus, next, wnext, ...
-      logic::binary_term<logic::LTLPFO>::type, // +, -, *, /
-      logic::unary<logic::LTLPFO>::type,       // unary operator
-      logic::binary<logic::LTLPFO>::type,      // binary operator
+      logic::unary_term<logic::Everything>::type,  // unary minus, next, ...
+      logic::binary_term<logic::Everything>::type, // +, -, *, /
+      logic::unary<logic::Everything>::type,       // unary operator
+      logic::binary<logic::Everything>::type,      // binary operator
+      hs_op_t,                                     // HS operators
       punctuation                // any non-logical token
     > _data;
   };

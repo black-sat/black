@@ -43,6 +43,8 @@
 
 namespace black::frontend {
 
+  namespace logic = black::logic;
+
   void output(
     tribool result, solver &solver, formula f, std::optional<formula> muc
   );
@@ -79,9 +81,11 @@ namespace black::frontend {
   int solve(std::optional<std::string> const&path, std::istream &file)
   {
     black::alphabet sigma;
-    std::optional<formula> f;
-
-    f = black::parse_formula(sigma, file, formula_syntax_error_handler(path));
+    
+    std::optional<formula> f = 
+      black::parse_formula<logic::LTLPFO>(
+        sigma, file, formula_syntax_error_handler(path)
+      );
     black_assert(f.has_value());
 
     if(cli::debug == "print")

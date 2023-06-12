@@ -333,7 +333,7 @@ namespace black::frontend
       if(!jmuc.is_null()) {
         std::string smuc = jmuc.get<std::string>();
         trace.muc =
-          black::parse_formula(
+          black::parse_formula<black::logic::LTLPFO>(
             sigma, smuc, [&](auto error) {
               io::fatal(
                 status_code::syntax_error, "{}: malformed 'muc' field: {}", 
@@ -419,7 +419,9 @@ namespace black::frontend
     black::alphabet sigma;
     
     std::optional<formula> f = 
-      black::parse_formula(sigma, file, formula_syntax_error_handler(path));
+      black::parse_formula<black::logic::LTLPFO>(
+        sigma, file, formula_syntax_error_handler(path)
+      );
 
     black_assert(f.has_value());
 

@@ -30,6 +30,7 @@
 
 #include <istream>
 #include <ostream>
+#include <sstream>
 #include <functional>
 #include <memory>
 
@@ -47,7 +48,7 @@ namespace black_internal
     
     ~parser();
 
-    std::optional<logic::formula<logic::LTLPFO>> parse();
+    std::optional<logic::formula<logic::Everything>> parse();
 
   private:
     struct _parser_t;
@@ -55,28 +56,47 @@ namespace black_internal
   };
 
   // Easy entry-point for parsing formulas
-  BLACK_EXPORT
-  std::optional<logic::formula<logic::LTLPFO>>
+  template<black::logic::fragment Syntax>
+  std::optional<black::logic::formula<Syntax>>
   parse_formula(
-    logic::alphabet &sigma, std::string const&s, parser::error_handler error
-  );
+    black::logic::alphabet &sigma, 
+    std::istream &stream, parser::error_handler error
+  ) {
+    parser p{sigma, stream, error};
 
-  BLACK_EXPORT
-  std::optional<logic::formula<logic::LTLPFO>>
-  parse_formula(
-    logic::alphabet &sigma, std::istream &s, parser::error_handler error
-  );
-
-  BLACK_EXPORT
-  inline std::optional<logic::formula<logic::LTLPFO>>
-  parse_formula(logic::alphabet &sigma, std::string const&s) {
-    return parse_formula(sigma, s, [](auto){});
+    auto parsed = p.parse();
+    if(!parsed)
+      return std::nullopt;
+    
+    auto casted = parsed->to<black::logic::formula<Syntax>>();
+    if(!casted) {
+      error("unsupported syntax in parsed formula");
+      return std::nullopt;
+    }
+    
+    return casted;
   }
 
-  BLACK_EXPORT
-  inline std::optional<logic::formula<logic::LTLPFO>>
+  template<black::logic::fragment Syntax>
+  std::optional<black::logic::formula<Syntax>>
+  parse_formula(
+    black::logic::alphabet &sigma, 
+    std::string const&s, parser::error_handler error
+  ) {
+    std::stringstream stream{s, std::stringstream::in};
+    return parse_formula<Syntax>(sigma, stream, std::move(error));
+  }
+
+  template<black::logic::fragment Syntax>
+  inline std::optional<logic::formula<Syntax>>
+  parse_formula(logic::alphabet &sigma, std::string const&s) {
+    return parse_formula<Syntax>(sigma, s, [](auto){});
+  }
+
+  template<black::logic::fragment Syntax>
+  inline std::optional<logic::formula<Syntax>>
   parse_formula(logic::alphabet &sigma, std::istream &s) {
-    return parse_formula(sigma, s, [](auto){});
+    return parse_formula<Syntax>(sigma, s, [](auto){});
   }
 
 } // namespace black_internal

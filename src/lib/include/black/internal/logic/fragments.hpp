@@ -222,6 +222,37 @@ namespace black {
   Element(prev) \
   Element(wprev)
 
+#define enum_elements_HS(Element) \
+  enum_elements_propositional(Element) \
+  Element(after) \
+  Element(before) \
+  Element(meets) \
+  Element(metby) \
+  Element(overlaps) \
+  Element(overlappedby) \
+  Element(begins) \
+  Element(beganby) \
+  Element(during) \
+  Element(contains) \
+  Element(ends) \
+  Element(endedby)
+
+#define enum_elements_Everything(Element) \
+  enum_elements_LTLPFO(Element) \
+  Element(after) \
+  Element(before) \
+  Element(meets) \
+  Element(metby) \
+  Element(overlaps) \
+  Element(overlappedby) \
+  Element(begins) \
+  Element(beganby) \
+  Element(during) \
+  Element(contains) \
+  Element(ends) \
+  Element(endedby)
+
+
 //
 // By repeatedly including `declare_fragment.hpp` we actually declare the
 // fragments and their namespaces
@@ -242,6 +273,12 @@ namespace black {
 #include <black/internal/logic/declare_fragment.hpp>
 #undef FRAGMENT
 #define FRAGMENT LTLPFO
+#include <black/internal/logic/declare_fragment.hpp>
+#undef FRAGMENT
+#define FRAGMENT HS
+#include <black/internal/logic/declare_fragment.hpp>
+#undef FRAGMENT
+#define FRAGMENT Everything
 #include <black/internal/logic/declare_fragment.hpp>
 #undef FRAGMENT
 

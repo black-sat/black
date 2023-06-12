@@ -81,7 +81,7 @@ namespace black_internal::logic {
   // This constant bounds the maximum number of items in the `syntax_element`
   // enum. We will ensure later that this is respected.
   //
-  inline constexpr size_t syntax_element_max_size = 64;
+  inline constexpr size_t syntax_element_max_size = 128;
 
   //
   // For introspection it is useful to be able to print the values of the above

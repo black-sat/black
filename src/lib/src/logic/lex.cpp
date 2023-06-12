@@ -29,10 +29,11 @@
 #include <istream>
 #include <charconv>
 #include <limits>
+#include <iostream>
 
 namespace black_internal::lexer_details
 {
-  using namespace black::logic::fragments::LTLPFO;
+  using namespace black::logic::fragments::Everything;
 
   static
   std::string to_string(quantifier::type t) {
@@ -123,6 +124,28 @@ namespace black_internal::lexer_details
     );
   }
   
+  static
+  std::string to_string(token::hs_op_t t) {
+    std::string op = t.first.match(
+      [](interval_op::type::after) { return "L"; },
+      [](interval_op::type::before) { return "!L"; },
+      [](interval_op::type::meets) { return "A"; },
+      [](interval_op::type::metby) { return "!A"; },
+      [](interval_op::type::overlaps) { return "O"; },
+      [](interval_op::type::overlappedby) { return "!O"; },
+      [](interval_op::type::begins) { return "B"; },
+      [](interval_op::type::beganby) { return "!B"; },
+      [](interval_op::type::during) { return "D"; },
+      [](interval_op::type::contains) { return "!D"; },
+      [](interval_op::type::ends) { return "E"; },
+      [](interval_op::type::endedby) { return "!E"; }
+    );
+
+    if(t.second)
+      return "<" + op + ">";
+    return "[" + op + "]";
+  }
+  
   std::string to_string(token::punctuation p) {
     switch(p) {
       case token::punctuation::left_paren:  return "(";
@@ -152,6 +175,7 @@ namespace black_internal::lexer_details
       [](binary_term::type t)     { return to_string(t); },
       [](unary::type t)           { return to_string(t); },
       [](binary::type t)          { return to_string(t); },
+      [](token::hs_op_t t)        { return to_string(t); },
       [](token::punctuation p)    { return to_string(p); }
     }, tok._data);
 
@@ -218,6 +242,7 @@ namespace black_internal::lexer_details
     {
       char ch = char(s.peek());
 
+      bool existential = false;
       switch (ch) {
         case '(':
           s.get();
@@ -282,19 +307,81 @@ namespace black_internal::lexer_details
           }
           return token{comparison::type::greater_than{}};
 
-        // '<->' or '<=>' or '<>'
-        case '<':
+        // '<->' or '<=>' or '<>' or HS operator
+        case '<': 
+          existential = true;
           s.get();
-          if (s.peek() == '-' || s.peek() == '=')
+          if (s.peek() == '-' || s.peek() == '=') {
             s.get();
-          else
-            return token{comparison::type::less_than{}};
-
-          if (s.peek() == '>') {
-            s.get();
-            return token{binary::type::iff{}};
+            if (s.peek() == '>') {
+              return token{binary::type::iff{}};
+            } else
+              return token{comparison::type::less_than{}};
           }
-          return token{comparison::type::less_than_equal{}};
+                   
+          [[fallthrough]];
+        
+        case '[': {
+          if(!existential)
+            s.get();
+          bool negated = false;
+          if(s.peek() == '!') {
+            negated = true;
+            s.get();
+          }
+          
+          std::optional<interval_op::type> op;
+          std::cerr << std::string(1, (char)s.peek()) << "\n";
+          switch(s.peek()) {
+            case 'L':
+              if(!negated)
+                op = interval_op::type::after{};
+              else
+                op = interval_op::type::before{};
+              break;
+            case 'A':
+              if(!negated)
+                op = interval_op::type::meets{};
+              else
+                op = interval_op::type::metby{};
+              break;
+            case 'O':
+              if(!negated)
+                op = interval_op::type::overlaps{};
+              else
+                op = interval_op::type::overlappedby{};
+              break;
+            case 'B':
+              if(!negated)
+                op = interval_op::type::begins{};
+              else
+                op = interval_op::type::beganby{};
+              break;
+            case 'D':
+              if(!negated)
+                op = interval_op::type::during{};
+              else
+                op = interval_op::type::contains{};
+              break;
+            case 'E':
+              if(!negated)
+                op = interval_op::type::ends{};
+              else
+                op = interval_op::type::endedby{};
+              break;
+            default:
+              if(!negated)
+                return token{comparison::type::less_than_equal{}};
+              return std::nullopt;
+          }
+
+          s.get();
+          if((existential && s.peek() != '>') || 
+             (!existential && s.peek() != ']'))
+            return std::nullopt;
+          s.get();
+          return token(std::pair(*op, existential));
+        }
 
         case '+':
           s.get();

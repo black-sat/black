@@ -54,7 +54,7 @@ TEST_CASE("Syntax errors") {
     {
       bool error = false;
       auto result = 
-        parse_formula(sigma, s, [&](std::string) {
+        parse_formula<logic::LTLPFO>(sigma, s, [&](std::string) {
           error = true;
         });
 
@@ -101,10 +101,11 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
 
   for(formula f : tests) {
     DYNAMIC_SECTION("Roundtrip for formula: " << to_string(f)) {
-      auto result = parse_formula(sigma, to_string(f), [](auto error){
-        INFO("parsing error: " << error);
-        REQUIRE(false);
-      });
+      auto result = parse_formula<logic::LTLPFO>(
+          sigma, to_string(f), [](auto error){
+            INFO("parsing error: " << error);
+            REQUIRE(false);
+          });
       
       REQUIRE(result.has_value());
 
