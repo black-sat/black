@@ -243,6 +243,7 @@ namespace black_internal::lexer_details
       char ch = char(s.peek());
 
       bool existential = false;
+      bool equal = false;
       switch (ch) {
         case '(':
           s.get();
@@ -312,11 +313,13 @@ namespace black_internal::lexer_details
           existential = true;
           s.get();
           if (s.peek() == '-' || s.peek() == '=') {
+            if(s.peek() == '=')
+              equal = true;
             s.get();
             if (s.peek() == '>') {
+              s.get();
               return token{binary::type::iff{}};
-            } else
-              return token{comparison::type::less_than{}};
+            }
           }
                    
           [[fallthrough]];
@@ -370,8 +373,11 @@ namespace black_internal::lexer_details
                 op = interval_op::type::endedby{};
               break;
             default:
-              if(!negated)
-                return token{comparison::type::less_than_equal{}};
+              if(!negated) {
+                if(equal)
+                  return token{comparison::type::less_than_equal{}};
+                return token{comparison::type::less_than{}};
+              }
               return std::nullopt;
           }
 
