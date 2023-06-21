@@ -226,8 +226,8 @@ namespace black {
   enum_elements_propositional(Element) \
   Element(after) \
   Element(before) \
-  Element(meets) \
-  Element(metby) \
+  Element(later) \
+  Element(sooner) \
   Element(overlaps) \
   Element(overlappedby) \
   Element(begins) \
@@ -241,8 +241,8 @@ namespace black {
   enum_elements_LTLPFO(Element) \
   Element(after) \
   Element(before) \
-  Element(meets) \
-  Element(metby) \
+  Element(later) \
+  Element(sooner) \
   Element(overlaps) \
   Element(overlappedby) \
   Element(begins) \

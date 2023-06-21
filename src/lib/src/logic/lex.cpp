@@ -126,10 +126,10 @@ namespace black_internal::lexer_details
   static
   std::string to_string(token::hs_op_t t) {
     std::string op = t.first.match(
-      [](interval_op::type::after) { return "L"; },
-      [](interval_op::type::before) { return "!L"; },
-      [](interval_op::type::meets) { return "A"; },
-      [](interval_op::type::metby) { return "!A"; },
+      [](interval_op::type::after) { return "A"; },
+      [](interval_op::type::before) { return "!A"; },
+      [](interval_op::type::later) { return "L"; },
+      [](interval_op::type::sooner) { return "!L"; },
       [](interval_op::type::overlaps) { return "O"; },
       [](interval_op::type::overlappedby) { return "!O"; },
       [](interval_op::type::begins) { return "B"; },
@@ -334,17 +334,17 @@ namespace black_internal::lexer_details
           
           std::optional<interval_op::type> op;
           switch(s.peek()) {
-            case 'L':
+            case 'A':
               if(!negated)
                 op = interval_op::type::after{};
               else
                 op = interval_op::type::before{};
               break;
-            case 'A':
+            case 'L':
               if(!negated)
-                op = interval_op::type::meets{};
+                op = interval_op::type::later{};
               else
-                op = interval_op::type::metby{};
+                op = interval_op::type::sooner{};
               break;
             case 'O':
               if(!negated)

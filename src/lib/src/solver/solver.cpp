@@ -31,6 +31,7 @@
 #include <black/sat/solver.hpp>
 
 #include <numeric>
+#include <iostream>
 
 namespace black_internal::solver
 {
@@ -91,6 +92,8 @@ namespace black_internal::solver
     scope xi{*f.sigma()};
 
     auto encoded = hs::encode(xi, f);
+
+    std::cerr << "encoded HS formula: " << to_string(encoded) << "\n";
 
     return solve(xi, encoded, /* finite =*/true, k_max, /*semi =*/true);
   }

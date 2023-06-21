@@ -28,10 +28,8 @@
 
 namespace black_internal::hs {
   
-  namespace logic = black::logic;
-
-  logic::formula<logic::LTLFO> encode(
-    logic::scope &xi, logic::formula<logic::HS> f
+  black::logic::formula<black::logic::LTLFO> encode(
+    black::logic::scope &xi, black::logic::formula<black::logic::HS> f
   );
 
 }

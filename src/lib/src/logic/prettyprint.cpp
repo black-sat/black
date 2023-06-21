@@ -88,10 +88,10 @@ namespace black_internal::logic
   static
   std::string to_string(interval_op<Everything>::type t) {
     return t.match(
-      [](interval_op<Everything>::type::after) { return "L"; },
-      [](interval_op<Everything>::type::before) { return "!L"; },
-      [](interval_op<Everything>::type::meets) { return "A"; },
-      [](interval_op<Everything>::type::metby) { return "!A"; },
+      [](interval_op<Everything>::type::after) { return "A"; },
+      [](interval_op<Everything>::type::before) { return "!A"; },
+      [](interval_op<Everything>::type::later) { return "L"; },
+      [](interval_op<Everything>::type::sooner) { return "!L"; },
       [](interval_op<Everything>::type::overlaps) { return "O"; },
       [](interval_op<Everything>::type::overlappedby) { return "!O"; },
       [](interval_op<Everything>::type::begins) { return "B"; },
