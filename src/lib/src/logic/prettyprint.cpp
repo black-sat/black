@@ -34,18 +34,18 @@ namespace black_internal::logic
 {
 
   static
-  bool does_need_parens(formula<LTLPFO> parent, formula<LTLPFO> arg) {
+  bool does_need_parens(formula<Everything> parent, formula<Everything> arg) {
     bool parens = false;
     arg.match(
-      [&](binary<LTLPFO>) {
+      [&](binary<Everything>) {
         parens = 
-        (!parent.is<conjunction<LTLPFO>>() && !parent.is<disjunction<LTLPFO>>())
+        (!parent.is<conjunction<Everything>>() && !parent.is<disjunction<Everything>>())
           || (parent.node_type() != arg.node_type());
       },
-      [&](comparison<LTLPFO>) {
+      [&](comparison<Everything>) {
         parens = true;
       },
-      [&](quantifier<LTLPFO>) {
+      [&](quantifier<Everything>) {
         parens = true;
       },
       [&](otherwise) { }
@@ -55,56 +55,74 @@ namespace black_internal::logic
   }
 
   static
-  std::string to_string(unary<LTLPFO>::type t) {
+  std::string to_string(unary<Everything>::type t) {
     return t.match(
-      [](unary<LTLPFO>::type::negation)     { return "!"; },
-      [](unary<LTLPFO>::type::tomorrow)     { return "X"; },
-      [](unary<LTLPFO>::type::w_tomorrow)   { return "wX"; },
-      [](unary<LTLPFO>::type::yesterday)    { return "Y"; },
-      [](unary<LTLPFO>::type::w_yesterday)  { return "Z"; },
-      [](unary<LTLPFO>::type::always)       { return "G"; },
-      [](unary<LTLPFO>::type::eventually)   { return "F"; },
-      [](unary<LTLPFO>::type::once)         { return "O"; },
-      [](unary<LTLPFO>::type::historically) { return "H"; }
+      [](unary<Everything>::type::negation)     { return "!"; },
+      [](unary<Everything>::type::tomorrow)     { return "X"; },
+      [](unary<Everything>::type::w_tomorrow)   { return "wX"; },
+      [](unary<Everything>::type::yesterday)    { return "Y"; },
+      [](unary<Everything>::type::w_yesterday)  { return "Z"; },
+      [](unary<Everything>::type::always)       { return "G"; },
+      [](unary<Everything>::type::eventually)   { return "F"; },
+      [](unary<Everything>::type::once)         { return "O"; },
+      [](unary<Everything>::type::historically) { return "H"; }
     );
   }
 
   static
-  std::string to_string(binary<LTLPFO>::type t) {
+  std::string to_string(binary<Everything>::type t) {
     return t.match(
-      [](binary<LTLPFO>::type::conjunction) { return "&"; },
-      [](binary<LTLPFO>::type::disjunction) { return "|"; },
-      [](binary<LTLPFO>::type::implication) { return "->"; },
-      [](binary<LTLPFO>::type::iff)         { return "<->"; },
-      [](binary<LTLPFO>::type::until)       { return "U"; },
-      [](binary<LTLPFO>::type::release)     { return "R"; },
-      [](binary<LTLPFO>::type::w_until)     { return "W"; },
-      [](binary<LTLPFO>::type::s_release)   { return "M"; },
-      [](binary<LTLPFO>::type::since)       { return "S"; },
-      [](binary<LTLPFO>::type::triggered)   { return "T"; }
+      [](binary<Everything>::type::conjunction) { return "&"; },
+      [](binary<Everything>::type::disjunction) { return "|"; },
+      [](binary<Everything>::type::implication) { return "->"; },
+      [](binary<Everything>::type::iff)         { return "<->"; },
+      [](binary<Everything>::type::until)       { return "U"; },
+      [](binary<Everything>::type::release)     { return "R"; },
+      [](binary<Everything>::type::w_until)     { return "W"; },
+      [](binary<Everything>::type::s_release)   { return "M"; },
+      [](binary<Everything>::type::since)       { return "S"; },
+      [](binary<Everything>::type::triggered)   { return "T"; }
+    );
+  }
+  
+  static
+  std::string to_string(interval_op<Everything>::type t) {
+    return t.match(
+      [](interval_op<Everything>::type::after) { return "L"; },
+      [](interval_op<Everything>::type::before) { return "!L"; },
+      [](interval_op<Everything>::type::meets) { return "A"; },
+      [](interval_op<Everything>::type::metby) { return "!A"; },
+      [](interval_op<Everything>::type::overlaps) { return "O"; },
+      [](interval_op<Everything>::type::overlappedby) { return "!O"; },
+      [](interval_op<Everything>::type::begins) { return "B"; },
+      [](interval_op<Everything>::type::beganby) { return "!B"; },
+      [](interval_op<Everything>::type::during) { return "D"; },
+      [](interval_op<Everything>::type::contains) { return "!D"; },
+      [](interval_op<Everything>::type::ends) { return "E"; },
+      [](interval_op<Everything>::type::endedby) { return "!E"; }
     );
   }
 
   static
-  std::string to_string(equality<LTLPFO>::type t, bool binary) {
+  std::string to_string(equality<Everything>::type t, bool binary) {
     if(binary)
       return t.match(
-        [](equality<LTLPFO>::type::equal)    { return "="; },
-        [](equality<LTLPFO>::type::distinct) { return "!="; }
+        [](equality<Everything>::type::equal)    { return "="; },
+        [](equality<Everything>::type::distinct) { return "!="; }
       );
     return t.match(
-      [](equality<LTLPFO>::type::equal)    { return "equal"; },
-      [](equality<LTLPFO>::type::distinct) { return "distinct"; }
+      [](equality<Everything>::type::equal)    { return "equal"; },
+      [](equality<Everything>::type::distinct) { return "distinct"; }
     );
   }
 
   static
-  std::string to_string(comparison<LTLPFO>::type t) {
+  std::string to_string(comparison<Everything>::type t) {
     return t.match(
-      [](comparison<LTLPFO>::type::less_than)          { return "<"; },
-      [](comparison<LTLPFO>::type::less_than_equal)    { return "<="; },
-      [](comparison<LTLPFO>::type::greater_than)       { return ">"; },
-      [](comparison<LTLPFO>::type::greater_than_equal) { return ">="; }
+      [](comparison<Everything>::type::less_than)          { return "<"; },
+      [](comparison<Everything>::type::less_than_equal)    { return "<="; },
+      [](comparison<Everything>::type::greater_than)       { return ">"; },
+      [](comparison<Everything>::type::greater_than_equal) { return ">="; }
     );
   }
 
@@ -148,12 +166,12 @@ namespace black_internal::logic
   }
 
   static
-  std::string term_parens(term<LTLPFO> t) {
+  std::string term_parens(term<Everything> t) {
     return t.match(
       [&](variable) {
         return to_string(t);
       },
-      [&](constant<LTLPFO>) {
+      [&](constant<Everything>) {
         return to_string(t);
       },
       [&](otherwise) {
@@ -162,19 +180,19 @@ namespace black_internal::logic
     );
   }
 
-  std::string to_string(term<LTLPFO> t)
+  std::string to_string(term<Everything> t)
   {
     using namespace std::literals;
     using namespace black_internal;
 
     return t.match(
-      [&](constant<LTLPFO> c) {
+      [&](constant<Everything> c) {
         return to_string(c.value());
       },
       [&](variable x) {
         return escape(to_string(x.name()));
       },
-      [&](application<LTLPFO> a) {
+      [&](application<Everything> a) {
         std::string result = 
           escape(to_string(a.func().name())) + "(" + to_string(a.terms()[0]);
         for(size_t i = 1; i < a.terms().size(); ++i) {
@@ -184,46 +202,46 @@ namespace black_internal::logic
 
         return result;
       }, // LCOV_EXCL_LINE
-      [&](negative<LTLPFO>, auto arg) {
+      [&](negative<Everything>, auto arg) {
         return fmt::format("-({})", to_string(arg));
       },
-      [&](to_integer<LTLPFO>, auto arg) {
+      [&](to_integer<Everything>, auto arg) {
         return fmt::format("to_int({})", to_string(arg));
       },
-      [&](to_real<LTLPFO>, auto arg) {
+      [&](to_real<Everything>, auto arg) {
         return fmt::format("to_real({})", to_string(arg));
       },
-      [&](next<LTLPFO>, auto arg) {
+      [&](next<Everything>, auto arg) {
         return fmt::format("next({})", to_string(arg));
       },
-      [&](wnext<LTLPFO>, auto arg) {
+      [&](wnext<Everything>, auto arg) {
         return fmt::format("wnext({})", to_string(arg));
       },
-      [&](prev<LTLPFO>, auto arg) {
+      [&](prev<Everything>, auto arg) {
         return fmt::format("prev({})", to_string(arg));
       },
-      [&](wprev<LTLPFO>, auto arg) {
+      [&](wprev<Everything>, auto arg) {
         return fmt::format("wprev({})", to_string(arg));
       },
-      [&](addition<LTLPFO>, auto left, auto right) {
+      [&](addition<Everything>, auto left, auto right) {
         return fmt::format("{} + {}", term_parens(left), term_parens(right));
       },
-      [&](subtraction<LTLPFO>, auto left, auto right) {
+      [&](subtraction<Everything>, auto left, auto right) {
         return fmt::format("{} - {}", term_parens(left), term_parens(right));
       },
-      [&](multiplication<LTLPFO>, auto left, auto right) {
+      [&](multiplication<Everything>, auto left, auto right) {
         return fmt::format("{} * {}", term_parens(left), term_parens(right));
       },
-      [&](division<LTLPFO>, auto left, auto right) {
+      [&](division<Everything>, auto left, auto right) {
         return fmt::format("{} / {}", term_parens(left), term_parens(right));
       },
-      [&](int_division<LTLPFO>, auto left, auto right) {
+      [&](int_division<Everything>, auto left, auto right) {
         return fmt::format("{} div {}", term_parens(left), term_parens(right));
       }
     );
   }
 
-  std::string to_string(formula<LTLPFO> f)
+  std::string to_string(formula<Everything> f)
   {
     using namespace std::literals;
     using namespace ::black_internal;
@@ -232,7 +250,7 @@ namespace black_internal::logic
       [&](proposition p) {
         return escape(to_string(p.name()));
       },
-      [&](atom<LTLPFO> a) {
+      [&](atom<Everything> a) {
         std::string result = 
           escape(to_string(a.rel().name())) + "(" + to_string(a.terms()[0]);
         for(size_t i = 1; i < a.terms().size(); ++i) {
@@ -242,7 +260,7 @@ namespace black_internal::logic
 
         return result;
       }, // LCOV_EXCL_LINE
-      [](equality<LTLPFO> e, auto terms) {
+      [](equality<Everything> e, auto terms) {
         black_assert(terms.size() > 0);
 
         if(terms.size() == 2) 
@@ -259,17 +277,17 @@ namespace black_internal::logic
         
         return fmt::format("{}({})", to_string(e.node_type(), false), args);
       },
-      [](comparison<LTLPFO> c, auto left, auto right) {
+      [](comparison<Everything> c, auto left, auto right) {
         return fmt::format(
           "{} {} {}", 
           to_string(left), to_string(c.node_type()), to_string(right)
         );
       },
-      [](quantifier<LTLPFO> q) {
-        std::string qs = q.node_type() == quantifier<LTLPFO>::type::exists{} ?
+      [](quantifier<Everything> q) {
+        std::string qs = q.node_type() == quantifier<Everything>::type::exists{} ?
           "exists " : "forall ";
 
-        bool parens = q.matrix().is<binary<LTLPFO>>();
+        bool parens = q.matrix().is<binary<Everything>>();
 
         for(var_decl d : q.variables()) {
           qs += 
@@ -281,31 +299,39 @@ namespace black_internal::logic
       [](boolean, bool b) {
         return b ? "True" : "False";
       },
-      [](negation<LTLPFO> n, auto arg) {
+      [](negation<Everything> n, auto arg) {
         bool needs_parens = does_need_parens(n, arg);
         return fmt::format("{}{}", 
-          to_string(unary<LTLPFO>::type::negation{}), 
+          to_string(unary<Everything>::type::negation{}), 
           parens_if_needed(arg, needs_parens)
         );
       },
-      [](unary<LTLPFO> u, auto arg) {
+      [](unary<Everything> u, auto arg) {
         bool needs_parens = does_need_parens(u, arg);
         return fmt::format("{}{}{}",
                             to_string(u.node_type()),
                             needs_parens ? "" : " ",
                             parens_if_needed(arg, needs_parens));
       },
-      [](binary<LTLPFO> b, auto left, auto right) {
+      [](binary<Everything> b, auto left, auto right) {
         return
           fmt::format("{} {} {}",
                       parens_if_needed(left, does_need_parens(b, left)),
                       to_string(b.node_type()),
                       parens_if_needed(right, does_need_parens(b, right)));
+      },
+      [](interval_op<Everything> i, bool existential, auto arg) {
+        return fmt::format("{}{}{}{}",
+          existential ? "<" : "[",
+          to_string(i.node_type()),
+          existential ? ">" : "]",
+          parens_if_needed(arg, does_need_parens(i, arg))
+        );
       }
     );
   }
 
-  std::string to_string(symbol<LTLPFO> s) {
+  std::string to_string(symbol<Everything> s) {
     return s.match(
       [](relation r) {
         return to_string(r.name());
@@ -316,7 +342,7 @@ namespace black_internal::logic
     );
   }
 
-  std::string to_string(number<LTLPFO> n) {
+  std::string to_string(number<Everything> n) {
     return n.match(
       [](integer, int64_t value) {
         return fmt::format("{}", value);

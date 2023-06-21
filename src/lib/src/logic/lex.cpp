@@ -29,7 +29,6 @@
 #include <istream>
 #include <charconv>
 #include <limits>
-#include <iostream>
 
 namespace black_internal::lexer_details
 {
@@ -334,7 +333,6 @@ namespace black_internal::lexer_details
           }
           
           std::optional<interval_op::type> op;
-          std::cerr << std::string(1, (char)s.peek()) << "\n";
           switch(s.peek()) {
             case 'L':
               if(!negated)

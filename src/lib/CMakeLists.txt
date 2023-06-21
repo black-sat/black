@@ -176,6 +176,7 @@ set (
   src/sat/solver.cpp
   src/sat/dimacs.cpp
   src/solver/encoding.cpp
+  src/solver/hs.cpp
   src/solver/solver.cpp
   src/solver/core.cpp
   src/debug/random_formula.cpp

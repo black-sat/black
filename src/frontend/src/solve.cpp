@@ -46,10 +46,15 @@ namespace black::frontend {
   namespace logic = black::logic;
 
   void output(
-    tribool result, solver &solver, formula f, std::optional<formula> muc
+    tribool result, solver &solver, logic::formula<logic::Everything> f, 
+    std::optional<formula> muc
   );
   
   int solve(std::optional<std::string> const&path, std::istream &file);
+  int solve(
+    std::optional<std::string> const&path, logic::formula<logic::LTLPFO> f
+  );
+  int solve(logic::formula<logic::HS> f);
 
   void trace(black::solver::trace_t data);
 
@@ -82,8 +87,8 @@ namespace black::frontend {
   {
     black::alphabet sigma;
     
-    std::optional<formula> f = 
-      black::parse_formula<logic::LTLPFO>(
+    std::optional<logic::formula<logic::Everything>> f = 
+      black::parse_formula<logic::Everything>(
         sigma, file, formula_syntax_error_handler(path)
       );
     black_assert(f.has_value());
@@ -93,6 +98,23 @@ namespace black::frontend {
         "{}: debug: parsed formula: {}", cli::command_name, to_string(*f)
       );
 
+    if(auto ltl = f->to<logic::formula<logic::LTLPFO>>(); ltl.has_value())
+      return solve(path, *ltl);
+    
+    if(auto hs = f->to<logic::formula<logic::HS>>(); hs.has_value())
+      return solve(*hs);
+
+    formula_syntax_error_handler(path)(
+      "mixing LTL and/or first-order syntax with HS operators is not supported"
+    );
+
+    return 1; // LCOV_EXCL_LINE
+  }
+
+  int solve(
+    std::optional<std::string> const&path, logic::formula<logic::LTLPFO> f
+  ) {
+    alphabet &sigma = *f.sigma();
     black::scope xi{sigma};
 
     xi.set_default_sort(sigma.named_sort("default"));
@@ -103,13 +125,13 @@ namespace black::frontend {
       xi.set_default_sort(sigma.real_sort());
     
     [[maybe_unused]]
-    bool ok = xi.type_check(*f, formula_syntax_error_handler(path));
+    bool ok = xi.type_check(f, formula_syntax_error_handler(path));
     black_assert(ok);
 
-    ok = black::solver::check_syntax(*f, formula_syntax_error_handler(path));
+    ok = black::solver::check_syntax(f, formula_syntax_error_handler(path));
     black_assert(ok);    
 
-    uint8_t features = formula_features(*f);
+    uint8_t features = formula_features(f);
 
     std::string backend = BLACK_DEFAULT_BACKEND;
 
@@ -184,7 +206,7 @@ namespace black::frontend {
       slv.set_tracer(&trace);
 
     if (cli::remove_past) {
-      auto ltl = f->to<black::logic::formula<black::logic::LTLP>>();
+      auto ltl = f.to<black::logic::formula<black::logic::LTLP>>();
       black_assert(ltl);
       f = black::remove_past(*ltl);
     }
@@ -194,23 +216,95 @@ namespace black::frontend {
     black::tribool res = black::tribool::undef;
     
     if(cli::validity) 
-      res = slv.is_valid(xi, *f, cli::finite, bound, cli::semi_decision);
+      res = slv.is_valid(xi, f, cli::finite, bound, cli::semi_decision);
     else
-      res = slv.solve(xi, *f, cli::finite, bound, cli::semi_decision);
+      res = slv.solve(xi, f, cli::finite, bound, cli::semi_decision);
 
     std::optional<formula> muc;
     if(res == false && cli::unsat_core) {
-      muc = unsat_core(xi, *f, cli::finite);
+      muc = unsat_core(xi, f, cli::finite);
     }
 
-    output(res, slv, *f, muc);
+    output(res, slv, f, muc);
+
+    return 0;
+  }
+
+  int solve(logic::formula<logic::HS> f) 
+  {
+    std::string backend = BLACK_DEFAULT_BACKEND;
+
+    if (cli::sat_backend)
+      backend = *cli::sat_backend;
+
+    black_assert(black::sat::solver::backend_exists(backend));
+
+    if(
+      !black::sat::solver::backend_has_feature(
+        backend, black::sat::feature::smt
+      )
+    ) {
+      io::errorln(
+        "{}: the `{}` backend does not support "
+        "first-order formulas, required to encode HS formulas",
+        cli::command_name, backend
+      ); // LCOV_EXCL_LINE
+      quit(status_code::failure);
+    }
+
+    if(
+      !black::sat::solver::backend_has_feature(
+        backend, black::sat::feature::quantifiers
+      )
+    ) {
+      io::errorln(
+        "{}: the `{}` backend does not support "
+        "quantified first-order formulas, required to encode HS formulas",
+        cli::command_name, backend
+      ); // LCOV_EXCL_LINE
+      quit(status_code::failure);
+    }
+
+    if(cli::print_model) {
+      command_line_error(
+        "model extraction is not supported (yet) for HS formulas."
+      );
+      quit(status_code::command_line_error);
+    }
+
+    if(cli::unsat_core) {
+      command_line_error(
+        "unsat cores extraction is not supported (yet) for HS formulas."
+      );
+      quit(status_code::command_line_error);
+    }
+
+    black::solver slv;
+
+    slv.set_sat_backend(backend);
+
+    if(!cli::debug.empty())
+      slv.set_tracer(&trace);
+
+    size_t bound = 
+      cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
+    black::tribool res = black::tribool::undef;
+    
+    if(cli::validity) 
+      res = slv.is_valid(f, bound);
+    else
+      res = slv.solve(f, bound);
+
+    output(res, slv, f, std::nullopt);
 
     return 0;
   }
 
   static 
-  void relevant_props(formula f, std::unordered_set<proposition> &props) 
-  {
+  void relevant_props(
+    logic::formula<logic::Everything> f, 
+    std::unordered_set<proposition> &props
+  ) {
     using namespace black;
 
     logic::for_each_child(f, overloaded {
@@ -249,7 +343,8 @@ namespace black::frontend {
 
   static
   void readable(
-    tribool result, solver &solver, formula f, std::optional<formula> muc
+    tribool result, solver &solver, logic::formula<logic::Everything> f, 
+    std::optional<formula> muc
   )
   {
     if(result == tribool::undef) {
@@ -319,7 +414,8 @@ namespace black::frontend {
 
   static
   void json(
-    tribool result, solver &solver, formula f, std::optional<formula> muc
+    tribool result, solver &solver, logic::formula<logic::Everything> f, 
+    std::optional<formula> muc
   ) {
 
     std::string result_str[] = { 
@@ -387,7 +483,8 @@ namespace black::frontend {
   }
 
   void output(
-    tribool result, solver &solver, formula f, std::optional<formula> muc
+    tribool result, solver &solver, logic::formula<logic::Everything> f, 
+    std::optional<formula> muc
   ) {
     if(cli::output_format == "json")
       return json(result, solver, f, muc);

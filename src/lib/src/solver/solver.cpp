@@ -27,6 +27,7 @@
 #include <black/support/range.hpp>
 #include <black/solver/solver.hpp>
 #include <black/solver/encoding.hpp>
+#include <black/solver/hs.hpp>
 #include <black/sat/solver.hpp>
 
 #include <numeric>
@@ -86,12 +87,29 @@ namespace black_internal::solver
     return _data->solve(xi, f, finite, k_max, semi_decision);
   }
 
+  tribool solver::solve(logic::formula<logic::HS> f, size_t k_max) {
+    scope xi{*f.sigma()};
+
+    auto encoded = hs::encode(xi, f);
+
+    return solve(xi, encoded, /* finite =*/true, k_max, /*semi =*/true);
+  }
+
   
   tribool solver::is_valid(
     scope const& xi, logic::formula<logic::LTLPFO> f, 
     bool finite, size_t k_max, bool semi_decision
   ) {
     tribool res = _data->solve(xi, !f, finite, k_max, semi_decision);
+    if(res == true)
+      return false;
+    if(res == false)
+      return true;
+    return tribool::undef;
+  }
+
+  tribool solver::is_valid(logic::formula<logic::HS> f, size_t k_max) {
+    tribool res = solve(!f, k_max);
     if(res == true)
       return false;
     if(res == false)

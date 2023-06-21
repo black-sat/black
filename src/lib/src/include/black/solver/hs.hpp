@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2021 Nicola Gigante
+// (C) 2023 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,39 +21,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_PRETTY_PRINT_HPP
-#define BLACK_LOGIC_PRETTY_PRINT_HPP
+#ifndef BLACK_SOLVER_HS_HPP
+#define BLACK_SOLVER_HS_HPP
 
-#include <black/support/common.hpp>
 #include <black/logic/logic.hpp>
 
-#include <string>
+namespace black_internal::hs {
+  
+  namespace logic = black::logic;
 
-namespace black_internal::logic
-{
-  
-  BLACK_EXPORT
-  std::string to_string(formula<Everything> f);
-  
-  BLACK_EXPORT
-  std::string to_string(term<Everything> t);
-  
-  BLACK_EXPORT
-  std::string to_string(symbol<Everything> t);
-  
-  BLACK_EXPORT
-  std::string to_string(number<Everything> t);
-  
-  BLACK_EXPORT
-  std::string to_string(declaration t);
-  
-  BLACK_EXPORT
-  std::string to_string(sort s);
-
-  BLACK_EXPORT
-  std::string to_smtlib2(formula<FO> f, scope const& xi);
+  logic::formula<logic::LTLFO> encode(
+    logic::scope &xi, logic::formula<logic::HS> f
+  );
 
 }
 
-#endif // BLACK_LOGIC_PRETTY_PRINT_HPP
-
+#endif // BLACK_SOLVER_HS_HPP
