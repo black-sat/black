@@ -286,8 +286,16 @@ namespace black::frontend {
     if(!cli::debug.empty())
       slv.set_tracer(&trace);
 
-    size_t bound = 
-      cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
+    if(!cli::bound) {
+      command_line_error(
+        "the -k option is mandatory for HS formulas."
+      );
+      quit(status_code::command_line_error);
+    }
+
+    black_assert(cli::bound);
+
+    size_t bound = *cli::bound;
     black::tribool res = black::tribool::undef;
     
     if(cli::validity) 

@@ -23,6 +23,7 @@
 
 #include <black/solver/hs.hpp>
 #include <black/logic/prettyprint.hpp>
+#include <black/support/range.hpp>
 
 #include <tsl/hopscotch_set.h>
 
@@ -41,7 +42,7 @@ namespace black_internal::hs {
   }
 
   static 
-  logic::formula<logic::FO> abstract(formula f, variable x, variable y) {
+  logic::formula<logic::FO> abstract(formula f, size_t x, size_t y) {
     alphabet &sigma = *f.sigma();
 
     return f.match(
@@ -110,24 +111,26 @@ namespace black_internal::hs {
     return std::vector<proposition>(begin(result), end(result));
   }
 
-  static logic::formula<logic::FO> beta(variable x, variable y) {
-    alphabet &sigma = *x.sigma();
+  // static logic::formula<logic::FO> beta(variable x, variable y) {
+  //   alphabet &sigma = *x.sigma();
 
-    auto m = sigma.variable("min");
-    auto M = sigma.variable("Max");
+  //   auto m = sigma.variable("min");
+  //   auto M = sigma.variable("Max");
 
-    return m <= x && x < y && y <= M;
-  }
+  //   return m <= x && x < y && y <= M;
+  // }
 
-  static logic::formula<logic::FO> gamma(interval_op op) {
-    alphabet &sigma = *op.sigma();
+  static bool gamma(
+    interval_op op, size_t x, size_t y, size_t w, size_t z
+  ) {
+    //alphabet &sigma = *op.sigma();
 
-    auto x = sigma.variable("x");
-    auto y = sigma.variable("y");
-    auto w = sigma.variable("w");
-    auto z = sigma.variable("z");
+    // auto x = sigma.variable("x");
+    // auto y = sigma.variable("y");
+    // auto w = sigma.variable("w");
+    // auto z = sigma.variable("z");
 
-    return beta(x, y) && beta(w, z) && op.match(
+    return op.match(
       [&](after)        { return y == w; },
       [&](before)       { return x == z; },
       [&](later)        { return y < w; },
@@ -143,7 +146,7 @@ namespace black_internal::hs {
     );
   }
 
-  logic::formula<logic::LTLFO> encode(logic::scope &xi, formula f) 
+  logic::formula<logic::LTLFO> encode(logic::scope &xi, formula f, size_t k) 
   {
     alphabet &sigma = *f.sigma();
     //auto e = sigma.proposition("e");
@@ -166,51 +169,68 @@ namespace black_internal::hs {
       xi.declare(pred, {Int, Int}, scope::rigid);
     }
 
-    auto m = sigma.variable("min");
-    auto M = sigma.variable("Max");
-    auto a = sigma.variable("a");
-    auto b = sigma.variable("b");
+    // auto m = sigma.variable("min");
+    // auto M = sigma.variable("Max");
+    // auto a = sigma.variable("a");
+    // auto b = sigma.variable("b");
 
-    xi.declare(m, Int, scope::rigid);
-    xi.declare(M, Int, scope::rigid);
-    xi.declare(a, Int, scope::rigid);
-    xi.declare(b, Int, scope::rigid);
+    // xi.declare(m, Int, scope::rigid);
+    // xi.declare(M, Int, scope::rigid);
+    // xi.declare(a, Int, scope::rigid);
+    // xi.declare(b, Int, scope::rigid);
 
-    auto x = sigma.variable("x");
-    auto y = sigma.variable("y");
-    auto w = sigma.variable("w");
-    auto z = sigma.variable("z");
+    // auto x = sigma.variable("x");
+    // auto y = sigma.variable("y");
+    // auto w = sigma.variable("w");
+    // auto z = sigma.variable("z");
 
     using ltlfo = logic::formula<logic::LTLFO>;
+    using black::range;
 
     auto unravel = big_and(sigma, ops, [&](auto op) -> ltlfo {
       if(op.existential())
-        return logic::forall(
-          {x[Int], y[Int]},
-          logic::implies(
-            beta(x, y) && abstract(op)(x, y),
-            X(
-              logic::exists({w[Int], z[Int]}, 
-                gamma(op) && abstract(op.argument(), w, z)
+        return big_and(sigma, range(0, 2 * k + 1), [&](size_t x) -> ltlfo {
+          return big_and(sigma, range(x + 1, 2 * k + 1), [&](size_t y) -> ltlfo{
+            return logic::iff(
+              abstract(op)(x, y),
+              X(
+                big_or(sigma, range(0, 2 * k + 1), [&](size_t w) -> ltlfo {
+                  return big_or(sigma, range(w + 1, 2 * k + 1), 
+                    [&](size_t z) -> ltlfo {
+                      if(gamma(op, x, y, w, z))
+                        return abstract(op.argument(), w, z);
+                      return sigma.bottom();
+                    });
+                })
               )
-            )
-          )
-        );
+            );  
+          });
+        });
       else
-        return logic::forall(
-          {x[Int], y[Int]},
-          logic::implies(
-            beta(x, y) && abstract(op)(x, y),
-            wX(
-              logic::forall({w[Int], z[Int]},
-                logic::implies(gamma(op), abstract(op.argument(), w, z))
+        return big_and(sigma, range(0, 2 * k + 1), [&](size_t x) -> ltlfo {
+          return big_and(sigma, range(x + 1, 2 * k + 1), [&](size_t y) -> ltlfo{
+            return logic::iff(
+              abstract(op)(x, y),
+              wX(
+                big_and(sigma, range(0, 2 * k + 1), [&](size_t w) -> ltlfo {
+                  return big_and(sigma, range(w + 1, 2 * k + 1), 
+                    [&](size_t z) -> ltlfo {
+                      if(gamma(op, x, y, w, z))
+                        return abstract(op.argument(), w, z);
+                      return sigma.top();
+                    });
+                })
               )
-            )
-          )
-        );
+            );
+          });
+        });
     });
 
-    return beta(a, b) && abstract(f, a, b) && G(unravel);
+    return G(unravel) && big_or(sigma, range(0, 2 * k + 1), [&](auto a) {
+      return big_or(sigma, range(a + 1, 2 * k + 1), [&](auto b) {
+        return abstract(f, a, b);
+      });
+    });
   }
 
 }

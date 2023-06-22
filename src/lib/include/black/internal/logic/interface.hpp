@@ -211,12 +211,12 @@ namespace black_internal::logic {
 
   template<std::integral T>
   constant<wrapped_int> wrap_term_op_arg(alphabet *sigma, T t) {
-    return constant{sigma->integer(int64_t{t})};
+    return constant{sigma->integer(static_cast<int64_t>(t))};
   }
 
   template<std::floating_point T>
   constant<wrapped_real> wrap_term_op_arg(alphabet *sigma, T t) { 
-    return constant{sigma->real(double{t})};
+    return constant{sigma->real(static_cast<double>(t))};
   }
 
   //

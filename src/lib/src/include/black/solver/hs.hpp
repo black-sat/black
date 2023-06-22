@@ -29,7 +29,9 @@
 namespace black_internal::hs {
   
   black::logic::formula<black::logic::LTLFO> encode(
-    black::logic::scope &xi, black::logic::formula<black::logic::HS> f
+    black::logic::scope &xi, 
+    black::logic::formula<black::logic::HS> f, 
+    size_t k
   );
 
 }

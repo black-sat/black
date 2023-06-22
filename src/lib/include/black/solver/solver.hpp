@@ -84,10 +84,7 @@ namespace black_internal::solver {
       //
       // Alternative overload for `solve` but for HS formulas
       //
-      tribool solve(
-        logic::formula<logic::HS> f,
-        size_t k_max = std::numeric_limits<size_t>::max()
-      );
+      tribool solve(logic::formula<logic::HS> f, size_t k_max);
 
       //
       // Same as `solve` but for validity. The arguments are the same.
@@ -103,10 +100,7 @@ namespace black_internal::solver {
       //
       // Same as above, for HS formulas
       //
-      tribool is_valid(
-        logic::formula<logic::HS> f,
-        size_t k_max = std::numeric_limits<size_t>::max()
-      );
+      tribool is_valid(logic::formula<logic::HS> f, size_t k_max);
 
       // Returns the model of the formula, if the last call to solve() 
       // returned true

@@ -91,7 +91,7 @@ namespace black_internal::solver
   tribool solver::solve(logic::formula<logic::HS> f, size_t k_max) {
     scope xi{*f.sigma()};
 
-    auto encoded = hs::encode(xi, f);
+    auto encoded = hs::encode(xi, f, k_max);
 
     std::cerr << "encoded HS formula: " << to_string(encoded) << "\n";
 
