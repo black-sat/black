@@ -20,7 +20,7 @@ def is_number(s):
 
 
 def main(argv):
-    parser = argparse.ArgumentParser(description='Parser for make-survival-plot.py')
+    parser = argparse.ArgumentParser(description='Parser for make-cactus-plot.py')
     parser.add_argument('datafile', metavar='datafile', 
                         nargs='?', default='_error_',
                         help='Name of the data file')
@@ -69,7 +69,7 @@ def main(argv):
     strfamily = ''
     if args.family:
         strfamily = args.family + "."
-    img_path_name = "survivalplot." + strfamily + datafile_name.replace(".csv",".pdf").replace(".dat",".pdf")
+    img_path_name = "cactusplot." + strfamily + datafile_name.replace(".csv",".pdf").replace(".dat",".pdf")
     # number of benchmarks
     sat_total_bench_counter = 0
     unsat_total_bench_counter = 0
@@ -133,7 +133,7 @@ def main(argv):
 
     # if we don't want the percentage
     shared_y_axis = True
-    y_axis_label = "Percentages of Completions (%)"
+    x_axis_label = lambda x: f'Percentages of {x} Completions (%)'
     sat_total = sat_total_bench_counter
     unsat_total = unsat_total_bench_counter
     both_total = both_total_bench_counter
@@ -142,7 +142,7 @@ def main(argv):
         unsat_total_bench_counter = 1
         both_total_bench_counter = 1
         shared_y_axis = False
-        y_axis_label = "Number of instances solved"
+        x_axis_label = lambda x: f'Number of {x} instances solved'
 
     # create the instants
     instants = []
@@ -189,7 +189,7 @@ def main(argv):
             both_toolspercent[toolname].append(percentage)
 
 
-    ### Create the Survival Plot
+    ### Create the Cactus Plot
     fig = make_subplots(
         rows=1, 
         cols=3 if args.both else 2,
@@ -201,8 +201,8 @@ def main(argv):
     counter = 0
     for toolname in toolsnames:
         fig.add_trace(go.Scatter(
-                      x=instants[1:], 
-                      y=sat_toolspercent[toolname][1:],
+                      y=instants[1:],
+                      x=sat_toolspercent[toolname][1:],
                       mode='lines',
                       line=dict(
                           color=PLOTLY_COLORS[counter]
@@ -212,8 +212,8 @@ def main(argv):
                       ),
             row=1,col=1)
         fig.add_trace(go.Scatter(
-                      x=instants[1:], 
-                      y=unsat_toolspercent[toolname][1:],
+                      y=instants[1:],
+                      x=unsat_toolspercent[toolname][1:],
                       mode='lines',
                       line=dict(
                           color=PLOTLY_COLORS[counter]
@@ -224,8 +224,8 @@ def main(argv):
             row=1,col=2)
         if args.both:
             fig.add_trace(go.Scatter(
-                      x=instants[1:], 
-                      y=both_toolspercent[toolname][1:],
+                      y=instants[1:],
+                      x=both_toolspercent[toolname][1:],
                       mode='lines',
                       line=dict(
                           color=PLOTLY_COLORS[counter]
@@ -237,7 +237,7 @@ def main(argv):
         counter += 1
     
     if not args.usepercentage:
-        fig.add_hline(y=sat_total, row=1, col=1,
+        fig.add_vline(x=sat_total, row=1, col=1,
             annotation_text=str(sat_total),
             annotation_position="top left",
             #annotation_font_size=20,
@@ -245,7 +245,7 @@ def main(argv):
             line_color="grey",
             line_dash="dot",
             )
-        fig.add_hline(y=unsat_total, row=1, col=2,
+        fig.add_vline(x=unsat_total, row=1, col=2,
             annotation_text=str(unsat_total),
             annotation_position="top left",
             annotation_font_color="grey",
@@ -253,7 +253,7 @@ def main(argv):
             line_dash="dot",
             )
         if args.both:
-            fig.add_hline(y=both_total, row=1, col=3,
+            fig.add_vline(x=both_total, row=1, col=3,
                 annotation_text=str(both_total),
                 annotation_position="top left",
                 annotation_font_color="grey",
@@ -262,56 +262,56 @@ def main(argv):
                 )
 
     # labels
-    fig.update_xaxes(
-        title_text="Time for SAT (sec.)",
+    fig.update_yaxes(
+        title_text="Time (sec.)",
         row=1,
         col=1,
         type="log",
         dtick=1,
         rangemode="tozero",
         )
-    fig.update_yaxes(
-        title_text=y_axis_label,
+    fig.update_xaxes(
+        title_text=x_axis_label('SAT'),
         row=1,
         col=1,
-        scaleanchor = "x", 
-        scaleratio = 1, # same scale of x-axis
+        scaleanchor="y",
+        scaleratio=1,  # same scale of y-axis
         rangemode="tozero",
         )
-    fig.update_xaxes(
-        title_text="Time for UNSAT (sec.)",
+    fig.update_yaxes(
+        title_text="",  # share label of y-axis
         row=1,
         col=2,
         type="log",
         dtick=1,
         rangemode="tozero",
         )
-    fig.update_yaxes(
-        title_text="", #share label of y-axis
+    fig.update_xaxes(
+        title_text=x_axis_label('UNSAT'),
         row=1,
         col=2,
-        scaleanchor = "x", 
-        scaleratio = 1, # same scale of x-axis
+        scaleanchor="y",
+        scaleratio=1,  # same scale of y-axis
         rangemode="tozero",
         )
     if args.both:
-        fig.update_xaxes(
-            title_text="Time for both (sec.)",
+        fig.update_yaxes(
+            title_text="",  # share label of y-axis
             row=1,
             col=3,
             type="log",
             dtick=1,
             rangemode="tozero",
             )
-        fig.update_yaxes(
-            title_text="", #share label of y-axis
+        fig.update_xaxes(
+            title_text=x_axis_label('all'),
             row=1,
             col=3,
-            scaleanchor = "x", 
-            scaleratio = 1, # same scale of x-axis
+            scaleanchor="y",
+            scaleratio=1,  # same scale of y-axis
             rangemode="tozero",
             )
-    
+
     # Legend
     fig.update_layout(
         legend=dict(
