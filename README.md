@@ -44,6 +44,6 @@ Download the self-contained ZIP archive.
 
 [Doc]: https://www.black-sat.org
 [brew]: https://brew.sh
-[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.10.4/black-sat-0.10.4-1.x86_64.deb
-[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.10.4/black-sat-0.10.4-1.x86_64.rpm
-[pkg.win]: https://github.com/black-sat/black/releases/download/v0.10.4/black-0.10.4-win-x64.zip
+[pkg.deb]: https://github.com/black-sat/black/releases/download/v0.10.4/black-sat-0.10.5-1.x86_64.deb
+[pkg.rpm]: https://github.com/black-sat/black/releases/download/v0.10.4/black-sat-0.10.5-1.x86_64.rpm
+[pkg.win]: https://github.com/black-sat/black/releases/download/v0.10.4/black-0.10.5-win-x64.zip
