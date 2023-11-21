@@ -382,17 +382,25 @@ namespace black_internal::encoder
       [&](to_real<LTLPFO>, auto arg) {
         return to_real(stepped(arg, k));
       },
-      [&](next<LTLPFO>, auto arg) {
-        return ground(lookahead_t{arg, req_t::future, req_t::strong}, k);
+      [&](next<LTLPFO>, term<LTLPFO> arg) {
+        return ground(lookahead_t{
+          *arg.to<variable>(), req_t::future, req_t::strong
+        }, k);
       },
-      [&](wnext<LTLPFO>, auto arg) {
-        return ground(lookahead_t{arg, req_t::future, req_t::weak}, k);
+      [&](wnext<LTLPFO>, term<LTLPFO> arg) {
+        return ground(lookahead_t{
+          *arg.to<variable>(), req_t::future, req_t::weak
+        }, k);
       },
-      [&](prev<LTLPFO>, auto arg) {
-        return ground(lookahead_t{arg, req_t::past, req_t::strong}, k);
+      [&](prev<LTLPFO>, term<LTLPFO> arg) {
+        return ground(lookahead_t{
+          *arg.to<variable>(), req_t::past, req_t::strong
+        }, k);
       },
-      [&](wprev<LTLPFO>, auto arg) {
-        return ground(lookahead_t{arg, req_t::past, req_t::weak}, k);
+      [&](wprev<LTLPFO>, term<LTLPFO> arg) {
+        return ground(lookahead_t{
+          *arg.to<variable>(), req_t::past, req_t::weak
+        }, k);
       },
       [&](negative<LTLPFO>, auto arg) {
         return negative<FO>(stepped(arg, k));
@@ -510,7 +518,11 @@ namespace black_internal::encoder
         (lh.strength == req_t::weak ? "__wnext" : "__next") :
         (lh.strength == req_t::weak ? "__wprev" : "__prev");
 
-    return _sigma->variable(std::tuple{sv, lh.target, k});
+    variable g = _sigma->variable(std::tuple{sv, lh.target, k});
+    if(_xi.sort(lh.target) && !_xi.sort(g))
+      _global_xi->declare(g, *_xi.sort(lh.target), scope::rigid);
+
+    return g;
   }
 
   formula<FO> encoder::ground(req_t req, size_t k) {
@@ -734,17 +746,17 @@ namespace black_internal::encoder
     
     std::optional<lookahead_t> lh;
     t.match(
-      [&](next<LTLPFO>, auto arg) { 
-        lh = lookahead_t{arg, req_t::future, req_t::strong}; 
+      [&](next<LTLPFO>, term<LTLPFO> arg) { 
+        lh = lookahead_t{*arg.to<variable>(), req_t::future, req_t::strong}; 
       },
-      [&](wnext<LTLPFO>, auto arg) { 
-        lh = lookahead_t{arg, req_t::future, req_t::weak}; 
+      [&](wnext<LTLPFO>, term<LTLPFO> arg) { 
+        lh = lookahead_t{*arg.to<variable>(), req_t::future, req_t::weak}; 
       },
-      [&](prev<LTLPFO>, auto arg) { 
-        lh = lookahead_t{arg, req_t::past, req_t::strong}; 
+      [&](prev<LTLPFO>, term<LTLPFO> arg) { 
+        lh = lookahead_t{*arg.to<variable>(), req_t::past, req_t::strong}; 
       },
-      [&](wprev<LTLPFO>, auto arg) { 
-        lh = lookahead_t{arg, req_t::past, req_t::weak}; 
+      [&](wprev<LTLPFO>, term<LTLPFO> arg) { 
+        lh = lookahead_t{*arg.to<variable>(), req_t::past, req_t::weak}; 
       },
       [](otherwise) { }
     );

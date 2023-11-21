@@ -73,7 +73,7 @@ namespace black_internal::encoder {
   struct lookahead_t {
     bool operator==(lookahead_t const&) const = default;
 
-    term<LTLPFO> target;
+    variable target;
     req_t::type_t type;
     req_t::strength_t strength;
   };
