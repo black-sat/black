@@ -40,23 +40,28 @@ namespace black_internal::encoder {
   struct req_t {
     enum type_t : uint8_t {
       future,
-      past,
-      atom
+      past
     };
 
     enum strength_t : uint8_t {
-      none,
       weak,
       strong
     };
+
+    friend strength_t operator|(strength_t s1, strength_t s2) {
+      return strength_t(std::max(uint8_t(s1), uint8_t(s2)));
+    }
+
+    friend strength_t operator!(strength_t s) {
+      return s == req_t::weak ? req_t::strong : req_t::weak;
+    }
 
     bool operator==(req_t const&) const = default;
 
     formula<LTLPFO> target;
     std::vector<var_decl> signature;
     type_t type;
-    strength_t future_strength;
-    strength_t past_strength;
+    strength_t strength;
   };
 
   formula<LTLPFO> to_formula(req_t req);
@@ -64,6 +69,14 @@ namespace black_internal::encoder {
   inline std::string to_string(req_t req) {
     return "{" + to_string(to_formula(req)) + "}"; 
   }
+
+  struct lookahead_t {
+    bool operator==(lookahead_t const&) const = default;
+
+    variable target;
+    req_t::type_t type;
+    req_t::strength_t strength;
+  };
 
   //
   // Functions that implement the SAT encoding. 
@@ -115,6 +128,10 @@ namespace black_internal::encoder {
     // Make the stepped version of a comparison
     comparison<FO> stepped(comparison<LTLPFO> a, size_t k);
 
+    // Make the last-state-wrapped version of a formula
+    // (only atoms, equalities and comparisons)
+    formula<FO> wrapped(formula<LTLPFO> a, size_t k);
+
     // Put a formula in negated normal form
     formula<LTLPFO> to_nnf(formula<LTLPFO> f);
 
@@ -162,22 +179,31 @@ namespace black_internal::encoder {
     // X/Y/Z-requests from the formula's closure
     std::vector<req_t> _requests;
 
+    // state variables for lookaheads
+    std::vector<lookahead_t> _lookaheads;
+
     // cache to memoize to_nnf() calls
     tsl::hopscotch_map<formula<LTLPFO>, formula<LTLPFO>> _nnf_cache;
 
+    proposition not_last_prop(size_t);
+    proposition not_first_prop(size_t);
+    variable ground(lookahead_t lh, size_t k);
     formula<FO> ground(req_t, size_t);
     formula<FO> forall(std::vector<var_decl> env, formula<FO> f);
 
     void _collect_requests(formula<LTLPFO> f, std::vector<var_decl> env = {});
+    void _collect_lookaheads(term<LTLPFO> t);
     req_t mk_req(tomorrow<LTLPFO>, std::vector<var_decl>);
     req_t mk_req(w_tomorrow<LTLPFO>, std::vector<var_decl>);
     req_t mk_req(yesterday<LTLPFO>, std::vector<var_decl>);
     req_t mk_req(w_yesterday<LTLPFO>, std::vector<var_decl>);
-    std::optional<req_t> mk_req(atom<LTLPFO>, std::vector<var_decl>);
-    std::optional<req_t> mk_req(equality<LTLPFO>, std::vector<var_decl>);
-    std::optional<req_t> mk_req(comparison<LTLPFO>, std::vector<var_decl>);
-    req_t::strength_t future_strength(formula<LTLPFO> a);
-    req_t::strength_t past_strength(formula<LTLPFO> a);
+    
+    struct formula_strength_t {
+      std::optional<req_t::strength_t> future;
+      std::optional<req_t::strength_t> past;
+    };
+    
+    formula_strength_t strength(formula<LTLPFO> f);
     
     void error(std::string const&msg);
 
@@ -196,8 +222,7 @@ namespace std {
       
       size_t h = std::hash<logic::formula<logic::LTLPFO>>{}(r.target);
       h = hash_combine(h, std::hash<req_t::type_t>{}(r.type));
-      h = hash_combine(h, std::hash<req_t::strength_t>{}(r.future_strength));
-      h = hash_combine(h, std::hash<req_t::strength_t>{}(r.past_strength));
+      h = hash_combine(h, std::hash<req_t::strength_t>{}(r.strength));
       
       for(auto d : r.signature)
         h = hash_combine(h, d.hash());

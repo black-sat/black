@@ -51,18 +51,18 @@ namespace black::frontend::io
   // io::print(format, args...)
   //
   template<typename... Args>
-  void print(std::string_view f, Args&&... args)
+  void print(std::string_view f, Args const&... args)
   {
-    fmt::vprint(stdout, f, fmt::make_format_args(std::forward<Args>(args)...));
+    fmt::vprint(stdout, f, fmt::make_format_args(args...));
   }
 
   //
   // println() is just as print(), but prints a newline
   //
   template<typename... Args>
-  void println(std::string_view fmt, Args&&... args)
+  void println(std::string_view fmt, Args const&... args)
   {
-    print(fmt, std::forward<Args>(args)...);
+    print(fmt, args...);
     print("\n");
   }
 
@@ -70,18 +70,18 @@ namespace black::frontend::io
   // io::error(format, args...)
   //
   template<typename... Args>
-  void error(std::string_view f, Args&&... args)
+  void error(std::string_view f, Args const&... args)
   {
-    fmt::vprint(stderr, f, fmt::make_format_args(std::forward<Args>(args)...));
+    fmt::vprint(stderr, f, fmt::make_format_args(args...));
   }
 
   //
   // io:errorln() is just as error(), but prints a newline
   //
   template<typename... Args>
-  void errorln(std::string_view fmt, Args&&... args)
+  void errorln(std::string_view fmt, Args const&... args)
   {
-    error(fmt, std::forward<Args>(args)...);
+    error(fmt, args...);
     error("\n");
   }
 
@@ -94,10 +94,10 @@ namespace black::frontend::io
   //
   template<typename... Args>
   [[ noreturn ]]
-  void fatal(status_code v, std::string_view fmt, Args&&... args) // LCOV_EXCL_LINE
+  void fatal(status_code v, std::string_view fmt, Args const&... args) // LCOV_EXCL_LINE
   {
     error("{}: ", cli::command_name); // LCOV_EXCL_LINE
-    errorln(fmt, std::forward<Args>(args)...); // LCOV_EXCL_LINE
+    errorln(fmt, args...); // LCOV_EXCL_LINE
 
     quit(v); // LCOV_EXCL_LINE
   }
