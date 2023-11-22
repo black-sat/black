@@ -1818,12 +1818,12 @@ namespace black_internal::logic {
   // of the fields of a storage, specialized later.
   //
   template<storage_type>
-  inline constexpr auto storage_fields_v = nullptr;
+  struct storage_fields {
+    static constexpr auto value = nullptr;
+  };
 
   template<storage_type Storage>
-  struct storage_fields {
-    static constexpr auto value = storage_fields_v<Storage>;
-  };
+  inline constexpr auto storage_fields_v = storage_fields<Storage>::value;
 
   //
   // Now we can actually get the fields.

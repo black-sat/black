@@ -786,8 +786,8 @@ namespace black_internal::logic
   //
   #define declare_storage_kind(Base, Storage) \
     template<> \
-    inline constexpr std::string_view \
-    storage_fields_v<storage_type::Storage>[] = {
+    struct storage_fields<storage_type::Storage> { \
+      static constexpr std::string_view value[] = {
   
   #define declare_field(Base, Storage, Type, Field) #Field, 
   #define declare_fields(Base, Storage, Type, Fields) #Fields, 
@@ -798,6 +798,7 @@ namespace black_internal::logic
     "__THIS_SHOULD_NOT_SHOW_UP_ANYWHERE__",
 
   #define end_storage_kind(Base, Storage) \
+      }; \
     };
 
   #include <black/internal/logic/hierarchy.hpp>

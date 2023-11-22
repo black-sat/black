@@ -184,6 +184,8 @@ namespace black_internal::mathsat
   void mathsat::clear() {
     msat_reset_env(_data->env);
   }
+  
+  void mathsat::interrupt() { }
 
   msat_term mathsat::_mathsat_t::to_mathsat(formula f) 
   {

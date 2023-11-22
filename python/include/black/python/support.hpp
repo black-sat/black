@@ -25,6 +25,7 @@
 #define BLACK_PYTHON_SUPPORT_HPP_
 
 #include <black/logic/logic.hpp>
+#include <black/support/tribool.hpp>
 
 #include <pybind11/pybind11.h>
 
@@ -67,6 +68,15 @@ namespace pyblack
     if(!h)
       return std::nullopt;
     return std::optional{universal_variant_t{specialize(*h)}};
+  }
+
+  inline std::variant<bool, py::none> tribool_to_py(black::tribool t) {
+    if(t == true)
+      return true;
+    if(t == false)
+      return false;
+
+    return py::none{};
   }
 
 }

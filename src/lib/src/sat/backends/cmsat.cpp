@@ -104,6 +104,8 @@ namespace black_internal::cmsat
     _data = std::make_unique<_cmsat_t>();
   }
 
+  void cmsat::interrupt() { }
+
   std::optional<std::string> cmsat::license() const
   {
     return

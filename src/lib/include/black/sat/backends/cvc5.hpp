@@ -44,6 +44,7 @@ namespace black_internal::cvc5
     virtual tribool value(equality a) const override;
     virtual tribool value(comparison a) const override;
     virtual void clear() override;
+    virtual void interrupt() override;
     virtual std::optional<std::string> license() const override;
 
   private:

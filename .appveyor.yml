@@ -69,6 +69,7 @@ install:
   - cmake -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DBUILD_TESTING=OFF ..
   - cmake --build .
   - cmake --build . --target install
+  - python -m pip install pybind11[global]
 
 platform: x64
 
@@ -83,12 +84,14 @@ build_script:
     -DZ3_LIBRARY=C:\Projects\z3\bin\libz3.lib \
     -DZ3_INCLUDE_DIR=C:\Projects\z3\include ..
   - cmake --build .
+  - cmake --build . --target pyblack
   - copy C:\Projects\z3\bin\libz3.dll .
   - mkdir C:\BLACK
   - cd C:\
   - copy C:\Projects\black\build\src\lib\black.lib C:\BLACK
   - copy C:\Projects\black\build\black.dll C:\BLACK
   - copy C:\Projects\black\build\black.exe C:\BLACK
+  - copy C:\Projects\black\build\python\black_sat.cp312-win_amd64.pyd C:\BLACK
   - xcopy C:\Projects\black\src\lib\include C:\BLACK\include\ /E /H
   - copy C:\Projects\z3\bin\libz3.dll C:\BLACK
   - 7z a -tzip black-win-x64.zip C:\BLACK

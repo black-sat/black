@@ -189,10 +189,18 @@ namespace black::frontend {
       cli::bound ? *cli::bound : std::numeric_limits<size_t>::max();
     black::tribool res = black::tribool::undef;
     
+    std::optional<std::chrono::seconds> timeout;
+    if(cli::timeout)
+      timeout = std::chrono::seconds(*cli::timeout);
+
     if(cli::validity) 
-      res = slv.is_valid(xi, *f, cli::finite, bound, cli::semi_decision);
+      res = slv.is_valid(
+        xi, *f, cli::finite, bound, timeout, cli::semi_decision
+      );
     else
-      res = slv.solve(xi, *f, cli::finite, bound, cli::semi_decision);
+      res = slv.solve(
+        xi, *f, cli::finite, bound, timeout, cli::semi_decision
+      );
 
     std::optional<formula> muc;
     if(res == false && cli::unsat_core) {

@@ -91,6 +91,10 @@ namespace black_internal::dimacs
     // clears the state of the solver
     virtual void clear() override = 0;
 
+    // interrupts the last call to is_sat() or is_sat_with(), 
+    // if supported by the backend
+    virtual void interrupt() override = 0;
+
     // License note for whatever third-party software lies under the hood
     virtual std::optional<std::string> license() const override = 0;
 

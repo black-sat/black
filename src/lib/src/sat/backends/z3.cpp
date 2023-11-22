@@ -36,6 +36,7 @@
 #include <optional>
 #include <string>
 #include <memory>
+#include <cstring>
 
 BLACK_REGISTER_SAT_BACKEND(z3, {
   black::sat::feature::smt, black::sat::feature::quantifiers
@@ -117,13 +118,19 @@ namespace black_internal::z3
     }
   }
   
-  [[noreturn]]
   static void error_handler(Z3_context c, Z3_error_code e) { // LCOV_EXCL_LINE
     using namespace z3_compat_wrap;
+    const char *errmsg = nullptr;
+    
     if constexpr (z3_is_old())
-      fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(e)); // LCOV_EXCL_LINE
+      errmsg = Z3_get_error_msg(e); // LCOV_EXCL_LINE
     else
-      fprintf(stderr, "Z3 error: %s\n", Z3_get_error_msg(c, e)); // LCOV_EXCL_LINE
+      errmsg = Z3_get_error_msg(c, e); // LCOV_EXCL_LINE
+    
+    if(strcmp(errmsg, "canceled") == 0)
+      return;
+    
+    fprintf(stderr, "Z3 error %d: %s\n", (int)e, errmsg);
     std::abort(); // LCOV_EXCL_LINE
   }
 
@@ -283,6 +290,10 @@ namespace black_internal::z3
 
   void z3::clear() { 
     Z3_solver_reset(_data->context, _data->solver);
+  }
+
+  void z3::interrupt() {
+    Z3_interrupt(_data->context);
   }
 
   void z3::_z3_t::upgrade_solver() {
