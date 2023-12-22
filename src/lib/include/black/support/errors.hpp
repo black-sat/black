@@ -32,9 +32,9 @@ namespace black::support::internal {
     std::string message;
 
     template<typename ...Args>
-    error_base(const char *format, Args&& ...args)
+    error_base(const char *format, Args const& ...args)
       : message{
-        fmt::vformat(format, fmt::make_format_args(std::forward<Args>(args)...))
+        fmt::vformat(format, fmt::make_format_args(args...))
       } { }
   };
 

@@ -30,7 +30,7 @@ as the error component of a :cpp:class:`result` object. This ensures they are al
 
          :param filename: the name of the file where the syntax error occurred.
             If `filename` is `std::nullopt`, the error came from some other
-            source instead of a file (*.e.g.* the standard input stream.
+            source instead of a file (*.e.g.* the standard input stream).
 
          :param line: the line where the syntax error occurred.
          :param col: the column where the syntax error occurred.
@@ -42,7 +42,7 @@ as the error component of a :cpp:class:`result` object. This ensures they are al
 
          The name of the file where the syntax error occurred. If `filename` is
          `std::nullopt`, the error came from some other source instead of a file
-         (*.e.g.* the standard input stream.
+         (*.e.g.* the standard input stream).
 
       .. cpp:member:: size_t line
 
