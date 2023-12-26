@@ -30,18 +30,13 @@
 
 using namespace black::support;
 
-struct test : black_sum_type(int, std::tuple<std::string, float>);
-
-struct nil { };
-
-template<typename T>
-struct list : black_rec_sum_type(nil, std::pair<T, list<T>>);
+using test = either<int, std::tuple<std::string, float>>;
 
 TEST_CASE("Match infrastructure") {
 
   test t = 21;
 
-  STATIC_REQUIRE(matchable<test>);
+  STATIC_REQUIRE(matchable<either<int, std::string>>);
   STATIC_REQUIRE(!matchable<int>);
 
   auto b = t.match(
@@ -59,7 +54,7 @@ TEST_CASE("Match infrastructure") {
 
 }
 
-TEST_CASE("Sum types") {
+TEST_CASE("Either type") {
   test t = 21;
 
   test t2 = t; // copy ctor
@@ -73,29 +68,4 @@ TEST_CASE("Sum types") {
   size_t h2 = hash(21);
 
   REQUIRE(h1 == h2);
-}
-
-TEST_CASE("Recursive sum types") {
-  using std::pair;
-
-  list<int> l = std::make_shared<std::pair<int, list<int>>>(
-    21, list<int>(std::make_shared<nil>())
-  );
-
-  list<int> l2 = std::make_shared<std::pair<int, list<int>>>(42, l);
-
-  std::vector<int> values;
-  std::function<void(list<int>)> f = [&](list<int> arg) {
-    arg.match(
-      [&](pair<int, list<int>> const *, auto head, auto tail) {
-        values.push_back(head);
-        f(tail);
-      },
-      [](nil const *) { }
-    );
-  };
-
-  f(l2);
-
-  REQUIRE(values == std::vector{42, 21});
 }

@@ -7,12 +7,12 @@ Exception types
 
    Base class for all the exception types thrown by BLACK.
 
-.. cpp:class:: unreachable_error : public exception
+.. cpp:class:: bad_unreachable : public exception
 
    Exception type thrown by :c:macro:`black_unreachable` in case of failure.
 
    :constructor:
-      .. cpp:function:: unreachable_error(const char *filename, size_t line) 
+      .. cpp:function:: bad_unreachable(const char *filename, size_t line) 
          
          :param filename: the name of the file of the 
             :c:macro:`black_unreachable` call.
@@ -28,12 +28,12 @@ Exception types
 
          :returns: the line of the :c:macro:`black_unreachable` call.
 
-.. cpp:class:: assert_error : public exception
+.. cpp:class:: bad_assert : public exception
 
    Exception type thrown by :c:macro:`black_assert` in case of failure.
 
    :constructor:
-      .. cpp:function:: assert_error( \
+      .. cpp:function:: bad_assert( \
             const char *filename, size_t line, const char *expression)
 
          :param filename: the name of the file of the failed   
@@ -59,20 +59,15 @@ Exception types
          :returns: a string representation of the asserted expression of the 
             failed :c:macro:`black_assert` call.
 
-.. cpp:type:: source_location
-
-   `using` declaration for `std::source_location` if available (with a  
-   compliant C++20 compiler), or a dummy type otherwise.
-
-.. cpp:class:: assume_error : public assert_error
+.. cpp:class:: bad_assumption : public bad_assert
 
    Exception type thrown by :c:macro:`black_assume` in case of failure.
 
    :constructor:
-      .. cpp:function:: assume_error( \
+      .. cpp:function:: bad_assumption( \
                const char *function,  \
                const char *filename, size_t line, \
-               source_location const& loc, \
+               std::source_location const& loc, \
                const char *expression, const char *message \
             )
          
@@ -84,8 +79,8 @@ Exception types
 
          :param line: the line of the failed :c:macro:`black_assert` call.
 
-         :param loc: :cpp:type:`source_location` of the failed `black_assume` 
-            call.
+         :param loc: :cpp:type:`std::source_location` of the failed 
+            `black_assume` call.
          
          :param expression: a string representation of the asserted expression 
             of the failed :c:macro:`black_assert` call.
@@ -103,18 +98,3 @@ Exception types
 
          :returns: the message associated with the failed
             :c:macro:`black_assume` call.
-
-.. cpp:class:: template<typename Error> bad_result_access : public exception
-
-   Exception type thrown by value access members of a :cpp:class:`result` 
-   object that contains an error.
-
-   :constructor: 
-      .. cpp:function:: bad_result_access(Error err)
-
-         :param err: the error contained in the :cpp:class:`result` object.
-
-   :members:
-      .. cpp:function:: Error const& error() const
-         
-         :returns: the error contained in the :cpp:class:`result` object.

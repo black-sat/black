@@ -187,7 +187,7 @@ namespace black::support::internal {
         return dispatch(
           *h.template to<Case>(), std::forward<Handlers>(handlers)...
         );
-      throw pattern_error();
+      throw bad_pattern();
     }
   };
 
@@ -200,21 +200,21 @@ namespace black::support::internal {
   };
 
   //
-  // Utility type to declare a simple union type from a list of alternatives
+  // Subclass of `std::variant` that supports the pattern matching interface
   //
   template<typename ...Cases>
-  struct sum_type : private std::variant<Cases...> {
+  struct either : private std::variant<Cases...> {
     using std::variant<Cases...>::variant;
 
     using alternatives = std::tuple<Cases...>;
-    static constexpr bool is_sum_type = true;
 
-    bool operator==(sum_type const&) const = default;
+    bool operator==(either const&) const = default;
 
     template<typename T>
+      requires (std::is_same_v<T, Cases> || ...)
     std::optional<T> to() const {
-      if(variant_is<T>(*this))
-        return variant_get<T>(*this);
+      if(std::holds_alternative<T>(*this))
+        return std::get<T>(*this);
       return {};
     }
 
@@ -225,59 +225,22 @@ namespace black::support::internal {
 
     template<typename ...Handlers>
     auto match(Handlers ...h) const {
-      return matcher<sum_type>::match(*this, h...);
+      return matcher<either>::match(*this, h...);
     }
-  };
-
-  template<typename ...Cases>
-  struct rec_sum_type
-  {
-    using alternatives = std::tuple<Cases const * ...> ;
-    static constexpr bool is_sum_type = true;
-
-    template<typename Case>
-      requires (std::is_same_v<std::remove_cvref_t<Case>, Cases> || ...)
-    rec_sum_type(std::shared_ptr<Case> const& c) : _data{c} { }
-
-    rec_sum_type(rec_sum_type const&) = default;
-    rec_sum_type(rec_sum_type &&) = default;
-    
-    rec_sum_type &operator=(rec_sum_type const&) = default;
-    rec_sum_type &operator=(rec_sum_type &&) = default;
-    
-    bool operator==(rec_sum_type const&other) const {
-      return _data == other._data;
-    }
-
-    template<
-      typename T, typename Base = std::remove_cvref_t<std::remove_pointer_t<T>>
-    >
-    std::optional<Base const*> to() const {
-      if(variant_is<std::shared_ptr<Base const>>(_data))
-        return variant_get<std::shared_ptr<Base const>>(_data)->get();
-      return {};
-    }
-
-    template<typename T>
-    bool is() const {
-      return to<T>().has_value();
-    }
-
-    template<typename ...Handlers>
-    auto match(Handlers ...h) const {
-      return matcher<rec_sum_type>::match(*this, h...);
-    }
-
-  private:
-    std::variant<std::shared_ptr<std::remove_cvref_t<Cases> const>...> _data;
   };
 
 }
 
-template<typename T>
-  requires requires { T::is_sum_type; }
-struct std::hash<T> {
-  size_t operator()(T const& v) const {
+namespace black::support {
+  using internal::matcher;
+  using internal::matchable;
+  using internal::otherwise;
+  using internal::either;
+}
+
+template<typename ...Cases>
+struct std::hash<::black::support::either<Cases...>> {
+  size_t operator()(::black::support::either<Cases...> const& v) const {
     return v.match(
       [](auto x) {
         return ::black::support::hash(x);
@@ -285,23 +248,5 @@ struct std::hash<T> {
     );
   }
 };
-
-#define black_sum_type(T1, ...) \
-  public black::support::sum_type<T1, __VA_ARGS__> { \
-    using black::support::sum_type<T1, __VA_ARGS__>::sum_type; \
-  }
-
-#define black_rec_sum_type(T1, ...) \
-  public black::support::rec_sum_type<T1, __VA_ARGS__> { \
-    using black::support::rec_sum_type<T1, __VA_ARGS__>::rec_sum_type; \
-  }
-
-namespace black::support {
-  using internal::matcher;
-  using internal::matchable;
-  using internal::otherwise;
-  using internal::sum_type;
-  using internal::rec_sum_type;
-}
 
 #endif // BLACK_SUPPORT_MATCH_HPP

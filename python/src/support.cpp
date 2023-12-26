@@ -39,13 +39,10 @@ namespace black::python {
     using namespace support;
     
     //
-    // Error types for use with `result<T,E>`
+    // Error types for use with `std::expected<T,E>`
     // 
     // These are not constructible from the Python side because often it does 
     // not make sense, but we expose properties to query the errors
-    //
-    // `error` and `result<T,E>` are matchable, so they are converted 
-    // dynamically to the right alternative by `to_python()`.
     //
     py::class_<syntax_error>(m, "SyntaxError")
       .def_readonly("filename", &syntax_error::filename)
@@ -63,7 +60,7 @@ namespace black::python {
     io_error_cls.def_readonly("filename", &io_error::filename);
     io_error_cls.def_readonly("op", &io_error::op);
     io_error_cls.def_property_readonly("error", [](io_error const&self) {
-      return strerror(self.error);
+      return strerror(self.err);
     });
     io_error_cls.def_readonly("message", &io_error::message);
 

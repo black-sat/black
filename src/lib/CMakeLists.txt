@@ -41,7 +41,7 @@ configure_file(
 #
 add_library (black ${LIB_SRC})
 
-target_link_libraries(black PUBLIC cereal tsl::hopscotch_map)
+target_link_libraries(black PUBLIC tsl::hopscotch_map)
 target_include_directories(black PUBLIC  
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>

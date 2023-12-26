@@ -10,13 +10,13 @@ Assertion macros
    Asserts that `Expr` must evaluate to `true`.
 
    :param Expr: `bool` expression that must evaluate to `true`.
-   :throws: :cpp:class:`assert_error` if `Expr` is `false`.
+   :throws: :cpp:class:`bad_assert` if `Expr` is `false`.
 
 .. c:macro:: black_unreachable()
 
    Specifies that the current line of code is unreachable.
 
-   :throws: :cpp:class:`unreachable_error`
+   :throws: :cpp:class:`bad_unreachable`
 
 .. c:macro:: black_assume(Expr, Loc, Message)
    
@@ -24,6 +24,6 @@ Assertion macros
    to `true`.
 
    :param Expr: `bool` expression that is assumed to be `true`
-   :param Loc: :cpp:type:`source_location` value of the function
+   :param Loc: :cpp:type:`std::source_location` value of the function
    :param Message: `const char *` message to show in case of failure
-   :throws: :cpp:class:`assume_error` in case of failure
+   :throws: :cpp:class:`bad_assumption` in case of failure

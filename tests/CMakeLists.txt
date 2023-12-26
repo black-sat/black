@@ -36,8 +36,6 @@ if(Catch2_FOUND)
     units/support/tribool.cpp
     units/support/hash.cpp
     units/support/match.cpp
-    units/support/serialize.cpp
-    units/support/range.cpp
     units/logic/logic.cpp
     units/logic/identifier.cpp
   )

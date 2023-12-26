@@ -50,8 +50,7 @@ namespace black::logic::internal {
     template<std::ranges::range R>
       requires std::is_constructible_v<label, std::ranges::range_value_t<R>>
     identifier(
-      R const& r, 
-      support::source_location loc = support::source_location::current()
+      R const& r, std::source_location loc = std::source_location::current()
     ) : _labels(begin(r), end(r)) { 
       black_assume(
         !_labels.empty(), loc, 
@@ -109,8 +108,7 @@ namespace black::logic::internal {
       requires 
         std::is_constructible_v<identifier, std::ranges::range_value_t<R>>
     path(
-      R const& r, 
-      support::source_location loc = support::source_location::current()
+      R const& r, std::source_location loc = std::source_location::current()
     ) { 
       black_assume(
         !std::empty(r), loc, 

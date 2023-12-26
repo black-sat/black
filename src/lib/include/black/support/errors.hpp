@@ -28,17 +28,17 @@
 
 namespace black::support::internal {
   
-  struct error_base {
+  struct error {
     std::string message;
 
     template<typename ...Args>
-    error_base(const char *format, Args const& ...args)
+    error(const char *format, Args const& ...args)
       : message{
         std::vformat(format, std::make_format_args(args...))
       } { }
   };
 
-  struct syntax_error : error_base {
+  struct syntax_error : error {
     std::optional<std::string> filename;
     size_t line = 0;
     size_t column = 0;
@@ -47,19 +47,19 @@ namespace black::support::internal {
     syntax_error(
       std::optional<std::string> _filename, size_t _line, size_t _col,
       const char *format, Args const& ...args
-    ) : error_base{format, args...}, 
+    ) : error{format, args...}, 
         filename{_filename}, line{_line}, column{_col} { }
   };
 
-  struct type_error : error_base { 
-    using error_base::error_base;
+  struct type_error : error { 
+    using error::error;
   };
 
-  struct backend_error : error_base { 
-    using error_base::error_base;
+  struct backend_error : error { 
+    using error::error;
   };
 
-  struct io_error : error_base {
+  struct io_error : error {
     enum operation {
       opening,
       reading,
@@ -68,27 +68,23 @@ namespace black::support::internal {
 
     std::optional<std::string> filename;
     operation op;
-    int error;
+    int err;
 
     template<typename ...Args>
     io_error(
       std::optional<std::string> _filename, operation _op, int _error,
       const char *format, Args const& ...args
-    ) : error_base{format, args...}, 
-        filename{_filename}, op{_op}, error{_error} { }
-  };
-
-  struct error : 
-    black_sum_type(syntax_error, type_error, backend_error, io_error);
-  
+    ) : error{format, args...}, 
+        filename{_filename}, op{_op}, err{_error} { }
+  };  
 }
 
 namespace black::support {
+  using internal::error;
   using internal::syntax_error;
   using internal::type_error;
   using internal::backend_error;
   using internal::io_error;
-  using internal::error;
 }
 
 

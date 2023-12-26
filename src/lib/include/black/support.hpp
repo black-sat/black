@@ -34,7 +34,6 @@
 #include <black/support/hash.hpp>
 #include <black/support/match.hpp>
 #include <black/support/errors.hpp>
-#include <black/support/serialize.hpp>
 #include <black/support/range.hpp>
 #include <black/support/bitset.hpp>
 

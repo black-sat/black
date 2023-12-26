@@ -45,13 +45,13 @@ namespace black::support::internal {
     if(assertion())
       return;
     
-    throw assert_error(filename, line, expression);
+    throw bad_assert(filename, line, expression);
   }
   
   [[noreturn]]
   inline void unreachable_handler(const char *filename, size_t line) 
   {
-    throw unreachable_error(filename, line);
+    throw bad_unreachable(filename, line);
   }
 
   template<typename Expr>
@@ -59,14 +59,14 @@ namespace black::support::internal {
     Expr assumption, 
     const char *function,
     const char *filename, size_t line,
-    source_location const& loc,
+    std::source_location const& loc,
     const char *expression, const char *message
   )
   {
     if(assumption())
       return;
     
-    throw assume_error(function, filename, line, loc, expression, message);
+    throw bad_assumption(function, filename, line, loc, expression, message);
   }
 
 }

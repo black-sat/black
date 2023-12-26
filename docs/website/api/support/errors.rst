@@ -3,20 +3,10 @@ Error types
 
 The following types form a taxonomy of all the possible errors that BLACK can
 return *to the user*. These types are **not** thrown as exceptions, but returned
-as the error component of a :cpp:class:`result` object. This ensures they are always handled explicitly.
+as the error component of a :cpp:class:`std::expected` object. This 
+ensures they are always handled explicitly.
 
 .. cpp:namespace:: black::support
-
-.. cpp:struct:: error 
-
-   A *matchable union type* (see :doc:`match`) representing an user 
-   error.
-
-   :alternatives:
-      1. :cpp:any:`syntax_error`
-      2. :cpp:any:`type_error`
-      3. :cpp:any:`backend_error`
-      4. :cpp:any:`io_error`
 
 .. cpp:struct:: syntax_error
 

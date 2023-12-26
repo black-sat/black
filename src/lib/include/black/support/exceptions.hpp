@@ -30,10 +30,7 @@
 #include <cstring>
 #include <cctype>
 #include <version>
-
-#if __has_include(<source_location>)
-  #include <source_location>
-#endif
+#include <source_location>
 
 //
 // This file declares the exception types used throught BLACK
@@ -81,10 +78,10 @@ namespace black::support::internal {
   //
   // exception thrown on failure of `black_unreachable()`
   //
-  class unreachable_error : public exception 
+  class bad_unreachable : public exception 
   {
   public:
-    unreachable_error(const char *filename, size_t line) 
+    bad_unreachable(const char *filename, size_t line) 
       : _filename{relative(filename)}, _line{line} 
     { 
       std::snprintf(
@@ -92,7 +89,7 @@ namespace black::support::internal {
         filename, line
       );
     }
-    virtual ~unreachable_error() override = default;
+    virtual ~bad_unreachable() override = default;
 
     const char *filename() const { return _filename; }
     size_t line() const { return _line; }
@@ -105,10 +102,10 @@ namespace black::support::internal {
   //
   // exception thrown on failure of `black_assert()`
   //
-  class assert_error : public exception 
+  class bad_assert : public exception 
   {
   public:
-    assert_error(
+    bad_assert(
       const char *filename, size_t line, const char *expression
     ) : _filename{relative(filename)}, _line{line}, _expression{expression}
     { 
@@ -117,7 +114,7 @@ namespace black::support::internal {
         filename, line, expression
       );
     }
-    virtual ~assert_error() override = default;
+    virtual ~bad_assert() override = default;
 
     const char *filename() const { return _filename; }
     size_t line() const { return _line; }
@@ -130,42 +127,17 @@ namespace black::support::internal {
   };
 
   //
-  // Work around for compilers not supporting std::source_location
-  //  
-  struct dummy_source_location 
-  {
-    consteval dummy_source_location() = default;
-    dummy_source_location(dummy_source_location const&) = default;
-    dummy_source_location(dummy_source_location &&) = default;
-
-    static consteval dummy_source_location current() noexcept { 
-      return dummy_source_location{};
-    }
-
-    constexpr std::uint_least32_t line() const noexcept { return 0; }
-    constexpr std::uint_least32_t column() const noexcept { return 0; }
-    constexpr const char* file_name() const noexcept { return nullptr; }
-    constexpr const char* function_name() const noexcept { return nullptr; }
-  };
-
-  #ifdef __cpp_lib_source_location
-    using source_location = std::source_location;
-  #else
-    using source_location = dummy_source_location;
-  #endif 
-
-  //
   // exception thrown on failure of `black_assume()`
   //
-  class assume_error : public assert_error 
+  class bad_assumption : public bad_assert 
   {
   public:
-    assume_error(
+    bad_assumption(
       const char *function, 
       const char *filename, size_t line, 
-      source_location const& loc,
+      std::source_location const& loc,
       const char *expression, const char *message
-    ) : assert_error(relative(filename), line, expression), 
+    ) : bad_assert(relative(filename), line, expression), 
         _function{function}, _message{message}
     { 
       if(loc.file_name() != nullptr) {
@@ -179,7 +151,7 @@ namespace black::support::internal {
         function, filename, line, message
       );
     }
-    virtual ~assume_error() override = default;
+    virtual ~bad_assumption() override = default;
 
     const char *function() const { return _function; }
     const char *message() const { return _message; }
@@ -192,50 +164,23 @@ namespace black::support::internal {
   //
   // Exception thrown on non-exhaustive pattern matches
   //
-  class pattern_error : public exception 
+  class bad_pattern : public exception 
   {
   public:
-    pattern_error() { 
-      strncpy(_what, "non-exhaustive pattern", _what_size);
+    bad_pattern() { 
+      strncpy(_what, "non-exhaustive pattern match", _what_size);
     }
 
-    virtual ~pattern_error() override = default;
+    virtual ~bad_pattern() override = default;
   };
-
-
-  struct error;
-
-  //
-  // Exception thrown by some members of the `result` class.
-  //
-  template<typename Error = error>
-  class bad_result_access : exception 
-  {
-  public:
-    bad_result_access(Error err) : _error{std::move(err)} { 
-      snprintf(_what, _what_size, "bad access to a `result<T, E>` object");
-    }
-
-    virtual ~bad_result_access() override = default;
-
-    Error const&error() const { return _error; }
-
-  private:
-    Error _error;
-  };
-
-  template<typename Error>
-  bad_result_access(Error) -> bad_result_access<Error>;
 
 }
 
 namespace black::support {
   using internal::exception;
-  using internal::unreachable_error;
-  using internal::assert_error;
-  using internal::assume_error;
-  using internal::source_location;
-  using internal::bad_result_access;
+  using internal::bad_unreachable;
+  using internal::bad_assert;
+  using internal::bad_assumption;
 }
 
 #endif // BLACK_SUPPORT_EXCEPTIONS_HPP

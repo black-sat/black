@@ -40,7 +40,9 @@ static int divide(int x) {
   return 42/x;
 }
 
-static int divide2(int x, source_location loc = source_location::current()) {
+static int divide2(
+  int x, std::source_location loc = std::source_location::current()
+) {
   black_assume(x != 0, loc, "`x` cannot be zero");
   
   return 42/x;
@@ -55,13 +57,13 @@ static int divide3(int x) {
 TEST_CASE("Testing assert macros") {
   
   black_assert(true);
-  REQUIRE_THROWS_AS(divide(0), assert_error);
-  REQUIRE_THROWS_AS(divide2(0), assume_error);
-  REQUIRE_THROWS_AS(divide3(0), unreachable_error);
+  REQUIRE_THROWS_AS(divide(0), bad_assert);
+  REQUIRE_THROWS_AS(divide2(0), bad_assumption);
+  REQUIRE_THROWS_AS(divide3(0), bad_unreachable);
 
   try {
     divide(0);
-  } catch (assert_error const& e) {
+  } catch (bad_assert const& e) {
 #ifdef _MSC_VER
   REQUIRE(e.filename() == "tests\\units\\support\\assert.cpp"s);
 #else

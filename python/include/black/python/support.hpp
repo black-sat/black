@@ -29,6 +29,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <expected>
+
 namespace black::python
 {  
   using namespace black;
@@ -41,6 +43,17 @@ namespace black::python
   template<typename T>
   T&& to_python(T&& v) {
     return std::forward<T>(v);
+  }
+
+  //
+  // When mapping functions that return `std::expected<T, E>`, the idiomatic
+  // Python way is to throw the `E`.
+  //
+  template<typename T, typename E>
+  T to_python(std::expected<T, E> const& e) {
+    if(e.has_value())
+      return e.value();
+    throw e.error();
   }
 
   //
