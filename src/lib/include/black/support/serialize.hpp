@@ -33,6 +33,7 @@
 #include <cereal/types/variant.hpp>
 
 #include <fstream>
+#include <expected>
 
 namespace black::support::internal {
 
@@ -47,7 +48,7 @@ namespace black::support::internal {
   };
 
   template<serializable T>
-  result<void, io_error> serialize(T const &obj, std::ostream &stream) {
+  std::expected<void, io_error> serialize(T const &obj, std::ostream &stream) {
     cereal::JSONOutputArchive archive{stream};
 
     auto state = stream.exceptions();
@@ -59,19 +60,24 @@ namespace black::support::internal {
       return {};
     } catch(const std::ios_base::failure&) {
       stream.exceptions(state);
-      return io_error({}, io_error::writing, errno, "serialization failed");
+      return std::unexpected(
+        io_error({}, io_error::writing, errno, "serialization failed")
+      );
     }
   }
 
   template<serializable T>
-  result<void, io_error> serialize(T const &obj, std::string const&filename) {
-
+  std::expected<void, io_error> 
+  serialize(T const &obj, std::string const&filename) 
+  {
     std::ofstream stream{filename};
     if(stream.bad())
       return 
-        io_error(filename, io_error::opening, errno, "serialization failed");
+        std::unexpected(
+          io_error(filename, io_error::opening, errno, "serialization failed")
+        );
 
-    result<void, io_error> res = serialize(obj, stream);
+    std::expected<void, io_error> res = serialize(obj, stream);
     if(!res.has_value()) {
       res.error().filename = filename;
     }
@@ -80,7 +86,7 @@ namespace black::support::internal {
   }
 
   template<serializable T>
-  result<void, io_error> deserialize(T &obj, std::istream &stream) {
+  std::expected<void, io_error> deserialize(T &obj, std::istream &stream) {
     cereal::JSONInputArchive archive{stream};
 
     auto state = stream.exceptions();
@@ -92,19 +98,23 @@ namespace black::support::internal {
       return {};
     } catch(const std::ios_base::failure&) {
       stream.exceptions(state);
-      return io_error({}, io_error::reading, errno, "deserialization failed");
+      return std::unexpected(
+        io_error({}, io_error::reading, errno, "deserialization failed")
+      );
     }
   }
 
   template<serializable T>
-  result<void, io_error> deserialize(T &obj, std::string const&filename) {
+  std::expected<void, io_error> deserialize(T &obj, std::string const&filename) 
+  {
 
     std::ifstream stream{filename};
     if(stream.bad())
-      return 
-        io_error(filename, io_error::opening, errno, "deserialization failed");
+      return std::unexpected(
+        io_error(filename, io_error::opening, errno, "deserialization failed")
+      );
 
-    result<void, io_error> res = deserialize(obj, stream);
+    std::expected<void, io_error> res = deserialize(obj, stream);
     if(!res.has_value()) {
       res.error().filename = filename;
     }

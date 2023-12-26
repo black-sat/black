@@ -41,14 +41,14 @@ configure_file(
 #
 add_library (black ${LIB_SRC})
 
-target_link_libraries(black PUBLIC fmt::fmt cereal tsl::hopscotch_map)
+target_link_libraries(black PUBLIC cereal tsl::hopscotch_map)
 target_include_directories(black PUBLIC  
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 target_include_directories(black PRIVATE src/include)
-target_compile_features(black PUBLIC cxx_std_20)
+target_compile_features(black PUBLIC cxx_std_23)
 target_enable_warnings(black)
 target_code_coverage(black)
 add_sanitizers(black)

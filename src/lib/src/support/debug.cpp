@@ -24,20 +24,10 @@
 #include <black/support.hpp>
 
 
-#include <fmt/format.h>
-#include <fmt/color.h>
-
+#include <iostream>
 #include <cstdio>
 #include <optional>
-
-#ifdef _MSC_VER
-  #include <io.h>
-  #define isatty _isatty
-  #define fileno _fileno
-#else
-  #include <unistd.h>
-#endif
-
+#include <format>
 
 namespace black::support::internal {
 
@@ -45,21 +35,16 @@ namespace black::support::internal {
 
   void debug(
     const char *filename, size_t line, const char *format, 
-    fmt::format_args args
+    std::format_args args
   ) {
     if(!debug_msgs_tag)
       return;
 
-    fmt::text_style style = {};
+    std::string message = std::vformat(format, args);
 
-    if(isatty(fileno(stderr)))
-      style = fmt::fg(fmt::color::orange) | fmt::emphasis::bold;
-
-    std::string message = fmt::vformat(format, args);
-
-    fmt::print(
-      stderr, "{}:{}: {}:{}: {}\n", 
-      *debug_msgs_tag, styled("debug", style),
+    std::cerr << std::format(
+      "{}:{}: {}:{}: {}\n", 
+      *debug_msgs_tag, "debug",
       relative(filename), line, message
     );
   }

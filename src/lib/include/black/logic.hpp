@@ -44,9 +44,5 @@
 //
 #include <black/logic/label.hpp>
 #include <black/logic/identifier.hpp>
-#include <black/logic/core.hpp>
-#include <black/logic/interface-fwd.hpp>
-#include <black/logic/generation.hpp>
-#include <black/logic/interface.hpp>
 
 #endif // BLACK_LOGIC_FORMULA_HPP

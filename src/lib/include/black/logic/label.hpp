@@ -26,7 +26,7 @@
 
 #include <black/support/hash.hpp>
 
-#include <fmt/format.h>
+#include <format>
 
 #include <any>
 #include <tuple>
@@ -40,7 +40,7 @@ namespace black::logic::internal
   class label;
 
   template<typename T>
-  concept formattable = std::is_constructible<fmt::formatter<T>>::value;
+  concept formattable = std::is_constructible<std::formatter<T>>::value;
 
   template<typename T>
   concept identifiable = 
@@ -165,15 +165,15 @@ namespace black::logic::internal
         T const *v = std::any_cast<T>(&me);
         black_assert(v != nullptr);
 
-        return fmt::format("{}", *v);
+        return std::format("{}", *v);
       };
     }
   };
 }
 
 template<> 
-struct fmt::formatter<black::logic::internal::label> 
-  : fmt::formatter<string_view>
+struct std::formatter<black::logic::internal::label> 
+  : std::formatter<string_view>
 {
   template <typename FormatContext>
   auto 

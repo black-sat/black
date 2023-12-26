@@ -59,18 +59,18 @@ namespace black::python {
     py::class_<backend_error>(m, "BackendError")
       .def_readonly("message", &backend_error::message);
     
-    py::enum_<io_error::operation>(m, "IOOperation")
+    py::class_<io_error> io_error_cls(m, "IOError");
+    io_error_cls.def_readonly("filename", &io_error::filename);
+    io_error_cls.def_readonly("op", &io_error::op);
+    io_error_cls.def_property_readonly("error", [](io_error const&self) {
+      return strerror(self.error);
+    });
+    io_error_cls.def_readonly("message", &io_error::message);
+
+    py::enum_<io_error::operation>(io_error_cls, "Operation")
       .value("Opening", io_error::opening)
       .value("Reading", io_error::reading)
       .value("Writing", io_error::writing);
-
-    py::class_<io_error>(m, "IOError")
-      .def_readonly("filename", &io_error::filename)
-      .def_readonly("op", &io_error::op)
-      .def_property_readonly("error", [](io_error const&self) {
-        return strerror(self.error);
-      })
-      .def_readonly("message", &io_error::message);
   }
 
 }

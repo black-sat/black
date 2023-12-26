@@ -32,8 +32,6 @@
 #include <limits>
 #include <cmath>
 
-#include <fmt/color.h>
-
 #ifdef _MSC_VER
   #define BLACK_EXPORT __declspec(dllexport)
 #else
@@ -51,23 +49,6 @@ namespace black::support::internal
   // not used for formula::match but useful to work with std::visit
   template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
   template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-
-  //
-  // Useful utilities to work with strongly-typed enums
-  //
-  // GCOV false negatives
-  template <typename E>
-    requires std::is_enum_v<E>
-  constexpr auto to_underlying(E e) noexcept // LCOV_EXCL_LINE
-  {
-      return static_cast<std::underlying_type_t<E>>(e); // LCOV_EXCL_LINE
-  }
-
-  template<typename E>
-    requires std::is_enum_v<E>
-  constexpr E from_underlying(std::underlying_type_t<E> v) noexcept {
-    return static_cast<E>(v);
-  }
 
   //
   // Misc metaprogramming utilities
@@ -144,22 +125,6 @@ namespace black::support::internal
 
     return {static_cast<int>(num), static_cast<int>(denum)};
   }
-
-  //
-  // Util to abstract whether {fmt} has the `styled()` function
-  //
-#if FMT_VERSION >= 90000
-  template<typename T>
-  auto styled(T&& v, fmt::text_style s) {
-    return styled(std::forward<T>(v), s);
-  }
-#else
-  template<typename T>
-  decltype(auto) styled(T&& v, fmt::text_style) {
-    return std::forward<T>(v);
-  }
-#endif
-
   
   inline constexpr std::string_view license =
 R"(
@@ -191,14 +156,11 @@ SOFTWARE.
 
 namespace black::support {
   using internal::overloaded;
-  using internal::to_underlying;
-  using internal::from_underlying;
   using internal::tuple_cons;
   using internal::tuple_cons_t;
   using internal::tuple_contains;
   using internal::tuple_contains_v;
   using internal::double_to_fraction;
-  using internal::styled;
   using internal::license;
 }
 

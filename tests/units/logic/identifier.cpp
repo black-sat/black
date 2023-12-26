@@ -26,7 +26,7 @@
 #include <black/support.hpp>
 #include <black/logic.hpp>
 
-#include <fmt/format.h>
+#include <format>
 
 using namespace black::logic;
 using namespace black::support;
@@ -41,8 +41,8 @@ TEST_CASE("labels") {
   REQUIRE(id3 == id);
   REQUIRE(id3 != id2);
 
-  std::string str1 = fmt::format("{}", id);
-  std::string str2 = fmt::format("{}", id2);
+  std::string str1 = std::format("{}", id);
+  std::string str2 = std::format("{}", id2);
 
   REQUIRE(str1 == "hello");
   REQUIRE(str2 == "42");

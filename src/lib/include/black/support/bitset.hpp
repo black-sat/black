@@ -46,6 +46,8 @@ namespace black::support::internal {
     constexpr bitset() = default;
     constexpr bitset(bitset const&) = default;
 
+    constexpr bitset(size_t bit) : bitset({bit}) { }
+
     constexpr bitset(std::initializer_list<size_t> args) {
       for(size_t i : args)
         set(i);
@@ -53,11 +55,7 @@ namespace black::support::internal {
 
     constexpr bitset &operator=(bitset const&) = default;
 
-    template<typename T>
-      requires requires(T t) { static_cast<size_t>(t); }
-    constexpr bool contains(T t) const {
-      size_t i = static_cast<size_t>(t);
-
+    constexpr bool contains(size_t i) const {
       if(i >= N)
         return false;
 
@@ -108,6 +106,11 @@ namespace black::support::internal {
       return result;
     }
 
+    constexpr bitset &operator&=(bitset const& other) {
+      *this = *this & other;
+      return *this;
+    }
+
     friend constexpr bitset operator|(bitset const& b1, bitset const& b2) {
       bitset result;
 
@@ -115,6 +118,11 @@ namespace black::support::internal {
         result._data[i] = b1._data[i] | b2._data[i];
       
       return result;
+    }
+
+    constexpr bitset &operator|=(bitset const& other) {
+      *this = *this | other;
+      return *this;
     }
 
     friend constexpr bitset operator~(bitset b) {

@@ -24,7 +24,7 @@
 #ifndef BLACK_SUPPORT_ERRORS_HPP
 #define BLACK_SUPPORT_ERRORS_HPP
 
-#include <fmt/format.h>
+#include <format>
 
 namespace black::support::internal {
   
@@ -34,7 +34,7 @@ namespace black::support::internal {
     template<typename ...Args>
     error_base(const char *format, Args const& ...args)
       : message{
-        fmt::vformat(format, fmt::make_format_args(args...))
+        std::vformat(format, std::make_format_args(args...))
       } { }
   };
 
@@ -81,6 +81,14 @@ namespace black::support::internal {
   struct error : 
     black_sum_type(syntax_error, type_error, backend_error, io_error);
   
+}
+
+namespace black::support {
+  using internal::syntax_error;
+  using internal::type_error;
+  using internal::backend_error;
+  using internal::io_error;
+  using internal::error;
 }
 
 

@@ -24,7 +24,7 @@
 #ifndef BLACK_SUPPORT_DEBUG_HPP
 #define BLACK_SUPPORT_DEBUG_HPP
 
-#include <fmt/format.h>
+#include <format>
 
 namespace black::support::internal {
   
@@ -36,14 +36,14 @@ namespace black::support::internal {
 
   void debug(
     const char *filename, size_t line, const char *format, 
-    fmt::format_args args
+    std::format_args args
   );
 
 }
 
 #define black_debug(Message, ...)                                   \
   black::support::internal::debug (                                 \
-    __FILE__, __LINE__, Message, fmt::make_format_args(__VA_ARGS__) \
+    __FILE__, __LINE__, Message, std::make_format_args(__VA_ARGS__) \
   )
 
 namespace black::support {

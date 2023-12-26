@@ -25,38 +25,38 @@
 
 #include <black/logic.hpp>
 
-using namespace black::logic::internal;
-using namespace black::support;
+// using namespace black::logic::internal;
+// using namespace black::support;
 
-struct Bool : make_fragment_t<
-  syntax_list<
-    syntax_element::proposition,
-    syntax_element::conjunction,
-    syntax_element::negation
-  >
-> { };
+// struct Bool : make_fragment_t<
+//   syntax_list<
+//     syntax_element::proposition,
+//     syntax_element::conjunction,
+//     syntax_element::negation
+//   >
+// > { };
 
-TEST_CASE("Terms hierarchy") {
+// TEST_CASE("Terms hierarchy") {
   
-  alphabet sigma;
+//   alphabet sigma;
 
-  proposition p = sigma.proposition("p");
-  proposition q = sigma.proposition("q");
+//   proposition p = sigma.proposition("p");
+//   proposition q = sigma.proposition("q");
 
-  formula<Bool> f = p && !q;
+//   formula<Bool> f = p && !q;
 
-  STATIC_REQUIRE(matchable<formula<Bool>>);
-  STATIC_REQUIRE(matchable<formula<Bool>::type>);
+//   STATIC_REQUIRE(matchable<formula<Bool>>);
+//   STATIC_REQUIRE(matchable<formula<Bool>::type>);
 
-  std::string s = f.match(
-    [](conjunction<Bool>) {
-      return "Ok";
-    },
-    [](otherwise) {
-      return "Not Ok";
-    }
-  );
+//   std::string s = f.match(
+//     [](conjunction<Bool>) {
+//       return "Ok";
+//     },
+//     [](otherwise) {
+//       return "Not Ok";
+//     }
+//   );
 
-  REQUIRE(s == "Ok");
+//   REQUIRE(s == "Ok");
 
-}
+// }
