@@ -60,27 +60,22 @@ TEST_CASE("identifiers and paths") {
 
   path p = "hello";
 
-  path p2 = {id1, id2};
+  path p2 = id1 / id2;
 
-  path p3{path::root, path::root, id1};
+  path p3{id1};
 
-  REQUIRE(p.identifiers().size() == 1);
-  REQUIRE(p2.identifiers().size() == 2);
-  REQUIRE(p3.identifiers().size() == 2);
+  REQUIRE(p.components().size() == 1);
+  REQUIRE(p2.components().size() == 2);
+  REQUIRE(p3.components().size() == 1);
 
-  REQUIRE(p.identifiers()[0] == "hello");
-  REQUIRE(p2.identifiers()[0] == id1);
-  REQUIRE(p2.identifiers()[1] == id2);
-  REQUIRE(p3.identifiers()[0].is_root());
-  REQUIRE(p3.identifiers()[1] == id1);
+  REQUIRE(p.components()[0] == "hello");
+  REQUIRE(p2.components()[0] == id1);
+  REQUIRE(p2.components()[1] == id2);
+  REQUIRE(p3.components()[0] == id1);
 
   path p4 = p3 / p;
   path p5 = p / "world";
 
-  REQUIRE(p4.identifiers().size() == 3);
-  REQUIRE(p5.identifiers().size() == 2);
-
-  REQUIRE(p4.is_absolute());
-  REQUIRE(!p5.is_absolute());
-
+  REQUIRE(p4.components().size() == 2);
+  REQUIRE(p5.components().size() == 2);
 }
