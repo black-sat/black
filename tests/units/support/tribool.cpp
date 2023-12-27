@@ -34,7 +34,7 @@ TEST_CASE("Testing tribool")
   tribool tb2 = true;
   tribool tb3 = false;
   
-  SECTION("Output stream") {
+  SECTION("Formatting") {
     std::vector<std::pair<tribool, std::string>> tests = {
       {tb0, "tribool::undef"},
       {tb1, "tribool::undef"},
