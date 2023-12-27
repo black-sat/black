@@ -97,99 +97,128 @@ namespace black::support::internal {
   };
 
   //
-  // The `dispatch()` function takes a hierarchy object and the list of handlers
+  // This is a dummy return type for missing cases in partial pattern matches.
+  // A conversion operator is available for any type, but it is never actually 
+  // called. See also the `std::common_type` specialization below.
+  //
+  struct missing_case_t {
+    template<typename T>
+    [[noreturn]] operator T() const { black_unreachable(); }
+  };
+
+  //
+  // The `dispatch()` function takes a matchable object and the list of handlers
   // and calls the first handler that can be called either directly or by
   // unpacking. Note that we check the unpacked case before to give it priority,
   // so that e.g. a lambda such as `[](conjunction, auto ...args) { }` picks up
   // the unpacked children in `args`.
   //
+  // The single-argument version is only called if no handler matches the type 
+  // of the object, so we raise a `bad_pattern` exception.
+  //
+  template<typename T>
+  missing_case_t dispatch(T const& obj, std::source_location const& loc) { 
+    throw bad_pattern(obj, loc);
+  }
+  
   template<typename T, typename Handler, typename ... Handlers>
-  auto dispatch(T obj, Handler&& handler, Handlers&& ...handlers) 
-  {
+  auto dispatch(
+    T const& obj, std::source_location const& loc, 
+    Handler const& handler, Handlers const& ...handlers
+  ) {
     if constexpr(unpackable<T, Handler>) 
-      return unpack(std::forward<Handler>(handler), obj);
+      return unpack(handler, obj);
     else if constexpr(std::is_invocable_v<Handler, T>)
-      return std::invoke(std::forward<Handler>(handler), obj);
+      return std::invoke(handler, obj);
     else 
-      return dispatch(obj, std::forward<Handlers>(handlers)...);
+      return dispatch(obj, loc, handlers...);
   }
 
   //
-  // Finally, the `matcher` class, which calls the machinery above to do the
-  // trick. This is generic and works not only for hierarchy types but for any
-  // type that expose `to<>` and `is<>` functions (e.g. `fragment_type` above).
+  // Little helper to compute the return type of the `dispatch` function above 
   //
-  // At first we need a concept to test the usability of such functions
-  //
-  template<typename H, typename Case>
-  concept can_cast_to = requires(H h) {
-    { h.template to<Case>() } -> std::convertible_to<std::optional<Case>>;
-    { h.template is<Case>() } -> std::convertible_to<bool>;
-  };
+  template<typename T, typename ...Handlers>
+  using dispatch_return_t = decltype(
+    dispatch(
+      std::declval<T>(), std::declval<std::source_location>(), 
+      std::declval<Handlers>()...
+    )
+  );
 
   //
-  // Now the matcher class itself. The `H` paremeter is the main class from
-  // which one wants to match (e.g. `formula<Syntax>`). The `Cases` parameter is
-  // a tuple of types to try to match the matched object to. The default value
-  // for `Cases` is the correct one to use in the common case of `H` being a
-  // hierarchy type.
+  // Finally, the `dispatcher` class, which calls the machinery above to do the
+  // trick. This is generic and works for any type that expose the `to<>` and
+  // `is<>` functions. The `H` parameter is the main class from which one wants
+  // to match (e.g. `term`). The `Cases` parameter is a tuple of types to try to
+  // match the matched object to. The default value for `Cases` is the correct
+  // one to use in the common case of `H` being a type that satisfies the
+  // interface for matchable types.
   //
   template<typename H, typename Cases = typename H::alternatives>
-  struct matcher;
+  struct dispatcher;
 
   template<typename H, typename Case, typename ...Cases>
-    //requires can_cast_to<H, Case>
-  struct matcher<H, std::tuple<Case, Cases...>>
+  struct dispatcher<H, std::tuple<Case, Cases...>>
   {
     //
     // The return type of `match()` is computed with `std::common_type`, which
-    // has been specialized for hierarchies above. Again, it is cumbersome to
-    // repeat the body twice but there's no other way.
+    // can also be specialized for custom types.
     //
     template<typename ...Handlers>
-    static auto match(H h, Handlers&& ...handlers) 
-      -> std::common_type_t<
-        decltype(dispatch(
-          *h.template to<Case>(), std::forward<Handlers>(handlers)...
-        )),
-        decltype(matcher<H, std::tuple<Cases...>>::match(
-          h, std::forward<Handlers>(handlers)...
-        ))
-      >
-    {
+    using dispatch_common_t = std::common_type_t<
+      dispatch_return_t<Case, Handlers...>,
+      dispatch_return_t<Cases, Handlers...>...
+    >;
+
+    template<typename ...Handlers>
+    static dispatch_common_t<Handlers...> 
+    match(
+      H const& h, std::source_location const& loc, Handlers const& ...handlers
+    ) {
       if(h.template is<Case>())
-        return dispatch(
-          *h.template to<Case>(), std::forward<Handlers>(handlers)...
-        );
+        return dispatch(*h.template to<Case>(), loc, handlers...);
       
-      return matcher<H, std::tuple<Cases...>>::match(
-        h, std::forward<Handlers>(handlers)...
+      return dispatcher<H, std::tuple<Cases...>>::match(
+        h, loc, handlers...
       );
     }
   };
 
   //
-  // The base case of the recursion above is the singleton list of cases. If we
-  // reach this, and the main type cannot be casted to this last case, it means
-  // it could not have been casted to any of the elements included in the list
-  // of cases, so we raise an exception.
+  // Base case of the recursion, when we only have one case.
   //
   template<typename H, typename Case>
-  struct matcher<H, std::tuple<Case>>
-  {
+  struct dispatcher<H, std::tuple<Case>> 
+  { 
     template<typename ...Handlers>
-    static auto match(H h, Handlers&& ...handlers) 
-      -> decltype(dispatch(
-        *h.template to<Case>(), std::forward<Handlers>(handlers)...
-      )) 
-    {
-      if(h.template is<Case>())
-        return dispatch(
-          *h.template to<Case>(), std::forward<Handlers>(handlers)...
-        );
-      throw bad_pattern();
+    static dispatch_return_t<Case, Handlers...> 
+    match(
+      H const& h, std::source_location const& loc, Handlers const& ...handlers
+    ) {
+      black_assert(h.template is<Case>());
+      
+      return dispatch(*h.template to<Case>(), loc, handlers...);
     }
   };
+
+  template<matchable H>
+  struct matcher {
+
+    template<typename ...Handlers>
+    auto operator()(Handlers const& ...handlers) const {
+      return dispatcher<H>::match(_h, _loc, handlers...);
+    }
+
+    H const& _h;
+    std::source_location _loc;
+  };
+
+  template<matchable H>
+  matcher<H> match(
+    H const& h, std::source_location loc = std::source_location::current()
+  ) {
+    return {h, loc};
+  }
 
   //
   // Little catch-all type used as a wildcard in patter matching 
@@ -203,7 +232,8 @@ namespace black::support::internal {
   // Subclass of `std::variant` that supports the pattern matching interface
   //
   template<typename ...Cases>
-  struct either : private std::variant<Cases...> {
+  struct either : private std::variant<Cases...> 
+  {
     using std::variant<Cases...>::variant;
 
     using alternatives = std::tuple<Cases...>;
@@ -221,27 +251,31 @@ namespace black::support::internal {
     template<typename T>
     bool is() const {
       return to<T>().has_value();
-    }
+    }  
 
-    template<typename ...Handlers>
-    auto match(Handlers ...h) const {
-      return matcher<either>::match(*this, h...);
-    }
   };
 
 }
 
 namespace black::support {
-  using internal::matcher;
+  using internal::match;
   using internal::matchable;
   using internal::otherwise;
   using internal::either;
 }
 
+template<typename T>
+struct std::common_type<::black::support::internal::missing_case_t, T> : 
+  std::type_identity<T> { };
+
+template<typename T>
+struct std::common_type<T, ::black::support::internal::missing_case_t> : 
+  std::type_identity<T> { };
+
 template<typename ...Cases>
 struct std::hash<::black::support::either<Cases...>> {
   size_t operator()(::black::support::either<Cases...> const& v) const {
-    return v.match(
+    return match(v)(
       [](auto x) {
         return ::black::support::hash(x);
       }

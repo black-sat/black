@@ -39,7 +39,7 @@ TEST_CASE("Match infrastructure") {
   STATIC_REQUIRE(matchable<either<int, std::string>>);
   STATIC_REQUIRE(!matchable<int>);
 
-  auto b = t.match(
+  auto b = match(t)(
     [](int x) {
       return x * 2;
     },
@@ -51,6 +51,26 @@ TEST_CASE("Match infrastructure") {
   STATIC_REQUIRE(std::is_same_v<decltype(b), int>);
 
   REQUIRE(b == 42);
+
+  SECTION("Partial pattern matches") {
+    REQUIRE_THROWS_AS(
+      match(t)(
+        [](std::tuple<std::string, float>) { 
+          return 42;
+        }
+      ), bad_pattern
+    );
+
+    auto r = match(t)(
+      [](int x) {
+        return x * 2;
+      }
+    );
+
+    STATIC_REQUIRE(std::is_same_v<decltype(r), int>);
+
+    REQUIRE(r == 42);
+  } 
 
 }
 

@@ -27,16 +27,25 @@
 #include <black/support/config.hpp>
 
 #include <stdexcept>
-#include <cstring>
-#include <cctype>
+#include <string>
+#include <format>
 #include <version>
+#include <typeinfo>
 #include <source_location>
+
+#include <cstring>
+#include <cstdlib>
+
+// for abi::__cxa_demangle to demangle names coming from type_info::name()
+#if __has_include(<cxxabi.h>)
+  #include <cxxabi.h>
+#endif
 
 //
 // This file declares the exception types used throught BLACK
 //
 namespace black::support::internal {
-  
+
   //
   // The error exception type is the base class of all the exceptions
   // thrown from within BLACK
@@ -49,11 +58,12 @@ namespace black::support::internal {
     
     virtual ~exception() override = default;
 
-    virtual const char *what() const noexcept override { return _what; }
+    virtual const char *what() const noexcept override { 
+      return _what.c_str(); 
+    }
 
   protected:
-    static constexpr size_t _what_size = 200;
-    char _what[_what_size];
+    std::string _what;
   };
 
   inline const char *relative(const char *path) 
@@ -84,9 +94,8 @@ namespace black::support::internal {
     bad_unreachable(const char *filename, size_t line) 
       : _filename{relative(filename)}, _line{line} 
     { 
-      std::snprintf(
-        _what, _what_size, "unreachable code reached at %s:%zd",
-        filename, line
+      _what = std::format(
+        "unreachable code reached at {}:{}", filename, line
       );
     }
     virtual ~bad_unreachable() override = default;
@@ -109,9 +118,8 @@ namespace black::support::internal {
       const char *filename, size_t line, const char *expression
     ) : _filename{relative(filename)}, _line{line}, _expression{expression}
     { 
-      std::snprintf(
-        _what, _what_size, "failed assertion at %s:%zd: %s",
-        filename, line, expression
+      _what = std::format(
+        "failed assertion at {}:{}: {}", filename, line, expression
       );
     }
     virtual ~bad_assert() override = default;
@@ -145,12 +153,12 @@ namespace black::support::internal {
         line = loc.line();
       }
 
-      std::snprintf(
-        _what, _what_size, 
-        "violated assumption when calling function '%s' at %s:%zd: %s",
+      _what = std::format(
+        "violated assumption when calling function '{}' at {}:{}: {}",
         function, filename, line, message
       );
     }
+
     virtual ~bad_assumption() override = default;
 
     const char *function() const { return _function; }
@@ -162,13 +170,41 @@ namespace black::support::internal {
   };
 
   //
-  // Exception thrown on non-exhaustive pattern matches
+  // Wrapper over `abi::__cxa_demangle()` used later in `bad_pattern`.
+  // If <cxxabi.h> is not there (any compiler other than GCC and clang),
+  // we just return the string as-is.
   //
-  class bad_pattern : public exception 
+  template<typename T>
+  std::string type_name() {
+    #if __has_include(<cxxabi.h>)
+      int status = 0;
+      
+      auto result = std::unique_ptr<char, decltype(&free)>(
+        abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, &status),
+        &free
+      );
+      
+      return result.get();
+    #else
+      return typeid(T).name();
+    #endif
+  }
+
+  //
+  // Exceptions thrown on non-exhaustive pattern matches.
+  // The first constructor parameter is meant to be the object being matched,
+  // whose type is the one missing in the list of handlers of match().
+  //
+  class bad_pattern : public exception
   {
   public:
-    bad_pattern() { 
-      strncpy(_what, "non-exhaustive pattern match", _what_size);
+    template<typename Case>
+    bad_pattern(Case const&, std::source_location loc) { 
+      _what = std::format(
+        "non-exhaustive pattern match: missing handler for type `{}` "
+        "at {} line {}", type_name<Case>(), 
+        relative(loc.file_name()), loc.line()
+      );
     }
 
     virtual ~bad_pattern() override = default;
@@ -181,6 +217,7 @@ namespace black::support {
   using internal::bad_unreachable;
   using internal::bad_assert;
   using internal::bad_assumption;
+  using internal::bad_pattern;
 }
 
 #endif // BLACK_SUPPORT_EXCEPTIONS_HPP
