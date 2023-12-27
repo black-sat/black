@@ -25,8 +25,6 @@
 
 #include <black/support/tribool.hpp>
 
-#include <sstream>
-
 using namespace black::support;
 
 TEST_CASE("Testing tribool")
@@ -45,10 +43,7 @@ TEST_CASE("Testing tribool")
     };
     
     for(auto [b, res] : tests) {
-      std::stringstream s;
-      s << b;
-
-      REQUIRE(s.str() == res);
+      REQUIRE(std::format("{}", b) == res);
     }
   }
 

@@ -76,22 +76,28 @@ namespace black::support::internal
     }
 
     explicit operator bool() const { return _value == _true; }
-    
-    // GCOV false negatives
-    friend std::ostream &
-    operator<<(std::ostream &s, tribool b) { // LCOV_EXCL_LINE
-      if(b == true) // LCOV_EXCL_LINE
-        return s << "true"; // LCOV_EXCL_LINE
-      if(b == false) // LCOV_EXCL_LINE
-        return s << "false"; // LCOV_EXCL_LINE
-      
-      return s << "tribool::undef"; // LCOV_EXCL_LINE
-    }
 
   private:
     tribool_t _value = _undef;
   };
 }
+
+template<> 
+struct std::formatter<black::support::internal::tribool> 
+  : std::formatter<string_view>
+{
+  template <typename FormatContext>
+  auto 
+  format(black::support::internal::tribool const& b, FormatContext& ctx) const 
+  {
+    if(b == true)
+      return formatter<string_view>::format("true", ctx);
+    if(b == false)
+      return formatter<string_view>::format("false", ctx);;
+    
+    return formatter<string_view>::format("tribool::undef", ctx);
+  }
+};
 
 namespace black::support {
   using internal::tribool;
