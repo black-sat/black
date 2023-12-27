@@ -35,29 +35,22 @@ namespace black::logic::internal {
   class identifier 
   {
   public:
-    template<typename T, typename ...Args>
+    template<typename T, typename ...Tags>
       requires (
         std::is_constructible_v<label, T> &&
-        (std::is_constructible_v<label, Args> && ...)
+        (std::is_constructible_v<label, Tags> && ...)
       )
-    identifier(T&& v, Args&& ...args) 
-      : _labels{std::forward<T>(v), std::forward<Args>(args)...} { }
+    constexpr identifier(T&& label, Tags&& ...tags) 
+      : _label{std::forward<T>(label)}, _tags{std::forward<Tags>(tags)...} { }
 
     template<size_t N>
     identifier(const char (&str)[N])
-      : _labels{label{str}} { }
+      : _label{str} { }
 
     template<std::ranges::range R>
       requires std::is_constructible_v<label, std::ranges::range_value_t<R>>
-    identifier(
-      R const& r, std::source_location loc = std::source_location::current()
-    ) : _labels(begin(r), end(r)) { 
-      black_assume(
-        !_labels.empty(), loc, 
-        "Cannot create an empty `identifier::component`. "
-        "Use `path::root` instead"
-      );
-    }
+    identifier(label l, R const& tags) 
+      : _label{l}, _tags(begin(tags), end(tags)) { }
 
     identifier(identifier const&) = default;
     identifier(identifier &&) = default;
@@ -67,16 +60,18 @@ namespace black::logic::internal {
     bool operator==(identifier const&) const = default;
 
     bool is_root() const {
-      return _labels.empty();
+      return _tags.empty();
     }
 
-    std::vector<label> const& labels() const { return _labels; }
+    class label const& label() const { return _label; }
+    std::vector<class label> const& tags() const { return _tags; }
 
   private:
     friend class path;
     identifier(root_id_t) { }
 
-    std::vector<label> _labels;
+    class label _label;
+    std::vector<class label> _tags;
   };
 
 }
@@ -85,7 +80,7 @@ template<>
 struct std::hash<black::logic::internal::identifier> {
   size_t 
   operator()(black::logic::internal::identifier const& c) const {
-    return black::support::hash(c.labels());
+    return black::support::hash(c.label(), c.tags());
   }
 };
 
@@ -94,7 +89,7 @@ namespace black::logic::internal {
   class path 
   {
   public:
-    static const identifier root; // cannot be `constexpr` in G++10
+    static const identifier root;
 
     template<typename ...Args>
       requires std::is_constructible_v<identifier, Args...>

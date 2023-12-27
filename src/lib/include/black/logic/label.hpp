@@ -53,7 +53,7 @@ namespace black::logic::internal
   class label
   {
   public:
-    label() = default;
+    constexpr label() = default;
     label(label const&) = default;
     label(label&&) = default;
 

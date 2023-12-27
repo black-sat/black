@@ -53,8 +53,6 @@ TEST_CASE("identifiers and paths") {
 
   enable_debug_msgs("test");
 
-  REQUIRE_THROWS_AS(identifier{std::vector<int>{}}, bad_assumption);
-
   identifier id1 = {"hello", 42};
   identifier id2 = {"hi", 0};
 
