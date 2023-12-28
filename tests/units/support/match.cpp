@@ -30,13 +30,13 @@
 
 using namespace black::support;
 
-using test = either<int, std::tuple<std::string, float>>;
+using test = std::variant<int, std::tuple<std::string, float>>;
 
 TEST_CASE("Match infrastructure") {
 
   test t = 21;
 
-  STATIC_REQUIRE(matchable<either<int, std::string>>);
+  STATIC_REQUIRE(matchable<std::variant<int, std::string>>);
   STATIC_REQUIRE(!matchable<int>);
 
   auto b = match(t)(
@@ -72,20 +72,34 @@ TEST_CASE("Match infrastructure") {
     REQUIRE(r == 42);
   } 
 
-}
+  SECTION("Match on optional<T>") {
+    std::optional<int> v;
 
-TEST_CASE("Either type") {
-  test t = 21;
+    auto r = match(v)(
+      [](int x) {
+        return x * 2;
+      },
+      [](otherwise) {
+        return 0;
+      }
+    );
 
-  test t2 = t; // copy ctor
+    REQUIRE(r == 0);
+  }
 
-  t2 = t; // assignment
+  SECTION("Match on expected<T, E>") {
+    std::expected<int, std::string> e = 21;
 
-  REQUIRE(t2 == t); // equality
+    auto r = match(e)(
+      [](int x) {
+        return x * 2;
+      },
+      [](std::string) {
+        return 0;
+      }
+    );
 
-  // hashing
-  size_t h1 = hash(t);
-  size_t h2 = hash(21);
+    REQUIRE(r == 42);
+  }
 
-  REQUIRE(h1 == h2);
 }

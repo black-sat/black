@@ -32,6 +32,9 @@ namespace black::logic::internal {
   template<int Dummy, typename ...Types>
   struct cpp_tuple : std::type_identity<std::tuple<Types...>> { };
 
+  template<int Dummy, typename ...Types>
+  using cpp_tuple_t = std::tuple<Types...>;
+
   #define declare_term_type(Name) Name,
 
   enum class term::type : uint8_t {
@@ -106,15 +109,30 @@ namespace black::logic::internal {
 
 }
 
-template<>
-struct black::support::match_cases<black::logic::internal::term> 
-  : black::logic::internal::cpp_tuple<0
+namespace black::support {
 
-    #define declare_term_type(Term) , black::logic::internal::Term
+  template<>
+  struct match_trait<logic::internal::term> {
+
+    using cases = logic::internal::cpp_tuple_t<0
+
+    #define declare_term_type(Term) , logic::internal::Term
 
     #include <black/logic/defs.hpp>
 
-  > { };
+    >;
+
+    template<typename U>
+    static std::optional<U> downcast(black::logic::term t) {
+      return t.to<U>();
+    }
+
+  };
+
+}
+
+
+  
 
 namespace black::logic {
 

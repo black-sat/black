@@ -24,34 +24,35 @@
 #ifndef BLACK_SUPPORT_MATCH_HPP
 #define BLACK_SUPPORT_MATCH_HPP
 
+#include <variant>
+#include <expected>
+
 //
 // Here we declare the infrastructure for pattern matching. The machinery is
-// based on three elements which have to be provided by matchable types:
-// - a specialization of match_cases<T> returning a tuple of cases types
-// - a T::to<U>() function that performs the downcast
-// - a T::is<U>() function that tells if the downcast is possible
+// based on a specialization of `match_trait<T>` which has to be provided by
+// any matchable type `T`.
+//
+// The specialization must provide:
+// - a `cases` alias to a tuple of alternative types for the match
+// - a `downcast<U>(T)` function that downcasts the `T` to an `std::optional<U>`
+//   if possible, or std::nullopt otherwise (only when `U` is among `cases`)
+//
 
 namespace black::support {
   template<typename T>
-  struct match_cases { };
-
-  template<typename T>
-  using match_cases_t = typename match_cases<T>::type;
+  struct match_trait { };
 }
 
 namespace black::support::internal {
 
   template<typename T>
   concept matchable = requires (T t) {
-    typename match_cases<T>::type;
     
-    { std::tuple_size<match_cases_t<T>>::value };
+    requires (std::tuple_size_v<typename match_trait<T>::cases> > 0);
     
-    requires (std::tuple_size<match_cases_t<T>>::value > 0);
-    
-    t.template to<typename std::tuple_element<0, match_cases_t<T>>::type>();
-
-    t.template is<typename std::tuple_element<0, match_cases_t<T>>::type>();
+    match_trait<T>::template downcast<
+      typename std::tuple_element<0, typename match_trait<T>::cases>::type
+    >(t);
   };
 
 
@@ -151,14 +152,11 @@ namespace black::support::internal {
 
   //
   // Finally, the `dispatcher` class, which calls the machinery above to do the
-  // trick. This is generic and works for any type that expose the `to<>` and
-  // `is<>` functions. The `H` parameter is the main class from which one wants
-  // to match (e.g. `term`). The `Cases` parameter is a tuple of types to try to
-  // match the matched object to. The default value for `Cases` is the correct
-  // one to use in the common case of `H` being a type that satisfies the
-  // interface for matchable types.
+  // trick. This is generic and works for any `matchable` type as defined above.
+  // The `H` parameter is the main class from which one wants to match (e.g.
+  // `term`).
   //
-  template<typename H, typename Cases = match_cases_t<H>>
+  template<typename H, typename Cases = match_trait<H>::cases>
   struct dispatcher;
 
   template<typename H, typename Case, typename ...Cases>
@@ -179,12 +177,11 @@ namespace black::support::internal {
     match(
       H const& h, std::source_location const& loc, Handlers const& ...handlers
     ) {
-      if(h.template is<Case>())
-        return dispatch(*h.template to<Case>(), loc, handlers...);
+      std::optional<Case> casted = match_trait<H>::template downcast<Case>(h);
+      if(casted)
+        return dispatch(*casted, loc, handlers...);
       
-      return dispatcher<H, std::tuple<Cases...>>::match(
-        h, loc, handlers...
-      );
+      return dispatcher<H, std::tuple<Cases...>>::match(h, loc, handlers...);
     }
   };
 
@@ -199,9 +196,10 @@ namespace black::support::internal {
     match(
       H const& h, std::source_location const& loc, Handlers const& ...handlers
     ) {
-      black_assert(h.template is<Case>());
+      std::optional<Case> casted = match_trait<H>::template downcast<Case>(h);
+      black_assert(casted);
       
-      return dispatch(*h.template to<Case>(), loc, handlers...);
+      return dispatch(*casted, loc, handlers...);
     }
   };
 
@@ -228,47 +226,79 @@ namespace black::support::internal {
   // Little catch-all type used as a wildcard in patter matching 
   //
   struct otherwise {
+    otherwise() = default;
+
     template<typename T>
     otherwise(T const&) { }
   };
 
-  //
-  // Subclass of `std::variant` that supports the pattern matching interface
-  //
+}
+
+//
+// Specialization of `match_trait` for standard types `std::variant`, and
+// `std::expected`.
+//
+namespace black::support {
+
   template<typename ...Cases>
-  struct either : private std::variant<Cases...> 
-  {
-    using std::variant<Cases...>::variant;
-
-    bool operator==(either const&) const = default;
-
-    template<typename T>
-      requires (std::is_same_v<T, Cases> || ...)
-    std::optional<T> to() const {
-      if(std::holds_alternative<T>(*this))
-        return std::get<T>(*this);
+  struct match_trait<std::variant<Cases...>> {
+    using cases = std::tuple<Cases...>;
+    
+    template<typename U>
+      requires (std::is_same_v<U, Cases> || ...)
+    static std::optional<U> downcast(std::variant<Cases...> const& v) {
+      if(std::holds_alternative<U>(v))
+        return {std::get<U>(v)};
       return {};
     }
-
-    template<typename T>
-    bool is() const {
-      return to<T>().has_value();
-    }  
-
+  };
+  
+  template<typename T, typename E>
+  struct match_trait<std::expected<T, E>> {
+    using cases = std::tuple<T, E>;
+    
+    template<typename U>
+      requires (std::is_same_v<U, T>)
+    static std::optional<U> downcast(std::expected<T, E> const& v) {
+      if(v.has_value())
+        return {v.value()};
+      return {};
+    }
+    
+    template<typename U>
+      requires (std::is_same_v<U, E>)
+    static std::optional<U> downcast(std::expected<T, E> const& v) {
+      if(!v.has_value())
+        return {v.error()};
+      return {};
+    }
+    
+  };
+  
+  template<typename T>
+  struct match_trait<std::optional<T>> {
+    using cases = std::tuple<T, internal::otherwise>;
+    
+    template<typename U>
+      requires (std::is_same_v<U, T>)
+    static std::optional<U> downcast(std::optional<T> const& v) {
+      if(v.has_value())
+        return {v.value()};
+      return {};
+    }
+    
+    template<typename U>
+      requires (std::is_same_v<U, internal::otherwise>)
+    static std::optional<U> downcast(std::optional<T> const& v) {
+      if(!v.has_value())
+        return {internal::otherwise{}};
+      return {};
+    }
+    
   };
 
 }
 
-namespace black::support {
-  using internal::match;
-  using internal::matchable;
-  using internal::otherwise;
-  using internal::either;
-}
-
-template<typename ...Cases>
-  struct black::support::match_cases<black::support::either<Cases...>> 
-    : std::type_identity<std::tuple<Cases...>> { };
 
 template<>
 struct std::common_type<
@@ -284,15 +314,10 @@ template<typename T>
 struct std::common_type<T, ::black::support::internal::missing_case_t> : 
   std::type_identity<T> { };
 
-template<typename ...Cases>
-struct std::hash<::black::support::either<Cases...>> {
-  size_t operator()(::black::support::either<Cases...> const& v) const {
-    return match(v)(
-      [](auto x) {
-        return ::black::support::hash(x);
-      }
-    );
-  }
-};
+namespace black::support {
+  using internal::match;
+  using internal::matchable;
+  using internal::otherwise;
+}
 
 #endif // BLACK_SUPPORT_MATCH_HPP
