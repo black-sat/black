@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2023 Nicola Gigante
+// (C) 2024 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,24 +21,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <catch.hpp>
+#ifndef declare_term_type
+  #define declare_term_type(Term)
+#endif
 
-#include <black/support.hpp>
-#include <black/logic.hpp>
+#ifndef declare_field
+  #define declare_field(Term, Field, Type)
+#endif
 
-TEST_CASE("Terms") {
+#ifndef declare_fields
+  #define declare_fields(Term, Field, Type)
+#endif
 
-  using namespace black::logic;
-  
-  symbol p{"p"};
-  symbol q{"q"};
+#ifndef end_term_type
+  #define end_term_type(Term)
+#endif
 
-  term t = conjunction{{p, q}};
+declare_term_type(integer)
+  declare_field(integer, value, int64_t)
+end_term_type(integer)
 
-  match(t)(
-    [](conjunction) {
-      return 42;
-    }
-  );
+declare_term_type(symbol)
+  declare_field(symbol, name, label)
+end_term_type(symbol)
 
-}
+declare_term_type(boolean)
+  declare_field(boolean, value, bool)
+end_term_type(boolean)
+
+declare_term_type(conjunction)
+  declare_fields(conjunction, operands, term)
+end_term_type(conjunction)
+
+
+#undef declare_term_type
+#undef declare_field
+#undef declare_fields
+#undef end_term_type

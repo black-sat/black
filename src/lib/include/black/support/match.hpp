@@ -24,28 +24,34 @@
 #ifndef BLACK_SUPPORT_MATCH_HPP
 #define BLACK_SUPPORT_MATCH_HPP
 
+//
+// Here we declare the infrastructure for pattern matching. The machinery is
+// based on three elements which have to be provided by matchable types:
+// - a specialization of match_cases<T> returning a tuple of cases types
+// - a T::to<U>() function that performs the downcast
+// - a T::is<U>() function that tells if the downcast is possible
+
+namespace black::support {
+  template<typename T>
+  struct match_cases { };
+
+  template<typename T>
+  using match_cases_t = typename match_cases<T>::type;
+}
 
 namespace black::support::internal {
 
-  //
-  // Here we declare the infrastructure for pattern matching. The machinery is
-  // based on three elements which have to be provided by matchable types:
-  // - a T::alternatives tuple with the list of alternative types
-  // - a T::to<U>() function that performs the downcast
-  // - a T::is<U>() function that tells if the downcast is possible
   template<typename T>
   concept matchable = requires (T t) {
-    typename T::alternatives;
-    { std::tuple_size<typename T::alternatives>::value };
-    requires (std::tuple_size<typename T::alternatives>::value > 0);
+    typename match_cases<T>::type;
     
-    t.template to<
-      typename std::tuple_element<0, typename T::alternatives>::type
-    >();
+    { std::tuple_size<match_cases_t<T>>::value };
+    
+    requires (std::tuple_size<match_cases_t<T>>::value > 0);
+    
+    t.template to<typename std::tuple_element<0, match_cases_t<T>>::type>();
 
-    t.template is<
-      typename std::tuple_element<0, typename T::alternatives>::type
-    >();
+    t.template is<typename std::tuple_element<0, match_cases_t<T>>::type>();
   };
 
 
@@ -59,9 +65,7 @@ namespace black::support::internal {
     size_t ...I
   >
     requires std::invocable<Handler, T, std::tuple_element_t<I, Base>...>
-  auto unpack(
-    Handler&& handler, T h, std::index_sequence<I...>
-  ) {
+  auto unpack(Handler&& handler, T h, std::index_sequence<I...>) {
     if constexpr(std::is_pointer_v<T>)
       return std::invoke(std::forward<Handler>(handler), h, get<I>(*h)...);
     else
@@ -154,7 +158,7 @@ namespace black::support::internal {
   // one to use in the common case of `H` being a type that satisfies the
   // interface for matchable types.
   //
-  template<typename H, typename Cases = typename H::alternatives>
+  template<typename H, typename Cases = match_cases_t<H>>
   struct dispatcher;
 
   template<typename H, typename Case, typename ...Cases>
@@ -236,8 +240,6 @@ namespace black::support::internal {
   {
     using std::variant<Cases...>::variant;
 
-    using alternatives = std::tuple<Cases...>;
-
     bool operator==(either const&) const = default;
 
     template<typename T>
@@ -263,6 +265,16 @@ namespace black::support {
   using internal::otherwise;
   using internal::either;
 }
+
+template<typename ...Cases>
+  struct black::support::match_cases<black::support::either<Cases...>> 
+    : std::type_identity<std::tuple<Cases...>> { };
+
+template<>
+struct std::common_type<
+  ::black::support::internal::missing_case_t, 
+  ::black::support::internal::missing_case_t
+> : std::type_identity<::black::support::internal::missing_case_t> { };
 
 template<typename T>
 struct std::common_type<::black::support::internal::missing_case_t, T> : 
