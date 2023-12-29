@@ -1,6 +1,8 @@
 Assertion macros
 ====================
 
+.. cpp:namespace:: black::support
+
 .. c:macro:: BLACK_ASSERT_DISABLE
 
    If defined, disables the :c:macro:`black_assert` macro.

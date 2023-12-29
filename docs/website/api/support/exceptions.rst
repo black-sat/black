@@ -1,6 +1,10 @@
 Exception types
 =================
 
+This page lists the *exception* types thrown by BLACK in many situations. BLACK
+only ever throws exceptions of types listed in this page, or standard exception
+types thrown by the standard library.
+
 .. cpp:namespace:: black::support
 
 .. cpp:class:: exception : public std::logic_error
