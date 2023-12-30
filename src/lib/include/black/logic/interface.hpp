@@ -26,7 +26,7 @@
 
 namespace black::logic::internal {
 
-  struct alphabet : alphabet_base<> { };
+  struct alphabet : alphabet_base<alphabet> { };
 
 }
 

@@ -46,6 +46,14 @@ namespace black::logic::internal {
   public:
     enum class type : uint8_t; // to specialize
 
+    term(term const&) = default;
+    term(term &&) = default;
+    
+    term &operator=(term const&) = default;
+    term &operator=(term &&) = default;
+
+    bool operator==(term const&) const = default;
+
     template<typename Handle>
       requires requires { type_of_handle_v<Handle>; }
     std::optional<Handle> to() const;
@@ -56,13 +64,19 @@ namespace black::logic::internal {
       return to<Handle>().has_value();
     }    
 
-  protected:
-    term(std::shared_ptr<node_base_t const> n) : _node{n} { }
+    alphabet *sigma() const { return _sigma; }
 
+    size_t hash() const { return support::hash(_node); }
+
+  private:
+    term(alphabet *sigma, std::shared_ptr<node_base_t const> n) 
+      : _sigma{sigma}, _node{n} { }
+
+    alphabet *_sigma;
     std::shared_ptr<node_base_t const> _node;
 
     template<term::type Type>
-    friend struct term_handle_base;
+    friend struct concrete_term;
   };
 
   struct node_base_t {
@@ -76,6 +90,20 @@ namespace black::logic::internal {
 
   template<typename T>
   using term_types_t = term_types<T>::type;
+
+  template<typename T>
+  struct has_sigma : std::false_type { };
+
+  template<typename T>
+  inline constexpr bool has_sigma_v = has_sigma<T>::value;
+
+  template<typename T>
+    requires requires(T v) { { v.sigma() } -> std::convertible_to<alphabet *>; }
+  struct has_sigma<T> : std::true_type { };
+
+  template<std::ranges::range R>
+    requires has_sigma_v<std::ranges::range_value_t<R>>
+  struct has_sigma<R> : std::true_type { };
 
   template<term::type Type>
   struct node_data; // to specialize
@@ -94,62 +122,11 @@ namespace black::logic::internal {
     node_data_t<Type> data;
   };
 
-  template<term::type Type, typename Args = node_data_t<Type>>
-  struct term_handle_ctor_base;
-  
-  template<term::type Type, typename ...Args>
-  struct term_handle_ctor_base<Type, std::tuple<Args...>> : term
-  {
-    term_handle_ctor_base(Args ...args)
-      : term{std::make_shared<node_t<Type> const>(std::move(args)...)} { }
-
-  private:
-    term_handle_ctor_base(std::shared_ptr<node_t<Type> const> ptr)
-      : term{ptr} { }
-
-    template<term::type, typename>
-    friend struct alphabet_named_factory_base;
-  };
-
-  template<term::type Type, typename Derived>
-  struct term_handle_fields; // to specialize
-
-  template<term::type Type>
-  struct term_handle_base 
-    : term_handle_ctor_base<Type>, 
-      term_handle_fields<Type, term_handle_base<Type>> 
-  {
-    friend term_handle_fields<Type, term_handle_base<Type>>;
-
-    using term_handle_ctor_base<Type>::term_handle_ctor_base;
-  };
-
-  template<typename Handle>
-    requires requires { type_of_handle_v<Handle>; }
-  std::optional<Handle> term::to() const {
-    if(this->_node->type == type_of_handle_v<Handle>)
-      return {static_cast<Handle const&>(*this)};
-    return {};
-  }
-
-  template<typename T>
-  struct is_child : std::false_type { };
-
-  template<>
-  struct is_child<term> : std::true_type { };
-
-  template<std::ranges::range R>
-    requires std::is_same_v<std::ranges::range_value_t<R>, term>
-  struct is_child<R> : std::true_type { };
-
-  template<typename T>
-  inline constexpr bool is_child_v = is_child<T>::value;
-
   template<term::type Type, typename = node_data_t<Type>>
   struct is_leaf : std::false_type { };
 
   template<term::type Type, typename ...Fields>
-    requires ((!is_child_v<Fields>) && ...)
+    requires ((!has_sigma_v<Fields>) && ...)
   struct is_leaf<Type, std::tuple<Fields...>> : std::true_type { };
 
   template<term::type Type>
@@ -177,22 +154,119 @@ namespace black::logic::internal {
 
   private:
     support::map<node_t<Type>, std::weak_ptr<node_t<Type> const>> _pool;
+
+    template<term::type, typename>
+    friend struct concrete_term_specific_base;
   };
 
-  template<term::type Type, typename Args = node_data_t<Type>>
+  template<typename Derived, term::type Type, typename Args = node_data_t<Type>>
   struct alphabet_named_factory_base { }; // to specialize
 
-  template<typename T = void, typename Types = term_types_t<T>>
+  template<typename Derived, typename Types = term_types_t<Derived>>
   struct alphabet_base;
   
-  template<term::type ...Types>
+  template<typename Derived, term::type ...Types>
   struct alphabet_base<
-    void, std::tuple<std::integral_constant<term::type, Types>...>
+    Derived, std::tuple<std::integral_constant<term::type, Types>...>
   > : std::conditional_t<
         is_leaf_v<Types>,
-        alphabet_named_factory_base<Types>,
-        std::monostate
+        alphabet_named_factory_base<Derived, Types>,
+        alphabet_factory_base<Types>
       >... { };
+
+  struct concrete_term_common_base 
+  {
+  protected:
+    concrete_term_common_base(
+      alphabet *sigma, std::shared_ptr<node_base_t const> node
+    ) : _sigma{sigma}, _node{node} { }
+
+    alphabet *_sigma;
+    std::shared_ptr<node_base_t const> _node;
+
+    template<typename, term::type, typename>
+    friend struct alphabet_named_factory_base;
+
+    friend term;
+  };
+
+  template<typename Arg>
+    requires has_sigma_v<Arg>
+  alphabet *sigma(std::source_location loc, Arg const& arg) {
+    if constexpr(std::ranges::range<Arg>) {
+      black_assume(!empty(arg), loc, "vector argument cannot be empty");
+
+      return begin(arg)->sigma();
+    } else {
+      return arg.sigma();
+    }
+  }
+
+  template<typename Arg, typename ...Args>
+  alphabet *sigma(
+    std::source_location loc, Arg const& arg, Args const& ...args
+  ) {
+    if constexpr (has_sigma_v<Arg>)
+      return sigma(loc, arg);
+    else
+      return sigma(loc, args...);
+  }
+
+  template<term::type Type, typename Args = node_data_t<Type>>
+  struct concrete_term_specific_base;
+  
+  template<term::type Type, typename ...Args>
+  struct concrete_term_specific_base<Type, std::tuple<Args...>>
+    : concrete_term_common_base
+  {
+    using concrete_term_common_base::concrete_term_common_base;
+  };
+
+  template<term::type Type, typename ...Args>
+    requires (!is_leaf_v<Type>)
+  struct concrete_term_specific_base<Type, std::tuple<Args...>>
+    : concrete_term_common_base
+  {
+    using concrete_term_common_base::concrete_term_common_base;
+
+    concrete_term_specific_base(
+      Args ...args, std::source_location loc = std::source_location::current()
+    )
+      : concrete_term_common_base{
+          sigma(loc, args...), 
+          sigma(loc, args...)->alphabet_factory_base<Type>::construct(
+            std::move(args)...
+          )
+        } { }
+
+  };
+
+  template<term::type Type, typename Derived>
+  struct concrete_term_fields; // to specialize
+
+  template<term::type Type>
+  struct concrete_term 
+    : concrete_term_specific_base<Type>, 
+      concrete_term_fields<Type, concrete_term<Type>> 
+  {
+    friend concrete_term_fields<Type, concrete_term<Type>>;
+
+    using concrete_term_specific_base<Type>::concrete_term_specific_base;
+
+    alphabet *sigma() const { return this->_sigma; }
+
+    operator term() const {
+      return term{this->_sigma, this->_node};
+    }
+  };
+
+  template<typename Handle>
+    requires requires { type_of_handle_v<Handle>; }
+  std::optional<Handle> term::to() const {
+    if(this->_node->type == type_of_handle_v<Handle>)
+      return Handle{_sigma, _node};
+    return {};
+  }
 
 }
 
@@ -200,6 +274,13 @@ template<black::logic::internal::term::type Type>
 struct std::hash<black::logic::internal::node_t<Type>> {
   size_t operator()(black::logic::internal::node_t<Type> const& n) const {
     return black::support::hash(n.type, n.data);
+  }
+};
+
+template<>
+struct std::hash<black::logic::internal::term> {
+  size_t operator()(black::logic::internal::term t) const {
+    return t.hash();
   }
 };
 

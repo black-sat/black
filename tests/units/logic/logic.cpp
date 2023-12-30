@@ -35,12 +35,14 @@ TEST_CASE("Terms") {
   auto p = sigma.symbol("p");
   auto q = sigma.symbol("q");
 
-  term t = conjunction{{p, q}};
+  term t = conjunction({p, q});
 
-  match(t)(
-    [](conjunction) {
-      return 42;
+  auto s = match(t)(
+    [](conjunction c) {
+      return c.operands()[0];
     }
   );
+
+  REQUIRE(s.is<symbol>());
 
 }

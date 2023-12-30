@@ -81,7 +81,7 @@ namespace black::logic::internal {
 
   #define declare_term_type(Term) \
     template<typename Derived> \
-    struct term_handle_fields<term::type::Term, Derived> {
+    struct concrete_term_fields<term::type::Term, Derived> {
 
   #define declare_fields declare_field
   #define declare_field(Term, Field, Type) \
@@ -100,12 +100,20 @@ namespace black::logic::internal {
 
   #include <black/logic/defs.hpp>
 
+}
+
+namespace black::logic {
+  
   #define declare_term_type(Term) \
-    struct Term : term_handle_base<term::type::Term> { \
-      using term_handle_base<term::type::Term>::term_handle_base; \
+    struct Term : internal::concrete_term<term::type::Term> { \
+      using concrete_term<term::type::Term>::concrete_term; \
     };
 
   #include <black/logic/defs.hpp>
+
+}
+
+namespace black::logic::internal {
 
   #define declare_term_type(Term) \
     template<> \
@@ -117,12 +125,15 @@ namespace black::logic::internal {
 
 
   #define declare_term_type(Term) \
-    template<typename ...Args> \
-    struct alphabet_named_factory_base<term::type::Term, std::tuple<Args...>> \
+    template<typename Derived, typename ...Args> \
+    struct alphabet_named_factory_base< \
+      Derived, term::type::Term, std::tuple<Args...> \
+    > \
       : alphabet_factory_base<term::type::Term> \
     { \
-      internal::Term Term(Args ...args) { \
-        return internal::Term{ \
+      logic::Term Term(Args ...args) { \
+        return logic::Term{ \
+          static_cast<Derived *>(this), \
           alphabet_factory_base<term::type::Term>::construct( \
             std::move(args)... \
           ) \
@@ -140,7 +151,7 @@ namespace black::support {
 
     using cases = logic::internal::cpp_tuple_t<0
 
-    #define declare_term_type(Term) , logic::internal::Term
+    #define declare_term_type(Term) , logic::Term
 
     #include <black/logic/defs.hpp>
 
@@ -152,17 +163,6 @@ namespace black::support {
     }
 
   };
-
-}
-
-
-  
-
-namespace black::logic {
-
-  #define declare_term_type(Term) using internal::Term;
-
-  #include <black/logic/defs.hpp>
 
 }
 
