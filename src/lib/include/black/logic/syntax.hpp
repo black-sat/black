@@ -27,12 +27,13 @@
 #include <memory>
 #include <tuple>
 #include <format>
+#include <ranges>
 
 #include <black/support.hpp>
 
 namespace black::logic::internal {
   
-  class alphabet;
+  struct alphabet;
   struct node_base_t;
 
   template<typename H>
@@ -66,7 +67,15 @@ namespace black::logic::internal {
 
   struct node_base_t {
     term::type type;
+
+    bool operator==(node_base_t const&) const = default;
   };
+
+  template<typename>
+  struct term_types;
+
+  template<typename T>
+  using term_types_t = term_types<T>::type;
 
   template<term::type Type>
   struct node_data; // to specialize
@@ -77,8 +86,8 @@ namespace black::logic::internal {
   template<term::type Type>
   struct node_t : node_base_t { 
     template<typename ...Args>
-    node_t(term::type _type, Args ...args)
-      : node_base_t{_type}, data{std::move(args)...} { }
+    node_t(Args ...args)
+      : node_base_t{Type}, data{std::move(args)...} { }
 
     bool operator==(node_t const&) const = default;
 
@@ -92,7 +101,14 @@ namespace black::logic::internal {
   struct term_handle_ctor_base<Type, std::tuple<Args...>> : term
   {
     term_handle_ctor_base(Args ...args)
-      : term{std::make_shared<node_t<Type> const>(Type, std::move(args)...)} { }
+      : term{std::make_shared<node_t<Type> const>(std::move(args)...)} { }
+
+  private:
+    term_handle_ctor_base(std::shared_ptr<node_t<Type> const> ptr)
+      : term{ptr} { }
+
+    template<term::type, typename>
+    friend struct alphabet_named_factory_base;
   };
 
   template<term::type Type, typename Derived>
@@ -115,6 +131,68 @@ namespace black::logic::internal {
       return {static_cast<Handle const&>(*this)};
     return {};
   }
+
+  template<typename T>
+  struct is_child : std::false_type { };
+
+  template<>
+  struct is_child<term> : std::true_type { };
+
+  template<std::ranges::range R>
+    requires std::is_same_v<std::ranges::range_value_t<R>, term>
+  struct is_child<R> : std::true_type { };
+
+  template<typename T>
+  inline constexpr bool is_child_v = is_child<T>::value;
+
+  template<term::type Type, typename = node_data_t<Type>>
+  struct is_leaf : std::false_type { };
+
+  template<term::type Type, typename ...Fields>
+    requires ((!is_child_v<Fields>) && ...)
+  struct is_leaf<Type, std::tuple<Fields...>> : std::true_type { };
+
+  template<term::type Type>
+  inline constexpr bool is_leaf_v = is_leaf<Type>::value;
+
+  template<term::type Type, typename Args = node_data_t<Type>>
+  class alphabet_factory_base { };
+
+  template<term::type Type, typename ...Args>
+  class alphabet_factory_base<Type, std::tuple<Args...>> 
+  {
+  protected:
+    std::shared_ptr<node_t<Type> const>
+    construct(Args ...args) {
+      node_t<Type> node{std::move(args)...};
+
+      if(auto ptr = _pool[node].lock(); ptr)
+        return ptr;
+      
+      auto ptr = std::make_shared<node_t<Type> const>(std::move(node));
+      _pool[*ptr] = ptr;
+
+      return ptr;
+    }
+
+  private:
+    support::map<node_t<Type>, std::weak_ptr<node_t<Type> const>> _pool;
+  };
+
+  template<term::type Type, typename Args = node_data_t<Type>>
+  struct alphabet_named_factory_base { }; // to specialize
+
+  template<typename T = void, typename Types = term_types_t<T>>
+  struct alphabet_base;
+  
+  template<term::type ...Types>
+  struct alphabet_base<
+    void, std::tuple<std::integral_constant<term::type, Types>...>
+  > : std::conditional_t<
+        is_leaf_v<Types>,
+        alphabet_named_factory_base<Types>,
+        std::monostate
+      >... { };
 
 }
 

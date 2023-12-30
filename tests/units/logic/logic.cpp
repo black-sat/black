@@ -30,8 +30,10 @@ TEST_CASE("Terms") {
 
   using namespace black::logic;
   
-  symbol p{"p"};
-  symbol q{"q"};
+  alphabet sigma;
+
+  auto p = sigma.symbol("p");
+  auto q = sigma.symbol("q");
 
   term t = conjunction{{p, q}};
 

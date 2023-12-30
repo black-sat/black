@@ -35,11 +35,19 @@ namespace black::logic::internal {
   template<int Dummy, typename ...Types>
   using cpp_tuple_t = std::tuple<Types...>;
 
-  #define declare_term_type(Name) Name,
+  #define declare_term_type(Term) Term,
 
   enum class term::type : uint8_t {
     #include <black/logic/defs.hpp>
   };
+
+  template<typename>
+  struct term_types : cpp_tuple<0
+    #define declare_term_type(Term) \
+      , std::integral_constant<term::type, term::type::Term>
+
+    #include <black/logic/defs.hpp>
+  > { };
 
   #define declare_term_type(Term) \
     template<> \
@@ -107,6 +115,22 @@ namespace black::logic::internal {
 
   #include <black/logic/defs.hpp>
 
+
+  #define declare_term_type(Term) \
+    template<typename ...Args> \
+    struct alphabet_named_factory_base<term::type::Term, std::tuple<Args...>> \
+      : alphabet_factory_base<term::type::Term> \
+    { \
+      internal::Term Term(Args ...args) { \
+        return internal::Term{ \
+          alphabet_factory_base<term::type::Term>::construct( \
+            std::move(args)... \
+          ) \
+        }; \
+      } \
+    };
+
+  #include <black/logic/defs.hpp>
 }
 
 namespace black::support {
