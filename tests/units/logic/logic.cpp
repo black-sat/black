@@ -35,6 +35,8 @@ TEST_CASE("Terms") {
   auto p = sigma.symbol("p");
   auto q = sigma.symbol("q");
 
+  REQUIRE_THROWS(conjunction(std::vector<term>{}));
+  
   term t = conjunction({p, q});
 
   auto s = match(t)(

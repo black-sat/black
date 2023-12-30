@@ -194,7 +194,7 @@ namespace black::logic::internal {
     requires has_sigma_v<Arg>
   alphabet *sigma(std::source_location loc, Arg const& arg) {
     if constexpr(std::ranges::range<Arg>) {
-      black_assume(!empty(arg), loc, "vector argument cannot be empty");
+      black_assume(!empty(arg), loc, "argument cannot be empty");
 
       return begin(arg)->sigma();
     } else {
