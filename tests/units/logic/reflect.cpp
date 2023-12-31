@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2022 Nicola Gigante
+// (C) 2024 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,32 +21,56 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_FORMULA_HPP
-#define BLACK_LOGIC_FORMULA_HPP
+#include <catch.hpp>
 
 #include <black/support.hpp>
+#include <black/logic.hpp>
 
-//
-// The files included here define BLACK's logic API: handling of logic formulas
-// and everything around formulas.
-//
-// WARNING: the following files are thoroughly commented, but please *do not*
-// read them to understand how to *use* BLACK's logic API. Refer to the
-// documentation instead for that (and ping me if the documentation does not yet
-// exists when you are reading this comment). After that, come here to
-// understand how the API works under the hood.
-//
-// Read the comments of the files in this order:
-// - hierarchy.hpp (which is not included from here)
-// - core.hpp
-// - generation.hpp
-// - interface.hpp (interface-fwd.hpp are just some needed forward declarations)
-//
-#include <black/logic/label.hpp>
-#include <black/logic/identifier.hpp>
-#include <black/logic/reflect.hpp>
-// #include <black/logic/syntax.hpp>
-// #include <black/logic/specialize.hpp>
-// #include <black/logic/interface.hpp>
+using namespace black::logic;
+using namespace black::logic::reflect;
 
-#endif // BLACK_LOGIC_FORMULA_HPP
+struct C {
+    int pippo(int x) { return x * 2; }
+};
+
+struct test : 
+    term_field_member_base<
+        term, terms_enum_t<term>::integer,
+        term_fields_enum_t<term, terms_enum_t<term>::integer>::value,
+        &C::pippo
+    > { };
+
+
+TEST_CASE("Static reflection") {
+
+    REQUIRE(
+        test{}.value(21) == 42
+    );
+
+    STATIC_REQUIRE(
+        std::is_same_v<
+            term_type_t<term, terms_enum_t<term>::integer>,
+            integer
+        >
+    );
+
+    REQUIRE(
+        term_field_name_v<
+            term, 
+            terms_enum_t<term>::integer, 
+            term_fields_enum_t<term, terms_enum_t<term>::integer>::value
+        > == "value"
+    );
+
+    STATIC_REQUIRE(
+        std::is_same_v<
+            term_field_type_t<
+                term, 
+                terms_enum_t<term>::integer, 
+                term_fields_enum_t<term, terms_enum_t<term>::integer>::value
+            >,
+            int64_t
+        >
+    );
+
+}

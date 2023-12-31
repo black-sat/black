@@ -29,10 +29,6 @@
   #define declare_field(Term, Field, Type)
 #endif
 
-#ifndef declare_fields
-  #define declare_fields(Term, Field, Type)
-#endif
-
 #ifndef end_term_type
   #define end_term_type(Term)
 #endif
@@ -50,11 +46,10 @@ declare_term_type(boolean)
 end_term_type(boolean)
 
 declare_term_type(conjunction)
-  declare_fields(conjunction, operands, term)
+  declare_field(conjunction, operands, std::vector<term>)
 end_term_type(conjunction)
 
 
 #undef declare_term_type
 #undef declare_field
-#undef declare_fields
 #undef end_term_type
