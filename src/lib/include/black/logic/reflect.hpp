@@ -84,6 +84,27 @@ namespace black::logic::reflect {
   using term_field_type_t = typename term_field_type<Term, Case, Field>::type;
 
   template<
+    typename Term, terms_enum_t<Term> Case, 
+    typename = term_fields_list_t<Term, Case>
+  >
+  struct term_fields_types { };
+
+  template<
+    typename Term, terms_enum_t<Term> Case,
+    term_fields_enum_t<Term, Case> ...Fields
+  >
+  struct term_fields_types<
+    Term, Case, 
+    std::tuple<
+      std::integral_constant<term_fields_enum_t<Term, Case>, Fields>...
+    >
+  > : std::type_identity<std::tuple<term_field_type_t<Term, Case, Fields>...>> 
+  { };
+
+  template<typename Term, terms_enum_t<Term> Case>
+  using term_fields_types_t = typename term_fields_types<Term, Case>::type;
+
+  template<
     typename Derived, typename Term, terms_enum_t<Term> Case,
     auto Member
   >
