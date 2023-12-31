@@ -30,7 +30,10 @@ using namespace black::logic;
 using namespace black::logic::reflect;
 
 struct C {
-    int pippo(int x) { return x * 2; }
+    int pippo() const { return x * 2; }
+    int pluto(int y) { return y * 2; }
+
+    int x = 21;
 };
 
 struct test : C, 
@@ -39,13 +42,23 @@ struct test : C,
         term, terms_enum_t<term>::integer,
         term_fields_enum_t<term, terms_enum_t<term>::integer>::value,
         &C::pippo
-    > { };
+    >, 
+    term_member_base<
+        test,
+        term, terms_enum_t<term>::integer,
+        &C::pluto
+    >
+    { };
 
 
 TEST_CASE("Static reflection") {
 
     REQUIRE(
-        test{}.value(21) == 42
+        test{}.value() == 42
+    );
+    
+    REQUIRE(
+        test{}.integer(21) == 42
     );
 
     STATIC_REQUIRE(
