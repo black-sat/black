@@ -84,6 +84,7 @@ namespace black::logic::reflect {
   using term_field_type_t = typename term_field_type<Term, Case, Field>::type;
 
   template<
+    typename Derived,
     typename Term, terms_enum_t<Term> Case, 
     term_fields_enum_t<Term, Case> Field,
     auto Member
@@ -187,32 +188,36 @@ namespace black::logic::reflect {
 
   #define declare_field(Term, Field, Type) \
   template< \
+    typename Derived, \
     typename Base, typename R, typename ...Args, \
     R (Base::*Ptr)(Args...) \
   > \
   struct term_field_member_base< \
+    Derived, \
     term, terms_enum_t<term>::Term, \
     term_fields_enum_t<term, terms_enum_t<term>::Term>::Field, \
     Ptr \
-  > : public Base { \
+  > { \
     R Field(Args... args) { \
-      return (this->*Ptr)(std::move(args...)); \
+      return (static_cast<Derived *>(this)->*Ptr)(std::move(args...)); \
     } \
   }; \
   \
   template< \
+    typename Derived, \
     typename Base, typename R, typename ...Args, \
     R (Base::*Ptr)(Args...) const \
   > \
   struct term_field_member_base< \
+    Derived, \
     term, terms_enum_t<term>::Term, \
     term_fields_enum_t<term, terms_enum_t<term>::Term>::Field, \
     Ptr \
-  > : public Base { \
+  > { \
     R Field(Args... args) const { \
-      return (this->*Ptr)(std::move(args...)); \
+      return (static_cast<Derived const*>(this)->*Ptr)(std::move(args...)); \
     } \
-  }; \
+  }; 
 
   #include <black/logic/defs.hpp>
 

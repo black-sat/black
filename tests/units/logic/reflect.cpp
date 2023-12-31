@@ -33,8 +33,9 @@ struct C {
     int pippo(int x) { return x * 2; }
 };
 
-struct test : 
+struct test : C, 
     term_field_member_base<
+        test,
         term, terms_enum_t<term>::integer,
         term_fields_enum_t<term, terms_enum_t<term>::integer>::value,
         &C::pippo
