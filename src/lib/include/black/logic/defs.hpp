@@ -21,35 +21,49 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef declare_term_type
-  #define declare_term_type(Term)
+#ifndef declare_ast
+  #define declare_ast(NS, AST)
+#endif
+
+#ifndef declare_ast_node
+  #define declare_ast_node(NS, AST, Node)
 #endif
 
 #ifndef declare_field
-  #define declare_field(Term, Field, Type)
+  #define declare_field(NS, AST, Node, Field, Type)
 #endif
 
-#ifndef end_term_type
-  #define end_term_type(Term)
+#ifndef end_ast_node
+  #define end_ast_node(NS, AST, Node)
 #endif
 
-declare_term_type(integer)
-  declare_field(integer, value, int64_t)
-end_term_type(integer)
+#ifndef end_ast
+  #define end_ast(NS, AST)
+#endif
 
-declare_term_type(symbol)
-  declare_field(symbol, name, label)
-end_term_type(symbol)
+declare_ast(logic, term)
 
-declare_term_type(boolean)
-  declare_field(boolean, value, bool)
-end_term_type(boolean)
+  declare_ast_node(logic, term, integer)
+    declare_field(logic, term, integer, value, int64_t)
+  end_ast_node(logic, term, integer)
 
-declare_term_type(conjunction)
-  declare_field(conjunction, operands, std::vector<term>)
-end_term_type(conjunction)
+  declare_ast_node(logic, term, symbol)
+    declare_field(logic, term, symbol, name, logic::label)
+  end_ast_node(logic, term, symbol)
+
+  declare_ast_node(logic, term, boolean)
+    declare_field(logic, term, boolean, value, bool)
+  end_ast_node(logic, term, boolean)
+
+  declare_ast_node(logic, term, conjunction)
+    declare_field(logic, term, conjunction, operands, std::vector<logic::term>)
+  end_ast_node(logic, term, conjunction)
+
+end_ast(logic, term)
 
 
-#undef declare_term_type
+#undef declare_ast
+#undef declare_ast_node
 #undef declare_field
-#undef end_term_type
+#undef end_ast_node
+#undef end_ast

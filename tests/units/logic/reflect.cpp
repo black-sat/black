@@ -26,72 +26,77 @@
 #include <black/support.hpp>
 #include <black/logic.hpp>
 
+using namespace black::reflect;
 using namespace black::logic;
-using namespace black::logic::reflect;
 
-struct C {
-    int test1() const { return x * 2; }
-    int test2(int y) { return y * 2; }
-
-    int x = 21;
-};
-
-struct test : C, 
-    term_field_member_base<
-        test,
-        term, terms_enum_t<term>::integer,
-        term_fields_enum_t<term, terms_enum_t<term>::integer>::value,
-        &C::test1
-    >, 
-    term_member_base<
-        test,
-        term, terms_enum_t<term>::integer,
-        &C::test2
-    >
-    { };
-
+#include <string_view>
 
 TEST_CASE("Static reflection") {
 
-    REQUIRE(
-        test{}.value() == 42
-    );
-    
-    REQUIRE(
-        test{}.integer(21) == 42
-    );
+    STATIC_REQUIRE(is_ast_v<term>);
+    STATIC_REQUIRE(is_ast_node_of_v<integer, term>);
 
     STATIC_REQUIRE(
         std::is_same_v<
-            term_type_t<term, terms_enum_t<term>::integer>,
-            integer
+            ast_nodes_t<term>,
+            std::tuple<integer, symbol, boolean, conjunction>
         >
     );
 
-    REQUIRE(
-        term_field_name_v<
-            term, 
-            terms_enum_t<term>::integer, 
-            term_fields_enum_t<term, terms_enum_t<term>::integer>::value
-        > == "value"
+    STATIC_REQUIRE(
+        std::to_underlying(ast_node_field_t<term, symbol>::name) == 0
     );
 
     STATIC_REQUIRE(
         std::is_same_v<
-            term_field_type_t<
-                term, 
-                terms_enum_t<term>::integer, 
-                term_fields_enum_t<term, terms_enum_t<term>::integer>::value
+            ast_node_field_list_t<term, symbol>,
+            std::tuple<
+                std::integral_constant<
+                    ast_node_field_t<term, symbol>,
+                    ast_node_field_t<term, symbol>::name
+                >
+            >
+        >
+    );
+
+    STATIC_REQUIRE(
+        std::is_same_v<
+            ast_node_field_type_t<
+                term, symbol, ast_node_field_t<term, symbol>::name
             >,
-            int64_t
+            label
         >
     );
 
     STATIC_REQUIRE(
+        ast_node_field_name_v<
+            term, symbol, ast_node_field_t<term, symbol>::name
+        > == "name"
+    );
+
+    STATIC_REQUIRE(
         std::is_same_v<
-            term_fields_types_t<term, terms_enum_t<term>::integer>,
-            std::tuple<int64_t>
+            ast_node_field_types_t<term, symbol>,
+            std::tuple<label>
         >
     );
+
+    struct base {
+        int test1(int y) { return y * 2; }
+        int test2() const { return x * 2; }
+
+        int x = 21;
+    };
+
+    struct test 
+        : base,
+        ast_node_member_base<test, term, symbol, &base::test1>,
+        ast_node_field_member_base<
+            test,
+            term, symbol, ast_node_field_t<term, symbol>::name, &base::test2
+        > { };
+
+    REQUIRE(test{}.symbol(21) == 42);
+    REQUIRE(test{}.name() == 42);
 
 }

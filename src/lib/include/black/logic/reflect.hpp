@@ -26,229 +26,219 @@
 
 #include <string_view>
 
-namespace black::logic::reflect {
+namespace black::reflect {
 
-  template<typename Term>
-  struct terms_enum { };
-
-  template<typename Term>
-  using terms_enum_t = typename terms_enum<Term>::type;
-
-  template<typename Term>
-  struct terms_list { };
-
-  template<typename Term>
-  using terms_list_t = typename terms_list<Term>::type;
-
-  template<typename Term, terms_enum_t<Term> Case>
-  struct term_type { };
+  template<typename AST>
+  struct is_ast : std::false_type { };
   
-  template<typename Term, terms_enum_t<Term> Case>
-  using term_type_t = typename term_type<Term, Case>::type;
+  template<typename AST>
+  inline constexpr bool is_ast_v = is_ast<AST>::value;
 
-  template<typename Term, terms_enum_t<Term> Case>
-  struct term_fields_enum { };
-
-  template<typename Term, terms_enum_t<Term> Case>
-  using term_fields_enum_t = typename term_fields_enum<Term, Case>::type;
-
-  template<typename Term, terms_enum_t<Term> Case>
-  struct term_fields_list { };
-
-  template<typename Term, terms_enum_t<Term> Case>
-  using term_fields_list_t = typename term_fields_list<Term, Case>::type;
-
-  template<
-    typename Term, terms_enum_t<Term> Case, 
-    term_fields_enum_t<Term, Case> Field
-  >
-  struct term_field_name { };
+  template<typename AST>
+  concept ast = is_ast_v<AST>;
   
-  template<
-    typename Term, terms_enum_t<Term> Case, 
-    term_fields_enum_t<Term, Case> Field
-  >
-  inline constexpr auto term_field_name_v = 
-    term_field_name<Term, Case, Field>::value;
+  template<typename Node, ast AST>
+  struct is_ast_node_of : std::false_type { };
   
-  template<
-    typename Term, terms_enum_t<Term> Case, 
-    term_fields_enum_t<Term, Case> Field
-  >
-  struct term_field_type { };
+  template<typename Node, ast AST>
+  inline constexpr bool is_ast_node_of_v = is_ast_node_of<Node, AST>::value;
+
+  template<typename Node, typename AST>
+  concept ast_node_of = ast<AST> && is_ast_node_of_v<Node, AST>;
+
+  template<ast AST>
+  struct ast_nodes { };
   
-  template<
-    typename Term, terms_enum_t<Term> Case, 
-    term_fields_enum_t<Term, Case> Field
-  >
-  using term_field_type_t = typename term_field_type<Term, Case, Field>::type;
+  template<ast AST>
+  using ast_nodes_t = typename ast_nodes<AST>::type;
+
+  template<ast AST, ast_node_of<AST> Node>
+  struct ast_node_field { };
+  
+  template<ast AST, ast_node_of<AST> Node>
+  using ast_node_field_t = typename ast_node_field<AST, Node>::type;
+
+  template<ast AST, ast_node_of<AST> Node>
+  struct ast_node_field_list { };
+
+  template<ast AST, ast_node_of<AST> Node>
+  using ast_node_field_list_t = typename ast_node_field_list<AST, Node>::type;
+
+  template<ast AST, ast_node_of<AST> Node, ast_node_field_t<AST, Node> Field>
+  struct ast_node_field_type { };
+
+  template<ast AST, ast_node_of<AST> Node, ast_node_field_t<AST, Node> Field>
+  using ast_node_field_type_t = 
+    typename ast_node_field_type<AST, Node, Field>::type;
+
+  template<ast AST, ast_node_of<AST> Node, ast_node_field_t<AST, Node> Field>
+  struct ast_node_field_name { };
+  
+  template<ast AST, ast_node_of<AST> Node, ast_node_field_t<AST, Node> Field>
+  inline constexpr auto ast_node_field_name_v = 
+    ast_node_field_name<AST, Node, Field>::value;
 
   template<
-    typename Term, terms_enum_t<Term> Case, 
-    typename = term_fields_list_t<Term, Case>
+    ast AST, ast_node_of<AST> Node, 
+    typename = ast_node_field_list_t<AST, Node>
   >
-  struct term_fields_types { };
+  struct ast_node_field_types { };
 
   template<
-    typename Term, terms_enum_t<Term> Case,
-    term_fields_enum_t<Term, Case> ...Fields
+    ast AST, ast_node_of<AST> Node, ast_node_field_t<AST, Node> ...Fields
   >
-  struct term_fields_types<
-    Term, Case, 
-    std::tuple<
-      std::integral_constant<term_fields_enum_t<Term, Case>, Fields>...
-    >
-  > : std::type_identity<std::tuple<term_field_type_t<Term, Case, Fields>...>> 
-  { };
+  struct ast_node_field_types<
+    AST, Node, 
+    std::tuple<std::integral_constant<ast_node_field_t<AST, Node>, Fields>...>
+  > : std::type_identity<
+        std::tuple<ast_node_field_type_t<AST, Node, Fields>...>
+      > { };
 
-  template<typename Term, terms_enum_t<Term> Case>
-  using term_fields_types_t = typename term_fields_types<Term, Case>::type;
-
-  template<
-    typename Derived, typename Term, terms_enum_t<Term> Case,
-    auto Member
-  >
-  struct term_member_base { };
+  template<ast AST, ast_node_of<AST> Node>
+  using ast_node_field_types_t = typename ast_node_field_types<AST, Node>::type;
 
   template<
     typename Derived,
-    typename Term, terms_enum_t<Term> Case, 
-    term_fields_enum_t<Term, Case> Field,
+    ast AST, ast_node_of<AST> Node,
     auto Member
   >
-  struct term_field_member_base { };
+  struct ast_node_member_base { };
+  
+  template<
+    typename Derived,
+    ast AST, ast_node_of<AST> Node, ast_node_field_t<AST, Node> Field,
+    auto Member
+  >
+  struct ast_node_field_member_base { };
 
 }
 
 //
-// x-pattern expansions to implement the traits above
+// implementation of the traits above through x-pattern expansions 
 //
-namespace black::logic {
-  struct term;
 
-  #define declare_term_type(Term) \
-    struct Term;
-  #include <black/logic/defs.hpp>
-}
-
-namespace black::logic::reflect {
+namespace black {
 
   template<int Dummy, typename ...Args>
   struct tuple_cpp : std::type_identity<std::tuple<Args...>> { };
-  
-  template<int Dummy, typename ...Args>
-  using tuple_cpp_t = typename tuple_cpp<Dummy, Args...>::type;
 
-  template<>
-  struct terms_enum<term> {
-    enum class type : size_t {
-      #define declare_term_type(Term) Term, 
-      #include <black/logic/defs.hpp>
-    };
-  };
-
-  template<>
-  struct terms_list<term> : tuple_cpp<0
-    #define declare_term_type(Term) \
-      , std::integral_constant< \
-          terms_enum_t<term>, terms_enum_t<term>::Term \
-        >
-    #include <black/logic/defs.hpp>
-  > { };
-
-  #define declare_term_type(Term) \
-    template<> \
-    struct term_type<term, terms_enum_t<term>::Term> \
-      : std::type_identity<Term> { };
+  #define declare_ast(NS, AST) \
+    namespace NS { \
+      struct AST; \
+    }
   #include <black/logic/defs.hpp>
 
-  #define declare_term_type(Term) \
-    template<> \
-    struct term_fields_enum<term, terms_enum_t<term>::Term> { \
-      enum class type : size_t { \
-  
-  #define declare_field(Term, Field, Type) \
-        Field, 
+  #define declare_ast_node(NS, AST, Node) \
+    namespace NS { \
+      struct Node; \
+    }
+  #include <black/logic/defs.hpp>
 
-  #define end_term_type(Term) \
+}
+
+namespace black::reflect {
+  
+  #define declare_ast(NS, AST) \
+    template<> \
+    struct is_ast<NS::AST> : std::true_type { };
+  #include <black/logic/defs.hpp>
+  
+  #define declare_ast_node(NS, AST, Node) \
+    template<> \
+    struct is_ast_node_of<NS::Node, NS::AST> : std::true_type { };
+  #include <black/logic/defs.hpp>
+
+  #define declare_ast(NS, AST) \
+    template<> \
+    struct ast_nodes<NS::AST> : tuple_cpp<0
+
+  #define declare_ast_node(NS, AST, Node) \
+      , NS::Node
+
+  #define end_ast(NS, AST) \
+    > { };
+
+  #include <black/logic/defs.hpp>
+
+  #define declare_ast_node(NS, AST, Node) \
+    template<> \
+    struct ast_node_field<NS::AST, NS::Node> { \
+      enum class type : size_t {
+
+  #define declare_field(NS, AST, Node, Field, Type) \
+        Field,
+
+  #define end_ast_node(NS, AST, Node) \
       }; \
     };
 
   #include <black/logic/defs.hpp>
 
-  #define declare_term_type(Term) \
-    template<> \
-    struct term_fields_list<term, terms_enum_t<term>::Term> : tuple_cpp<0
 
-  #define declare_field(Term, Field, Type) \
-    , std::integral_constant< \
-        term_fields_enum_t<term, terms_enum_t<term>::Term>, \
-        term_fields_enum_t<term, terms_enum_t<term>::Term>::Field \
-      >
+  #define declare_ast_node(NS, AST, Node) \
+    template<> \
+    struct ast_node_field_list<NS::AST, NS::Node> : tuple_cpp<0
+
+  #define declare_field(NS, AST, Node, Field, Type) \
+      , std::integral_constant< \
+          ast_node_field_t<NS::AST, NS::Node>, \
+          ast_node_field_t<NS::AST, NS::Node>::Field \
+        >
   
-  #define end_term_type(Term) \
-  > { };
+  #define end_ast_node(NS, AST, Node) \
+    > { };
 
   #include <black/logic/defs.hpp>
 
-  #define declare_field(Term, Field, Type) \
+  #define declare_field(NS, AST, Node, Field, Type) \
     template<> \
-    struct term_field_name< \
-      term, \
-      terms_enum_t<term>::Term, \
-      term_fields_enum_t<term, terms_enum_t<term>::Term>::Field \
+    struct ast_node_field_type< \
+      NS::AST, NS::Node, ast_node_field_t<NS::AST, NS::Node>::Field \
+    > : std::type_identity<Type> { };
+
+  #include <black/logic/defs.hpp>
+
+  #define declare_field(NS, AST, Node, Field, Type) \
+    template<> \
+    struct ast_node_field_name< \
+      NS::AST, NS::Node, ast_node_field_t<NS::AST, NS::Node>::Field \
     > { \
       static constexpr std::string_view value = #Field; \
     };
 
   #include <black/logic/defs.hpp>
 
-  #define declare_field(Term, Field, Type) \
-    template<> \
-    struct term_field_type< \
-      term, \
-      terms_enum_t<term>::Term, \
-      term_fields_enum_t<term, terms_enum_t<term>::Term>::Field \
-    > : std::type_identity<Type> { };
+  #define declare_ast_node(NS, AST, Node) \
+    template< \
+      typename Derived, \
+      typename Base, typename R, typename ...Args, \
+      R (Base::*Ptr)(Args...) \
+    > \
+    struct ast_node_member_base<Derived, NS::AST, NS::Node, Ptr> { \
+      R Node(Args const& ...args) { \
+        return (static_cast<Derived *>(this)->*Ptr)(args...); \
+      } \
+    };
 
   #include <black/logic/defs.hpp>
 
-  #define declare_term_type(Term) \
-  template< \
-    typename Derived, \
-    typename Base, typename R, typename ...Args, \
-    R (Base::*Ptr)(Args ...args) \
-  > \
-  struct term_member_base< \
-    Derived, \
-    term, terms_enum_t<term>::Term, \
-    Ptr \
-  > { \
-    R Term(Args ...args) { \
-      return (static_cast<Derived *>(this)->*Ptr)(std::move(args)...); \
-    } \
-  };
+  #define declare_field(NS, AST, Node, Field, Type) \
+    template< \
+      typename Derived, \
+      typename Base, typename R, \
+      R (Base::*Ptr)() const \
+    > \
+    struct ast_node_field_member_base< \
+      Derived, \
+      NS::AST, NS::Node, ast_node_field_t<NS::AST, NS::Node>::Field, Ptr \
+    > { \
+      R Field() const { \
+        return (static_cast<Derived const*>(this)->*Ptr)(); \
+      } \
+    };
 
   #include <black/logic/defs.hpp>
 
-  #define declare_field(Term, Field, Type) \
-  template< \
-    typename Derived, typename Base, typename R, \
-    R (Base::*Ptr)() const \
-  > \
-  struct term_field_member_base< \
-    Derived, \
-    term, terms_enum_t<term>::Term, \
-    term_fields_enum_t<term, terms_enum_t<term>::Term>::Field, \
-    Ptr \
-  > { \
-    R Field() const { \
-      return (static_cast<Derived const*>(this)->*Ptr)(); \
-    } \
-  };
-
-  #include <black/logic/defs.hpp>
-
-}
+} // namespace black::reflect
 
 #endif // BLACK_LOGIC_REFLECT_HPP
