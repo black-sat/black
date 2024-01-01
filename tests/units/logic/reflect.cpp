@@ -23,10 +23,10 @@
 
 #include <catch.hpp>
 
-#include <black/support.hpp>
 #include <black/logic.hpp>
+#include <black/ast.hpp>
 
-using namespace black::reflect;
+using namespace black::ast::reflect;
 using namespace black::logic;
 
 #include <string_view>
@@ -38,9 +38,13 @@ TEST_CASE("Static reflection") {
 
     STATIC_REQUIRE(
         std::is_same_v<
-            ast_nodes_t<term>,
+            ast_node_list_t<term>,
             std::tuple<integer, symbol, boolean, conjunction>
         >
+    );
+
+    STATIC_REQUIRE(
+        std::to_underlying(ast_node_t<term>::integer) == 0
     );
 
     STATIC_REQUIRE(

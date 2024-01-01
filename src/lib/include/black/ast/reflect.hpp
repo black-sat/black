@@ -21,12 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_REFLECT_HPP
-#define BLACK_LOGIC_REFLECT_HPP
+#ifndef BLACK_AST_REFLECT_HPP
+#define BLACK_AST_REFLECT_HPP
 
 #include <string_view>
 
-namespace black::reflect {
+namespace black::ast::reflect {
 
   template<typename AST>
   struct is_ast : std::false_type { };
@@ -47,10 +47,16 @@ namespace black::reflect {
   concept ast_node_of = ast<AST> && is_ast_node_of_v<Node, AST>;
 
   template<ast AST>
-  struct ast_nodes { };
+  struct ast_node_list { };
   
   template<ast AST>
-  using ast_nodes_t = typename ast_nodes<AST>::type;
+  using ast_node_list_t = typename ast_node_list<AST>::type;
+
+  template<ast AST>
+  struct ast_node { };
+
+  template<ast AST>
+  using ast_node_t = typename ast_node<AST>::type;
 
   template<ast AST, ast_node_of<AST> Node>
   struct ast_node_field { };
@@ -126,31 +132,31 @@ namespace black {
     namespace NS { \
       struct AST; \
     }
-  #include <black/logic/defs.hpp>
+  #include <black/ast/defs.hpp>
 
   #define declare_ast_node(NS, AST, Node) \
     namespace NS { \
       struct Node; \
     }
-  #include <black/logic/defs.hpp>
+  #include <black/ast/defs.hpp>
 
 }
 
-namespace black::reflect {
+namespace black::ast::reflect {
   
   #define declare_ast(NS, AST) \
     template<> \
     struct is_ast<NS::AST> : std::true_type { };
-  #include <black/logic/defs.hpp>
+  #include <black/ast/defs.hpp>
   
   #define declare_ast_node(NS, AST, Node) \
     template<> \
     struct is_ast_node_of<NS::Node, NS::AST> : std::true_type { };
-  #include <black/logic/defs.hpp>
+  #include <black/ast/defs.hpp>
 
   #define declare_ast(NS, AST) \
     template<> \
-    struct ast_nodes<NS::AST> : tuple_cpp<0
+    struct ast_node_list<NS::AST> : tuple_cpp<0
 
   #define declare_ast_node(NS, AST, Node) \
       , NS::Node
@@ -158,7 +164,21 @@ namespace black::reflect {
   #define end_ast(NS, AST) \
     > { };
 
-  #include <black/logic/defs.hpp>
+  #include <black/ast/defs.hpp>
+
+  #define declare_ast(NS, AST) \
+    template<> \
+    struct ast_node<NS::AST> { \
+      enum class type : size_t {
+
+  #define declare_ast_node(NS, AST, Node) \
+        Node,
+
+  #define end_ast(NS, AST) \
+      }; \
+    };
+
+  #include <black/ast/defs.hpp>
 
   #define declare_ast_node(NS, AST, Node) \
     template<> \
@@ -172,7 +192,7 @@ namespace black::reflect {
       }; \
     };
 
-  #include <black/logic/defs.hpp>
+  #include <black/ast/defs.hpp>
 
 
   #define declare_ast_node(NS, AST, Node) \
@@ -188,7 +208,7 @@ namespace black::reflect {
   #define end_ast_node(NS, AST, Node) \
     > { };
 
-  #include <black/logic/defs.hpp>
+  #include <black/ast/defs.hpp>
 
   #define declare_field(NS, AST, Node, Field, Type) \
     template<> \
@@ -196,7 +216,7 @@ namespace black::reflect {
       NS::AST, NS::Node, ast_node_field_t<NS::AST, NS::Node>::Field \
     > : std::type_identity<Type> { };
 
-  #include <black/logic/defs.hpp>
+  #include <black/ast/defs.hpp>
 
   #define declare_field(NS, AST, Node, Field, Type) \
     template<> \
@@ -206,7 +226,7 @@ namespace black::reflect {
       static constexpr std::string_view value = #Field; \
     };
 
-  #include <black/logic/defs.hpp>
+  #include <black/ast/defs.hpp>
 
   #define declare_ast_node(NS, AST, Node) \
     template< \
@@ -220,7 +240,7 @@ namespace black::reflect {
       } \
     };
 
-  #include <black/logic/defs.hpp>
+  #include <black/ast/defs.hpp>
 
   #define declare_field(NS, AST, Node, Field, Type) \
     template< \
@@ -237,8 +257,8 @@ namespace black::reflect {
       } \
     };
 
-  #include <black/logic/defs.hpp>
+  #include <black/ast/defs.hpp>
 
 } // namespace black::reflect
 
-#endif // BLACK_LOGIC_REFLECT_HPP
+#endif // BLACK_AST_REFLECT_HPP

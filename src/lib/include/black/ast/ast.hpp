@@ -21,10 +21,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_FORMULA_HPP
-#define BLACK_LOGIC_FORMULA_HPP
+#ifndef BLACK_AST_AST_HPP
+#define BLACK_AST_AST_HPP
 
-#include <black/logic/label.hpp>
-#include <black/logic/identifier.hpp>
+#include <black/ast/reflect.hpp>
 
-#endif // BLACK_LOGIC_FORMULA_HPP
+namespace black::ast::internal {
+
+}
+
+#endif // BLACK_AST_AST_HPP

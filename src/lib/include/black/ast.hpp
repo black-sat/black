@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2024 Nicola Gigante
+// (C) 2022 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,10 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_FORMULA_HPP
-#define BLACK_LOGIC_FORMULA_HPP
+#ifndef BLACK_AST_HPP
+#define BLACK_AST_HPP
 
-#include <black/logic/label.hpp>
-#include <black/logic/identifier.hpp>
+#include <black/ast/ast.hpp>
+#include <black/ast/reflect.hpp>
 
-#endif // BLACK_LOGIC_FORMULA_HPP
+#endif // BLACK_AST_HPP
