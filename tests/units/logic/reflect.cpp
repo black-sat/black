@@ -44,11 +44,15 @@ TEST_CASE("Static reflection") {
     );
 
     STATIC_REQUIRE(
-        std::to_underlying(ast_node_t<term>::integer) == 0
+        std::to_underlying(ast_node_index_t<term>::integer) == 0
     );
 
     STATIC_REQUIRE(
-        std::to_underlying(ast_node_field_t<term, symbol>::name) == 0
+        std::to_underlying(ast_node_field_index_t<term, symbol>::name) == 0
+    );
+
+    STATIC_REQUIRE(
+        ast_node_index_of_v<term, integer> == 0
     );
 
     STATIC_REQUIRE(
@@ -56,8 +60,8 @@ TEST_CASE("Static reflection") {
             ast_node_field_list_t<term, symbol>,
             std::tuple<
                 std::integral_constant<
-                    ast_node_field_t<term, symbol>,
-                    ast_node_field_t<term, symbol>::name
+                    ast_node_field_index_t<term, symbol>,
+                    ast_node_field_index_t<term, symbol>::name
                 >
             >
         >
@@ -66,7 +70,7 @@ TEST_CASE("Static reflection") {
     STATIC_REQUIRE(
         std::is_same_v<
             ast_node_field_type_t<
-                term, symbol, ast_node_field_t<term, symbol>::name
+                term, symbol, ast_node_field_index_t<term, symbol>::name
             >,
             label
         >
@@ -74,7 +78,7 @@ TEST_CASE("Static reflection") {
 
     STATIC_REQUIRE(
         ast_node_field_name_v<
-            term, symbol, ast_node_field_t<term, symbol>::name
+            term, symbol, ast_node_field_index_t<term, symbol>::name
         > == "name"
     );
 
@@ -97,7 +101,8 @@ TEST_CASE("Static reflection") {
         ast_node_member_base<test, term, symbol, &base::test1>,
         ast_node_field_member_base<
             test,
-            term, symbol, ast_node_field_t<term, symbol>::name, &base::test2
+            term, symbol, ast_node_field_index_t<term, symbol>::name, 
+            &base::test2
         > { };
 
     REQUIRE(test{}.symbol(21) == 42);

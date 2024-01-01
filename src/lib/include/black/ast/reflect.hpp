@@ -53,16 +53,23 @@ namespace black::ast::reflect {
   using ast_node_list_t = typename ast_node_list<AST>::type;
 
   template<ast AST>
-  struct ast_node { };
+  struct ast_node_index { };
 
   template<ast AST>
-  using ast_node_t = typename ast_node<AST>::type;
+  using ast_node_index_t = typename ast_node_index<AST>::type;
 
   template<ast AST, ast_node_of<AST> Node>
-  struct ast_node_field { };
+  struct ast_node_index_of { };
   
   template<ast AST, ast_node_of<AST> Node>
-  using ast_node_field_t = typename ast_node_field<AST, Node>::type;
+  inline constexpr auto ast_node_index_of_v = 
+    ast_node_index_of<AST, Node>::value;
+
+  template<ast AST, ast_node_of<AST> Node>
+  struct ast_node_field_index { };
+  
+  template<ast AST, ast_node_of<AST> Node>
+  using ast_node_field_index_t = typename ast_node_field_index<AST, Node>::type;
 
   template<ast AST, ast_node_of<AST> Node>
   struct ast_node_field_list { };
@@ -70,17 +77,25 @@ namespace black::ast::reflect {
   template<ast AST, ast_node_of<AST> Node>
   using ast_node_field_list_t = typename ast_node_field_list<AST, Node>::type;
 
-  template<ast AST, ast_node_of<AST> Node, ast_node_field_t<AST, Node> Field>
+  template<
+    ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> Field
+  >
   struct ast_node_field_type { };
 
-  template<ast AST, ast_node_of<AST> Node, ast_node_field_t<AST, Node> Field>
+  template<
+    ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> Field
+  >
   using ast_node_field_type_t = 
     typename ast_node_field_type<AST, Node, Field>::type;
 
-  template<ast AST, ast_node_of<AST> Node, ast_node_field_t<AST, Node> Field>
+  template<
+    ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> Field
+  >
   struct ast_node_field_name { };
   
-  template<ast AST, ast_node_of<AST> Node, ast_node_field_t<AST, Node> Field>
+  template<
+    ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> Field
+  >
   inline constexpr auto ast_node_field_name_v = 
     ast_node_field_name<AST, Node, Field>::value;
 
@@ -91,11 +106,13 @@ namespace black::ast::reflect {
   struct ast_node_field_types { };
 
   template<
-    ast AST, ast_node_of<AST> Node, ast_node_field_t<AST, Node> ...Fields
+    ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> ...Fields
   >
   struct ast_node_field_types<
     AST, Node, 
-    std::tuple<std::integral_constant<ast_node_field_t<AST, Node>, Fields>...>
+    std::tuple<
+      std::integral_constant<ast_node_field_index_t<AST, Node>, Fields>...
+    >
   > : std::type_identity<
         std::tuple<ast_node_field_type_t<AST, Node, Fields>...>
       > { };
@@ -112,7 +129,7 @@ namespace black::ast::reflect {
   
   template<
     typename Derived,
-    ast AST, ast_node_of<AST> Node, ast_node_field_t<AST, Node> Field,
+    ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> Field,
     auto Member
   >
   struct ast_node_field_member_base { };
@@ -168,7 +185,7 @@ namespace black::ast::reflect {
 
   #define declare_ast(NS, AST) \
     template<> \
-    struct ast_node<NS::AST> { \
+    struct ast_node_index<NS::AST> { \
       enum class type : size_t {
 
   #define declare_ast_node(NS, AST, Node) \
@@ -182,7 +199,16 @@ namespace black::ast::reflect {
 
   #define declare_ast_node(NS, AST, Node) \
     template<> \
-    struct ast_node_field<NS::AST, NS::Node> { \
+    struct ast_node_index_of<NS::AST, NS::Node> \
+      : std::integral_constant< \
+          size_t, std::to_underlying(ast_node_index_t<NS::AST>::Node) \
+        > { };
+
+  #include <black/ast/defs.hpp>
+
+  #define declare_ast_node(NS, AST, Node) \
+    template<> \
+    struct ast_node_field_index<NS::AST, NS::Node> { \
       enum class type : size_t {
 
   #define declare_field(NS, AST, Node, Field, Type) \
@@ -201,8 +227,8 @@ namespace black::ast::reflect {
 
   #define declare_field(NS, AST, Node, Field, Type) \
       , std::integral_constant< \
-          ast_node_field_t<NS::AST, NS::Node>, \
-          ast_node_field_t<NS::AST, NS::Node>::Field \
+          ast_node_field_index_t<NS::AST, NS::Node>, \
+          ast_node_field_index_t<NS::AST, NS::Node>::Field \
         >
   
   #define end_ast_node(NS, AST, Node) \
@@ -213,7 +239,7 @@ namespace black::ast::reflect {
   #define declare_field(NS, AST, Node, Field, Type) \
     template<> \
     struct ast_node_field_type< \
-      NS::AST, NS::Node, ast_node_field_t<NS::AST, NS::Node>::Field \
+      NS::AST, NS::Node, ast_node_field_index_t<NS::AST, NS::Node>::Field \
     > : std::type_identity<Type> { };
 
   #include <black/ast/defs.hpp>
@@ -221,7 +247,7 @@ namespace black::ast::reflect {
   #define declare_field(NS, AST, Node, Field, Type) \
     template<> \
     struct ast_node_field_name< \
-      NS::AST, NS::Node, ast_node_field_t<NS::AST, NS::Node>::Field \
+      NS::AST, NS::Node, ast_node_field_index_t<NS::AST, NS::Node>::Field \
     > { \
       static constexpr std::string_view value = #Field; \
     };
@@ -250,7 +276,7 @@ namespace black::ast::reflect {
     > \
     struct ast_node_field_member_base< \
       Derived, \
-      NS::AST, NS::Node, ast_node_field_t<NS::AST, NS::Node>::Field, Ptr \
+      NS::AST, NS::Node, ast_node_field_index_t<NS::AST, NS::Node>::Field, Ptr \
     > { \
       R Field() const { \
         return (static_cast<Derived const*>(this)->*Ptr)(); \
