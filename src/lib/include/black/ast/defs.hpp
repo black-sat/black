@@ -25,6 +25,10 @@
   #define declare_ast(NS, AST)
 #endif
 
+#ifndef declare_ast_factory
+  #define declare_ast_factory(NS, AST, Factory, Member)
+#endif
+
 #ifndef declare_ast_node
   #define declare_ast_node(NS, AST, Node)
 #endif
@@ -42,6 +46,8 @@
 #endif
 
 declare_ast(logic, term)
+
+  declare_ast_factory(logic, term, alphabet, sigma)
 
   declare_ast_node(logic, term, integer)
     declare_field(logic, term, integer, value, int64_t)
@@ -63,6 +69,7 @@ end_ast(logic, term)
 
 
 #undef declare_ast
+#undef declare_ast_factory
 #undef declare_ast_node
 #undef declare_field
 #undef end_ast_node

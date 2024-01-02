@@ -24,122 +24,6 @@
 #ifndef BLACK_AST_REFLECT_HPP
 #define BLACK_AST_REFLECT_HPP
 
-#include <string_view>
-
-namespace black::ast::reflect {
-
-  template<typename AST>
-  struct is_ast : std::false_type { };
-  
-  template<typename AST>
-  inline constexpr bool is_ast_v = is_ast<AST>::value;
-
-  template<typename AST>
-  concept ast = is_ast_v<AST>;
-  
-  template<typename Node, ast AST>
-  struct is_ast_node_of : std::false_type { };
-  
-  template<typename Node, ast AST>
-  inline constexpr bool is_ast_node_of_v = is_ast_node_of<Node, AST>::value;
-
-  template<typename Node, typename AST>
-  concept ast_node_of = ast<AST> && is_ast_node_of_v<Node, AST>;
-
-  template<ast AST>
-  struct ast_node_list { };
-  
-  template<ast AST>
-  using ast_node_list_t = typename ast_node_list<AST>::type;
-
-  template<ast AST>
-  struct ast_node_index { };
-
-  template<ast AST>
-  using ast_node_index_t = typename ast_node_index<AST>::type;
-
-  template<ast AST, ast_node_of<AST> Node>
-  struct ast_node_index_of { };
-  
-  template<ast AST, ast_node_of<AST> Node>
-  inline constexpr auto ast_node_index_of_v = 
-    ast_node_index_of<AST, Node>::value;
-
-  template<ast AST, ast_node_of<AST> Node>
-  struct ast_node_field_index { };
-  
-  template<ast AST, ast_node_of<AST> Node>
-  using ast_node_field_index_t = typename ast_node_field_index<AST, Node>::type;
-
-  template<ast AST, ast_node_of<AST> Node>
-  struct ast_node_field_list { };
-
-  template<ast AST, ast_node_of<AST> Node>
-  using ast_node_field_list_t = typename ast_node_field_list<AST, Node>::type;
-
-  template<
-    ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> Field
-  >
-  struct ast_node_field_type { };
-
-  template<
-    ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> Field
-  >
-  using ast_node_field_type_t = 
-    typename ast_node_field_type<AST, Node, Field>::type;
-
-  template<
-    ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> Field
-  >
-  struct ast_node_field_name { };
-  
-  template<
-    ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> Field
-  >
-  inline constexpr auto ast_node_field_name_v = 
-    ast_node_field_name<AST, Node, Field>::value;
-
-  template<
-    ast AST, ast_node_of<AST> Node, 
-    typename = ast_node_field_list_t<AST, Node>
-  >
-  struct ast_node_field_types { };
-
-  template<
-    ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> ...Fields
-  >
-  struct ast_node_field_types<
-    AST, Node, 
-    std::tuple<
-      std::integral_constant<ast_node_field_index_t<AST, Node>, Fields>...
-    >
-  > : std::type_identity<
-        std::tuple<ast_node_field_type_t<AST, Node, Fields>...>
-      > { };
-
-  template<ast AST, ast_node_of<AST> Node>
-  using ast_node_field_types_t = typename ast_node_field_types<AST, Node>::type;
-
-  template<
-    typename Derived,
-    ast AST, ast_node_of<AST> Node,
-    auto Member
-  >
-  struct ast_node_member_base { };
-  
-  template<
-    typename Derived,
-    ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> Field,
-    auto Member
-  >
-  struct ast_node_field_member_base { };
-
-}
-
-//
-// implementation of the traits above through x-pattern expansions 
-//
-
 namespace black {
 
   template<int Dummy, typename ...Args>
@@ -286,5 +170,42 @@ namespace black::ast::reflect {
   #include <black/ast/defs.hpp>
 
 } // namespace black::reflect
+
+namespace black {
+
+  #define declare_ast_factory(NS, AST, Factory, Member) \
+    namespace NS { \
+      struct Factory : ast::internal::ast_factory<NS::AST> { }; \
+    }
+
+  #include <black/ast/defs.hpp>
+
+  #define declare_ast_factory(NS, AST, Factory, Member) \
+    template<typename Derived> \
+    struct ast::internal::ast_factory_named_member<Derived, NS::AST> { \
+      NS::Factory *Member() const { \
+        return static_cast<NS::Factory *>( \
+          static_cast<Derived const*>(this)->factory() \
+        ); \
+      } \
+    };
+
+  #include <black/ast/defs.hpp>
+
+  #define declare_ast(NS, AST) \
+    struct NS::AST : ast::internal::ast_base<NS::AST> { \
+      using ast::internal::ast_base<NS::AST>::ast_base; \
+  };
+
+  #include <black/ast/defs.hpp>
+
+  #define declare_ast_node(NS, AST, Node) \
+    struct NS::Node : ast::internal::ast_node_base<NS::AST, NS::Node> { \
+      using ast::internal::ast_node_base<NS::AST, NS::Node>::ast_node_base; \
+    };
+
+  #include <black/ast/defs.hpp>
+
+}
 
 #endif // BLACK_AST_REFLECT_HPP
