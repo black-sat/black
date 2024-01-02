@@ -112,7 +112,7 @@ namespace black::ast::reflect {
     struct ast_node_field_index<NS::AST, NS::Node> { \
       enum class type : size_t {
 
-  #define declare_field(NS, AST, Node, Field, Type) \
+  #define declare_field(NS, AST, Node, Field, Type, Doc) \
         Field,
 
   #define end_ast_node(NS, AST, Node) \
@@ -126,7 +126,7 @@ namespace black::ast::reflect {
     template<> \
     struct ast_node_field_list<NS::AST, NS::Node> : tuple_cpp<0
 
-  #define declare_field(NS, AST, Node, Field, Type) \
+  #define declare_field(NS, AST, Node, Field, Type, Doc) \
       , std::integral_constant< \
           ast_node_field_index_t<NS::AST, NS::Node>, \
           ast_node_field_index_t<NS::AST, NS::Node>::Field \
@@ -137,7 +137,7 @@ namespace black::ast::reflect {
 
   #include <black/ast/defs.hpp>
 
-  #define declare_field(NS, AST, Node, Field, Type) \
+  #define declare_field(NS, AST, Node, Field, Type, Doc) \
     template<> \
     struct ast_node_field_type< \
       NS::AST, NS::Node, ast_node_field_index_t<NS::AST, NS::Node>::Field \
@@ -145,7 +145,7 @@ namespace black::ast::reflect {
 
   #include <black/ast/defs.hpp>
 
-  #define declare_field(NS, AST, Node, Field, Type) \
+  #define declare_field(NS, AST, Node, Field, Type, Doc) \
     template<> \
     struct ast_node_field_name< \
       NS::AST, NS::Node, ast_node_field_index_t<NS::AST, NS::Node>::Field \
@@ -172,7 +172,7 @@ namespace black::ast::reflect {
 
   #include <black/ast/defs.hpp>
 
-  #define declare_field(NS, AST, Node, Field, Type) \
+  #define declare_field(NS, AST, Node, Field, Type, Doc) \
     template< \
       typename Derived, \
       typename Base, typename R, \

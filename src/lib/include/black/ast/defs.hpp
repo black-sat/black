@@ -25,6 +25,10 @@
   #define declare_ast(NS, AST)
 #endif
 
+#ifndef ast_doc
+  #define ast_doc(Doc)
+#endif
+
 #ifndef declare_ast_factory
   #define declare_ast_factory(NS, AST, Factory, Member)
 #endif
@@ -33,8 +37,12 @@
   #define declare_ast_node(NS, AST, Node)
 #endif
 
+#ifndef ast_node_doc
+  #define ast_node_doc(Doc)
+#endif
+
 #ifndef declare_field
-  #define declare_field(NS, AST, Node, Field, Type)
+  #define declare_field(NS, AST, Node, Field, Type, Doc)
 #endif
 
 #ifndef end_ast_node
@@ -49,33 +57,49 @@ declare_ast(logic, term)
 
   declare_ast_factory(logic, term, alphabet, sigma)
 
+  ast_doc("Type representing logical terms")
+
   declare_ast_node(logic, term, integer)
-    declare_field(logic, term, integer, value, int64_t)
+    ast_node_doc("A constant integer value (e.g., 42)")
+    declare_field(logic, term, integer, value, int64_t, "The constant value")
   end_ast_node(logic, term, integer)
 
   declare_ast_node(logic, term, symbol)
-    declare_field(logic, term, symbol, name, logic::label)
+    ast_node_doc("A named symbol (e.g. `x`)")
+    declare_field(logic, term, symbol, name, logic::label, "The symbol name")
   end_ast_node(logic, term, symbol)
 
   declare_ast_node(logic, term, boolean)
-    declare_field(logic, term, boolean, value, bool)
+    ast_node_doc("A constant boolean value (e.g. `true` or `false`)")
+    declare_field(logic, term, boolean, value, bool, "The boolean value")
   end_ast_node(logic, term, boolean)
 
   declare_ast_node(logic, term, conjunction)
-    declare_field(logic, term, conjunction, operands, std::vector<logic::term>)
+    ast_node_doc("A logical conjunction")
+    declare_field(
+      logic, term, conjunction, operands, std::vector<logic::term>,
+      "The conjuncts"
+    )
   end_ast_node(logic, term, conjunction)
 
   declare_ast_node(logic, term, until)
-    declare_field(logic, term, until, left, logic::term)
-    declare_field(logic, term, until, right, logic::term)
+    ast_node_doc("An until LTL formula")
+    declare_field(
+      logic, term, until, left, logic::term, "The left-hand side argument"
+    )
+    declare_field(
+      logic, term, until, right, logic::term, "The right-hand side argument"
+    )
   end_ast_node(logic, term, until)
 
 end_ast(logic, term)
 
 
 #undef declare_ast
+#undef ast_doc
 #undef declare_ast_factory
 #undef declare_ast_node
+#undef ast_node_doc
 #undef declare_field
 #undef end_ast_node
 #undef end_ast
