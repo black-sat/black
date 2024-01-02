@@ -28,7 +28,10 @@
 #include <string_view>
 #include <variant>
 #include <tuple>
+#include <memory>
+#include <string>
 #include <optional>
+#include <typeinfo>
 #include <limits>
 #include <cmath>
 
@@ -43,58 +46,32 @@
   using ssize_t = SSIZE_T;
 #endif
 
+// for abi::__cxa_demangle to demangle names coming from type_info::name()
+#if __has_include(<cxxabi.h>)
+  #include <cxxabi.h>
+#endif
+
 namespace black::support::internal 
 {
-  // Simple utility to get the overloading of multiple lambdas (for example)
-  // not used for formula::match but useful to work with std::visit
-  template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-  template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-
   //
-  // Misc metaprogramming utilities
+  // Wrapper over `abi::__cxa_demangle()` used later in `bad_pattern`.
+  // If <cxxabi.h> is not there (any compiler other than GCC and clang),
+  // we just return the string as-is.
   //
-
-  template<typename T, typename U>
-  struct tuple_cons;
-
-  template<typename T, typename ...Us>
-  struct tuple_cons<T, std::tuple<Us...>> {
-    using type = std::tuple<T, Us...>;
-  };
-
-  template<typename T, typename ...Us>
-  using tuple_cons_t = typename tuple_cons<T, Us...>::type;
-
-  template<typename T, typename U>
-  struct tuple_contains : std::false_type { };
-
-  template<typename ...Ts, typename U>
-  struct tuple_contains<std::tuple<Ts...>, U> : 
-    std::disjunction<std::is_same<Ts, U>...> { };
-
-  template<typename T, typename U>
-  inline constexpr bool tuple_contains_v = tuple_contains<T, U>::value;
-
-  template<typename T, typename ...Args>
-    requires (std::is_same_v<T, Args> || ...)
-  bool variant_is(std::variant<Args...> const& v) {
-    return std::holds_alternative<T>(v);
-  }
-
-  template<typename T, typename ...Args>
-  bool variant_is(std::variant<Args...> const&) {
-    return false;
-  }
-
-  template<typename T, typename ...Args>
-    requires (std::is_same_v<T, Args> || ...)
-  std::optional<T> variant_get(std::variant<Args...> const& v) {
-    return std::get<T>(v);
-  }
-
-  template<typename T, typename ...Args>
-  std::optional<T> variant_get(std::variant<Args...> const&) {
-    return {};
+  template<typename T>
+  std::string type_name() {
+    #if __has_include(<cxxabi.h>)
+      int status = 0;
+      
+      auto result = std::unique_ptr<char, decltype(&free)>(
+        abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, &status),
+        &free
+      );
+      
+      return result.get();
+    #else
+      return typeid(T).name();
+    #endif
   }
 
   //
@@ -155,11 +132,7 @@ SOFTWARE.
 }
 
 namespace black::support {
-  using internal::overloaded;
-  using internal::tuple_cons;
-  using internal::tuple_cons_t;
-  using internal::tuple_contains;
-  using internal::tuple_contains_v;
+  using internal::type_name;
   using internal::double_to_fraction;
   using internal::license;
 }

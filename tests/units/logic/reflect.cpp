@@ -52,7 +52,7 @@ TEST_CASE("Static reflection") {
     );
 
     STATIC_REQUIRE(
-        ast_node_index_of_v<term, integer> == 0
+        std::to_underlying(ast_node_index_of_v<term, integer>) == 0
     );
 
     STATIC_REQUIRE(
@@ -107,5 +107,16 @@ TEST_CASE("Static reflection") {
 
     REQUIRE(test{}.symbol(21) == 42);
     REQUIRE(test{}.name() == 42);
+
+    alphabet sigma;
+
+    integer p = sigma.integer(42);
+    integer q = sigma.integer(42);
+
+    REQUIRE_THROWS(conjunction(std::vector<term>{}));
+
+    auto c = conjunction(std::vector<term>{p, q});
+
+    // next step: REQUIRE(c.left() == 42);
 
 }

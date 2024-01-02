@@ -23,7 +23,7 @@ types thrown by the standard library.
          :param line: the line of the :c:macro:`black_unreachable` call.
 
    :members:
-      .. cpp:function:: const char* filename() const
+      .. cpp:function:: std::string_view filename() const
 
          :returns: the name of the file of the :c:macro:`black_unreachable` 
             call.
@@ -49,7 +49,7 @@ types thrown by the standard library.
             of the failed :c:macro:`black_assert` call.
 
    :members:
-      .. cpp:function:: const char* filename() const
+      .. cpp:function:: std::string_view filename() const
 
          :returns: the name of the file of the failed :c:macro:`black_assert` 
             call.
@@ -58,7 +58,7 @@ types thrown by the standard library.
 
          :returns: the line of the failed :c:macro:`black_assert` call.
 
-      .. cpp:function:: const char* expression() const
+      .. cpp:function:: std::string_view expression() const
 
          :returns: a string representation of the asserted expression of the 
             failed :c:macro:`black_assert` call.
@@ -93,12 +93,12 @@ types thrown by the standard library.
             :c:macro:`black_assume` call.
 
    :members:
-      .. cpp:function:: const char* function() const
+      .. cpp:function:: std::string_view function() const
 
          :returns: the name of the function that contains the failed
             :c:macro:`black_assume` call.
       
-      .. cpp:function:: const char* message() const
+      .. cpp:function:: std::string_view message() const
 
          :returns: the message associated with the failed
             :c:macro:`black_assume` call.

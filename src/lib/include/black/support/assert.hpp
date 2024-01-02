@@ -32,6 +32,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string_view>
 
 #include <black/support/exceptions.hpp>
 
@@ -60,13 +61,16 @@ namespace black::support::internal {
     const char *function,
     const char *filename, size_t line,
     std::source_location const& loc,
-    const char *expression, const char *message
+    const char *expression, std::string_view message,
+    std::format_args const&args
   )
   {
     if(assumption())
       return;
     
-    throw bad_assumption(function, filename, line, loc, expression, message);
+    throw bad_assumption(
+      function, filename, line, loc, expression, message, args
+    );
   }
 
 }
@@ -88,10 +92,11 @@ namespace black::support::internal {
     black::support::internal::unreachable_handler(__FILE__, __LINE__); 
 
 
-#define black_assume(Expr, Loc, Message)                \
+#define black_assume(Expr, Loc, Message, ...)           \
   black::support::internal::assume_handler(             \
     [&]() { return static_cast<bool>(Expr); },          \
-    __FUNCTION__, __FILE__, __LINE__, Loc, #Expr, Message \
+    __FUNCTION__, __FILE__, __LINE__, Loc, #Expr, Message, \
+    std::make_format_args(__VA_ARGS__) \
   )
 
 #endif // BLACK_ASSERT_HPP

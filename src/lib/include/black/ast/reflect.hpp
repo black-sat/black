@@ -52,6 +52,11 @@ namespace black::ast::reflect {
   
   #define declare_ast_node(NS, AST, Node) \
     template<> \
+    struct is_ast_node<NS::Node> : std::true_type { };
+  #include <black/ast/defs.hpp>
+  
+  #define declare_ast_node(NS, AST, Node) \
+    template<> \
     struct is_ast_node_of<NS::Node, NS::AST> : std::true_type { };
   #include <black/ast/defs.hpp>
 
@@ -85,9 +90,16 @@ namespace black::ast::reflect {
     template<> \
     struct ast_node_index_of<NS::AST, NS::Node> \
       : std::integral_constant< \
-          size_t, std::to_underlying(ast_node_index_t<NS::AST>::Node) \
+          ast_node_index_t<NS::AST>, ast_node_index_t<NS::AST>::Node \
         > { };
 
+  #include <black/ast/defs.hpp>
+
+  #define declare_ast_node(NS, AST, Node) \
+    template<> \
+    struct ast_node_name<NS::AST, NS::Node> { \
+      static constexpr std::string_view value = #Node; \
+    };
   #include <black/ast/defs.hpp>
 
   #define declare_ast_node(NS, AST, Node) \
@@ -145,6 +157,9 @@ namespace black::ast::reflect {
       R (Base::*Ptr)(Args...) \
     > \
     struct ast_node_member_base<Derived, NS::AST, NS::Node, Ptr> { \
+      \
+      bool operator==(ast_node_member_base const&) const = default; \
+      \
       R Node(Args const& ...args) { \
         return (static_cast<Derived *>(this)->*Ptr)(args...); \
       } \
@@ -162,6 +177,9 @@ namespace black::ast::reflect {
       Derived, \
       NS::AST, NS::Node, ast_node_field_index_t<NS::AST, NS::Node>::Field, Ptr \
     > { \
+      \
+      bool operator==(ast_node_field_member_base const&) const = default; \
+      \
       R Field() const { \
         return (static_cast<Derived const*>(this)->*Ptr)(); \
       } \
@@ -183,6 +201,9 @@ namespace black {
   #define declare_ast_factory(NS, AST, Factory, Member) \
     template<typename Derived> \
     struct ast::internal::ast_factory_named_member<Derived, NS::AST> { \
+      \
+      bool operator==(ast_factory_named_member const&) const = default; \
+      \
       NS::Factory *Member() const { \
         return static_cast<NS::Factory *>( \
           static_cast<Derived const*>(this)->factory() \

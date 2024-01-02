@@ -28,6 +28,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <format>
 #include <version>
 #include <typeinfo>
@@ -35,11 +36,6 @@
 
 #include <cstring>
 #include <cstdlib>
-
-// for abi::__cxa_demangle to demangle names coming from type_info::name()
-#if __has_include(<cxxabi.h>)
-  #include <cxxabi.h>
-#endif
 
 //
 // This file declares the exception types used throught BLACK
@@ -100,7 +96,7 @@ namespace black::support::internal {
     }
     virtual ~bad_unreachable() override = default;
 
-    const char *filename() const { return _filename; }
+    std::string_view filename() const { return _filename; }
     size_t line() const { return _line; }
 
   private:
@@ -124,9 +120,9 @@ namespace black::support::internal {
     }
     virtual ~bad_assert() override = default;
 
-    const char *filename() const { return _filename; }
+    std::string_view filename() const { return _filename; }
     size_t line() const { return _line; }
-    const char *expression() const { return _expression; }
+    std::string_view expression() const { return _expression; }
 
   private:
     const char *_filename = nullptr;
@@ -144,9 +140,10 @@ namespace black::support::internal {
       const char *function, 
       const char *filename, size_t line, 
       std::source_location const& loc,
-      const char *expression, const char *message
+      const char *expression, std::string_view message,
+      std::format_args const&args
     ) : bad_assert(relative(filename), line, expression), 
-        _function{function}, _message{message}
+        _function{function}, _message{std::vformat(message, args)}
     { 
       if(loc.file_name() != nullptr) {
         filename = relative(loc.file_name());
@@ -155,40 +152,19 @@ namespace black::support::internal {
 
       _what = std::format(
         "violated assumption when calling function '{}' at {}:{}: {}",
-        function, filename, line, message
+        function, filename, line, _message
       );
     }
 
     virtual ~bad_assumption() override = default;
 
-    const char *function() const { return _function; }
-    const char *message() const { return _message; }
+    std::string_view function() const { return _function; }
+    std::string_view message() const { return _message; }
 
   private:
     const char *_function = nullptr;
-    const char *_message = nullptr;
+    std::string _message;
   };
-
-  //
-  // Wrapper over `abi::__cxa_demangle()` used later in `bad_pattern`.
-  // If <cxxabi.h> is not there (any compiler other than GCC and clang),
-  // we just return the string as-is.
-  //
-  template<typename T>
-  std::string type_name() {
-    #if __has_include(<cxxabi.h>)
-      int status = 0;
-      
-      auto result = std::unique_ptr<char, decltype(&free)>(
-        abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, &status),
-        &free
-      );
-      
-      return result.get();
-    #else
-      return typeid(T).name();
-    #endif
-  }
 
   //
   // Exceptions thrown on non-exhaustive pattern matches.
