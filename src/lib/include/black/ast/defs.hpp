@@ -65,6 +65,11 @@ declare_ast(logic, term)
     declare_field(logic, term, conjunction, operands, std::vector<logic::term>)
   end_ast_node(logic, term, conjunction)
 
+  declare_ast_node(logic, term, until)
+    declare_field(logic, term, until, left, logic::term)
+    declare_field(logic, term, until, right, logic::term)
+  end_ast_node(logic, term, until)
+
 end_ast(logic, term)
 
 

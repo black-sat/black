@@ -60,6 +60,11 @@ namespace black::ast::reflect {
     struct is_ast_node_of<NS::Node, NS::AST> : std::true_type { };
   #include <black/ast/defs.hpp>
 
+  #define declare_ast_node(NS, AST, Node) \
+    template<> \
+    struct ast_of<NS::Node> : std::type_identity<NS::AST> { };
+  #include <black/ast/defs.hpp>
+
   #define declare_ast(NS, AST) \
     template<> \
     struct ast_node_list<NS::AST> : tuple_cpp<0
@@ -191,9 +196,23 @@ namespace black::ast::reflect {
 
 namespace black {
 
+  #define declare_ast(NS, AST) \
+    struct NS::AST : ast::internal::ast_base<NS::AST> { \
+      using ast::internal::ast_base<NS::AST>::ast_base; \
+  };
+
+  #include <black/ast/defs.hpp>
+
+  #define declare_ast_node(NS, AST, Node) \
+    struct NS::Node : ast::internal::ast_node_base<NS::AST, NS::Node> { \
+      using ast::internal::ast_node_base<NS::AST, NS::Node>::ast_node_base; \
+    };
+
+  #include <black/ast/defs.hpp>
+
   #define declare_ast_factory(NS, AST, Factory, Member) \
     namespace NS { \
-      struct Factory : ast::internal::ast_factory<NS::AST> { }; \
+      struct Factory; \
     }
 
   #include <black/ast/defs.hpp>
@@ -213,17 +232,8 @@ namespace black {
 
   #include <black/ast/defs.hpp>
 
-  #define declare_ast(NS, AST) \
-    struct NS::AST : ast::internal::ast_base<NS::AST> { \
-      using ast::internal::ast_base<NS::AST>::ast_base; \
-  };
-
-  #include <black/ast/defs.hpp>
-
-  #define declare_ast_node(NS, AST, Node) \
-    struct NS::Node : ast::internal::ast_node_base<NS::AST, NS::Node> { \
-      using ast::internal::ast_node_base<NS::AST, NS::Node>::ast_node_base; \
-    };
+  #define declare_ast_factory(NS, AST, Factory, Member) \
+    struct NS::Factory : ast::internal::ast_factory<NS::AST> { };
 
   #include <black/ast/defs.hpp>
 

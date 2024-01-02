@@ -28,6 +28,7 @@
 
 using namespace black::ast::reflect;
 using namespace black::logic;
+using namespace black::support;
 
 #include <string_view>
 
@@ -39,7 +40,7 @@ TEST_CASE("Static reflection") {
     STATIC_REQUIRE(
         std::is_same_v<
             ast_node_list_t<term>,
-            std::tuple<integer, symbol, boolean, conjunction>
+            std::tuple<integer, symbol, boolean, conjunction, until>
         >
     );
 
@@ -117,6 +118,25 @@ TEST_CASE("Static reflection") {
 
     auto c = conjunction(std::vector<term>{p, q});
 
-    // next step: REQUIRE(c.left() == 42);
+    term t1 = p;
+    term t2 = p;
+
+    REQUIRE(t1 == t2);
+
+    REQUIRE(c.operands()[0] == p);
+
+    term t = until(p, q);
+
+    REQUIRE(t.to<until>().has_value());
+    REQUIRE(t.to<until>()->left() == p);
+
+    auto result = match(t)(
+        [&](until, auto left, auto) {
+            REQUIRE(left == p);
+            return 42;
+        }
+    );
+
+    REQUIRE(result == 42);
 
 }
