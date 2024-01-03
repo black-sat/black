@@ -10,4 +10,5 @@ BLACK's API is partitioned into modules, each documented separately.
    :maxdepth: 1
    :caption: Modules
 
+   api/logic
    api/support

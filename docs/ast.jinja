@@ -1,0 +1,13 @@
+{% macro build_ast(astlist, name) %}
+{% for ast in astlist %}
+{% if ast.name == name %}
+
+We have the following subcases:
+    
+{% for node in ast.nodes %}
+.. cpp:struct:: {{ node.name }}
+{% endfor %}
+
+{% endif %}
+{% endfor %}
+{% endmacro %}

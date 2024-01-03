@@ -1,0 +1,5 @@
+sphinx
+sphinxcontrib-bibtex
+furo
+jinja-cli
+click

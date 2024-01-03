@@ -1,33 +1,36 @@
 {
-    "ast": {
+    "ast": [
+
 #define declare_ast(NS, AST) \
-        "namespace": #NS, \
+        { \
+            "name": #AST, \
+            "namespace": #NS, \
 
 #define ast_doc(Doc) \
-        "doc": Doc, \
-        "nodes": [
+            "doc": Doc, \
+            "nodes": [
 
 #define declare_ast_node(NS, AST, Node) \
-            { \
-                "name": #Node, 
+                { \
+                    "name": #Node, 
 
 #define ast_node_doc(Doc) \
-                "doc": Doc, \
-                "fields": [
+                    "doc": Doc, \
+                    "fields": [
 
 #define declare_field(NS, AST, Node, Field, Type, Doc) \
-                    { "name": #Field, "type": #Type, "doc": Doc },
+                        { "name": #Field, "type": #Type, "doc": Doc },
 
 #define end_ast_node(NS, AST, Node) \
-                    null \
-                ] \
-            },
+                        null \
+                    ] \
+                },
         
-
 #define end_ast(NS, AST) \
-        null \
-    ]
-
+                null \
+            ] \
+        },
 #include <black/ast/defs.hpp>
-    }
+        null
+    ]
 }

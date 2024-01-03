@@ -19,11 +19,14 @@ help:
 .PHONY: help Makefile $(ASTSOURCE) ast.json.in 
 
 _build/ast.json: ast.json.in
+	@mkdir -p _build
 	@cc -x c++ -I../src/lib/include -E $< | sed '/^#/d;/^$$/d' | \
 		jq 'del(..|select(. == null))' > $@
 
 %.rst: %.rst.in _build/ast.json
-	echo lol $@
+	@python3 gen-ast-rst.py _build/ast.json $< > $@
+
+.SECONDARY: $(ASTFILES)
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
