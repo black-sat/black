@@ -24,7 +24,7 @@
 #ifndef BLACK_SUPPORT_LABEL_HPP
 #define BLACK_SUPPORT_LABEL_HPP
 
-#include <black/support.hpp>
+#include <black/support>
 
 #include <format>
 

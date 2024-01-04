@@ -36,9 +36,8 @@ if(Catch2_FOUND)
     units/support/tribool.cpp
     units/support/hash.cpp
     units/support/match.cpp
-    units/logic/reflect.cpp
+    units/ast/ast.cpp
     units/logic/identifier.cpp
-    #units/logic/logic.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)

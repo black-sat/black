@@ -23,7 +23,7 @@
 
 #include <catch.hpp>
 
-#include <black/support/tribool.hpp>
+#include <black/support>
 
 using namespace black::support;
 

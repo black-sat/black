@@ -27,7 +27,7 @@
   #undef BLACK_ASSERT_DISABLE
 #endif
 
-#include <black/support.hpp>
+#include <black/support>
 
 #include <string>
 

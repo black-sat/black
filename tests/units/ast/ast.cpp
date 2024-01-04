@@ -23,8 +23,7 @@
 
 #include <catch.hpp>
 
-#include <black/logic.hpp>
-#include <black/ast.hpp>
+#include <black/logic>
 
 using namespace black::ast::reflect;
 using namespace black::logic;

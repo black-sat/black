@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2020 Nicola Gigante
+// (C) 2024 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,20 +21,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SUPPORT_HPP
-#define BLACK_SUPPORT_HPP
+#ifndef BLACK_LOGIC_INTERFACE_HPP
+#define BLACK_LOGIC_INTERFACE_HPP
 
+#include <black/ast>
 
-#include <black/support/config.hpp>
-#include <black/support/utils.hpp>
-#include <black/support/exceptions.hpp>
-#include <black/support/assert.hpp>
-#include <black/support/debug.hpp>
-#include <black/support/tribool.hpp>
-#include <black/support/hash.hpp>
-#include <black/support/match.hpp>
-#include <black/support/errors.hpp>
-#include <black/support/range.hpp>
-#include <black/support/bitset.hpp>
+namespace black::logic::internal {
 
-#endif // BLACK_SUPPORT_HPP
+}
+
+#endif // BLACK_LOGIC_INTERFACE_HPP

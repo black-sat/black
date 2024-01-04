@@ -24,7 +24,7 @@
 #ifndef BLACK_LOGIC_IDENTIFIER_HPP
 #define BLACK_LOGIC_IDENTIFIER_HPP
 
-#include <black/support.hpp>
+#include <black/support>
 
 #include <ranges>
 

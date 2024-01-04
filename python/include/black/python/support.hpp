@@ -24,7 +24,7 @@
 #ifndef BLACK_PYTHON_SUPPORT_HPP_
 #define BLACK_PYTHON_SUPPORT_HPP_
 
-#include <black/support.hpp>
+#include <black/support>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

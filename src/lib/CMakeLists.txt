@@ -32,8 +32,8 @@ set (
 
 # configure config header
 configure_file(
-  include/black/support/config.hpp.in 
-  ${CMAKE_BINARY_DIR}/include/black/support/config.hpp
+  include/black/internal/support/config.hpp.in 
+  ${CMAKE_BINARY_DIR}/include/black/internal/support/config.hpp
 )
 
 #

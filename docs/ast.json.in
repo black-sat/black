@@ -35,7 +35,7 @@
                 null \
             ] \
         },
-#include <black/ast/defs.hpp>
+#include <black/internal/ast/defs.hpp>
         null
     ]
 }

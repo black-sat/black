@@ -34,8 +34,6 @@
 #include <cstdlib>
 #include <string_view>
 
-#include <black/support/exceptions.hpp>
-
 namespace black::support::internal {
 
   template<typename Expr>

@@ -33,13 +33,13 @@ namespace black {
     namespace NS { \
       struct AST; \
     }
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_ast_node(NS, AST, Node, Doc) \
     namespace NS { \
       struct Node; \
     }
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
 }
 
@@ -48,22 +48,22 @@ namespace black::ast::reflect {
   #define declare_ast(NS, AST) \
     template<> \
     struct is_ast<NS::AST> : std::true_type { };
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
   
   #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
     struct is_ast_node<NS::Node> : std::true_type { };
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
   
   #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
     struct is_ast_node_of<NS::Node, NS::AST> : std::true_type { };
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
     struct ast_of<NS::Node> : std::type_identity<NS::AST> { };
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_ast(NS, AST) \
     template<> \
@@ -75,7 +75,7 @@ namespace black::ast::reflect {
   #define end_ast(NS, AST) \
     > { };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_ast(NS, AST) \
     template<> \
@@ -89,7 +89,7 @@ namespace black::ast::reflect {
       }; \
     };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
@@ -98,14 +98,14 @@ namespace black::ast::reflect {
           ast_node_index_t<NS::AST>, ast_node_index_t<NS::AST>::Node \
         > { };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
     struct ast_node_name<NS::AST, NS::Node> { \
       static constexpr std::string_view value = #Node; \
     };
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
@@ -119,7 +119,7 @@ namespace black::ast::reflect {
       }; \
     };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
 
   #define declare_ast_node(NS, AST, Node, Doc) \
@@ -135,7 +135,7 @@ namespace black::ast::reflect {
   #define end_ast_node(NS, AST, Node) \
     > { };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_field(NS, AST, Node, Field, Type, Doc) \
     template<> \
@@ -143,7 +143,7 @@ namespace black::ast::reflect {
       NS::AST, NS::Node, ast_node_field_index_t<NS::AST, NS::Node>::Field \
     > : std::type_identity<Type> { };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_field(NS, AST, Node, Field, Type, Doc) \
     template<> \
@@ -153,7 +153,7 @@ namespace black::ast::reflect {
       static constexpr std::string_view value = #Field; \
     };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_ast_node(NS, AST, Node, Doc) \
     template< \
@@ -170,7 +170,7 @@ namespace black::ast::reflect {
       } \
     };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_field(NS, AST, Node, Field, Type, Doc) \
     template< \
@@ -190,7 +190,7 @@ namespace black::ast::reflect {
       } \
     };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
 } // namespace black::reflect
 
@@ -201,21 +201,21 @@ namespace black {
       using ast::internal::ast_base<NS::AST>::ast_base; \
   };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_ast_node(NS, AST, Node, Doc) \
     struct NS::Node : ast::internal::ast_node_base<NS::AST, NS::Node> { \
       using ast::internal::ast_node_base<NS::AST, NS::Node>::ast_node_base; \
     };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_ast_factory(NS, AST, Factory, Member) \
     namespace NS { \
       struct Factory; \
     }
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_ast_factory(NS, AST, Factory, Member) \
     template<typename Derived> \
@@ -230,12 +230,12 @@ namespace black {
       } \
     };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
   #define declare_ast_factory(NS, AST, Factory, Member) \
     struct NS::Factory : ast::internal::ast_factory<NS::AST> { };
 
-  #include <black/ast/defs.hpp>
+  #include <black/internal/ast/defs.hpp>
 
 }
 

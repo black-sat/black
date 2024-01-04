@@ -23,8 +23,8 @@
 
 #include <catch.hpp>
 
-#include <black/support.hpp>
-#include <black/logic.hpp>
+#include <black/support>
+#include <black/logic>
 
 #include <format>
 
