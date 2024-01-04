@@ -62,13 +62,15 @@ namespace black::support::internal {
   struct matcher_impl<M, R, std::tuple<Case, Cases...>>
   {
     template<typename ...Handlers>
-    R match(
+    static R match(
       M const &m, std::source_location loc, Handlers ...handlers
-    ) const {
-      auto casted = match_trait<M>::template downcast<Case>(std::forward<M>(m));
+    ) {
+      auto casted = match_trait<M>::template downcast<Case>(m);
       if(casted)
         return dispatch(handlers...)(*casted, loc);
-      return matcher_impl<M, std::tuple<Cases...>>::match(m, loc, handlers...);
+      return matcher_impl<M, R, std::tuple<Cases...>>::match(
+        m, loc, handlers...
+      );
     }
   };
   
@@ -76,10 +78,10 @@ namespace black::support::internal {
   struct matcher_impl<M, R, std::tuple<Case>>
   {
     template<typename ...Handlers>
-    R match(
+    static R match(
       M const &m, std::source_location loc, Handlers ...handlers
-    ) const {
-      auto casted = match_trait<M>::template downcast<Case>(std::forward<M>(m));
+    ) {
+      auto casted = match_trait<M>::template downcast<Case>(m);
       black_assert(casted);
 
       return dispatch(handlers...)(*casted, loc);
@@ -101,7 +103,9 @@ namespace black::support::internal {
   
     template<typename ...Handlers>
     auto operator()(Handlers ...handlers) const {
-      return matcher_impl<M, return_t<Handlers...>>::match(handlers...);
+      return matcher_impl<M, return_t<Handlers...>>::match(
+        _m, _loc, handlers...
+      );
     }
 
   private:

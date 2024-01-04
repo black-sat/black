@@ -103,12 +103,12 @@ TEST_CASE("Static reflection") {
 
     alphabet sigma;
 
-    integer p = sigma.integer(42);
+    integer p = sigma.integer(21);
     integer q = sigma.integer(42);
 
-    REQUIRE_THROWS(conjunction(std::vector<term>{}));
+    REQUIRE_THROWS(sum(std::vector<term>{}));
 
-    auto c = conjunction(std::vector<term>{p, q});
+    auto c = sum(std::vector<term>{p, q});
 
     term t1 = p;
     term t2 = p;
@@ -117,15 +117,17 @@ TEST_CASE("Static reflection") {
 
     REQUIRE(c.arguments()[0] == p);
 
-    term t = until(p, q);
+    difference u = difference(p, q);
+    term t = u;
 
-    REQUIRE(t.to<until>().has_value());
-    REQUIRE(t.to<until>()->left() == p);
+    REQUIRE(t.to<difference>().has_value());
+    REQUIRE(t.to<difference>() == u);
+    REQUIRE(t.to<difference>()->left() == p);
 
     auto result = match(t)(
-        [&](until, auto left, auto) {
+        [&](difference, term left, term) {
             REQUIRE(left == p);
-            return 42;
+            return left.to<integer>()->value() * 2;
         }
     );
 

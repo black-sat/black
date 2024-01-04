@@ -44,7 +44,7 @@ namespace black::support::internal {
   struct is_invocable_unpack_ : std::false_type { };
 
   template<typename Callable, typename Arg, size_t ...I>
-  struct is_invocable_unpack_<Arg, Callable, std::index_sequence<I...>>
+  struct is_invocable_unpack_<Callable, Arg, std::index_sequence<I...>>
     : std::is_invocable<Callable, Arg, std::tuple_element_t<I, Arg>...> { };
 
   template<typename Callable, typename Arg>
@@ -70,12 +70,13 @@ namespace black::support::internal {
   template<typename Arg, typename Callable, typename ...Callables>
   auto dispatch_impl(
     std::source_location loc,
-    Arg&& arg, Callable const& callable, Callables const& ...callables
+    Arg&& arg, Callable callable, Callables ...callables
   ) {
-    if constexpr(is_invocable_unpack_v<Callable, Arg>) 
+    using TArg = std::remove_cvref_t<Arg>;
+    if constexpr(is_invocable_unpack_v<Callable, TArg>) 
       return unpack(
-        std::forward<Arg>(arg), callable, 
-        std::make_index_sequence<std::tuple_size_v<Arg>>{}
+        callable, std::forward<Arg>(arg),
+        std::make_index_sequence<std::tuple_size_v<TArg>>{}
       );
     else if constexpr(std::is_invocable_v<Callable, Arg>)
       return std::invoke(callable, std::forward<Arg>(arg));
@@ -93,7 +94,7 @@ namespace black::support::internal {
     auto operator()(
       Arg&& arg, std::source_location loc = std::source_location::current()
     ) const {
-      return std::apply([&](auto const& ...callables) {
+      return std::apply([&](auto ...callables) {
         return dispatch_impl(loc, std::forward<Arg>(arg), callables...);
       }, _callables);
     }
