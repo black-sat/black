@@ -103,3 +103,18 @@ TEST_CASE("Match infrastructure") {
   }
 
 }
+
+TEST_CASE("Dispatch") {
+  auto d = dispatch(
+    [](int x) {
+      return x * 2;
+    },
+    [](float y) { 
+      return y / 2;
+    }
+  );
+
+  REQUIRE(d(21) == 42);
+
+  REQUIRE_THROWS(d("hello"));
+}

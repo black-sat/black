@@ -26,5 +26,6 @@
 
 #include <black/internal/ast/core.hpp>
 #include <black/internal/ast/reflect.hpp>
+#include <black/internal/ast/algorithms.hpp>
 
 #endif // BLACK_AST_HPP

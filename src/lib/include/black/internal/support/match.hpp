@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2019 Nicola Gigante
+// (C) 2024 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -55,182 +55,66 @@ namespace black::support::internal {
     >(t);
   };
 
-
-  //
-  // The first thing we need is a function to do this std::apply-like unpacking
-  // of the hierarchy to the called lambda. 
-  // If the argument is a pointer, we unpack the pointee.
-  //
-  template<
-    typename Handler, typename T, typename Base = std::remove_pointer_t<T>,
-    size_t ...I
-  >
-    requires std::invocable<Handler, T, std::tuple_element_t<I, Base>...>
-  auto unpack(Handler&& handler, T h, std::index_sequence<I...>) {
-    if constexpr(std::is_pointer_v<T>)
-      return std::invoke(std::forward<Handler>(handler), h, get<I>(*h)...);
-    else
-      return std::invoke(std::forward<Handler>(handler), h, get<I>(h)...);
-  }
-
-  //
-  // Entry function to unpack the index sequence.
-  // If the argument is a pointer, we unpack the pointee.
-  //
-  template<
-    typename Handler, typename T, typename Base = std::remove_pointer_t<T>
-  >
-  auto unpack(Handler&& handler, T h)
-  -> decltype(
-    unpack(
-      std::forward<Handler>(handler), h, 
-      std::make_index_sequence<std::tuple_size<Base>::value>{}
-    )
-  ) {
-    return unpack(
-      std::forward<Handler>(handler), h, 
-      std::make_index_sequence<std::tuple_size<Base>::value>{}
-    );
-  }
-
-  //
-  // This concept holds if the call to `unpack` is well-formed
-  //
-  template<typename H, typename Handler>
-  concept unpackable = requires(Handler handler, H h) {
-    unpack(handler, h);    
-  };
-
-  //
-  // This is a dummy return type for missing cases in partial pattern matches.
-  // A conversion operator is available for any type, but it is never actually 
-  // called. See also the `std::common_type` specialization below.
-  //
-  struct missing_case_t {
-    template<typename T>
-    [[noreturn]] operator T() const { black_unreachable(); }
-  };
-
-  //
-  // The `dispatch()` function takes a matchable object and the list of handlers
-  // and calls the first handler that can be called either directly or by
-  // unpacking. Note that we check the unpacked case before to give it priority,
-  // so that e.g. a lambda such as `[](conjunction, auto ...args) { }` picks up
-  // the unpacked children in `args`.
-  //
-  // The single-argument version is only called if no handler matches the type 
-  // of the object, so we raise a `bad_pattern` exception.
-  //
-  template<typename T>
-  missing_case_t dispatch(T const& obj, std::source_location const& loc) { 
-    throw bad_pattern(obj, loc);
-  }
+  template<matchable M, typename R, typename = typename match_trait<M>::cases>
+  struct matcher_impl;
   
-  template<typename T, typename Handler, typename ... Handlers>
-  auto dispatch(
-    T const& obj, std::source_location const& loc, 
-    Handler const& handler, Handlers const& ...handlers
-  ) {
-    if constexpr(unpackable<T, Handler>) 
-      return unpack(handler, obj);
-    else if constexpr(std::is_invocable_v<Handler, T>)
-      return std::invoke(handler, obj);
-    else 
-      return dispatch(obj, loc, handlers...);
-  }
-
-  //
-  // Little helper to compute the return type of the `dispatch` function above 
-  //
-  template<typename T, typename ...Handlers>
-  using dispatch_return_t = decltype(
-    dispatch(
-      std::declval<T>(), std::declval<std::source_location>(), 
-      std::declval<Handlers>()...
-    )
-  );
-
-  //
-  // Finally, the `dispatcher` class, which calls the machinery above to do the
-  // trick. This is generic and works for any `matchable` type as defined above.
-  // The `H` parameter is the main class from which one wants to match (e.g.
-  // `term`).
-  //
-  template<typename H, typename Cases = match_trait<H>::cases>
-  struct dispatcher;
-
-  template<typename H, typename Case, typename ...Cases>
-  struct dispatcher<H, std::tuple<Case, Cases...>>
+  template<matchable M, typename R, typename Case, typename ...Cases>
+  struct matcher_impl<M, R, std::tuple<Case, Cases...>>
   {
-    //
-    // The return type of `match()` is computed with `std::common_type`, which
-    // can also be specialized for custom types.
-    //
     template<typename ...Handlers>
-    using dispatch_common_t = std::common_type_t<
-      dispatch_return_t<Case, Handlers...>,
-      dispatch_return_t<Cases, Handlers...>...
-    >;
-
-    template<typename ...Handlers>
-    static dispatch_common_t<Handlers...> 
-    match(
-      H const& h, std::source_location const& loc, Handlers const& ...handlers
-    ) {
-      std::optional<Case> casted = match_trait<H>::template downcast<Case>(h);
+    R match(
+      M const &m, std::source_location loc, Handlers ...handlers
+    ) const {
+      auto casted = match_trait<M>::template downcast<Case>(std::forward<M>(m));
       if(casted)
-        return dispatch(*casted, loc, handlers...);
-      
-      return dispatcher<H, std::tuple<Cases...>>::match(h, loc, handlers...);
+        return dispatch(handlers...)(*casted, loc);
+      return matcher_impl<M, std::tuple<Cases...>>::match(m, loc, handlers...);
     }
   };
-
-  //
-  // Base case of the recursion, when we only have one case.
-  //
-  template<typename H, typename Case>
-  struct dispatcher<H, std::tuple<Case>> 
-  { 
+  
+  template<matchable M, typename R, typename Case>
+  struct matcher_impl<M, R, std::tuple<Case>>
+  {
     template<typename ...Handlers>
-    static dispatch_return_t<Case, Handlers...> 
-    match(
-      H const& h, std::source_location const& loc, Handlers const& ...handlers
-    ) {
-      std::optional<Case> casted = match_trait<H>::template downcast<Case>(h);
+    R match(
+      M const &m, std::source_location loc, Handlers ...handlers
+    ) const {
+      auto casted = match_trait<M>::template downcast<Case>(std::forward<M>(m));
       black_assert(casted);
-      
-      return dispatch(*casted, loc, handlers...);
+
+      return dispatch(handlers...)(*casted, loc);
     }
   };
 
-  template<matchable H>
-  struct matcher {
+  template<matchable M, typename = typename match_trait<M>::cases>
+  class matcher_t;
 
+  template<matchable M, typename ...Cases>
+  class matcher_t<M, std::tuple<Cases...>>
+  {
     template<typename ...Handlers>
-    auto operator()(Handlers const& ...handlers) const {
-      return dispatcher<H>::match(_h, _loc, handlers...);
+    using return_t = std::common_type_t<
+      decltype(dispatch(std::declval<Handlers>()...)(std::declval<Cases>()))...
+    >;
+  public:
+    matcher_t(M const& m, std::source_location loc) : _m{m}, _loc{loc} { }
+  
+    template<typename ...Handlers>
+    auto operator()(Handlers ...handlers) const {
+      return matcher_impl<M, return_t<Handlers...>>::match(handlers...);
     }
 
-    H const& _h;
+  private:
+    M const& _m;
     std::source_location _loc;
   };
 
   template<matchable H>
-  matcher<H> match(
+  matcher_t<H> match(
     H const& h, std::source_location loc = std::source_location::current()
   ) {
     return {h, loc};
   }
-
-  //
-  // Little catch-all type used as a wildcard in patter matching 
-  //
-  struct otherwise {
-    otherwise() = default;
-
-    template<typename T>
-    otherwise(T const&) { }
-  };
 
 }
 
@@ -299,7 +183,6 @@ namespace black::support {
 
 }
 
-
 template<>
 struct std::common_type<
   ::black::support::internal::missing_case_t, 
@@ -317,7 +200,6 @@ struct std::common_type<T, ::black::support::internal::missing_case_t> :
 namespace black::support {
   using internal::match;
   using internal::matchable;
-  using internal::otherwise;
 }
 
 #endif // BLACK_SUPPORT_MATCH_HPP
