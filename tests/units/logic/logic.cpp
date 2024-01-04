@@ -35,16 +35,14 @@ TEST_CASE("Terms") {
   auto p = sigma.symbol("p");
   auto q = sigma.symbol("q");
 
-  REQUIRE_THROWS(conjunction(std::vector<term>{}));
-  
-  term t = conjunction({p, q});
+  negation n1 = !p;
+  negation n2 = !q;    
 
-  auto s = match(t)(
-    [](conjunction c) {
-      return c.operands()[0];
-    }
-  );
+  REQUIRE_FALSE(n1 == n2);
+  REQUIRE(n1 != n2);
 
-  REQUIRE(s.is<symbol>());
+  term e = n1 == n2;
+
+  REQUIRE(e.is<equal>());
 
 }

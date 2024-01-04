@@ -1,10 +1,11 @@
 {
     "ast": [
 
-#define declare_ast(NS, AST) \
+#define declare_ast_factory(NS, AST, Factory, Member) \
         { \
             "name": #AST, \
             "namespace": #NS, \
+            "factory": { "name": #Factory, "member": #Member }, \
             "sections": [
 
 #define section(Doc) \

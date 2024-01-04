@@ -28,6 +28,8 @@
 #include <functional>
 #include <ranges>
 #include <tuple>
+#include <algorithm>
+#include <memory>
 
 #include <tsl/hopscotch_map.h>
 #include <tsl/hopscotch_set.h>

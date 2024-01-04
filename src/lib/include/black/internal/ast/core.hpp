@@ -205,12 +205,24 @@ namespace black::ast::internal {
   template<ast AST>
   struct ast_factory;
 
+  enum class unique_id_t : uintptr_t { };
+  
+  inline bool operator==(unique_id_t id1, unique_id_t id2) {
+    return uintptr_t(id1) == uintptr_t(id2);
+  }
+  
+  inline bool operator!=(unique_id_t id1, unique_id_t id2) {
+    return uintptr_t(id1) != uintptr_t(id2);
+  }
+
   template<ast AST>
   class node_holder {
     public:
       size_t hash() const { return support::hash(_factory, _impl); }
     
-      bool operator==(node_holder const&) const = default;
+      unique_id_t unique_id() const { 
+        return unique_id_t(reinterpret_cast<uintptr_t>(_impl.get()));
+      }
 
     protected:
       ast_factory<AST> *factory() const { return _factory; }
@@ -256,10 +268,6 @@ namespace black::ast::internal {
     ast_base &operator=(ast_base const&) = default;
     ast_base &operator=(ast_base &&) = default;
 
-    bool operator==(ast_base const&o) const {
-      return this->factory() == o.factory() && this->impl() == o.impl();
-    }
-
     template<ast_node_of<AST> Node>
     std::optional<Node> to() const {
       if(this->_impl->index == ast_node_index_of_v<AST, Node>)
@@ -276,6 +284,16 @@ namespace black::ast::internal {
     template<ast A, ast_node_of<A>, typename>
       friend struct ast_node_base;
   };
+
+  template<ast AST>
+  bool operator==(AST t1, AST t2) {
+    return t1.unique_id() == t2.unique_id();
+  }
+
+  template<ast AST>
+  bool operator!=(AST t1, AST t2) {
+    return t1.unique_id() != t2.unique_id();
+  }
 
   template<ast AST, typename T>
   struct has_factory : std::false_type { };
@@ -404,8 +422,6 @@ namespace black::ast::internal {
     
     ast_node_base &operator=(ast_node_base const&) = default;
     ast_node_base &operator=(ast_node_base &&) = default;
-
-    bool operator==(ast_node_base const&) const = default;
 
     template<ast>
       friend struct ast_base;

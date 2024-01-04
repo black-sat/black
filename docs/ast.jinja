@@ -16,6 +16,7 @@
 
    {{node.doc}}.
 
+   {% if node is composite %}
    :constructor:
       .. cpp:function:: {{ node.name }}(
             {%- for field in node.fields -%}
@@ -27,6 +28,14 @@
          :param {{field.name}}: {{field.doc}}.
       {% endfor %}
 
+   {% else %}
+   .. note::
+      This {{ast.name}} type is *primitive*, therefore it has no 
+      constructors. Use :cpp:func:`{{ast.factory.name}}::{{node.name}}()` to 
+      create objects of this type.
+   {% endif %}
+
+   {% if (node.fields|length) > 0 %}   
    :members:
 
    {% for field in node.fields %}
@@ -35,6 +44,7 @@
          :returns: {{field.doc}}.
 
    {% endfor %}
+   {% endif %}
         
 {% endfor %}
 {% endfor %}

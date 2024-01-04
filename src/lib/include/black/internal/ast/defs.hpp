@@ -57,6 +57,27 @@ declare_ast(logic, term)
 
   declare_ast_factory(logic, term, alphabet, sigma)
 
+  section("Built-in sorts")
+
+    declare_ast_node(logic, term, sort_sort, "The sort of sorts")
+    end_ast_node(logic, term, sort_sort)
+
+    declare_ast_node(logic, term, integer_sort, "The sort of integer numbers")
+    end_ast_node(logic, term, integer_sort)
+    
+    declare_ast_node(logic, term, real_sort, "The sort of real numbers")
+    end_ast_node(logic, term, real_sort)
+    
+    declare_ast_node(logic, term, boolean_sort, "The sort of boolean values")
+    end_ast_node(logic, term, boolean_sort)
+    
+    declare_ast_node(logic, term, function_sort, "The sort of functions")
+      declare_field(logic, term, function_sort, range, logic::term, "The function's range")
+      declare_field(logic, term, function_sort, arguments, std::vector<logic::term>, "The function's arguments")
+    end_ast_node(logic, term, function_sort)
+
+  end_section()
+
   section("Constant terms")
     declare_ast_node(logic, term, integer, "A constant integer value (e.g., 42)")
       declare_field(logic, term, integer, value, int64_t, "The constant value")
@@ -66,14 +87,14 @@ declare_ast(logic, term)
       declare_field(logic, term, real, value, double, "The constant value")
     end_ast_node(logic, term, real)
 
-    declare_ast_node(logic, term, boolean, "A constant boolean value (i.e. `true` or `false`)")
+    declare_ast_node(logic, term, boolean, "A constant boolean value (i.e., `true` or `false`)")
       declare_field(logic, term, boolean, value, bool, "The boolean value")
     end_ast_node(logic, term, boolean)
   end_section()
 
   section("Boolean and first-order predicates")
 
-    declare_ast_node(logic, term, symbol, "A named symbol (e.g. a variable or a predicate)")
+    declare_ast_node(logic, term, symbol, "A named symbol (e.g., a variable or a predicate)")
       declare_field(logic, term, symbol, name, logic::label, "The symbol's label")
     end_ast_node(logic, term, symbol)
 
@@ -94,15 +115,15 @@ declare_ast(logic, term)
 
   section("Boolean connectives")
     declare_ast_node(logic, term, negation, "A logical negation")
-      declare_field(logic, term, negation, operand, logic::term, "The term to negate")
+      declare_field(logic, term, negation, argument, logic::term, "The term to negate")
     end_ast_node(logic, term, negation)
     
     declare_ast_node(logic, term, conjunction, "A logical conjunction")
-      declare_field(logic, term, conjunction, operands, std::vector<logic::term>, "The conjuncts")
+      declare_field(logic, term, conjunction, arguments, std::vector<logic::term>, "The conjuncts")
     end_ast_node(logic, term, conjunction)
     
     declare_ast_node(logic, term, disjunction, "A logical disjunction")
-      declare_field(logic, term, disjunction, operands, std::vector<logic::term>, "The disjuncts")
+      declare_field(logic, term, disjunction, arguments, std::vector<logic::term>, "The disjuncts")
     end_ast_node(logic, term, disjunction)
     
     declare_ast_node(logic, term, implication, "A logical implication")
@@ -169,6 +190,56 @@ declare_ast(logic, term)
       declare_field(logic, term, triggered, right, logic::term, "The universal argument")
     end_ast_node(logic, term, triggered)
 
+  end_section()
+
+  section("Arithmetic operators")
+  
+    declare_ast_node(logic, term, minus, "The unary minus")
+      declare_field(logic, term, minus, argument, logic::term, "The operand")
+    end_ast_node(logic, term, minus)
+    
+    declare_ast_node(logic, term, sum, "An arithmetic sum")
+      declare_field(logic, term, sum, arguments, std::vector<logic::term>, "The addends")
+    end_ast_node(logic, term, sum)
+    
+    declare_ast_node(logic, term, product, "An arithmetic product")
+      declare_field(logic, term, product, arguments, std::vector<logic::term>, "The factors")
+    end_ast_node(logic, term, product)
+
+    declare_ast_node(logic, term, difference, "An arithmetic difference")
+      declare_field(logic, term, difference, left, logic::term, "The minuend")
+      declare_field(logic, term, difference, right, logic::term, "The subtrahend")
+    end_ast_node(logic, term, difference)
+
+    declare_ast_node(logic, term, division, "An arithmetic division")
+      declare_field(logic, term, division, left, logic::term, "The numerator")
+      declare_field(logic, term, division, right, logic::term, "The denominator")
+    end_ast_node(logic, term, division)
+  
+  end_section()
+  
+  section("Relational comparisons")
+  
+    declare_ast_node(logic, term, less_than, "A less-than comparison")
+      declare_field(logic, term, less_than, left, logic::term, "The lower argument")
+      declare_field(logic, term, less_than, right, logic::term, "The greater argument")
+    end_ast_node(logic, term, less_than)
+  
+    declare_ast_node(logic, term, less_than_eq, "A less-than-or-equal comparison")
+      declare_field(logic, term, less_than_eq, left, logic::term, "The lower argument")
+      declare_field(logic, term, less_than_eq, right, logic::term, "The greater argument")
+    end_ast_node(logic, term, less_than_eq)
+  
+    declare_ast_node(logic, term, greater_than, "A greater-than comparison")
+      declare_field(logic, term, greater_than, left, logic::term, "The greater argument")
+      declare_field(logic, term, greater_than, right, logic::term, "The lower argument")
+    end_ast_node(logic, term, greater_than)
+  
+    declare_ast_node(logic, term, greater_than_eq, "A greater-than-or-equal comparison")
+      declare_field(logic, term, greater_than_eq, left, logic::term, "The greater argument")
+      declare_field(logic, term, greater_than_eq, right, logic::term, "The lower argument")
+    end_ast_node(logic, term, greater_than_eq)
+  
   end_section()
 
 end_ast(logic, term)
