@@ -43,7 +43,7 @@ namespace black {
 
 }
 
-namespace black::ast::reflect {
+namespace black::ast {
   
   #define declare_ast(NS, AST) \
     template<> \
@@ -186,7 +186,7 @@ namespace black::ast::reflect {
 
   #include <black/internal/ast/defs.hpp>
 
-} // namespace black::reflect
+} // namespace black::ast
 
 namespace black {
 
@@ -213,7 +213,7 @@ namespace black {
 
   #define declare_ast_factory(NS, AST, Factory, Member) \
     template<typename Derived> \
-    struct ast::internal::ast_factory_named_member<Derived, NS::AST> { \
+    struct ast::ast_factory_named_member<Derived, NS::AST> { \
       NS::Factory *Member() const { \
         return static_cast<NS::Factory *>( \
           static_cast<Derived const*>(this)->factory() \

@@ -34,7 +34,7 @@
 // See reflect.hpp to see how these are implemented from the expansion 
 // of defs.hpp
 //
-namespace black::ast::reflect {
+namespace black::ast {
 
   template<typename AST>
   struct is_ast : std::false_type { };
@@ -175,8 +175,6 @@ namespace black::ast::reflect {
 // Implementation of AST nodes
 //
 namespace black::ast::internal {
-
-  using namespace reflect;
 
   template<ast AST>
   struct ast_impl_base {
@@ -430,7 +428,7 @@ namespace black::ast::internal {
       friend struct ast_factory_ctor_base;
   };
 
-  template<size_t I, black::ast::reflect::ast_node Node>
+  template<size_t I, black::ast::ast_node Node>
   auto get(Node n) {
     constexpr auto Field = ast_node_field_index_t<ast_of_t<Node>, Node>(I);
     return n.template field<Field>();
@@ -513,42 +511,42 @@ namespace black::ast::internal {
 }
 
 namespace black::support {
-  template<ast::reflect::ast AST>
+  template<ast::ast AST>
   struct match_trait<AST> {
-    using cases = ast::reflect::ast_node_list_t<AST>;
+    using cases = ast::ast_node_list_t<AST>;
     
-    template<ast::reflect::ast_node_of<AST> Node>
+    template<ast::ast_node_of<AST> Node>
     static std::optional<Node> downcast(AST t) {
       return t.template to<Node>();
     }
   };
 }
 
-template<black::ast::reflect::ast_node Node>
+template<black::ast::ast_node Node>
 struct std::tuple_size<Node>
   : std::tuple_size<
-      black::ast::reflect::ast_node_field_list_t<
-        black::ast::reflect::ast_of_t<Node>, Node
+      black::ast::ast_node_field_list_t<
+        black::ast::ast_of_t<Node>, Node
       >
     > { };
 
-template<size_t I, black::ast::reflect::ast_node Node>
+template<size_t I, black::ast::ast_node Node>
 struct std::tuple_element<I, Node>
   : std::tuple_element<
-      I, black::ast::reflect::ast_node_field_types_t<
-        black::ast::reflect::ast_of_t<Node>, Node
+      I, black::ast::ast_node_field_types_t<
+        black::ast::ast_of_t<Node>, Node
       >
     > { };
 
 
-template<black::ast::reflect::ast T>
+template<black::ast::ast T>
 struct std::hash<T> {
   size_t operator()(T v) const {
     return v.hash();
   }
 };
 
-template<black::ast::reflect::ast_node T>
+template<black::ast::ast_node T>
 struct std::hash<T> {
   size_t operator()(T v) const {
     return v.hash();
@@ -556,7 +554,7 @@ struct std::hash<T> {
 };
 
 template<
-  black::ast::reflect::ast AST, black::ast::reflect::ast_node_of<AST> Node
+  black::ast::ast AST, black::ast::ast_node_of<AST> Node
 >
 struct std::hash<black::ast::internal::ast_impl<AST, Node>> {
   size_t operator()(black::ast::internal::ast_impl<AST, Node> const &impl) const

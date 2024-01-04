@@ -21,14 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//
-// Custom assert macros:
-// - black_assert(Expr)
-// - black_unreachable()
-//
-
-#ifndef BLACK_ASSERT_HPP
-#define BLACK_ASSERT_HPP
+#ifndef BLACK_SUPPORT_ASSERT_HPP
+#define BLACK_SUPPORT_ASSERT_HPP
 
 #include <cstdio>
 #include <cstdlib>
@@ -97,4 +91,4 @@ namespace black::support::internal {
     std::make_format_args(__VA_ARGS__) \
   )
 
-#endif // BLACK_ASSERT_HPP
+#endif // BLACK_SUPPORT_ASSERT_HPP

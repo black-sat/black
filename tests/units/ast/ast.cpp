@@ -25,7 +25,7 @@
 
 #include <black/logic>
 
-using namespace black::ast::reflect;
+using namespace black::ast;
 using namespace black::logic;
 using namespace black::support;
 
