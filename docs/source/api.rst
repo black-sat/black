@@ -1,4 +1,4 @@
-BLACK's API
+API Reference
 =====================
 
 BLACK is designed as a library embeddable into any client application. This 

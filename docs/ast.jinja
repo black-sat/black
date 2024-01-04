@@ -2,24 +2,29 @@
 {% for ast in astlist %}
 {% if ast.name == name %}
 
-We have the following subcases:
+``using namespace black::{{ast.namespace}};``
 
-.. cpp:namespace:: black::{{ ast.namespace }}
+.. cpp:namespace:: black::{{ast.namespace}}
 
-{% for node in ast.nodes %}
-.. cpp:struct:: {{ node.name }}
+{% for section in ast.sections %}
 
-   {{ node.doc }}
+{{section.doc}}
+{{'~' * (section.doc|length)}}
+
+{% for node in section.nodes %}
+.. cpp:struct:: {{node.name}}
+
+   {{node.doc}}.
 
    :constructor:
       .. cpp:function:: {{ node.name }}(
             {%- for field in node.fields -%}
-            {{ field.type }} {{ field.name}} {{", " if not loop.last else ""}}
+            {{field.type}} {{field.name}}{{", " if not loop.last else ""}}
             {%- endfor -%}
       )
 
       {% for field in node.fields %}
-         :param {{field.name}}: {{field.doc}}
+         :param {{field.name}}: {{field.doc}}.
       {% endfor %}
 
    :members:
@@ -27,10 +32,11 @@ We have the following subcases:
    {% for field in node.fields %}
       .. cpp:function:: {{field.type}} {{field.name}}() const
 
-         :returns: {{field.doc}}
+         :returns: {{field.doc}}.
 
    {% endfor %}
         
+{% endfor %}
 {% endfor %}
 
 {% endif %}

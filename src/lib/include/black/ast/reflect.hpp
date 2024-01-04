@@ -35,7 +35,7 @@ namespace black {
     }
   #include <black/ast/defs.hpp>
 
-  #define declare_ast_node(NS, AST, Node) \
+  #define declare_ast_node(NS, AST, Node, Doc) \
     namespace NS { \
       struct Node; \
     }
@@ -50,17 +50,17 @@ namespace black::ast::reflect {
     struct is_ast<NS::AST> : std::true_type { };
   #include <black/ast/defs.hpp>
   
-  #define declare_ast_node(NS, AST, Node) \
+  #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
     struct is_ast_node<NS::Node> : std::true_type { };
   #include <black/ast/defs.hpp>
   
-  #define declare_ast_node(NS, AST, Node) \
+  #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
     struct is_ast_node_of<NS::Node, NS::AST> : std::true_type { };
   #include <black/ast/defs.hpp>
 
-  #define declare_ast_node(NS, AST, Node) \
+  #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
     struct ast_of<NS::Node> : std::type_identity<NS::AST> { };
   #include <black/ast/defs.hpp>
@@ -69,7 +69,7 @@ namespace black::ast::reflect {
     template<> \
     struct ast_node_list<NS::AST> : tuple_cpp<0
 
-  #define declare_ast_node(NS, AST, Node) \
+  #define declare_ast_node(NS, AST, Node, Doc) \
       , NS::Node
 
   #define end_ast(NS, AST) \
@@ -82,7 +82,7 @@ namespace black::ast::reflect {
     struct ast_node_index<NS::AST> { \
       enum class type : size_t {
 
-  #define declare_ast_node(NS, AST, Node) \
+  #define declare_ast_node(NS, AST, Node, Doc) \
         Node,
 
   #define end_ast(NS, AST) \
@@ -91,7 +91,7 @@ namespace black::ast::reflect {
 
   #include <black/ast/defs.hpp>
 
-  #define declare_ast_node(NS, AST, Node) \
+  #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
     struct ast_node_index_of<NS::AST, NS::Node> \
       : std::integral_constant< \
@@ -100,14 +100,14 @@ namespace black::ast::reflect {
 
   #include <black/ast/defs.hpp>
 
-  #define declare_ast_node(NS, AST, Node) \
+  #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
     struct ast_node_name<NS::AST, NS::Node> { \
       static constexpr std::string_view value = #Node; \
     };
   #include <black/ast/defs.hpp>
 
-  #define declare_ast_node(NS, AST, Node) \
+  #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
     struct ast_node_field_index<NS::AST, NS::Node> { \
       enum class type : size_t {
@@ -122,7 +122,7 @@ namespace black::ast::reflect {
   #include <black/ast/defs.hpp>
 
 
-  #define declare_ast_node(NS, AST, Node) \
+  #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
     struct ast_node_field_list<NS::AST, NS::Node> : tuple_cpp<0
 
@@ -155,7 +155,7 @@ namespace black::ast::reflect {
 
   #include <black/ast/defs.hpp>
 
-  #define declare_ast_node(NS, AST, Node) \
+  #define declare_ast_node(NS, AST, Node, Doc) \
     template< \
       typename Derived, \
       typename Base, typename R, typename ...Args, \
@@ -203,7 +203,7 @@ namespace black {
 
   #include <black/ast/defs.hpp>
 
-  #define declare_ast_node(NS, AST, Node) \
+  #define declare_ast_node(NS, AST, Node, Doc) \
     struct NS::Node : ast::internal::ast_node_base<NS::AST, NS::Node> { \
       using ast::internal::ast_node_base<NS::AST, NS::Node>::ast_node_base; \
     };

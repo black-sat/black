@@ -5,23 +5,28 @@
         { \
             "name": #AST, \
             "namespace": #NS, \
+            "sections": [
 
-#define ast_doc(Doc) \
-            "doc": Doc, \
-            "nodes": [
-
-#define declare_ast_node(NS, AST, Node) \
+#define section(Doc) \
                 { \
-                    "name": #Node, 
-
-#define ast_node_doc(Doc) \
                     "doc": Doc, \
-                    "fields": [
+                    "nodes": [
+
+#define declare_ast_node(NS, AST, Node, Doc) \
+                        { \
+                            "doc": Doc, \
+                            "name": #Node, \
+                            "fields": [
 
 #define declare_field(NS, AST, Node, Field, Type, Doc) \
-                        { "name": #Field, "type": #Type, "doc": Doc },
+                                { "name": #Field, "type": #Type, "doc": Doc },
 
 #define end_ast_node(NS, AST, Node) \
+                                null \
+                            ] \
+                        },
+
+#define end_section() \
                         null \
                     ] \
                 },

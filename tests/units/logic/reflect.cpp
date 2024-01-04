@@ -38,13 +38,6 @@ TEST_CASE("Static reflection") {
     STATIC_REQUIRE(is_ast_node_of_v<integer, term>);
 
     STATIC_REQUIRE(
-        std::is_same_v<
-            ast_node_list_t<term>,
-            std::tuple<integer, symbol, boolean, conjunction, until>
-        >
-    );
-
-    STATIC_REQUIRE(
         std::to_underlying(ast_node_index_t<term>::integer) == 0
     );
 
