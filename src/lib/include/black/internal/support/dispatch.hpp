@@ -28,33 +28,68 @@
 #include <utility>
 #include <tuple>
 
+namespace black::support {
+
+  template<typename T>
+  struct unpack_size { };
+
+  template<typename T>
+    requires requires { std::tuple_size<T>::value; }
+  struct unpack_size<T> 
+    : std::integral_constant<size_t, std::tuple_size<T>::value + 1> { };
+
+  template<typename T>
+  inline constexpr size_t unpack_size_v = unpack_size<T>::value;
+
+  template<size_t I, typename T>
+  struct unpack_element : std::tuple_element<I - 1, T> { };
+
+  template<typename T>
+  struct unpack_element<0, T> : std::type_identity<T> { };
+
+  template<size_t I, typename T>
+  using unpack_element_t = typename unpack_element<I, T>::type;
+
+  template<size_t I, typename T>
+    requires (I == 0 || requires(T v) { get<I - 1>(v); })
+  decltype(auto) unpack(T&& v) {
+    if constexpr(I == 0)
+      return std::forward<T>(v);
+    else
+      return get<I - 1>(std::forward<T>(v));
+  }
+}
+
+
 namespace black::support::internal {
 
   template<typename Callable, typename Arg>
-  struct is_invocable_unpack : std::false_type { };
+  struct is_invocable_unpacked : std::false_type { };
 
   template<typename Callable, typename Arg>
-  inline constexpr bool is_invocable_unpack_v = 
-    is_invocable_unpack<Callable, Arg>::value;
+  inline constexpr bool is_invocable_unpacked_v = 
+    is_invocable_unpacked<Callable, Arg>::value;
 
   template<
     typename Callable, typename Arg, 
-    typename Indexes = std::make_index_sequence<std::tuple_size_v<Arg>>
+    typename Indexes = std::make_index_sequence<unpack_size_v<Arg>>
   >
-  struct is_invocable_unpack_ : std::false_type { };
+  struct is_invocable_unpacked_ : std::false_type { };
 
   template<typename Callable, typename Arg, size_t ...I>
-  struct is_invocable_unpack_<Callable, Arg, std::index_sequence<I...>>
-    : std::is_invocable<Callable, Arg, std::tuple_element_t<I, Arg>...> { };
+  struct is_invocable_unpacked_<Callable, Arg, std::index_sequence<I...>>
+    : std::is_invocable<Callable, unpack_element_t<I, Arg>...> { };
 
   template<typename Callable, typename Arg>
-    requires requires { std::tuple_size<Arg>::value; }
-  struct is_invocable_unpack<Callable, Arg>
-    : is_invocable_unpack_<Callable, Arg> { };
+    requires requires { unpack_size<Arg>::value; }
+  struct is_invocable_unpacked<Callable, Arg>
+    : is_invocable_unpacked_<Callable, Arg> { };
 
   template<typename Callable, typename Arg, size_t ...I>
-  auto unpack(Callable const& callable, Arg arg, std::index_sequence<I...>) {
-    return std::invoke(callable, arg, get<I>(arg)...);
+  auto invoke_unpacked(
+    Callable const& callable, Arg&& arg, std::index_sequence<I...>
+  ) {
+    return std::invoke(callable, unpack<I>(std::forward<Arg>(arg))...);
   }
 
   struct missing_case_t {
@@ -73,10 +108,10 @@ namespace black::support::internal {
     Arg&& arg, Callable callable, Callables ...callables
   ) {
     using TArg = std::remove_cvref_t<Arg>;
-    if constexpr(is_invocable_unpack_v<Callable, TArg>) 
-      return unpack(
+    if constexpr(is_invocable_unpacked_v<Callable, TArg>) 
+      return invoke_unpacked(
         callable, std::forward<Arg>(arg),
-        std::make_index_sequence<std::tuple_size_v<TArg>>{}
+        std::make_index_sequence<unpack_size_v<TArg>>{}
       );
     else if constexpr(std::is_invocable_v<Callable, Arg>)
       return std::invoke(callable, std::forward<Arg>(arg));
@@ -84,23 +119,21 @@ namespace black::support::internal {
       return dispatch_impl(loc, std::forward<Arg>(arg), callables...);
   }
 
-  template<typename ...Callables>
+  template<typename Arg>
   class dispatch_t 
   {
   public:
-    dispatch_t(Callables ...args) : _callables{std::move(args)...} { }
+    dispatch_t(Arg const& arg, std::source_location loc) 
+      : _arg{arg}, _loc{loc} { }
 
-    template<typename Arg>
-    auto operator()(
-      Arg&& arg, std::source_location loc = std::source_location::current()
-    ) const {
-      return std::apply([&](auto ...callables) {
-        return dispatch_impl(loc, std::forward<Arg>(arg), callables...);
-      }, _callables);
+    template<typename ...Callables>
+    auto operator()(Callables ...callables) const {
+      return dispatch_impl(_loc, _arg, callables...);
     }
 
   private:
-    std::tuple<Callables...> _callables;
+    Arg const& _arg;
+    std::source_location _loc;
   };
 
   struct otherwise {
@@ -110,9 +143,11 @@ namespace black::support::internal {
     otherwise(T const&) { }
   };
 
-  template<typename ...Callables>
-  auto dispatch(Callables ...callables) {
-    return dispatch_t<Callables...>{std::move(callables)...};
+  template<typename Arg>
+  auto dispatch(
+    Arg const& arg, std::source_location loc = std::source_location::current()
+  ) {
+    return dispatch_t<Arg>{arg, loc};
   }
 }
 

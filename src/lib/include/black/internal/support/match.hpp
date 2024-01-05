@@ -67,7 +67,7 @@ namespace black::support::internal {
     ) {
       auto casted = match_trait<M>::template downcast<Case>(m);
       if(casted)
-        return dispatch(handlers...)(*casted, loc);
+        return dispatch(*casted, loc)(handlers...);
       return matcher_impl<M, R, std::tuple<Cases...>>::match(
         m, loc, handlers...
       );
@@ -84,7 +84,7 @@ namespace black::support::internal {
       auto casted = match_trait<M>::template downcast<Case>(m);
       black_assert(casted);
 
-      return dispatch(handlers...)(*casted, loc);
+      return dispatch(*casted, loc)(handlers...);
     }
   };
 
@@ -96,7 +96,7 @@ namespace black::support::internal {
   {
     template<typename ...Handlers>
     using return_t = std::common_type_t<
-      decltype(dispatch(std::declval<Handlers>()...)(std::declval<Cases>()))...
+      decltype(dispatch(std::declval<Cases>())(std::declval<Handlers>()...))...
     >;
   public:
     matcher_t(M const& m, std::source_location loc) : _m{m}, _loc{loc} { }

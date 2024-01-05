@@ -105,16 +105,23 @@ TEST_CASE("Match infrastructure") {
 }
 
 TEST_CASE("Dispatch") {
-  auto d = dispatch(
-    [](int x) {
-      return x * 2;
-    },
-    [](float y) { 
-      return y / 2;
-    }
+  auto d = dispatch(21)(
+    [](int x) { return x * 2; },
+    [](float y) { return y / 2; }
   );
 
-  REQUIRE(d(21) == 42);
+  REQUIRE(d == 42);
+  
+  REQUIRE_THROWS(
+    dispatch("hello")(
+      [](int x) { return x * 2; }
+    )
+  );
 
-  REQUIRE_THROWS(d("hello"));
+  int x = 0;
+  dispatch(21)(
+    [&](int y) { x = y * 2; }
+  );
+
+  REQUIRE(x == 42);
 }
