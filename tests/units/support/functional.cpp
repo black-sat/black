@@ -49,7 +49,7 @@ TEST_CASE("Unpack combinator") {
 
 TEST_CASE("Dispatch combinator") {
 
-    auto d = dispatch(
+    auto d = dispatching(
         [](int x) { return x; },
         [](float f) { return f; },
         [](std::string s) { return s; }
@@ -58,24 +58,42 @@ TEST_CASE("Dispatch combinator") {
     REQUIRE(d(42) == 42);
 }
 
-TEST_CASE("Match function") {
-    
-    std::variant<int, float, std::string> t = 42;
+TEST_CASE("Visiting combinator") 
+{
+    using T = std::variant<int, float, std::string>;
+    T t = 42;
 
-    auto r = match(t)(
-        [](int x) { return x; },
-        [](float f) { return f; },
-        [](std::string s) { return s.size(); }
+    auto v = visitor(
+        [](auto e) {
+            return std::format("{}", e);
+        }
     );
 
-    REQUIRE(r == 42);
+    REQUIRE(v(t) == "42");
+}
 
-    t = "hello";
+TEST_CASE("Match function") {
+    using T = std::variant<int, float, std::string>;
+
+    T t = 42;
+
+    auto r = match(t)(
+        [](auto e) {
+            return std::format("{}", e);
+        }
+    );
+
+    REQUIRE(r == "42");
 
     REQUIRE_THROWS(
         match(t)(
-            [](int x) { return x; },
-            [](float f) { return f; }
+            [](std::string x) { return x; }
         )
     );
+
+    auto f = matching(
+        [](int x) { return x; }
+    );
+
+    REQUIRE(f(t) == 42);
 }

@@ -88,21 +88,16 @@ namespace black::support::internal {
     return unpackN<std::tuple_size_v<Arg>>(f, arg);
   }
 
-  template<typename F>
-  struct unpacking_t {
-    template<typename Arg>
-    auto operator()(Arg arg) 
-      requires (!std::same_as<decltype(unpack(this->f, arg)), no_unpack_t>)
-    {
-      return unpack(f, arg);
-    }
-
-    F f;
+  template<typename Arg, typename F>
+  concept can_unpack_over = requires(Arg arg, F f) {
+    requires (!std::same_as<decltype(unpack(f, arg)), no_unpack_t>);
   };
 
   template<typename F>
   auto unpacking(F f) {
-    return unpacking_t<F>{f};
+    return [=](can_unpack_over<F> auto arg) {
+      return unpack(f, arg);
+    };
   }
 
   //
@@ -111,240 +106,200 @@ namespace black::support::internal {
   struct no_dispatch_t { };
 
   template<typename Arg, typename F, typename ...Fs>
-  auto do_dispatch(Arg arg, F f, Fs ...fs) 
+  auto dispatch(Arg arg, F f, Fs ...fs) 
   {
     if constexpr (requires { std::invoke(f, arg); })
       return std::invoke(f, arg);
     else if constexpr (sizeof...(Fs) > 0)
-      return do_dispatch(arg, fs...);
+      return dispatch(arg, fs...);
     else
       return no_dispatch_t{};
   }
 
   template<typename Arg, typename ...Fs>
-  auto do_dispatch(Arg arg, std::tuple<Fs...> tuple) {
-    return std::apply([&](auto ...fs) {
-      return do_dispatch(arg, fs...);
-    }, tuple);
-  }
-
-  template<typename ...Fs>
-  struct dispatch_t 
-  {
-    template<typename Arg>
-    auto operator()(Arg arg)
-      requires 
-        (!std::same_as<decltype(do_dispatch(arg, this->fs)), no_dispatch_t>)
-    {
-      return do_dispatch(arg, fs);
-    }
-
-    std::tuple<Fs...> fs;
+  concept can_dispatch_over = requires(Arg arg, Fs ...fs) {
+    requires (!std::same_as<decltype(dispatch(arg, fs...)), no_dispatch_t>);
   };
 
   template<typename ...Fs>
-  auto dispatch(Fs ...fs) {
-    return dispatch_t<Fs...>{{fs...}};
+  auto dispatching(Fs ...fs) {
+    return [=](can_dispatch_over<Fs...> auto arg) {
+      return dispatch(arg, fs...);
+    };
   }
 
   struct otherwise { 
     otherwise() = default;
-    otherwise(auto) { }
+    otherwise(auto const&) { }
   };
 
 }
 
 namespace black::support {
   template<typename T>
-  struct match_trait { };
+  struct match_cases { };
+
+  template<typename T>
+  using match_cases_t = typename match_cases<T>::type;
+
+  //
+  // `match_cases` and `downcast` for standard types `std::variant`, 
+  // `std::optional` and  `std::expected`
+  //
+  template<typename ...Cases>
+  struct match_cases<std::variant<Cases...>> :
+    std::type_identity<std::tuple<Cases...>> { };
+    
+  template<typename U, typename ...Cases>
+    requires (std::is_same_v<U, Cases> || ...)
+  std::optional<U> downcast(std::variant<Cases...> const& v) {
+    if(std::holds_alternative<U>(v))
+      return {std::get<U>(v)};
+    return {};
+  }
+  
+  template<typename T, typename E>
+  struct match_cases<std::expected<T, E>> 
+    : std::type_identity<std::tuple<T, E>> { };
+    
+  template<typename R, typename E>
+  std::optional<R> downcast(std::expected<R, E> const& v) {
+    if(v.has_value())
+      return {v.value()};
+    return {};
+  }
+  
+  template<typename R, typename T>
+  std::optional<R> downcast(std::expected<T, R> const& v) {
+    if(!v.has_value())
+      return {v.error()};
+    return {};
+  }
+  
+  template<typename T>
+  struct match_cases<std::optional<T>> 
+    : std::type_identity<std::tuple<T, internal::otherwise>> { };
+    
+  template<typename U>
+  std::optional<U> downcast(std::optional<U> const& v) {
+    if(v.has_value())
+      return {v.value()};
+    return {};
+  }
+  
+  template<std::same_as<internal::otherwise> U, typename T>
+  std::optional<U> downcast(std::optional<T> const& v) {
+    if(!v.has_value())
+      return {internal::otherwise{}};
+    return {};
+  }
+
+  //
+  // This has to stay after the definitions of downcast<>() above
+  //
+  template<typename T>
+  concept matchable = requires (T t) 
+  {
+    requires (std::tuple_size_v<typename match_cases<T>::type> > 0);
+    
+    downcast<
+      typename std::tuple_element<0, typename match_cases<T>::type>::type
+    >(t);
+  };
 }
 
 namespace black::support::internal {
 
-  template<typename T>
-  concept matchable = requires (T t) {
-    
-    requires (std::tuple_size_v<typename match_trait<T>::cases> > 0);
-    
-    match_trait<T>::template downcast<
-      typename std::tuple_element<0, typename match_trait<T>::cases>::type
-    >(t);
+  template<typename F, typename Cases>
+  struct visit_result_ { };
+  
+  template<typename F, typename ...Cases>
+  struct visit_result_<F, std::tuple<Cases...>> : std::common_type<
+    decltype(std::declval<F>()(std::declval<Cases>()))...
+  > { };
+
+  template<typename F, matchable M>
+  struct visit_result : visit_result_<F, match_cases_t<M>> { };
+
+  template<typename F, typename Cases>
+  using visit_result_t = typename visit_result<F, Cases>::type;
+
+  template<typename M, typename F>
+  concept can_visit_over = matchable<M> && requires {
+    typename visit_result<F, M>::type;
   };
 
+  template<matchable M, typename F, size_t I, size_t ...Is>
+  visit_result_t<F, M> visit(M m, F f, std::index_sequence<I, Is...>)
+  {
+    using T = std::tuple_element_t<I, match_cases_t<M>>;
+    auto casted = downcast<T>(m);
+    if(casted) 
+      return static_cast<visit_result_t<F, M>>(std::invoke(f, *casted));
+
+    if constexpr(sizeof...(Is) > 0)
+      return visit(m, f, std::index_sequence<Is...>{});
+    
+    black_unreachable();
+  }
+
+  template<matchable M, typename F>
+  auto visit(M m, F f) {
+    constexpr auto N = std::tuple_size_v<match_cases_t<M>>;
+    
+    return visit(m, f, std::make_index_sequence<N>{});
+  }
+
+  template<typename F>
+  auto visitor(F f) {
+    return [=](can_visit_over<F> auto arg) {
+      return visit(arg, f);
+    };
+  }
+
+  //
+  // Matching combinator and match function
+  //
   struct missing_case_t { 
     template<typename T>
     [[noreturn]] operator T() const { black_unreachable(); }
   };
-
-  template<typename Case, typename ...Fs>
-  struct dispatch_result : std::type_identity<missing_case_t> { };
   
-  template<typename Case, typename ...Fs>
-  using dispatch_result_t = typename dispatch_result<Case, Fs...>::type;
-  
-  template<typename Case, typename ...Fs>
-    requires requires {
-      dispatch(unpacking(std::declval<Fs>())...)(std::declval<Case>());
-    }
-  struct dispatch_result<Case, Fs...> : std::type_identity<
-    decltype(
-      dispatch(unpacking(std::declval<Fs>())...)(std::declval<Case>())
-    )
-  > { };
-
-  template<typename Cases, typename Fs>
-  struct match_result { };
-
-  template<typename Cases, typename Fs>
-  using match_result_t = typename match_result<Cases, Fs>::type;
-
-  template<
-    typename Case, typename ...Cases, typename ...Fs
-  >
-  struct match_result<std::tuple<Case, Cases...>, std::tuple<Fs...>>
-    : std::common_type<
-        dispatch_result_t<Case, Fs...>, dispatch_result_t<Cases, Fs...>...
-      > { };
+  template<matchable M>
+  auto match(M m, std::source_location loc = std::source_location::current()) {
+    return [=](auto ...fs) {
+      return visitor(
+        dispatching(
+          unpacking(fs)...,
+          [&](auto missing) -> missing_case_t { 
+            throw bad_pattern(missing, loc); 
+          }
+        )
+      )(m);
+    };
+  }
 
   template<typename ...Fs>
-  struct match_result<std::tuple<>, std::tuple<Fs...>>
-    : std::type_identity<missing_case_t> { };
-
-  template<typename Case, typename ...Cases, matchable M, typename ...Fs>
-  match_result_t<std::tuple<Case, Cases...>, std::tuple<Fs...>>
-  do_match(M m, std::source_location loc, Fs ...fs) {
-    auto casted = match_trait<M>::template downcast<Case>(m);
-    if(casted) {
-      if constexpr (requires { dispatch(unpacking(fs)...)(*casted); })
-        return dispatch(unpacking(fs)...)(*casted);
-      else
-        throw bad_pattern(m, loc);
-    }
-
-    if constexpr(sizeof...(Cases) > 0)
-      return do_match<Cases...>(m, loc, fs...);
-    else
-      black_unreachable();
-  }
-
-  template<typename Cases, typename Fs>
-  concept has_common_type = requires { 
-    typename match_result<Cases, Fs>::type; 
-  };
-
-  template<matchable M, typename Cases = typename match_trait<M>::cases>
-  struct matcher_t;
-
-  template<matchable M, typename ...Cases>
-  struct matcher_t<M, std::tuple<Cases...>>
-  {
-    template<typename ...Fs>
-      requires has_common_type<std::tuple<Cases...>, std::tuple<Fs...>>
-    auto operator()(Fs ...fs) 
-      requires requires { do_match<Cases...>(this->m, this->loc, fs...); }
-    {
-      return do_match<Cases...>(m, loc, fs...);
-    }
-
-    M m;
-    std::source_location loc;
-  };
-
-  template<matchable M>
-  matcher_t<M> match(
-    M const& m, std::source_location loc = std::source_location::current()
-  ) {
-    return {m, loc};
+  auto matching(Fs ...fs) {
+    return [=](
+      matchable auto m, 
+      std::source_location loc = std::source_location::current()
+    ) {
+      return match(m, loc)(fs...);
+    };
   }
 
 }
 
-template<>
-struct std::common_type<
-  ::black::support::internal::missing_case_t, 
-  ::black::support::internal::missing_case_t
-> : std::type_identity<::black::support::internal::missing_case_t> { };
-
-template<typename T>
-struct std::common_type<::black::support::internal::missing_case_t, T> : 
-  std::type_identity<T> { };
-
-template<typename T>
-struct std::common_type<T, ::black::support::internal::missing_case_t> : 
-  std::type_identity<T> { };
-
-//
-// Specialization of `match_trait` for standard types `std::variant`, and
-// `std::expected`.
-//
-namespace black::support {
-
-  template<typename ...Cases>
-  struct match_trait<std::variant<Cases...>> {
-    using cases = std::tuple<Cases...>;
-    
-    template<typename U>
-      requires (std::is_same_v<U, Cases> || ...)
-    static std::optional<U> downcast(std::variant<Cases...> const& v) {
-      if(std::holds_alternative<U>(v))
-        return {std::get<U>(v)};
-      return {};
-    }
-  };
-  
-  template<typename T, typename E>
-  struct match_trait<std::expected<T, E>> {
-    using cases = std::tuple<T, E>;
-    
-    template<typename U>
-      requires (std::is_same_v<U, T>)
-    static std::optional<U> downcast(std::expected<T, E> const& v) {
-      if(v.has_value())
-        return {v.value()};
-      return {};
-    }
-    
-    template<typename U>
-      requires (std::is_same_v<U, E>)
-    static std::optional<U> downcast(std::expected<T, E> const& v) {
-      if(!v.has_value())
-        return {v.error()};
-      return {};
-    }
-    
-  };
-  
-  template<typename T>
-  struct match_trait<std::optional<T>> {
-    using cases = std::tuple<T, internal::otherwise>;
-    
-    template<typename U>
-      requires (std::is_same_v<U, T>)
-    static std::optional<U> downcast(std::optional<T> const& v) {
-      if(v.has_value())
-        return {v.value()};
-      return {};
-    }
-    
-    template<typename U>
-      requires (std::is_same_v<U, internal::otherwise>)
-    static std::optional<U> downcast(std::optional<T> const& v) {
-      if(!v.has_value())
-        return {internal::otherwise{}};
-      return {};
-    }
-    
-  };
-
-}
 
 namespace black::support {
   using internal::lazy;
   using internal::unpacking;
-  using internal::dispatch;
+  using internal::dispatching;
   using internal::otherwise;
+  using internal::visitor;
   using internal::match;
-  using internal::matchable;
+  using internal::matching;
 }
 
 #endif // BLACK_SUPPORT_FUNCTIONAL_HPP
