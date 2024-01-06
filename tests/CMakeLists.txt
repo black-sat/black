@@ -35,8 +35,9 @@ if(Catch2_FOUND)
     units/support/assert.cpp
     units/support/tribool.cpp
     units/support/hash.cpp
-    units/support/match.cpp
+    units/support/functional.cpp
     units/ast/ast.cpp
+    units/ast/algorithms.cpp
     units/logic/identifier.cpp
     units/logic/logic.cpp
   )

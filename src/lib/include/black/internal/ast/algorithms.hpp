@@ -24,9 +24,7 @@
 #ifndef BLACK_SUPPORT_ALGORITHMS_HPP
 #define BLACK_SUPPORT_ALGORITHMS_HPP
 
-namespace black::support {
-
-  
+namespace black::ast {
 
 }
 

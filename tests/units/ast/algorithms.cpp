@@ -21,15 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_FORMULA_HPP
-#define BLACK_LOGIC_FORMULA_HPP
+#include <catch.hpp>
 
-#include <black/internal/logic/label.hpp>
-#include <black/internal/logic/identifier.hpp>
-
-#include <black/support>
 #include <black/ast>
 
-#include <black/internal/logic/operators.hpp>
+TEST_CASE("AST algorithms") {
+  
 
-#endif // BLACK_LOGIC_FORMULA_HPP
+
+}

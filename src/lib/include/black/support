@@ -32,8 +32,7 @@
 #include <black/internal/support/debug.hpp>
 #include <black/internal/support/tribool.hpp>
 #include <black/internal/support/hash.hpp>
-#include <black/internal/support/dispatch.hpp>
-#include <black/internal/support/match.hpp>
+#include <black/internal/support/functional.hpp>
 #include <black/internal/support/errors.hpp>
 
 #endif // BLACK_SUPPORT_HPP
