@@ -227,6 +227,11 @@ namespace black::support::internal {
       black_unreachable();
   }
 
+  template<typename Cases, typename Fs>
+  concept has_common_type = requires { 
+    typename match_result<Cases, Fs>::type; 
+  };
+
   template<matchable M, typename Cases = typename match_trait<M>::cases>
   struct matcher_t;
 
@@ -234,7 +239,10 @@ namespace black::support::internal {
   struct matcher_t<M, std::tuple<Cases...>>
   {
     template<typename ...Fs>
-    auto operator()(Fs ...fs) {
+      requires has_common_type<std::tuple<Cases...>, std::tuple<Fs...>>
+    auto operator()(Fs ...fs) 
+      requires requires { do_match<Cases...>(this->m, this->loc, fs...); }
+    {
       return do_match<Cases...>(m, loc, fs...);
     }
 
