@@ -24,7 +24,34 @@
 #ifndef BLACK_SUPPORT_ALGORITHMS_HPP
 #define BLACK_SUPPORT_ALGORITHMS_HPP
 
+#include <black/support>
+
 namespace black::ast {
+
+  template<typename T>
+  auto traverse(T t) {
+    return [&](auto ...) -> T {
+      return t;
+    };
+  }
+
+  template<ast AST>
+  auto traverse(AST t) {
+    using namespace support;
+    
+    return [=](auto ...fs) {
+      return match(t)(
+        [=](auto c, auto ...args) {
+          return dispatching(
+            unpacking(ignore1(fs))...
+          )(std::tuple{c, traverse(args)(fs...)...});
+        },
+        [=]<typename N>(N, auto ...args) {
+          return N(traverse(args)(fs...)...);
+        }
+      );
+    };
+  }
 
 }
 

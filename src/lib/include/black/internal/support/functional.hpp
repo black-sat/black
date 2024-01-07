@@ -55,6 +55,18 @@ namespace black::support::internal {
   }
 
   //
+  // Returns a lambda that ignore an additional dummy first argument
+  //
+  inline auto ignore1(auto f) {
+    return [=]<typename ...Args>(auto, Args&& ...args) 
+      -> decltype(f(std::forward<Args>(args)...))
+    {
+      return f(std::forward<Args>(args)...);
+    };
+  }
+
+
+  //
   // unpacking() combinator
   //
   template<typename F, typename Arg, size_t ...I>
@@ -142,69 +154,17 @@ namespace black::support {
   template<typename T>
   using match_cases_t = typename match_cases<T>::type;
 
-  //
-  // `match_cases` and `downcast` for standard types `std::variant`, 
-  // `std::optional` and  `std::expected`
-  //
-  template<typename ...Cases>
-  struct match_cases<std::variant<Cases...>> :
-    std::type_identity<std::tuple<Cases...>> { };
-    
-  template<typename U, typename ...Cases>
-    requires (std::is_same_v<U, Cases> || ...)
-  std::optional<U> downcast(std::variant<Cases...> const& v) {
-    if(std::holds_alternative<U>(v))
-      return {std::get<U>(v)};
-    return {};
-  }
-  
-  template<typename T, typename E>
-  struct match_cases<std::expected<T, E>> 
-    : std::type_identity<std::tuple<T, E>> { };
-    
-  template<typename R, typename E>
-  std::optional<R> downcast(std::expected<R, E> const& v) {
-    if(v.has_value())
-      return {v.value()};
-    return {};
-  }
-  
-  template<typename R, typename T>
-  std::optional<R> downcast(std::expected<T, R> const& v) {
-    if(!v.has_value())
-      return {v.error()};
-    return {};
-  }
-  
-  template<typename T>
-  struct match_cases<std::optional<T>> 
-    : std::type_identity<std::tuple<T, internal::otherwise>> { };
-    
-  template<typename U>
-  std::optional<U> downcast(std::optional<U> const& v) {
-    if(v.has_value())
-      return {v.value()};
-    return {};
-  }
-  
-  template<std::same_as<internal::otherwise> U, typename T>
-  std::optional<U> downcast(std::optional<T> const& v) {
-    if(!v.has_value())
-      return {internal::otherwise{}};
-    return {};
-  }
+  template<typename From, typename To>
+  struct match_downcast { };
 
-  //
-  // This has to stay after the definitions of downcast<>() above
-  //
   template<typename T>
   concept matchable = requires (T t) 
   {
     requires (std::tuple_size_v<typename match_cases<T>::type> > 0);
     
-    downcast<
-      typename std::tuple_element<0, typename match_cases<T>::type>::type
-    >(t);
+    match_downcast<
+      T, typename std::tuple_element<0, typename match_cases<T>::type>::type
+    >::downcast(t);
   };
 }
 
@@ -233,7 +193,7 @@ namespace black::support::internal {
   visit_result_t<F, M> visit(M m, F f, std::index_sequence<I, Is...>)
   {
     using T = std::tuple_element_t<I, match_cases_t<M>>;
-    auto casted = downcast<T>(m);
+    auto casted = match_downcast<M, T>::downcast(m);
     if(casted) 
       return static_cast<visit_result_t<F, M>>(std::invoke(f, *casted));
 
@@ -291,9 +251,75 @@ namespace black::support::internal {
 
 }
 
+namespace black::support {
+  //
+  // `match_cases` and `match_downcast` for standard types `std::variant`, 
+  // `std::optional` and  `std::expected`
+  //
+  template<typename ...Cases>
+  struct match_cases<std::variant<Cases...>> :
+    std::type_identity<std::tuple<Cases...>> { };
+    
+  template<typename U, typename ...Cases>
+    requires (std::same_as<U, Cases> || ...)
+  struct match_downcast<std::variant<Cases...>, U> {
+    static std::optional<U> downcast(std::variant<Cases...> const& v) {
+      if(std::holds_alternative<U>(v))
+        return {std::get<U>(v)};
+      return {};
+    }
+  };
+  
+  
+  template<typename T, typename E>
+  struct match_cases<std::expected<T, E>> 
+    : std::type_identity<std::tuple<T, E>> { };
+    
+  template<typename R, typename E>
+  struct match_downcast<std::expected<R, E>, R> {
+    static std::optional<R> downcast(std::expected<R, E> const& v) {
+      if(v.has_value())
+        return {v.value()};
+      return {};
+    }
+  };
+  
+  template<typename R, typename T>
+  struct match_downcast<std::expected<T, R>, R> {
+    static std::optional<R> downcast(std::expected<T, R> const& v) {
+      if(!v.has_value())
+        return {v.error()};
+      return {};
+    }
+  };
+  
+  template<typename T>
+  struct match_cases<std::optional<T>> 
+    : std::type_identity<std::tuple<T, internal::otherwise>> { };
+    
+  template<typename U>
+  struct match_downcast<std::optional<U>, U> {
+    static std::optional<U> downcast(std::optional<U> const& v) {
+      if(v.has_value())
+        return {v.value()};
+      return {};
+    }
+  };
+  
+  template<typename T>
+  struct match_downcast<T, internal::otherwise> {
+    std::optional<internal::otherwise> downcast(std::optional<T> const& v) {
+      if(!v.has_value())
+        return {internal::otherwise{}};
+      return {};
+    }
+  };
+}
+
 
 namespace black::support {
   using internal::lazy;
+  using internal::ignore1;
   using internal::unpacking;
   using internal::dispatching;
   using internal::otherwise;

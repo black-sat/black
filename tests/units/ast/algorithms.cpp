@@ -24,9 +24,23 @@
 #include <catch.hpp>
 
 #include <black/ast>
+#include <black/logic>
 
-TEST_CASE("AST algorithms") {
-  
+using namespace black::logic;
 
+TEST_CASE("Traverse AST algorithm") {
+
+  alphabet sigma;
+
+  integer p = sigma.integer(21);
+  integer q = sigma.integer(21);
+
+  term t = p && q;
+
+  traverse(t)(
+    [](integer, auto value) {
+      return integer(value * 2);
+    }
+  );
 
 }

@@ -97,3 +97,9 @@ TEST_CASE("Match function") {
 
     REQUIRE(f(t) == 42);
 }
+
+TEST_CASE("ignore1() combinator") {
+    auto f = ignore1([](int x) { return x; });
+
+    REQUIRE(f("hello", 42) == 42);
+}

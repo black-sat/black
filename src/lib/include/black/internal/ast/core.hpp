@@ -510,17 +510,17 @@ namespace black::ast::internal {
 
 }
 
-// namespace black::support {
-//   template<ast::ast AST>
-//   struct match_trait<AST> {
-//     using cases = ast::ast_node_list_t<AST>;
-    
-//     template<ast::ast_node_of<AST> Node>
-//     static std::optional<Node> downcast(AST t) {
-//       return t.template to<Node>();
-//     }
-//   };
-// }
+namespace black::support {
+  template<ast::ast AST>
+  struct match_cases<AST> : ast::ast_node_list<AST> { };
+
+  template<ast::ast_node Node>
+  struct match_downcast<ast::ast_of_t<Node>, Node> {
+    static std::optional<Node> downcast(ast::ast_of_t<Node> t) {
+      return t.template to<Node>();
+    }
+  };
+}
 
 template<black::ast::ast_node Node>
 struct std::tuple_size<Node>
