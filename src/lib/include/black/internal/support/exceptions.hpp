@@ -24,7 +24,7 @@
 #ifndef BLACK_SUPPORT_EXCEPTIONS_HPP
 #define BLACK_SUPPORT_EXCEPTIONS_HPP
 
-#include <black/support/config.hpp>
+#include <black/support>
 
 #include <stdexcept>
 #include <string>

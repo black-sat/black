@@ -190,20 +190,6 @@ namespace black::ast {
 
 namespace black {
 
-  #define declare_ast(NS, AST) \
-    struct NS::AST : ast::internal::ast_base<NS::AST> { \
-      using ast::internal::ast_base<NS::AST>::ast_base; \
-  };
-
-  #include <black/internal/ast/defs.hpp>
-
-  #define declare_ast_node(NS, AST, Node, Doc) \
-    struct NS::Node : ast::internal::ast_node_base<NS::AST, NS::Node> { \
-      using ast::internal::ast_node_base<NS::AST, NS::Node>::ast_node_base; \
-    };
-
-  #include <black/internal/ast/defs.hpp>
-
   #define declare_ast_factory(NS, AST, Factory, Member) \
     namespace NS { \
       struct Factory; \
@@ -219,6 +205,20 @@ namespace black {
           static_cast<Derived const*>(this)->factory() \
         ); \
       } \
+    };
+
+  #include <black/internal/ast/defs.hpp>
+
+  #define declare_ast(NS, AST) \
+    struct NS::AST : ast::internal::ast_base<NS::AST> { \
+      using ast::internal::ast_base<NS::AST>::ast_base; \
+  };
+
+  #include <black/internal/ast/defs.hpp>
+
+  #define declare_ast_node(NS, AST, Node, Doc) \
+    struct NS::Node : ast::internal::ast_node_base<NS::AST, NS::Node> { \
+      using ast::internal::ast_node_base<NS::AST, NS::Node>::ast_node_base; \
     };
 
   #include <black/internal/ast/defs.hpp>
