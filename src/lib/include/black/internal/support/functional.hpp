@@ -55,10 +55,10 @@ namespace black::support::internal {
   }
 
   //
-  // Returns a lambda that ignore an additional dummy first argument
+  // Returns a lambda that ignores an additional dummy first argument
   //
   inline auto ignore1(auto f) {
-    return [=]<typename ...Args>(auto, Args&& ...args) 
+    return [=]<typename ...Args>(auto&&, Args&& ...args) 
       -> decltype(f(std::forward<Args>(args)...))
     {
       return f(std::forward<Args>(args)...);

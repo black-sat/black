@@ -30,7 +30,7 @@ namespace black::ast {
 
   template<typename T>
   auto traverse(T t) {
-    return [&](auto ...) -> T {
+    return [&](auto&& ...) {
       return t;
     };
   }
@@ -39,16 +39,15 @@ namespace black::ast {
   auto traverse(AST t) {
     using namespace support;
     
-    return match(t)(
-      [=](auto c, auto ...args) {
-        return dispatching(
-          unpacking(ignore1(fs))...
-        )(std::tuple{c, traverse(args)(fs...)...});
-      },
-      [=]<typename N>(N n, auto ...args) {
-        return N(n.factory(), traverse(args)(fs...)...);
-      }
-    );
+    return [=](auto ...fs) {
+      return visitor(
+        [=](auto c, auto ...args) {
+          return dispatching(
+            unpacking(ignore1(fs))...
+          )(std::tuple{c, traverse(args)(fs...)...});
+        }
+      )(t);
+    };
   }
 
 }

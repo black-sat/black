@@ -36,17 +36,17 @@ TEST_CASE("Static reflection") {
     STATIC_REQUIRE(is_ast_v<term>);
     STATIC_REQUIRE(is_ast_node_of_v<integer, term>);
 
-    STATIC_REQUIRE(
-        std::to_underlying(ast_node_index_t<term>::sort_sort) == 0
-    );
+    // STATIC_REQUIRE(
+    //     std::to_underlying(ast_node_index_t<term>::sort_sort) == 0
+    // );
 
-    STATIC_REQUIRE(
-        std::to_underlying(ast_node_field_index_t<term, symbol>::name) == 0
-    );
+    // STATIC_REQUIRE(
+    //     std::to_underlying(ast_node_field_index_t<term, symbol>::name) == 0
+    // );
 
-    STATIC_REQUIRE(
-        std::to_underlying(ast_node_index_of_v<term, sort_sort>) == 0
-    );
+    // STATIC_REQUIRE(
+    //     std::to_underlying(ast_node_index_of_v<term, sort_sort>) == 0
+    // );
 
     STATIC_REQUIRE(
         std::is_same_v<

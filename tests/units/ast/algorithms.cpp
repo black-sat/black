@@ -27,6 +27,7 @@
 #include <black/logic>
 
 using namespace black::logic;
+using namespace black::support;
 
 TEST_CASE("Traverse AST algorithm") {
 
@@ -37,10 +38,16 @@ TEST_CASE("Traverse AST algorithm") {
 
   term t = p && q;
 
-  traverse(t)(
-    [](integer, auto value) {
-      return integer(value * 2);
+  auto s = traverse(t)(
+    [](integer) { return 1; },
+    [](symbol) { return 1; },
+    [](real) { return 1; },
+    [](boolean) { return 1; },
+    [](auto, auto ...values) {
+      return (values + ... + 1);
     }
   );
+
+  REQUIRE(s == 3);
 
 }
