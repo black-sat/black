@@ -221,9 +221,10 @@ namespace black::ast::internal {
       unique_id_t unique_id() const { 
         return unique_id_t(reinterpret_cast<uintptr_t>(_impl.get()));
       }
+      
+      ast_factory<AST> *factory() const { return _factory; }
 
     protected:
-      ast_factory<AST> *factory() const { return _factory; }
       ast_impl_ref<AST> impl() const { return _impl; }
 
       node_holder(ast_factory<AST> *f, ast_impl_ref<AST> i)
@@ -409,14 +410,15 @@ namespace black::ast::internal {
     ast_node_base(ast_node_base &&) = default;
 
     ast_node_base(
+      ast_factory<AST> *f, Args ...args
+    ) : node_holder<AST>(
+          f, f->template allocate<Node>(std::move(args)...)
+        ) { }
+
+    ast_node_base(
       Args ...args, std::source_location loc = std::source_location::current()
     ) requires is_composite_v<AST, Node>
-      : node_holder<AST>(
-        factory_of<AST, Node>(loc, args...),
-        factory_of<AST, Node>(loc, args...)->template allocate<Node>(
-          std::move(args)...
-        )
-      ) { }
+      : ast_node_base(factory_of<AST, Node>(loc, args...), args...) { }
     
     ast_node_base &operator=(ast_node_base const&) = default;
     ast_node_base &operator=(ast_node_base &&) = default;
