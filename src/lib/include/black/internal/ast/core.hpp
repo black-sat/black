@@ -238,7 +238,7 @@ namespace black::ast::internal {
         std::source_location, T const& h, Others...
       );
 
-      template<ast A, ast_node_of<AST> N, ast_node_field_index_t<A, N>>
+      template<ast A, ast_node_of<A> N, ast_node_field_index_t<A, N>>
       friend struct ast_node_fields_base;
 
       ast_factory<AST> *_factory;

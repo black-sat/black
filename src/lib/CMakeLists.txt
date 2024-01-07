@@ -71,8 +71,8 @@ install(
   PATTERN "*.in" EXCLUDE
 )
 
-install(FILES "${CMAKE_BINARY_DIR}/include/black/support/config.hpp"
-  DESTINATION include/black/support
+install(FILES "${CMAKE_BINARY_DIR}/include/black/internal/support/config.hpp"
+  DESTINATION include/black/internal/support
 )
 
 install(EXPORT blackTargets
