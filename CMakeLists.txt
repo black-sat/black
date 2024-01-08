@@ -88,7 +88,7 @@ endif()
 
 # Black library and frontend
 add_subdirectory(src/lib)
-add_subdirectory(python)
+add_subdirectory(src/python)
 
 # Tests
 

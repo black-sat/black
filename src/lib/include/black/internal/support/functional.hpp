@@ -31,42 +31,6 @@
 namespace black::support::internal {
 
   //
-  // lazy() combinator
-  //
-  template<typename F>
-  class lazy_t 
-  {
-  public:
-    lazy_t(F f) : _f{std::move(f)} { }
-
-    template<typename T>
-      requires std::convertible_to<std::invoke_result_t<F>, T>
-    operator T() {
-      return _f();
-    }
-
-  private:
-    F _f;
-  };
-
-  template<typename F>
-  auto lazy(F f) {
-    return lazy_t<F>{std::move(f)};
-  }
-
-  //
-  // Returns a lambda that ignores an additional dummy first argument
-  //
-  inline auto ignore1(auto f) {
-    return [=]<typename ...Args>(auto&&, Args&& ...args) 
-      -> decltype(f(std::forward<Args>(args)...))
-    {
-      return f(std::forward<Args>(args)...);
-    };
-  }
-
-
-  //
   // unpacking() combinator
   //
   template<typename F, typename Arg, size_t ...I>
@@ -318,11 +282,10 @@ namespace black::support {
 
 
 namespace black::support {
-  using internal::lazy;
-  using internal::ignore1;
   using internal::unpacking;
   using internal::dispatching;
   using internal::otherwise;
+  using internal::visit;
   using internal::visitor;
   using internal::match;
   using internal::matching;

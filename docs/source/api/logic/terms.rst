@@ -202,7 +202,7 @@ Boolean and first-order predicates
    :members:
 
    
-      .. cpp:function:: logic::label name() const
+      .. cpp:function:: std::string name() const
 
          :returns: The symbol's label.
 

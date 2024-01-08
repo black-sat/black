@@ -57,26 +57,26 @@ declare_ast(logic, term)
 
   declare_ast_factory(logic, term, alphabet, sigma)
 
-  // section("Built-in sorts")
+  section("Built-in sorts")
 
-  //   declare_ast_node(logic, term, sort_sort, "The sort of sorts")
-  //   end_ast_node(logic, term, sort_sort)
+    declare_ast_node(logic, term, sort_sort, "The sort of sorts")
+    end_ast_node(logic, term, sort_sort)
 
-  //   declare_ast_node(logic, term, integer_sort, "The sort of integer numbers")
-  //   end_ast_node(logic, term, integer_sort)
+    declare_ast_node(logic, term, integer_sort, "The sort of integer numbers")
+    end_ast_node(logic, term, integer_sort)
     
-  //   declare_ast_node(logic, term, real_sort, "The sort of real numbers")
-  //   end_ast_node(logic, term, real_sort)
+    declare_ast_node(logic, term, real_sort, "The sort of real numbers")
+    end_ast_node(logic, term, real_sort)
     
-  //   declare_ast_node(logic, term, boolean_sort, "The sort of boolean values")
-  //   end_ast_node(logic, term, boolean_sort)
+    declare_ast_node(logic, term, boolean_sort, "The sort of boolean values")
+    end_ast_node(logic, term, boolean_sort)
     
-  //   declare_ast_node(logic, term, function_sort, "The sort of functions")
-  //     declare_field(logic, term, function_sort, range, logic::term, "The function's range")
-  //     declare_field(logic, term, function_sort, arguments, std::vector<logic::term>, "The function's arguments")
-  //   end_ast_node(logic, term, function_sort)
+    declare_ast_node(logic, term, function_sort, "The sort of functions")
+      declare_field(logic, term, function_sort, range, logic::term, "The function's range")
+      declare_field(logic, term, function_sort, arguments, std::vector<logic::term>, "The function's arguments")
+    end_ast_node(logic, term, function_sort)
 
-  // end_section()
+  end_section()
 
   section("Constant terms")
     declare_ast_node(logic, term, integer, "A constant integer value (e.g., 42)")

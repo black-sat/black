@@ -222,9 +222,8 @@ namespace black::ast::internal {
         return unique_id_t(reinterpret_cast<uintptr_t>(_impl.get()));
       }
       
-      ast_factory<AST> *factory() const { return _factory; }
-
     protected:
+      ast_factory<AST> *factory() const { return _factory; }
       ast_impl_ref<AST> impl() const { return _impl; }
 
       node_holder(ast_factory<AST> *f, ast_impl_ref<AST> i)
@@ -410,12 +409,6 @@ namespace black::ast::internal {
     ast_node_base(ast_node_base &&) = default;
 
     ast_node_base(
-      ast_factory<AST> *f, Args ...args
-    ) : node_holder<AST>(
-          f, f->template allocate<Node>(std::move(args)...)
-        ) { }
-
-    ast_node_base(
       Args ...args, std::source_location loc = std::source_location::current()
     ) requires is_composite_v<AST, Node>
       : ast_node_base(factory_of<AST, Node>(loc, args...), args...) { }
@@ -423,11 +416,22 @@ namespace black::ast::internal {
     ast_node_base &operator=(ast_node_base const&) = default;
     ast_node_base &operator=(ast_node_base &&) = default;
 
+    Node rebuild(Args ...args) const {
+      return Node(this->factory(), args...);
+    }
+
     template<ast>
       friend struct ast_base;
     
     template<typename, ast A, ast_node_of<A>, typename>
       friend struct ast_factory_ctor_base;
+
+    private:
+      ast_node_base(
+        ast_factory<AST> *f, Args ...args
+      ) : node_holder<AST>(
+            f, f->template allocate<Node>(std::move(args)...)
+          ) { }
   };
 
   template<size_t I, black::ast::ast_node Node>
