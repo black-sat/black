@@ -57,7 +57,7 @@ declare_ast(logic, term)
 
   declare_ast_factory(logic, term, alphabet, sigma)
 
-  section("Built-in sorts")
+  section("Sorts and declarations")
 
     declare_ast_node(logic, term, sort_sort, "The sort of sorts")
     end_ast_node(logic, term, sort_sort)
@@ -75,6 +75,16 @@ declare_ast(logic, term)
       declare_field(logic, term, function_sort, range, logic::term, "The function's range")
       declare_field(logic, term, function_sort, arguments, std::vector<logic::term>, "The function's arguments")
     end_ast_node(logic, term, function_sort)
+
+    declare_ast_node(logic, term, decl, "A declaration")
+      declare_field(logic, term, decl, name, logic::symbol, "The declared symbol")
+      declare_field(logic, term, decl, sort, logic::term, "The sort of the declared symbol")
+    end_ast_node(logic, term, decl)
+
+    declare_ast_node(logic, term, cast, "A type-cast expression")
+      declare_field(logic, term, cast, target, logic::term, "The target sort")
+      declare_field(logic, term, cast, expr, logic::term, "The term to cast")
+    end_ast_node(logic, term, cast)
 
   end_section()
 
@@ -130,6 +140,34 @@ declare_ast(logic, term)
       declare_field(logic, term, implication, left, logic::term, "The antecedent")
       declare_field(logic, term, implication, right, logic::term, "The consequent")
     end_ast_node(logic, term, implication)
+  end_section()
+
+  section("Functional constructs")
+
+    declare_ast_node(logic, term, ite, "An if/then/else selection construct")
+      declare_field(logic, term, ite, guard, logic::term, "The test guard")
+      declare_field(logic, term, ite, iftrue, logic::term, "The result if the guard is true")
+      declare_field(logic, term, ite, iffalse, logic::term, "The result if the guard is false")
+    end_ast_node(logic, term, ite)
+
+    declare_ast_node(logic, term, lambda, "A lambda abstraction")
+      declare_field(logic, term, lambda, vars, std::vector<logic::decl>, "The abstracted variables")
+      declare_field(logic, term, lambda, body, logic::term, "The lambda's body")
+    end_ast_node(logic, term, lambda)
+
+    declare_ast_node(logic, term, placeholder, "A placeholder in a match expression")
+    end_ast_node(logic, term, placeholder)
+
+    declare_ast_node(logic, term, pattern, "A pattern in a match expression")
+      declare_field(logic, term, pattern, head, logic::term, "The pattern's head")
+      declare_field(logic, term, pattern, body, logic::term, "The pattern's body")
+    end_ast_node(logic, term, pattern)
+    
+    declare_ast_node(logic, term, caseof, "A pattern match expression over an ADT")
+      declare_field(logic, term, caseof, expr, logic::term, "The matched expression")
+      declare_field(logic, term, caseof, cases, std::vector<logic::pattern>, "The match patterns")
+    end_ast_node(logic, term, caseof)
+
   end_section()
 
   section("Linear Temporal Logic (future) temporal operators")
