@@ -59,6 +59,7 @@ set(
   -Wno-sign-conversion
   -Wno-newline-eof
   -Wno-ctad-maybe-unsupported
+  -Wno-shadow-field-in-constructor
 )
 
 # GCC

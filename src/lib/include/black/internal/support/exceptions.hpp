@@ -40,7 +40,7 @@
 //
 // This file declares the exception types used throught BLACK
 //
-namespace black::support::internal {
+namespace black::support {
 
   //
   // The error exception type is the base class of all the exceptions
@@ -62,23 +62,25 @@ namespace black::support::internal {
     std::string _what;
   };
 
-  inline const char *relative(const char *path) 
-  {
-    const char *p = path;
-    const char *bp = BLACK_SOURCE_PATH;
-    while(*bp != 0 && *path != 0) {
-      char c = *p == '\\' ? '/' : (char)tolower(*p);
-      char bc = *bp == '\\' ? '/' : (char)tolower(*bp);
-      if(bc != c)
-        return path;
-      bp++;
-      p++;
+  namespace internal {
+    inline const char *relative(const char *path) 
+    {
+      const char *p = path;
+      const char *bp = BLACK_SOURCE_PATH;
+      while(*bp != 0 && *path != 0) {
+        char c = *p == '\\' ? '/' : (char)tolower(*p);
+        char bc = *bp == '\\' ? '/' : (char)tolower(*bp);
+        if(bc != c)
+          return path;
+        bp++;
+        p++;
+      }
+
+      if(*bp == 0)
+        return p;
+
+      return path;
     }
-
-    if(*bp == 0)
-      return p;
-
-    return path;
   }
 
   //
@@ -88,7 +90,7 @@ namespace black::support::internal {
   {
   public:
     bad_unreachable(const char *filename, size_t line) 
-      : _filename{relative(filename)}, _line{line} 
+      : _filename{internal::relative(filename)}, _line{line} 
     { 
       _what = std::format(
         "unreachable code reached at {}:{}", filename, line
@@ -112,7 +114,7 @@ namespace black::support::internal {
   public:
     bad_assert(
       const char *filename, size_t line, const char *expression
-    ) : _filename{relative(filename)}, _line{line}, _expression{expression}
+    ) : _filename{internal::relative(filename)}, _line{line}, _expression{expression}
     { 
       _what = std::format(
         "failed assertion at {}:{}: {}", filename, line, expression
@@ -142,11 +144,11 @@ namespace black::support::internal {
       std::source_location const& loc,
       const char *expression, std::string_view message,
       std::format_args const&args
-    ) : bad_assert(relative(filename), line, expression), 
+    ) : bad_assert(internal::relative(filename), line, expression), 
         _function{function}, _message{std::vformat(message, args)}
     { 
       if(loc.file_name() != nullptr) {
-        filename = relative(loc.file_name());
+        filename = internal::relative(loc.file_name());
         line = loc.line();
       }
 
@@ -179,21 +181,13 @@ namespace black::support::internal {
       _what = std::format(
         "non-exhaustive pattern match: missing handler for type `{}` "
         "at {} line {}", type_name<Case>(), 
-        relative(loc.file_name()), loc.line()
+        internal::relative(loc.file_name()), loc.line()
       );
     }
 
     virtual ~bad_pattern() override = default;
   };
 
-}
-
-namespace black::support {
-  using internal::exception;
-  using internal::bad_unreachable;
-  using internal::bad_assert;
-  using internal::bad_assumption;
-  using internal::bad_pattern;
 }
 
 #endif // BLACK_SUPPORT_EXCEPTIONS_HPP

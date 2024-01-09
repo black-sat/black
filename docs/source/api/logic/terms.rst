@@ -13,8 +13,8 @@ Terms and formulas
 
 
 
-Built-in sorts
-~~~~~~~~~~~~~~
+Sorts and declarations
+~~~~~~~~~~~~~~~~~~~~~~
 
 
 .. cpp:struct:: sort_sort
@@ -101,6 +101,72 @@ Built-in sorts
       .. cpp:function:: std::vector<logic::term> arguments() const
 
          :returns: The function's arguments.
+
+   
+   
+        
+
+.. cpp:struct:: decl
+
+   A declaration.
+
+   
+   :constructor:
+      .. cpp:function:: decl(logic::symbol name, logic::term sort)
+
+      
+         :param name: The declared symbol.
+      
+         :param sort: The sort of the declared symbol.
+      
+
+   
+
+      
+   :members:
+
+   
+      .. cpp:function:: logic::symbol name() const
+
+         :returns: The declared symbol.
+
+   
+      .. cpp:function:: logic::term sort() const
+
+         :returns: The sort of the declared symbol.
+
+   
+   
+        
+
+.. cpp:struct:: cast
+
+   A type-cast expression.
+
+   
+   :constructor:
+      .. cpp:function:: cast(logic::term target, logic::term expr)
+
+      
+         :param target: The target sort.
+      
+         :param expr: The term to cast.
+      
+
+   
+
+      
+   :members:
+
+   
+      .. cpp:function:: logic::term target() const
+
+         :returns: The target sort.
+
+   
+      .. cpp:function:: logic::term expr() const
+
+         :returns: The term to cast.
 
    
    
@@ -407,6 +473,165 @@ Boolean connectives
       .. cpp:function:: logic::term right() const
 
          :returns: The consequent.
+
+   
+   
+        
+
+
+
+Functional constructs
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. cpp:struct:: ite
+
+   An if/then/else selection construct.
+
+   
+   :constructor:
+      .. cpp:function:: ite(logic::term guard, logic::term iftrue, logic::term iffalse)
+
+      
+         :param guard: The test guard.
+      
+         :param iftrue: The result if the guard is true.
+      
+         :param iffalse: The result if the guard is false.
+      
+
+   
+
+      
+   :members:
+
+   
+      .. cpp:function:: logic::term guard() const
+
+         :returns: The test guard.
+
+   
+      .. cpp:function:: logic::term iftrue() const
+
+         :returns: The result if the guard is true.
+
+   
+      .. cpp:function:: logic::term iffalse() const
+
+         :returns: The result if the guard is false.
+
+   
+   
+        
+
+.. cpp:struct:: lambda
+
+   A lambda abstraction.
+
+   
+   :constructor:
+      .. cpp:function:: lambda(std::vector<logic::decl> vars, logic::term body)
+
+      
+         :param vars: The abstracted variables.
+      
+         :param body: The lambda's body.
+      
+
+   
+
+      
+   :members:
+
+   
+      .. cpp:function:: std::vector<logic::decl> vars() const
+
+         :returns: The abstracted variables.
+
+   
+      .. cpp:function:: logic::term body() const
+
+         :returns: The lambda's body.
+
+   
+   
+        
+
+.. cpp:struct:: placeholder
+
+   A placeholder in a match expression.
+
+   
+   .. note::
+      This term type is *primitive*, therefore it has no 
+      constructors. Use :cpp:func:`alphabet::placeholder()` to 
+      create objects of this type.
+   
+
+   
+        
+
+.. cpp:struct:: pattern
+
+   A pattern in a match expression.
+
+   
+   :constructor:
+      .. cpp:function:: pattern(logic::term head, logic::term body)
+
+      
+         :param head: The pattern's head.
+      
+         :param body: The pattern's body.
+      
+
+   
+
+      
+   :members:
+
+   
+      .. cpp:function:: logic::term head() const
+
+         :returns: The pattern's head.
+
+   
+      .. cpp:function:: logic::term body() const
+
+         :returns: The pattern's body.
+
+   
+   
+        
+
+.. cpp:struct:: caseof
+
+   A pattern match expression over an ADT.
+
+   
+   :constructor:
+      .. cpp:function:: caseof(logic::term expr, std::vector<logic::pattern> cases)
+
+      
+         :param expr: The matched expression.
+      
+         :param cases: The match patterns.
+      
+
+   
+
+      
+   :members:
+
+   
+      .. cpp:function:: logic::term expr() const
+
+         :returns: The matched expression.
+
+   
+      .. cpp:function:: std::vector<logic::pattern> cases() const
+
+         :returns: The match patterns.
 
    
    

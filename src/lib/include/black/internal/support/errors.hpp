@@ -26,29 +26,47 @@
 
 #include <format>
 
-namespace black::support::internal {
+namespace black::support {
   
-  struct error {
-    std::string message;
-
+  //! Base class for all the following error classes.
+  struct error 
+  {
+    //! \param format A format string (see `std::format`) for the error message.
+    //! \param args The format string arguments.
     template<typename ...Args>
     error(const char *format, Args const& ...args)
       : message{
         std::vformat(format, std::make_format_args(args...))
       } { }
+
+    virtual ~error() = default;
+    
+    std::string message; //!< The error message.
   };
 
-  struct syntax_error : error {
-    std::optional<std::string> filename;
-    size_t line = 0;
-    size_t column = 0;
-
+  //! A syntax error occurred in any input file read by BLACK
+  struct syntax_error : error 
+  {
+    //! \param filename The filename (see `filename` below).
+    //! \param line The error line.
+    //! \param column The error column.
+    //! \param format A format string (see `std::format`) for the error message.
+    //! \param args The format string arguments.
     template<typename ...Args>
     syntax_error(
-      std::optional<std::string> _filename, size_t _line, size_t _col,
+      std::optional<std::string> filename, size_t line, size_t column,
       const char *format, Args const& ...args
     ) : error{format, args...}, 
-        filename{_filename}, line{_line}, column{_col} { }
+        filename{filename}, line{line}, column{column} { }
+
+    //! The name of the file where the syntax error occurred.
+    //! If `filename` is `std::nullopt`, the error came from some source
+    //! different from a file (*e.g.* the standard input stream).
+    std::optional<std::string> filename; 
+
+    size_t line = 0; //!< The line where the syntax error occurred.
+
+    size_t column = 0; //!< The column where the syntax error occurred.
   };
 
   struct type_error : error { 
@@ -59,32 +77,36 @@ namespace black::support::internal {
     using error::error;
   };
 
+  //! An error occurred while reading or writing from files or streams
   struct io_error : error {
+
+    //! Kind of operation that caused the error
     enum operation {
-      opening,
-      reading,
-      writing
+      opening, //!< The operation was the opening of a file
+      reading, //!< The operation was a read from a file or stream
+      writing  //!< The operation was a write to a file or stream
     };
 
-    std::optional<std::string> filename;
-    operation op;
-    int err;
-
+    //! \param filename The filename (see `filename` below). 
+    //! \param op The kind of operation that caused the error. 
+    //! \param err The value of the `errno` variable describing the error.
+    //! \param format A format string (see `std::format`) for the error 
+    //!               message. 
+    //! \param args The format string arguments.
     template<typename ...Args>
     io_error(
-      std::optional<std::string> _filename, operation _op, int _error,
+      std::optional<std::string> filename, operation op, int err, 
       const char *format, Args const& ...args
     ) : error{format, args...}, 
-        filename{_filename}, op{_op}, err{_error} { }
-  };  
-}
+        filename{filename}, op{op}, err{err} { }
 
-namespace black::support {
-  using internal::error;
-  using internal::syntax_error;
-  using internal::type_error;
-  using internal::backend_error;
-  using internal::io_error;
+    //! The name of the file on which the error occurred.
+    //! If `filename` is `std::nullopt`, the error came from some source.
+    //! different from a file (*e.g.* the standard input stream).
+    std::optional<std::string> filename;
+    operation op; //!< The kind of operation that caused the error.
+    int err; //!< The value of the `errno` variable describing the error.
+  };  
 }
 
 

@@ -15,6 +15,8 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 
+import os
+
 # -- Project information -----------------------------------------------------
 
 project = 'black-sat'
@@ -28,10 +30,16 @@ author = 'The BLACK team'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinxcontrib.bibtex'
+    'sphinxcontrib.bibtex', 'breathe'
 ]
 
 bibtex_bibfiles = ['biblio.bib']
+
+breathe_projects = {'black': '../doxygen/xml'}
+
+breathe_default_project = 'black'
+
+breathe_default_members = ('members', 'undoc-members', 'members-only')
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

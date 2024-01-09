@@ -2,4 +2,5 @@ sphinx
 sphinxcontrib-bibtex
 furo
 jinja-cli
+breathe
 click
