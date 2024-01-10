@@ -21,12 +21,4 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_AST_HPP
-#define BLACK_AST_HPP
-
-#include <black/support>
-
-#include <black/internal/ast/core.hpp>
 #include <black/internal/ast/reflect.hpp>
-
-#endif // BLACK_AST_HPP

@@ -24,6 +24,8 @@
 #ifndef BLACK_AST_CORE_HPP
 #define BLACK_AST_CORE_HPP
 
+#include <black/support>
+
 #include <string_view>
 #include <source_location>
 #include <tuple>
@@ -34,7 +36,7 @@
 // See reflect.hpp to see how these are implemented from the expansion 
 // of defs.hpp
 //
-namespace black::ast {
+namespace black::ast::core {
 
   template<typename AST>
   struct is_ast : std::false_type { };
@@ -174,7 +176,10 @@ namespace black::ast {
 //
 // Implementation of AST nodes
 //
-namespace black::ast::internal {
+namespace black::ast::core::internal {
+
+  template<int Dummy, typename ...Args>
+  struct tuple_cpp : std::type_identity<std::tuple<Args...>> { };
 
   template<ast AST>
   struct ast_impl_base {
@@ -434,7 +439,7 @@ namespace black::ast::internal {
           ) { }
   };
 
-  template<size_t I, black::ast::ast_node Node>
+  template<size_t I, ast_node Node>
   auto get(Node n) {
     constexpr auto Field = ast_node_field_index_t<ast_of_t<Node>, Node>(I);
     return n.template field<Field>();
@@ -517,42 +522,42 @@ namespace black::ast::internal {
 }
 
 namespace black::support {
-  template<ast::ast AST>
-  struct match_cases<AST> : ast::ast_node_list<AST> { };
+  template<ast::core::ast AST>
+  struct match_cases<AST> : ast::core::ast_node_list<AST> { };
 
-  template<ast::ast_node Node>
-  struct match_downcast<ast::ast_of_t<Node>, Node> {
-    static std::optional<Node> downcast(ast::ast_of_t<Node> t) {
+  template<ast::core::ast_node Node>
+  struct match_downcast<ast::core::ast_of_t<Node>, Node> {
+    static std::optional<Node> downcast(ast::core::ast_of_t<Node> t) {
       return t.template to<Node>();
     }
   };
 }
 
-template<black::ast::ast_node Node>
+template<black::ast::core::ast_node Node>
 struct std::tuple_size<Node>
   : std::tuple_size<
-      black::ast::ast_node_field_list_t<
-        black::ast::ast_of_t<Node>, Node
+      black::ast::core::ast_node_field_list_t<
+        black::ast::core::ast_of_t<Node>, Node
       >
     > { };
 
-template<size_t I, black::ast::ast_node Node>
+template<size_t I, black::ast::core::ast_node Node>
 struct std::tuple_element<I, Node>
   : std::tuple_element<
-      I, black::ast::ast_node_field_types_t<
-        black::ast::ast_of_t<Node>, Node
+      I, black::ast::core::ast_node_field_types_t<
+        black::ast::core::ast_of_t<Node>, Node
       >
     > { };
 
 
-template<black::ast::ast T>
+template<black::ast::core::ast T>
 struct std::hash<T> {
   size_t operator()(T v) const {
     return v.hash();
   }
 };
 
-template<black::ast::ast_node T>
+template<black::ast::core::ast_node T>
 struct std::hash<T> {
   size_t operator()(T v) const {
     return v.hash();
@@ -560,11 +565,12 @@ struct std::hash<T> {
 };
 
 template<
-  black::ast::ast AST, black::ast::ast_node_of<AST> Node
+  black::ast::core::ast AST, black::ast::core::ast_node_of<AST> Node
 >
-struct std::hash<black::ast::internal::ast_impl<AST, Node>> {
-  size_t operator()(black::ast::internal::ast_impl<AST, Node> const &impl) const
-  {
+struct std::hash<black::ast::core::internal::ast_impl<AST, Node>> {
+  size_t operator()(
+    black::ast::core::internal::ast_impl<AST, Node> const &impl
+  ) const {
     return black::support::hash(impl.index, impl.data);
   }
 };

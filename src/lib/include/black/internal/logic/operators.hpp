@@ -24,8 +24,6 @@
 #ifndef BLACK_LOGIC_TERMS_HPP
 #define BLACK_LOGIC_TERMS_HPP
 
-#include <black/ast>
-
 namespace black::logic {
 
   //
