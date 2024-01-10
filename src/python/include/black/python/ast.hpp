@@ -1,0 +1,112 @@
+//
+// BLACK - Bounded Ltl sAtisfiability ChecKer
+//
+// (C) 2024 Nicola Gigante
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+#ifndef BLACK_PYTHON_AST_HPP
+#define BLACK_PYTHON_AST_HPP
+
+#include <black/python/support.hpp>
+
+#include <black/ast/core>
+
+namespace black::python 
+{
+  namespace core = black::ast::core;
+
+  template<typename TupleLike>
+  void for_each_type(auto f) {
+    [&]<size_t ...Is>(std::index_sequence<Is...>) {
+      (f(std::type_identity<std::tuple_element_t<Is, TupleLike>>{}), ...);
+    }(std::make_index_sequence<std::tuple_size_v<TupleLike>>{});
+  }
+
+  template<typename T, typename Args>
+  struct constructor { };
+
+  template<typename T, typename ...Args>
+  struct constructor<T, std::tuple<Args...>> {
+    auto operator()(Args ...args) const {
+      return T(std::move(args)...);
+    }
+  };
+  
+  template<core::ast AST, core::ast_node_of<AST> Node, typename Args>
+  struct factory_method { };
+
+  template<core::ast AST, core::ast_node_of<AST> Node, typename ...Args>
+  struct factory_method<AST, Node, std::tuple<Args...>> {
+    auto operator()(core::ast_factory_type_t<AST> &self, Args ...args) const {
+      return self.template construct<Node>(std::move(args)...);
+    }
+  };
+
+  template<core::ast AST>
+  void register_ast(py::module &m) {
+
+    py::class_<AST> ast(m, core::ast_name_v<AST>.data());
+    py::class_<core::ast_factory_type_t<AST>> factory(
+      m, core::ast_factory_name_v<AST>.data()
+    );
+    factory.def(py::init<>());
+
+    for_each_type<core::ast_node_list_t<AST>>(
+      [&]<typename Node>(std::type_identity<Node>) {
+        py::class_<Node> node(m, core::ast_node_name_v<AST, Node>.data());
+
+        ast.def(py::init([](Node n) { return AST(n); }));
+        py::implicitly_convertible<Node, AST>();
+        
+        if constexpr(core::ast_node_is_composite_v<AST, Node>) {
+          node.def(
+            py::init(
+              constructor<Node, core::ast_node_field_types_t<AST, Node>>()
+            )
+          );
+        } else {
+          factory.def(core::ast_node_name_v<AST, Node>.data(), 
+            factory_method<AST, Node, core::ast_node_field_types_t<AST, Node>>()
+          );
+        }
+
+        node.doc() = core::ast_node_doc_v<AST, Node>;
+
+        using field_t = core::ast_node_field_index_t<AST, Node>;
+
+        for_each_type<core::ast_node_field_list_t<AST, Node>>(
+          [&]<field_t Field>
+            (std::type_identity<std::integral_constant<field_t, Field>>) 
+          {
+            node.def_property_readonly(
+              core::ast_node_field_name_v<AST, Node, Field>.data(),
+              [](Node self) { return self.template field<Field>(); },
+              core::ast_node_field_doc_v<AST, Node, Field>.data()
+            );
+          }
+        );
+      }
+    );
+
+  }
+
+}
+
+#endif // BLACK_PYTHON_AST_HPP

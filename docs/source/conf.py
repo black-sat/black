@@ -30,7 +30,7 @@ author = 'The BLACK team'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinxcontrib.bibtex', 'breathe'
+    'sphinxcontrib.bibtex', 'breathe', 'sphinx.ext.autodoc'
 ]
 
 bibtex_bibfiles = ['biblio.bib']

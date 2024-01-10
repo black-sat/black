@@ -124,13 +124,13 @@ TEST_CASE("Static reflection") {
     REQUIRE(t.to<difference>() == u);
     REQUIRE(t.to<difference>()->left() == p);
 
-    // auto result = match(t)(
-    //     [&](difference, term left, term) {
-    //         REQUIRE(left == p);
-    //         return left.to<integer>()->value() * 2;
-    //     }
-    // );
+    auto result = match(t)(
+        [&](difference, term left, term) {
+            REQUIRE(left == p);
+            return left.to<integer>()->value() * 2;
+        }
+    );
 
-    // REQUIRE(result == 42);
+    REQUIRE(result == 42);
 
 }

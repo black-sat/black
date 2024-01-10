@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2022 Nicola Gigante
+// (C) 2024 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@
 
 namespace black::python
 {  
-  using namespace black;
+  namespace support = black::support;
   namespace py = pybind11;
 
   //
@@ -78,17 +78,16 @@ namespace black::python
   using tuple_to_variant_t = typename tuple_to_variant<Args...>::type;
 
   template<support::matchable T>
-  using matchable_py_t = tuple_to_variant_t<typename T::alternatives>;
+  using matchable_py_t = tuple_to_variant_t<support::match_cases_t<T>>;
   
   template<support::matchable T>
-  matchable_py_t<T> to_python(T&& v) {
-    return std::forward<T>(v).match(
+  matchable_py_t<T> to_python(T const& v) {
+    return match(v)(
       [](auto x) -> matchable_py_t<T> {
         return x;
       }
     );
   }
-
 
   void register_support(py::module &m);
 

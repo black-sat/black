@@ -1,3 +1,8 @@
+#ifndef BLACK_AST_REFLECT_DEFS_FILE
+    #error "Please define the " BLACK_AST_REFLECT_DEFS_FILE " macro before" \
+           "preprocessing ast.json.in"
+#endif
+
 {
     "ast": [
 
@@ -36,7 +41,7 @@
                 null \
             ] \
         },
-#include <black/internal/ast/defs.hpp>
+#include BLACK_AST_REFLECT_DEFS_FILE
         null
     ]
 }

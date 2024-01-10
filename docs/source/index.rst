@@ -38,5 +38,6 @@ look at its `GitHub repository <https://github.com/black-sat/black>`_.
    logics
    cli
    syntax
-   api
+   api/c++
+   api/python
    publications

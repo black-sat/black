@@ -49,6 +49,12 @@ namespace BLACK_AST_REFLECT_BASE_NAMESPACE {
     }
   #include BLACK_AST_REFLECT_DEFS_FILE
 
+  #define declare_ast_factory(NS, AST, Factory, Member) \
+    namespace NS { \
+      struct Factory; \
+    }
+  #include BLACK_AST_REFLECT_DEFS_FILE
+
 }
 
 namespace black::ast::core {
@@ -58,6 +64,32 @@ namespace black::ast::core {
     struct is_ast<NS::AST> : std::true_type { };
   #include BLACK_AST_REFLECT_DEFS_FILE
   
+  #define declare_ast_factory(NS, AST, Factory, Member) \
+    template<> \
+    struct ast_factory_type<NS::AST> : std::type_identity<NS::Factory> { };
+  #include BLACK_AST_REFLECT_DEFS_FILE
+  
+  #define declare_ast_factory(NS, AST, Factory, Member) \
+    template<> \
+    struct ast_factory_name<NS::AST> { \
+      static constexpr std::string_view value = #Factory; \
+    };
+  #include BLACK_AST_REFLECT_DEFS_FILE
+  
+  #define declare_ast_factory(NS, AST, Factory, Member) \
+    template<> \
+    struct ast_factory_member_name<NS::AST> { \
+      static constexpr std::string_view value = #Member; \
+    };
+  #include BLACK_AST_REFLECT_DEFS_FILE
+
+  #define declare_ast(NS, AST) \
+    template<> \
+    struct ast_name<NS::AST> { \
+      static constexpr std::string_view value = #AST; \
+    };
+  #include BLACK_AST_REFLECT_DEFS_FILE
+
   #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
     struct is_ast_node<NS::Node> : std::true_type { };
@@ -114,6 +146,13 @@ namespace black::ast::core {
       static constexpr std::string_view value = #Node; \
     };
   #include BLACK_AST_REFLECT_DEFS_FILE
+  
+  #define declare_ast_node(NS, AST, Node, Doc) \
+    template<> \
+    struct ast_node_doc<NS::AST, NS::Node> { \
+      static constexpr std::string_view value = #Doc; \
+    };
+  #include BLACK_AST_REFLECT_DEFS_FILE
 
   #define declare_ast_node(NS, AST, Node, Doc) \
     template<> \
@@ -160,6 +199,16 @@ namespace black::ast::core {
       NS::AST, NS::Node, ast_node_field_index_t<NS::AST, NS::Node>::Field \
     > { \
       static constexpr std::string_view value = #Field; \
+    };
+
+  #include BLACK_AST_REFLECT_DEFS_FILE
+
+  #define declare_field(NS, AST, Node, Field, Type, Doc) \
+    template<> \
+    struct ast_node_field_doc< \
+      NS::AST, NS::Node, ast_node_field_index_t<NS::AST, NS::Node>::Field \
+    > { \
+      static constexpr std::string_view value = #Doc; \
     };
 
   #include BLACK_AST_REFLECT_DEFS_FILE

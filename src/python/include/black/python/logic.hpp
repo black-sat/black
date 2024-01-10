@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2022 Nicola Gigante
+// (C) 2024 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,17 +21,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#ifndef BLACK_PYTHON_LOGIC_HPP
+#define BLACK_PYTHON_LOGIC_HPP
+
+#include <black/python/logic.hpp>
+#include <black/python/support.hpp>
+
+#include <black/support>
+#include <black/logic>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <pybind11/functional.h>
 
-#include <black/python/support.hpp>
-#include <black/python/logic.hpp>
 
-PYBIND11_MODULE(black_sat, m) {
+namespace black::python {
 
-  black::python::register_support(m);
-  black::python::register_logic(m);
+  void register_logic(py::module &m);
 
 }
 
+#endif // BLACK_PYTHON_LOGIC_HPP

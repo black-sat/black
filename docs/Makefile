@@ -11,6 +11,7 @@ BUILDDIR      = _build
 ASTSOURCE = $(shell find . -name '*.rst.in')
 ASTFILES = $(shell find . -name '*.rst.in' | sed 's/\.in//g')
 
+export PYTHONPATH=../build/src/python
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -18,16 +19,16 @@ help:
 
 .PHONY: help Makefile $(ASTSOURCE) ast.json.in doxygen.conf
 
-_build/ast.json: ast.json.in
-	@mkdir -p _build
-	@cc -x c++ -I../src/lib/include -E $< | sed '/^#/d;/^$$/d' | \
-		jq 'del(..|select(. == null))' > $@
-
 doxygen/xml: doxygen.conf
 	doxygen doxygen.conf
 
-%.rst: %.rst.in _build/ast.json
-	@python3 gen-ast-rst.py _build/ast.json $< > $@
+%.rst: %.rst.in # %.json.in ast.json.in
+	@mkdir -p _build
+	@cc -x c++ -I../src/lib/include -I. -I_build -E \
+		"$(shell dirname $@)/$(shell basename $@ .rst).json.in" | \
+		sed '/^#/d;/^$$/d' | \
+		jq 'del(..|select(. == null))' > _build/$(shell basename $@ .rst).json
+	@python3 gen-ast-rst.py _build/$(shell basename $@ .rst).json $< > $@
 
 .SECONDARY: $(ASTFILES)
 

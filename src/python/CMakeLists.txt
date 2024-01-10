@@ -39,6 +39,7 @@ if(BLACK_ENABLE_PYTHON_BINDINGS)
       bindings 
       src/main.cpp 
       src/support.cpp
+      src/logic.cpp
     )
 
     target_include_directories(
