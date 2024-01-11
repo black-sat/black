@@ -30,8 +30,11 @@
 
 PYBIND11_MODULE(black_sat, m) {
 
-  black::python::register_support(m);
-  black::python::register_logic(m);
+  auto support = m.def_submodule("support");
+  auto logic = m.def_submodule("logic");
+
+  black::python::register_support(support);
+  black::python::register_logic(logic);
 
 }
 

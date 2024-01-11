@@ -30,6 +30,7 @@
 #include <pybind11/stl.h>
 
 #include <expected>
+#include <ranges>
 
 namespace black::python
 {  
@@ -82,11 +83,34 @@ namespace black::python
   
   template<support::matchable T>
   matchable_py_t<T> to_python(T const& v) {
-    return match(v)(
+    return support::match(v)(
       [](auto x) -> matchable_py_t<T> {
         return x;
       }
     );
+  }
+
+  template<support::matchable M>
+  using matchable_iterable_t =
+    std::ranges::transform_view<
+      std::ranges::ref_view<const std::vector<M>>, 
+      matchable_py_t<M> (*)(M const& v)
+    >;
+
+  template<support::matchable M>
+  void register_range_iterable(py::module &m, std::string_view name) {
+    using T = matchable_iterable_t<M>;
+
+    py::class_<T>(m, name.data())
+      .def("__iter__", [](T const& self) { 
+        return py::make_iterator(self.begin(), self.end());
+      }, py::keep_alive<0, 1>());
+  }
+
+  template<support::matchable M>
+  matchable_iterable_t<M> to_python(std::vector<M> const& v) {
+    auto map = static_cast<matchable_py_t<M> (*)(M const& v)>(&to_python<M>);
+    return matchable_iterable_t<M>{{v}, map};
   }
 
   void register_support(py::module &m);

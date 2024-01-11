@@ -1,14 +1,16 @@
 #!/bin/env python3
 
-from black_sat import *
+from black_sat.logic import *
+from typing import *
 
-sigma = alphabet()
+sigma = Alphabet()
 
 p = sigma.symbol("p")
 q = sigma.symbol("q")
 
-c = conjunction([p, q])
+u = Conjunction([p, q])
 
-match c:
-    case conjunction:
-        print("Hello")
+match u:
+    case Conjunction(args):
+        for a in args:
+            print(a)

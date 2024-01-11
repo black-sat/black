@@ -28,6 +28,9 @@
 
 #include <black/ast/core>
 
+#include <cctype>
+#include <format>
+
 namespace black::python 
 {
   namespace core = black::ast::core;
@@ -52,25 +55,48 @@ namespace black::python
   template<core::ast AST, core::ast_node_of<AST> Node, typename Args>
   struct factory_method { };
 
+  template<core::ast_node Node>
+  auto to_python(Node const& n) {
+    return to_python(core::ast_of_t<Node>(n));
+  }
+
   template<core::ast AST, core::ast_node_of<AST> Node, typename ...Args>
-  struct factory_method<AST, Node, std::tuple<Args...>> {
+struct factory_method<AST, Node, std::tuple<Args...>> {
     auto operator()(core::ast_factory_type_t<AST> &self, Args ...args) const {
-      return self.template construct<Node>(std::move(args)...);
+      return to_python(self.template construct<Node>(std::move(args)...));
     }
   };
 
-  template<core::ast AST>
-  void register_ast(py::module &m) {
+  inline std::string to_camel(std::string_view name) {
+    std::string str;
 
-    py::class_<AST> ast(m, core::ast_name_v<AST>.data());
+    bool capital = true;
+    for(char c : name) {
+      if(c != '_')
+        str += capital ? (char)toupper(c) : c;
+      capital = (c == '_');
+    }
+    
+    return str;
+  }
+
+  template<core::ast AST>
+  void register_ast(py::module &m) 
+  { 
+    std::string ast_name = to_camel(core::ast_name_v<AST>);
+    py::class_<AST> ast(m, ast_name.c_str());
+
     py::class_<core::ast_factory_type_t<AST>> factory(
-      m, core::ast_factory_name_v<AST>.data()
+      m, to_camel(core::ast_factory_name_v<AST>).c_str()
     );
     factory.def(py::init<>());
+    
+    register_range_iterable<AST>(m, std::format("{}_iterable", ast_name));
 
     for_each_type<core::ast_node_list_t<AST>>(
       [&]<typename Node>(std::type_identity<Node>) {
-        py::class_<Node> node(m, core::ast_node_name_v<AST, Node>.data());
+        py::class_<Node> node(
+          m, to_camel(core::ast_node_name_v<AST, Node>).c_str());
 
         ast.def(py::init([](Node n) { return AST(n); }));
         py::implicitly_convertible<Node, AST>();
@@ -91,17 +117,27 @@ namespace black::python
 
         using field_t = core::ast_node_field_index_t<AST, Node>;
 
+        py::tuple match_args(
+          std::tuple_size_v<core::ast_node_field_list_t<AST, Node>>
+        );
+
+        size_t i = 0;
         for_each_type<core::ast_node_field_list_t<AST, Node>>(
           [&]<field_t Field>
             (std::type_identity<std::integral_constant<field_t, Field>>) 
           {
+            std::string name{core::ast_node_field_name_v<AST, Node, Field>};
             node.def_property_readonly(
-              core::ast_node_field_name_v<AST, Node, Field>.data(),
-              [](Node self) { return self.template field<Field>(); },
+              name.c_str(),
+              [](Node self) { return to_python(self.template field<Field>()); },
+              py::keep_alive<0, 1>(),
               core::ast_node_field_doc_v<AST, Node, Field>.data()
             );
+            match_args[i++] = name;
           }
         );
+
+        node.attr("__match_args__") = match_args;
       }
     );
 

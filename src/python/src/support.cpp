@@ -39,6 +39,25 @@ namespace black::python {
     using namespace support;
     
     //
+    // Exception types
+    //
+    py::register_exception<exception>(m, "Error", PyExc_RuntimeError);
+    
+    py::register_exception<bad_unreachable>(
+      m, "BadUnreachableError", PyExc_RuntimeError
+    );
+    py::register_exception<bad_assert>(
+      m, "BadAssertError", PyExc_RuntimeError
+    );
+    py::register_exception<bad_assumption>(
+      m, "BadAssumptionError", PyExc_RuntimeError
+    );
+    py::register_exception<bad_pattern>(
+      m, "BadPatternError", PyExc_RuntimeError
+    );
+
+    
+    //
     // Error types for use with `std::expected<T,E>`
     // 
     // These are not constructible from the Python side because often it does 
