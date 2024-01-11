@@ -27,9 +27,6 @@
 #include <black/support>
 #include <black/ast/core>
 
-#include <black/internal/logic/label.hpp>
-#include <black/internal/logic/identifier.hpp>
-
 #define BLACK_AST_REFLECT_DEFS_FILE <black/internal/logic/terms-defs.hpp>
 #include <black/ast/reflect>
 #undef BLACK_AST_REFLECT_DEFS_FILE

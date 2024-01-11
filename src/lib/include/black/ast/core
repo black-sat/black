@@ -25,5 +25,7 @@
 #define BLACK_AST_HPP
 
 #include <black/internal/ast/core.hpp>
+#include <black/internal/ast/label.hpp>
+#include <black/internal/ast/identifier.hpp>
 
 #endif // BLACK_AST_HPP

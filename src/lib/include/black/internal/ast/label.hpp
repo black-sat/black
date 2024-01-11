@@ -35,7 +35,7 @@
 #include <string_view>
 #include <string>
 
-namespace black::logic::internal
+namespace black::ast::core::internal
 {
   class label;
 
@@ -172,25 +172,25 @@ namespace black::logic::internal
 }
 
 template<> 
-struct std::formatter<black::logic::internal::label> 
+struct std::formatter<black::ast::core::internal::label> 
   : std::formatter<string_view>
 {
   template <typename FormatContext>
   auto 
-  format(black::logic::internal::label const& p, FormatContext& ctx) const 
+  format(black::ast::core::internal::label const& p, FormatContext& ctx) const 
   {
     return formatter<string_view>::format(p.to_string(), ctx);
   }
 };
 
 template<>
-struct std::hash<black::logic::internal::label> {
-  size_t operator()(black::logic::internal::label const&h) const {
+struct std::hash<black::ast::core::internal::label> {
+  size_t operator()(black::ast::core::internal::label const&h) const {
     return h.hash();
   }
 };
 
-namespace black::logic {
+namespace black::ast::core {
   using internal::label;
 }
 

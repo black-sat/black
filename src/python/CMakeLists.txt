@@ -39,6 +39,7 @@ if(BLACK_ENABLE_PYTHON_BINDINGS)
       bindings 
       src/main.cpp 
       src/support.cpp
+      src/ast.cpp
       src/logic.cpp
     )
 

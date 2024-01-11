@@ -65,7 +65,7 @@ TEST_CASE("Static reflection") {
             ast_node_field_type_t<
                 term, symbol, ast_node_field_index_t<term, symbol>::name
             >,
-            std::string
+            label
         >
     );
 
@@ -78,7 +78,7 @@ TEST_CASE("Static reflection") {
     STATIC_REQUIRE(
         std::is_same_v<
             ast_node_field_types_t<term, symbol>,
-            std::tuple<std::string>
+            std::tuple<label>
         >
     );
 

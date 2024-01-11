@@ -28,7 +28,7 @@
 namespace black::python {
   
   void register_logic(py::module &m) {
-    register_ast<black::logic::term>(m);
+    register_ast_type<black::logic::term>(m);
   }
 
 }

@@ -26,14 +26,18 @@
 #include <pybind11/functional.h>
 
 #include <black/python/support.hpp>
+#include <black/python/ast.hpp>
 #include <black/python/logic.hpp>
 
 PYBIND11_MODULE(black_sat, m) {
 
   auto support = m.def_submodule("support");
+  auto ast = m.def_submodule("ast");
+  auto core = ast.def_submodule("core");
   auto logic = m.def_submodule("logic");
 
   black::python::register_support(support);
+  black::python::register_ast(core);
   black::python::register_logic(logic);
 
 }

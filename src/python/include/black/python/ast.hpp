@@ -35,6 +35,10 @@ namespace black::python
 {
   namespace core = black::ast::core;
 
+  void register_ast(py::module &m);
+
+  py::object to_python(black::ast::core::label const& label);
+
   template<typename TupleLike>
   void for_each_type(auto f) {
     [&]<size_t ...Is>(std::index_sequence<Is...>) {
@@ -81,7 +85,7 @@ struct factory_method<AST, Node, std::tuple<Args...>> {
   }
 
   template<core::ast AST>
-  void register_ast(py::module &m) 
+  void register_ast_type(py::module &m) 
   { 
     std::string ast_name = to_camel(core::ast_name_v<AST>);
     py::class_<AST> ast(m, ast_name.c_str());
@@ -91,7 +95,7 @@ struct factory_method<AST, Node, std::tuple<Args...>> {
     );
     factory.def(py::init<>());
     
-    register_range_iterable<AST>(m, std::format("{}_iterable", ast_name));
+    register_range_iterable<AST>(m, std::format("{}Iterable", ast_name));
 
     for_each_type<core::ast_node_list_t<AST>>(
       [&]<typename Node>(std::type_identity<Node>) {

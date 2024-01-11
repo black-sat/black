@@ -105,7 +105,7 @@ declare_ast(logic, term)
   section("Boolean and first-order predicates")
 
     declare_ast_node(logic, term, symbol, "A named symbol (e.g., a variable or a predicate)")
-      declare_field(logic, term, symbol, name, std::string, "The symbol's label")
+      declare_field(logic, term, symbol, name, ast::core::label, "The symbol's label")
     end_ast_node(logic, term, symbol)
 
     declare_ast_node(logic, term, equal, "An equality constraint between terms")

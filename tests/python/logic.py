@@ -1,16 +1,28 @@
 #!/bin/env python3
 
+from black_sat.ast.core import *
 from black_sat.logic import *
 from typing import *
 
 sigma = Alphabet()
 
-p = sigma.symbol("p")
-q = sigma.symbol("q")
+l = Label(42)
 
-u = Conjunction([p, q])
+assert l.value == 42
 
-match u:
+p = sigma.symbol(42)
+q = sigma.symbol('q')
+
+assert p.name == 42
+assert q.name == 'q'
+
+assert p != q
+
+c = Conjunction([p, q])
+
+assert c.arguments.__class__.__name__ == 'TermIterable'
+
+match c:
     case Conjunction(args):
-        for a in args:
-            print(a)
+        l = [a.name for a in args]
+        assert l == [42, 'q']

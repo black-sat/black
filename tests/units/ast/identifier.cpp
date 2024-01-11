@@ -24,12 +24,12 @@
 #include <catch.hpp>
 
 #include <black/support>
-#include <black/logic>
+#include <black/ast/core>
 
 #include <format>
 
-using namespace black::logic;
 using namespace black::support;
+using namespace black::ast::core;
 
 TEST_CASE("labels") {
 

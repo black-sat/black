@@ -28,7 +28,7 @@
 
 #include <ranges>
 
-namespace black::logic::internal {
+namespace black::ast::core::internal {
 
   struct root_id_t { };
 
@@ -70,14 +70,14 @@ namespace black::logic::internal {
 }
 
 template<>
-struct std::hash<black::logic::internal::identifier> {
+struct std::hash<black::ast::core::internal::identifier> {
   size_t 
-  operator()(black::logic::internal::identifier const& c) const {
+  operator()(black::ast::core::internal::identifier const& c) const {
     return black::support::hash(c.label(), c.tags());
   }
 };
 
-namespace black::logic::internal {
+namespace black::ast::core::internal {
 
   class path 
   {
@@ -117,13 +117,13 @@ namespace black::logic::internal {
 }
 
 template<>
-struct std::hash<black::logic::internal::path> {
-  size_t operator()(black::logic::internal::path const& id) const {
+struct std::hash<black::ast::core::internal::path> {
+  size_t operator()(black::ast::core::internal::path const& id) const {
     return black::support::hash(id.components());
   }
 };
 
-namespace black::logic {
+namespace black::ast::core {
   using internal::identifier;
   using internal::path;
 }
