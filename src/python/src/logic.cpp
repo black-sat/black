@@ -28,7 +28,76 @@
 namespace black::python {
   
   void register_logic(py::module &m) {
-    register_ast_type<black::logic::term>(m);
+    using namespace black::logic;
+
+    auto term_cls = register_ast_types<term>(m, 
+      []<typename Node>(py::class_<Node> &node) {
+        node.def("__call__", [](Node self, py::args args) {
+          return atom(self, py::cast<std::vector<term>>(args));
+        });
+
+        node.def("__add__", [](Node self, term t) {
+          return self + t;
+        }, py::is_operator());
+
+        node.def("__sub__", [](Node self, term t) {
+          return self - t;
+        }, py::is_operator());
+        
+        node.def("__neg__", [](Node self) {
+          return -self;
+        }, py::is_operator());
+        
+        node.def("__mul__", [](Node self, term t) {
+          return self * t;
+        }, py::is_operator());
+        
+        node.def("__truediv__", [](Node self, term t) {
+          return self / t;
+        }, py::is_operator());
+
+        node.def("__lt__", [](Node self, term t) {
+          return self < t;
+        }, py::is_operator());
+        
+        node.def("__le__", [](Node self, term t) {
+          return self <= t;
+        }, py::is_operator());
+        
+        node.def("__gt__", [](Node self, term t) {
+          return self > t;
+        }, py::is_operator());
+        
+        node.def("__ge__", [](Node self, term t) {
+          return self >= t;
+        }, py::is_operator());
+      }
+    );
+
+    py::class_<eq_wrapper_t<true>>(m, "TermEQWrapper")
+      .def("__bool__", [](eq_wrapper_t<true> w) { return (bool)w; });
+    py::class_<eq_wrapper_t<false>>(m, "TermNEWrapper")
+      .def("__bool__", [](eq_wrapper_t<false> w) { return (bool)w; });
+
+    term_cls.def(py::init([](eq_wrapper_t<true> w) { return (term)w; }));
+    term_cls.def(py::init([](eq_wrapper_t<false> w) { return (term)w; }));
+
+    py::implicitly_convertible<eq_wrapper_t<true>, term>();
+    py::implicitly_convertible<eq_wrapper_t<false>, term>();
+
+    m.def("Not", [](term t) {
+      return negation(t);
+    });
+
+    m.def("And", [](py::args args) {
+      return conjunction(py::cast<std::vector<term>>(args));
+    });
+    
+    m.def("Or", [](py::args args) {
+      return disjunction(py::cast<std::vector<term>>(args));
+    });
+  
+
   }
 
 }

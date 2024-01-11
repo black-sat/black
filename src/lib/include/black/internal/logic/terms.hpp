@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2023 Nicola Gigante
+// (C) 2024 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,32 +21,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <catch.hpp>
+#ifndef BLACK_LOGIC_TERMS_HPP
+#define BLACK_LOGIC_TERMS_HPP
 
-#include <black/support>
-#include <black/logic>
+namespace black::logic {
+  struct term;
+  struct atom;
 
-TEST_CASE("Terms") {
+  namespace internal {
+    struct term_custom_members {
+      template<std::convertible_to<term> ...Terms>
+      atom operator()(Terms ...terms) const;
+    };
+  }
+};
 
-  using namespace black::logic;
+namespace black::ast::core {
+  template<>
+  struct ast_custom_members<logic::term> 
+    : logic::internal::term_custom_members { };
   
-  alphabet sigma;
-
-  auto p = sigma.symbol("p");
-  auto q = sigma.symbol("q");
-
-  negation n1 = !p;
-  negation n2 = !q;    
-
-  REQUIRE_FALSE(n1 == n2);
-  REQUIRE(n1 != n2);
-
-  term e = n1 == n2;
-
-  REQUIRE(e.is<equal>());
-
-  atom a = p(e);
-
-  REQUIRE(a.head() == p);
-
+  template<ast_node_of<logic::term> Node>
+  struct ast_node_custom_members<Node> 
+    : logic::internal::term_custom_members { };
 }
+
+#define BLACK_AST_REFLECT_DEFS_FILE <black/internal/logic/terms-defs.hpp>
+#include <black/ast/reflect>
+#undef BLACK_AST_REFLECT_DEFS_FILE
+
+
+namespace black::logic::internal {
+
+  template<std::convertible_to<term> ...Terms>
+  atom term_custom_members::operator()(Terms ...terms) const {
+      return atom(static_cast<term const&>(*this), std::vector<term>{terms...});
+  };
+}
+
+
+
+#endif // BLACK_LOGIC_TERMS_HPP

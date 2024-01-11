@@ -244,6 +244,12 @@ namespace black::ast::core {
   inline constexpr bool ast_node_is_composite_v = 
     ast_node_is_composite<AST, Node>::value;
 
+  template<typename AST>
+  struct ast_custom_members { };
+
+  template<typename Node>
+  struct ast_node_custom_members { };
+
 }
 
 //
@@ -329,7 +335,8 @@ namespace black::ast::core::internal {
 
   template<ast AST>
   struct ast_base 
-    : node_holder<AST>, ast_factory_named_member<AST, AST>
+    : node_holder<AST>, ast_factory_named_member<AST, AST>,
+      ast_custom_members<AST>
   {
     using node_holder<AST>::node_holder;
 
@@ -449,7 +456,8 @@ namespace black::ast::core::internal {
   struct ast_node_base<AST, Node, std::tuple<Args...>>
     : node_holder<AST>, 
       ast_factory_named_member<Node, AST>,
-      ast_node_named_fields<AST, Node>
+      ast_node_named_fields<AST, Node>,
+      ast_node_custom_members<Node>
   {
     using node_holder<AST>::node_holder;
 

@@ -268,7 +268,7 @@ Boolean and first-order predicates
    :members:
 
    
-      .. cpp:function:: std::string name() const
+      .. cpp:function:: ast::core::label name() const
 
          :returns: The symbol's label.
 

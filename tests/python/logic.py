@@ -11,18 +11,25 @@ l = Label(42)
 assert l.value == 42
 
 p = sigma.symbol(42)
+ten = sigma.symbol(10)
 q = sigma.symbol('q')
 
 assert p.name == 42
 assert q.name == 'q'
 
+assert (p != q).__class__.__name__ == 'TermNEWrapper'
+
 assert p != q
 
-c = Conjunction([p, q])
+a = q(p - ten)
+
+assert a.head == q
+assert list(a.arguments) == [p - ten]
+
+c = Conjunction([p, q == p])
 
 assert c.arguments.__class__.__name__ == 'TermIterable'
 
 match c:
     case Conjunction(args):
-        l = [a.name for a in args]
-        assert l == [42, 'q']
+        assert list(args) == [sigma.symbol(42), Equal([q, p])]

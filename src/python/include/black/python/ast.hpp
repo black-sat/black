@@ -65,7 +65,7 @@ namespace black::python
   }
 
   template<core::ast AST, core::ast_node_of<AST> Node, typename ...Args>
-struct factory_method<AST, Node, std::tuple<Args...>> {
+  struct factory_method<AST, Node, std::tuple<Args...>> {
     auto operator()(core::ast_factory_type_t<AST> &self, Args ...args) const {
       return to_python(self.template construct<Node>(std::move(args)...));
     }
@@ -85,7 +85,7 @@ struct factory_method<AST, Node, std::tuple<Args...>> {
   }
 
   template<core::ast AST>
-  void register_ast_type(py::module &m) 
+  py::class_<AST> register_ast_types(py::module &m, auto f) 
   { 
     std::string ast_name = to_camel(core::ast_name_v<AST>);
     py::class_<AST> ast(m, ast_name.c_str());
@@ -140,11 +140,21 @@ struct factory_method<AST, Node, std::tuple<Args...>> {
             match_args[i++] = name;
           }
         );
-
         node.attr("__match_args__") = match_args;
+
+        node.def("__eq__", [](Node self, AST other) {
+          return self == other;
+        });
+        
+        node.def("__ne__", [](Node self, AST other) {
+          return self != other;
+        });
+
+        f(node);
       }
     );
 
+    return std::move(ast);
   }
 
 }
