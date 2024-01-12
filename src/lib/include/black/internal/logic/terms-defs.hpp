@@ -106,8 +106,6 @@ declare_ast(logic, term)
 
     declare_ast_node(logic, term, temporal_sort, "The sort of temporal terms and formulas")
       declare_field(logic, term, temporal_sort, base, logic::term, "The base sort")
-      declare_field(logic, term, temporal_sort, future, logic::term, "The future strength")
-      declare_field(logic, term, temporal_sort, past, logic::term, "The past strength")
     end_ast_node(logic, term, temporal_sort)
 
     declare_ast_node(logic, term, cast, "A type-cast expression")
