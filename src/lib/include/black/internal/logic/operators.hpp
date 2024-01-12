@@ -63,14 +63,23 @@ namespace black::logic {
     }
   };
 
-  inline eq_wrapper_t<true> operator==(term t1, term t2) {
-    return {t1, t2};
+  template<ast::core::ast_type T1, ast::core::ast_type T2>
+    requires (
+      ast::core::ast_type_of<T1, term> && 
+      ast::core::ast_type_of<T2, term>
+    )
+  eq_wrapper_t<true> operator==(T1 n1, T2 n2) {
+    return {n1, n2};
   }
   
-  inline eq_wrapper_t<false> operator!=(term t1, term t2) {
-    return {t1, t2};
+  template<ast::core::ast_type T1, ast::core::ast_type T2>
+    requires (
+      ast::core::ast_type_of<T1, term> && 
+      ast::core::ast_type_of<T2, term>
+    )
+  eq_wrapper_t<false> operator!=(T1 n1, T2 n2) {
+    return {n1, n2};
   }
-
 
   //
   // boolean connectives

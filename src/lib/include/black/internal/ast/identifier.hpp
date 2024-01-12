@@ -62,22 +62,15 @@ namespace black::ast::core::internal {
     class label const& label() const { return _label; }
     std::vector<class label> const& tags() const { return _tags; }
 
+    size_t hash() const {
+      return support::hash(label(), tags());
+    }
+
   private:
     class label _label;
     std::vector<class label> _tags;
   };
 
-}
-
-template<>
-struct std::hash<black::ast::core::internal::identifier> {
-  size_t 
-  operator()(black::ast::core::internal::identifier const& c) const {
-    return black::support::hash(c.label(), c.tags());
-  }
-};
-
-namespace black::ast::core::internal {
 
   class path 
   {
@@ -103,6 +96,10 @@ namespace black::ast::core::internal {
       return _ids;
     }
 
+    size_t hash() const {
+      return support::hash(components());
+    }
+
   private:
     std::vector<identifier> _ids;
   };
@@ -115,13 +112,6 @@ namespace black::ast::core::internal {
   }
 
 }
-
-template<>
-struct std::hash<black::ast::core::internal::path> {
-  size_t operator()(black::ast::core::internal::path const& id) const {
-    return black::support::hash(id.components());
-  }
-};
 
 namespace black::ast::core {
   using internal::identifier;

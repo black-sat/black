@@ -37,16 +37,13 @@ namespace black::python {
     bool operator==(identifiable_wrapper const&w) const {
       return obj.is(w.obj);
     }
+
+    size_t hash() const {
+      return (int64_t)pybind11::cast<pybind11::int_>(obj.attr("__hash__")());
+    }
   };
 
 }
-
-template<>
-struct std::hash<black::python::identifiable_wrapper> {
-  size_t operator()(black::python::identifiable_wrapper const& w) {
-    return (int64_t)pybind11::cast<pybind11::int_>(w.obj.attr("__hash__")());
-  }
-};
 
 template<> 
 struct std::formatter<black::python::identifiable_wrapper> 
@@ -91,7 +88,7 @@ namespace black::python {
         return std::format("{}", self);
       })
       .def("__hash__", [](label self) {
-        return std::hash<label>{}(self);
+        return support::hash(self);
       })
       .def_property_readonly("value", [](label const& self) {
         return to_python(self);

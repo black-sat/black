@@ -45,7 +45,7 @@ namespace black::ast::core::internal
   template<typename T>
   concept identifiable = 
     !std::is_same_v<T, label> &&
-    support::hashable<T> && std::equality_comparable<T> && formattable<T>;
+    std::equality_comparable<T> && formattable<T>;
 
   //
   // Type-erased hashable, comparable and printable value
@@ -76,7 +76,6 @@ namespace black::ast::core::internal
       : label{std::string{c_str}} { }
 
     size_t hash() const {
-      black_assert(_any.has_value());
       return _hash(_any);
     }
 
@@ -141,9 +140,10 @@ namespace black::ast::core::internal
     hasher_t make_hasher(T const&) { // LCOV_EXCL_LINE
       return [](std::any const&me) -> size_t { // LCOV_EXCL_LINE
         T const *v = std::any_cast<T>(&me); // LCOV_EXCL_LINE
-        black_assert(v != nullptr); // LCOV_EXCL_LINE
+        if(v == nullptr)
+          return 0;
 
-        return std::hash<T>{}(*v); // LCOV_EXCL_LINE
+        return support::hash(*v); // LCOV_EXCL_LINE
       };
     }
     
@@ -180,13 +180,6 @@ struct std::formatter<black::ast::core::internal::label>
   format(black::ast::core::internal::label const& p, FormatContext& ctx) const 
   {
     return formatter<string_view>::format(p.to_string(), ctx);
-  }
-};
-
-template<>
-struct std::hash<black::ast::core::internal::label> {
-  size_t operator()(black::ast::core::internal::label const&h) const {
-    return h.hash();
   }
 };
 

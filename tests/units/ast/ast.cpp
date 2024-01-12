@@ -133,4 +133,12 @@ TEST_CASE("Static reflection") {
 
     REQUIRE(result == 42);
 
+    map<term, int> m = {{t, result}};
+
+    REQUIRE(m[t] ==  result);
+
+    REQUIRE((t == t));
+
+    term t3 = t == t;
+
 }

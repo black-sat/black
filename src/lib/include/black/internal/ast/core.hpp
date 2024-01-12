@@ -65,6 +65,12 @@ namespace black::ast::core {
   template<typename Node, typename AST>
   concept ast_node_of = ast<AST> && is_ast_node_of_v<Node, AST>;
 
+  template<typename T>
+  concept ast_type = ast<T> || ast_node<T>;
+
+  template<typename T, typename AST>
+  concept ast_type_of = std::same_as<T, AST> || ast_node_of<T, AST>;
+
   template<ast_node Node>
   struct ast_of { };
   
@@ -281,6 +287,10 @@ namespace black::ast::core::internal {
     
     bool operator==(ast_impl const&) const = default;
 
+    size_t hash() const {
+      return support::hash(this->index, data);
+    }
+
     const ast_node_field_types_t<AST, Node> data;
   };
 
@@ -367,16 +377,6 @@ namespace black::ast::core::internal {
     template<ast A, ast_node_of<A>, typename>
       friend struct ast_node_base;
   };
-
-  template<ast AST>
-  bool operator==(AST t1, AST t2) {
-    return t1.unique_id() == t2.unique_id();
-  }
-
-  template<ast AST>
-  bool operator!=(AST t1, AST t2) {
-    return t1.unique_id() != t2.unique_id();
-  }
 
   template<
     ast AST, ast_node_of<AST> Node, size_t I = 0,
@@ -491,6 +491,16 @@ namespace black::ast::core::internal {
             f, f->template allocate<Node>(std::move(args)...)
           ) { }
   };
+
+  template<ast_type T1, ast_type T2>
+  bool operator==(T1 t1, T2 t2) {
+    return t1.unique_id() == t2.unique_id();
+  }
+
+  template<ast_type T1, ast_type T2>
+  bool operator!=(T1 t1, T2 t2) {
+    return t1.unique_id() != t2.unique_id();
+  }
 
   template<size_t I, ast_node Node>
   auto get(Node n) {
@@ -610,31 +620,5 @@ struct std::tuple_element<I, Node>
         black::ast::core::ast_of_t<Node>, Node
       >
     > { };
-
-
-template<black::ast::core::ast T>
-struct std::hash<T> {
-  size_t operator()(T v) const {
-    return v.hash();
-  }
-};
-
-template<black::ast::core::ast_node T>
-struct std::hash<T> {
-  size_t operator()(T v) const {
-    return v.hash();
-  }
-};
-
-template<
-  black::ast::core::ast AST, black::ast::core::ast_node_of<AST> Node
->
-struct std::hash<black::ast::core::internal::ast_impl<AST, Node>> {
-  size_t operator()(
-    black::ast::core::internal::ast_impl<AST, Node> const &impl
-  ) const {
-    return black::support::hash(impl.index, impl.data);
-  }
-};
 
 #endif // BLACK_AST_CORE_HPP

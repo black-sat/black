@@ -37,6 +37,14 @@
   #define declare_ast_node(NS, AST, Node, Doc)
 #endif
 
+#ifndef declare_type
+  #define declare_type(NS, Decl)
+#endif
+
+#ifndef define_type
+  #define define_type(NS, Decl, ...)
+#endif
+
 #ifndef declare_field
   #define declare_field(NS, AST, Node, Field, Type, Doc)
 #endif
@@ -52,6 +60,26 @@
 #ifndef end_ast
   #define end_ast(NS, AST)
 #endif
+
+define_type(logic, struct pattern,
+  struct pattern { 
+    logic::term head; 
+    logic::term body;
+
+    bool operator==(pattern const&) const = default;
+    size_t hash() const { return support::hash(head, body); }
+  };
+)
+
+define_type(logic, struct decl,
+  struct decl { 
+    logic::symbol name; 
+    logic::term sort;
+
+    bool operator==(decl const&) const = default;
+    size_t hash() const { return support::hash(name, sort); }
+  };
+)
 
 declare_ast(logic, term)
 
@@ -76,10 +104,11 @@ declare_ast(logic, term)
       declare_field(logic, term, function_sort, arguments, std::vector<logic::term>, "The function's arguments")
     end_ast_node(logic, term, function_sort)
 
-    declare_ast_node(logic, term, decl, "A declaration")
-      declare_field(logic, term, decl, name, logic::symbol, "The declared symbol")
-      declare_field(logic, term, decl, sort, logic::term, "The sort of the declared symbol")
-    end_ast_node(logic, term, decl)
+    declare_ast_node(logic, term, temporal_sort, "The sort of temporal terms and formulas")
+      declare_field(logic, term, temporal_sort, base, logic::term, "The base sort")
+      declare_field(logic, term, temporal_sort, future, logic::term, "The future strength")
+      declare_field(logic, term, temporal_sort, past, logic::term, "The past strength")
+    end_ast_node(logic, term, temporal_sort)
 
     declare_ast_node(logic, term, cast, "A type-cast expression")
       declare_field(logic, term, cast, target, logic::term, "The target sort")
@@ -157,16 +186,11 @@ declare_ast(logic, term)
 
     declare_ast_node(logic, term, placeholder, "A placeholder in a match expression")
     end_ast_node(logic, term, placeholder)
-
-    declare_ast_node(logic, term, pattern, "A pattern in a match expression")
-      declare_field(logic, term, pattern, head, logic::term, "The pattern's head")
-      declare_field(logic, term, pattern, body, logic::term, "The pattern's body")
-    end_ast_node(logic, term, pattern)
     
-    declare_ast_node(logic, term, caseof, "A pattern match expression over an ADT")
-      declare_field(logic, term, caseof, expr, logic::term, "The matched expression")
-      declare_field(logic, term, caseof, cases, std::vector<logic::pattern>, "The match patterns")
-    end_ast_node(logic, term, caseof)
+    declare_ast_node(logic, term, case_of, "A pattern match expression over an ADT")
+      declare_field(logic, term, case_of, expr, logic::term, "The matched expression")
+      declare_field(logic, term, case_of, cases, std::vector<logic::pattern>, "The match patterns")
+    end_ast_node(logic, term, case_of)
 
   end_section()
 
@@ -282,12 +306,14 @@ declare_ast(logic, term)
 
 end_ast(logic, term)
 
-
+#undef COMMAS
 #undef declare_ast
 #undef ast_doc
 #undef section
 #undef declare_ast_factory
 #undef declare_ast_node
+#undef declare_type
+#undef define_type
 #undef ast_node_doc
 #undef declare_field
 #undef end_ast_node

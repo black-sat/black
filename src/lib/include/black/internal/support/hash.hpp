@@ -55,17 +55,29 @@ namespace black::support::internal {
   }
 
   template<typename T>
-  concept hashable = requires(T t) {
-    std::hash<std::remove_cvref_t<T>>{}(t);
-  };
-
-  template<hashable T>
-  size_t hash(T const& arg) {
+  size_t hash(T const& arg)
+  {
     return std::hash<T>{}(arg);
   }
 
+  template<typename T>
+    requires requires(T v) { v.hash(); }
+  size_t hash(T const& v) {
+    return v.hash();
+  }
+
+  // The following functions are declared before being defined in order to 
+  // allow each of them to find each other by unqualified lookup
   template<std::ranges::range R>
-    requires (!hashable<R> && hashable<std::ranges::range_value_t<R>>)
+  size_t hash(R const& r);
+
+  template<typename Arg, typename ...Args>
+  size_t hash(std::tuple<Arg, Args...> const& t);
+
+  size_t hash(std::tuple<>);
+
+  // Implementations
+  template<std::ranges::range R>
   size_t hash(R const& r) {
     size_t h = 0;
     for(auto elem : r)
@@ -83,7 +95,13 @@ namespace black::support::internal {
       }, t);
   }
 
+  inline size_t hash(std::tuple<>) {
+    return 0;
+  }
+
+  // Variadic version
   template<typename Arg, typename ...Args>
+    requires (sizeof...(Args) > 0)
   size_t hash(Arg const& arg, Args const& ...args) {
     size_t h = hash(arg);
     ((h = hash_combine(h, hash(args))), ...);
@@ -100,9 +118,16 @@ namespace black::support::internal {
   using set = tsl::hopscotch_set<T>;
 }
 
+template<typename T>
+  requires requires(T v) { v.hash(); }
+struct std::hash<T> {
+  size_t operator()(T const& v) const {
+    return v.hash();
+  }
+};
+
 namespace black::support {
   using internal::hash;
-  using internal::hashable;
   using internal::map;
   using internal::set;
 }

@@ -55,6 +55,18 @@ namespace BLACK_AST_REFLECT_BASE_NAMESPACE {
     }
   #include BLACK_AST_REFLECT_DEFS_FILE
 
+  #define declare_type(NS, Decl) \
+    namespace NS { \
+      Decl; \
+    }
+  #include BLACK_AST_REFLECT_DEFS_FILE
+  
+  #define define_type(NS, Decl, ...) \
+    namespace NS { \
+      Decl; \
+    }
+  #include BLACK_AST_REFLECT_DEFS_FILE
+
 }
 
 namespace black::ast::core {
@@ -288,6 +300,12 @@ namespace BLACK_AST_REFLECT_BASE_NAMESPACE {
         ast::core::internal::ast_node_base<NS::AST, NS::Node>::ast_node_base; \
     };
 
+  #include BLACK_AST_REFLECT_DEFS_FILE
+
+  #define define_type(NS, Decl, ...) \
+    namespace NS { \
+      __VA_ARGS__ \
+    }
   #include BLACK_AST_REFLECT_DEFS_FILE
 
   #define declare_ast_factory(NS, AST, Factory, Member) \
