@@ -132,13 +132,43 @@ namespace black::support {
   };
 }
 
+namespace black::support {
+
+  template<typename ...Args>
+  struct common_result { };
+  
+  template<typename ...Args>
+  using common_result_t = typename common_result<Args...>::type;
+
+  template<typename Arg1, std::common_with<Arg1> Arg2>
+  struct common_result<Arg1, Arg2> : std::common_type<Arg1, Arg2> { };
+
+  template<typename Arg1, typename Arg2>
+    requires (!std::common_with<Arg1, Arg2> && std::convertible_to<Arg2, Arg1>)
+  struct common_result<Arg1, Arg2> : std::type_identity<Arg1> { };
+  
+  template<typename Arg1, typename Arg2>
+    requires (
+      !std::common_with<Arg1, Arg2> && 
+      !std::convertible_to<Arg2, Arg1> &&
+      std::convertible_to<Arg1, Arg2>
+    )
+  struct common_result<Arg1, Arg2> : std::type_identity<Arg2> { };
+
+  template<typename Arg, typename ...Args>
+    requires (sizeof...(Args) > 1)
+  struct common_result<Arg, Args...>
+    : common_result<Arg, common_result_t<Args...>> { };
+
+}
+
 namespace black::support::internal {
 
   template<typename F, typename Cases>
   struct visit_result_ { };
   
   template<typename F, typename ...Cases>
-  struct visit_result_<F, std::tuple<Cases...>> : std::common_type<
+  struct visit_result_<F, std::tuple<Cases...>> : common_result<
     decltype(std::declval<F>()(std::declval<Cases>()))...
   > { };
 
@@ -217,8 +247,8 @@ namespace black::support::internal {
 
 namespace black::support {
   //
-  // `match_cases` and `match_downcast` for standard types `std::variant`, 
-  // `std::optional` and  `std::expected`
+  // `match_cases`, `match_downcast` and `common_result` 
+  // for standard types `std::variant`, `std::optional` and  `std::expected`
   //
   template<typename ...Cases>
   struct match_cases<std::variant<Cases...>> :
@@ -256,6 +286,21 @@ namespace black::support {
       return {};
     }
   };
+
+  template<typename T, typename U, typename E>
+    requires std::common_with<T, U>
+  struct common_result<T, std::expected<U, E>>
+    : std::type_identity<std::expected<std::common_type_t<T, U>, E>> { };
+  
+  template<typename T, typename U, typename E>
+    requires std::common_with<U, T>
+  struct common_result<std::expected<U, E>, T>
+    : std::type_identity<std::expected<std::common_type_t<U, T>, E>> { };
+  
+  template<typename T, typename U, typename E>
+    requires std::common_with<T, U>
+  struct common_result<std::expected<T, E>, std::expected<U, E>>
+    : std::type_identity<std::expected<std::common_type_t<T, U>, E>> { };
   
   template<typename T>
   struct match_cases<std::optional<T>> 
@@ -278,6 +323,21 @@ namespace black::support {
       return {};
     }
   };
+
+  template<typename T, typename U>
+    requires std::common_with<T, U>
+  struct common_result<T, std::optional<U>>
+    : std::type_identity<std::optional<std::common_type_t<T, U>>> { };
+  
+  template<typename T, typename U>
+    requires std::common_with<U, T>
+  struct common_result<std::optional<U>, T>
+    : std::type_identity<std::optional<std::common_type_t<U, T>>> { };
+
+  template<typename T, typename U>
+    requires std::common_with<T, U>
+  struct common_result<std::optional<T>, std::optional<U>>
+    : std::type_identity<std::optional<std::common_type_t<T, U>>> { };
 }
 
 

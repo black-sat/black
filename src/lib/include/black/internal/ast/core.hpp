@@ -316,8 +316,8 @@ namespace black::ast::core::internal {
         return unique_id_t(reinterpret_cast<uintptr_t>(_impl.get()));
       }
       
-    protected:
       ast_factory<AST> *factory() const { return _factory; }
+    protected:
       ast_impl_ref<AST> impl() const { return _impl; }
 
       node_holder(ast_factory<AST> *f, ast_impl_ref<AST> i)
@@ -590,6 +590,19 @@ namespace black::ast::core::internal {
 
   template<ast AST>
   struct ast_factory : ast_factory_base<ast_factory<AST>, AST> { };
+}
+
+namespace black::support {
+
+  template<ast::core::ast_node Node1, ast::core::ast_node Node2>
+    requires (
+      !std::same_as<Node1, Node2> &&
+      std::same_as<
+        ast::core::ast_of_t<Node1>, ast::core::ast_of_t<Node2>
+      >
+    )
+  struct common_result<Node1, Node2> 
+    : std::type_identity<ast::core::ast_of_t<Node1>> { };
 
 }
 

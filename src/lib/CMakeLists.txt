@@ -28,6 +28,8 @@
 set (
   LIB_SRC
   src/support/debug.cpp
+  src/logic/scope.cpp
+  src/logic/module.cpp
 )
 
 # configure config header

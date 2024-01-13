@@ -74,10 +74,10 @@ define_type(logic, struct pattern,
 define_type(logic, struct decl,
   struct decl { 
     logic::symbol name; 
-    logic::term sort;
+    logic::term type;
 
     bool operator==(decl const&) const = default;
-    size_t hash() const { return support::hash(name, sort); }
+    size_t hash() const { return support::hash(name, type); }
   };
 )
 
@@ -87,29 +87,29 @@ declare_ast(logic, term)
 
   section("Sorts and declarations")
 
-    declare_ast_node(logic, term, sort_sort, "The sort of sorts")
-    end_ast_node(logic, term, sort_sort)
+    declare_ast_node(logic, term, type_type, "The type of types")
+    end_ast_node(logic, term, type_type)
 
-    declare_ast_node(logic, term, integer_sort, "The sort of integer numbers")
-    end_ast_node(logic, term, integer_sort)
+    declare_ast_node(logic, term, integer_type, "The type of integer numbers")
+    end_ast_node(logic, term, integer_type)
     
-    declare_ast_node(logic, term, real_sort, "The sort of real numbers")
-    end_ast_node(logic, term, real_sort)
+    declare_ast_node(logic, term, real_type, "The type of real numbers")
+    end_ast_node(logic, term, real_type)
     
-    declare_ast_node(logic, term, boolean_sort, "The sort of boolean values")
-    end_ast_node(logic, term, boolean_sort)
+    declare_ast_node(logic, term, boolean_type, "The type of boolean values")
+    end_ast_node(logic, term, boolean_type)
     
-    declare_ast_node(logic, term, function_sort, "The sort of functions")
-      declare_field(logic, term, function_sort, range, logic::term, "The function's range")
-      declare_field(logic, term, function_sort, arguments, std::vector<logic::term>, "The function's arguments")
-    end_ast_node(logic, term, function_sort)
+    declare_ast_node(logic, term, function_type, "The type of functions")
+      declare_field(logic, term, function_type, parameters, std::vector<logic::term>, "The parameters types")
+      declare_field(logic, term, function_type, range, logic::term, "The function's range")
+    end_ast_node(logic, term, function_type)
 
-    declare_ast_node(logic, term, temporal_sort, "The sort of temporal terms and formulas")
-      declare_field(logic, term, temporal_sort, base, logic::term, "The base sort")
-    end_ast_node(logic, term, temporal_sort)
+    declare_ast_node(logic, term, temporal_type, "The type of temporal terms and formulas")
+      declare_field(logic, term, temporal_type, base, logic::term, "The base type")
+    end_ast_node(logic, term, temporal_type)
 
     declare_ast_node(logic, term, cast, "A type-cast expression")
-      declare_field(logic, term, cast, target, logic::term, "The target sort")
+      declare_field(logic, term, cast, target, logic::term, "The target type")
       declare_field(logic, term, cast, expr, logic::term, "The term to cast")
     end_ast_node(logic, term, cast)
 

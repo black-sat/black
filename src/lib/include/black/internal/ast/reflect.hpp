@@ -26,10 +26,20 @@
          "including the <black/ast/reflect> header file."
 #endif
 
+#define DELAY(FILE) #FILE
+#define DELAY2(FILE) DELAY(FILE)
+
+#define ERR \
+  "The header file " DELAY2(BLACK_AST_REFLECT_DEFS_FILE) " given by the "\
+  "`BLACK_AST_REFLECT_DEFS_FILE` macro does not exist."
+
 #if !__has_include(BLACK_AST_REFLECT_DEFS_FILE)
-  #error "The header file " BLACK_AST_REFLECT_DEFS_FILE " given by the " \
-         "`BLACK_AST_REFLECT_DEFS_FILE` macro does not exist."
-#endif
+  static_assert(false, ERR);
+#else
+
+#undef ERR
+#undef DELAY1
+#undef DELAY2
 
 #ifndef BLACK_AST_REFLECT_BASE_NAMESPACE
   #define BLACK_AST_REFLECT_BASE_NAMESPACE black
@@ -314,3 +324,5 @@ namespace BLACK_AST_REFLECT_BASE_NAMESPACE {
   #include BLACK_AST_REFLECT_DEFS_FILE
 
 }
+
+#endif

@@ -39,6 +39,12 @@ namespace black::support {
         std::vformat(format, std::make_format_args(args...))
       } { }
 
+    error(error const&) = default;
+    error(error &&) = default;
+    
+    error &operator=(error const&) = default;
+    error &operator=(error &&) = default;
+
     virtual ~error() = default;
     
     std::string message; //!< The error message.
@@ -67,10 +73,6 @@ namespace black::support {
     size_t line = 0; //!< The line where the syntax error occurred.
 
     size_t column = 0; //!< The column where the syntax error occurred.
-  };
-
-  struct type_error : error { 
-    using error::error;
   };
 
   struct backend_error : error { 
