@@ -97,3 +97,47 @@ TEST_CASE("Match function") {
 
     REQUIRE(f(t) == 42);
 }
+
+TEST_CASE("Match on std::optional") {
+
+    using T = std::variant<int, float, std::string>;
+
+    std::optional<T> t = 42;
+
+    auto r = match(t)(
+        [](int x) { return x; }
+    );
+
+    REQUIRE(r == 42);
+
+    t = {};
+
+    auto r2 = match(t)(
+        [](int x) { return x; }
+    );
+
+    REQUIRE(!r2.has_value());
+
+}
+
+TEST_CASE("Match on std::expected") {
+
+    using T = std::variant<int, float, std::string>;
+
+    std::expected<T, std::string> t = 42;
+
+    auto r = match(t)(
+        [](int x) { return x; }
+    );
+
+    REQUIRE(r == 42);
+
+    t = std::unexpected("Error");
+
+    auto r2 = match(t)(
+        [](int x) { return x; }
+    );
+
+    REQUIRE(!r2.has_value());
+
+}

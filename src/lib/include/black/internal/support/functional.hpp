@@ -233,6 +233,32 @@ namespace black::support::internal {
     };
   }
 
+  template<matchable M>
+  auto match(
+    std::optional<M> m, 
+    std::source_location loc = std::source_location::current()
+  ) 
+  {
+    return [=](auto ...fs) -> std::optional<decltype(match(*m, loc)(fs...))> {
+      if(m)
+        return match(*m, loc)(fs...);
+      return {};
+    };
+  }
+  
+  template<matchable M, typename E>
+  auto match(
+    std::expected<M, E> m, 
+    std::source_location loc = std::source_location::current()
+  ) {
+    return [=](auto ...fs) -> std::expected<decltype(match(*m, loc)(fs...)), E> 
+    {
+      if(m)
+        return match(*m, loc)(fs...);
+      return std::unexpected(m.error());
+    };
+  }
+
   template<typename ...Fs>
   auto matching(Fs ...fs) {
     return [=](
@@ -247,8 +273,7 @@ namespace black::support::internal {
 
 namespace black::support {
   //
-  // `match_cases`, `match_downcast` and `common_result` 
-  // for standard types `std::variant`, `std::optional` and  `std::expected`
+  // `match_cases` and `match_downcast` for `std::variant`
   //
   template<typename ...Cases>
   struct match_cases<std::variant<Cases...>> :
@@ -263,29 +288,24 @@ namespace black::support {
       return {};
     }
   };
+
+  //
+  // `common_result` for `std::optional` and `std::expected`
+  //
+  template<typename T, typename U>
+    requires std::common_with<T, U>
+  struct common_result<T, std::optional<U>>
+    : std::type_identity<std::optional<std::common_type_t<T, U>>> { };
   
-  
-  template<typename T, typename E>
-  struct match_cases<std::expected<T, E>> 
-    : std::type_identity<std::tuple<T, E>> { };
-    
-  template<typename R, typename E>
-  struct match_downcast<std::expected<R, E>, R> {
-    static std::optional<R> downcast(std::expected<R, E> const& v) {
-      if(v.has_value())
-        return {v.value()};
-      return {};
-    }
-  };
-  
-  template<typename R, typename T>
-  struct match_downcast<std::expected<T, R>, R> {
-    static std::optional<R> downcast(std::expected<T, R> const& v) {
-      if(!v.has_value())
-        return {v.error()};
-      return {};
-    }
-  };
+  template<typename T, typename U>
+    requires std::common_with<U, T>
+  struct common_result<std::optional<U>, T>
+    : std::type_identity<std::optional<std::common_type_t<U, T>>> { };
+
+  template<typename T, typename U>
+    requires std::common_with<T, U>
+  struct common_result<std::optional<T>, std::optional<U>>
+    : std::type_identity<std::optional<std::common_type_t<T, U>>> { };
 
   template<typename T, typename U, typename E>
     requires std::common_with<T, U>
@@ -302,42 +322,6 @@ namespace black::support {
   struct common_result<std::expected<T, E>, std::expected<U, E>>
     : std::type_identity<std::expected<std::common_type_t<T, U>, E>> { };
   
-  template<typename T>
-  struct match_cases<std::optional<T>> 
-    : std::type_identity<std::tuple<T, internal::otherwise>> { };
-    
-  template<typename U>
-  struct match_downcast<std::optional<U>, U> {
-    static std::optional<U> downcast(std::optional<U> const& v) {
-      if(v.has_value())
-        return {v.value()};
-      return {};
-    }
-  };
-  
-  template<typename T>
-  struct match_downcast<T, internal::otherwise> {
-    std::optional<internal::otherwise> downcast(std::optional<T> const& v) {
-      if(!v.has_value())
-        return {internal::otherwise{}};
-      return {};
-    }
-  };
-
-  template<typename T, typename U>
-    requires std::common_with<T, U>
-  struct common_result<T, std::optional<U>>
-    : std::type_identity<std::optional<std::common_type_t<T, U>>> { };
-  
-  template<typename T, typename U>
-    requires std::common_with<U, T>
-  struct common_result<std::optional<U>, T>
-    : std::type_identity<std::optional<std::common_type_t<U, T>>> { };
-
-  template<typename T, typename U>
-    requires std::common_with<T, U>
-  struct common_result<std::optional<T>, std::optional<U>>
-    : std::type_identity<std::optional<std::common_type_t<T, U>>> { };
 }
 
 
