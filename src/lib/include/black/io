@@ -21,14 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_HPP
-#define BLACK_LOGIC_HPP
+#ifndef BLACK_IO_HPP
+#define BLACK_IO_HPP
 
-#include <black/support>
-#include <black/ast/core>
+#include <black/internal/io/printer.hpp>
 
-#include <black/internal/logic/terms.hpp>
-#include <black/internal/logic/operators.hpp>
-#include <black/internal/logic/scope.hpp>
-
-#endif // BLACK_LOGIC_HPP
+#endif // BLACK_IO_HPP

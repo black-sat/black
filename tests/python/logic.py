@@ -33,3 +33,5 @@ assert c.arguments.__class__.__name__ == 'TermIterable'
 match c:
     case Conjunction(args):
         assert list(args) == [sigma.symbol(42), Equal([q, p])]
+
+print(c)

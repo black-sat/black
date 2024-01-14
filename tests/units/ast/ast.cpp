@@ -141,6 +141,12 @@ TEST_CASE("Static reflection") {
 
     term t3 = t == t;
 
+    auto r = match(u)(
+        [](difference) { return 42; }
+    );
+
+    REQUIRE(r == 42);
+
 }
 
 TEST_CASE("any_of<...>") {

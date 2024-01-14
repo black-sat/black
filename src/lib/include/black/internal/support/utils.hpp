@@ -74,6 +74,19 @@ namespace black::support::internal
     #endif
   }
 
+  inline std::string to_camel(std::string_view name) {
+    std::string str;
+
+    bool capital = true;
+    for(char c : name) {
+      if(c != '_')
+        str += capital ? (char)toupper(c) : c;
+      capital = (c == '_');
+    }
+    
+    return str;
+  }
+
   //
   // Thanks to Leonardo Taglialegne
   //
@@ -134,6 +147,7 @@ SOFTWARE.
 namespace black::support {
   using internal::type_name;
   using internal::double_to_fraction;
+  using internal::to_camel;
   using internal::license;
 }
 

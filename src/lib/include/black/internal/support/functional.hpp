@@ -140,6 +140,9 @@ namespace black::support {
   template<typename ...Args>
   using common_result_t = typename common_result<Args...>::type;
 
+  template<typename Arg>
+  struct common_result<Arg> : std::type_identity<Arg> { };
+
   template<typename Arg1, std::common_with<Arg1> Arg2>
   struct common_result<Arg1, Arg2> : std::common_type<Arg1, Arg2> { };
 

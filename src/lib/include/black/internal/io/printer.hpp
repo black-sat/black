@@ -21,14 +21,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_HPP
-#define BLACK_LOGIC_HPP
+#ifndef BLACK_IO_PRINTER_HPP
+#define BLACK_IO_PRINTER_HPP
 
-#include <black/support>
-#include <black/ast/core>
+#include <black/logic>
 
-#include <black/internal/logic/terms.hpp>
-#include <black/internal/logic/operators.hpp>
-#include <black/internal/logic/scope.hpp>
+#include <format>
 
-#endif // BLACK_LOGIC_HPP
+namespace black::io {
+  
+  struct syntax {
+    struct python { };
+    // struct black { }; // TODO...
+    // struct smtlib2 { };
+
+    syntax(python s) : settings{s} { }
+
+    std::variant<python /*, black, smtlib2 */> settings;
+  };
+
+  std::string format(syntax::python, logic::term v);
+  
+  inline std::string format(syntax s, logic::term v) {
+    return support::match(s.settings)(
+      [&](auto x) { return format(x, v); }
+    );
+  }
+
+}
+
+#endif // BLACK_IO_PRINTER_HPP

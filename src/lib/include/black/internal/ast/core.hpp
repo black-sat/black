@@ -664,6 +664,10 @@ namespace black::ast::core {
 
     any_of &operator=(any_of const&) = default;
     any_of &operator=(any_of &&) = default;
+
+    operator ast_of_t<Node>() const {
+      return ast_of_t<Node>{this->_factory, this->_impl};
+    }
   };
 
   template<ast_node ...Nodes1, ast_node ...Nodes2>
@@ -691,6 +695,9 @@ namespace black::support {
 
   template<ast::core::ast AST>
   struct match_cases<AST> : ast::core::ast_node_list<AST> { };
+  
+  template<ast::core::ast_node Node>
+  struct match_cases<Node> : std::type_identity<std::tuple<Node>> { };
 
   template<typename T>
     requires requires { typename T::any_of_t; }
@@ -701,6 +708,21 @@ namespace black::support {
   struct match_downcast<T, Node> {
     static std::optional<Node> downcast(T t) {
       return ast::core::cast<Node>(t);
+    }
+  };
+  
+  template<ast::core::ast_node Node>
+  struct match_downcast<Node, Node> {
+    static std::optional<Node> downcast(Node t) {
+      return t;
+    }
+  };
+  
+  template<ast::core::ast_node NodeFrom, ast::core::ast_node NodeTo>
+    requires (!std::same_as<NodeFrom, NodeTo>)
+  struct match_downcast<NodeFrom, NodeTo> {
+    static std::optional<NodeTo> downcast(NodeFrom) {
+      return {};
     }
   };
 }

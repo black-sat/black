@@ -27,6 +27,7 @@
 #include <black/python/support.hpp>
 
 #include <black/ast/core>
+#include <black/io>
 
 #include <cctype>
 #include <format>
@@ -71,27 +72,14 @@ namespace black::python
     }
   };
 
-  inline std::string to_camel(std::string_view name) {
-    std::string str;
-
-    bool capital = true;
-    for(char c : name) {
-      if(c != '_')
-        str += capital ? (char)toupper(c) : c;
-      capital = (c == '_');
-    }
-    
-    return str;
-  }
-
   template<core::ast AST>
   py::class_<AST> register_ast_types(py::module &m, auto f) 
   { 
-    std::string ast_name = to_camel(core::ast_name_v<AST>);
+    std::string ast_name = support::to_camel(core::ast_name_v<AST>);
     py::class_<AST> ast(m, ast_name.c_str());
 
     py::class_<core::ast_factory_type_t<AST>> factory(
-      m, to_camel(core::ast_factory_name_v<AST>).c_str()
+      m, support::to_camel(core::ast_factory_name_v<AST>).c_str()
     );
     factory.def(py::init<>());
     
@@ -100,7 +88,7 @@ namespace black::python
     for_each_type<core::ast_node_list_t<AST>>(
       [&]<typename Node>(std::type_identity<Node>) {
         py::class_<Node> node(
-          m, to_camel(core::ast_node_name_v<AST, Node>).c_str());
+          m, support::to_camel(core::ast_node_name_v<AST, Node>).c_str());
 
         ast.def(py::init([](Node n) { return AST(n); }));
         py::implicitly_convertible<Node, AST>();
@@ -148,6 +136,10 @@ namespace black::python
         
         node.def("__ne__", [](Node self, AST other) {
           return self != other;
+        });
+
+        node.def("__str__", [](Node self) {
+          return io::format(io::syntax::python{}, self);
         });
 
         f(node);

@@ -30,6 +30,7 @@ set (
   src/support/debug.cpp
   src/logic/scope.cpp
   src/logic/module.cpp
+  src/io/printers/python.cpp
 )
 
 # configure config header

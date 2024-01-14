@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 #include <black/support>
+#include <black/io>
 #include <black/logic>
 
 namespace black::logic {
@@ -46,7 +47,10 @@ namespace black::logic {
       [&](symbol s)      -> type_result<type> { 
         if(auto type = type_of(s); type)
           return type;
-        return type_error("Use of undeclared symbol");
+        return 
+          type_error(
+            "Use of undeclared symbol" // `{}`", io::format(io::syntax::python{}, s)
+          );
       },
       [&](atom, term head, auto args) -> type_result<type> {
         auto fty = cast<function_type>(type_of(head));
