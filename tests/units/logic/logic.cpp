@@ -43,7 +43,7 @@ TEST_CASE("Terms") {
 
   term e = n1 == n2;
 
-  REQUIRE(e.is<equal>());
+  REQUIRE(cast<equal>(e));
 
   atom a = p(e);
 

@@ -65,17 +65,40 @@ namespace black::ast::core {
   template<typename Node, typename AST>
   concept ast_node_of = ast<AST> && is_ast_node_of_v<Node, AST>;
 
-  template<typename T>
-  concept ast_type = ast<T> || ast_node<T>;
-
-  template<typename T, typename AST>
-  concept ast_type_of = std::same_as<T, AST> || ast_node_of<T, AST>;
-
   template<ast_node Node>
   struct ast_of { };
   
   template<ast_node Node>
   using ast_of_t = typename ast_of<Node>::type;
+
+  template<ast_node ...Nodes>
+  struct any_of;
+
+  template<typename T>
+  struct is_any_of : std::false_type { };
+  
+  template<typename T>
+  inline constexpr bool is_any_of_v = is_any_of<T>::value;
+
+  template<ast_node Node, ast_node ...Nodes>
+    requires (std::same_as<ast_of_t<Node>, ast_of_t<Nodes>> && ...)
+  struct is_any_of<any_of<Node, Nodes...>> : std::true_type { };
+
+  template<typename T, ast AST>
+  struct is_any_of_ast : std::false_type { };
+  
+  template<typename T, ast AST>
+  inline constexpr bool is_any_of_ast_v = is_any_of_ast<T, AST>::value;
+
+  template<ast AST, ast_node_of<AST> ...Nodes>
+  struct is_any_of_ast<any_of<Nodes...>, AST> : std::true_type { };
+
+  template<typename T>
+  concept ast_type = ast<T> || ast_node<T> || is_any_of_v<T>;
+
+  template<typename T, typename AST>
+  concept ast_type_of = 
+    std::same_as<T, AST> || ast_node_of<T, AST> || is_any_of_ast_v<T, AST>;
 
   template<ast AST>
   struct ast_factory_type { };
@@ -220,17 +243,17 @@ namespace black::ast::core {
   using ast_node_field_types_t = typename ast_node_field_types<AST, Node>::type;
 
   namespace internal {
+    template<ast AST>
+    class node_holder;
+
     template<ast AST, typename T>
     struct has_factory : std::false_type { };
     
     template<ast AST, typename T>
     inline constexpr bool has_factory_v = has_factory<AST, T>::value;
 
-    template<ast AST>
-    struct has_factory<AST, AST> : std::true_type { };
-    
-    template<ast AST, ast_node_of<AST> Node>
-    struct has_factory<AST, Node> : std::true_type { };
+    template<ast AST, std::derived_from<node_holder<AST>> T>
+    struct has_factory<AST, T> : std::true_type { };
 
     template<ast AST, std::ranges::range R>
     struct has_factory<AST, R> 
@@ -310,12 +333,15 @@ namespace black::ast::core::internal {
   template<ast AST>
   class node_holder {
     public:
+      using index_t = ast_node_index_t<AST>;
+
       size_t hash() const { return support::hash(_factory, _impl); }
     
       unique_id_t unique_id() const { 
         return unique_id_t(reinterpret_cast<uintptr_t>(_impl.get()));
       }
       
+      index_t index() const { return _impl->index; }
       ast_factory<AST> *factory() const { return _factory; }
     protected:
       ast_impl_ref<AST> impl() const { return _impl; }
@@ -334,9 +360,24 @@ namespace black::ast::core::internal {
       template<ast A, ast_node_of<A> N, ast_node_field_index_t<A, N>>
       friend struct ast_node_fields_base;
 
+      template<ast_node ...Nodes>
+      friend struct core::any_of;
+
+      template<ast_node Node, ast A>
+        requires ast_node_of<Node, A>
+      friend std::optional<Node> cast(node_holder<A> const& h);
+
       ast_factory<AST> *_factory;
       ast_impl_ref<AST> _impl;
   };
+
+  template<ast_node Node, ast AST>
+    requires ast_node_of<Node, AST>
+  std::optional<Node> cast(node_holder<AST> const& h) {
+    if(h._impl->index == ast_node_index_of_v<AST, Node>)
+      return Node{h._factory, h._impl};
+    return {};
+  }
 
   template<
     ast AST, ast_node_of<AST> Node, typename = ast_node_field_types_t<AST, Node>
@@ -360,19 +401,6 @@ namespace black::ast::core::internal {
 
     ast_base &operator=(ast_base const&) = default;
     ast_base &operator=(ast_base &&) = default;
-
-    template<ast_node_of<AST> Node>
-    std::optional<Node> to() const {
-      if(this->_impl->index == ast_node_index_of_v<AST, Node>)
-        return Node{this->_factory, this->_impl};
-      
-      return {};
-    }
-
-    template<ast_node_of<AST> Node>
-    bool is() const {
-      return to<Node>().has_value();
-    }
 
     template<ast A, ast_node_of<A>, typename>
       friend struct ast_node_base;
@@ -493,12 +521,12 @@ namespace black::ast::core::internal {
   };
 
   template<ast_type T1, ast_type T2>
-  bool operator==(T1 t1, T2 t2) {
+  bool operator==(T1 const& t1, T2 const& t2) {
     return t1.unique_id() == t2.unique_id();
   }
 
   template<ast_type T1, ast_type T2>
-  bool operator!=(T1 t1, T2 t2) {
+  bool operator!=(T1 const& t1, T2 const& t2) {
     return t1.unique_id() != t2.unique_id();
   }
 
@@ -592,6 +620,63 @@ namespace black::ast::core::internal {
   struct ast_factory : ast_factory_base<ast_factory<AST>, AST> { };
 }
 
+namespace black::ast::core {
+
+  using internal::cast;
+
+  template<typename From, typename To>
+  concept castable_to = ast_node<To> && requires(From f) { 
+    { cast<To>(f) } -> std::same_as<std::optional<To>>;
+  };
+
+  template<ast_node Node, castable_to<Node> T>
+  std::optional<Node> cast(std::optional<T> o) {
+    if(o)
+      return cast<Node>(*o);
+    return {};
+  }
+
+  template<ast_node Node, castable_to<Node> T, typename E>
+  std::expected<Node, E> cast(std::expected<T, E> const& e) {
+    if(e)
+      if(auto casted = cast<Node>(*e); casted)
+        return *casted;
+    return std::unexpected(e.error());
+  }
+    
+  
+  template<ast_node Node, ast_node ...Nodes>
+    requires (std::same_as<ast_of_t<Node>, ast_of_t<Nodes>> && ...)
+  struct any_of<Node, Nodes...> : internal::node_holder<ast_of_t<Node>> 
+  {
+    using internal::node_holder<ast_of_t<Node>>::node_holder;
+
+    using any_of_t = std::tuple<Node, Nodes...>;
+
+    any_of() = delete;
+    any_of(any_of const&) = default;
+    any_of(any_of &&) = default;
+    
+    template<typename T>
+      requires (std::same_as<T, Node> || (std::same_as<T, Nodes> || ...))
+    any_of(T n) 
+      : internal::node_holder<ast_of_t<Node>>(n._factory, n._impl) { }
+
+    any_of &operator=(any_of const&) = default;
+    any_of &operator=(any_of &&) = default;
+  };
+
+  template<ast_node ...Nodes1, ast_node ...Nodes2>
+  bool operator==(any_of<Nodes1...> const& a1, any_of<Nodes2...> const& a2) {
+    return a1.unique_id() == a2.unique_id();
+  }
+
+  template<ast_node ...Nodes1, ast_node ...Nodes2>
+  bool operator!=(any_of<Nodes1...> const& a1, any_of<Nodes2...> const& a2) {
+    return a1.unique_id() != a2.unique_id();
+  }
+}
+
 namespace black::support {
 
   template<ast::core::ast_node Node1, ast::core::ast_node Node2>
@@ -604,16 +689,18 @@ namespace black::support {
   struct common_result<Node1, Node2> 
     : std::type_identity<ast::core::ast_of_t<Node1>> { };
 
-}
-
-namespace black::support {
   template<ast::core::ast AST>
   struct match_cases<AST> : ast::core::ast_node_list<AST> { };
 
-  template<ast::core::ast_node Node>
-  struct match_downcast<ast::core::ast_of_t<Node>, Node> {
-    static std::optional<Node> downcast(ast::core::ast_of_t<Node> t) {
-      return t.template to<Node>();
+  template<typename T>
+    requires requires { typename T::any_of_t; }
+  struct match_cases<T> : std::type_identity<typename T::any_of_t> { };
+  
+  template<typename T, ast::core::ast_node Node>
+    requires ast::core::castable_to<T, Node>
+  struct match_downcast<T, Node> {
+    static std::optional<Node> downcast(T t) {
+      return ast::core::cast<Node>(t);
     }
   };
 }

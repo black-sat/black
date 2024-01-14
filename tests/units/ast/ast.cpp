@@ -120,14 +120,14 @@ TEST_CASE("Static reflection") {
     difference u = difference(p, q);
     term t = u;
 
-    REQUIRE(t.to<difference>().has_value());
-    REQUIRE(t.to<difference>() == u);
-    REQUIRE(t.to<difference>()->left() == p);
+    REQUIRE(cast<difference>(t).has_value());
+    REQUIRE(cast<difference>(t) == u);
+    REQUIRE(cast<difference>(t)->left() == p);
 
     auto result = match(t)(
         [&](difference, term left, term) {
             REQUIRE(left == p);
-            return left.to<integer>()->value() * 2;
+            return cast<integer>(left)->value() * 2;
         }
     );
 
@@ -141,4 +141,16 @@ TEST_CASE("Static reflection") {
 
     term t3 = t == t;
 
+}
+
+TEST_CASE("any_of<...>") {
+    alphabet sigma;
+
+    type ty = sigma.boolean_type();
+
+    auto r = match(ty)(
+        [](any_of<boolean_type, real_type>) { return 42; }
+    );
+
+    REQUIRE(r == 42);
 }

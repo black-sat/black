@@ -29,7 +29,7 @@ namespace black::logic {
   struct module::_impl_t 
   {
     alphabet *sigma;
-    support::map<symbol, term> decls;
+    support::map<symbol, type> decls;
     support::map<symbol, term> defs;
   };
 
@@ -42,7 +42,7 @@ namespace black::logic {
     return _impl->sigma;
   }
 
-  type_result<term> module::type_of(symbol s) const {
+  type_result<type> module::type_of(symbol s) const {
     if(auto it = _impl->decls.find(s); it != _impl->decls.end())
       return it->second;
     return std::unexpected("Use of undeclared symbol");
@@ -54,13 +54,13 @@ namespace black::logic {
     return std::unexpected("Use of undeclared symbol");
   }
 
-  type_result<void> module::declare(symbol s, term type) {
+  type_result<void> module::declare(symbol s, type ty) {
     if(_impl->decls.contains(s))
       return std::unexpected(type_error("Symbol already declared"));
     if(_impl->defs.contains(s))
       return std::unexpected(type_error("Symbol already defined"));
     
-    _impl->decls.insert({s, type});
+    _impl->decls.insert({s, ty});
     return {};
   }
 
@@ -75,7 +75,7 @@ namespace black::logic {
   }
 
   type_result<void> 
-  module::declare(symbol s, std::vector<term> params, term range) {
+  module::declare(symbol s, std::vector<type> params, type range) {
     return declare(s, function_type(params, range));
   }
     

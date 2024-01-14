@@ -68,7 +68,7 @@ namespace black::logic {
       ast::core::ast_type_of<T1, term> && 
       ast::core::ast_type_of<T2, term>
     )
-  eq_wrapper_t<true> operator==(T1 n1, T2 n2) {
+  eq_wrapper_t<true> operator==(T1 const& n1, T2 const& n2) {
     return {n1, n2};
   }
   
@@ -77,7 +77,7 @@ namespace black::logic {
       ast::core::ast_type_of<T1, term> && 
       ast::core::ast_type_of<T2, term>
     )
-  eq_wrapper_t<false> operator!=(T1 n1, T2 n2) {
+  eq_wrapper_t<false> operator!=(T1 const& n1, T2 const& n2) {
     return {n1, n2};
   }
 

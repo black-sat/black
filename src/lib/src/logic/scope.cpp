@@ -26,7 +26,7 @@
 
 namespace black::logic {
 
-  type_result<term> scope::type_of(term t) const {
+  type_result<type> scope::type_of(term t) const {
     using support::match;
 
     alphabet *sigma = t.sigma();
@@ -37,45 +37,41 @@ namespace black::logic {
       [&](real_type)     { return sigma->type_type(); },
       [&](boolean_type)  { return sigma->type_type(); },
       [&](function_type) { return sigma->type_type(); },
-      [&](temporal_type) { return sigma->type_type(); },
       [&](integer)       { return sigma->integer_type(); },
       [&](real)          { return sigma->real_type(); },
       [&](boolean)       { return sigma->boolean_type(); },
       [&](equal)         { return sigma->boolean_type(); },
       [&](distinct)      { return sigma->boolean_type(); },
-      [&](cast c)        { return c.target(); },
-      [&](symbol s)      -> type_result<term> { 
+      [&](type_cast c)   { return c.target(); },
+      [&](symbol s)      -> type_result<type> { 
         if(auto type = type_of(s); type)
           return type;
-        return std::unexpected(type_error("Use of undeclared symbol"));
+        return type_error("Use of undeclared symbol");
       },
-      [&](atom, term head, auto args) -> type_result<term> {
-        auto head_type = type_of(head);
-        if(!head_type)
-          return head_type;
+      [&](atom, term head, auto args) -> type_result<type> {
+        auto fty = cast<function_type>(type_of(head));
+        if(!fty)
+          return type_error("Calling a non-function");
+          
         auto sorts = type_of(args);
         if(!sorts)
-          return std::unexpected(sorts.error());
+          return sorts.error();
 
-        auto fty = head_type->to<function_type>();
-        if(!fty)
-          return std::unexpected(type_error("Calling a non-function"));
-          
         if(*sorts != fty->parameters())
-          return std::unexpected(type_error("Type mismatch in function call"));
+          return type_error("Type mismatch in function call");
 
         return fty->range();
       }
     );
   }
 
-  type_result<std::vector<term>> 
+  type_result<std::vector<type>> 
   scope::type_of(std::vector<term> const& vec) const {
-    std::vector<term> types;
+    std::vector<type> types;
     for(auto t : vec) {
       auto ty = type_of(t);
       if(!ty)
-        return std::unexpected(ty.error());
+        return ty.error();
       types.push_back(*ty);
     }
     return types;
