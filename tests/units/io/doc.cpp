@@ -21,10 +21,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_IO_HPP
-#define BLACK_IO_HPP
+#include <catch.hpp>
 
-#include <black/internal/io/doc.hpp>
-#include <black/internal/io/printer.hpp>
+#include <black/io>
 
-#endif // BLACK_IO_HPP
+TEST_CASE("io::doc class") {
+
+  using namespace black::io;
+
+  std::string s = "hello";
+
+  REQUIRE(doc("{} {}!", s, "world").format() == "hello world!");
+
+}
