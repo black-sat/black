@@ -24,7 +24,6 @@
 #ifndef BLACK_IO_HPP
 #define BLACK_IO_HPP
 
-#include <black/internal/io/doc.hpp>
 #include <black/internal/io/printer.hpp>
 
 #endif // BLACK_IO_HPP

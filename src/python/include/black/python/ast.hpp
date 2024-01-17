@@ -138,10 +138,6 @@ namespace black::python
           return self != other;
         });
 
-        node.def("__str__", [](Node self) {
-          return io::format(io::syntax::python{}, self);
-        });
-
         f(node);
       }
     );

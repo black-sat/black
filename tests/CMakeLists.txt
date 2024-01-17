@@ -39,7 +39,6 @@ if(Catch2_FOUND)
     units/ast/ast.cpp
     units/ast/identifier.cpp
     units/logic/logic.cpp
-    units/io/doc.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)
