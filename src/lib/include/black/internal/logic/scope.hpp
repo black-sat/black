@@ -57,15 +57,15 @@ namespace black::logic {
     scope &operator=(scope &&) = delete;
 
     virtual type_result<type> type_of(symbol s) const = 0;
-    virtual type_result<term> value_of(symbol s) const = 0;
+    virtual type_result<term> definition_of(symbol s) const = 0;
 
     type_result<type> type_of(term t) const;
-    type_result<term> value_of(term t) const;
+    type_result<term> definition_of(term t) const;
     
     type_result<std::vector<type>> 
       type_of(std::vector<term> const& t) const;
     type_result<std::vector<term>> 
-      value_of(std::vector<term> const& t) const;
+      definition_of(std::vector<term> const& t) const;
 
   };
 
@@ -84,7 +84,7 @@ namespace black::logic {
     alphabet *sigma() const;
 
     virtual type_result<type> type_of(symbol s) const override;
-    virtual type_result<term> value_of(symbol s) const override;
+    virtual type_result<term> definition_of(symbol s) const override;
 
     type_result<void> declare(symbol s, type ty);
     type_result<void> define(symbol s, term value);

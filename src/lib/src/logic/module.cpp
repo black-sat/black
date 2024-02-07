@@ -45,20 +45,20 @@ namespace black::logic {
   type_result<type> module::type_of(symbol s) const {
     if(auto it = _impl->decls.find(s); it != _impl->decls.end())
       return it->second;
-    return std::unexpected("Use of undeclared symbol");
+    return type_error("Use of undeclared symbol");
   }
   
-  type_result<term> module::value_of(symbol s) const {
+  type_result<term> module::definition_of(symbol s) const {
     if(auto it = _impl->defs.find(s); it != _impl->defs.end())
       return it->second;
-    return std::unexpected("Use of undeclared symbol");
+    return type_error("Use of undeclared symbol");
   }
 
   type_result<void> module::declare(symbol s, type ty) {
     if(_impl->decls.contains(s))
-      return std::unexpected(type_error("Symbol already declared"));
+      return type_error("Symbol already declared");
     if(_impl->defs.contains(s))
-      return std::unexpected(type_error("Symbol already defined"));
+      return type_error("Symbol already defined");
     
     _impl->decls.insert({s, ty});
     return {};
@@ -66,9 +66,9 @@ namespace black::logic {
 
   type_result<void> module::define(symbol s, term value) {
     if(_impl->decls.contains(s))
-      return std::unexpected(type_error("Symbol already declared"));
+      return type_error("Symbol already declared");
     if(_impl->defs.contains(s))
-      return std::unexpected(type_error("Symbol already defined"));
+      return type_error("Symbol already defined");
     
     _impl->defs.insert({s, value});
     return {};
