@@ -27,7 +27,7 @@
 
 namespace black::logic {
 
-  type_result<type> scope::type_of(term t) const {
+  type_result<term> scope::type_of(term t) const {
     using support::match;
 
     alphabet *sigma = t.sigma();
@@ -44,7 +44,7 @@ namespace black::logic {
       [&](equal)         { return sigma->boolean_type(); },
       [&](distinct)      { return sigma->boolean_type(); },
       [&](type_cast c)   { return c.target(); },
-      [&](symbol s)      -> type_result<type> { 
+      [&](symbol s)      -> type_result<term> { 
         if(auto type = type_of(s); type)
           return type;
         return 
@@ -52,7 +52,7 @@ namespace black::logic {
             "Use of undeclared symbol"
           );
       },
-      [&](atom, term head, auto args) -> type_result<type> {
+      [&](atom, term head, auto args) -> type_result<term> {
         auto fty = cast<function_type>(type_of(head));
         if(!fty)
           return type_error("Calling a non-function");
@@ -66,7 +66,7 @@ namespace black::logic {
 
         return fty->range();
       },
-      [&](negation, term argument) -> type_result<type> {
+      [&](negation, term argument) -> type_result<term> {
         auto argty = type_of(argument);
         if(!argty)
           return argty;
@@ -76,7 +76,7 @@ namespace black::logic {
 
         return sigma->boolean_type();
       },
-      [&](conjunction, std::vector<term> const& arguments) -> type_result<type> 
+      [&](conjunction, std::vector<term> const& arguments) -> type_result<term> 
       {
         for(term arg : arguments) { 
           auto argty = type_of(arg);
@@ -90,7 +90,7 @@ namespace black::logic {
 
         return sigma->boolean_type();          
       },
-      [&](disjunction, std::vector<term> const& arguments) -> type_result<type> 
+      [&](disjunction, std::vector<term> const& arguments) -> type_result<term> 
       {
         for(term arg : arguments) { 
           auto argty = type_of(arg);
@@ -104,7 +104,7 @@ namespace black::logic {
 
         return sigma->boolean_type();          
       },
-      [&](implication, std::vector<term> const& arguments) -> type_result<type> 
+      [&](implication, std::vector<term> const& arguments) -> type_result<term> 
       {
         for(term arg : arguments) { 
           auto argty = type_of(arg);
@@ -118,7 +118,7 @@ namespace black::logic {
 
         return sigma->boolean_type();          
       },
-      [&](ite, term guard, term iftrue, term iffalse) -> type_result<type> {
+      [&](ite, term guard, term iftrue, term iffalse) -> type_result<term> {
         auto guardty = type_of(guard);
         auto truety = type_of(iftrue);
         auto falsety = type_of(iffalse);
@@ -141,9 +141,9 @@ namespace black::logic {
         return *truety;
       },
       [&](lambda, std::vector<decl> const& decls, term body)  
-        -> type_result<type> 
+        -> type_result<term> 
       {
-        std::vector<type> argtypes;
+        std::vector<term> argtypes;
         for(decl d : decls)
           argtypes.push_back(d.type);
         
@@ -153,7 +153,7 @@ namespace black::logic {
         return function_type(std::move(argtypes), *bodyty);
       },
       // case_of...
-      [&](tomorrow, term argument) -> type_result<type> {
+      [&](tomorrow, term argument) -> type_result<term> {
         auto argty = type_of(argument);
         if(!argty)
           return argty;
@@ -165,7 +165,7 @@ namespace black::logic {
             );
         return sigma->boolean_type();
       },
-      [&](w_tomorrow, term argument) -> type_result<type> {
+      [&](w_tomorrow, term argument) -> type_result<term> {
         auto argty = type_of(argument);
         if(!argty)
           return argty;
@@ -177,7 +177,7 @@ namespace black::logic {
             );
         return sigma->boolean_type();
       },
-      [&](yesterday, term argument) -> type_result<type> {
+      [&](yesterday, term argument) -> type_result<term> {
         auto argty = type_of(argument);
         if(!argty)
           return argty;
@@ -189,7 +189,7 @@ namespace black::logic {
             );
         return sigma->boolean_type();
       },
-      [&](w_yesterday, term argument) -> type_result<type> {
+      [&](w_yesterday, term argument) -> type_result<term> {
         auto argty = type_of(argument);
         if(!argty)
           return argty;
@@ -201,7 +201,7 @@ namespace black::logic {
             );
         return sigma->boolean_type();
       },
-      [&](eventually, term argument) -> type_result<type> {
+      [&](eventually, term argument) -> type_result<term> {
         auto argty = type_of(argument);
         if(!argty)
           return argty;
@@ -213,7 +213,7 @@ namespace black::logic {
             );
         return sigma->boolean_type();
       },
-      [&](always, term argument) -> type_result<type> {
+      [&](always, term argument) -> type_result<term> {
         auto argty = type_of(argument);
         if(!argty)
           return argty;
@@ -225,7 +225,7 @@ namespace black::logic {
             );
         return sigma->boolean_type();
       },
-      [&](once, term argument) -> type_result<type> {
+      [&](once, term argument) -> type_result<term> {
         auto argty = type_of(argument);
         if(!argty)
           return argty;
@@ -237,7 +237,7 @@ namespace black::logic {
             );
         return sigma->boolean_type();
       },
-      [&](historically, term argument) -> type_result<type> {
+      [&](historically, term argument) -> type_result<term> {
         auto argty = type_of(argument);
         if(!argty)
           return argty;
@@ -249,7 +249,7 @@ namespace black::logic {
             );
         return sigma->boolean_type();
       },
-      [&](until, term left, term right) -> type_result<type> {
+      [&](until, term left, term right) -> type_result<term> {
         auto leftty = type_of(left);
         auto rightty = type_of(right);
         
@@ -266,7 +266,7 @@ namespace black::logic {
         
         return sigma->boolean_type();
       },
-      [&](release, term left, term right) -> type_result<type> {
+      [&](release, term left, term right) -> type_result<term> {
         auto leftty = type_of(left);
         auto rightty = type_of(right);
         
@@ -283,7 +283,7 @@ namespace black::logic {
         
         return sigma->boolean_type();
       },
-      [&](since, term left, term right) -> type_result<type> {
+      [&](since, term left, term right) -> type_result<term> {
         auto leftty = type_of(left);
         auto rightty = type_of(right);
         
@@ -300,7 +300,7 @@ namespace black::logic {
         
         return sigma->boolean_type();
       },
-      [&](triggered, term left, term right) -> type_result<type> {
+      [&](triggered, term left, term right) -> type_result<term> {
         auto leftty = type_of(left);
         auto rightty = type_of(right);
         
@@ -320,9 +320,9 @@ namespace black::logic {
     );
   }
 
-  type_result<std::vector<type>> 
+  type_result<std::vector<term>> 
   scope::type_of(std::vector<term> const& vec) const {
-    std::vector<type> types;
+    std::vector<term> types;
     for(auto t : vec) {
       auto ty = type_of(t);
       if(!ty)

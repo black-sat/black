@@ -71,22 +71,10 @@ define_type(logic, struct pattern,
   };
 )
 
-define_type(logic, struct type,
-  struct type 
-    : ast::core::any_of<
-        type_type, integer_type, real_type, boolean_type, function_type
-      > 
-  { 
-    using any_of<
-      type_type, integer_type, real_type, boolean_type, function_type
-    >::any_of;
-  };
-)
-
 define_type(logic, struct decl,
   struct decl { 
     logic::symbol name; 
-    logic::type type;
+    logic::term type;
 
     bool operator==(decl const&) const = default;
     size_t hash() const { return support::hash(name, type); }
@@ -112,12 +100,12 @@ declare_ast(logic, term)
     end_ast_node(logic, term, boolean_type)
     
     declare_ast_node(logic, term, function_type, "The type of functions")
-      declare_field(logic, term, function_type, parameters, std::vector<logic::type>, "The parameters types")
-      declare_field(logic, term, function_type, range, logic::type, "The function's range")
+      declare_field(logic, term, function_type, parameters, std::vector<logic::term>, "The parameters types")
+      declare_field(logic, term, function_type, range, logic::term, "The function's range")
     end_ast_node(logic, term, function_type)
 
     declare_ast_node(logic, term, type_cast, "A type-cast expression")
-      declare_field(logic, term, type_cast, target, logic::type, "The target type")
+      declare_field(logic, term, type_cast, target, logic::term, "The target type")
       declare_field(logic, term, type_cast, expr, logic::term, "The term to cast")
     end_ast_node(logic, term, type_cast)
 
