@@ -56,11 +56,11 @@ namespace black::logic {
     scope &operator=(scope const&) = delete;
     scope &operator=(scope &&) = delete;
 
-    virtual result<term> type_of(symbol s) const = 0;
-    virtual result<term> definition_of(symbol s) const = 0;
+    virtual std::optional<term> type_of(symbol s) const = 0;
+    virtual std::optional<term> definition_of(symbol s) const = 0;
 
     result<term> type_of(term t) const;
-    result<term> definition_of(term t) const;
+    result<term> value_of(term t) const;
 
     result<bool> is_type(term t) const;
     
@@ -85,8 +85,8 @@ namespace black::logic {
 
     alphabet *sigma() const;
 
-    virtual result<term> type_of(symbol s) const override;
-    virtual result<term> definition_of(symbol s) const override;
+    virtual std::optional<term> type_of(symbol s) const override;
+    virtual std::optional<term> definition_of(symbol s) const override;
 
     result<void> declare(symbol s, term type);
     result<void> define(symbol s, term value);

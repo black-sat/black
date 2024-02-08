@@ -42,16 +42,16 @@ namespace black::logic {
     return _impl->sigma;
   }
 
-  scope::result<term> module::type_of(symbol s) const {
+  std::optional<term> module::type_of(symbol s) const {
     if(auto it = _impl->decls.find(s); it != _impl->decls.end())
       return it->second;
-    return type_error("use of undeclared symbol");
+    return {};
   }
   
-  scope::result<term> module::definition_of(symbol s) const {
+  std::optional<term> module::definition_of(symbol s) const {
     if(auto it = _impl->defs.find(s); it != _impl->defs.end())
       return it->second;
-    return type_error("use of undeclared symbol");
+    return {};
   }
 
   scope::result<void> module::declare(symbol s, term ty) {

@@ -59,6 +59,27 @@ namespace black::logic::internal {
   };
 }
 
+namespace black::logic {
 
+  template<typename T, typename ...Ts>
+  concept any_of = (std::same_as<T, Ts> || ...);
+
+  template<typename T>
+  concept connective = 
+    any_of<T, negation, conjunction, disjunction, implication>;
+
+
+  template<typename T>
+  concept future =
+    any_of<T, tomorrow, w_tomorrow, eventually, always, until, release>;
+
+  template<typename T>
+  concept past =
+    any_of<T, yesterday, w_yesterday, once, historically, since, triggered>;
+
+  template<typename T>
+  concept temporal = future<T> || past<T>;
+
+}
 
 #endif // BLACK_LOGIC_TERMS_HPP

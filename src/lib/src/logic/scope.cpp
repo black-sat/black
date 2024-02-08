@@ -37,16 +37,33 @@ namespace black::logic {
       [&](integer_type)  { return sigma->type_type(); },
       [&](real_type)     { return sigma->type_type(); },
       [&](boolean_type)  { return sigma->type_type(); },
-      [&](function_type) { return sigma->type_type(); },
       [&](integer)       { return sigma->integer_type(); },
       [&](real)          { return sigma->real_type(); },
       [&](boolean)       { return sigma->boolean_type(); },
       [&](equal)         { return sigma->boolean_type(); },
       [&](distinct)      { return sigma->boolean_type(); },
       [&](type_cast c)   { return c.target(); },
-      [&](symbol s)      -> result<term> { 
+      [&](function_type, std::vector<term> const& params, term range) 
+        -> result<term>
+      { 
+        for(term p : params) {
+          result<bool> ist = is_type(p);
+          if(!ist)
+            return ist.error();
+          if(!*ist)
+            return type_error("type of function parameter is not a type");
+        }
+        result<bool> ist = is_type(range);
+        if(!ist)
+          return ist.error();
+        if(!*ist)
+          return type_error("function range is not a type");
+
+        return sigma->type_type(); 
+      },
+      [&](symbol s) -> result<term> { 
         if(auto type = type_of(s); type)
-          return type;
+          return *type;
         return type_error("use of undeclared symbol");
       },
       [&](atom, term head, auto args) -> result<term> {
@@ -67,56 +84,32 @@ namespace black::logic {
 
         return fty->range();
       },
-      [&](negation, term argument) -> result<term> {
-        auto argty = type_of(argument);
-        if(!argty)
-          return argty;
-
-        if(!cast<boolean_type>(argty))
-          return type_error("negation can be applied only to boolean terms");
+      [&](any_of<negation, implication> auto, auto ...args) -> result<term> {
+        result<term> argtypes[] = {type_of(args)...};
+        for(auto ty : argtypes) {
+          if(!ty)
+            return ty;
+          if(!cast<boolean_type>(ty))
+            return 
+              type_error("connectives can be applied only to boolean terms");
+        }
 
         return sigma->boolean_type();
       },
-      [&](conjunction, std::vector<term> const& arguments) -> result<term> 
+      [&](any_of<conjunction, disjunction> auto, std::vector<term> const& args) 
+        -> result<term> 
       {
-        for(term arg : arguments) { 
+        for(term arg : args) { 
           auto argty = type_of(arg);
           if(!argty)
             return argty;
           
           if(!cast<boolean_type>(argty))
             return 
-              type_error("conjunction can be applied only to boolean terms");
+              type_error("connectives can be applied only to boolean terms");
         }
 
-        return sigma->boolean_type();          
-      },
-      [&](disjunction, std::vector<term> const& arguments) -> result<term> 
-      {
-        for(term arg : arguments) { 
-          auto argty = type_of(arg);
-          if(!argty)
-            return argty;
-          
-          if(!cast<boolean_type>(argty))
-            return 
-              type_error("disjunction can be applied only to boolean terms");
-        }
-
-        return sigma->boolean_type();          
-      },
-      [&](implication, std::vector<term> const& arguments) -> result<term> {
-        for(term arg : arguments) { 
-          auto argty = type_of(arg);
-          if(!argty)
-            return argty;
-          
-          if(!cast<boolean_type>(argty))
-            return 
-              type_error("implication can be applied only to boolean terms");
-        }
-
-        return sigma->boolean_type();          
+        return sigma->boolean_type();
       },
       [&](ite, term guard, term iftrue, term iffalse) -> result<term> {
         auto guardty = type_of(guard);
@@ -151,168 +144,18 @@ namespace black::logic {
         return function_type(std::move(argtypes), *bodyty);
       },
       // case_of...
-      [&](tomorrow, term argument) -> result<term> {
-        auto argty = type_of(argument);
-        if(!argty)
-          return argty;
-        if(!cast<boolean_type>(argty))
-          return 
-            type_error(
-              "the `tomorrow` temporal operators can only be applied to "
-              "booleans"
-            );
-        return sigma->boolean_type();
-      },
-      [&](w_tomorrow, term argument) -> result<term> {
-        auto argty = type_of(argument);
-        if(!argty)
-          return argty;
-        if(!cast<boolean_type>(argty))
-          return 
-            type_error(
-              "the `weak tomorrow` temporal operators can only be applied to "
-              "booleans"
-            );
-        return sigma->boolean_type();
-      },
-      [&](yesterday, term argument) -> result<term> {
-        auto argty = type_of(argument);
-        if(!argty)
-          return argty;
-        if(!cast<boolean_type>(argty))
-          return 
-            type_error(
-              "the `yesterday` temporal operators can only be applied to "
-              "booleans"
-            );
-        return sigma->boolean_type();
-      },
-      [&](w_yesterday, term argument) -> result<term> {
-        auto argty = type_of(argument);
-        if(!argty)
-          return argty;
-        if(!cast<boolean_type>(argty))
-          return 
-            type_error(
-              "the `weak yesterday` temporal operators can only be applied to "
-              "booleans"
-            );
-        return sigma->boolean_type();
-      },
-      [&](eventually, term argument) -> result<term> {
-        auto argty = type_of(argument);
-        if(!argty)
-          return argty;
-        if(!cast<boolean_type>(argty))
-          return 
-            type_error(
-              "the `eventually` temporal operators can only be applied to "
-              "booleans"
-            );
-        return sigma->boolean_type();
-      },
-      [&](always, term argument) -> result<term> {
-        auto argty = type_of(argument);
-        if(!argty)
-          return argty;
-        if(!cast<boolean_type>(argty))
-          return 
-            type_error(
-              "the `always` temporal operators can only be applied to "
-              "booleans"
-            );
-        return sigma->boolean_type();
-      },
-      [&](once, term argument) -> result<term> {
-        auto argty = type_of(argument);
-        if(!argty)
-          return argty;
-        if(!cast<boolean_type>(argty))
-          return 
-            type_error(
-              "the `once` temporal operators can only be applied to "
-              "booleans"
-            );
-        return sigma->boolean_type();
-      },
-      [&](historically, term argument) -> result<term> {
-        auto argty = type_of(argument);
-        if(!argty)
-          return argty;
-        if(!cast<boolean_type>(argty))
-          return 
-            type_error(
-              "the `historically` temporal operators can only be applied to "
-              "booleans"
-            );
-        return sigma->boolean_type();
-      },
-      [&](until, term left, term right) -> result<term> {
-        auto leftty = type_of(left);
-        auto rightty = type_of(right);
-        
-        if(!leftty)
-          return leftty;
-        if(!rightty)
-          return rightty;
-        
-        if(!cast<boolean_type>(leftty) || !cast<boolean_type>(rightty))
-          return type_error(
-            "the `until` temporal operators can only be applied to "
-            "booleans"
-          );
-        
-        return sigma->boolean_type();
-      },
-      [&](release, term left, term right) -> result<term> {
-        auto leftty = type_of(left);
-        auto rightty = type_of(right);
-        
-        if(!leftty)
-          return leftty;
-        if(!rightty)
-          return rightty;
-        
-        if(!cast<boolean_type>(leftty) || !cast<boolean_type>(rightty))
-          return type_error(
-            "the `release` temporal operators can only be applied to "
-            "booleans"
-          );
-        
-        return sigma->boolean_type();
-      },
-      [&](since, term left, term right) -> result<term> {
-        auto leftty = type_of(left);
-        auto rightty = type_of(right);
-        
-        if(!leftty)
-          return leftty;
-        if(!rightty)
-          return rightty;
-        
-        if(!cast<boolean_type>(leftty) || !cast<boolean_type>(rightty))
-          return type_error(
-            "the `since` temporal operators can only be applied to "
-            "booleans"
-          );
-        
-        return sigma->boolean_type();
-      },
-      [&](triggered, term left, term right) -> result<term> {
-        auto leftty = type_of(left);
-        auto rightty = type_of(right);
-        
-        if(!leftty)
-          return leftty;
-        if(!rightty)
-          return rightty;
-        
-        if(!cast<boolean_type>(leftty) || !cast<boolean_type>(rightty))
-          return type_error(
-            "the `triggered` temporal operators can only be applied to "
-            "booleans"
-          );
-        
+      [&](temporal auto, auto ...args) -> result<term> {
+        result<term> argtypes[] = {type_of(args)...};
+        for(auto ty : argtypes) {
+          if(!ty)
+            return ty;
+          if(!cast<boolean_type>(ty))
+            return 
+              type_error(
+                "temporal operators can be applied only to boolean terms"
+              );
+        }
+
         return sigma->boolean_type();
       }
     );
