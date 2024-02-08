@@ -106,9 +106,9 @@ TEST_CASE("Static reflection") {
     integer p = sigma.integer(21);
     integer q = sigma.integer(42);
 
-    REQUIRE_THROWS(sum(std::vector<term>{}));
+    REQUIRE_THROWS(conjunction(std::vector<term>{}));
 
-    auto c = sum(std::vector<term>{p, q});
+    auto c = conjunction(std::vector<term>{p, q});
 
     term t1 = p;
     term t2 = p;

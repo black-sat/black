@@ -81,6 +81,16 @@ define_type(logic, struct decl,
   };
 )
 
+define_type(logic, struct def,
+  struct def { 
+    logic::symbol name; 
+    logic::term value;
+
+    bool operator==(def const&) const = default;
+    size_t hash() const { return support::hash(name, value); }
+  };
+)
+
 declare_ast(logic, term)
 
   declare_ast_factory(logic, term, alphabet, sigma)
@@ -143,6 +153,16 @@ declare_ast(logic, term)
       declare_field(logic, term, atom, head, logic::term, "The applied symbol")
       declare_field(logic, term, atom, arguments, std::vector<logic::term>, "The arguments")
     end_ast_node(logic, term, symbol)
+
+    declare_ast_node(logic, term, exists, "An existentially quantified term")
+      declare_field(logic, term, exists, decls, std::vector<logic::decl>, "The quantified variables")
+      declare_field(logic, term, exists, body, logic::term, "The quantified term")
+    end_ast_node(logic, term, exists)
+
+    declare_ast_node(logic, term, forall, "An universally quantified term")
+      declare_field(logic, term, forall, decls, std::vector<logic::decl>, "The quantified variables")
+      declare_field(logic, term, forall, body, logic::term, "The quantified term")
+    end_ast_node(logic, term, forall)
 
   end_section()
 
@@ -255,11 +275,13 @@ declare_ast(logic, term)
     end_ast_node(logic, term, minus)
     
     declare_ast_node(logic, term, sum, "An arithmetic sum")
-      declare_field(logic, term, sum, arguments, std::vector<logic::term>, "The addends")
+      declare_field(logic, term, sum, left, logic::term, "The first summand")
+      declare_field(logic, term, sum, right, logic::term, "The second summand")
     end_ast_node(logic, term, sum)
     
     declare_ast_node(logic, term, product, "An arithmetic product")
-      declare_field(logic, term, product, arguments, std::vector<logic::term>, "The factors")
+      declare_field(logic, term, product, left, logic::term, "The first factor")
+      declare_field(logic, term, product, right, logic::term, "The second factor")
     end_ast_node(logic, term, product)
 
     declare_ast_node(logic, term, difference, "An arithmetic difference")

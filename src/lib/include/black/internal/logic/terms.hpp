@@ -67,7 +67,9 @@ namespace black::logic {
   template<typename T>
   concept connective = 
     any_of<T, negation, conjunction, disjunction, implication>;
-
+  
+  template<typename T>
+  concept quantifier = any_of<T, exists, forall>;
 
   template<typename T>
   concept future =
@@ -79,6 +81,13 @@ namespace black::logic {
 
   template<typename T>
   concept temporal = future<T> || past<T>;
+
+  template<typename T>
+  concept arithmetic = any_of<T, minus, sum, product, difference, division>;
+  
+  template<typename T>
+  concept relational = 
+    any_of<T, less_than, less_than_eq, greater_than, greater_than_eq>;
 
 }
 

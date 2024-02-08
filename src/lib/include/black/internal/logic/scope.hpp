@@ -47,6 +47,12 @@ namespace black::logic {
     template<typename T>
     using result = std::expected<T, type_error>;
 
+    struct lookup {
+      symbol name;
+      term result;
+      scope const *origin;
+    };
+
     scope() = default;
     scope(scope const&) = delete;
     scope(scope &&) = delete;
@@ -56,18 +62,15 @@ namespace black::logic {
     scope &operator=(scope const&) = delete;
     scope &operator=(scope &&) = delete;
 
-    virtual std::optional<term> type_of(symbol s) const = 0;
-    virtual std::optional<term> definition_of(symbol s) const = 0;
+    virtual alphabet *sigma() const = 0;
+
+    virtual std::optional<lookup> decl_of(symbol s) const = 0;
+    virtual std::optional<lookup> def_of(symbol s) const = 0;
 
     result<term> type_of(term t) const;
     result<term> value_of(term t) const;
 
     result<bool> is_type(term t) const;
-    
-    result<std::vector<term>> 
-      type_of(std::vector<term> const& t) const;
-    result<std::vector<term>> 
-      definition_of(std::vector<term> const& t) const;
 
   };
 
@@ -75,6 +78,7 @@ namespace black::logic {
   {
   public:
     module(alphabet *sigma);
+    module(scope const* sigma);
     module(module const&) = delete;
     module(module &&) = delete;
 
@@ -83,13 +87,19 @@ namespace black::logic {
     module &operator=(module const&) = delete;
     module &operator=(module &&) = delete;
 
-    alphabet *sigma() const;
+    virtual std::optional<lookup> decl_of(symbol s) const override;
+    virtual std::optional<lookup> def_of(symbol s) const override;
 
-    virtual std::optional<term> type_of(symbol s) const override;
-    virtual std::optional<term> definition_of(symbol s) const override;
+    alphabet *sigma() const override;
+    scope const *base() const;
 
     result<void> declare(symbol s, term type);
     result<void> define(symbol s, term value);
+    
+    result<void> declare(decl d);
+    result<void> define(def d);
+    result<void> declare(std::vector<decl> const& decls);
+    result<void> define(std::vector<def> const& defs);
     result<void> declare(symbol s, std::vector<term> params, term range);
     result<void> define(symbol s, std::vector<decl> params, term body);
 

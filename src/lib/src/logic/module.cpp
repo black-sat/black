@@ -29,12 +29,17 @@ namespace black::logic {
   struct module::_impl_t 
   {
     alphabet *sigma;
+    scope const* base;
     support::map<symbol, term> decls;
     support::map<symbol, term> defs;
   };
 
   module::module(alphabet *sigma) 
-    : _impl{std::make_unique<_impl_t>(_impl_t{sigma, {}, {}})} { } 
+    : _impl{std::make_unique<_impl_t>(_impl_t{sigma, nullptr, {}, {}})} { } 
+  
+  module::module(scope const *base) 
+    : _impl{std::make_unique<_impl_t>(_impl_t{base->sigma(), base, {}, {}})} 
+    { } 
   
   module::~module() = default;
 
@@ -42,15 +47,23 @@ namespace black::logic {
     return _impl->sigma;
   }
 
-  std::optional<term> module::type_of(symbol s) const {
+  std::optional<scope::lookup> module::decl_of(symbol s) const {
     if(auto it = _impl->decls.find(s); it != _impl->decls.end())
-      return it->second;
+      return lookup{s, it->second, this};
+    
+    if(_impl->base)
+      return _impl->base->decl_of(s);
+    
     return {};
   }
   
-  std::optional<term> module::definition_of(symbol s) const {
+  std::optional<scope::lookup> module::def_of(symbol s) const {
     if(auto it = _impl->defs.find(s); it != _impl->defs.end())
-      return it->second;
+      return lookup{s, it->second, this};
+
+    if(_impl->base)
+      return _impl->base->def_of(s);
+
     return {};
   }
 
@@ -76,6 +89,28 @@ namespace black::logic {
       return type_error("symbol already defined");
     
     _impl->defs.insert({s, value});
+    return {};
+  }
+
+  scope::result<void> module::declare(decl d) {
+    return declare(d.name, d.type);
+  }
+  
+  scope::result<void> module::define(def d) {
+    return define(d.name, d.value);
+  }
+
+  scope::result<void> module::declare(std::vector<decl> const& decls) {
+    for(decl d : decls)
+      if(auto r = declare(d); !r)
+        return r;
+    return {};
+  }
+  
+  scope::result<void> module::define(std::vector<def> const& defs) {
+    for(def d : defs)
+      if(auto r = define(d); !r)
+        return r;
     return {};
   }
 
