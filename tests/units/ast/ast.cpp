@@ -148,15 +148,3 @@ TEST_CASE("Static reflection") {
     REQUIRE(r == 42);
 
 }
-
-TEST_CASE("any_of<...>") {
-    alphabet sigma;
-
-    term ty = sigma.boolean_type();
-
-    auto r = match(ty)(
-        [](any_of<boolean_type, real_type>) { return 42; }
-    );
-
-    REQUIRE(r == 42);
-}
