@@ -42,44 +42,49 @@ namespace black::logic {
     return _impl->sigma;
   }
 
-  type_result<term> module::type_of(symbol s) const {
+  scope::result<term> module::type_of(symbol s) const {
     if(auto it = _impl->decls.find(s); it != _impl->decls.end())
       return it->second;
-    return type_error("Use of undeclared symbol");
+    return type_error("use of undeclared symbol");
   }
   
-  type_result<term> module::definition_of(symbol s) const {
+  scope::result<term> module::definition_of(symbol s) const {
     if(auto it = _impl->defs.find(s); it != _impl->defs.end())
       return it->second;
-    return type_error("Use of undeclared symbol");
+    return type_error("use of undeclared symbol");
   }
 
-  type_result<void> module::declare(symbol s, term ty) {
+  scope::result<void> module::declare(symbol s, term ty) {
+    result<bool> ist = is_type(ty);
+    if(!ist)
+      return ist.error();
+    if(!*ist)
+      return type_error("type of declaration is not a type");
     if(_impl->decls.contains(s))
-      return type_error("Symbol already declared");
+      return type_error("symbol already declared");
     if(_impl->defs.contains(s))
-      return type_error("Symbol already defined");
+      return type_error("symbol already defined");
     
     _impl->decls.insert({s, ty});
     return {};
   }
 
-  type_result<void> module::define(symbol s, term value) {
+  scope::result<void> module::define(symbol s, term value) {
     if(_impl->decls.contains(s))
-      return type_error("Symbol already declared");
+      return type_error("symbol already declared");
     if(_impl->defs.contains(s))
-      return type_error("Symbol already defined");
+      return type_error("symbol already defined");
     
     _impl->defs.insert({s, value});
     return {};
   }
 
-  type_result<void> 
+  scope::result<void> 
   module::declare(symbol s, std::vector<term> params, term range) {
     return declare(s, function_type(params, range));
   }
     
-  type_result<void> 
+  scope::result<void> 
   module::define(symbol s, std::vector<decl> params, term body) {
     return define(s, lambda(params, body));
   }

@@ -40,13 +40,13 @@ namespace black::logic {
       return std::unexpected(*this);
     }
   };
-  
-  template<typename T>
-  using type_result = std::expected<T, type_error>;
 
   class scope 
   {
   public:
+    template<typename T>
+    using result = std::expected<T, type_error>;
+
     scope() = default;
     scope(scope const&) = delete;
     scope(scope &&) = delete;
@@ -56,15 +56,17 @@ namespace black::logic {
     scope &operator=(scope const&) = delete;
     scope &operator=(scope &&) = delete;
 
-    virtual type_result<term> type_of(symbol s) const = 0;
-    virtual type_result<term> definition_of(symbol s) const = 0;
+    virtual result<term> type_of(symbol s) const = 0;
+    virtual result<term> definition_of(symbol s) const = 0;
 
-    type_result<term> type_of(term t) const;
-    type_result<term> definition_of(term t) const;
+    result<term> type_of(term t) const;
+    result<term> definition_of(term t) const;
+
+    result<bool> is_type(term t) const;
     
-    type_result<std::vector<term>> 
+    result<std::vector<term>> 
       type_of(std::vector<term> const& t) const;
-    type_result<std::vector<term>> 
+    result<std::vector<term>> 
       definition_of(std::vector<term> const& t) const;
 
   };
@@ -83,13 +85,13 @@ namespace black::logic {
 
     alphabet *sigma() const;
 
-    virtual type_result<term> type_of(symbol s) const override;
-    virtual type_result<term> definition_of(symbol s) const override;
+    virtual result<term> type_of(symbol s) const override;
+    virtual result<term> definition_of(symbol s) const override;
 
-    type_result<void> declare(symbol s, term type);
-    type_result<void> define(symbol s, term value);
-    type_result<void> declare(symbol s, std::vector<term> params, term range);
-    type_result<void> define(symbol s, std::vector<decl> params, term body);
+    result<void> declare(symbol s, term type);
+    result<void> define(symbol s, term value);
+    result<void> declare(symbol s, std::vector<term> params, term range);
+    result<void> define(symbol s, std::vector<decl> params, term body);
 
   private:
     struct _impl_t;
