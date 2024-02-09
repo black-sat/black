@@ -63,8 +63,9 @@ namespace black::logic {
       [&](symbol s) -> result<term> { 
         if(auto lookup = decl_of(s); lookup)
           return lookup->result;
-        if(auto lookup = def_of(s); lookup)
+        if(auto lookup = def_of(s); lookup) {
           return lookup->origin->type_of(lookup->result);
+        }
         
         return type_error("use of undeclared symbol");
       },
@@ -279,8 +280,11 @@ namespace black::logic {
       },
       //[&](type_cast c)   { return c.target(); },
       [&](symbol s) -> result<term> {
-        if(auto lookup = def_of(s); lookup)
+        if(auto lookup = def_of(s); lookup) {
+          if(lookup->origin == this)
+            return lookup->result;
           return lookup->origin->value_of(lookup->result);
+        }
         if(auto lookup = decl_of(s); lookup)
           return type_error("cannot evaluate a declared symbol");
         
@@ -382,7 +386,11 @@ namespace black::logic {
       },
       [&](arithmetic auto op, term left, term right) -> result<term> {
         auto lv = value_of(left);
+        if(!lv)
+          return lv;
         auto rv = value_of(right);
+        if(!rv)
+          return rv;
 
         return match(lv)(
           [&](integer) {
@@ -413,7 +421,11 @@ namespace black::logic {
       },
       [&](relational auto op, term left, term right) -> result<term> {
         auto lv = value_of(left);
+        if(!lv)
+          return lv;
         auto rv = value_of(right);
+        if(!rv)
+          return rv;
 
         return match(lv)(
           [&](integer) {

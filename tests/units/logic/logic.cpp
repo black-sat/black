@@ -82,6 +82,7 @@ TEST_CASE("Modules") {
       ite(a > sigma.integer(0), a + x, a - x)
     );
     m.define(x, sigma.integer(40));
+    m.define(a, sigma.real(0.0)); // this will be shadowed
 
     term t = p(sigma.integer(2));
 
@@ -94,6 +95,22 @@ TEST_CASE("Modules") {
     REQUIRE(r2.has_value());
     REQUIRE(r2 == sigma.integer(42));
 
+  }
+
+  SECTION("Mixed declarations and definitions") {
+    auto a = sigma.symbol("a");
+
+    m.define(p, {{a, sigma.integer_type()}}, a + x);
+    m.declare(x, sigma.integer_type());
+
+    term t = p(sigma.integer(40));
+
+    scope::result<term> r1 = m.type_of(t);
+    REQUIRE(r1.has_value());
+    REQUIRE(r1 == sigma.integer_type());
+    
+    scope::result<term> r2 = m.value_of(t);
+    REQUIRE(!r2.has_value());
 
   }
 
