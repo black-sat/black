@@ -72,11 +72,11 @@ namespace black::logic {
     if(!ist)
       return ist.error();
     if(!*ist)
-      return type_error("type of declaration is not a type");
+      return error("type of declaration is not a type");
     if(_impl->decls.contains(s))
-      return type_error("symbol already declared");
+      return error("symbol already declared");
     if(_impl->defs.contains(s))
-      return type_error("symbol already defined");
+      return error("symbol already defined");
     
     _impl->decls.insert({s, ty});
     return {};
@@ -84,9 +84,9 @@ namespace black::logic {
 
   scope::result<void> module::define(symbol s, term value) {
     if(_impl->decls.contains(s))
-      return type_error("symbol already declared");
+      return error("symbol already declared");
     if(_impl->defs.contains(s))
-      return type_error("symbol already defined");
+      return error("symbol already defined");
     
     _impl->defs.insert({s, value});
     return {};

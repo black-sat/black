@@ -50,13 +50,13 @@ namespace black::logic {
           if(!ist)
             return ist.error();
           if(!*ist)
-            return type_error("type of function parameter is not a type");
+            return error("type of function parameter is not a type");
         }
         result<bool> ist = is_type(range);
         if(!ist)
           return ist.error();
         if(!*ist)
-          return type_error("function range is not a type");
+          return error("function range is not a type");
 
         return sigma->type_type(); 
       },
@@ -67,7 +67,7 @@ namespace black::logic {
           return lookup->origin->type_of(lookup->result);
         }
         
-        return type_error("use of undeclared symbol");
+        return error("use of undeclared symbol");
       },
       [&](atom, term head, auto const& args) -> result<term> {
         result<term> rfty = type_of(head);
@@ -76,10 +76,10 @@ namespace black::logic {
 
         auto fty = cast<function_type>(rfty);
         if(!fty)
-          return type_error("calling a non-function");
+          return error("calling a non-function");
           
         if(args.size() != fty->parameters().size()) 
-          return type_error("argument number mismatch in function call");
+          return error("argument number mismatch in function call");
 
         for(size_t i = 0; i < args.size(); i++) {
           auto type = type_of(args[i]);
@@ -87,7 +87,7 @@ namespace black::logic {
             return type.error();
 
           if(*type != fty->parameters()[i])
-            return type_error("type mismatch in function call");
+            return error("type mismatch in function call");
         }
 
         return fty->range();
@@ -102,7 +102,7 @@ namespace black::logic {
           return type;
         
         if(!cast<boolean_type>(type))
-          return type_error("quantified terms must be boolean");
+          return error("quantified terms must be boolean");
         
         return sigma->boolean_type();
       },
@@ -113,7 +113,7 @@ namespace black::logic {
             return ty;
           if(!cast<boolean_type>(ty))
             return 
-              type_error("connectives can be applied only to boolean terms");
+              error("connectives can be applied only to boolean terms");
         }
 
         return sigma->boolean_type();
@@ -128,7 +128,7 @@ namespace black::logic {
           
           if(!cast<boolean_type>(argty))
             return 
-              type_error("connectives can be applied only to boolean terms");
+              error("connectives can be applied only to boolean terms");
         }
 
         return sigma->boolean_type();
@@ -147,10 +147,10 @@ namespace black::logic {
           return falsety;
 
         if(!cast<boolean_type>(guardty))
-          return type_error("the guard of an `ite` expression must be boolean");
+          return error("the guard of an `ite` expression must be boolean");
         if(*truety != *falsety)
           return 
-            type_error(
+            error(
               "the two cases of an `ite` expression must have the same type"
             );
 
@@ -177,7 +177,7 @@ namespace black::logic {
             return ty;
           if(!cast<boolean_type>(ty))
             return 
-              type_error(
+              error(
                 "temporal operators can be applied only to boolean terms"
               );
         }
@@ -191,7 +191,7 @@ namespace black::logic {
         
         if(type != sigma->integer_type() && type != sigma->real_type())
           return 
-            type_error("arithmetic operations only work on integers or reals");
+            error("arithmetic operations only work on integers or reals");
         
         return *type;
       },
@@ -206,15 +206,15 @@ namespace black::logic {
         
         if(type1 != sigma->integer_type() && type1 != sigma->real_type())
           return 
-            type_error("arithmetic operations only work on integers or reals");
+            error("arithmetic operations only work on integers or reals");
         
         if(type2 != sigma->integer_type() && type1 != sigma->real_type())
           return 
-            type_error("arithmetic operations only work on integers or reals");
+            error("arithmetic operations only work on integers or reals");
 
         if(*type1 != *type2)
           return 
-            type_error(
+            error(
               "arithmetic operations can only be applied to equal types"
             );
         
@@ -231,15 +231,15 @@ namespace black::logic {
         
         if(type1 != sigma->integer_type() && type1 != sigma->real_type())
           return 
-            type_error("relational operations only work on integers or reals");
+            error("relational operations only work on integers or reals");
         
         if(type2 != sigma->integer_type() && type1 != sigma->real_type())
           return 
-            type_error("relational operations only work on integers or reals");
+            error("relational operations only work on integers or reals");
 
         if(*type1 != *type2)
           return 
-            type_error(
+            error(
               "relational operations can only be applied to equal types"
             );
         
@@ -286,9 +286,9 @@ namespace black::logic {
           return lookup->origin->value_of(lookup->result);
         }
         if(auto lookup = decl_of(s); lookup)
-          return type_error("cannot evaluate a declared symbol");
+          return error("cannot evaluate a declared symbol");
         
-        return type_error("use of undeclared symbol");
+        return error("use of undeclared symbol");
       },
       [&](atom, term head, auto const& args) -> result<term> {
         auto h = value_of(head);
@@ -298,7 +298,7 @@ namespace black::logic {
         black_assert(f);
 
         if(f->vars().size() != args.size())
-          return type_error("number of arguments mismatch in function call");
+          return error("number of arguments mismatch in function call");
         
         module nest(this);
 
@@ -314,7 +314,7 @@ namespace black::logic {
       },
       // quantifier...
       [&](temporal auto) -> result<term> {
-        return type_error("cannot evaluate a temporal formula");
+        return error("cannot evaluate a temporal formula");
       },
       [&](negation, term arg) -> result<term> {
         auto v = cast<boolean>(value_of(arg));

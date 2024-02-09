@@ -32,20 +32,20 @@
 
 namespace black::logic {
 
-  struct type_error : support::error { 
-    using error::error;
-
-    template<typename T>
-    operator std::expected<T, type_error>() const {
-      return std::unexpected(*this);
-    }
-  };
-
   class scope 
   {
   public:
+    struct error : support::error { 
+      using support::error::error;
+
+      template<typename T>
+      operator std::expected<T, error>() const {
+        return std::unexpected(*this);
+      }
+    };
+    
     template<typename T>
-    using result = std::expected<T, type_error>;
+    using result = std::expected<T, error>;
 
     struct lookup {
       symbol name;
@@ -107,7 +107,6 @@ namespace black::logic {
     struct _impl_t;
     std::unique_ptr<_impl_t> _impl;
   };
-
 }
 
 #endif // BLACK_LOGIC_SCOPE_HPP

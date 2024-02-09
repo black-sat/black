@@ -75,10 +75,6 @@ namespace black::support {
     size_t column = 0; //!< The column where the syntax error occurred.
   };
 
-  struct backend_error : error { 
-    using error::error;
-  };
-
   //! An error occurred while reading or writing from files or streams
   struct io_error : error {
 

@@ -69,9 +69,6 @@ namespace black::python {
       .def_readonly("column", &syntax_error::column)
       .def_readonly("message", &syntax_error::message);
     
-    py::class_<backend_error>(m, "BackendError")
-      .def_readonly("message", &backend_error::message);
-    
     py::class_<io_error> io_error_cls(m, "IOError");
     io_error_cls.def_readonly("filename", &io_error::filename);
     io_error_cls.def_readonly("op", &io_error::op);
