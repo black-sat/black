@@ -27,6 +27,100 @@
 
 namespace black::logic {
 
+  scope::result<term> 
+  scope::resolve(term t, support::set<symbol> const& shadow) const {
+    // TODO: extract the recursion logic into a generic helper
+    using support::match;
+
+    alphabet *sigma = t.sigma();
+
+    return match(t)(
+      [&](type_type v)     { return v; },
+      [&](integer_type v)  { return v; },
+      [&](real_type v)     { return v; },
+      [&](boolean_type v)  { return v; },
+      [&](integer v)       { return v; },
+      [&](real v)          { return v; },
+      [&](boolean v)       { return v; },
+      [&](variable v)      { return v; },
+      [&](symbol s) -> result<term> {
+        if(shadow.contains(s))
+          return s;
+        auto decl = lookup(s);
+        if(!decl)
+          return error("use of undeclared symbol");
+        
+        return sigma->variable(*decl);
+      },
+      [&](function_type, auto const & args, term range) -> result<term> {
+        std::vector<term> resargs;
+        for(auto arg : args) {
+          auto res = resolve(arg, shadow);
+          if(!res)
+            return res;
+          resargs.push_back(*res);
+        }
+        
+        auto resrange = resolve(range, shadow);
+        if(!resrange)
+          return resrange;
+        
+        return atom(*resrange, resargs);
+      },
+      [&](atom, term head, auto const &args) -> result<term> {
+        auto reshead = resolve(head, shadow);
+        if(!reshead)
+          return reshead;
+
+        std::vector<term> resargs;
+        for(auto arg : args) {
+          auto res = resolve(arg, shadow);
+          if(!res)
+            return res;
+          resargs.push_back(*res);
+        }
+        
+        return atom(*reshead, resargs);
+      },
+      [&]<any_of<lambda, exists, forall> T>
+      (T, auto const& bindings, term body) -> result<term> 
+      {
+        support::set<symbol> nest = shadow;
+        for(binding bind : bindings)
+          nest.insert(bind.name);
+
+        auto res = resolve(body, nest);
+        if(!res)
+          return res;
+
+        return T(bindings, *res);
+      },
+      [&]<any_of<conjunction, disjunction, equal, distinct> T>
+      (T, auto const& args) -> result<term> 
+      {
+        std::vector<term> resargs;
+        for(term arg : args) {
+          auto res = resolve(arg, shadow);
+          if(!res)
+            return res;
+          resargs.push_back(*res);
+        }
+
+        return T(std::move(resargs));
+      },
+      [&]<typename T>(T, auto ...args) -> result<term> {
+        std::vector<result<term>> resargs = { resolve(args, shadow)... };
+        for(auto res : resargs)
+          if(!res)
+            return res;
+
+        return [&]<size_t ...Idx>(std::index_sequence<Idx...>) {
+          return T(*resargs[Idx]...);
+        }(std::make_index_sequence<sizeof...(args)>{});
+      }
+    );
+  }
+
   scope::result<term> scope::type_of(term t) const {
     using support::match;
 
@@ -43,6 +137,10 @@ namespace black::logic {
       [&](equal)         { return sigma->boolean_type(); },
       [&](distinct)      { return sigma->boolean_type(); },
       [&](type_cast c)   { return c.target(); },
+      // `symbol` purposefully not handled here
+      [&](variable, auto decl) {
+        return decl->type();
+      },
       [&](function_type, auto const& params, term range) -> result<term>
       { 
         for(term p : params) {
@@ -59,15 +157,6 @@ namespace black::logic {
           return error("function range is not a type");
 
         return sigma->type_type(); 
-      },
-      [&](symbol s) -> result<term> { 
-        if(auto lookup = decl_of(s); lookup)
-          return lookup->result;
-        if(auto lookup = def_of(s); lookup) {
-          return lookup->origin->type_of(lookup->result);
-        }
-        
-        return error("use of undeclared symbol");
       },
       [&](atom, term head, auto const& args) -> result<term> {
         result<term> rfty = type_of(head);
@@ -156,13 +245,15 @@ namespace black::logic {
 
         return *truety;
       },
-      [&](lambda, std::vector<decl> const& decls, term body) -> result<term> {
+      [&](lambda, std::vector<binding> const& binds, term body) 
+        -> result<term> 
+      {
         std::vector<term> argtypes;
-        for(decl d : decls)
-          argtypes.push_back(d.type);
+        for(binding b : binds)
+          argtypes.push_back(b.target);
         
         module nest(this);
-        nest.declare(decls);
+        nest.declare(binds);
 
         auto bodyty = nest.type_of(body);
         if(!bodyty)
@@ -248,7 +339,7 @@ namespace black::logic {
     );
   }
 
-  scope::result<term> scope::value_of(term t) const {
+  scope::result<term> scope::evaluate(term t) const {
     using support::match;
 
     alphabet *sigma = t.sigma();
@@ -266,6 +357,36 @@ namespace black::logic {
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
       [&](lambda v)        { return v; },
+      // `symbol` purposefully not handled here
+      [&](variable, auto decl) -> result<term> {
+        if(!decl->def())
+          return error("cannot evaluate a declared variable");
+        
+        return evaluate(*decl->def());       
+      },
+      //[&](type_cast c)   { return c.target(); },
+      [&](atom, term head, auto const& args) -> result<term> {
+        auto h = evaluate(head);
+        if(!h)
+          return h;
+        auto f = cast<lambda>(h);
+        black_assert(f);
+
+        if(f->vars().size() != args.size())
+          return error("number of arguments mismatch in function call");
+        
+        module nest(this);
+
+        for(size_t i = 0; i < args.size(); i++) {
+          auto argv = evaluate(args[i]);
+          if(!argv)
+            return argv;
+
+          nest.define(f->vars()[i].name, *argv);
+        }
+
+        return nest.evaluate(f->body());
+      },
       [&](equal, auto const& args) { 
         for(size_t i = 1; i < args.size(); i++)
           if(args[i] != args[0])
@@ -278,46 +399,12 @@ namespace black::logic {
             return sigma->boolean(true);
         return sigma->boolean(false);
       },
-      //[&](type_cast c)   { return c.target(); },
-      [&](symbol s) -> result<term> {
-        if(auto lookup = def_of(s); lookup) {
-          if(lookup->origin == this)
-            return lookup->result;
-          return lookup->origin->value_of(lookup->result);
-        }
-        if(auto lookup = decl_of(s); lookup)
-          return error("cannot evaluate a declared symbol");
-        
-        return error("use of undeclared symbol");
-      },
-      [&](atom, term head, auto const& args) -> result<term> {
-        auto h = value_of(head);
-        if(!h)
-          return h;
-        auto f = cast<lambda>(h);
-        black_assert(f);
-
-        if(f->vars().size() != args.size())
-          return error("number of arguments mismatch in function call");
-        
-        module nest(this);
-
-        for(size_t i = 0; i < args.size(); i++) {
-          auto argv = value_of(args[i]);
-          if(!argv)
-            return argv;
-
-          nest.define(f->vars()[i].name, *argv);
-        }
-
-        return nest.value_of(f->body());
-      },
       // quantifier...
       [&](temporal auto) -> result<term> {
         return error("cannot evaluate a temporal formula");
       },
       [&](negation, term arg) -> result<term> {
-        auto v = cast<boolean>(value_of(arg));
+        auto v = cast<boolean>(evaluate(arg));
         if(!v)
           return v.error();
         
@@ -326,7 +413,7 @@ namespace black::logic {
       [&](conjunction, auto const& args) -> result<term> {
         bool result = true;
         for(auto arg : args) {
-          auto v = cast<boolean>(value_of(arg));
+          auto v = cast<boolean>(evaluate(arg));
           if(!v)
             return v;
           result = result && v->value();
@@ -336,7 +423,7 @@ namespace black::logic {
       [&](disjunction, auto const& args) -> result<term> {
         bool result = true;
         for(auto arg : args) {
-          auto v = cast<boolean>(value_of(arg));
+          auto v = cast<boolean>(evaluate(arg));
           if(!v)
             return v;
           result = result || v->value();
@@ -344,25 +431,25 @@ namespace black::logic {
         return sigma->boolean(result);
       },
       [&](implication, term left, term right) -> result<term> {
-        auto vl = cast<boolean>(value_of(left));
+        auto vl = cast<boolean>(evaluate(left));
         if(!vl)
           return vl;
-        auto vr = cast<boolean>(value_of(right));
+        auto vr = cast<boolean>(evaluate(right));
         if(!vr)
           return vr;
         
         return sigma->boolean(!vl->value() || vr->value());
       },
       [&](ite, term guard, term iftrue, term iffalse) -> result<term> {
-        auto guardv = cast<boolean>(value_of(guard));
+        auto guardv = cast<boolean>(evaluate(guard));
         if(!guardv)
           return guardv;
 
-        auto truev = value_of(iftrue);
+        auto truev = evaluate(iftrue);
         if(!truev)
           return truev;
 
-        auto falsev = value_of(iffalse);
+        auto falsev = evaluate(iffalse);
         if(!falsev)
           return falsev;
         
@@ -371,7 +458,7 @@ namespace black::logic {
         return falsev;
       },
       [&](minus, term arg) -> result<term> {
-        auto v = value_of(arg);
+        auto v = evaluate(arg);
         if(!v)
           return v;
         
@@ -385,10 +472,10 @@ namespace black::logic {
         );
       },
       [&](arithmetic auto op, term left, term right) -> result<term> {
-        auto lv = value_of(left);
+        auto lv = evaluate(left);
         if(!lv)
           return lv;
-        auto rv = value_of(right);
+        auto rv = evaluate(right);
         if(!rv)
           return rv;
 
@@ -420,10 +507,10 @@ namespace black::logic {
         );
       },
       [&](relational auto op, term left, term right) -> result<term> {
-        auto lv = value_of(left);
+        auto lv = evaluate(left);
         if(!lv)
           return lv;
-        auto rv = value_of(right);
+        auto rv = evaluate(right);
         if(!rv)
           return rv;
 
@@ -462,7 +549,7 @@ namespace black::logic {
     if(!type)
       return type.error();
     
-    return bool(cast<type_type>(type));
+    return cast<type_type>(type).has_value();
   }
 
 }

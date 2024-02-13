@@ -30,15 +30,14 @@ namespace black::logic {
   {
     alphabet *sigma;
     scope const* base;
-    support::map<symbol, term> decls;
-    support::map<symbol, term> defs;
+    support::map<symbol, std::shared_ptr<decl>> decls;
   };
 
   module::module(alphabet *sigma) 
-    : _impl{std::make_unique<_impl_t>(_impl_t{sigma, nullptr, {}, {}})} { } 
+    : _impl{std::make_unique<_impl_t>(_impl_t{sigma, nullptr, {}})} { } 
   
   module::module(scope const *base) 
-    : _impl{std::make_unique<_impl_t>(_impl_t{base->sigma(), base, {}, {}})} 
+    : _impl{std::make_unique<_impl_t>(_impl_t{base->sigma(), base, {}})} 
     { } 
   
   module::~module() = default;
@@ -47,69 +46,72 @@ namespace black::logic {
     return _impl->sigma;
   }
 
-  std::optional<scope::lookup> module::decl_of(symbol s) const {
+  std::optional<const decl *> module::lookup(symbol s) const {
     if(auto it = _impl->decls.find(s); it != _impl->decls.end())
-      return lookup{s, it->second, this};
+      return it->second.get();
     
     if(_impl->base)
-      return _impl->base->decl_of(s);
+      return _impl->base->lookup(s);
     
-    return {};
-  }
-  
-  std::optional<scope::lookup> module::def_of(symbol s) const {
-    if(auto it = _impl->defs.find(s); it != _impl->defs.end())
-      return lookup{s, it->second, this};
-
-    if(_impl->base)
-      return _impl->base->def_of(s);
-
     return {};
   }
 
   scope::result<void> module::declare(symbol s, term ty) {
-    result<bool> ist = is_type(ty);
-    if(!ist)
-      return ist.error();
-    if(!*ist)
-      return error("type of declaration is not a type");
     if(_impl->decls.contains(s))
-      return error("symbol already declared");
-    if(_impl->defs.contains(s))
-      return error("symbol already defined");
+      return error("symbol already declared or defined");
     
-    _impl->decls.insert({s, ty});
+    _impl->decls.insert({s, scope::make_decl(s, ty, {})});
     return {};
   }
 
-  scope::result<void> module::define(symbol s, term value) {
-    if(_impl->decls.contains(s))
-      return error("symbol already declared");
-    if(_impl->defs.contains(s))
-      return error("symbol already defined");
+  //
+  // what do we have to do here
+  // 1. compute the type of the term
+  // 2. look for the symbol only in the current module (not parent scopes)
+  //    a. if it is present
+  //       - check it's not already defined
+  //       - check the type is the same, and set the definition
+  //    b. if it is not present, create and insert a new decl
+  scope::result<void> module::define(symbol s, term value) 
+  {
+    // TODO: assume value is already resolved
+    result<term> type = type_of(value);
+    if(!type)
+      return type.error();
     
-    _impl->defs.insert({s, value});
+    if(auto it = _impl->decls.find(s); it != _impl->decls.end()) {
+      if(it->second->def())
+        return error("symbol already defined");
+      
+      if(it->second->type() != type)
+        return error("symbol already declared with a different type");
+
+      it->second->def(value);
+      return {};
+    }
+    
+    _impl->decls.insert({s, scope::make_decl(s, *type, value)});
     return {};
   }
 
-  scope::result<void> module::declare(decl d) {
-    return declare(d.name, d.type);
+  scope::result<void> module::declare(binding b) {
+    return declare(b.name, b.target);
   }
   
-  scope::result<void> module::define(def d) {
-    return define(d.name, d.value);
+  scope::result<void> module::define(binding b) {
+    return define(b.name, b.target);
   }
 
-  scope::result<void> module::declare(std::vector<decl> const& decls) {
-    for(decl d : decls)
-      if(auto r = declare(d); !r)
+  scope::result<void> module::declare(std::vector<binding> const& binds) {
+    for(binding b : binds)
+      if(auto r = declare(b); !r)
         return r;
     return {};
   }
   
-  scope::result<void> module::define(std::vector<def> const& defs) {
-    for(def d : defs)
-      if(auto r = define(d); !r)
+  scope::result<void> module::define(std::vector<binding> const& binds) {
+    for(binding b : binds)
+      if(auto r = define(b); !r)
         return r;
     return {};
   }
@@ -120,7 +122,7 @@ namespace black::logic {
   }
     
   scope::result<void> 
-  module::define(symbol s, std::vector<decl> params, term body) {
+  module::define(symbol s, std::vector<binding> params, term body) {
     return define(s, lambda(params, body));
   }
 

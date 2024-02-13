@@ -50,12 +50,13 @@ namespace black::io {
     return std::format("[{}]", join(strings));
   }
 
-  static std::string format(syntax::python s, logic::decl d) {
-    return std::format("Decl({}, {})", format(s, d.name), format(s, d.type));
+  static std::string format(syntax::python s, logic::decl const *d) {
+    return
+      std::format("Decl({}, {})", format(s, d->name()), format(s, d->type()));
   }
   
-  static std::string format(syntax::python s, logic::pattern p) {
-    return std::format("Pattern({}, {})", format(s, p.head), format(s, p.body));
+  static std::string format(syntax::python s, logic::binding b) {
+    return std::format("Decl({}, {})", format(s, b.name), format(s, b.target));
   }
   
   static std::string format(syntax::python, ast::core::label label) {

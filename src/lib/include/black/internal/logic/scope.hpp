@@ -32,6 +32,46 @@
 
 namespace black::logic {
 
+
+  //
+  // We want to make sure that term AST nodes are uniqued only when 
+  // semantically they are indeed the same thing, that is:
+  //  ** two symbols are uniqued only if they resolve to the same **
+  //  ** declaration/definition inside the same scope             **
+  // 
+  // This can be done in two ways:
+  // 1. the scope is a parameter of the symbol object
+  // 2. the declaration is an object with its own identity and it's a parameter
+  //    of the symbol object
+  //
+
+  class decl 
+  {
+  protected:
+    struct ctor_t { };
+  public:
+    decl(decl const&) = delete;
+
+    decl &operator=(decl const&) = delete;
+
+    symbol name() const { return _name; }
+    term type() const { return _type; }
+    std::optional<term> def() const { return _def; }
+
+    void def(term t) { _def = t; }
+
+    decl(ctor_t, symbol name, term type, std::optional<term> def)
+      : _name{name}, _type{type}, _def{def} { }
+
+
+  private:
+    friend class scope;
+    
+    symbol _name;
+    term _type;
+    std::optional<term> _def;
+  };
+
   class scope 
   {
   public:
@@ -47,12 +87,6 @@ namespace black::logic {
     template<typename T>
     using result = std::expected<T, error>;
 
-    struct lookup {
-      symbol name;
-      term result;
-      scope const *origin;
-    };
-
     scope() = default;
     scope(scope const&) = delete;
     scope(scope &&) = delete;
@@ -64,13 +98,20 @@ namespace black::logic {
 
     virtual alphabet *sigma() const = 0;
 
-    virtual std::optional<lookup> decl_of(symbol s) const = 0;
-    virtual std::optional<lookup> def_of(symbol s) const = 0;
+    virtual std::optional<decl const *> lookup(symbol s) const = 0;
+
+    result<term> resolve(term t, support::set<symbol> const& shadow = {}) const;
 
     result<term> type_of(term t) const;
-    result<term> value_of(term t) const;
+    result<term> evaluate(term t) const;
 
     result<bool> is_type(term t) const;
+
+  protected:
+    static std::shared_ptr<decl> 
+    make_decl(symbol name, term type, std::optional<term> def) {
+      return std::make_shared<decl>(decl::ctor_t{}, name, type, def);
+    }
 
   };
 
@@ -87,8 +128,6 @@ namespace black::logic {
     module &operator=(module const&) = delete;
     module &operator=(module &&) = delete;
 
-    virtual std::optional<lookup> decl_of(symbol s) const override;
-    virtual std::optional<lookup> def_of(symbol s) const override;
 
     alphabet *sigma() const override;
     scope const *base() const;
@@ -96,12 +135,15 @@ namespace black::logic {
     result<void> declare(symbol s, term type);
     result<void> define(symbol s, term value);
     
-    result<void> declare(decl d);
-    result<void> define(def d);
-    result<void> declare(std::vector<decl> const& decls);
-    result<void> define(std::vector<def> const& defs);
+    result<void> declare(binding d);
+    result<void> define(binding d);
+    result<void> declare(std::vector<binding> const& binds);
+    result<void> define(std::vector<binding> const& binds);
     result<void> declare(symbol s, std::vector<term> params, term range);
-    result<void> define(symbol s, std::vector<decl> params, term body);
+    result<void> define(symbol s, std::vector<binding> params, term body);
+    
+  protected:
+    virtual std::optional<decl const *> lookup(symbol s) const override;
 
   private:
     struct _impl_t;

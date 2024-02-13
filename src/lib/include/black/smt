@@ -29,6 +29,6 @@
 #include <black/logic>
 
 #include <black/internal/smt/backend.hpp>
-#include <black/internal/smt/backends/cvc5.hpp>
+//#include <black/internal/smt/backends/z3.hpp>
 
 #endif // BLACK_SMT_HPP

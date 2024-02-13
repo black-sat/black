@@ -61,35 +61,27 @@
   #define end_ast(NS, AST)
 #endif
 
-define_type(logic, struct pattern,
-  struct pattern { 
-    logic::term head; 
-    logic::term body;
+// define_type(logic, struct pattern,
+//   struct pattern { 
+//     logic::term head; 
+//     logic::term body;
 
-    bool operator==(pattern const&) const = default;
-    size_t hash() const { return support::hash(head, body); }
-  };
-)
+//     bool operator==(pattern const&) const = default;
+//     size_t hash() const { return support::hash(head, body); }
+//   };
+// )
 
-define_type(logic, struct decl,
-  struct decl { 
+define_type(logic, struct binding,
+  struct binding { 
     logic::symbol name; 
-    logic::term type;
+    logic::term target;
 
-    bool operator==(decl const&) const = default;
-    size_t hash() const { return support::hash(name, type); }
+    bool operator==(binding const&) const = default;
+    size_t hash() const { return support::hash(name, target); }
   };
 )
 
-define_type(logic, struct def,
-  struct def { 
-    logic::symbol name; 
-    logic::term value;
-
-    bool operator==(def const&) const = default;
-    size_t hash() const { return support::hash(name, value); }
-  };
-)
+declare_type(logic, class decl)
 
 declare_ast(logic, term)
 
@@ -137,9 +129,13 @@ declare_ast(logic, term)
 
   section("Boolean and first-order predicates")
 
-    declare_ast_node(logic, term, symbol, "A named symbol (e.g., a variable or a predicate)")
-      declare_field(logic, term, symbol, name, ast::core::label, "The symbol's label")
+    declare_ast_node(logic, term, symbol, "An unresolved symbol")
+      declare_field(logic, term, symbol, name, ast::core::label, "The symbol's name")
     end_ast_node(logic, term, symbol)
+
+    declare_ast_node(logic, term, variable, "A variable (i.e., a fully-resolved symbol)")
+      declare_field(logic, term, variable, decl, logic::decl const *, "The variable's declaration")
+    end_ast_node(logic, term, variable)
 
     declare_ast_node(logic, term, equal, "An equality constraint between terms")
       declare_field(logic, term, equal, arguments, std::vector<logic::term>, "The operands")
@@ -155,12 +151,12 @@ declare_ast(logic, term)
     end_ast_node(logic, term, symbol)
 
     declare_ast_node(logic, term, exists, "An existentially quantified term")
-      declare_field(logic, term, exists, decls, std::vector<logic::decl>, "The quantified variables")
+      declare_field(logic, term, exists, decls, std::vector<logic::binding>, "The quantified variables")
       declare_field(logic, term, exists, body, logic::term, "The quantified term")
     end_ast_node(logic, term, exists)
 
     declare_ast_node(logic, term, forall, "An universally quantified term")
-      declare_field(logic, term, forall, decls, std::vector<logic::decl>, "The quantified variables")
+      declare_field(logic, term, forall, decls, std::vector<logic::binding>, "The quantified variables")
       declare_field(logic, term, forall, body, logic::term, "The quantified term")
     end_ast_node(logic, term, forall)
 
@@ -194,17 +190,17 @@ declare_ast(logic, term)
     end_ast_node(logic, term, ite)
 
     declare_ast_node(logic, term, lambda, "A lambda abstraction")
-      declare_field(logic, term, lambda, vars, std::vector<logic::decl>, "The abstracted variables")
+      declare_field(logic, term, lambda, vars, std::vector<logic::binding>, "The abstracted variables")
       declare_field(logic, term, lambda, body, logic::term, "The lambda's body")
     end_ast_node(logic, term, lambda)
 
-    declare_ast_node(logic, term, placeholder, "A placeholder in a match expression")
-    end_ast_node(logic, term, placeholder)
+    // declare_ast_node(logic, term, placeholder, "A placeholder in a match expression")
+    // end_ast_node(logic, term, placeholder)
     
-    declare_ast_node(logic, term, case_of, "A pattern match expression over an ADT")
-      declare_field(logic, term, case_of, expr, logic::term, "The matched expression")
-      declare_field(logic, term, case_of, cases, std::vector<logic::pattern>, "The match patterns")
-    end_ast_node(logic, term, case_of)
+    // declare_ast_node(logic, term, case_of, "A pattern match expression over an ADT")
+    //   declare_field(logic, term, case_of, expr, logic::term, "The matched expression")
+    //   declare_field(logic, term, case_of, cases, std::vector<logic::pattern>, "The match patterns")
+    // end_ast_node(logic, term, case_of)
 
   end_section()
 

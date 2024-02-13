@@ -91,7 +91,7 @@ TEST_CASE("Modules") {
     REQUIRE(r1.has_value());
     REQUIRE(r1 == sigma.integer_type());
     
-    scope::result<term> r2 = m.value_of(t);
+    scope::result<term> r2 = m.evaluate(t);
     REQUIRE(r2.has_value());
     REQUIRE(r2 == sigma.integer(42));
 
@@ -109,7 +109,7 @@ TEST_CASE("Modules") {
     REQUIRE(r1.has_value());
     REQUIRE(r1 == sigma.integer_type());
     
-    scope::result<term> r2 = m.value_of(t);
+    scope::result<term> r2 = m.evaluate(t);
     REQUIRE(!r2.has_value());
 
   }
