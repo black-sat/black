@@ -81,7 +81,7 @@ define_type(logic, struct binding,
   };
 )
 
-declare_type(logic, class decl)
+declare_type(logic, struct decl)
 
 declare_ast(logic, term)
 
@@ -111,6 +111,10 @@ declare_ast(logic, term)
       declare_field(logic, term, type_cast, expr, logic::term, "The term to cast")
     end_ast_node(logic, term, type_cast)
 
+    declare_ast_node(logic, term, type_of, "The type of a term")
+      declare_field(logic, term, type_of, argument, logic::term, "The target term")
+    end_ast_node(logic, term, type_of)
+
   end_section()
 
   section("Constant terms")
@@ -134,7 +138,7 @@ declare_ast(logic, term)
     end_ast_node(logic, term, symbol)
 
     declare_ast_node(logic, term, variable, "A variable (i.e., a fully-resolved symbol)")
-      declare_field(logic, term, variable, decl, logic::decl const *, "The variable's declaration")
+      declare_field(logic, term, variable, decl, std::shared_ptr<logic::decl const>, "The variable's declaration")
     end_ast_node(logic, term, variable)
 
     declare_ast_node(logic, term, equal, "An equality constraint between terms")

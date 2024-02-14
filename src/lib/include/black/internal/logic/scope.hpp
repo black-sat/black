@@ -32,6 +32,7 @@
 
 namespace black::logic {
 
+  using ast::core::label;
 
   //
   // We want to make sure that term AST nodes are uniqued only when 
@@ -45,31 +46,16 @@ namespace black::logic {
   //    of the symbol object
   //
 
-  class decl 
-  {
-  protected:
-    struct ctor_t { };
-  public:
-    decl(decl const&) = delete;
+  struct decl { 
+    label name; 
+    term type;
+    std::optional<term> def;
+  };
 
-    decl &operator=(decl const&) = delete;
-
-    symbol name() const { return _name; }
-    term type() const { return _type; }
-    std::optional<term> def() const { return _def; }
-
-    void def(term t) { _def = t; }
-
-    decl(ctor_t, symbol name, term type, std::optional<term> def)
-      : _name{name}, _type{type}, _def{def} { }
-
-
-  private:
-    friend class scope;
-    
-    symbol _name;
-    term _type;
-    std::optional<term> _def;
+  struct def {
+    label name; 
+    term type;
+    term def;
   };
 
   class scope 
@@ -98,20 +84,14 @@ namespace black::logic {
 
     virtual alphabet *sigma() const = 0;
 
-    virtual std::optional<decl const *> lookup(symbol s) const = 0;
+    virtual std::shared_ptr<decl const> lookup(label s) const = 0;
 
-    result<term> resolve(term t, support::set<symbol> const& shadow = {}) const;
+    term resolve(term t, support::set<symbol> const& shadow = {}) const;
 
     result<term> type_of(term t) const;
     result<term> evaluate(term t) const;
 
     result<bool> is_type(term t) const;
-
-  protected:
-    static std::shared_ptr<decl> 
-    make_decl(symbol name, term type, std::optional<term> def) {
-      return std::make_shared<decl>(decl::ctor_t{}, name, type, def);
-    }
 
   };
 
@@ -128,22 +108,26 @@ namespace black::logic {
     module &operator=(module const&) = delete;
     module &operator=(module &&) = delete;
 
+    virtual std::shared_ptr<decl const> lookup(label s) const override;
 
     alphabet *sigma() const override;
     scope const *base() const;
 
-    result<void> declare(symbol s, term type);
-    result<void> define(symbol s, term value);
+    variable declare(label s, term type);
+    variable declare(binding d);
+    variable declare(label s, std::vector<term> params, term range);
+    std::vector<variable> declare(std::vector<binding> const& binds);
     
-    result<void> declare(binding d);
-    result<void> define(binding d);
-    result<void> declare(std::vector<binding> const& binds);
-    result<void> define(std::vector<binding> const& binds);
-    result<void> declare(symbol s, std::vector<term> params, term range);
-    result<void> define(symbol s, std::vector<binding> params, term body);
-    
-  protected:
-    virtual std::optional<decl const *> lookup(symbol s) const override;
+    variable define(label s, term type, term def);
+    variable define(def d);
+    variable 
+      define(symbol s, std::vector<binding> params, term range, term body);
+    variable 
+      define(label s, std::vector<binding> params, term range, term body);
+    std::vector<variable> define(std::vector<def> const& defs);
+
+    using scope::resolve;
+    void resolve();
 
   private:
     struct _impl_t;

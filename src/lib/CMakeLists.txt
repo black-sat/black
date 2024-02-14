@@ -143,7 +143,6 @@ set (
   src/support/debug.cpp
   src/logic/scope.cpp
   src/logic/module.cpp
-  src/io/printer.cpp
 )
 
 # if(Z3_FOUND)

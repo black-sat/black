@@ -57,20 +57,17 @@ TEST_CASE("Modules") {
   
   alphabet sigma;
 
-  auto p = sigma.symbol("p");
-  auto x = sigma.symbol("x");
-  auto y = sigma.symbol("y");
-
   module m(&sigma);
 
   SECTION("Declarations") {
-    m.declare(p, {sigma.integer_type()}, sigma.boolean_type());
-    m.declare(x, sigma.integer_type());
-    m.declare(y, sigma.real_type());
+    variable p = m.declare("p", {sigma.integer_type()}, sigma.boolean_type());
+    variable x = m.declare("x", sigma.integer_type());
+    variable y = m.declare("y", sigma.real_type());
 
     scope::result<term> r1 = m.type_of(p(x));
     scope::result<term> r2 = m.type_of(p(y));
 
+    REQUIRE(r1.has_value());
     REQUIRE(r1 == sigma.boolean_type());
     REQUIRE(!r2);
   }
@@ -78,11 +75,12 @@ TEST_CASE("Modules") {
   SECTION("Definitions") {
     auto a = sigma.symbol("a");
     
-    m.define(p, {{a, sigma.integer_type()}}, 
-      ite(a > sigma.integer(0), a + x, a - x)
-    );
-    m.define(x, sigma.integer(40));
-    m.define(a, sigma.real(0.0)); // this will be shadowed
+    variable x = m.define("x", sigma.integer_type(), sigma.integer(40));
+    variable p = 
+      m.define("p", {{a, sigma.integer_type()}}, sigma.integer_type(),
+        ite(a > sigma.integer(0), a + x, a - x)
+      );
+    m.define("a", sigma.real_type(), sigma.real(0.0)); // this will be shadowed
 
     term t = p(sigma.integer(2));
 
@@ -92,6 +90,8 @@ TEST_CASE("Modules") {
     REQUIRE(r1 == sigma.integer_type());
     
     scope::result<term> r2 = m.evaluate(t);
+    if(!r2)
+      throw r2.error().message;
     REQUIRE(r2.has_value());
     REQUIRE(r2 == sigma.integer(42));
 
@@ -100,8 +100,9 @@ TEST_CASE("Modules") {
   SECTION("Mixed declarations and definitions") {
     auto a = sigma.symbol("a");
 
-    m.define(p, {{a, sigma.integer_type()}}, a + x);
-    m.declare(x, sigma.integer_type());
+    variable x = m.declare("x", sigma.integer_type());
+    variable p = 
+      m.define("p", {{a, sigma.integer_type()}}, sigma.integer_type(), a + x);
 
     term t = p(sigma.integer(40));
 

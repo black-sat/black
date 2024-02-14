@@ -27,7 +27,6 @@
 #include <black/python/support.hpp>
 
 #include <black/ast/core>
-#include <black/io>
 
 #include <cctype>
 #include <format>

@@ -22,13 +22,13 @@
 // SOFTWARE.
 
 #include <black/support>
-#include <black/io>
 #include <black/logic>
+
+#include <iostream>
 
 namespace black::logic {
 
-  scope::result<term> 
-  scope::resolve(term t, support::set<symbol> const& shadow) const {
+  term scope::resolve(term t, support::set<symbol> const& shadow) const {
     // TODO: extract the recursion logic into a generic helper
     using support::match;
 
@@ -43,80 +43,45 @@ namespace black::logic {
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
       [&](variable v)      { return v; },
-      [&](symbol s) -> result<term> {
-        if(shadow.contains(s))
-          return s;
-        auto decl = lookup(s);
-        if(!decl)
-          return error("use of undeclared symbol");
+      [&](symbol s) -> term {
+        auto decl = lookup(s.name());
+        if(decl && !shadow.contains(s))
+          return sigma->variable(decl);
         
-        return sigma->variable(*decl);
+        return s;        
       },
-      [&](function_type, auto const & args, term range) -> result<term> {
+      [&](function_type, auto const & args, term range) {
         std::vector<term> resargs;
-        for(auto arg : args) {
-          auto res = resolve(arg, shadow);
-          if(!res)
-            return res;
-          resargs.push_back(*res);
-        }
+        for(auto arg : args)
+          resargs.push_back(resolve(arg, shadow));
         
-        auto resrange = resolve(range, shadow);
-        if(!resrange)
-          return resrange;
-        
-        return atom(*resrange, resargs);
+        return atom(resolve(range, shadow), std::move(resargs));
       },
-      [&](atom, term head, auto const &args) -> result<term> {
-        auto reshead = resolve(head, shadow);
-        if(!reshead)
-          return reshead;
-
+      [&](atom, term head, auto const &args) {
         std::vector<term> resargs;
-        for(auto arg : args) {
-          auto res = resolve(arg, shadow);
-          if(!res)
-            return res;
-          resargs.push_back(*res);
-        }
+        for(auto arg : args)
+          resargs.push_back(resolve(arg, shadow));
         
-        return atom(*reshead, resargs);
+        return atom(resolve(head, shadow), std::move(resargs));
       },
       [&]<any_of<lambda, exists, forall> T>
-      (T, auto const& bindings, term body) -> result<term> 
-      {
+      (T, auto const& bindings, term body) {
         support::set<symbol> nest = shadow;
         for(binding bind : bindings)
           nest.insert(bind.name);
 
-        auto res = resolve(body, nest);
-        if(!res)
-          return res;
-
-        return T(bindings, *res);
+        return T(bindings, resolve(body, nest));
       },
       [&]<any_of<conjunction, disjunction, equal, distinct> T>
-      (T, auto const& args) -> result<term> 
-      {
+      (T, auto const& args) {
         std::vector<term> resargs;
-        for(term arg : args) {
-          auto res = resolve(arg, shadow);
-          if(!res)
-            return res;
-          resargs.push_back(*res);
-        }
+        for(term arg : args)
+          resargs.push_back(resolve(arg, shadow));
 
         return T(std::move(resargs));
       },
-      [&]<typename T>(T, auto ...args) -> result<term> {
-        std::vector<result<term>> resargs = { resolve(args, shadow)... };
-        for(auto res : resargs)
-          if(!res)
-            return res;
-
-        return [&]<size_t ...Idx>(std::index_sequence<Idx...>) {
-          return T(*resargs[Idx]...);
-        }(std::make_index_sequence<sizeof...(args)>{});
+      [&]<typename T>(T, auto ...args) {
+        return T(resolve(args, shadow)...);
       }
     );
   }
@@ -131,15 +96,18 @@ namespace black::logic {
       [&](integer_type)  { return sigma->type_type(); },
       [&](real_type)     { return sigma->type_type(); },
       [&](boolean_type)  { return sigma->type_type(); },
+      [&](logic::type_of){ return sigma->type_type(); },
       [&](integer)       { return sigma->integer_type(); },
       [&](real)          { return sigma->real_type(); },
       [&](boolean)       { return sigma->boolean_type(); },
       [&](equal)         { return sigma->boolean_type(); },
       [&](distinct)      { return sigma->boolean_type(); },
       [&](type_cast c)   { return c.target(); },
-      // `symbol` purposefully not handled here
+      [&](symbol s) {
+        return logic::type_of(s);
+      },
       [&](variable, auto decl) {
-        return decl->type();
+        return decl->type;
       },
       [&](function_type, auto const& params, term range) -> result<term>
       { 
@@ -186,7 +154,7 @@ namespace black::logic {
         module nest(this);
         nest.declare(decls);
 
-        result<term> type = nest.type_of(body);
+        result<term> type = nest.type_of(nest.resolve(body));
         if(!type)
           return type;
         
@@ -255,7 +223,7 @@ namespace black::logic {
         module nest(this);
         nest.declare(binds);
 
-        auto bodyty = nest.type_of(body);
+        auto bodyty = nest.type_of(nest.resolve(body));
         if(!bodyty)
           return bodyty;
         return function_type(std::move(argtypes), *bodyty);
@@ -286,22 +254,23 @@ namespace black::logic {
         
         return *type;
       },
-      [&](arithmetic auto, term first, term second) -> result<term> {
-        result<term> type1 = type_of(first);
+      [&](arithmetic auto, term left, term right) -> result<term> {
+        result<term> type1 = type_of(left);
         if(!type1)
           return type1;
         
-        result<term> type2 = type_of(second);
+        result<term> type2 = type_of(right);
         if(!type2)
           return type2;
         
-        if(type1 != sigma->integer_type() && type1 != sigma->real_type())
+        if(type1 != sigma->integer_type() && type1 != sigma->real_type()) {
           return 
-            error("arithmetic operations only work on integers or reals");
+            error("left side of arithmetic operator must be integer or real");
+        }
         
-        if(type2 != sigma->integer_type() && type1 != sigma->real_type())
+        if(type2 != sigma->integer_type() && type2 != sigma->real_type())
           return 
-            error("arithmetic operations only work on integers or reals");
+            error("right side of arithmetic operator must be integer or real");
 
         if(*type1 != *type2)
           return 
@@ -322,11 +291,11 @@ namespace black::logic {
         
         if(type1 != sigma->integer_type() && type1 != sigma->real_type())
           return 
-            error("relational operations only work on integers or reals");
+            error("left side of relational operator must be integer or real");
         
-        if(type2 != sigma->integer_type() && type1 != sigma->real_type())
+        if(type2 != sigma->integer_type() && type2 != sigma->real_type())
           return 
-            error("relational operations only work on integers or reals");
+            error("right side of relational operator must be integer or real");
 
         if(*type1 != *type2)
           return 
@@ -357,12 +326,22 @@ namespace black::logic {
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
       [&](lambda v)        { return v; },
-      // `symbol` purposefully not handled here
+      [&](symbol) -> result<term> {
+        return error("cannot evaluate an unbound symbol");
+      },
       [&](variable, auto decl) -> result<term> {
-        if(!decl->def())
+        if(!decl->def)
           return error("cannot evaluate a declared variable");
         
-        return evaluate(*decl->def());       
+        return evaluate(*decl->def);
+      },
+      [&](logic::type_of tof, term arg) -> result<term> {
+        if(cast<symbol>(arg))
+          return tof;
+        auto type = type_of(arg);
+        if(!type)
+          return type;
+        return evaluate(*type);
       },
       //[&](type_cast c)   { return c.target(); },
       [&](atom, term head, auto const& args) -> result<term> {
@@ -382,10 +361,10 @@ namespace black::logic {
           if(!argv)
             return argv;
 
-          nest.define(f->vars()[i].name, *argv);
+          nest.define(f->vars()[i].name.name(), f->vars()[i].target, *argv);
         }
 
-        return nest.evaluate(f->body());
+        return nest.evaluate(nest.resolve(f->body()));
       },
       [&](equal, auto const& args) { 
         for(size_t i = 1; i < args.size(); i++)

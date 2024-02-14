@@ -30,7 +30,7 @@ namespace black::logic {
   {
     alphabet *sigma;
     scope const* base;
-    support::map<symbol, std::shared_ptr<decl>> decls;
+    support::map<label, std::shared_ptr<decl>> decls;
   };
 
   module::module(alphabet *sigma) 
@@ -46,85 +46,83 @@ namespace black::logic {
     return _impl->sigma;
   }
 
-  std::optional<const decl *> module::lookup(symbol s) const {
+  std::shared_ptr<decl const> module::lookup(label s) const {
     if(auto it = _impl->decls.find(s); it != _impl->decls.end())
-      return it->second.get();
+      return it->second;
     
     if(_impl->base)
       return _impl->base->lookup(s);
     
-    return {};
+    return nullptr;
   }
 
-  scope::result<void> module::declare(symbol s, term ty) {
-    if(_impl->decls.contains(s))
-      return error("symbol already declared or defined");
+  variable module::declare(label s, term ty) {
+    auto d = std::make_shared<decl>(decl{s, ty, {}});
+    _impl->decls.insert({s, d});
     
-    _impl->decls.insert({s, scope::make_decl(s, ty, {})});
-    return {};
+    return _impl->sigma->variable(d);
   }
 
-  //
-  // what do we have to do here
-  // 1. compute the type of the term
-  // 2. look for the symbol only in the current module (not parent scopes)
-  //    a. if it is present
-  //       - check it's not already defined
-  //       - check the type is the same, and set the definition
-  //    b. if it is not present, create and insert a new decl
-  scope::result<void> module::define(symbol s, term value) 
-  {
-    // TODO: assume value is already resolved
-    result<term> type = type_of(value);
-    if(!type)
-      return type.error();
-    
-    if(auto it = _impl->decls.find(s); it != _impl->decls.end()) {
-      if(it->second->def())
-        return error("symbol already defined");
-      
-      if(it->second->type() != type)
-        return error("symbol already declared with a different type");
-
-      it->second->def(value);
-      return {};
-    }
-    
-    _impl->decls.insert({s, scope::make_decl(s, *type, value)});
-    return {};
+  variable module::declare(binding b) {
+    return declare(b.name.name(), b.target);
   }
 
-  scope::result<void> module::declare(binding b) {
-    return declare(b.name, b.target);
-  }
-  
-  scope::result<void> module::define(binding b) {
-    return define(b.name, b.target);
-  }
-
-  scope::result<void> module::declare(std::vector<binding> const& binds) {
-    for(binding b : binds)
-      if(auto r = declare(b); !r)
-        return r;
-    return {};
-  }
-  
-  scope::result<void> module::define(std::vector<binding> const& binds) {
-    for(binding b : binds)
-      if(auto r = define(b); !r)
-        return r;
-    return {};
-  }
-
-  scope::result<void> 
-  module::declare(symbol s, std::vector<term> params, term range) {
+  variable module::declare(label s, std::vector<term> params, term range) {
     return declare(s, function_type(params, range));
   }
-    
-  scope::result<void> 
-  module::define(symbol s, std::vector<binding> params, term body) {
-    return define(s, lambda(params, body));
+
+  std::vector<variable> module::declare(std::vector<binding> const& binds) {
+    std::vector<variable> vars;
+    for(binding b : binds)
+      vars.push_back(declare(b)); 
+
+    return vars;
   }
+
+  variable module::define(label s, term type, term def)
+  {
+    auto d = std::make_shared<decl>(decl{s, type, def});
+    _impl->decls.insert({s, d});
+
+    return _impl->sigma->variable(d);
+  }
+
+  variable module::define(def d) {
+    return define(d.name, d.type, d.def);
+  }
+  
+  variable 
+  module::define(label s, std::vector<binding> params, term range, term body) {
+    std::vector<term> paramtypes;
+    for(auto p : params)
+      paramtypes.push_back(p.target);
+    
+    auto type = function_type(paramtypes, range);
+    return define(s, type, lambda(params, body));
+  }
+  
+  std::vector<variable> module::define(std::vector<def> const& defs) 
+  {
+    std::vector<variable> vars;
+    for(auto def : defs)
+      vars.push_back(define(def));
+  
+    return vars;
+  }
+    
+  void module::resolve() {
+    support::map<label, term> defs;
+    for(auto [name, decl] : _impl->decls) {
+      if(!decl->def) 
+        continue;
+      
+      defs.insert({name, resolve(*decl->def)});
+    }
+
+    for(auto [name, def] : defs)
+      _impl->decls[name]->def = def;
+  }
+
 
 }
 
