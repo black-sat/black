@@ -34,18 +34,6 @@ namespace black::logic {
 
   using ast::core::label;
 
-  //
-  // We want to make sure that term AST nodes are uniqued only when 
-  // semantically they are indeed the same thing, that is:
-  //  ** two symbols are uniqued only if they resolve to the same **
-  //  ** declaration/definition inside the same scope             **
-  // 
-  // This can be done in two ways:
-  // 1. the scope is a parameter of the symbol object
-  // 2. the declaration is an object with its own identity and it's a parameter
-  //    of the symbol object
-  //
-
   struct decl { 
     label name; 
     term type;
@@ -61,17 +49,9 @@ namespace black::logic {
   class scope 
   {
   public:
-    struct error : support::error { 
-      using support::error::error;
-
-      template<typename T>
-      operator std::expected<T, error>() const {
-        return std::unexpected(*this);
-      }
+    enum class depth {
+      deep, shallow
     };
-    
-    template<typename T>
-    using result = std::expected<T, error>;
 
     scope() = default;
     scope(scope const&) = delete;
@@ -84,14 +64,17 @@ namespace black::logic {
 
     virtual alphabet *sigma() const = 0;
 
-    virtual std::shared_ptr<decl const> lookup(label s) const = 0;
+    virtual std::shared_ptr<decl const> lookup(label s, depth d) const = 0;
 
-    term resolve(term t, support::set<symbol> const& shadow = {}) const;
+    term resolve(term t, depth d, support::set<symbol> const& shadow = {})const;
 
-    result<term> type_of(term t) const;
-    result<term> evaluate(term t) const;
+    term type_of(term t) const;
+    term evaluate(term t) const;
 
-    result<bool> is_type(term t) const;
+    std::vector<term> type_of(std::vector<term> const& ts) const;
+    std::vector<term> evaluate(std::vector<term> const& ts) const;
+
+    bool is_type(term t) const;
 
   };
 
@@ -108,7 +91,7 @@ namespace black::logic {
     module &operator=(module const&) = delete;
     module &operator=(module &&) = delete;
 
-    virtual std::shared_ptr<decl const> lookup(label s) const override;
+    virtual std::shared_ptr<decl const> lookup(label s, depth d) const override;
 
     alphabet *sigma() const override;
     scope const *base() const;

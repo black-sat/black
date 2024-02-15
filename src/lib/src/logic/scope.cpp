@@ -24,17 +24,17 @@
 #include <black/support>
 #include <black/logic>
 
-#include <iostream>
-
 namespace black::logic {
 
-  term scope::resolve(term t, support::set<symbol> const& shadow) const {
+  term scope::resolve(term t, depth d, support::set<symbol> const& shadow)const 
+  {
     // TODO: extract the recursion logic into a generic helper
     using support::match;
 
     alphabet *sigma = t.sigma();
 
     return match(t)(
+      [&](error v)         { return v; },
       [&](type_type v)     { return v; },
       [&](integer_type v)  { return v; },
       [&](real_type v)     { return v; },
@@ -44,25 +44,31 @@ namespace black::logic {
       [&](boolean v)       { return v; },
       [&](variable v)      { return v; },
       [&](symbol s) -> term {
-        auto decl = lookup(s.name());
-        if(decl && !shadow.contains(s))
+        if(shadow.contains(s))
+          return s;
+
+        auto decl = lookup(s.name(), d);
+        if(decl)
           return sigma->variable(decl);
         
-        return s;        
+        if(d == depth::deep)
+          return error(s, "use of undeclared symbol");
+        
+        return s;
       },
       [&](function_type, auto const & args, term range) {
         std::vector<term> resargs;
         for(auto arg : args)
-          resargs.push_back(resolve(arg, shadow));
+          resargs.push_back(resolve(arg, d, shadow));
         
-        return atom(resolve(range, shadow), std::move(resargs));
+        return atom(resolve(range, d, shadow), std::move(resargs));
       },
       [&](atom, term head, auto const &args) {
         std::vector<term> resargs;
         for(auto arg : args)
-          resargs.push_back(resolve(arg, shadow));
+          resargs.push_back(resolve(arg, d, shadow));
         
-        return atom(resolve(head, shadow), std::move(resargs));
+        return atom(resolve(head, d, shadow), std::move(resargs));
       },
       [&]<any_of<lambda, exists, forall> T>
       (T, auto const& bindings, term body) {
@@ -70,33 +76,33 @@ namespace black::logic {
         for(binding bind : bindings)
           nest.insert(bind.name);
 
-        return T(bindings, resolve(body, nest));
+        return T(bindings, resolve(body, d, nest));
       },
       [&]<any_of<conjunction, disjunction, equal, distinct> T>
       (T, auto const& args) {
         std::vector<term> resargs;
         for(term arg : args)
-          resargs.push_back(resolve(arg, shadow));
+          resargs.push_back(resolve(arg, d, shadow));
 
         return T(std::move(resargs));
       },
       [&]<typename T>(T, auto ...args) {
-        return T(resolve(args, shadow)...);
+        return T(resolve(args, d, shadow)...);
       }
     );
   }
 
-  scope::result<term> scope::type_of(term t) const {
+  term scope::type_of(term t) const {
     using support::match;
 
     alphabet *sigma = t.sigma();
 
     return match(t)(
+      [&](error e)       { return e; },
       [&](type_type)     { return sigma->type_type(); },
       [&](integer_type)  { return sigma->type_type(); },
       [&](real_type)     { return sigma->type_type(); },
       [&](boolean_type)  { return sigma->type_type(); },
-      [&](logic::type_of){ return sigma->type_type(); },
       [&](integer)       { return sigma->integer_type(); },
       [&](real)          { return sigma->real_type(); },
       [&](boolean)       { return sigma->boolean_type(); },
@@ -104,118 +110,81 @@ namespace black::logic {
       [&](distinct)      { return sigma->boolean_type(); },
       [&](type_cast c)   { return c.target(); },
       [&](symbol s) {
-        return logic::type_of(s);
+        return error(s, "use of undeclared symbol");
       },
       [&](variable, auto decl) {
         return decl->type;
       },
-      [&](function_type, auto const& params, term range) -> result<term>
-      { 
-        for(term p : params) {
-          result<bool> ist = is_type(p);
-          if(!ist)
-            return ist.error();
-          if(!*ist)
-            return error("type of function parameter is not a type");
-        }
-        result<bool> ist = is_type(range);
-        if(!ist)
-          return ist.error();
-        if(!*ist)
-          return error("function range is not a type");
+      [&](function_type ty, auto const& params, term range) -> term { 
+        for(term p : params)
+          if(!is_type(p))
+            return error(ty, "type of function parameter is not a type");
+        
+        if(!is_type(range))
+          return error(ty, "function range is not a type");
 
         return sigma->type_type(); 
       },
-      [&](atom, term head, auto const& args) -> result<term> {
-        result<term> rfty = type_of(head);
-        if(!rfty)
-          return rfty;
-
-        auto fty = cast<function_type>(rfty);
+      [&](atom a, term head, auto const& args) -> term {
+        auto fty = cast<function_type>(type_of(head));
         if(!fty)
-          return error("calling a non-function");
+          return error(a, "calling a non-function");
           
         if(args.size() != fty->parameters().size()) 
-          return error("argument number mismatch in function call");
+          return error(a, "argument number mismatch in function call");
 
         for(size_t i = 0; i < args.size(); i++) {
           auto type = type_of(args[i]);
-          if(!type)
-            return type.error();
 
-          if(*type != fty->parameters()[i])
-            return error("type mismatch in function call");
+          if(type != fty->parameters()[i])
+            return error(a, "type mismatch in function call");
         }
 
         return fty->range();
       },
-      [&](quantifier auto, auto const& decls, term body) -> result<term>
-      {
+      [&](quantifier auto, auto const& binds, term body) -> term {
         module nest(this);
-        nest.declare(decls);
+        nest.declare(binds);
 
-        result<term> type = nest.type_of(nest.resolve(body));
-        if(!type)
-          return type;
-        
-        if(!cast<boolean_type>(type))
-          return error("quantified terms must be boolean");
+        term bodyty = nest.type_of(nest.resolve(body, depth::shallow));
+        if(!cast<boolean_type>(bodyty))
+          return error(body, "quantified terms must be boolean");
         
         return sigma->boolean_type();
       },
-      [&](any_of<negation, implication> auto, auto ...args) -> result<term> {
-        result<term> argtypes[] = {type_of(args)...};
+      [&](any_of<negation, implication> auto c, auto ...args) -> term {
+        term argtypes[] = {type_of(args)...};
         for(auto ty : argtypes) {
-          if(!ty)
-            return ty;
           if(!cast<boolean_type>(ty))
             return 
-              error("connectives can be applied only to boolean terms");
+              error(c, "connectives can be applied only to boolean terms");
         }
 
         return sigma->boolean_type();
       },
-      [&](any_of<conjunction, disjunction> auto, std::vector<term> const& args) 
-        -> result<term> 
-      {
-        for(term arg : args) { 
-          auto argty = type_of(arg);
-          if(!argty)
-            return argty;
-          
-          if(!cast<boolean_type>(argty))
+      [&](any_of<conjunction, disjunction> auto c, auto const& args) -> term {
+        for(term arg : args) 
+          if(!cast<boolean_type>(type_of(arg)))
             return 
-              error("connectives can be applied only to boolean terms");
-        }
+              error(c, "connectives can be applied only to boolean terms");
 
         return sigma->boolean_type();
       },
-      [&](ite, term guard, term iftrue, term iffalse) -> result<term> {
-        auto guardty = type_of(guard);
-        if(!guardty)
-          return guardty;
-        
-        auto truety = type_of(iftrue);
-        if(!truety)
-          return truety;
-        
-        auto falsety = type_of(iffalse);
-        if(!falsety)
-          return falsety;
+      [&](ite f, term guard, term iftrue, term iffalse) -> term {
+        if(!cast<boolean_type>(type_of(guard)))
+          return error(f, "the guard of an `ite` expression must be boolean");
 
-        if(!cast<boolean_type>(guardty))
-          return error("the guard of an `ite` expression must be boolean");
-        if(*truety != *falsety)
+        auto truety = type_of(iftrue);
+        auto falsety = type_of(iffalse);
+        if(truety != falsety)
           return 
-            error(
+            error(f,
               "the two cases of an `ite` expression must have the same type"
             );
 
-        return *truety;
+        return truety;
       },
-      [&](lambda, std::vector<binding> const& binds, term body) 
-        -> result<term> 
-      {
+      [&](lambda, std::vector<binding> const& binds, term body) -> term {
         std::vector<term> argtypes;
         for(binding b : binds)
           argtypes.push_back(b.target);
@@ -223,98 +192,96 @@ namespace black::logic {
         module nest(this);
         nest.declare(binds);
 
-        auto bodyty = nest.type_of(nest.resolve(body));
-        if(!bodyty)
-          return bodyty;
-        return function_type(std::move(argtypes), *bodyty);
+        auto bodyty = nest.type_of(nest.resolve(body, depth::shallow));
+        return function_type(std::move(argtypes), bodyty);
       },
       // case_of...
-      [&](temporal auto, auto ...args) -> result<term> {
-        result<term> argtypes[] = {type_of(args)...};
-        for(auto ty : argtypes) {
-          if(!ty)
-            return ty;
+      [&](temporal auto tm, auto ...args) -> term {
+        term argtypes[] = {type_of(args)...};
+        for(auto ty : argtypes)
           if(!cast<boolean_type>(ty))
             return 
-              error(
+              error(tm,
                 "temporal operators can be applied only to boolean terms"
               );
-        }
 
         return sigma->boolean_type();
       },
-      [&](minus, term arg) -> result<term> {
-        result<term> type = type_of(arg);
-        if(!type)
-          return type;
+      [&](minus m, term arg) -> term {
+        term type = type_of(arg);
         
-        if(type != sigma->integer_type() && type != sigma->real_type())
+        if(
+          bool(type != sigma->integer_type()) && 
+          bool(type != sigma->real_type())
+        )
           return 
-            error("arithmetic operations only work on integers or reals");
+            error(m, "arithmetic operators only work on integers or reals");
         
-        return *type;
+        return type;
       },
-      [&](arithmetic auto, term left, term right) -> result<term> {
-        result<term> type1 = type_of(left);
-        if(!type1)
-          return type1;
+      [&](arithmetic auto a, term left, term right) -> term {
+        term type1 = type_of(left);
+        term type2 = type_of(right);
         
-        result<term> type2 = type_of(right);
-        if(!type2)
-          return type2;
-        
-        if(type1 != sigma->integer_type() && type1 != sigma->real_type()) {
+        if(
+          bool(type1 != sigma->integer_type()) && 
+          bool(type1 != sigma->real_type())
+        )
           return 
-            error("left side of arithmetic operator must be integer or real");
-        }
-        
-        if(type2 != sigma->integer_type() && type2 != sigma->real_type())
-          return 
-            error("right side of arithmetic operator must be integer or real");
-
-        if(*type1 != *type2)
-          return 
-            error(
-              "arithmetic operations can only be applied to equal types"
+            error(a, 
+              "left side of arithmetic operator must be integer or real"
             );
         
-        return *type1;
-      },
-      [&](relational auto, term left, term right) -> result<term> {
-        result<term> type1 = type_of(left);
-        if(!type1)
-          return type1;
-        
-        result<term> type2 = type_of(right);
-        if(!type2)
-          return type2;
-        
-        if(type1 != sigma->integer_type() && type1 != sigma->real_type())
+        if(
+          bool(type2 != sigma->integer_type()) && 
+          bool(type2 != sigma->real_type())
+        )
           return 
-            error("left side of relational operator must be integer or real");
-        
-        if(type2 != sigma->integer_type() && type2 != sigma->real_type())
-          return 
-            error("right side of relational operator must be integer or real");
-
-        if(*type1 != *type2)
-          return 
-            error(
-              "relational operations can only be applied to equal types"
+            error(a, 
+              "right side of arithmetic operator must be integer or real"
             );
+
+        if(type1 != type2)
+          return 
+            error(a, "arithmetic operators can only be applied to equal types");
+        
+        return type1;
+      },
+      [&](relational auto r, term left, term right) -> term {
+        term type1 = type_of(left);
+        term type2 = type_of(right);
+        
+        if(
+          bool(type1 != sigma->integer_type()) && 
+          bool(type1 != sigma->real_type())
+        )
+          return 
+            error(r, 
+              "left side of relational operator must be integer or real"
+            );
+        
+        if(
+          bool(type2 != sigma->integer_type()) && 
+          bool(type2 != sigma->real_type())
+        )
+          return 
+            error(r, 
+              "right side of relational operator must be integer or real"
+            );
+
+        if(type1 != type2)
+          return 
+            error(r, "relational operators can only be applied to equal types");
         
         return sigma->boolean_type();
       }
     );
   }
 
-  scope::result<term> scope::evaluate(term t) const {
+  term scope::evaluate(term t) const {
     using support::match;
 
     alphabet *sigma = t.sigma();
-
-    if(result<term> type = type_of(t); !type)
-      return type;
 
     return match(t)(
       [&](type_type v)     { return v; },
@@ -326,209 +293,187 @@ namespace black::logic {
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
       [&](lambda v)        { return v; },
-      [&](symbol) -> result<term> {
-        return error("cannot evaluate an unbound symbol");
-      },
-      [&](variable, auto decl) -> result<term> {
+      [&](symbol s)        { return s; },
+      [&](variable v, auto decl) -> term {
         if(!decl->def)
-          return error("cannot evaluate a declared variable");
+          return v;
         
         return evaluate(*decl->def);
       },
-      [&](logic::type_of tof, term arg) -> result<term> {
-        if(cast<symbol>(arg))
-          return tof;
-        auto type = type_of(arg);
-        if(!type)
-          return type;
-        return evaluate(*type);
-      },
       //[&](type_cast c)   { return c.target(); },
-      [&](atom, term head, auto const& args) -> result<term> {
-        auto h = evaluate(head);
-        if(!h)
-          return h;
-        auto f = cast<lambda>(h);
-        black_assert(f);
+      [&](atom, term head, auto const& args) -> term {
 
-        if(f->vars().size() != args.size())
-          return error("number of arguments mismatch in function call");
+        term ehead = evaluate(head);
+        std::vector<term> eargs = evaluate(args);
+
+        auto f = cast<lambda>(ehead);
+        if(!f || f->vars().size() != args.size())
+          return atom(ehead, eargs);
         
         module nest(this);
 
-        for(size_t i = 0; i < args.size(); i++) {
-          auto argv = evaluate(args[i]);
-          if(!argv)
-            return argv;
+        for(size_t i = 0; i < args.size(); i++)
+          nest.define(f->vars()[i].name.name(), f->vars()[i].target, eargs[i]);
 
-          nest.define(f->vars()[i].name.name(), f->vars()[i].target, *argv);
-        }
-
-        return nest.evaluate(nest.resolve(f->body()));
+        return nest.evaluate(nest.resolve(f->body(), depth::shallow));
       },
-      [&](equal, auto const& args) { 
-        for(size_t i = 1; i < args.size(); i++)
-          if(args[i] != args[0])
-            return sigma->boolean(false);
-        return sigma->boolean(true);
+      // equal, distinct
+      [&]<quantifier T>(T, auto const& binds, term body) {
+        return T(binds, evaluate(body));
       },
-      [&](distinct, auto const& args) { 
-        for(size_t i = 1; i < args.size(); i++)
-          if(args[i] != args[0])
-            return sigma->boolean(true);
-        return sigma->boolean(false);
+      [&]<temporal T>(T, auto ...args) {
+        return T(evaluate(args)...);
       },
-      // quantifier...
-      [&](temporal auto) -> result<term> {
-        return error("cannot evaluate a temporal formula");
-      },
-      [&](negation, term arg) -> result<term> {
-        auto v = cast<boolean>(evaluate(arg));
-        if(!v)
-          return v.error();
+      [&](negation, term arg) -> term {
+        term earg = evaluate(arg);
+        if(auto v = cast<boolean>(earg); v)
+          return sigma->boolean(!v->value());
         
-        return sigma->boolean(!v->value());
+        return negation(earg);
       },
-      [&](conjunction, auto const& args) -> result<term> {
+      [&](conjunction, auto const& args) -> term {
+        std::vector<term> eargs = evaluate(args);
         bool result = true;
-        for(auto arg : args) {
-          auto v = cast<boolean>(evaluate(arg));
-          if(!v)
-            return v;
-          result = result && v->value();
+        
+        for(auto earg : eargs) {
+          if(auto v = cast<boolean>(earg); v)
+            result = result && v->value();
+          return conjunction(eargs);
         }
+
         return sigma->boolean(result);
       },
-      [&](disjunction, auto const& args) -> result<term> {
-        bool result = true;
-        for(auto arg : args) {
-          auto v = cast<boolean>(evaluate(arg));
-          if(!v)
-            return v;
-          result = result || v->value();
+      [&](disjunction, auto const& args) -> term {
+        std::vector<term> eargs = evaluate(args);
+        bool result = false;
+        
+        for(auto earg : eargs) {
+          if(auto v = cast<boolean>(earg); v)
+            result = result || v->value();
+          return conjunction(eargs);
         }
+
         return sigma->boolean(result);
       },
-      [&](implication, term left, term right) -> result<term> {
-        auto vl = cast<boolean>(evaluate(left));
-        if(!vl)
-          return vl;
-        auto vr = cast<boolean>(evaluate(right));
-        if(!vr)
-          return vr;
+      [&](implication, term left, term right) -> term {
+        term eleft = evaluate(left);
+        term eright = evaluate(right);
+        
+        auto vl = cast<boolean>(eleft);
+        auto vr = cast<boolean>(eright);
+
+        if(!vl || !vr)
+          return implication(eleft, eright);
         
         return sigma->boolean(!vl->value() || vr->value());
       },
-      [&](ite, term guard, term iftrue, term iffalse) -> result<term> {
-        auto guardv = cast<boolean>(evaluate(guard));
+      [&](ite, term guard, term iftrue, term iffalse) -> term {
+        term eguard = evaluate(guard);
+        term etrue = evaluate(iftrue);
+        term efalse = evaluate(iffalse);
+
+        auto guardv = cast<boolean>(eguard);
         if(!guardv)
-          return guardv;
+          return ite(eguard, etrue, efalse);
 
-        auto truev = evaluate(iftrue);
-        if(!truev)
-          return truev;
-
-        auto falsev = evaluate(iffalse);
-        if(!falsev)
-          return falsev;
-        
         if(guardv->value())
-          return truev;
-        return falsev;
+          return etrue;
+        return efalse;
       },
-      [&](minus, term arg) -> result<term> {
-        auto v = evaluate(arg);
-        if(!v)
-          return v;
+      [&](minus, term arg) -> term {
+        term earg = evaluate(arg);
         
-        return match(*v)(
+        return match(earg)(
           [&](integer, auto value) {
             return sigma->integer(-value);
           },
           [&](real, auto value) {
             return sigma->real(-value);
+          },
+          [&](auto) {
+            return minus(earg);
           }
         );
       },
-      [&](arithmetic auto op, term left, term right) -> result<term> {
-        auto lv = evaluate(left);
-        if(!lv)
-          return lv;
-        auto rv = evaluate(right);
-        if(!rv)
-          return rv;
+      [&]<arithmetic T>(T op, term left, term right) -> term {
+        term eleft = evaluate(left);
+        term eright = evaluate(right);
 
-        return match(lv)(
-          [&](integer) {
-            int64_t lhs = cast<integer>(lv)->value();
-            int64_t rhs = cast<integer>(rv)->value();
-            return sigma->integer(
-              match(op)(
-                [&](sum) { return lhs + rhs; },
-                [&](product) { return lhs * rhs; },
-                [&](difference) { return lhs - rhs; },
-                [&](division) { return lhs / rhs; }
-              )
-            );
-          },
-          [&](real) {
-            double lhs = cast<real>(lv)->value();
-            double rhs = cast<real>(rv)->value();
-            return sigma->real(
-              match(op)(
-                [&](sum) { return lhs + rhs; },
-                [&](product) { return lhs * rhs; },
-                [&](difference) { return lhs - rhs; },
-                [&](division) { return lhs / rhs; }
-              )
-            );
-          }
-        );
+        auto ilv = cast<integer>(eleft);
+        auto ilr = cast<integer>(eright);
+        if(ilv && ilr)
+          return sigma->integer(
+            match(op)(
+              [&](sum) { return ilv->value() + ilr->value(); },
+              [&](product) { return ilv->value() * ilr->value(); },
+              [&](difference) { return ilv->value() - ilr->value(); },
+              [&](division) { return ilv->value() / ilr->value(); }
+            )
+          );
+        
+        auto rlv = cast<real>(eleft);
+        auto rlr = cast<real>(eright);
+        if(rlv && rlr)
+          return sigma->real(
+            match(op)(
+              [&](sum) { return rlv->value() + rlr->value(); },
+              [&](product) { return rlv->value() * rlr->value(); },
+              [&](difference) { return rlv->value() - rlr->value(); },
+              [&](division) { return rlv->value() / rlr->value(); }
+            )
+          );
+
+        return T(eleft, eright);
       },
-      [&](relational auto op, term left, term right) -> result<term> {
-        auto lv = evaluate(left);
-        if(!lv)
-          return lv;
-        auto rv = evaluate(right);
-        if(!rv)
-          return rv;
+      [&](relational auto op, term left, term right) -> term {
+        term eleft = evaluate(left);
+        term eright = evaluate(right);
 
-        return match(lv)(
-          [&](integer) {
-            int64_t lhs = cast<integer>(lv)->value();
-            int64_t rhs = cast<integer>(rv)->value();
-            return sigma->boolean(
-              match(op)(
-                [&](less_than) { return lhs < rhs; },
-                [&](less_than_eq) { return lhs <= rhs; },
-                [&](greater_than) { return lhs > rhs; },
-                [&](greater_than_eq) { return lhs >= rhs; }
-              )
-            );
-          },
-          [&](real) {
-            double lhs = cast<real>(lv)->value();
-            double rhs = cast<real>(rv)->value();
-            return sigma->boolean(
-              match(op)(
-                [&](less_than) { return lhs < rhs; },
-                [&](less_than_eq) { return lhs <= rhs; },
-                [&](greater_than) { return lhs > rhs; },
-                [&](greater_than_eq) { return lhs >= rhs; }
-              )
-            );
-          }
-        );
+        auto ilv = cast<integer>(eleft);
+        auto ilr = cast<integer>(eright);
+        if(ilv && ilr)
+          return sigma->boolean(
+            match(op)(
+              [&](less_than) { return ilv->value() < ilr->value(); },
+              [&](less_than_eq) { return ilv->value() <= ilr->value(); },
+              [&](greater_than) { return ilv->value() > ilr->value(); },
+              [&](greater_than_eq) { return ilv->value() >= ilr->value(); }
+            )
+          );
+        
+        auto rlv = cast<real>(eleft);
+        auto rlr = cast<real>(eright);
+        if(rlv && rlr)
+          return sigma->boolean(
+            match(op)(
+              [&](less_than) { return rlv->value() < rlr->value(); },
+              [&](less_than_eq) { return rlv->value() <= rlr->value(); },
+              [&](greater_than) { return rlv->value() > rlr->value(); },
+              [&](greater_than_eq) { return rlv->value() >= rlr->value(); }
+            )
+          );
+
+        return T(eleft, eright);
       }
     );
   }
 
-  scope::result<bool> scope::is_type(term t) const {
-    result<term> type = type_of(t);
-    if(!type)
-      return type.error();
-    
-    return cast<type_type>(type).has_value();
+  std::vector<term> scope::type_of(std::vector<term> const& ts) const {
+    std::vector<term> result;
+    for(term t : ts)
+      result.push_back(type_of(t));
+    return result;
+  }
+  
+  std::vector<term> scope::evaluate(std::vector<term> const& ts) const {
+    std::vector<term> result;
+    for(term t : ts)
+      result.push_back(evaluate(t));
+    return result;
+  }
+
+  bool scope::is_type(term t) const {
+    return cast<type_type>(type_of(t)).has_value();
   }
 
 }

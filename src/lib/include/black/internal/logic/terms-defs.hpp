@@ -87,6 +87,14 @@ declare_ast(logic, term)
 
   declare_ast_factory(logic, term, alphabet, sigma)
 
+  section("The error term")
+    declare_ast_node(logic, term, error, "A logically error term")
+      declare_field(logic, term, error, source, logic::term, "The erroneous term")
+      declare_field(logic, term, error, error, std::string, "The error")
+      // TODO: variadic args to format the error
+    end_ast_node(logic, term, error)
+  end_section()
+
   section("Sorts and declarations")
 
     declare_ast_node(logic, term, type_type, "The type of types")
@@ -110,10 +118,6 @@ declare_ast(logic, term)
       declare_field(logic, term, type_cast, target, logic::term, "The target type")
       declare_field(logic, term, type_cast, expr, logic::term, "The term to cast")
     end_ast_node(logic, term, type_cast)
-
-    declare_ast_node(logic, term, type_of, "The type of a term")
-      declare_field(logic, term, type_of, argument, logic::term, "The target term")
-    end_ast_node(logic, term, type_of)
 
   end_section()
 

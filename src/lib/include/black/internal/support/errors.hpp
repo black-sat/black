@@ -28,7 +28,7 @@
 
 namespace black::support {
   
-  //! Base class for all the following error classes.
+  //! (Non-polymorphic) base class for all the following error classes.
   struct error 
   {
     //! \param format A format string (see `std::format`) for the error message.
@@ -45,7 +45,9 @@ namespace black::support {
     error &operator=(error const&) = default;
     error &operator=(error &&) = default;
 
-    virtual ~error() = default;
+    bool operator==(error const&) const = default;
+
+    size_t hash() const { return support::hash(message); }
     
     std::string message; //!< The error message.
   };

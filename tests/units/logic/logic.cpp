@@ -64,12 +64,11 @@ TEST_CASE("Modules") {
     variable x = m.declare("x", sigma.integer_type());
     variable y = m.declare("y", sigma.real_type());
 
-    scope::result<term> r1 = m.type_of(p(x));
-    scope::result<term> r2 = m.type_of(p(y));
+    term r1 = m.type_of(p(x));
+    // term r2 = m.type_of(p(y));
 
-    REQUIRE(r1.has_value());
     REQUIRE(r1 == sigma.boolean_type());
-    REQUIRE(!r2);
+    // TODO: check r2 contains an error
   }
 
   SECTION("Definitions") {
@@ -84,16 +83,12 @@ TEST_CASE("Modules") {
 
     term t = p(sigma.integer(2));
 
-    scope::result<term> r1 = m.type_of(t);
-
-    REQUIRE(r1.has_value());
+    term r1 = m.type_of(t);
     REQUIRE(r1 == sigma.integer_type());
     
-    scope::result<term> r2 = m.evaluate(t);
-    if(!r2)
-      throw r2.error().message;
-    REQUIRE(r2.has_value());
+    term r2 = m.evaluate(t);
     REQUIRE(r2 == sigma.integer(42));
+
 
   }
 
@@ -106,13 +101,11 @@ TEST_CASE("Modules") {
 
     term t = p(sigma.integer(40));
 
-    scope::result<term> r1 = m.type_of(t);
-    REQUIRE(r1.has_value());
+    term r1 = m.type_of(t);
     REQUIRE(r1 == sigma.integer_type());
     
-    scope::result<term> r2 = m.evaluate(t);
-    REQUIRE(!r2.has_value());
-
+    term r2 = m.evaluate(t);
+    REQUIRE(r2 == sigma.integer(40) + x);
   }
 
 

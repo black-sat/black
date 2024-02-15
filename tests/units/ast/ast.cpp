@@ -37,7 +37,7 @@ TEST_CASE("Static reflection") {
     STATIC_REQUIRE(is_ast_node_of_v<integer, term>);
 
     STATIC_REQUIRE(
-        std::to_underlying(ast_node_index_t<term>::type_type) == 0
+        std::to_underlying(ast_node_index_t<term>::error) == 0
     );
 
     STATIC_REQUIRE(
@@ -45,7 +45,7 @@ TEST_CASE("Static reflection") {
     );
 
     STATIC_REQUIRE(
-        std::to_underlying(ast_node_index_of_v<term, type_type>) == 0
+        std::to_underlying(ast_node_index_of_v<term, black::logic::error>) == 0
     );
 
     STATIC_REQUIRE(

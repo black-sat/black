@@ -46,12 +46,12 @@ namespace black::logic {
     return _impl->sigma;
   }
 
-  std::shared_ptr<decl const> module::lookup(label s) const {
+  std::shared_ptr<decl const> module::lookup(label s, depth d) const {
     if(auto it = _impl->decls.find(s); it != _impl->decls.end())
       return it->second;
     
-    if(_impl->base)
-      return _impl->base->lookup(s);
+    if(_impl->base && d == depth::deep)
+      return _impl->base->lookup(s, d);
     
     return nullptr;
   }
@@ -116,7 +116,7 @@ namespace black::logic {
       if(!decl->def) 
         continue;
       
-      defs.insert({name, resolve(*decl->def)});
+      defs.insert({name, resolve(*decl->def, scope::depth::deep)});
     }
 
     for(auto [name, def] : defs)
