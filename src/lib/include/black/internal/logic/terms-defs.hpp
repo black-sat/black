@@ -73,7 +73,7 @@
 
 define_type(logic, struct binding,
   struct binding { 
-    logic::symbol name; 
+    logic::variable name; 
     logic::term target;
 
     bool operator==(binding const&) const = default;
@@ -88,7 +88,7 @@ declare_ast(logic, term)
   declare_ast_factory(logic, term, alphabet, sigma)
 
   section("The error term")
-    declare_ast_node(logic, term, error, "A logically error term")
+    declare_ast_node(logic, term, error, "A logically erroneous term")
       declare_field(logic, term, error, source, logic::term, "The erroneous term")
       declare_field(logic, term, error, error, std::string, "The error")
       // TODO: variadic args to format the error
@@ -137,26 +137,26 @@ declare_ast(logic, term)
 
   section("Boolean and first-order predicates")
 
-    declare_ast_node(logic, term, symbol, "An unresolved symbol")
-      declare_field(logic, term, symbol, name, ast::core::label, "The symbol's name")
-    end_ast_node(logic, term, symbol)
-
-    declare_ast_node(logic, term, variable, "A variable (i.e., a fully-resolved symbol)")
-      declare_field(logic, term, variable, decl, std::shared_ptr<logic::decl const>, "The variable's declaration")
+    declare_ast_node(logic, term, variable, "An unbound symbol")
+      declare_field(logic, term, variable, name, ast::core::label, "The variable's name")
     end_ast_node(logic, term, variable)
+
+    declare_ast_node(logic, term, object, "A symbol bound to a declaration")
+      declare_field(logic, term, object, decl, std::shared_ptr<logic::decl const>, "The object's declaration")
+    end_ast_node(logic, term, object)
 
     declare_ast_node(logic, term, equal, "An equality constraint between terms")
       declare_field(logic, term, equal, arguments, std::vector<logic::term>, "The operands")
-    end_ast_node(logic, term, symbol)
+    end_ast_node(logic, term, equal)
 
     declare_ast_node(logic, term, distinct, "An inequality constraint between terms")
       declare_field(logic, term, distinct, arguments, std::vector<logic::term>, "The operands")
-    end_ast_node(logic, term, symbol)
+    end_ast_node(logic, term, distinct)
     
     declare_ast_node(logic, term, atom, "An atomic first-order term (e.g. `f(x, y)`)")
-      declare_field(logic, term, atom, head, logic::term, "The applied symbol")
+      declare_field(logic, term, atom, head, logic::term, "The applied term")
       declare_field(logic, term, atom, arguments, std::vector<logic::term>, "The arguments")
-    end_ast_node(logic, term, symbol)
+    end_ast_node(logic, term, atom)
 
     declare_ast_node(logic, term, exists, "An existentially quantified term")
       declare_field(logic, term, exists, decls, std::vector<logic::binding>, "The quantified variables")

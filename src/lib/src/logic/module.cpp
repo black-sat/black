@@ -46,52 +46,52 @@ namespace black::logic {
     return _impl->sigma;
   }
 
-  std::shared_ptr<decl const> module::lookup(label s, depth d) const {
+  std::shared_ptr<decl const> module::lookup(label s) const {
     if(auto it = _impl->decls.find(s); it != _impl->decls.end())
       return it->second;
     
-    if(_impl->base && d == depth::deep)
-      return _impl->base->lookup(s, d);
+    if(_impl->base)
+      return _impl->base->lookup(s);
     
     return nullptr;
   }
 
-  variable module::declare(label s, term ty) {
+  object module::declare(label s, term ty) {
     auto d = std::make_shared<decl>(decl{s, ty, {}});
     _impl->decls.insert({s, d});
     
-    return _impl->sigma->variable(d);
+    return _impl->sigma->object(d);
   }
 
-  variable module::declare(binding b) {
+  object module::declare(binding b) {
     return declare(b.name.name(), b.target);
   }
 
-  variable module::declare(label s, std::vector<term> params, term range) {
+  object module::declare(label s, std::vector<term> params, term range) {
     return declare(s, function_type(params, range));
   }
 
-  std::vector<variable> module::declare(std::vector<binding> const& binds) {
-    std::vector<variable> vars;
+  std::vector<object> module::declare(std::vector<binding> const& binds) {
+    std::vector<object> vars;
     for(binding b : binds)
       vars.push_back(declare(b)); 
 
     return vars;
   }
 
-  variable module::define(label s, term type, term def)
+  object module::define(label s, term type, term def)
   {
     auto d = std::make_shared<decl>(decl{s, type, def});
     _impl->decls.insert({s, d});
 
-    return _impl->sigma->variable(d);
+    return _impl->sigma->object(d);
   }
 
-  variable module::define(def d) {
+  object module::define(def d) {
     return define(d.name, d.type, d.def);
   }
   
-  variable 
+  object 
   module::define(label s, std::vector<binding> params, term range, term body) {
     std::vector<term> paramtypes;
     for(auto p : params)
@@ -101,9 +101,9 @@ namespace black::logic {
     return define(s, type, lambda(params, body));
   }
   
-  std::vector<variable> module::define(std::vector<def> const& defs) 
+  std::vector<object> module::define(std::vector<def> const& defs) 
   {
-    std::vector<variable> vars;
+    std::vector<object> vars;
     for(auto def : defs)
       vars.push_back(define(def));
   
@@ -112,12 +112,9 @@ namespace black::logic {
     
   void module::resolve() {
     support::map<label, term> defs;
-    for(auto [name, decl] : _impl->decls) {
-      if(!decl->def) 
-        continue;
-      
-      defs.insert({name, resolve(*decl->def, scope::depth::deep)});
-    }
+    for(auto [name, decl] : _impl->decls)
+      if(decl->def) 
+        defs.insert({name, resolve(*decl->def)});
 
     for(auto [name, def] : defs)
       _impl->decls[name]->def = def;

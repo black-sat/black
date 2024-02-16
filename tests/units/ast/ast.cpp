@@ -41,7 +41,7 @@ TEST_CASE("Static reflection") {
     );
 
     STATIC_REQUIRE(
-        std::to_underlying(ast_node_field_index_t<term, symbol>::name) == 0
+        std::to_underlying(ast_node_field_index_t<term, variable>::name) == 0
     );
 
     STATIC_REQUIRE(
@@ -50,11 +50,11 @@ TEST_CASE("Static reflection") {
 
     STATIC_REQUIRE(
         std::is_same_v<
-            ast_node_field_list_t<term, symbol>,
+            ast_node_field_list_t<term, variable>,
             std::tuple<
                 std::integral_constant<
-                    ast_node_field_index_t<term, symbol>,
-                    ast_node_field_index_t<term, symbol>::name
+                    ast_node_field_index_t<term, variable>,
+                    ast_node_field_index_t<term, variable>::name
                 >
             >
         >
@@ -63,7 +63,7 @@ TEST_CASE("Static reflection") {
     STATIC_REQUIRE(
         std::is_same_v<
             ast_node_field_type_t<
-                term, symbol, ast_node_field_index_t<term, symbol>::name
+                term, variable, ast_node_field_index_t<term, variable>::name
             >,
             label
         >
@@ -71,13 +71,13 @@ TEST_CASE("Static reflection") {
 
     STATIC_REQUIRE(
         ast_node_field_name_v<
-            term, symbol, ast_node_field_index_t<term, symbol>::name
+            term, variable, ast_node_field_index_t<term, variable>::name
         > == "name"
     );
 
     STATIC_REQUIRE(
         std::is_same_v<
-            ast_node_field_types_t<term, symbol>,
+            ast_node_field_types_t<term, variable>,
             std::tuple<label>
         >
     );
@@ -91,14 +91,14 @@ TEST_CASE("Static reflection") {
 
     struct test 
         : base,
-        ast_node_member_base<test, term, symbol, &base::test1>,
+        ast_node_member_base<test, term, variable, &base::test1>,
         ast_node_field_member_base<
             test,
-            term, symbol, ast_node_field_index_t<term, symbol>::name, 
+            term, variable, ast_node_field_index_t<term, variable>::name, 
             &base::test2
         > { };
 
-    REQUIRE(test{}.symbol(21) == 42);
+    REQUIRE(test{}.variable(21) == 42);
     REQUIRE(test{}.name() == 42);
 
     alphabet sigma;

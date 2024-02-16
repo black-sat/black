@@ -26,7 +26,7 @@
 
 namespace black::logic {
 
-  term scope::resolve(term t, depth d, support::set<symbol> const& shadow)const 
+  term scope::resolve(term t, support::set<variable> const& shadow)const 
   {
     // TODO: extract the recursion logic into a generic helper
     using support::match;
@@ -42,52 +42,48 @@ namespace black::logic {
       [&](integer v)       { return v; },
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
-      [&](variable v)      { return v; },
-      [&](symbol s) -> term {
+      [&](object v)      { return v; },
+      [&](variable s) -> term {
         if(shadow.contains(s))
           return s;
 
-        auto decl = lookup(s.name(), d);
-        if(decl)
-          return sigma->variable(decl);
-        
-        if(d == depth::deep)
-          return error(s, "use of undeclared symbol");
+        if(auto decl = lookup(s.name()); decl)
+          return sigma->object(decl);
         
         return s;
       },
       [&](function_type, auto const & args, term range) {
         std::vector<term> resargs;
         for(auto arg : args)
-          resargs.push_back(resolve(arg, d, shadow));
+          resargs.push_back(resolve(arg, shadow));
         
-        return atom(resolve(range, d, shadow), std::move(resargs));
+        return atom(resolve(range, shadow), std::move(resargs));
       },
       [&](atom, term head, auto const &args) {
         std::vector<term> resargs;
         for(auto arg : args)
-          resargs.push_back(resolve(arg, d, shadow));
+          resargs.push_back(resolve(arg, shadow));
         
-        return atom(resolve(head, d, shadow), std::move(resargs));
+        return atom(resolve(head, shadow), std::move(resargs));
       },
       [&]<any_of<lambda, exists, forall> T>
       (T, auto const& bindings, term body) {
-        support::set<symbol> nest = shadow;
+        support::set<variable> nest = shadow;
         for(binding bind : bindings)
           nest.insert(bind.name);
 
-        return T(bindings, resolve(body, d, nest));
+        return T(bindings, resolve(body, nest));
       },
       [&]<any_of<conjunction, disjunction, equal, distinct> T>
       (T, auto const& args) {
         std::vector<term> resargs;
         for(term arg : args)
-          resargs.push_back(resolve(arg, d, shadow));
+          resargs.push_back(resolve(arg, shadow));
 
         return T(std::move(resargs));
       },
       [&]<typename T>(T, auto ...args) {
-        return T(resolve(args, d, shadow)...);
+        return T(resolve(args, shadow)...);
       }
     );
   }
@@ -109,10 +105,10 @@ namespace black::logic {
       [&](equal)         { return sigma->boolean_type(); },
       [&](distinct)      { return sigma->boolean_type(); },
       [&](type_cast c)   { return c.target(); },
-      [&](symbol s) {
-        return error(s, "use of undeclared symbol");
+      [&](variable s) {
+        return error(s, "use of undeclared variable");
       },
-      [&](variable, auto decl) {
+      [&](object, auto decl) {
         return decl->type;
       },
       [&](function_type ty, auto const& params, term range) -> term { 
@@ -143,10 +139,10 @@ namespace black::logic {
         return fty->range();
       },
       [&](quantifier auto, auto const& binds, term body) -> term {
-        module nest(this);
-        nest.declare(binds);
+        module env(sigma);
+        env.declare(binds);
 
-        term bodyty = nest.type_of(nest.resolve(body, depth::shallow));
+        term bodyty = type_of(env.resolve(body));
         if(!cast<boolean_type>(bodyty))
           return error(body, "quantified terms must be boolean");
         
@@ -189,10 +185,10 @@ namespace black::logic {
         for(binding b : binds)
           argtypes.push_back(b.target);
         
-        module nest(this);
-        nest.declare(binds);
+        module env(this);
+        env.declare(binds);
 
-        auto bodyty = nest.type_of(nest.resolve(body, depth::shallow));
+        auto bodyty = type_of(env.resolve(body));
         return function_type(std::move(argtypes), bodyty);
       },
       // case_of...
@@ -293,8 +289,8 @@ namespace black::logic {
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
       [&](lambda v)        { return v; },
-      [&](symbol s)        { return s; },
-      [&](variable v, auto decl) -> term {
+      [&](variable s)        { return s; },
+      [&](object v, auto decl) -> term {
         if(!decl->def)
           return v;
         
@@ -310,12 +306,12 @@ namespace black::logic {
         if(!f || f->vars().size() != args.size())
           return atom(ehead, eargs);
         
-        module nest(this);
+        module env(sigma);
 
         for(size_t i = 0; i < args.size(); i++)
-          nest.define(f->vars()[i].name.name(), f->vars()[i].target, eargs[i]);
+          env.define(f->vars()[i].name.name(), f->vars()[i].target, eargs[i]);
 
-        return nest.evaluate(nest.resolve(f->body(), depth::shallow));
+        return evaluate(env.resolve(f->body()));
       },
       // equal, distinct
       [&]<quantifier T>(T, auto const& binds, term body) {

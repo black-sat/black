@@ -32,8 +32,8 @@ TEST_CASE("Terms") {
   
   alphabet sigma;
 
-  auto p = sigma.symbol("p");
-  auto q = sigma.symbol("q");
+  auto p = sigma.variable("p");
+  auto q = sigma.variable("q");
 
   negation n1 = !p;
   negation n2 = !q;    
@@ -60,9 +60,9 @@ TEST_CASE("Modules") {
   module m(&sigma);
 
   SECTION("Declarations") {
-    variable p = m.declare("p", {sigma.integer_type()}, sigma.boolean_type());
-    variable x = m.declare("x", sigma.integer_type());
-    variable y = m.declare("y", sigma.real_type());
+    object p = m.declare("p", {sigma.integer_type()}, sigma.boolean_type());
+    object x = m.declare("x", sigma.integer_type());
+    object y = m.declare("y", sigma.real_type());
 
     term r1 = m.type_of(p(x));
     // term r2 = m.type_of(p(y));
@@ -72,10 +72,10 @@ TEST_CASE("Modules") {
   }
 
   SECTION("Definitions") {
-    auto a = sigma.symbol("a");
+    auto a = sigma.variable("a");
     
-    variable x = m.define("x", sigma.integer_type(), sigma.integer(40));
-    variable p = 
+    object x = m.define("x", sigma.integer_type(), sigma.integer(40));
+    object p = 
       m.define("p", {{a, sigma.integer_type()}}, sigma.integer_type(),
         ite(a > sigma.integer(0), a + x, a - x)
       );
@@ -93,10 +93,10 @@ TEST_CASE("Modules") {
   }
 
   SECTION("Mixed declarations and definitions") {
-    auto a = sigma.symbol("a");
+    auto a = sigma.variable("a");
 
-    variable x = m.declare("x", sigma.integer_type());
-    variable p = 
+    object x = m.declare("x", sigma.integer_type());
+    object p = 
       m.define("p", {{a, sigma.integer_type()}}, sigma.integer_type(), a + x);
 
     term t = p(sigma.integer(40));

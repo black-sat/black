@@ -49,10 +49,6 @@ namespace black::logic {
   class scope 
   {
   public:
-    enum class depth {
-      deep, shallow
-    };
-
     scope() = default;
     scope(scope const&) = delete;
     scope(scope &&) = delete;
@@ -64,9 +60,9 @@ namespace black::logic {
 
     virtual alphabet *sigma() const = 0;
 
-    virtual std::shared_ptr<decl const> lookup(label s, depth d) const = 0;
+    virtual std::shared_ptr<decl const> lookup(label s) const = 0;
 
-    term resolve(term t, depth d, support::set<symbol> const& shadow = {})const;
+    term resolve(term t, support::set<variable> const& shadow = {})const;
 
     term type_of(term t) const;
     term evaluate(term t) const;
@@ -91,23 +87,20 @@ namespace black::logic {
     module &operator=(module const&) = delete;
     module &operator=(module &&) = delete;
 
-    virtual std::shared_ptr<decl const> lookup(label s, depth d) const override;
+    virtual std::shared_ptr<decl const> lookup(label s) const override;
 
     alphabet *sigma() const override;
     scope const *base() const;
 
-    variable declare(label s, term type);
-    variable declare(binding d);
-    variable declare(label s, std::vector<term> params, term range);
-    std::vector<variable> declare(std::vector<binding> const& binds);
+    object declare(label s, term type);
+    object declare(binding d);
+    object declare(label s, std::vector<term> params, term range);
+    std::vector<object> declare(std::vector<binding> const& binds);
     
-    variable define(label s, term type, term def);
-    variable define(def d);
-    variable 
-      define(symbol s, std::vector<binding> params, term range, term body);
-    variable 
-      define(label s, std::vector<binding> params, term range, term body);
-    std::vector<variable> define(std::vector<def> const& defs);
+    object define(label s, term type, term def);
+    object define(def d);
+    object define(label s, std::vector<binding> params, term range, term body);
+    std::vector<object> define(std::vector<def> const& defs);
 
     using scope::resolve;
     void resolve();
