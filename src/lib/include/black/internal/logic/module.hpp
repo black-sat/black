@@ -46,52 +46,26 @@ namespace black::logic {
     term def;
   };
 
-  class scope 
+  class module
   {
   public:
-    scope() = default;
-    scope(scope const&) = delete;
-    scope(scope &&) = delete;
-
-    virtual ~scope() = default;
-    
-    scope &operator=(scope const&) = delete;
-    scope &operator=(scope &&) = delete;
-
-    virtual alphabet *sigma() const = 0;
-
-    virtual std::shared_ptr<decl const> lookup(label s) const = 0;
-
-    term resolve(term t, support::set<variable> const& shadow = {})const;
-
-    term type_of(term t) const;
-    term evaluate(term t) const;
-
-    std::vector<term> type_of(std::vector<term> const& ts) const;
-    std::vector<term> evaluate(std::vector<term> const& ts) const;
-
-    bool is_type(term t) const;
-
-  };
-
-  class module : public scope 
-  {
-  public:
-    module(alphabet *sigma);
-    module(scope const* sigma);
+    explicit module(alphabet *sigma);
     module(module const&) = delete;
-    module(module &&) = delete;
+    module(module &&) = default;
 
-    virtual ~module() override;
+    ~module();
     
     module &operator=(module const&) = delete;
-    module &operator=(module &&) = delete;
+    module &operator=(module &&) = default;
+    
+    //
+    // Import other modules
+    //
+    void import(module const&);
 
-    virtual std::shared_ptr<decl const> lookup(label s) const override;
-
-    alphabet *sigma() const override;
-    scope const *base() const;
-
+    //
+    // Declarations and definitions
+    //
     object declare(label s, term type);
     object declare(binding d);
     object declare(label s, std::vector<term> params, term range);
@@ -102,12 +76,47 @@ namespace black::logic {
     object define(label s, std::vector<binding> params, term range, term body);
     std::vector<object> define(std::vector<def> const& defs);
 
-    using scope::resolve;
+    //
+    // accessors
+    //
+    alphabet *sigma() const;
+
+    using decl_range_t = 
+      std::ranges::transform_view<
+        std::ranges::ref_view<support::map<label, std::shared_ptr<decl>>>, 
+        std::shared_ptr<decl> std::pair<label, std::shared_ptr<decl>>::*
+      >;
+
+    decl_range_t declarations() const;
+
+
+    //
+    // Lookup of single symbols
+    //
+    std::shared_ptr<decl const> lookup(label s) const;
+
+    //
+    // Resolution of terms
+    //
+    term resolve(term t, support::set<variable> const& shadow = {}) const;
     void resolve();
+
+    //
+    // Type checking and term evaluation
+    //
+    term type_of(term t) const;
+    term evaluate(term t) const;
+
+    std::vector<term> type_of(std::vector<term> const& ts) const;
+    std::vector<term> evaluate(std::vector<term> const& ts) const;
+
+    bool is_type(term t) const;
 
   private:
     struct _impl_t;
-    std::unique_ptr<_impl_t> _impl;
+    
+    module(std::shared_ptr<_impl_t>);
+    std::shared_ptr<_impl_t> _impl;
   };
 }
 

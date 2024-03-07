@@ -23,10 +23,10 @@
 
 #include <catch.hpp>
 
-#include <black/support>
-#include <black/logic>
-#include <black/smt>
+// #include <black/support>
+// #include <black/logic>
+// #include <black/smt>
 
-TEST_CASE("SMT") {
+// TEST_CASE("SMT") {
   
-}
+// }

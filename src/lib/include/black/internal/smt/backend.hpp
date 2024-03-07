@@ -54,9 +54,7 @@ namespace black::smt {
     backend &operator=(backend const&) = delete;
     backend &operator=(backend &&) = delete;
 
-    virtual result<support::tribool> check(logic::module const *mod) = 0;
-
-    virtual std::optional<logic::scope const *> model() const = 0;
+    virtual result<support::tribool> check(logic::module const &mod) = 0;
 
   };
 

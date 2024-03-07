@@ -29,6 +29,6 @@
 
 #include <black/internal/logic/terms.hpp>
 #include <black/internal/logic/operators.hpp>
-#include <black/internal/logic/scope.hpp>
+#include <black/internal/logic/module.hpp>
 
 #endif // BLACK_LOGIC_HPP
