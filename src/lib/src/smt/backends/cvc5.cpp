@@ -86,8 +86,17 @@ namespace black::smt::cvc5 {
 
   //
   // TODO: the caching of terms in presence of quantifiers is currently wrong
-  // because mkVar() in cvc5 always returns a fresh variable while our 
+  // because mkVar() in cvc5 always returns a fresh variable while our
   // `variable` terms are uniqued by name.
+  //
+  // TODO: constants must not be declared on-the-fly. Rather, we need to declare
+  // all the constants corresponding to all the module's declarations upfront,
+  // to be able to ask any of them to the solver after the solving process.
+  //
+  // To do that we need to be able to get the imports from a module, so the 
+  // current opaque handling of module::impl_t is unsuitable. But:
+  // 1. do we want modules to have value semantics?
+  // 2. is it ok to just keep raw pointers to modules?
   //
   CVC5::Term solver::impl_t::to_cvc5(term t) {
     if(auto it = terms.find(t); it != terms.end())
