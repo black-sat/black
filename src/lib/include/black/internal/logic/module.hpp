@@ -51,17 +51,15 @@ namespace black::logic {
   public:
     explicit module(alphabet *sigma);
     module(module const&) = delete;
-    module(module &&) = default;
-
-    ~module();
+    module(module &&) = delete;
     
     module &operator=(module const&) = delete;
-    module &operator=(module &&) = default;
+    module &operator=(module &&) = delete;
     
     //
     // Import other modules
     //
-    void import(module const&);
+    void import(module const *);
 
     //
     // Declarations and definitions
@@ -109,8 +107,6 @@ namespace black::logic {
 
     std::vector<term> type_of(std::vector<term> const& ts) const;
     std::vector<term> evaluate(std::vector<term> const& ts) const;
-
-    bool is_type(term t) const;
 
   private:
     struct _impl_t;

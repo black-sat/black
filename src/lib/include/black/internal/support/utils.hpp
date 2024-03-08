@@ -90,15 +90,15 @@ namespace black::support::internal
   //
   // Thanks to Leonardo Taglialegne
   //
-  inline std::pair<int, int> double_to_fraction(double n) {
+  inline std::pair<int64_t, int64_t> double_to_fraction(double n) {
     uint64_t a = (uint64_t)floor(n), b = 1;
     uint64_t c = (uint64_t)ceil(n), d = 1;
 
     uint64_t num = 1;
     uint64_t denum = 1;
     while(
-      a + c <= (uint64_t)std::numeric_limits<int>::max() &&
-      b + d <= (uint64_t)std::numeric_limits<int>::max() &&
+      a + c <= (uint64_t)std::numeric_limits<int64_t>::max() &&
+      b + d <= (uint64_t)std::numeric_limits<int64_t>::max() &&
       ((double)num/(double)denum != n)
     ) {
       num = a + c;
@@ -113,7 +113,7 @@ namespace black::support::internal
       }
     }
 
-    return {static_cast<int>(num), static_cast<int>(denum)};
+    return {num, denum};
   }
   
   inline constexpr std::string_view license =

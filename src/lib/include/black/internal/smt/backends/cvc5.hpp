@@ -21,14 +21,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SMT_HPP
-#define BLACK_SMT_HPP
+#ifndef BLACK_SMT_BACKENDS_HPP
+#define BLACK_SMT_BACKENDS_HPP
 
-#include <black/support>
-#include <black/ast/core>
 #include <black/logic>
 
-#include <black/internal/smt/solver.hpp>
-#include <black/internal/smt/backends/cvc5.hpp>
+#include <memory>
 
-#endif // BLACK_SMT_HPP
+namespace black::smt::cvc5 {
+
+  class solver : public smt::solver 
+  {
+    solver(logic::module const *mod);
+    solver(solver const&) = delete;
+    solver(solver &&) = delete;
+    
+    virtual ~solver() override;
+
+    solver &operator=(solver const&) = delete;
+    solver &operator=(solver &&) = delete;
+
+    virtual support::tribool check() override;
+
+  private:
+    struct impl_t;
+    std::unique_ptr<impl_t> _impl;
+  };
+
+}
+
+#endif // BLACK_SMT_BACKENDS_HPP__

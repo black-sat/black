@@ -23,10 +23,24 @@
 
 #include <catch.hpp>
 
-// #include <black/support>
-// #include <black/logic>
-// #include <black/smt>
+#include <black/support>
+#include <black/logic>
+#include <black/smt>
 
-// TEST_CASE("SMT") {
-  
-// }
+TEST_CASE("SMT") {
+
+    // alphabet sigma;
+    
+    // module mod(&sigma);
+
+    // object x = mod.declare("x", sigma.boolean_type());
+    // object y = mod.declare("y", sigma.boolean_type());
+    
+    // mod.assertion("consistency", x && y);
+
+    // z3::solver slv(mod);
+
+    // tribool ok = slv.check();
+
+
+}

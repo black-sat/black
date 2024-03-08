@@ -29,32 +29,20 @@
 
 namespace black::smt {
   
-  class backend 
+  class solver
   {
   public:
-    struct error : support::error { 
-      using support::error::error;
+    solver() = default;
 
-      template<typename T>
-      operator std::expected<T, error>() const {
-        return std::unexpected(*this);
-      }
-    };
+    solver(solver const&) = delete;
+    solver(solver &&) = default;
     
-    template<typename T>
-    using result = std::expected<T, error>;
+    virtual ~solver() = default;
 
-    backend() = default;
+    solver &operator=(solver const&) = delete;
+    solver &operator=(solver &&) = default;
 
-    backend(backend const&) = delete;
-    backend(backend &&) = delete;
-    
-    virtual ~backend() = default;
-
-    backend &operator=(backend const&) = delete;
-    backend &operator=(backend &&) = delete;
-
-    virtual result<support::tribool> check(logic::module const &mod) = 0;
+    virtual support::tribool check() = 0;
 
   };
 

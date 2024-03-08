@@ -39,11 +39,9 @@ namespace black::logic {
     : _impl{std::make_shared<_impl_t>(_impl_t{sigma, {}, {}})} { } 
 
   module::module(std::shared_ptr<_impl_t> impl) : _impl{impl} { }
-  
-  module::~module() = default;
 
-  void module::import(module const& m) {
-    _impl->imports.push_back(m._impl);
+  void module::import(module const *m) {
+    _impl->imports.push_back(m->_impl);
   }
 
   std::shared_ptr<decl const> module::lookup(label s) const {
@@ -127,8 +125,8 @@ namespace black::logic {
       if(decl->def) 
         defs.push_back({decl->name, decl->type, resolve(*decl->def)});
 
-    for(auto [name, type, def] : defs)
-      define(name, type, def);
+    for(auto d : defs)
+      define(d);
   }
 
   term module::resolve(term t, support::set<variable> const& shadow) const 
@@ -282,7 +280,7 @@ namespace black::logic {
           argtypes.push_back(b.target);
         
         module env(sigma);
-        env.import(*this);
+        env.import(this);
         env.declare(binds);
 
         auto bodyty = type_of(env.resolve(body));
@@ -563,10 +561,6 @@ namespace black::logic {
     for(term t : ts)
       result.push_back(evaluate(t));
     return result;
-  }
-
-  bool module::is_type(term t) const {
-    return cast<type_type>(type_of(t)).has_value();
   }
 
 }
