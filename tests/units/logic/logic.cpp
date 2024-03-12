@@ -54,15 +54,17 @@ TEST_CASE("Terms") {
 TEST_CASE("Modules") {
 
   using namespace black::logic;
+  namespace support = black::support;
   
   alphabet sigma;
 
   module m(&sigma);
 
-  SECTION("Declarations") {
-    object p = m.declare("p", {sigma.integer_type()}, sigma.boolean_type());
-    object x = m.declare("x", sigma.integer_type());
-    object y = m.declare("y", sigma.real_type());
+  SECTION("Declarations") 
+  {
+    variable p = m.declare("p", {sigma.integer_type()}, sigma.boolean_type());
+    variable x = m.declare("x", sigma.integer_type());
+    variable y = m.declare("y", sigma.real_type());
 
     term r1 = m.type_of(p(x));
     // term r2 = m.type_of(p(y));
@@ -72,14 +74,14 @@ TEST_CASE("Modules") {
   }
 
   SECTION("Definitions") {
-    auto a = sigma.variable("a");
+    variable a = sigma.variable("a");
     
-    object x = m.define("x", sigma.integer_type(), sigma.integer(40));
-    object p = 
+    variable x = m.define("x", sigma.integer_type(), sigma.integer(40));
+    variable p = 
       m.define("p", {{a, sigma.integer_type()}}, sigma.integer_type(),
         ite(a > sigma.integer(0), a + x, a - x)
       );
-    m.define("a", sigma.real_type(), sigma.real(0.0)); // this will be shadowed
+    m.define(a, sigma.real_type(), sigma.real(0.0)); // this will be shadowed
 
     term t = p(sigma.integer(2));
 
@@ -95,8 +97,8 @@ TEST_CASE("Modules") {
   SECTION("Mixed declarations and definitions") {
     auto a = sigma.variable("a");
 
-    object x = m.declare("x", sigma.integer_type());
-    object p = 
+    variable x = m.declare("x", sigma.integer_type());
+    variable p = 
       m.define("p", {{a, sigma.integer_type()}}, sigma.integer_type(), a + x);
 
     term t = p(sigma.integer(40));

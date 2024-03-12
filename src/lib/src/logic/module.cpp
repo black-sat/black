@@ -24,6 +24,9 @@
 #include <black/support>
 #include <black/logic>
 
+#include <immer/vector.hpp>
+#include <immer/map.hpp>
+
 #include <ranges>
 
 namespace black::logic {
@@ -31,164 +34,103 @@ namespace black::logic {
   struct module::_impl_t 
   {
     alphabet *sigma;
-    std::vector<std::shared_ptr<_impl_t>> imports;
-    support::map<label, std::shared_ptr<decl>> decls;
+    immer::vector<module> imports;
+    immer::map<variable, decl> decls;
   };
 
   module::module(alphabet *sigma) 
-    : _impl{std::make_shared<_impl_t>(_impl_t{sigma, {}, {}})} { } 
+    : _impl{std::make_unique<_impl_t>(_impl_t{sigma, {}, {}})} { } 
 
-  module::module(std::shared_ptr<_impl_t> impl) : _impl{impl} { }
+  module::module(module const& other)
+    : _impl{std::make_unique<_impl_t>(_impl_t{*other._impl})} { }
 
-  void module::import(module const *m) {
-    _impl->imports.push_back(m->_impl);
+  module::~module() = default;
+
+  module &module::operator=(module const& other) {
+    *_impl = *other._impl;
+    return *this;
   }
 
-  std::shared_ptr<decl const> module::lookup(label s) const {
-    if(auto it = _impl->decls.find(s); it != _impl->decls.end())
-      return it->second;
-    
-    for(auto imported : _impl->imports)
-      if(auto result = module(imported).lookup(s); result)
-        return result;
-    
-    return nullptr;
+  void module::import(module m) {
+    _impl->imports = _impl->imports.push_back(std::move(m));
   }
 
-  object module::declare(label s, term ty) {
-    auto d = std::make_shared<decl>(decl{s, ty, {}});
-    _impl->decls.insert({s, d});
-    
-    return _impl->sigma->object(d);
+  variable module::declare(variable x, term ty) {
+    _impl->decls = _impl->decls.insert({x, decl{this, x, ty, {}}});
+    return x;
   }
 
-  object module::declare(binding b) {
-    return declare(b.name.name(), b.target);
+  variable module::declare(binding b) {
+    return declare(b.name, b.target);
   }
 
-  object module::declare(label s, std::vector<term> params, term range) {
-    return declare(s, function_type(params, range));
+  variable 
+  module::declare(variable x, std::vector<term> const &params, term range) {
+    return declare(x, function_type(params, range));
   }
 
-  std::vector<object> module::declare(std::vector<binding> const& binds) {
-    std::vector<object> vars;
+  void module::declare(std::vector<binding> const& binds) {
     for(binding b : binds)
-      vars.push_back(declare(b)); 
-
-    return vars;
+      declare(b);
   }
 
-  object module::define(label s, term type, term def)
+  variable module::declare(label s, term type) {
+    return declare(type.sigma()->variable(s), type);
+  }
+
+  variable module::declare(label s, std::vector<term> const &params, term range)
   {
-    auto d = std::make_shared<decl>(decl{s, type, def});
-    _impl->decls.insert({s, d});
-
-    return _impl->sigma->object(d);
+    return declare(range.sigma()->variable(s), params, range);
   }
 
-  object module::define(def d) {
+  variable module::define(variable x, term type, term def) {
+    _impl->decls = _impl->decls.insert({x, decl{this, x, type, def}});
+    return x;
+  }
+
+  variable module::define(def d) {
     return define(d.name, d.type, d.def);
   }
   
-  object 
-  module::define(label s, std::vector<binding> params, term range, term body) {
+  variable module::define(
+    variable x, std::vector<binding> const &params, term range, term body
+  ) {
     std::vector<term> paramtypes;
     for(auto p : params)
       paramtypes.push_back(p.target);
     
-    auto type = function_type(paramtypes, range);
-    return define(s, type, lambda(params, body));
+    return define(x, function_type(paramtypes, range), lambda(params, body));
   }
   
-  std::vector<object> module::define(std::vector<def> const& defs) 
+  void module::define(std::vector<def> const& defs) 
   {
-    std::vector<object> vars;
     for(auto def : defs)
-      vars.push_back(define(def));
-  
-    return vars;
+      define(def);
+  }
+    
+  variable module::define(label s, term type, term def) {
+    return define(type.sigma()->variable(s), type, def);
+  }
+
+  variable module::define(
+    label s, std::vector<binding> const &params, term range, term body
+  ) {
+    return define(range.sigma()->variable(s), params, range, body);
   }
 
   alphabet *module::sigma() const {
     return _impl->sigma;
   }
-
-  module::decl_range_t module::declarations() const {
-    return
-      std::views::all(_impl->decls) | 
-      std::views::transform(&std::pair<label, std::shared_ptr<decl>>::second);
-  }
+  
+  std::optional<decl> module::lookup(variable s) const {
+    if(auto it = _impl->decls.find(s); it)
+      return *it;
     
-  void module::resolve() {
-    std::vector<def> defs;
-    for(auto decl : declarations())
-      if(decl->def) 
-        defs.push_back({decl->name, decl->type, resolve(*decl->def)});
-
-    for(auto d : defs)
-      define(d);
-  }
-
-  term module::resolve(term t, support::set<variable> const& shadow) const 
-  {
-    // TODO: extract the recursion logic into a generic helper
-    using support::match;
-
-    alphabet *sigma = t.sigma();
-
-    return match(t)(
-      [&](error v)         { return v; },
-      [&](type_type v)     { return v; },
-      [&](integer_type v)  { return v; },
-      [&](real_type v)     { return v; },
-      [&](boolean_type v)  { return v; },
-      [&](integer v)       { return v; },
-      [&](real v)          { return v; },
-      [&](boolean v)       { return v; },
-      [&](object v)      { return v; },
-      [&](variable s) -> term {
-        if(shadow.contains(s))
-          return s;
-
-        if(auto decl = lookup(s.name()); decl)
-          return sigma->object(decl);
-        
-        return s;
-      },
-      [&](function_type, auto const & args, term range) {
-        std::vector<term> resargs;
-        for(auto arg : args)
-          resargs.push_back(resolve(arg, shadow));
-        
-        return atom(resolve(range, shadow), std::move(resargs));
-      },
-      [&](atom, term head, auto const &args) {
-        std::vector<term> resargs;
-        for(auto arg : args)
-          resargs.push_back(resolve(arg, shadow));
-        
-        return atom(resolve(head, shadow), std::move(resargs));
-      },
-      [&]<any_of<lambda, exists, forall> T>
-      (T, auto const& bindings, term body) {
-        support::set<variable> nest = shadow;
-        for(binding bind : bindings)
-          nest.insert(bind.name);
-
-        return T(bindings, resolve(body, nest));
-      },
-      [&]<any_of<conjunction, disjunction, equal, distinct> T>
-      (T, auto const& args) {
-        std::vector<term> resargs;
-        for(term arg : args)
-          resargs.push_back(resolve(arg, shadow));
-
-        return T(std::move(resargs));
-      },
-      [&]<typename T>(T, auto ...args) {
-        return T(resolve(args, shadow)...);
-      }
-    );
+    for(auto imported : _impl->imports)
+      if(auto result = imported.lookup(s); result)
+        return result;
+    
+    return {};
   }
 
   term module::type_of(term t) const {
@@ -209,11 +151,11 @@ namespace black::logic {
       [&](equal)         { return sigma->boolean_type(); },
       [&](distinct)      { return sigma->boolean_type(); },
       [&](type_cast c)   { return c.target(); },
-      [&](variable s) {
-        return error(s, "use of undeclared variable");
-      },
-      [&](object, auto decl) {
-        return decl->type;
+      [&](variable x) -> term {
+        auto d = lookup(x);
+        if(!d)
+          return error(x, "Use of undeclared variable");
+        return d->scope->evaluate(d->type);
       },
       [&](atom a, term head, auto const& args) -> term {
         auto fty = cast<function_type>(type_of(head));
@@ -236,7 +178,7 @@ namespace black::logic {
         module env(sigma);
         env.declare(binds);
 
-        term bodyty = type_of(env.resolve(body));
+        term bodyty = env.type_of(body);
         if(!cast<boolean_type>(bodyty))
           return error(body, "quantified terms must be boolean");
         
@@ -280,10 +222,10 @@ namespace black::logic {
           argtypes.push_back(b.target);
         
         module env(sigma);
-        env.import(this);
+        env.import(*this);
         env.declare(binds);
 
-        auto bodyty = type_of(env.resolve(body));
+        auto bodyty = env.type_of(body);
         return function_type(std::move(argtypes), bodyty);
       },
       // case_of...
@@ -384,12 +326,12 @@ namespace black::logic {
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
       [&](lambda v)        { return v; },
-      [&](variable s)        { return s; },
-      [&](object v, auto decl) -> term {
-        if(!decl->def)
-          return v;
+      [&](variable x) -> term {
+        auto d = lookup(x);
+        if(!d || !d->def)
+          return x;
         
-        return evaluate(*decl->def);
+        return d->scope->evaluate(*d->def);
       },
       //[&](type_cast c)   { return c.target(); },
       [&](atom, term head, auto const& args) -> term {
@@ -402,11 +344,12 @@ namespace black::logic {
           return atom(ehead, eargs);
         
         module env(sigma);
+        env.import(*this);
 
         for(size_t i = 0; i < args.size(); i++)
-          env.define(f->vars()[i].name.name(), f->vars()[i].target, eargs[i]);
+          env.define(f->vars()[i].name, f->vars()[i].target, eargs[i]);
 
-        return evaluate(env.resolve(f->body()));
+        return env.evaluate(f->body());
       },
       // equal, distinct
       [&]<quantifier T>(T, auto const& binds, term body) {

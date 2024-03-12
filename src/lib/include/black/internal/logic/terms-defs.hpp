@@ -137,13 +137,9 @@ declare_ast(logic, term)
 
   section("Boolean and first-order predicates")
 
-    declare_ast_node(logic, term, variable, "An unbound symbol")
+    declare_ast_node(logic, term, variable, "A variable")
       declare_field(logic, term, variable, name, ast::core::label, "The variable's name")
     end_ast_node(logic, term, variable)
-
-    declare_ast_node(logic, term, object, "A symbol bound to a declaration")
-      declare_field(logic, term, object, decl, std::shared_ptr<logic::decl const>, "The object's declaration")
-    end_ast_node(logic, term, object)
 
     declare_ast_node(logic, term, equal, "An equality constraint between terms")
       declare_field(logic, term, equal, arguments, std::vector<logic::term>, "The operands")

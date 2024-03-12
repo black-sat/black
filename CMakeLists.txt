@@ -73,6 +73,7 @@ endif()
 # External dependencies
 #
 find_package(tsl-hopscotch-map REQUIRED)
+find_package(immer REQUIRED)
 
 add_subdirectory(external/clipp EXCLUDE_FROM_ALL)
 

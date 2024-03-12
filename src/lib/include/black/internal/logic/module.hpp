@@ -34,14 +34,17 @@ namespace black::logic {
 
   using ast::core::label;
 
+  class module;
+
   struct decl { 
-    label name; 
+    module const *scope;
+    variable name; 
     term type;
     std::optional<term> def;
   };
 
   struct def {
-    label name; 
+    variable name; 
     term type;
     term def;
   };
@@ -50,54 +53,49 @@ namespace black::logic {
   {
   public:
     explicit module(alphabet *sigma);
-    module(module const&) = delete;
-    module(module &&) = delete;
+    module(module const&);
+    module(module &&) = default;
+
+    ~module();
     
-    module &operator=(module const&) = delete;
-    module &operator=(module &&) = delete;
+    module &operator=(module const&);
+    module &operator=(module &&) = default;
     
     //
     // Import other modules
     //
-    void import(module const *);
+    void import(module m);
 
     //
     // Declarations and definitions
     //
-    object declare(label s, term type);
-    object declare(binding d);
-    object declare(label s, std::vector<term> params, term range);
-    std::vector<object> declare(std::vector<binding> const& binds);
+    variable declare(variable s, term type);
+    variable declare(label s, term type);
+    variable declare(binding d);
+    variable declare(variable s, std::vector<term> const &params, term range);
+    variable declare(label s, std::vector<term> const &params, term range);
+    void declare(std::vector<binding> const& binds);
     
-    object define(label s, term type, term def);
-    object define(def d);
-    object define(label s, std::vector<binding> params, term range, term body);
-    std::vector<object> define(std::vector<def> const& defs);
+    variable define(variable s, term type, term def);
+    variable define(label s, term type, term def);
+    variable define(def d);
+    variable define(
+      variable s, std::vector<binding> const &params, term range, term body
+    );
+    variable define(
+      label s, std::vector<binding> const &params, term range, term body
+    );
+    void define(std::vector<def> const& defs);
 
     //
     // accessors
     //
     alphabet *sigma() const;
 
-    using decl_range_t = 
-      std::ranges::transform_view<
-        std::ranges::ref_view<support::map<label, std::shared_ptr<decl>>>, 
-        std::shared_ptr<decl> std::pair<label, std::shared_ptr<decl>>::*
-      >;
-
-    decl_range_t declarations() const;
-
-
     //
     // Lookup of single symbols
     //
-    std::shared_ptr<decl const> lookup(label s) const;
-
-    //
-    // Resolution of terms
-    //
-    term resolve(term t, support::set<variable> const& shadow = {}) const;
-    void resolve();
+    std::optional<decl> lookup(variable s) const;
 
     //
     // Type checking and term evaluation
@@ -110,9 +108,7 @@ namespace black::logic {
 
   private:
     struct _impl_t;
-    
-    module(std::shared_ptr<_impl_t>);
-    std::shared_ptr<_impl_t> _impl;
+    std::unique_ptr<_impl_t> _impl;
   };
 }
 
