@@ -110,5 +110,19 @@ TEST_CASE("Modules") {
     REQUIRE(r2 == sigma.integer(40) + x);
   }
 
+  SECTION("Term cache") {
+
+    variable x = sigma.variable("x");
+
+    m.cache().insert(x, 42);
+
+    std::optional<int> v1 = m.cache().get<int>(x);
+    std::optional<float> v2 = m.cache().get<float>(x);
+
+    REQUIRE(v1.has_value());
+    REQUIRE(!v2.has_value());
+    REQUIRE(*v1 == 42);
+
+  }
 
 }

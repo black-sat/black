@@ -64,6 +64,18 @@ namespace black::logic {
     std::optional<std::any> get(term k) const;
     void insert(term k, std::any v);
     void clear();
+    
+    template<typename T>
+    std::optional<T> get(term k) const {
+      auto v = get(k);
+      if(!v)
+        return {};
+
+      if(T const *r = std::any_cast<T>(&*v); r)
+        return *r;
+      
+      return {};
+    }
 
   private:
     struct _impl_t;
