@@ -31,11 +31,17 @@
 
 namespace black::logic {
 
+  struct decl_inner_t {
+    variable name;
+    term type;
+    std::optional<term> def;
+  };
+
   struct module::_impl_t 
   {
     alphabet *sigma;
     immer::vector<module> imports;
-    immer::map<variable, decl> decls;
+    immer::map<variable, decl_inner_t> decls;
   };
 
   module::module(alphabet *sigma) 
@@ -56,7 +62,7 @@ namespace black::logic {
   }
 
   variable module::declare(variable x, term ty) {
-    _impl->decls = _impl->decls.insert({x, decl{this, x, ty, {}}});
+    _impl->decls = _impl->decls.insert({x, decl_inner_t{x, ty, {}}});
     return x;
   }
 
@@ -84,7 +90,7 @@ namespace black::logic {
   }
 
   variable module::define(variable x, term type, term def) {
-    _impl->decls = _impl->decls.insert({x, decl{this, x, type, def}});
+    _impl->decls = _impl->decls.insert({x, decl_inner_t{x, type, def}});
     return x;
   }
 
@@ -124,7 +130,7 @@ namespace black::logic {
   
   std::optional<decl> module::lookup(variable s) const {
     if(auto it = _impl->decls.find(s); it)
-      return *it;
+      return decl{this, it->name, it->type, it->def};
     
     for(auto imported : _impl->imports)
       if(auto result = imported.lookup(s); result)
