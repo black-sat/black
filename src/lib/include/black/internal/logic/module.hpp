@@ -49,6 +49,27 @@ namespace black::logic {
     term def;
   };
 
+  class cache 
+  {
+  public:
+    cache();
+    cache(cache const&);
+    cache(cache &&);
+
+    ~cache();
+    
+    cache &operator=(cache const&);
+    cache &operator=(cache &&);
+    
+    std::optional<std::any> get(term k) const;
+    void insert(term k, std::any v);
+    void clear();
+
+  private:
+    struct _impl_t;
+    std::unique_ptr<_impl_t> _impl;
+  };
+
   class module
   {
   public:
@@ -87,15 +108,26 @@ namespace black::logic {
     );
     void define(std::vector<def> const& defs);
 
+    void undef(variable x);
+    void undef(label s);
+    void undef(std::vector<variable> const& vars);
+
     //
     // accessors
     //
     alphabet *sigma() const;
 
     //
-    // Lookup of single symbols
+    // Lookup of variables
     //
     std::optional<decl> lookup(variable s) const;
+
+    //
+    // Generic term cache for the users of this module
+    //
+    class cache &cache();
+
+    class cache const& cache() const;
 
     //
     // Type checking and term evaluation

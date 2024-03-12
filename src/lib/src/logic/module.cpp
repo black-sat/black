@@ -27,7 +27,7 @@
 #include <immer/vector.hpp>
 #include <immer/map.hpp>
 
-#include <ranges>
+#include <any>
 
 namespace black::logic {
 
@@ -42,10 +42,13 @@ namespace black::logic {
     alphabet *sigma;
     immer::vector<module> imports;
     immer::map<variable, decl_inner_t> decls;
+    class cache cache;
+
+    _impl_t(alphabet *sigma) : sigma{sigma} { }
   };
 
   module::module(alphabet *sigma) 
-    : _impl{std::make_unique<_impl_t>(_impl_t{sigma, {}, {}})} { } 
+    : _impl{std::make_unique<_impl_t>(sigma)} { } 
 
   module::module(module const& other)
     : _impl{std::make_unique<_impl_t>(_impl_t{*other._impl})} { }
@@ -124,6 +127,19 @@ namespace black::logic {
     return define(range.sigma()->variable(s), params, range, body);
   }
 
+  void module::undef(variable x) {
+    _impl->decls = _impl->decls.erase(x);
+  }
+
+  void module::undef(label s) {
+    undef(_impl->sigma->variable(s));
+  }
+
+  void module::undef(std::vector<variable> const& vars) {
+    for(auto v : vars)
+      undef(v);
+  }
+
   alphabet *module::sigma() const {
     return _impl->sigma;
   }
@@ -138,6 +154,51 @@ namespace black::logic {
     
     return {};
   }
+
+  cache & module::cache() {
+    return _impl->cache;
+  }
+
+  cache const& module::cache() const {
+    return _impl->cache;
+  }
+  
+  struct cache::_impl_t {
+    immer::map<term, std::any> data;
+
+    _impl_t() = default;
+  };
+
+  cache::cache() : _impl{std::make_unique<_impl_t>()} { }
+  
+  cache::cache(cache const& other) 
+    : _impl{std::make_unique<_impl_t>(*other._impl)} { }
+
+  cache::cache(cache &&) = default;
+
+  cache::~cache() = default;
+  
+  cache &cache::operator=(cache const& other) {
+    *_impl = *other._impl;
+    return *this;
+  }
+
+  cache &cache::operator=(cache &&) = default;
+
+  std::optional<std::any> cache::get(term k) const {
+    if(auto x = _impl->data.find(k); x)
+      return *x;
+    
+    return {};
+  }
+
+  void cache::insert(term k, std::any v) {
+    _impl->data = _impl->data.insert({k, v});
+  }
+
+  void cache::clear() {
+    _impl->data = {};
+  }  
 
   term module::type_of(term t) const {
     using support::match;
