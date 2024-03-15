@@ -46,11 +46,17 @@ namespace black::logic {
     term type;
     term value;
 
-    def(variable name, term type, term value) 
-      : name{name.name()}, type{type}, value{value} { }
-    
     def(label name, term type, term value)
       : name{name}, type{type}, value{value} { }
+    
+    def(label name, term value)
+      : name{name}, type{value.sigma()->inferred_type()}, value{value} { }
+    
+    def(variable name, term type, term value) 
+      : def(name.name(), type, value) { }
+    
+    def(variable name, term value)
+      : def(name.name(), value) { }
   };
 
   struct function_def {
@@ -58,6 +64,21 @@ namespace black::logic {
     std::vector<decl> parameters;
     term range;
     term body;
+
+    function_def(label name, std::vector<decl> parms, term range, term body)
+      : name{name}, parameters{std::move(parms)}, range{range}, body{body} { }
+
+    function_def(label name, std::vector<decl> parms, term body)
+      : name{name}, 
+        parameters{std::move(parms)}, 
+        range{body.sigma()->inferred_type()}, 
+        body{body} { }
+    
+    function_def(variable name, std::vector<decl> parms, term range, term body)
+      : function_def(name.name(), std::move(parms), range, body) { }
+
+    function_def(variable name, std::vector<decl> parms, term body)
+      : function_def(name.name(), std::move(parms), body) { }
   };
 
   class module
@@ -93,6 +114,7 @@ namespace black::logic {
     // Lookup of variables
     //
     std::optional<object> lookup(label x) const;
+    std::optional<object> lookup(variable x) const { return lookup(x.name()); }
 
     //
     // Resolve terms

@@ -123,15 +123,16 @@ namespace black::logic {
   static 
   term resolved(module const& m, term t, immer::set<label> hidden = {}) {
     return support::match(t)(
-      [&](error v)        { return v; },
-      [&](type_type v)    { return v; },
-      [&](integer_type v) { return v; },
-      [&](real_type v)    { return v; },
-      [&](boolean_type v) { return v; },
-      [&](integer v)      { return v; },
-      [&](real v)         { return v; },
-      [&](boolean v)      { return v; },
-      [&](object v)       { return v; },
+      [&](error v)         { return v; },
+      [&](type_type v)     { return v; },
+      [&](inferred_type v) { return v; },
+      [&](integer_type v)  { return v; },
+      [&](real_type v)     { return v; },
+      [&](boolean_type v)  { return v; },
+      [&](integer v)       { return v; },
+      [&](real v)          { return v; },
+      [&](boolean v)       { return v; },
+      [&](object v)        { return v; },
       [&](variable x, label name) -> term {
         if(hidden.count(name))
           return x;
@@ -164,13 +165,35 @@ namespace black::logic {
     for(auto p : _impl->pending)
       _impl->lookups = _impl->lookups.insert({p->name, p});
 
-    for(auto p : _impl->pending) {
-      p->type = resolved(p->type);
-      if(p->value)
-        *p->value = resolved(*p->value);
-    }
-
+    auto pending = _impl->pending;
     _impl->pending = {};
+
+    for(auto p : pending) {
+      p->type = resolved(p->type);
+      if(p->value) {
+        *p->value = resolved(*p->value);
+        p->type = support::match(p->type)(
+          [&](inferred_type) {
+            return type_of(*p->value);
+          },
+          [&](function_type t, auto const& params, term range) {
+            if(!cast<inferred_type>(range))
+              return t;
+            auto func = cast<lambda>(p->value);
+            if(!func)
+              return t;
+
+            module m(_impl->sigma);
+            m.import(*this);
+            for(decl d : func->vars())
+              m.declare(d);
+            
+            return function_type(params, m.type_of(m.resolved(func->body())));
+          },
+          [&](auto t) { return t; }
+        );
+      }
+    }
   }
 
   module module::resolved() const {
@@ -187,6 +210,7 @@ namespace black::logic {
     return match(t)(
       [&](error e)       { return e; },
       [&](type_type)     { return sigma->type_type(); },
+      [&](inferred_type) { return sigma->type_type(); },
       [&](integer_type)  { return sigma->type_type(); },
       [&](real_type)     { return sigma->type_type(); },
       [&](boolean_type)  { return sigma->type_type(); },
@@ -366,6 +390,7 @@ namespace black::logic {
 
     return match(t)(
       [&](type_type v)     { return v; },
+      [&](inferred_type v) { return v; },
       [&](integer_type v)  { return v; },
       [&](real_type v)     { return v; },
       [&](boolean_type v)  { return v; },

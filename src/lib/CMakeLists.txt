@@ -172,7 +172,7 @@ configure_file(
 #
 add_library (black ${LIB_SRC})
 
-target_link_libraries(black PUBLIC tsl::hopscotch_map immer)
+target_link_libraries(black PUBLIC tsl::hopscotch_map)
 target_link_libraries(black PRIVATE immer)
 
 target_include_directories(black PUBLIC  

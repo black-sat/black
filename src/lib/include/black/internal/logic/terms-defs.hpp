@@ -78,8 +78,8 @@ define_type(logic, struct decl,
     ast::core::label name; 
     logic::term type;
 
-    decl(variable name, logic::term type) : name{name.name()}, type{type} { }
     decl(ast::core::label name, logic::term type) : name{name}, type{type} { }
+    decl(variable name, logic::term type) : decl(name.name(), type) { }
 
     bool operator==(decl const&) const = default;
     size_t hash() const { return support::hash(name, type); }
@@ -103,6 +103,9 @@ declare_ast(logic, term)
     declare_ast_node(logic, term, type_type, "The type of types")
     end_ast_node(logic, term, type_type)
 
+    declare_ast_node(logic, term, inferred_type, "A type still to be inferred")
+    end_ast_node(logic, term, inferred_type)
+
     declare_ast_node(logic, term, integer_type, "The type of integer numbers")
     end_ast_node(logic, term, integer_type)
     
@@ -121,6 +124,8 @@ declare_ast(logic, term)
       declare_field(logic, term, type_cast, target, logic::term, "The target type")
       declare_field(logic, term, type_cast, expr, logic::term, "The term to cast")
     end_ast_node(logic, term, type_cast)
+
+
 
   end_section()
 

@@ -26,6 +26,8 @@
 #include <black/support>
 #include <black/logic>
 
+#include <iostream>
+
 TEST_CASE("Terms") {
 
   using namespace black::logic;
@@ -73,16 +75,19 @@ TEST_CASE("Modules") {
   SECTION("Definitions") {
     variable a = sigma.variable("a");
     
-    object x = m.define({"x", sigma.integer_type(), sigma.integer(40)});
+    object x = m.define({"x", sigma.integer(40)});
     object p = 
       m.define({
-        "p", {{a, sigma.integer_type()}}, sigma.integer_type(),
+        "p", {{a, sigma.integer_type()}}, 
         ite(a > sigma.integer(0), a + x, a - x)
       });
-    m.define({a, sigma.real_type(), sigma.real(0.0)}); // this will be shadowed
+    object aobj = m.define({a, sigma.real(0.0)}); // this will be shadowed
+
+    REQUIRE(m.type_of(x) == sigma.integer_type());
+    REQUIRE(m.type_of(aobj) == sigma.real_type());
 
     term ft = function_type({sigma.integer_type()}, sigma.integer_type());
-    REQUIRE(m.lookup("p")->lookup()->type == ft);
+    REQUIRE(m.type_of(p) == ft);
 
     term t = p(sigma.integer(2));
 
@@ -108,18 +113,32 @@ TEST_CASE("Modules") {
   }
 
 
-  SECTION("Name lookup and resolution") {
+  SECTION("Mutually recursive scope and type inference") {
 
-    // variable x = sigma.variable("x");
-    // variable y = sigma.variable("y");
-    // variable z = sigma.variable("z");
+    variable f = sigma.variable("f");
+    variable a = sigma.variable("a");
+    variable x = sigma.variable("x");
+    variable y = sigma.variable("y");
 
-    // m.define(x, sigma.integer_type(), y + z);
-    // m.define(y, sigma.integer_type(), x - z);
-    // m.declare(z, sigma.integer_type());
+    m.define({f, {{a, sigma.integer_type()}}, a + x + y}, resolution::delayed);
 
-    // module m2 = m.resolved();
+    m.define({x, sigma.integer_type(), y}, resolution::delayed);
+    m.define({y, sigma.integer_type(), x}, resolution::delayed);
+    
+    m.resolve();
 
+    auto fobj = m.lookup(f);
+    auto xobj = m.lookup(x);
+    auto yobj = m.lookup(y);
+
+    REQUIRE(fobj.has_value());
+    REQUIRE(xobj.has_value());
+    REQUIRE(yobj.has_value());
+    
+    term ft = function_type({sigma.integer_type()}, sigma.integer_type());
+    REQUIRE(fobj->lookup()->type == ft);
+    REQUIRE(xobj->lookup()->value == *yobj);
+    REQUIRE(yobj->lookup()->value == *xobj);
   }
 
 }
