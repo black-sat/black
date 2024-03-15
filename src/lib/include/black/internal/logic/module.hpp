@@ -111,7 +111,7 @@ namespace black::logic {
     alphabet *sigma() const;
 
     //
-    // Lookup of variables
+    // Name lookup
     //
     std::optional<object> lookup(label x) const;
     std::optional<object> lookup(variable x) const { return lookup(x.name()); }

@@ -120,25 +120,31 @@ TEST_CASE("Modules") {
     variable x = sigma.variable("x");
     variable y = sigma.variable("y");
 
-    m.define({f, {{a, sigma.integer_type()}}, a + x + y}, resolution::delayed);
+    object fobj = 
+      m.define(
+        {f, {{a, sigma.integer_type()}}, a + x + y}, resolution::delayed
+      );
 
-    m.define({x, sigma.integer_type(), y}, resolution::delayed);
-    m.define({y, sigma.integer_type(), x}, resolution::delayed);
+    object xobj = m.define({x, sigma.integer_type(), y}, resolution::delayed);
+    object yobj = m.define({y, sigma.integer_type(), x}, resolution::delayed);
     
     m.resolve();
 
-    auto fobj = m.lookup(f);
-    auto xobj = m.lookup(x);
-    auto yobj = m.lookup(y);
-
-    REQUIRE(fobj.has_value());
-    REQUIRE(xobj.has_value());
-    REQUIRE(yobj.has_value());
+    REQUIRE(m.lookup(f) == fobj);
+    REQUIRE(m.lookup(x) == xobj);
+    REQUIRE(m.lookup(y) == yobj);
     
     term ft = function_type({sigma.integer_type()}, sigma.integer_type());
-    REQUIRE(fobj->lookup()->type == ft);
-    REQUIRE(xobj->lookup()->value == *yobj);
-    REQUIRE(yobj->lookup()->value == *xobj);
+    REQUIRE(fobj.lookup()->type == ft);
+    REQUIRE(xobj.lookup()->value == yobj);
+    REQUIRE(yobj.lookup()->value == xobj);
+
+    object wrongf = m.define(
+      {f, {{a, sigma.integer_type()}}, f(a)}
+    );
+
+    term wrongft = function_type({sigma.integer_type()}, sigma.inferred_type());
+    REQUIRE(wrongf.lookup()->type == wrongft);
   }
 
 }
