@@ -327,6 +327,36 @@ namespace black::support {
   
 }
 
+namespace black::support::internal {
+  //
+  // Utility to keep a stack of objects during a recursive traversal
+  //
+  template<typename T>
+  struct 
+  [[nodiscard("result of checkpoint() must be stored in a local variable")]] 
+  checkpoint_t 
+  {
+    checkpoint_t(T &x) : _original{&x}, _saved{x} { }
+
+    checkpoint_t(checkpoint_t const&) = delete;
+    checkpoint_t(checkpoint_t &&) = delete;
+    
+    checkpoint_t &operator=(checkpoint_t const&) = delete;
+    checkpoint_t &operator=(checkpoint_t &&) = delete;
+
+    ~checkpoint_t() noexcept(std::is_nothrow_assignable_v<T, T>) {
+      *_original = _saved;
+    }
+
+    T *_original = nullptr;
+    T  _saved;
+  };
+
+  template<typename T>
+  checkpoint_t<T> checkpoint(T & x) {
+    return {x};
+  }
+}
 
 namespace black::support {
   using internal::unpacking;
@@ -336,6 +366,7 @@ namespace black::support {
   using internal::visitor;
   using internal::match;
   using internal::matching;
+  using internal::checkpoint;
 }
 
 #endif // BLACK_SUPPORT_FUNCTIONAL_HPP

@@ -62,34 +62,33 @@ TEST_CASE("Modules") {
 
   SECTION("Declarations") 
   {
-    variable p = m.declare("p", {sigma.integer_type()}, sigma.boolean_type());
-    variable x = m.declare("x", sigma.integer_type());
-    variable y = m.declare("y", sigma.real_type());
+    object p = m.declare(
+      {"p", function_type({sigma.integer_type()}, sigma.boolean_type())}
+    );
+    object x = m.declare({"x", sigma.integer_type()});
 
-    term r1 = m.type_of(p(x));
-    // term r2 = m.type_of(p(y));
-
-    REQUIRE(r1 == sigma.boolean_type());
-    // TODO: check r2 contains an error
+    REQUIRE(m.type_of(p(x)) == sigma.boolean_type());
   }
 
   SECTION("Definitions") {
     variable a = sigma.variable("a");
     
-    variable x = m.define("x", sigma.integer_type(), sigma.integer(40));
-    variable p = 
-      m.define("p", {{a, sigma.integer_type()}}, sigma.integer_type(),
+    object x = m.define({"x", sigma.integer_type(), sigma.integer(40)});
+    object p = 
+      m.define({
+        "p", {{a, sigma.integer_type()}}, sigma.integer_type(),
         ite(a > sigma.integer(0), a + x, a - x)
-      );
-    m.define(a, sigma.real_type(), sigma.real(0.0)); // this will be shadowed
+      });
+    m.define({a, sigma.real_type(), sigma.real(0.0)}); // this will be shadowed
+
+    term ft = function_type({sigma.integer_type()}, sigma.integer_type());
+    REQUIRE(m.lookup("p")->lookup()->type == ft);
 
     term t = p(sigma.integer(2));
 
-    term r1 = m.type_of(t);
-    REQUIRE(r1 == sigma.integer_type());
+    REQUIRE(m.type_of(t) == sigma.integer_type());
     
-    term r2 = m.evaluate(t);
-    REQUIRE(r2 == sigma.integer(42));
+    REQUIRE(m.evaluate(t) == sigma.integer(42));
 
 
   }
@@ -97,31 +96,29 @@ TEST_CASE("Modules") {
   SECTION("Mixed declarations and definitions") {
     auto a = sigma.variable("a");
 
-    variable x = m.declare("x", sigma.integer_type());
-    variable p = 
-      m.define("p", {{a, sigma.integer_type()}}, sigma.integer_type(), a + x);
+    object x = m.declare({"x", sigma.integer_type()});
+    object p = 
+      m.define({"p", {{a, sigma.integer_type()}}, sigma.integer_type(), a + x});
 
     term t = p(sigma.integer(40));
 
-    term r1 = m.type_of(t);
-    REQUIRE(r1 == sigma.integer_type());
+    REQUIRE(m.type_of(t) == sigma.integer_type());
     
-    term r2 = m.evaluate(t);
-    REQUIRE(r2 == sigma.integer(40) + x);
+    REQUIRE(m.evaluate(t) == sigma.integer(40) + x);
   }
 
-  SECTION("Term cache") {
 
-    variable x = sigma.variable("x");
+  SECTION("Name lookup and resolution") {
 
-    m.cache().insert(x, 42);
+    // variable x = sigma.variable("x");
+    // variable y = sigma.variable("y");
+    // variable z = sigma.variable("z");
 
-    std::optional<int> v1 = m.cache().get<int>(x);
-    std::optional<float> v2 = m.cache().get<float>(x);
+    // m.define(x, sigma.integer_type(), y + z);
+    // m.define(y, sigma.integer_type(), x - z);
+    // m.declare(z, sigma.integer_type());
 
-    REQUIRE(v1.has_value());
-    REQUIRE(!v2.has_value());
-    REQUIRE(*v1 == 42);
+    // module m2 = m.resolved();
 
   }
 

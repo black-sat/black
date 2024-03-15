@@ -34,52 +34,30 @@ namespace black::logic {
 
   using ast::core::label;
 
-  class module;
+  struct lookup;
 
-  struct decl { 
-    module const *scope;
-    variable name; 
-    term type;
-    std::optional<term> def;
+  enum class resolution : bool {
+    delayed = false,
+    immediate = true
   };
 
   struct def {
-    variable name; 
+    label name; 
     term type;
-    term def;
+    term value;
+
+    def(variable name, term type, term value) 
+      : name{name.name()}, type{type}, value{value} { }
+    
+    def(label name, term type, term value)
+      : name{name}, type{type}, value{value} { }
   };
 
-  class cache 
-  {
-  public:
-    cache();
-    cache(cache const&);
-    cache(cache &&);
-
-    ~cache();
-    
-    cache &operator=(cache const&);
-    cache &operator=(cache &&);
-    
-    std::optional<std::any> get(term k) const;
-    void insert(term k, std::any v);
-    void clear();
-    
-    template<typename T>
-    std::optional<T> get(term k) const {
-      auto v = get(k);
-      if(!v)
-        return {};
-
-      if(T const *r = std::any_cast<T>(&*v); r)
-        return *r;
-      
-      return {};
-    }
-
-  private:
-    struct _impl_t;
-    std::unique_ptr<_impl_t> _impl;
+  struct function_def {
+    label name;
+    std::vector<decl> parameters;
+    term range;
+    term body;
   };
 
   class module
@@ -93,36 +71,18 @@ namespace black::logic {
     
     module &operator=(module const&);
     module &operator=(module &&) = default;
+
+    bool operator==(module const&) const;
     
     //
     // Import other modules
     //
     void import(module m);
-
-    //
-    // Declarations and definitions
-    //
-    variable declare(variable s, term type);
-    variable declare(label s, term type);
-    variable declare(binding d);
-    variable declare(variable s, std::vector<term> const &params, term range);
-    variable declare(label s, std::vector<term> const &params, term range);
-    void declare(std::vector<binding> const& binds);
+  
+    object declare(decl d, resolution r = resolution::immediate);
     
-    variable define(variable s, term type, term def);
-    variable define(label s, term type, term def);
-    variable define(def d);
-    variable define(
-      variable s, std::vector<binding> const &params, term range, term body
-    );
-    variable define(
-      label s, std::vector<binding> const &params, term range, term body
-    );
-    void define(std::vector<def> const& defs);
-
-    void undef(variable x);
-    void undef(label s);
-    void undef(std::vector<variable> const& vars);
+    object define(def d, resolution r = resolution::immediate);
+    object define(function_def f, resolution r = resolution::immediate);
 
     //
     // accessors
@@ -132,14 +92,18 @@ namespace black::logic {
     //
     // Lookup of variables
     //
-    std::optional<decl> lookup(variable s) const;
+    std::optional<object> lookup(label x) const;
 
     //
-    // Generic term cache for the users of this module
+    // Resolve terms
     //
-    class cache &cache();
+    term resolved(term t) const;
 
-    class cache const& cache() const;
+    //
+    // Fully resolve the whole module
+    //
+    void resolve();
+    module resolved() const;
 
     //
     // Type checking and term evaluation
@@ -154,6 +118,19 @@ namespace black::logic {
     struct _impl_t;
     std::unique_ptr<_impl_t> _impl;
   };
+
+  struct lookup {
+    label name;
+    term type;
+    std::optional<term> value;
+
+    explicit lookup(decl d) : name{d.name}, type{d.type} { }
+    
+    explicit lookup(def d) : name{d.name}, type{d.type}, value{d.value} { }
+
+    bool operator==(lookup const&) const = default;
+  };
+
 }
 
 #endif // BLACK_LOGIC_SCOPE_HPP

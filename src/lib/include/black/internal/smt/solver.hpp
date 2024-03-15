@@ -34,12 +34,12 @@ namespace black::smt {
   public:
     solver() = default;
 
-    solver(solver const&) = delete;
+    solver(solver const&) = default;
     solver(solver &&) = default;
     
     virtual ~solver() = default;
 
-    solver &operator=(solver const&) = delete;
+    solver &operator=(solver const&) = default;
     solver &operator=(solver &&) = default;
 
     virtual support::tribool check() = 0;

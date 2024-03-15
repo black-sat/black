@@ -26,25 +26,20 @@
 
 #include <immer/vector.hpp>
 #include <immer/map.hpp>
-
-#include <any>
+#include <immer/set.hpp>
 
 namespace black::logic {
-
-  struct decl_inner_t {
-    variable name;
-    term type;
-    std::optional<term> def;
-  };
 
   struct module::_impl_t 
   {
     alphabet *sigma;
     immer::vector<module> imports;
-    immer::map<variable, decl_inner_t> decls;
-    class cache cache;
+    immer::map<label, std::shared_ptr<struct lookup const>> lookups;
+    immer::vector<std::shared_ptr<struct lookup>> pending;
 
     _impl_t(alphabet *sigma) : sigma{sigma} { }
+
+    bool operator==(_impl_t const&) const = default;
   };
 
   module::module(alphabet *sigma) 
@@ -60,93 +55,52 @@ namespace black::logic {
     return *this;
   }
 
+  bool module::operator==(module const& other) const {
+    return *_impl == *other._impl;
+  }
+
   void module::import(module m) {
-    _impl->imports = _impl->imports.push_back(std::move(m));
+    _impl->imports = _impl->imports.push_back(m.resolved());
   }
 
-  variable module::declare(variable x, term ty) {
-    _impl->decls = _impl->decls.insert({x, decl_inner_t{x, ty, {}}});
-    return x;
-  }
+  object module::declare(decl d, resolution r) {
+    auto ptr = std::make_shared<struct lookup>(d);
+    _impl->pending = _impl->pending.push_back(ptr);
+    
+    if(r == resolution::immediate)
+      resolve();
 
-  variable module::declare(binding b) {
-    return declare(b.name, b.target);
-  }
-
-  variable 
-  module::declare(variable x, std::vector<term> const &params, term range) {
-    return declare(x, function_type(params, range));
-  }
-
-  void module::declare(std::vector<binding> const& binds) {
-    for(binding b : binds)
-      declare(b);
-  }
-
-  variable module::declare(label s, term type) {
-    return declare(type.sigma()->variable(s), type);
-  }
-
-  variable module::declare(label s, std::vector<term> const &params, term range)
-  {
-    return declare(range.sigma()->variable(s), params, range);
-  }
-
-  variable module::define(variable x, term type, term def) {
-    _impl->decls = _impl->decls.insert({x, decl_inner_t{x, type, def}});
-    return x;
-  }
-
-  variable module::define(def d) {
-    return define(d.name, d.type, d.def);
+    return _impl->sigma->object(ptr.get());
   }
   
-  variable module::define(
-    variable x, std::vector<binding> const &params, term range, term body
-  ) {
-    std::vector<term> paramtypes;
-    for(auto p : params)
-      paramtypes.push_back(p.target);
+  object module::define(def d, resolution r) {
+    auto ptr = std::make_shared<struct lookup>(d);
+    _impl->pending = _impl->pending.push_back(ptr);
     
-    return define(x, function_type(paramtypes, range), lambda(params, body));
-  }
-  
-  void module::define(std::vector<def> const& defs) 
-  {
-    for(auto def : defs)
-      define(def);
-  }
-    
-  variable module::define(label s, term type, term def) {
-    return define(type.sigma()->variable(s), type, def);
+    if(r == resolution::immediate)
+      resolve();
+
+    return _impl->sigma->object(ptr.get());
   }
 
-  variable module::define(
-    label s, std::vector<binding> const &params, term range, term body
-  ) {
-    return define(range.sigma()->variable(s), params, range, body);
-  }
+  object module::define(function_def f, resolution r) {
+    std::vector<term> argtypes;
+    for(decl d : f.parameters)
+      argtypes.push_back(d.type);
 
-  void module::undef(variable x) {
-    _impl->decls = _impl->decls.erase(x);
-  }
+    auto type = function_type(argtypes, f.range);
+    auto body = lambda(f.parameters, f.body);
 
-  void module::undef(label s) {
-    undef(_impl->sigma->variable(s));
-  }
-
-  void module::undef(std::vector<variable> const& vars) {
-    for(auto v : vars)
-      undef(v);
+    return define(def{f.name, type, body}, r);
   }
 
   alphabet *module::sigma() const {
     return _impl->sigma;
   }
   
-  std::optional<decl> module::lookup(variable s) const {
-    if(auto it = _impl->decls.find(s); it)
-      return decl{this, it->name, it->type, it->def};
+  std::optional<object> module::lookup(label s) const {
+    if(auto p = _impl->lookups.find(s); p)
+      return _impl->sigma->object(p->get());
     
     for(auto imported : _impl->imports)
       if(auto result = imported.lookup(s); result)
@@ -155,50 +109,75 @@ namespace black::logic {
     return {};
   }
 
-  cache & module::cache() {
-    return _impl->cache;
-  }
-
-  cache const& module::cache() const {
-    return _impl->cache;
-  }
+  static term resolved(module const& m, term t, immer::set<label> hidden);
   
-  struct cache::_impl_t {
-    immer::map<term, std::any> data;
-
-    _impl_t() = default;
-  };
-
-  cache::cache() : _impl{std::make_unique<_impl_t>()} { }
-  
-  cache::cache(cache const& other) 
-    : _impl{std::make_unique<_impl_t>(*other._impl)} { }
-
-  cache::cache(cache &&) = default;
-
-  cache::~cache() = default;
-  
-  cache &cache::operator=(cache const& other) {
-    *_impl = *other._impl;
-    return *this;
+  static std::vector<term> resolved(
+    module const& m, std::vector<term> const &ts, immer::set<label> hidden
+  ) {
+    std::vector<term> res;
+    for(term t : ts)
+      res.push_back(resolved(m, t, hidden));
+    return res;
   }
 
-  cache &cache::operator=(cache &&) = default;
+  static 
+  term resolved(module const& m, term t, immer::set<label> hidden = {}) {
+    return support::match(t)(
+      [&](error v)        { return v; },
+      [&](type_type v)    { return v; },
+      [&](integer_type v) { return v; },
+      [&](real_type v)    { return v; },
+      [&](boolean_type v) { return v; },
+      [&](integer v)      { return v; },
+      [&](real v)         { return v; },
+      [&](boolean v)      { return v; },
+      [&](object v)       { return v; },
+      [&](variable x, label name) -> term {
+        if(hidden.count(name))
+          return x;
 
-  std::optional<std::any> cache::get(term k) const {
-    if(auto x = _impl->data.find(k); x)
-      return *x;
-    
-    return {};
+        if(auto lookup = m.lookup(name); lookup)
+          return *lookup;
+        
+        return x;
+      },
+      [&]<any_of<exists,forall,lambda> T>(T, auto const& decls, term body) {
+        std::vector<decl> rdecls;
+        for(decl d : decls) {
+          rdecls.push_back(decl{d.name, resolved(m, d.type, hidden)});
+          hidden = hidden.insert(d.name);
+        }
+        
+        return T(rdecls, resolved(m, body, hidden));
+      },
+      [&]<typename T>(T, auto const &...args) {
+        return T(resolved(m, args, hidden)...);
+      }
+    );
   }
 
-  void cache::insert(term k, std::any v) {
-    _impl->data = _impl->data.insert({k, v});
+  term module::resolved(term t) const {
+    return logic::resolved(*this, t);
   }
 
-  void cache::clear() {
-    _impl->data = {};
-  }  
+  void module::resolve() {
+    for(auto p : _impl->pending)
+      _impl->lookups = _impl->lookups.insert({p->name, p});
+
+    for(auto p : _impl->pending) {
+      p->type = resolved(p->type);
+      if(p->value)
+        *p->value = resolved(*p->value);
+    }
+
+    _impl->pending = {};
+  }
+
+  module module::resolved() const {
+    module m = *this;
+    m.resolve();
+    return m;
+  }
 
   term module::type_of(term t) const {
     using support::match;
@@ -219,10 +198,10 @@ namespace black::logic {
       [&](distinct)      { return sigma->boolean_type(); },
       [&](type_cast c)   { return c.target(); },
       [&](variable x) -> term {
-        auto d = lookup(x);
-        if(!d)
-          return error(x, "Use of undeclared variable");
-        return d->scope->evaluate(d->type);
+        return error(x, "use of unbound free variable");
+      },
+      [&](object, auto lookup) {
+        return lookup->type;
       },
       [&](atom a, term head, auto const& args) -> term {
         auto fty = cast<function_type>(type_of(head));
@@ -241,9 +220,10 @@ namespace black::logic {
 
         return fty->range();
       },
-      [&](quantifier auto, auto const& binds, term body) -> term {
+      [&](quantifier auto, auto const& decls, term body) -> term {
         module env(sigma);
-        env.declare(binds);
+        for(decl d : decls)
+          env.declare(d);
 
         term bodyty = env.type_of(body);
         if(!cast<boolean_type>(bodyty))
@@ -283,14 +263,15 @@ namespace black::logic {
 
         return truety;
       },
-      [&](lambda, std::vector<binding> const& binds, term body) -> term {
+      [&](lambda, auto const& decls, term body) -> term {
         std::vector<term> argtypes;
-        for(binding b : binds)
-          argtypes.push_back(b.target);
+        for(decl d : decls)
+          argtypes.push_back(d.type);
         
         module env(sigma);
         env.import(*this);
-        env.declare(binds);
+        for(decl d : decls)
+          env.declare(d);
 
         auto bodyty = env.type_of(body);
         return function_type(std::move(argtypes), bodyty);
@@ -393,12 +374,11 @@ namespace black::logic {
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
       [&](lambda v)        { return v; },
-      [&](variable x) -> term {
-        auto d = lookup(x);
-        if(!d || !d->def)
-          return x;
-        
-        return d->scope->evaluate(*d->def);
+      [&](variable x)      { return x; },
+      [&](object x, auto lookup) -> term {
+        if(lookup->value)
+          return evaluate(*lookup->value);
+        return x;
       },
       //[&](type_cast c)   { return c.target(); },
       [&](atom, term head, auto const& args) -> term {
@@ -414,9 +394,9 @@ namespace black::logic {
         env.import(*this);
 
         for(size_t i = 0; i < args.size(); i++)
-          env.define(f->vars()[i].name, f->vars()[i].target, eargs[i]);
+          env.define({f->vars()[i].name, f->vars()[i].type, eargs[i]});
 
-        return env.evaluate(f->body());
+        return env.evaluate(env.resolved(f->body()));
       },
       // equal, distinct
       [&]<quantifier T>(T, auto const& binds, term body) {
@@ -526,7 +506,7 @@ namespace black::logic {
 
         return T(eleft, eright);
       },
-      [&](relational auto op, term left, term right) -> term {
+      [&]<relational T>(T op, term left, term right) -> term {
         term eleft = evaluate(left);
         term eright = evaluate(right);
 

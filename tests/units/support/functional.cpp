@@ -141,3 +141,14 @@ TEST_CASE("Match on std::expected") {
     REQUIRE(!r2.has_value());
 
 }
+
+TEST_CASE("checkpoint()") {
+    int x = 42;
+
+    {
+        auto _ = checkpoint(x);
+        x = 0;
+    }
+
+    REQUIRE(x == 42);
+}

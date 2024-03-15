@@ -71,17 +71,20 @@
 //   };
 // )
 
-define_type(logic, struct binding,
-  struct binding { 
-    logic::variable name; 
-    logic::term target;
+declare_type(logic, struct lookup)
 
-    bool operator==(binding const&) const = default;
-    size_t hash() const { return support::hash(name, target); }
+define_type(logic, struct decl,
+  struct decl { 
+    ast::core::label name; 
+    logic::term type;
+
+    decl(variable name, logic::term type) : name{name.name()}, type{type} { }
+    decl(ast::core::label name, logic::term type) : name{name}, type{type} { }
+
+    bool operator==(decl const&) const = default;
+    size_t hash() const { return support::hash(name, type); }
   };
 )
-
-declare_type(logic, struct decl)
 
 declare_ast(logic, term)
 
@@ -137,9 +140,13 @@ declare_ast(logic, term)
 
   section("Boolean and first-order predicates")
 
-    declare_ast_node(logic, term, variable, "A variable")
+    declare_ast_node(logic, term, variable, "An unbound variable")
       declare_field(logic, term, variable, name, ast::core::label, "The variable's name")
     end_ast_node(logic, term, variable)
+    
+    declare_ast_node(logic, term, object, "A resolved object")
+      declare_field(logic, term, object, lookup, logic::lookup const *, "The object's lookup info")
+    end_ast_node(logic, term, object)
 
     declare_ast_node(logic, term, equal, "An equality constraint between terms")
       declare_field(logic, term, equal, arguments, std::vector<logic::term>, "The operands")
@@ -155,12 +162,12 @@ declare_ast(logic, term)
     end_ast_node(logic, term, atom)
 
     declare_ast_node(logic, term, exists, "An existentially quantified term")
-      declare_field(logic, term, exists, binds, std::vector<logic::binding>, "The quantified variables")
+      declare_field(logic, term, exists, binds, std::vector<logic::decl>, "The quantified variables")
       declare_field(logic, term, exists, body, logic::term, "The quantified term")
     end_ast_node(logic, term, exists)
 
     declare_ast_node(logic, term, forall, "An universally quantified term")
-      declare_field(logic, term, forall, binds, std::vector<logic::binding>, "The quantified variables")
+      declare_field(logic, term, forall, binds, std::vector<logic::decl>, "The quantified variables")
       declare_field(logic, term, forall, body, logic::term, "The quantified term")
     end_ast_node(logic, term, forall)
 
@@ -193,8 +200,8 @@ declare_ast(logic, term)
       declare_field(logic, term, ite, iffalse, logic::term, "The result if the guard is false")
     end_ast_node(logic, term, ite)
 
-    declare_ast_node(logic, term, lambda, "A lambda abstraction")
-      declare_field(logic, term, lambda, vars, std::vector<logic::binding>, "The abstracted variables")
+    declare_ast_node(logic, term, lambda, "A lambda abstraction (i.e., an anonymous function)")
+      declare_field(logic, term, lambda, vars, std::vector<logic::decl>, "The lambda's parameters")
       declare_field(logic, term, lambda, body, logic::term, "The lambda's body")
     end_ast_node(logic, term, lambda)
 
