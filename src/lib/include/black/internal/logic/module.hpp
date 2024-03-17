@@ -100,6 +100,9 @@ namespace black::logic {
     //
     void import(module m);
   
+    //
+    // declarations and definitions
+    //
     object declare(decl d, resolution r = resolution::immediate);
     
     object define(def d, resolution r = resolution::immediate);
@@ -112,11 +115,17 @@ namespace black::logic {
     std::optional<object> lookup(variable x) const { return lookup(x.name()); }
 
     //
+    // requirements
+    //
+    void require(term req);
+
+    //
     // accessors
     //
     alphabet *sigma() const;
     std::vector<module> imports() const; // TODO: replace vector with lazy range
-    std::vector<object> objects() const; // TODO: replace vector with lazy range
+    std::vector<object> objects() const; // TODO: same as above
+    std::vector<term> requirements() const; // TODO: same as above
 
     //
     // Resolve terms

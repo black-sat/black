@@ -25,21 +25,38 @@
 
 #include <black/support>
 #include <black/logic>
+#include <black/backends/cvc5>
 
-TEST_CASE("SMT") {
+using namespace black::support;
+using namespace black::logic;
+using namespace black::backends;
 
-    // alphabet sigma;
+TEST_CASE("cvc5") {
+
+    alphabet sigma;
     
-    // module mod(&sigma);
+    module mod(&sigma);
 
-    // object x = mod.declare("x", sigma.boolean_type());
-    // object y = mod.declare("y", sigma.boolean_type());
+    object x = mod.declare({"x", sigma.integer_type()});
+    object y = mod.declare({"y", sigma.integer_type()});
+
+    cvc5::solver slv(&sigma);
     
-    // mod.assertion("consistency", x && y);
+    slv.import(mod);
+    slv.require(x <= y);
+    
+    REQUIRE(slv.check() == true);
+    
+    slv.push();
+    slv.require(x > y);
 
-    // z3::solver slv(mod);
+    REQUIRE(slv.check() == false);
 
-    // tribool ok = slv.check();
+    slv.pop();
+
+    REQUIRE(slv.check() == true);
+
+    REQUIRE(slv.check_assuming(x > y) == false);
 
 
 }

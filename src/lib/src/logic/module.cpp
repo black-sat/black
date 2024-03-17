@@ -36,6 +36,7 @@ namespace black::logic {
     immer::vector<module> imports;
     immer::map<label, std::shared_ptr<struct lookup const>> lookups;
     immer::vector<std::shared_ptr<struct lookup>> pending;
+    immer::vector<term> reqs;
 
     _impl_t(alphabet *sigma) : sigma{sigma} { }
 
@@ -109,6 +110,10 @@ namespace black::logic {
     return {};
   }
 
+  void module::require(term req) {
+    _impl->reqs = _impl->reqs.push_back(req);
+  }
+
   alphabet *module::sigma() const {
     return _impl->sigma;
   }
@@ -124,6 +129,10 @@ namespace black::logic {
         return _impl->sigma->object(v.second.get());
       }) |
       std::ranges::to<std::vector>();
+  }
+
+  std::vector<term> module::requirements() const {
+    return std::vector<term>{_impl->reqs.begin(), _impl->reqs.end()};
   }
 
   static term resolved(module const& m, term t, immer::set<label> hidden);

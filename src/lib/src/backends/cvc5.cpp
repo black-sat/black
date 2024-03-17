@@ -48,7 +48,6 @@ namespace black::backends::cvc5 {
       module mod;
       immer::map<object, CVC5::Term> objects;
       immer::map<CVC5::Term, object> consts;
-      immer::vector<term> requirements;
 
       explicit frame_t(alphabet *sigma) : mod{sigma} { }
     } frame;
@@ -212,7 +211,8 @@ namespace black::backends::cvc5 {
     }
 
     void require(term r) {
-      frame.requirements = frame.requirements.push_back(r);
+      frame.mod.require(r);
+      slv.assertFormula(to_term(r, {}));
     }
 
     void push() {
@@ -232,11 +232,21 @@ namespace black::backends::cvc5 {
     }
 
     support::tribool check() {
-      return true;
+      CVC5::Result res = slv.checkSat();
+      if(res.isSat())
+        return true;
+      if(res.isUnsat())
+        return false;
+      return tribool::undef;
     }
     
-    support::tribool check_with(term) {
-      return true;
+    support::tribool check_assuming(term assumption) {
+      CVC5::Result res = slv.checkSatAssuming(to_term(assumption, {}));
+      if(res.isSat())
+        return true;
+      if(res.isUnsat())
+        return false;
+      return tribool::undef;
     }
 
   };
@@ -257,8 +267,8 @@ namespace black::backends::cvc5 {
 
   support::tribool solver::check() { return _impl->check(); }
     
-  support::tribool solver::check_with(term t) {
-    return _impl->check_with(t);
+  support::tribool solver::check_assuming(term t) {
+    return _impl->check_assuming(t);
   }
 
 }

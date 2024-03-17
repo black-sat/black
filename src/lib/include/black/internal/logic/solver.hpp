@@ -29,7 +29,8 @@
 
 namespace black::logic {
 
-  class solver {
+  class solver 
+  {
   public:
     solver() = default;
     solver(solver const&) = delete;
@@ -50,7 +51,7 @@ namespace black::logic {
 
     virtual support::tribool check() = 0;
     
-    virtual support::tribool check_with(term t) = 0;
+    virtual support::tribool check_assuming(term t) = 0;
   };
 
 }

@@ -32,6 +32,7 @@ namespace black::backends::cvc5 {
 
   class solver : public logic::solver 
   {
+  public:
     solver(logic::alphabet *sigma);
     solver(solver const&) = delete;
     solver(solver &&) = delete;
@@ -51,7 +52,7 @@ namespace black::backends::cvc5 {
 
     virtual support::tribool check() override;
     
-    virtual support::tribool check_with(logic::term t) override;
+    virtual support::tribool check_assuming(logic::term t) override;
 
   private:
     struct impl_t;
