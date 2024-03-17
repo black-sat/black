@@ -32,7 +32,7 @@ namespace black::backends::cvc5 {
 
   class solver : public logic::solver 
   {
-    solver();
+    solver(logic::alphabet *sigma);
     solver(solver const&) = delete;
     solver(solver &&) = delete;
     

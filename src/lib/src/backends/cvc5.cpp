@@ -41,17 +41,21 @@ namespace black::backends::cvc5 {
   namespace CVC5 = ::cvc5;
 
   struct solver::impl_t {
-    std::vector<module> imports;
 
     CVC5::Solver slv;
 
     struct frame_t {
+      module mod;
       immer::map<object, CVC5::Term> objects;
       immer::map<CVC5::Term, object> consts;
       immer::vector<term> requirements;
+
+      explicit frame_t(alphabet *sigma) : mod{sigma} { }
     } frame;
   
     std::stack<frame_t> stack;    
+
+    impl_t(alphabet *sigma) : frame{sigma} { }
 
     CVC5::Sort to_sort(term type) const {
       return match(type)(
@@ -122,7 +126,7 @@ namespace black::backends::cvc5 {
           
           return slv.mkTerm(CVC5::Kind::APPLY_UF, argterms);
         },
-        [&](quantifier auto q, auto decls, term body) {
+        [&]<any_of<exists,forall,lambda> T>(T v, auto decls, term body) {
           std::vector<CVC5::Term> varlist;
           immer::map<label, CVC5::Term> newvars = vars;
 
@@ -132,9 +136,10 @@ namespace black::backends::cvc5 {
             newvars = newvars.set(name, term);
           }
 
-          CVC5::Kind kind = match(q)(
+          CVC5::Kind kind = match(v)(
             [](forall) { return CVC5::Kind::FORALL; },
-            [](exists) { return CVC5::Kind::EXISTS; }
+            [](exists) { return CVC5::Kind::EXISTS; },
+            [](lambda) { return CVC5::Kind::LAMBDA; }
           );
 
           return slv.mkTerm(kind, { 
@@ -144,6 +149,48 @@ namespace black::backends::cvc5 {
         },
         [&](negation, term arg) {
           return slv.mkTerm(CVC5::Kind::NOT, { to_term(arg, vars) });
+        },
+        [&](conjunction, auto const& args) {
+          return slv.mkTerm(CVC5::Kind::AND, to_term(args, vars));
+        },
+        [&](disjunction, auto const& args) {
+          return slv.mkTerm(CVC5::Kind::OR, to_term(args, vars));
+        },
+        [&](implication, term left, term right) {
+          return slv.mkTerm(
+            CVC5::Kind::IMPLIES, { to_term(left, vars), to_term(right, vars) }
+          );
+        },
+        [&](ite, term guard, term iftrue, term iffalse) {
+          return slv.mkTerm(CVC5::Kind::ITE, {
+            to_term(guard, vars), to_term(iftrue, vars), to_term(iffalse, vars)
+          });
+        },
+        [&](arithmetic auto v, auto ...args) {
+          CVC5::Kind kind = match(v)(
+            [](minus) { return CVC5::Kind::NEG; },
+            [](sum) { return CVC5::Kind::ADD; },
+            [](product) { return CVC5::Kind::MULT; },
+            [](difference) { return CVC5::Kind::SUB; },
+            [&](division) { 
+              module const&mod = frame.mod;
+              alphabet *sigma = mod.sigma();
+              if((bool(mod.type_of(args) == sigma->integer_type()) || ...))
+                return CVC5::Kind::INTS_DIVISION;
+              return CVC5::Kind::DIVISION; 
+            }
+          );
+          return slv.mkTerm(kind, { to_term(args, vars)... });
+        },
+        [&](relational auto v, term left, term right) {
+          CVC5::Kind kind = match(v)(
+            [](less_than) { return CVC5::Kind::LT; },
+            [](less_than_eq) { return CVC5::Kind::LEQ; },
+            [](greater_than) { return CVC5::Kind::GT; },
+            [](greater_than_eq) { return CVC5::Kind::GEQ; }
+          );
+          return 
+            slv.mkTerm(kind, { to_term(left, vars), to_term(right, vars) });
         }
       );
     }
@@ -160,7 +207,7 @@ namespace black::backends::cvc5 {
     }
 
     void import(module m) {
-      imports.push_back(m);
+      frame.mod.import(m);
       collect(m);
     }
 
@@ -175,7 +222,7 @@ namespace black::backends::cvc5 {
 
     void pop() {
       if(stack.empty()) {
-        frame = {};
+        frame = frame_t{frame.mod.sigma()};
         slv.resetAssertions();
       }
 
@@ -195,8 +242,8 @@ namespace black::backends::cvc5 {
   };
 
 
-  solver::solver() 
-    : _impl{std::make_unique<impl_t>()} { }
+  solver::solver(alphabet *sigma) 
+    : _impl{std::make_unique<impl_t>(sigma)} { }
 
   solver::~solver() = default;
 
