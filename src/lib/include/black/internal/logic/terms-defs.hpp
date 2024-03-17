@@ -125,8 +125,6 @@ declare_ast(logic, term)
       declare_field(logic, term, type_cast, expr, logic::term, "The term to cast")
     end_ast_node(logic, term, type_cast)
 
-
-
   end_section()
 
   section("Constant terms")

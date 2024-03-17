@@ -48,12 +48,16 @@ namespace black::logic {
   module::module(module const& other)
     : _impl{std::make_unique<_impl_t>(_impl_t{*other._impl})} { }
 
+  module::module(module &&) = default;
+
   module::~module() = default;
 
   module &module::operator=(module const& other) {
     *_impl = *other._impl;
     return *this;
   }
+
+  module &module::operator=(module &&) = default;
 
   bool module::operator==(module const& other) const {
     return *_impl == *other._impl;
@@ -93,10 +97,6 @@ namespace black::logic {
 
     return define(def{f.name, type, body}, r);
   }
-
-  alphabet *module::sigma() const {
-    return _impl->sigma;
-  }
   
   std::optional<object> module::lookup(label s) const {
     if(auto p = _impl->lookups.find(s); p)
@@ -107,6 +107,23 @@ namespace black::logic {
         return result;
     
     return {};
+  }
+
+  alphabet *module::sigma() const {
+    return _impl->sigma;
+  }
+  
+  std::vector<module> module::imports() const {
+    return std::vector<module>{_impl->imports.begin(), _impl->imports.end()};
+  }
+  
+  std::vector<object> module::objects() const {
+    return 
+      std::views::all(_impl->lookups) | 
+      std::views::transform([&](auto v) { 
+        return _impl->sigma->object(v.second.get());
+      }) |
+      std::ranges::to<std::vector>();
   }
 
   static term resolved(module const& m, term t, immer::set<label> hidden);

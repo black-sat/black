@@ -86,12 +86,12 @@ namespace black::logic {
   public:
     explicit module(alphabet *sigma);
     module(module const&);
-    module(module &&) = default;
+    module(module &&);
 
     ~module();
     
     module &operator=(module const&);
-    module &operator=(module &&) = default;
+    module &operator=(module &&);
 
     bool operator==(module const&) const;
     
@@ -106,15 +106,17 @@ namespace black::logic {
     object define(function_def f, resolution r = resolution::immediate);
 
     //
-    // accessors
-    //
-    alphabet *sigma() const;
-
-    //
     // Name lookup
     //
     std::optional<object> lookup(label x) const;
     std::optional<object> lookup(variable x) const { return lookup(x.name()); }
+
+    //
+    // accessors
+    //
+    alphabet *sigma() const;
+    std::vector<module> imports() const; // TODO: replace vector with lazy range
+    std::vector<object> objects() const; // TODO: replace vector with lazy range
 
     //
     // Resolve terms

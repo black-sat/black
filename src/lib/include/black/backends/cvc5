@@ -21,31 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SMT_BACKEND_HPP
-#define BLACK_SMT_BACKEND_HPP
+#ifndef BLACK_BACKENDS_CVC5_HPP
+#define BLACK_BACKENDS_CVC5_HPP
 
-#include <black/support>
-#include <black/logic>
+#include <black/internal/backends/cvc5.hpp>
 
-namespace black::smt {
-  
-  class solver
-  {
-  public:
-    solver() = default;
-
-    solver(solver const&) = default;
-    solver(solver &&) = default;
-    
-    virtual ~solver() = default;
-
-    solver &operator=(solver const&) = default;
-    solver &operator=(solver &&) = default;
-
-    virtual support::tribool check() = 0;
-
-  };
-
-}
-
-#endif // BLACK_SMT_BACKEND_HPP
+#endif // BLACK_BACKENDS_CVC5_HPP

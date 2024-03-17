@@ -25,7 +25,6 @@
 
 #include <black/support>
 #include <black/logic>
-#include <black/smt>
 
 TEST_CASE("SMT") {
 
