@@ -74,5 +74,20 @@ TEST_CASE("cvc5") {
         REQUIRE(slv.check() == false);
     }
 
+    SECTION("Declaration of functions/predicates") {
+
+        variable x = sigma.variable("x");
+
+        object p = slv.declare({
+            "p", function_type({sigma.integer_type()}, sigma.boolean_type())
+        });
+
+        slv.require(forall({{x, sigma.integer_type()}}, p(x)));
+        slv.require(!p(42));
+
+        REQUIRE(slv.check() == false);
+
+    }
+
 
 }

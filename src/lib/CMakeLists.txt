@@ -142,6 +142,8 @@ set (
   LIB_SRC
   src/support/debug.cpp
   src/logic/module.cpp
+  src/logic/type_of.cpp
+  src/logic/evaluate.cpp
 )
 
 # if(Z3_FOUND)

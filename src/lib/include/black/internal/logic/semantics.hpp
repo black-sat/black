@@ -21,16 +21,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_LOGIC_HPP
-#define BLACK_LOGIC_HPP
+#ifndef BLACK_LOGIC_SEMANTICS_HPP
+#define BLACK_LOGIC_SEMANTICS_HPP
 
-#include <black/support>
-#include <black/ast/core>
+#include <vector>
 
-#include <black/internal/logic/terms.hpp>
-#include <black/internal/logic/operators.hpp>
-#include <black/internal/logic/module.hpp>
-#include <black/internal/logic/semantics.hpp>
-#include <black/internal/logic/solver.hpp>
+namespace black::logic {
 
-#endif // BLACK_LOGIC_HPP
+  term type_of(term);
+  std::vector<term> type_of(std::vector<term> const&);
+
+  term evaluate(term);
+  std::vector<term> evaluate(std::vector<term> const&);
+
+}
+
+#endif // BLACK_LOGIC_SEMANTICS_HPP

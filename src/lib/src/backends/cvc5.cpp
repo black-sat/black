@@ -173,10 +173,8 @@ namespace black::backends::cvc5 {
             [](sum) { return CVC5::Kind::ADD; },
             [](product) { return CVC5::Kind::MULT; },
             [](difference) { return CVC5::Kind::SUB; },
-            [&](division) { 
-              module const&mod = frame.mod;
-              alphabet *sigma = mod.sigma();
-              if((bool(mod.type_of(args) == sigma->integer_type()) || ...))
+            [&](division) {
+              if((cast<integer_type>(type_of(args)) || ...))
                 return CVC5::Kind::INTS_DIVISION;
               return CVC5::Kind::DIVISION; 
             }
@@ -198,38 +196,32 @@ namespace black::backends::cvc5 {
 
     void collect(object obj) {
       auto lu = obj.lookup();
-      CVC5::Term t = match(lu->type)(
-        [&](auto ty) {
-          if(!lu->value)
-            return slv.mkConst(to_sort(ty));
+      CVC5::Term t = !lu->value ? slv.mkConst(to_sort(lu->type)) : 
+        match(*lu->value)(
+          [&](lambda, auto const &decls, term body) {
+            std::vector<CVC5::Term> vars;
+            immer::map<label, CVC5::Term> varmap;
 
-          return match(*lu->value)(
-            [&](lambda, auto const &decls, term body) {
-              std::vector<CVC5::Term> vars;
-              immer::map<label, CVC5::Term> varmap;
-
-              for(auto [name, type] : decls) {
-                CVC5::Term var = slv.mkVar(to_sort(type));
-                vars.push_back(var);
-                varmap = varmap.set(name, var);
-              }
-
-              auto fun_ty = cast<function_type>(lu->type);
-              black_assert(fun_ty.has_value());
-
-              return slv.defineFun(
-                std::format("{}", lu->name), vars, 
-                to_sort(fun_ty->range()), to_term(body, varmap)
-              );
-            },
-            [&](auto d) {
-              return slv.defineFun(
-                std::format("{}", lu->name), {}, to_sort(ty), to_term(d, {})
-              );
+            for(auto [name, type] : decls) {
+              CVC5::Term var = slv.mkVar(to_sort(type));
+              vars.push_back(var);
+              varmap = varmap.set(name, var);
             }
-          );
-        }
-      );
+
+            auto fun_ty = cast<function_type>(lu->type);
+            black_assert(fun_ty.has_value());
+
+            return slv.defineFun(
+              std::format("{}", lu->name), vars, 
+              to_sort(fun_ty->range()), to_term(body, varmap)
+            );
+          },
+          [&](auto d) {
+            return slv.defineFun(
+              std::format("{}", lu->name), {}, to_sort(lu->type), to_term(d, {})
+            );
+          }
+        ); 
       
       frame.objects = frame.objects.insert({obj, t});
       frame.consts = frame.consts.insert({t, obj});

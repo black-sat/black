@@ -69,7 +69,7 @@ TEST_CASE("Modules") {
     );
     object x = m.declare({"x", sigma.integer_type()});
 
-    REQUIRE(m.type_of(p(x)) == sigma.boolean_type());
+    REQUIRE(type_of(p(x)) == sigma.boolean_type());
   }
 
   SECTION("Definitions") {
@@ -83,17 +83,17 @@ TEST_CASE("Modules") {
       });
     object aobj = m.define({a, sigma.real(0.0)}); // this will be shadowed
 
-    REQUIRE(m.type_of(x) == sigma.integer_type());
-    REQUIRE(m.type_of(aobj) == sigma.real_type());
+    REQUIRE(type_of(x) == sigma.integer_type());
+    REQUIRE(type_of(aobj) == sigma.real_type());
 
     term ft = function_type({sigma.integer_type()}, sigma.integer_type());
-    REQUIRE(m.type_of(p) == ft);
+    REQUIRE(type_of(p) == ft);
 
     term t = p(sigma.integer(2));
 
-    REQUIRE(m.type_of(t) == sigma.integer_type());
+    REQUIRE(type_of(t) == sigma.integer_type());
     
-    REQUIRE(m.evaluate(t) == sigma.integer(42));
+    REQUIRE(evaluate(t) == sigma.integer(42));
 
 
   }
@@ -107,9 +107,9 @@ TEST_CASE("Modules") {
 
     term t = p(sigma.integer(40));
 
-    REQUIRE(m.type_of(t) == sigma.integer_type());
+    REQUIRE(type_of(t) == sigma.integer_type());
     
-    REQUIRE(m.evaluate(t) == sigma.integer(40) + x);
+    REQUIRE(evaluate(t) == sigma.integer(40) + x);
   }
 
 

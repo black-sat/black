@@ -138,15 +138,6 @@ namespace black::logic {
     void resolve();
     module resolved() const;
 
-    //
-    // Type checking and term evaluation
-    //
-    term type_of(term t) const;
-    term evaluate(term t) const;
-
-    std::vector<term> type_of(std::vector<term> const& ts) const;
-    std::vector<term> evaluate(std::vector<term> const& ts) const;
-
   private:
     struct _impl_t;
     std::unique_ptr<_impl_t> _impl;
