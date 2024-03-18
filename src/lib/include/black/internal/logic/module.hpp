@@ -120,6 +120,18 @@ namespace black::logic {
     void require(term req);
 
     //
+    // push()/pop() interface
+    //
+    void push();
+    void pop();
+
+    auto pushed(auto f) {
+      auto _ = support::finally([&]{ pop(); });
+      push();
+      return f();
+    }
+
+    //
     // accessors
     //
     alphabet *sigma() const;

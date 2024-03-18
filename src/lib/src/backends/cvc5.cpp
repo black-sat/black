@@ -28,10 +28,11 @@
 
 #include <immer/vector.hpp>
 #include <immer/map.hpp>
+#include <immer/set.hpp>
 
 #include <cvc5/cvc5.h>
 
-#include <iostream>
+#include <algorithm>
 
 namespace black::backends::cvc5 {
 
@@ -44,19 +45,20 @@ namespace black::backends::cvc5 {
 
   struct solver::impl_t {
 
-    CVC5::Solver slv;
-
     struct frame_t {
       module mod;
       immer::map<object, CVC5::Term> objects;
       immer::map<CVC5::Term, object> consts;
+      immer::set<term> reqs;
 
-      explicit frame_t(alphabet *sigma) : mod{sigma} { }
+      frame_t(alphabet *sigma) : mod{sigma} { }
     } frame;
   
+    alphabet *sigma;
+    CVC5::Solver slv;
     std::stack<frame_t> stack;    
 
-    impl_t(alphabet *sigma) : frame{sigma} { }
+    impl_t(alphabet *sigma) : frame{sigma}, sigma{sigma} { }
 
     CVC5::Sort to_sort(term type) const {
       return match(type)(
@@ -194,7 +196,10 @@ namespace black::backends::cvc5 {
       );
     }
 
-    void collect(object obj) {
+    void add(object obj) {
+      if(frame.objects.find(obj) != nullptr)
+        return;
+
       auto lu = obj.lookup();
       CVC5::Term t = !lu->value ? slv.mkConst(to_sort(lu->type)) : 
         match(*lu->value)(
@@ -227,40 +232,40 @@ namespace black::backends::cvc5 {
       frame.consts = frame.consts.insert({t, obj});
     }
 
-    void collect(module const& m) {
+    void add(term t) {
+      if(frame.reqs.find(t) != nullptr)
+        return;
+
+      frame.reqs = frame.reqs.insert(t);
+      slv.assertFormula(to_term(t, {}));
+    }
+
+    void objects(module const& m, std::vector<object> &objs) {
       for(module imported : m.imports())
-        collect(imported);
+        objects(imported);
       
       for(object obj : m.objects()) 
-        collect(obj);
+        objs.push_back(obj);
     }
 
-    void import(module m) {
-      frame.mod.import(m);
-      collect(m);
+    std::vector<object> objects(module const& m) {
+      std::vector<object> result;
+      objects(m, result);
+      return result;
     }
 
-    object declare(decl d) {
-      object obj = frame.mod.declare(d);
-      collect(obj);
-      return obj;
-    }
-    
-    object define(def d) {
-      object obj = frame.mod.define(d);
-      collect(obj);
-      return obj;
-    }
-    
-    object define(function_def f) {
-      object obj = frame.mod.define(f);
-      collect(obj);
-      return obj;
+    void requirements(module const& m, immer::set<term> &reqs) {
+      for(module imported : m.imports())
+        requirements(imported, reqs);
+
+      for(term req : m.requirements())
+        reqs = reqs.insert(req);
     }
 
-    void require(term r) {
-      frame.mod.require(r);
-      slv.assertFormula(to_term(r, {}));
+    immer::set<term> requirements(module const& m) {
+      immer::set<term> result;
+      requirements(m, result);
+      return result;
     }
 
     void push() {
@@ -270,26 +275,41 @@ namespace black::backends::cvc5 {
 
     void pop() {
       if(stack.empty()) {
-        frame = frame_t{frame.mod.sigma()};
+        frame = frame_t{sigma};
         slv.resetAssertions();
+      } else {
+        frame = stack.top();
+        stack.pop();
+        slv.pop();
       }
-
-      frame = stack.top();
-      stack.pop();
-      slv.pop();
     }
 
-    support::tribool check() {
+    void rollback(module const &m) {
+      immer::set<term> reqs = requirements(m);
+
+      auto contains = [&](auto a, auto b) {
+        return std::all_of(b.begin(), b.end(), [&](term t) { 
+          return a.find(t) != nullptr; 
+        });
+      };
+
+      while(!contains(reqs, frame.reqs))
+        pop();
+
+      push();
+      
+      auto objs = objects(m);
+      for(object obj : objs)
+        add(obj);
+
+      for(term req : reqs)
+        add(req);
+    }
+
+    support::tribool check(module m) {
+      rollback(m);     
+
       CVC5::Result res = slv.checkSat();
-      if(res.isSat())
-        return true;
-      if(res.isUnsat())
-        return false;
-      return tribool::undef;
-    }
-    
-    support::tribool check_assuming(term assumption) {
-      CVC5::Result res = slv.checkSatAssuming(to_term(assumption, {}));
       if(res.isSat())
         return true;
       if(res.isUnsat())
@@ -305,24 +325,8 @@ namespace black::backends::cvc5 {
 
   solver::~solver() = default;
 
-  void solver::import(module m) { _impl->import(std::move(m)); }
-
-  object solver::declare(decl d) { return _impl->declare(d); }
-    
-  object solver::define(def d) { return _impl->define(d); }
-    
-  object solver::define(function_def f) { return _impl->define(f); }
-
-  void solver::require(term r) { _impl->require(r); }
-
-  void solver::push() { _impl->push(); }
-
-  void solver::pop() { _impl->pop(); }
-
-  support::tribool solver::check() { return _impl->check(); }
-    
-  support::tribool solver::check_assuming(term t) {
-    return _impl->check_assuming(t);
+  support::tribool solver::check(module m) { 
+    return _impl->check(std::move(m)); 
   }
 
 }

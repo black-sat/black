@@ -30,35 +30,19 @@
 
 namespace black::backends::cvc5 {
 
-  class solver : public logic::solver 
+  class solver
   {
   public:
     solver(logic::alphabet *sigma);
     solver(solver const&) = delete;
     solver(solver &&) = delete;
     
-    virtual ~solver() override;
+    ~solver();
 
     solver &operator=(solver const&) = delete;
     solver &operator=(solver &&) = delete;
 
-    virtual void import(logic::module m) override;
-
-    virtual logic::object declare(logic::decl d) override;
-    
-    virtual logic::object define(logic::def d) override;
-    
-    virtual logic::object define(logic::function_def f) override;
-
-    virtual void require(logic::term r) override;
-
-    virtual void push() override;
-
-    virtual void pop() override;
-
-    virtual support::tribool check() override;
-    
-    virtual support::tribool check_assuming(logic::term t) override;
+    support::tribool check(logic::module m);
 
   private:
     struct impl_t;

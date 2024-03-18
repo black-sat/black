@@ -328,33 +328,34 @@ namespace black::support {
 }
 
 namespace black::support::internal {
+
   //
-  // Utility to keep a stack of objects during a recursive traversal
+  // Utility to execute code at the end of the scope
   //
-  template<typename T>
+  template<typename F>
   struct 
-  [[nodiscard("result of checkpoint() must be stored in a local variable")]] 
-  checkpoint_t 
-  {
-    checkpoint_t(T &x) : _original{&x}, _saved{x} { }
-
-    checkpoint_t(checkpoint_t const&) = delete;
-    checkpoint_t(checkpoint_t &&) = delete;
-    
-    checkpoint_t &operator=(checkpoint_t const&) = delete;
-    checkpoint_t &operator=(checkpoint_t &&) = delete;
-
-    ~checkpoint_t() noexcept(std::is_nothrow_assignable_v<T, T>) {
-      *_original = _saved;
+  [[nodiscard("result of finally() must be stored in a local variable")]] 
+  finally_t {
+    finally_t(F guard) : _guard{guard} { }
+    ~finally_t() noexcept(noexcept(_guard())) {
+      _guard();
     }
 
-    T *_original = nullptr;
-    T  _saved;
+    F _guard;
   };
 
-  template<typename T>
-  checkpoint_t<T> checkpoint(T & x) {
-    return {x};
+  template<typename F>
+  finally_t<F> finally(F guard) {
+    return finally_t<F>(guard);
+  }
+
+  //
+  // Restore the current value of `v` at the end of the scope
+  //
+  auto checkpoint(auto & v) {
+    return finally([original = &v, saved = v](){
+      *original = saved;
+    });
   }
 }
 
@@ -366,6 +367,7 @@ namespace black::support {
   using internal::visitor;
   using internal::match;
   using internal::matching;
+  using internal::finally;
   using internal::checkpoint;
 }
 

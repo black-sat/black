@@ -32,11 +32,18 @@ namespace black::logic {
 
   struct module::_impl_t 
   {
+    struct frame_t {
+      immer::vector<module> imports;
+      immer::map<label, std::shared_ptr<struct lookup const>> lookups;
+      immer::vector<term> reqs;
+
+      bool operator==(frame_t const&) const = default;
+    };
+    
     alphabet *sigma;
-    immer::vector<module> imports;
-    immer::map<label, std::shared_ptr<struct lookup const>> lookups;
+    frame_t frame;
+    immer::vector<frame_t> stack;
     immer::vector<std::shared_ptr<struct lookup>> pending;
-    immer::vector<term> reqs;
 
     _impl_t(alphabet *sigma) : sigma{sigma} { }
 
@@ -65,7 +72,7 @@ namespace black::logic {
   }
 
   void module::import(module m) {
-    _impl->imports = _impl->imports.push_back(m.resolved());
+    _impl->frame.imports = _impl->frame.imports.push_back(m.resolved());
   }
 
   object module::declare(decl d, resolution r) {
@@ -100,10 +107,10 @@ namespace black::logic {
   }
   
   std::optional<object> module::lookup(label s) const {
-    if(auto p = _impl->lookups.find(s); p)
+    if(auto p = _impl->frame.lookups.find(s); p)
       return _impl->sigma->object(p->get());
     
-    for(auto imported : _impl->imports)
+    for(auto imported : _impl->frame.imports)
       if(auto result = imported.lookup(s); result)
         return result;
     
@@ -111,7 +118,16 @@ namespace black::logic {
   }
 
   void module::require(term req) {
-    _impl->reqs = _impl->reqs.push_back(req);
+    _impl->frame.reqs = _impl->frame.reqs.push_back(req);
+  }
+
+  void module::push() {
+    _impl->stack = _impl->stack.push_back(_impl->frame);
+  }
+
+  void module::pop() {
+    _impl->frame = _impl->stack.back();
+    _impl->stack = _impl->stack.take(_impl->stack.size() - 1);
   }
 
   alphabet *module::sigma() const {
@@ -119,12 +135,14 @@ namespace black::logic {
   }
   
   std::vector<module> module::imports() const {
-    return std::vector<module>{_impl->imports.begin(), _impl->imports.end()};
+    return std::vector<module>{
+      _impl->frame.imports.begin(), _impl->frame.imports.end()
+    };
   }
   
   std::vector<object> module::objects() const {
     return 
-      std::views::all(_impl->lookups) | 
+      std::views::all(_impl->frame.lookups) | 
       std::views::transform([&](auto v) { 
         return _impl->sigma->object(v.second.get());
       }) |
@@ -132,7 +150,9 @@ namespace black::logic {
   }
 
   std::vector<term> module::requirements() const {
-    return std::vector<term>{_impl->reqs.begin(), _impl->reqs.end()};
+    return std::vector<term>{
+      _impl->frame.reqs.begin(), _impl->frame.reqs.end()
+    };
   }
 
   static term resolved(module const& m, term t, immer::set<label> hidden);
@@ -189,7 +209,7 @@ namespace black::logic {
 
   void module::resolve() {
     for(auto p : _impl->pending)
-      _impl->lookups = _impl->lookups.insert({p->name, p});
+      _impl->frame.lookups = _impl->frame.lookups.insert({p->name, p});
 
     auto pending = _impl->pending;
     _impl->pending = {};

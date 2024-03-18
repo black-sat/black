@@ -31,6 +31,5 @@
 #include <black/internal/logic/operators.hpp>
 #include <black/internal/logic/module.hpp>
 #include <black/internal/logic/semantics.hpp>
-#include <black/internal/logic/solver.hpp>
 
 #endif // BLACK_LOGIC_HPP
