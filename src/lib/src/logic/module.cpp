@@ -27,6 +27,7 @@
 #include <immer/vector.hpp>
 #include <immer/map.hpp>
 #include <immer/set.hpp>
+#include <immer/algorithm.hpp>
 
 namespace black::logic {
 
@@ -35,7 +36,7 @@ namespace black::logic {
     struct frame_t {
       immer::vector<module> imports;
       immer::map<label, std::shared_ptr<struct lookup const>> lookups;
-      immer::vector<term> reqs;
+      immer::set<term> reqs;
 
       bool operator==(frame_t const&) const = default;
     };
@@ -118,7 +119,24 @@ namespace black::logic {
   }
 
   void module::require(term req) {
-    _impl->frame.reqs = _impl->frame.reqs.push_back(req);
+    _impl->frame.reqs = _impl->frame.reqs.insert(req);
+  }
+
+  // elements in `a` but not in `b`
+  inline bool contains(auto const& a, auto const& b) {
+    bool added = false;
+    bool changed = false;
+    immer::diff(a, b, 
+      [&](auto) { added = true; }, 
+      [](auto){ },
+      [&](auto,auto) { changed = true; });
+    return !added && !changed;
+  }
+
+  bool module::contains(module const& other) const {
+    return
+      logic::contains(_impl->frame.lookups, other._impl->frame.lookups) &&
+      logic::contains(_impl->frame.reqs, other._impl->frame.reqs);
   }
 
   void module::push() {
@@ -126,7 +144,8 @@ namespace black::logic {
   }
 
   void module::pop() {
-    _impl->frame = _impl->stack.back();
+    _impl->frame = 
+      _impl->stack.empty() ? _impl_t::frame_t{} : _impl->stack.back();
     _impl->stack = _impl->stack.take(_impl->stack.size() - 1);
   }
 

@@ -120,6 +120,14 @@ namespace black::logic {
     void require(term req);
 
     //
+    // Comparisons
+    //
+
+    // true if all the elements (declarations, requirements, etc.) 
+    // of `m` are contained in `*this`, disregarding imported modules
+    bool contains(module const& m) const;
+
+    //
     // push()/pop() interface
     //
     void push();

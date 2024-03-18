@@ -85,20 +85,18 @@ TEST_CASE("cvc5") {
     }
 
     SECTION("Push/pop interface") {
-        module mod2(&sigma);
-
-        object x1 = mod.declare({"x", sigma.integer_type()});
-        object y1 = mod.declare({"y", sigma.integer_type()});
         
-        object x2 = mod2.declare({"x", sigma.integer_type()});
-        object y2 = mod2.declare({"y", sigma.integer_type()});
+        object x = mod.declare({"x", sigma.integer_type()});
+        object y = mod.declare({"y", sigma.integer_type()});
         
-        mod.require(x1 <= y1);
-        mod2.require(x2 <= y2);
-        mod2.require(x2 > y2);
-
+        mod.require(x <= y);
         REQUIRE(slv.check(mod) == true);
-        REQUIRE(slv.check(mod2) == false);
+
+        mod.push();
+        mod.require(x > y);
+        REQUIRE(slv.check(mod) == false);
+        
+        mod.pop();
         REQUIRE(slv.check(mod) == true);
     }
 
