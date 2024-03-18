@@ -43,6 +43,12 @@ namespace black::logic {
 
     virtual void import(module m) = 0;
 
+    virtual object declare(decl d) = 0;
+    
+    virtual object define(def d) = 0;
+    
+    virtual object define(function_def f) = 0;
+
     virtual void require(term r) = 0;
 
     virtual void push() = 0;

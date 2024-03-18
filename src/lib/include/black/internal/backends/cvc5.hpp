@@ -44,6 +44,12 @@ namespace black::backends::cvc5 {
 
     virtual void import(logic::module m) override;
 
+    virtual logic::object declare(logic::decl d) override;
+    
+    virtual logic::object define(logic::def d) override;
+    
+    virtual logic::object define(logic::function_def f) override;
+
     virtual void require(logic::term r) override;
 
     virtual void push() override;

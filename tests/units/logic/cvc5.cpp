@@ -35,28 +35,43 @@ TEST_CASE("cvc5") {
 
     alphabet sigma;
     
-    module mod(&sigma);
-
-    object x = mod.declare({"x", sigma.integer_type()});
-    object y = mod.declare({"y", sigma.integer_type()});
-
     cvc5::solver slv(&sigma);
-    
-    slv.import(mod);
-    slv.require(x <= y);
-    
-    REQUIRE(slv.check() == true);
-    
-    slv.push();
-    slv.require(x > y);
 
-    REQUIRE(slv.check() == false);
+    SECTION("Declarations") {
+        object x = slv.declare({"x", sigma.integer_type()});
+        object y = slv.declare({"y", sigma.integer_type()});
+        
+        slv.require(x <= y);
+        
+        REQUIRE(slv.check() == true);
+        
+        slv.push();
+        slv.require(x > y);
 
-    slv.pop();
+        REQUIRE(slv.check() == false);
 
-    REQUIRE(slv.check() == true);
+        slv.pop();
 
-    REQUIRE(slv.check_assuming(x > y) == false);
+        REQUIRE(slv.check() == true);
+
+        REQUIRE(slv.check_assuming(x > y) == false);
+    }
+
+    SECTION("Definitions") 
+    {    
+        variable a = sigma.variable("a");
+
+        object factor = slv.define({"factor", sigma.integer(2)});
+        object f = slv.define({"f", {{a, sigma.integer_type()}}, a * factor});
+        
+        slv.require(f(sigma.integer(21)) == sigma.integer(42));
+
+        REQUIRE(slv.check() == true);
+        
+        slv.require(f(sigma.integer(21)) == sigma.integer(40));
+
+        REQUIRE(slv.check() == false);
+    }
 
 
 }

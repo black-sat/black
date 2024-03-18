@@ -31,6 +31,8 @@
 
 #include <cvc5/cvc5.h>
 
+#include <iostream>
+
 namespace black::backends::cvc5 {
 
   using namespace black::support;
@@ -194,20 +196,74 @@ namespace black::backends::cvc5 {
       );
     }
 
+    void collect(object obj) {
+      auto lu = obj.lookup();
+      CVC5::Term t = match(lu->type)(
+        [&](auto ty) {
+          if(!lu->value)
+            return slv.mkConst(to_sort(ty));
+
+          return match(*lu->value)(
+            [&](lambda, auto const &decls, term body) {
+              std::vector<CVC5::Term> vars;
+              immer::map<label, CVC5::Term> varmap;
+
+              for(auto [name, type] : decls) {
+                CVC5::Term var = slv.mkVar(to_sort(type));
+                vars.push_back(var);
+                varmap = varmap.set(name, var);
+              }
+
+              auto fun_ty = cast<function_type>(lu->type);
+              black_assert(fun_ty.has_value());
+
+              return slv.defineFun(
+                std::format("{}", lu->name), vars, 
+                to_sort(fun_ty->range()), to_term(body, varmap)
+              );
+            },
+            [&](auto d) {
+              return slv.defineFun(
+                std::format("{}", lu->name), {}, to_sort(ty), to_term(d, {})
+              );
+            }
+          );
+        }
+      );
+      
+      frame.objects = frame.objects.insert({obj, t});
+      frame.consts = frame.consts.insert({t, obj});
+    }
+
     void collect(module const& m) {
       for(module imported : m.imports())
         collect(imported);
       
-      for(object obj : m.objects()) {
-        CVC5::Term t = slv.mkConst(to_sort(obj.lookup()->type));
-        frame.objects = frame.objects.insert({obj, t});
-        frame.consts = frame.consts.insert({t, obj});
-      }
+      for(object obj : m.objects()) 
+        collect(obj);
     }
 
     void import(module m) {
       frame.mod.import(m);
       collect(m);
+    }
+
+    object declare(decl d) {
+      object obj = frame.mod.declare(d);
+      collect(obj);
+      return obj;
+    }
+    
+    object define(def d) {
+      object obj = frame.mod.define(d);
+      collect(obj);
+      return obj;
+    }
+    
+    object define(function_def f) {
+      object obj = frame.mod.define(f);
+      collect(obj);
+      return obj;
     }
 
     void require(term r) {
@@ -258,6 +314,12 @@ namespace black::backends::cvc5 {
   solver::~solver() = default;
 
   void solver::import(module m) { _impl->import(std::move(m)); }
+
+  object solver::declare(decl d) { return _impl->declare(d); }
+    
+  object solver::define(def d) { return _impl->define(d); }
+    
+  object solver::define(function_def f) { return _impl->define(f); }
 
   void solver::require(term r) { _impl->require(r); }
 
