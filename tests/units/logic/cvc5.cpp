@@ -61,14 +61,15 @@ TEST_CASE("cvc5") {
     {    
         variable a = sigma.variable("a");
 
-        object factor = slv.define({"factor", sigma.integer(2)});
+        object factor = slv.declare({"factor", sigma.integer_type()});
         object f = slv.define({"f", {{a, sigma.integer_type()}}, a * factor});
         
-        slv.require(f(sigma.integer(21)) == sigma.integer(42));
+        slv.require(factor >= 2);
+        slv.require(f(21) >= 42);
 
         REQUIRE(slv.check() == true);
         
-        slv.require(f(sigma.integer(21)) == sigma.integer(40));
+        slv.require(f(21) < 42);
 
         REQUIRE(slv.check() == false);
     }

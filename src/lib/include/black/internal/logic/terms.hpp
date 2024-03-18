@@ -29,9 +29,12 @@ namespace black::logic {
   struct atom;
 
   namespace internal {
+    template<typename T>
+    concept term_arg = 
+    std::convertible_to<T, term> || std::integral<T> || std::floating_point<T>;
+
     struct term_custom_members {
-      template<std::convertible_to<term> ...Terms>
-      atom operator()(Terms ...terms) const;
+      atom operator()(term_arg auto ...terms) const;
     };
   }
 };
@@ -53,9 +56,22 @@ namespace black::ast::core {
 
 namespace black::logic::internal {
 
-  template<std::convertible_to<term> ...Terms>
-  atom term_custom_members::operator()(Terms ...terms) const {
-      return atom(static_cast<term const&>(*this), std::vector<term>{terms...});
+  inline term arg_to_term(alphabet *, term t) {
+    return t;
+  }
+  
+  inline term arg_to_term(alphabet *sigma, std::integral auto v) {
+    return sigma->integer(int64_t(v));
+  }
+  
+  inline term arg_to_term(alphabet *sigma, std::floating_point auto v) {
+    return sigma->real(double(v));
+  }
+
+  atom term_custom_members::operator()(term_arg auto ...terms) const {
+      term const&self = static_cast<term const&>(*this);
+      
+      return atom(self, std::vector<term>{arg_to_term(self.sigma(), terms)...});
   };
 }
 

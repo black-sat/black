@@ -81,6 +81,30 @@ namespace black::logic {
     return {n1, n2};
   }
 
+  template<ast::core::ast_type T>
+    requires ast::core::ast_type_of<T, term>
+  term operator==(T const& n, std::integral auto v) {
+    return n == n.sigma()->integer(int64_t(v));
+  }
+  
+  template<ast::core::ast_type T>
+    requires ast::core::ast_type_of<T, term>
+  term operator==(std::integral auto v, T const& n) {
+    return n.sigma()->integer(int64_t(v)) == n;
+  }
+  
+  template<ast::core::ast_type T>
+    requires ast::core::ast_type_of<T, term>
+  term operator==(T const& n, std::floating_point auto v) {
+    return n == n.sigma()->real(double(v));
+  }
+  
+  template<ast::core::ast_type T>
+    requires ast::core::ast_type_of<T, term>
+  term operator==(std::floating_point auto v, T const& n) {
+    return n.sigma()->real(double(v)) == n;
+  }
+
   //
   // boolean connectives
   //
@@ -128,17 +152,81 @@ namespace black::logic {
   inline sum operator+(term t1, term t2) {
     return sum({t1, t2});
   }
+  
+  inline sum operator+(std::integral auto t1, term t2) {
+    return sum({t2.sigma()->integer(uint64_t(t1)), t2});
+  }
+  
+  inline sum operator+(term t1, std::integral auto t2) {
+    return sum({t1, t1.sigma()->integer(uint64_t(t2))});
+  }
+
+  inline sum operator+(std::floating_point auto t1, term t2) {
+    return sum({t2.sigma()->real(double(t1)), t2});
+  }
+  
+  inline sum operator+(term t1, std::floating_point auto t2) {
+    return sum({t1, t1.sigma()->real(double(t2))});
+  }
 
   inline product operator*(term t1, term t2) {
     return product({t1, t2});
+  }
+
+  inline product operator*(std::integral auto t1, term t2) {
+    return product({t2.sigma()->integer(uint64_t(t1)), t2});
+  }
+  
+  inline product operator*(term t1, std::integral auto t2) {
+    return product({t1, t1.sigma()->integer(uint64_t(t2))});
+  }
+
+  inline product operator*(std::floating_point auto t1, term t2) {
+    return product({t2.sigma()->real(double(t1)), t2});
+  }
+  
+  inline product operator*(term t1, std::floating_point auto t2) {
+    return product({t1, t1.sigma()->real(double(t2))});
   }
 
   inline difference operator-(term t1, term t2) {
     return difference(t1, t2);
   }
 
+  inline difference operator-(std::integral auto t1, term t2) {
+    return difference({t2.sigma()->integer(uint64_t(t1)), t2});
+  }
+  
+  inline difference operator-(term t1, std::integral auto t2) {
+    return difference({t1, t1.sigma()->integer(uint64_t(t2))});
+  }
+
+  inline difference operator-(std::floating_point auto t1, term t2) {
+    return difference({t2.sigma()->real(double(t1)), t2});
+  }
+  
+  inline difference operator-(term t1, std::floating_point auto t2) {
+    return difference({t1, t1.sigma()->real(double(t2))});
+  }
+
   inline division operator/(term t1, term t2) {
     return division(t1, t2);
+  }
+
+  inline division operator/(std::integral auto t1, term t2) {
+    return division({t2.sigma()->integer(uint64_t(t1)), t2});
+  }
+  
+  inline division operator/(term t1, std::integral auto t2) {
+    return division({t1, t1.sigma()->integer(uint64_t(t2))});
+  }
+
+  inline division operator/(std::floating_point auto t1, term t2) {
+    return division({t2.sigma()->real(double(t1)), t2});
+  }
+  
+  inline division operator/(term t1, std::floating_point auto t2) {
+    return division({t1, t1.sigma()->real(double(t2))});
   }
 
   //
@@ -147,17 +235,81 @@ namespace black::logic {
   inline less_than operator<(term t1, term t2) {
     return less_than(t1, t2);
   }
+
+  inline less_than operator<(std::integral auto t1, term t2) {
+    return less_than({t2.sigma()->integer(uint64_t(t1)), t2});
+  }
+  
+  inline less_than operator<(term t1, std::integral auto t2) {
+    return less_than({t1, t1.sigma()->integer(uint64_t(t2))});
+  }
+
+  inline less_than operator<(std::floating_point auto t1, term t2) {
+    return less_than({t2.sigma()->real(double(t1)), t2});
+  }
+  
+  inline less_than operator<(term t1, std::floating_point auto t2) {
+    return less_than({t1, t1.sigma()->real(double(t2))});
+  }
   
   inline less_than_eq operator<=(term t1, term t2) {
     return less_than_eq(t1, t2);
+  }
+
+  inline less_than_eq operator<=(std::integral auto t1, term t2) {
+    return less_than_eq({t2.sigma()->integer(uint64_t(t1)), t2});
+  }
+  
+  inline less_than_eq operator<=(term t1, std::integral auto t2) {
+    return less_than_eq({t1, t1.sigma()->integer(uint64_t(t2))});
+  }
+
+  inline less_than_eq operator<=(std::floating_point auto t1, term t2) {
+    return less_than_eq({t2.sigma()->real(double(t1)), t2});
+  }
+  
+  inline less_than_eq operator<=(term t1, std::floating_point auto t2) {
+    return less_than_eq({t1, t1.sigma()->real(double(t2))});
   }
   
   inline greater_than operator>(term t1, term t2) {
     return greater_than(t1, t2);
   }
+
+  inline greater_than operator>(std::integral auto t1, term t2) {
+    return greater_than({t2.sigma()->integer(uint64_t(t1)), t2});
+  }
+  
+  inline greater_than operator>(term t1, std::integral auto t2) {
+    return greater_than({t1, t1.sigma()->integer(uint64_t(t2))});
+  }
+
+  inline greater_than operator>(std::floating_point auto t1, term t2) {
+    return greater_than({t2.sigma()->real(double(t1)), t2});
+  }
+  
+  inline greater_than operator>(term t1, std::floating_point auto t2) {
+    return greater_than({t1, t1.sigma()->real(double(t2))});
+  }
   
   inline greater_than_eq operator>=(term t1, term t2) {
     return greater_than_eq(t1, t2);
+  }
+
+  inline greater_than_eq operator>=(std::integral auto t1, term t2) {
+    return greater_than_eq({t2.sigma()->integer(uint64_t(t1)), t2});
+  }
+  
+  inline greater_than_eq operator>=(term t1, std::integral auto t2) {
+    return greater_than_eq({t1, t1.sigma()->integer(uint64_t(t2))});
+  }
+
+  inline greater_than_eq operator>=(std::floating_point auto t1, term t2) {
+    return greater_than_eq({t2.sigma()->real(double(t1)), t2});
+  }
+  
+  inline greater_than_eq operator>=(term t1, std::floating_point auto t2) {
+    return greater_than_eq({t1, t1.sigma()->real(double(t2))});
   }
 
 }
