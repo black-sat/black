@@ -34,7 +34,6 @@
 #include <cvc5/cvc5.h>
 
 #include <algorithm>
-#include <deque>
 #include <iostream>
 
 namespace black::backends::cvc5 {
@@ -51,7 +50,6 @@ namespace black::backends::cvc5 {
     struct frame_t {
       immer::map<object, CVC5::Term> objects;
       immer::map<CVC5::Term, object> consts;
-      immer::set<term> reqs;
 
       bool operator==(frame_t const&) const = default;
     };
@@ -63,7 +61,10 @@ namespace black::backends::cvc5 {
 
     impl_t(alphabet *sigma) 
       : sigma{sigma}, mod{sigma}, 
-        stack{{frame_t{}}}, slv{std::make_unique<CVC5::Solver>()} { }
+        stack{{frame_t{}}}, slv{std::make_unique<CVC5::Solver>()} 
+    { 
+      slv->push();
+    }
 
     CVC5::Sort to_sort(term type) const {
       return match(type)(
@@ -109,7 +110,7 @@ namespace black::backends::cvc5 {
           return *var;
         },
         [&](object o) {
-          CVC5::Term const *obj = frame.objects.find(o);
+          CVC5::Term const *obj = stack.top().objects.find(o);
 
           black_assert(obj != nullptr); // TODO: handle error well
 
@@ -201,10 +202,11 @@ namespace black::backends::cvc5 {
       );
     }
 
-    void declaration(object obj) {
-      if(frame.objects.find(obj) != nullptr)
-        return;
+    void import(module) {
+      // TODO
+    } 
 
+    void adopt(object obj) {
       auto lu = obj.lookup();
       CVC5::Term t = !lu->value ? slv->mkConst(to_sort(lu->type)) : 
         match(*lu->value)(
@@ -233,32 +235,38 @@ namespace black::backends::cvc5 {
           }
         ); 
       
-      frame.objects = frame.objects.insert({obj, t});
-      frame.consts = frame.consts.insert({t, obj});
+      stack.top().objects = stack.top().objects.insert({obj, t});
+      stack.top().consts = stack.top().consts.insert({t, obj});
     }
 
-    void requirement(term t) {
-      if(frame.reqs.find(t) != nullptr)
-        return;
-
-      frame.reqs = frame.reqs.insert(t);
+    void require(term t) {
       slv->assertFormula(to_term(t, {}));
     }
 
-    void imported(module const&) {
-      // TODO
+    void push() {
+      if(stack.empty())
+        stack.push({});
+      else
+        stack.push(stack.top());
+      slv->push();
+    }
+
+    void pop(size_t n) {
+      for(size_t i = 0; i < n; i++)
+        stack.pop();
+      slv->pop(unsigned(n));
     }
 
     support::tribool check(module m) {
-      
+      m.replay(mod, *this);
+      mod = m;
 
-      // CVC5::Result res = slv->checkSat();
-      // if(res.isSat())
-      //   return true;
-      // if(res.isUnsat())
-      //   return false;
-      // return tribool::undef;
-      return false;
+      CVC5::Result res = slv->checkSat();
+      if(res.isSat())
+        return true;
+      if(res.isUnsat())
+        return false;
+      return tribool::undef;
     }
 
   };

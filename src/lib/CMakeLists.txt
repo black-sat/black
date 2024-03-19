@@ -150,9 +150,9 @@ set (
 #   set(LIB_SRC ${LIB_SRC} src/smt/backends/z3.cpp)
 # endif()
 
-# if(CVC5_FOUND)
-#   set(LIB_SRC ${LIB_SRC} src/backends/cvc5.cpp)
-# endif()
+if(CVC5_FOUND)
+  set(LIB_SRC ${LIB_SRC} src/backends/cvc5.cpp)
+endif()
 
 # if(MathSAT_FOUND)
 #   set(LIB_SRC ${LIB_SRC} src/sat/backends/mathsat.cpp)
