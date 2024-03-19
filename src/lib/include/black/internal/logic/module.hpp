@@ -26,6 +26,7 @@
 
 #include <optional>
 #include <expected>
+#include <variant>
 #include <memory>
 
 #include <black/support>
@@ -81,6 +82,18 @@ namespace black::logic {
       : function_def(name.name(), std::move(parms), body) { }
   };
 
+  class module;
+
+  template<typename T>
+  concept replay_target = requires(T v, object obj, module m, term t) {
+    v.import(m);
+    v.adopt(obj);
+    v.require(t);
+    v.push();
+    v.pop(42);
+  };
+
+
   class module
   {
   public:
@@ -108,6 +121,12 @@ namespace black::logic {
     object define(def d, resolution r = resolution::immediate);
     object define(function_def f, resolution r = resolution::immediate);
 
+    // adopt an existing object (maybe declared in another module)
+    void adopt(object);
+
+    // adopt a set of possibly recursively interconnected existing objects
+    void adopt(std::vector<object> const& objs);
+
     //
     // Name lookup
     //
@@ -123,15 +142,24 @@ namespace black::logic {
     // Comparisons
     //
 
-    // true if all the elements (declarations, requirements, etc.) 
-    // of `m` are contained in `*this`, disregarding imported modules
-    bool contains(module const& m) const;
-
     //
     // push()/pop() interface
     //
+    // We need ad-hoc data structures to support both lookups and efficient
+    // replay of stack history.
+    // - we store the stack frames explicitly instead of copying the whole 
+    //   module.
+    //   * this implies changing the lookup logic but it will not affect 
+    //     semantics if we traverse the stack from top to bottom for lookups
+    // - now we can:
+    //   * efficiently find a common prefix of the stack history of two modules
+    //   * replay the stack history from a given prefix onwards
+    // - this should be presented as a general way to iterate through the module
+    // - we should also take this opportunity to account for groups of mutually 
+    //   recursive declarations
+    //
     void push();
-    void pop();
+    void pop(size_t n = 1);
 
     auto pushed(auto f) {
       auto _ = support::finally([&]{ pop(); });
@@ -140,12 +168,22 @@ namespace black::logic {
     }
 
     //
+    // Issues a sequence of calls to member functions of `target` for each 
+    // difference of `*this` and `from`.
+    //
+    // The calls are arranged in such a way that after the following call:
+    //
+    //    m.replay(from, from);
+    // 
+    // then `m == from` is guaranteed to hold.
+    //
+    template<replay_target T>
+    void replay(module const& from, T &target) const;
+
+    //
     // accessors
     //
     alphabet *sigma() const;
-    std::vector<module> imports() const; // TODO: replace vector with lazy range
-    std::vector<object> objects() const; // TODO: same as above
-    std::vector<term> requirements() const; // TODO: same as above
 
     //
     // Resolve terms
@@ -159,11 +197,23 @@ namespace black::logic {
     module resolved() const;
 
   private:
+
+    struct replay_target_t {
+      virtual ~replay_target_t() = default;
+      virtual void import(module) = 0;
+      virtual void adopt(object) = 0;
+      virtual void require(term) = 0;
+      virtual void push() = 0;
+      virtual void pop(size_t) = 0;
+    };
+
+    void replay(module const& from, replay_target_t *target) const;
+
     struct _impl_t;
     std::unique_ptr<_impl_t> _impl;
   };
 
-  struct lookup {
+  struct lookup : std::enable_shared_from_this<lookup> {
     label name;
     term type;
     std::optional<term> value;
@@ -172,8 +222,31 @@ namespace black::logic {
     
     explicit lookup(def d) : name{d.name}, type{d.type}, value{d.value} { }
 
-    bool operator==(lookup const&) const = default;
+    bool operator==(lookup const& o) const {
+      return name == o.name && type == o.type && value == o.value;
+    }
   };
+
+  //
+  // Implementation of module::replay interface
+  //
+  template<replay_target T>
+  void module::replay(module const &from, T &target) const {
+    struct wrap_t : replay_target_t {
+      T *t;
+
+      wrap_t(T *t) : t{t} { }
+
+      virtual void import(module m) override { return t->import(std::move(m)); }
+      virtual void adopt(object obj) override { return t->adopt(obj); }
+      virtual void require(term r) override { return t->require(r); }
+      virtual void push() override { t->push(); }
+      virtual void pop(size_t n) override { t->pop(n); }
+
+    } wrap{&target};
+
+    return replay(from, &wrap);
+  }
 
 }
 

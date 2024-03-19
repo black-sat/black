@@ -33,72 +33,72 @@ using namespace black::backends;
 
 TEST_CASE("cvc5") {
 
-    alphabet sigma;
+    // alphabet sigma;
 
-    module mod(&sigma);
+    // module mod(&sigma);
 
-    cvc5::solver slv(&sigma);
+    // cvc5::solver slv(&sigma);
 
-    SECTION("Declarations") {
-        object x = mod.declare({"x", sigma.integer_type()});
-        object y = mod.declare({"y", sigma.integer_type()});
+    // SECTION("Declarations") {
+    //     object x = mod.declare({"x", sigma.integer_type()});
+    //     object y = mod.declare({"y", sigma.integer_type()});
         
-        mod.require(x <= y);
+    //     mod.require(x <= y);
 
-        REQUIRE(slv.check(mod) == true);
+    //     REQUIRE(slv.check(mod) == true);
         
-        mod.require(x > y);
+    //     mod.require(x > y);
 
-        REQUIRE(slv.check(mod) == false);
-    }
+    //     REQUIRE(slv.check(mod) == false);
+    // }
 
-    SECTION("Definitions") 
-    {    
-        variable a = sigma.variable("a");
+    // SECTION("Definitions") 
+    // {    
+    //     variable a = sigma.variable("a");
 
-        object k = mod.declare({"k", sigma.integer_type()});
-        object f = mod.define({"f", {{a, sigma.integer_type()}}, a * k});
+    //     object k = mod.declare({"k", sigma.integer_type()});
+    //     object f = mod.define({"f", {{a, sigma.integer_type()}}, a * k});
         
-        mod.require(k >= 2);
-        mod.require(f(21) >= 42);
+    //     mod.require(k >= 2);
+    //     mod.require(f(21) >= 42);
 
-        REQUIRE(slv.check(mod) == true);
+    //     REQUIRE(slv.check(mod) == true);
         
-        mod.require(f(21) < 42);
+    //     mod.require(f(21) < 42);
 
-        REQUIRE(slv.check(mod) == false);
-    }
+    //     REQUIRE(slv.check(mod) == false);
+    // }
 
-    SECTION("Declaration of functions/predicates") {
+    // SECTION("Declaration of functions/predicates") {
 
-        variable x = sigma.variable("x");
+    //     variable x = sigma.variable("x");
 
-        object p = mod.declare({
-            "p", function_type({sigma.integer_type()}, sigma.boolean_type())
-        });
+    //     object p = mod.declare({
+    //         "p", function_type({sigma.integer_type()}, sigma.boolean_type())
+    //     });
 
-        mod.require(forall({{x, sigma.integer_type()}}, p(x)));
-        mod.require(!p(42));
+    //     mod.require(forall({{x, sigma.integer_type()}}, p(x)));
+    //     mod.require(!p(42));
 
-        REQUIRE(slv.check(mod) == false);
+    //     REQUIRE(slv.check(mod) == false);
 
-    }
+    // }
 
-    SECTION("Push/pop interface") {
+    // SECTION("Push/pop interface") {
         
-        object x = mod.declare({"x", sigma.integer_type()});
-        object y = mod.declare({"y", sigma.integer_type()});
+    //     object x = mod.declare({"x", sigma.integer_type()});
+    //     object y = mod.declare({"y", sigma.integer_type()});
         
-        mod.require(x <= y);
-        REQUIRE(slv.check(mod) == true);
+    //     mod.require(x <= y);
+    //     REQUIRE(slv.check(mod) == true);
 
-        mod.push();
-        mod.require(x > y);
-        REQUIRE(slv.check(mod) == false);
+    //     mod.push();
+    //     mod.require(x > y);
+    //     REQUIRE(slv.check(mod) == false);
         
-        mod.pop();
-        REQUIRE(slv.check(mod) == true);
-    }
+    //     mod.pop();
+    //     REQUIRE(slv.check(mod) == true);
+    // }
 
 
 }

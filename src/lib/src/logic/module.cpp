@@ -25,9 +25,12 @@
 #include <black/logic>
 
 #include <immer/vector.hpp>
+#include <immer/flex_vector.hpp>
 #include <immer/map.hpp>
 #include <immer/set.hpp>
 #include <immer/algorithm.hpp>
+
+#include <algorithm>
 
 namespace black::logic {
 
@@ -35,20 +38,26 @@ namespace black::logic {
   {
     struct frame_t {
       immer::vector<module> imports;
-      immer::map<label, std::shared_ptr<struct lookup const>> lookups;
-      immer::set<term> reqs;
+      immer::vector<std::shared_ptr<struct lookup const>> lookups;
+      immer::map<label, struct lookup const*> scope;
+      immer::vector<term> reqs;
 
       bool operator==(frame_t const&) const = default;
     };
     
     alphabet *sigma;
-    frame_t frame;
     immer::vector<frame_t> stack;
     immer::vector<std::shared_ptr<struct lookup>> pending;
 
-    _impl_t(alphabet *sigma) : sigma{sigma} { }
+    _impl_t(alphabet *sigma) : sigma{sigma}, stack{frame_t{}} { }
 
     bool operator==(_impl_t const&) const = default;
+
+    std::optional<frame_t>
+    diff(frame_t const& ours, frame_t const& theirs) const;
+    
+    void replay(frame_t const& f, replay_target_t *target) const;
+    void replay(module const &from, replay_target_t *target) const;
   };
 
   module::module(alphabet *sigma) 
@@ -73,7 +82,10 @@ namespace black::logic {
   }
 
   void module::import(module m) {
-    _impl->frame.imports = _impl->frame.imports.push_back(m.resolved());
+    _impl->stack = _impl->stack.update(_impl->stack.size() - 1, [&](auto top) {
+      top.imports = top.imports.push_back(m.resolved());
+      return top;
+    });
   }
 
   object module::declare(decl d, resolution r) {
@@ -107,73 +119,158 @@ namespace black::logic {
     return define(def{f.name, type, body}, r);
   }
   
-  std::optional<object> module::lookup(label s) const {
-    if(auto p = _impl->frame.lookups.find(s); p)
-      return _impl->sigma->object(p->get());
+  void module::adopt(object obj) {
+    auto lu = obj.lookup()->shared_from_this();
+    _impl->stack = _impl->stack.update(_impl->stack.size() - 1, [&](auto top) {
+      top.lookups = top.lookups.push_back(lu);
+      top.scope = top.scope.insert({lu->name, lu.get()});
+      return top;
+    });    
+  }
+
+  void module::adopt(std::vector<object> const& objs) {
+    for(object obj : objs) // TODO: handle recursivity
+      adopt(obj); 
+  }
+
+  std::optional<object> module::lookup(label s) const 
+  {
+    for(auto it = _impl->stack.rbegin(); it != _impl->stack.rend(); it++)
+      if(auto p = it->scope.find(s); p)
+        return _impl->sigma->object(*p);  
     
-    for(auto imported : _impl->frame.imports)
-      if(auto result = imported.lookup(s); result)
-        return result;
+    for(auto it = _impl->stack.rbegin(); it != _impl->stack.rend(); it++) 
+      for(auto im = it->imports.rbegin(); im != it->imports.rend(); im++)
+        if(auto result = im->lookup(s); result)
+          return result;   
     
     return {};
   }
 
   void module::require(term req) {
-    _impl->frame.reqs = _impl->frame.reqs.insert(req);
-  }
-
-  // elements in `a` but not in `b`
-  inline bool contains(auto const& a, auto const& b) {
-    bool added = false;
-    bool changed = false;
-    immer::diff(a, b, 
-      [&](auto) { added = true; }, 
-      [](auto){ },
-      [&](auto,auto) { changed = true; });
-    return !added && !changed;
-  }
-
-  bool module::contains(module const& other) const {
-    return
-      logic::contains(_impl->frame.lookups, other._impl->frame.lookups) &&
-      logic::contains(_impl->frame.reqs, other._impl->frame.reqs);
+    black_assert(!_impl->stack.empty());
+    _impl->stack = _impl->stack.update(_impl->stack.size() - 1, [&](auto top) {
+      top.reqs = top.reqs.push_back(req);
+      return top;
+    });
   }
 
   void module::push() {
-    _impl->stack = _impl->stack.push_back(_impl->frame);
+    _impl->stack = _impl->stack.push_back({});
   }
 
-  void module::pop() {
-    _impl->frame = 
-      _impl->stack.empty() ? _impl_t::frame_t{} : _impl->stack.back();
-    _impl->stack = _impl->stack.take(_impl->stack.size() - 1);
+  void module::pop(size_t n) {
+    black_assert(!_impl->stack.empty());
+    _impl->stack = _impl->stack.take(_impl->stack.size() - n);
+    if(_impl->stack.empty())
+      _impl->stack = _impl->stack.push_back({});
+  }
+
+  auto module::_impl_t::diff(frame_t const&inner, frame_t const&outer) const 
+    -> std::optional<frame_t>
+  {
+    frame_t result;
+    
+    // check vectors sizes
+    if(inner.imports.size() > outer.imports.size())
+      return {};
+    if(inner.lookups.size() > outer.lookups.size())
+      return {};
+    if(inner.reqs.size() > outer.reqs.size())
+      return {};
+
+    // check that inner is a prefix
+    for(size_t i = 0; i < inner.imports.size(); i++)
+      if(inner.imports[i] != outer.imports[i])
+        return {};
+    
+    for(size_t i = 0; i < inner.lookups.size(); i++)
+      if(inner.lookups[i] != outer.lookups[i])
+        return {};
+    
+    for(size_t i = 0; i < inner.reqs.size(); i++)
+      if(inner.reqs[i] != outer.reqs[i])
+        return {};
+    
+    // collect the additional one from outer
+    for(size_t i = inner.imports.size(); i < outer.imports.size(); i++)
+      result.imports = result.imports.push_back(outer.imports[i]);
+    
+    for(size_t i = inner.lookups.size(); i < outer.lookups.size(); i++)
+      result.lookups = result.lookups.push_back(outer.lookups[i]);
+    
+    for(size_t i = inner.reqs.size(); i < outer.reqs.size(); i++)
+      result.reqs = result.reqs.push_back(outer.reqs[i]);
+
+    return result;
+  }
+    
+  void 
+  module::_impl_t::replay(frame_t const& f, replay_target_t *target) const {
+    for(module m : f.imports)
+      target->import(std::move(m));
+    for(auto lu : f.lookups)
+      target->adopt(sigma->object(lu.get()));
+    for(term req : f.reqs)
+      target->require(req);
+  }
+
+  void 
+  module::_impl_t::replay(module const&from, replay_target_t *target) const {
+    auto ours = stack;
+    auto theirs = from._impl->stack;
+    size_t shortest = std::min(ours.size(), theirs.size());
+
+    // 'start' is the index of the first different frame in `ours` and `theirs`
+    // after the longest common prefix
+    // if `start == shortest` one of the two is a strict subset of the other
+    size_t start = [&]{
+      for(size_t i = 0; i < shortest; i++)
+        if(ours[i] != theirs[i]) // TODO: study the performance of this
+          return i;
+      return shortest;
+    }();
+
+    // pop the extra levels except `theirs[start]`
+    size_t different = theirs.size() - std::min(theirs.size(), start);
+    if(different > 1)
+      target->pop(different - 1);
+
+    // if ours is a prefix of theirs, we pop `theirs[start]` as well,
+    // and we are done
+    if(start == ours.size()) {
+      target->pop(1);
+      return;
+    }
+
+    // if no one is a prefix of the other, we try to replay the
+    // difference between `ours[start]` and `theirs[start]`.
+    // If the diff fails, we pop the frame and replay it as a whole later
+    if(start < shortest) {
+      if(auto d = diff(theirs[start], ours[start]); d) {
+        replay(*d, target);
+        start++;
+      } else {
+        target->pop(1);
+      }
+    }
+    
+    // replay all the other frames
+    for(size_t i = start; i < ours.size(); i++) {
+      target->push();
+      replay(ours[i], target); 
+    }
+  }
+
+  void module::replay(module const&from, replay_target_t *target) const 
+  {
+    _impl->replay(from, target);
   }
 
   alphabet *module::sigma() const {
     return _impl->sigma;
   }
   
-  std::vector<module> module::imports() const {
-    return std::vector<module>{
-      _impl->frame.imports.begin(), _impl->frame.imports.end()
-    };
-  }
-  
-  std::vector<object> module::objects() const {
-    return 
-      std::views::all(_impl->frame.lookups) | 
-      std::views::transform([&](auto v) { 
-        return _impl->sigma->object(v.second.get());
-      }) |
-      std::ranges::to<std::vector>();
-  }
-
-  std::vector<term> module::requirements() const {
-    return std::vector<term>{
-      _impl->frame.reqs.begin(), _impl->frame.reqs.end()
-    };
-  }
-
   static term resolved(module const& m, term t, immer::set<label> hidden);
   
   static std::vector<term> resolved(
@@ -228,7 +325,12 @@ namespace black::logic {
 
   void module::resolve() {
     for(auto p : _impl->pending)
-      _impl->frame.lookups = _impl->frame.lookups.insert({p->name, p});
+      _impl->stack = _impl->stack.update(_impl->stack.size() - 1, 
+        [&](auto top) {
+          top.lookups = top.lookups.push_back(p);
+          top.scope = top.scope.insert({p->name, p.get()});
+          return top;
+        });
 
     auto pending = _impl->pending;
     _impl->pending = {};

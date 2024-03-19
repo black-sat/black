@@ -29,10 +29,13 @@
 #include <immer/vector.hpp>
 #include <immer/map.hpp>
 #include <immer/set.hpp>
+#include <immer/algorithm.hpp>
 
 #include <cvc5/cvc5.h>
 
 #include <algorithm>
+#include <deque>
+#include <iostream>
 
 namespace black::backends::cvc5 {
 
@@ -49,15 +52,18 @@ namespace black::backends::cvc5 {
       immer::map<object, CVC5::Term> objects;
       immer::map<CVC5::Term, object> consts;
       immer::set<term> reqs;
-    } frame;
+
+      bool operator==(frame_t const&) const = default;
+    };
   
     alphabet *sigma;
     module mod;
+    std::stack<frame_t> stack;
     std::unique_ptr<CVC5::Solver> slv;
-    std::stack<frame_t> stack;    
 
     impl_t(alphabet *sigma) 
-      : sigma{sigma}, mod{sigma}, slv{std::make_unique<CVC5::Solver>()} { }
+      : sigma{sigma}, mod{sigma}, 
+        stack{{frame_t{}}}, slv{std::make_unique<CVC5::Solver>()} { }
 
     CVC5::Sort to_sort(term type) const {
       return match(type)(
@@ -195,7 +201,7 @@ namespace black::backends::cvc5 {
       );
     }
 
-    void add(object obj) {
+    void declaration(object obj) {
       if(frame.objects.find(obj) != nullptr)
         return;
 
@@ -231,7 +237,7 @@ namespace black::backends::cvc5 {
       frame.consts = frame.consts.insert({t, obj});
     }
 
-    void add(term t) {
+    void requirement(term t) {
       if(frame.reqs.find(t) != nullptr)
         return;
 
@@ -239,74 +245,20 @@ namespace black::backends::cvc5 {
       slv->assertFormula(to_term(t, {}));
     }
 
-    void add(module const& m) {
-      for(object obj : m.objects())
-        add(obj);
-
-      for(term req : m.requirements())
-        add(req);
-    }
-
-    void traverse(module const& m) {
-      for(module imported : m.imports())
-        add(imported);
-
-      add(m);
-    }
-
-    void push() {
-      stack.push(frame);
-      slv->push();
-    }
-
-    void clear() {
-      *this = impl_t{sigma};
-    }
-
-    void pop() {
-      if(stack.empty()) {
-        clear();
-      } else {
-        frame = stack.top();
-        stack.pop();
-        slv->pop();
-      }
-    }
-
-    void rollback(module m) {
-      while(!m.contains(mod)) {
-        pop();
-        mod.pop();
-      }
-
-      std::vector<module> steps;
-      while(!mod.contains(m)) {
-        steps.push_back(m);
-        m.pop();
-      }
-
-      for(auto it = rbegin(steps); it != rend(steps); it++) {
-        push();
-        add(*it);
-      }
+    void imported(module const&) {
+      // TODO
     }
 
     support::tribool check(module m) {
-      if(m.imports() != mod.imports()) { // TODO: use structural sharing
-        clear();
-        traverse(m);
-      } else {
-        rollback(m);
-      }
+      
 
-      mod = m;
-
-      CVC5::Result res = slv->checkSat();
-      if(res.isSat())
-        return true;
-      if(res.isUnsat())
-        return false;
-      return tribool::undef;
+      // CVC5::Result res = slv->checkSat();
+      // if(res.isSat())
+      //   return true;
+      // if(res.isUnsat())
+      //   return false;
+      // return tribool::undef;
+      return false;
     }
 
   };
