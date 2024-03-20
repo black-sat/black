@@ -34,5 +34,6 @@
 #include <black/internal/support/hash.hpp>
 #include <black/internal/support/functional.hpp>
 #include <black/internal/support/errors.hpp>
+#include <black/internal/support/memory.hpp>
 
 #endif // BLACK_SUPPORT_HPP
