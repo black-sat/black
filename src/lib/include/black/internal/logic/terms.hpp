@@ -29,15 +29,17 @@ namespace black::logic {
   struct atom;
 
   namespace internal {
-    template<typename T>
-    concept term_arg = 
-    std::convertible_to<T, term> || std::integral<T> || std::floating_point<T>;
-
     struct term_custom_members {
-      atom operator()(term_arg auto ...terms) const;
+      atom operator()(std::convertible_to<term> auto ...terms) const;
+    };
+
+    struct term_custom_init {
+      static term init(std::integral auto);
+      static term init(std::floating_point auto);
+      static term init(bool);
     };
   }
-};
+}
 
 namespace black::ast::core {
   template<>
@@ -47,32 +49,117 @@ namespace black::ast::core {
   template<ast_node_of<logic::term> Node>
   struct ast_node_custom_members<Node> 
     : logic::internal::term_custom_members { };
+  
+  template<ast AST>
+  struct ast_custom_init<AST> 
+    : logic::internal::term_custom_init { };
 }
+
+  //
+  // Equality/inequality
+  //
+
+namespace black::logic {
+  inline bool term_equal(term t1, term t2);
+
+  template<bool EQ>
+  struct eq_wrapper_t;
+
+  inline eq_wrapper_t<true> operator==(term t1, term t2);
+
+  inline eq_wrapper_t<false> operator!=(term t1, term t2);
+}
+
 
 #define BLACK_AST_REFLECT_DEFS_FILE <black/internal/logic/terms-defs.hpp>
 #include <black/ast/reflect>
 #undef BLACK_AST_REFLECT_DEFS_FILE
 
 
-namespace black::logic::internal {
+namespace black::logic 
+{
+  template<bool EQ>
+  struct eq_wrapper_t {
+    term t1;
+    term t2;
 
-  inline term arg_to_term(term t) {
-    return t;
-  }
-  
-  inline term arg_to_term(std::integral auto v) {
-    return integer(int64_t(v));
-  }
-  
-  inline term arg_to_term(std::floating_point auto v) {
-    return real(double(v));
-  }
+    operator bool() const requires (EQ) {
+      return term_equal(t1, t2);
+    }
 
-  atom term_custom_members::operator()(term_arg auto ...terms) const {
-      term const&self = static_cast<term const&>(*this);
-      
-      return atom(self, std::vector<term>{arg_to_term(terms)...});
+    operator bool() const requires (!EQ) {
+      return !term_equal(t1, t2);
+    }
+    
+    eq_wrapper_t<!EQ> operator!() const { 
+      return {t1, t2};
+    }
+
+    operator term() const requires (EQ) {
+      return equal({t1, t2});
+    }
+
+    operator equal() const requires (EQ) {
+      return equal({t1, t2});
+    }
+
+    operator term() const requires (!EQ) {
+      return distinct({t1, t2});
+    }
+
+    operator distinct() const requires (!EQ) {
+      return distinct({t1, t2});
+    }
   };
+
+  inline eq_wrapper_t<true> operator==(term t1, term t2) {
+    return {t1, t2};
+  }
+  
+  inline eq_wrapper_t<false> operator!=(term t1, term t2) {
+    return {t1, t2};
+  }
+
+  inline bool term_equal(term t1, term t2) {
+    if(t1.unique_id() == t2.unique_id())
+      return true;
+
+    if(t1.hash() != t2.hash())
+      return false;
+
+    return support::match(t1)(
+      [&]<typename Node>(Node, auto const& ...args1) {
+        return support::match(t2)(
+          [&](Node, auto const& ...args2) {
+            return (bool(args1 == args2) && ...);
+          },
+          [](auto) { return false; }
+        );
+      }
+    );
+  }
+  
+  namespace internal {
+
+    atom 
+    term_custom_members::operator()(std::convertible_to<term> auto ...ts) const 
+    {
+      return 
+        atom(static_cast<term const&>(*this), std::vector<term>{ts...});
+    };
+
+    inline term term_custom_init::init(std::integral auto v) {
+      return integer(int64_t(v));
+    }
+
+    inline term term_custom_init::init(std::floating_point auto v) {
+      return real(double(v));
+    }
+    
+    inline term term_custom_init::init(bool v) {
+      return boolean(v);
+    }
+  }
 }
 
 namespace black::logic {

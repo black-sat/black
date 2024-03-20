@@ -134,6 +134,14 @@ namespace black::support {
 
 namespace black::support {
 
+  namespace internal {
+    template <class From, class To>
+    concept explicitly_convertible_to = requires {
+        static_cast<To>(std::declval<From>());
+    };
+  }
+
+
   template<typename ...Args>
   struct common_result { };
   
@@ -145,18 +153,6 @@ namespace black::support {
 
   template<typename Arg1, std::common_with<Arg1> Arg2>
   struct common_result<Arg1, Arg2> : std::common_type<Arg1, Arg2> { };
-
-  template<typename Arg1, typename Arg2>
-    requires (!std::common_with<Arg1, Arg2> && std::convertible_to<Arg2, Arg1>)
-  struct common_result<Arg1, Arg2> : std::type_identity<Arg1> { };
-  
-  template<typename Arg1, typename Arg2>
-    requires (
-      !std::common_with<Arg1, Arg2> && 
-      !std::convertible_to<Arg2, Arg1> &&
-      std::convertible_to<Arg1, Arg2>
-    )
-  struct common_result<Arg1, Arg2> : std::type_identity<Arg2> { };
 
   template<typename Arg, typename ...Args>
     requires (sizeof...(Args) > 1)
@@ -219,7 +215,7 @@ namespace black::support::internal {
   //
   struct missing_case_t { 
     template<typename T>
-    [[noreturn]] operator T() const { black_unreachable(); }
+    [[noreturn]] explicit operator T() const { black_unreachable(); }
   };
   
   template<matchable M>
@@ -275,6 +271,19 @@ namespace black::support::internal {
 }
 
 namespace black::support {
+
+  template<typename Arg>
+  struct common_result<Arg, internal::missing_case_t> 
+    : std::type_identity<Arg> { };
+  
+  template<typename Arg>
+  struct common_result<internal::missing_case_t, Arg> 
+    : std::type_identity<Arg> { };
+
+  template<>
+  struct common_result<internal::missing_case_t, internal::missing_case_t> 
+    : std::type_identity<internal::missing_case_t> { };
+
   //
   // `match_cases` and `match_downcast` for `std::variant`
   //

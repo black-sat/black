@@ -81,6 +81,10 @@ TEST_CASE("Modules") {
     term ft = function_type({integer_type()}, integer_type());
     REQUIRE(type_of(p) == ft);
 
+    term t21 = 21;
+
+    static_assert(std::convertible_to<int, term>);
+
     term t = p(2);
 
     REQUIRE(type_of(t) == integer_type());

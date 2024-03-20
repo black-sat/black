@@ -77,9 +77,8 @@ define_type(logic, struct decl,
     decl(ast::core::label name, logic::term type) : name{name}, type{type} { }
     decl(variable name, logic::term type) : decl(name.name(), type) { }
 
-    bool operator==(decl const& d) const {
-      return name == d.name && ast::core::ast_equal(type, d.type);
-    }
+    bool operator==(decl const&) const = default;
+    size_t hash() const { return support::hash(name, type); }
   };
 )
 

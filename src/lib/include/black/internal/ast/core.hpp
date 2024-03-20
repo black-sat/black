@@ -205,6 +205,9 @@ namespace black::ast::core {
   template<typename AST>
   struct ast_custom_members { };
 
+  template<typename AST>
+  struct ast_custom_init { };
+  
   template<typename Node>
   struct ast_node_custom_members { };
 
@@ -218,9 +221,14 @@ namespace black::ast::core::internal {
   template<int Dummy, typename ...Args>
   struct tuple_cpp : std::type_identity<std::tuple<Args...>> { };
 
+  struct ast_metadata {
+    const size_t hash;
+  };
+
   template<ast AST>
   struct ast_impl_base {
     const ast_node_index_t<AST> index;
+    const ast_metadata metadata;
 
     bool operator==(ast_impl_base const&) const = default;
   };
@@ -234,8 +242,9 @@ namespace black::ast::core::internal {
   template<ast AST, ast_node_of<AST> Node>
   struct ast_impl : ast_impl_base<AST> {
     
-    ast_impl(ast_node_field_types_t<AST, Node> _data) 
-      : ast_impl_base<AST>{ast_node_index_of_v<AST, Node>}, data{_data} { }
+    ast_impl(ast_node_field_types_t<AST, Node> _data, ast_metadata meta) 
+      : ast_impl_base<AST>{ast_node_index_of_v<AST, Node>, meta}, 
+        data{_data} { }
     
     bool operator==(ast_impl const&) const = default;
 
@@ -261,12 +270,18 @@ namespace black::ast::core::internal {
         return unique_id_t(reinterpret_cast<uintptr_t>(_impl.get()));
       }
       
+      size_t hash() const {
+        return impl()->metadata.hash;
+      }
+
       index_t index() const { return _impl->index; }
 
       template<ast_node_of<AST> Node, typename ...Args>
       static ast_impl_ref<AST> allocate(Args ...args) {
         ast_node_field_types_t<AST, Node> data{args...};
-        return std::make_shared<ast_impl<AST, Node>>(std::move(data));
+        return std::make_shared<ast_impl<AST, Node>>(
+          std::move(data), ast_metadata{support::hash(data)}
+        );
       }
 
     protected:
@@ -309,6 +324,13 @@ namespace black::ast::core::internal {
     template<ast_node_of<AST> Node>
     ast_base(Node n) 
       : node_holder<AST>(n._impl) { }
+
+    template<typename T>
+      requires requires(T v) { 
+        { ast_custom_init<AST>::init(v) } -> std::same_as<AST>; 
+      }
+    ast_base(T v) 
+      : node_holder<AST>(ast_custom_init<AST>::init(v).impl()) { }    
 
     ast_base &operator=(ast_base const&) = default;
     ast_base &operator=(ast_base &&) = default;
@@ -451,58 +473,6 @@ namespace black::support {
       return {};
     }
   };
-}
-
-namespace black::ast::core {
-
-  template<typename T1, typename T2>
-  bool ast_equal(T1 const&t1, T2 const&t2) {
-    return t1 == t2;
-  }
-
-  template<ast_type T1, ast_type T2>
-    requires (!std::is_same_v<T1, T2>)
-  bool ast_equal(T1 const&, T2 const&) { 
-    return false; 
-  }
-
-  template<ast_node Node>
-  bool ast_equal(Node n1, Node n2) 
-  {
-    if(n1.unique_id() == n2.unique_id())
-      return true;
-
-    constexpr size_t n_fields = 
-      std::tuple_size_v<ast_node_field_list_t<ast_of_t<Node>, Node>>;
-    
-    return [&]<size_t ...F>(std::index_sequence<F...>){
-      return (ast_equal(
-        n1.template field<ast_node_field_index_t<ast_of_t<Node>, Node>(F)>(), 
-        n2.template field<ast_node_field_index_t<ast_of_t<Node>, Node>(F)>()
-      ) && ...);
-    }(std::make_index_sequence<n_fields>{});
-  }
-
-  template<ast AST>
-  bool ast_equal(AST t1, AST t2) {
-    return support::match(t1)(
-      [&](auto v1){
-        return support::match(t2)(
-          [&](auto v2){
-            return ast_equal(v1, v2);
-          }
-        );
-      }
-    );
-  }
-
-  // namespace internal {
-  //   template<ast_type T1, ast_type T2>
-  //   bool operator==(T1 const& t1, T2 const& t2) {
-  //     return ast_equal(t1, t2);
-  //   }
-  // }
-
 }
 
 template<black::ast::core::ast_node Node>
