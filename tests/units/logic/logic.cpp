@@ -32,8 +32,10 @@ TEST_CASE("Terms") {
 
   using namespace black::logic;
   
-  variable p{"p"};
-  variable q{"q"};
+  variable p = "p";
+  variable q = "q";
+
+  boolean b = true;
 
   negation n1 = !p;
   negation n2 = !q;    
@@ -71,6 +73,8 @@ TEST_CASE("Modules") {
   SECTION("Definitions") {
     variable a = variable("a");
     
+    term tint = 42;
+
     object x = m.define({"x", integer(40)});
     object p = m.define({"p", {{a, integer_type()}}, ite(a > 0, a + x, a - x)});
     object aobj = m.define({a, real(0.0)}); // this will be shadowed
@@ -81,15 +85,11 @@ TEST_CASE("Modules") {
     term ft = function_type({integer_type()}, integer_type());
     REQUIRE(type_of(p) == ft);
 
-    term t21 = 21;
-
-    static_assert(std::convertible_to<int, term>);
-
     term t = p(2);
 
     REQUIRE(type_of(t) == integer_type());
     
-    REQUIRE(evaluate(t) == integer(42));
+    REQUIRE(evaluate(t) == 42);
   }
 
   SECTION("Mixed declarations and definitions") {
@@ -109,10 +109,10 @@ TEST_CASE("Modules") {
 
   SECTION("Mutually recursive scope and type inference") {
 
-    variable f{"f"};
-    variable a{"a"};
-    variable x{"x"};
-    variable y{"y"};
+    variable f = "f";
+    variable a = "a";
+    variable x = "x";
+    variable y = "y";
 
     object fobj = 
       m.define(

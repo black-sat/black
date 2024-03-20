@@ -27,6 +27,10 @@
 namespace black::logic {
   struct term;
   struct atom;
+  struct integer;
+  struct real;
+  struct variable;
+  struct boolean;
 
   namespace internal {
     struct term_custom_members {
@@ -37,6 +41,22 @@ namespace black::logic {
       static term init(std::integral auto);
       static term init(std::floating_point auto);
       static term init(bool);
+    };
+    
+    struct integer_custom_init {
+      static integer init(std::integral auto);
+    };
+    
+    struct real_custom_init {
+      static real init(std::floating_point auto);
+    };
+    
+    struct boolean_custom_init {
+      static boolean init(bool);
+    };
+    
+    struct variable_custom_init {
+      static variable init(std::string s);
     };
   }
 }
@@ -50,9 +70,28 @@ namespace black::ast::core {
   struct ast_node_custom_members<Node> 
     : logic::internal::term_custom_members { };
   
-  template<ast AST>
-  struct ast_custom_init<AST> 
+  template<>
+  struct ast_custom_init<logic::term> 
     : logic::internal::term_custom_init { };
+  
+  template<>
+  struct ast_node_custom_init<logic::integer> 
+    : logic::internal::integer_custom_init { };
+  
+  template<>
+  struct ast_node_custom_init<logic::real> 
+    : logic::internal::real_custom_init { };
+  
+  template<>
+  struct ast_node_custom_init<logic::boolean> 
+    : logic::internal::boolean_custom_init { };
+  
+  template<>
+  struct ast_node_custom_init<logic::variable> 
+    : logic::internal::variable_custom_init { };
+  
+  
+  
 }
 
   //
@@ -149,16 +188,34 @@ namespace black::logic
     };
 
     inline term term_custom_init::init(std::integral auto v) {
-      return integer(int64_t(v));
+      return integer(v);
     }
 
     inline term term_custom_init::init(std::floating_point auto v) {
-      return real(double(v));
+      return real(v);
     }
     
     inline term term_custom_init::init(bool v) {
       return boolean(v);
     }
+
+    inline integer integer_custom_init::init(std::integral auto v) {
+      return integer(int64_t(v));
+    }
+
+    inline real real_custom_init::init(std::floating_point auto v) {
+      return real(v);
+    }
+
+    inline boolean boolean_custom_init::init(bool v) {
+      return boolean(v);
+    }
+
+    inline variable variable_custom_init::init(std::string s) {
+      return variable(ast::core::label{s});
+    }
+
+
   }
 }
 

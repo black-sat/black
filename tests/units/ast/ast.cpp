@@ -101,8 +101,8 @@ TEST_CASE("Static reflection") {
     REQUIRE(test{}.variable(21) == 42);
     REQUIRE(test{}.name() == 42);
 
-    integer p = integer(21);
-    integer q = integer(42);
+    integer p = 21;
+    integer q = 42;
 
     auto c = conjunction(std::vector<term>{p, q});
 

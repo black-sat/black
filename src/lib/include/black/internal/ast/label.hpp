@@ -47,6 +47,14 @@ namespace black::ast::core::internal
     !std::is_same_v<T, label> &&
     std::equality_comparable<T> && formattable<T>;
 
+  struct string_literal {
+    template<size_t N>
+    string_literal(const char (&arg)[N])
+      : str{arg} { }
+
+    const char *str;
+  };  
+
   //
   // Type-erased hashable, comparable and printable value
   //
@@ -59,21 +67,21 @@ namespace black::ast::core::internal
 
     template<typename T>
       requires identifiable<std::remove_cvref_t<T>>
-    label(T&& value)
+    explicit label(T&& value)
       : _any(std::forward<T>(value)),
         _hash(make_hasher(value)),
         _cmp(make_cmp(value)),
         _printer(make_printer(value)) { }
 
-    label(std::string_view view) 
+    explicit label(std::string_view view) 
       : label{std::string{view}} { }
 
-    label(char const* c_str) 
+    explicit label(char const* c_str) 
       : label{std::string{c_str}} { }
 
     template<size_t N>
-    label(const char (&c_str)[N])
-      : label{std::string{c_str}} { }
+    label(const char (&str)[N])
+      : label{std::string{str}} { }
 
     size_t hash() const {
       return _hash(_any);

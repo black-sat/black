@@ -71,11 +71,11 @@ declare_type(logic, struct lookup)
 
 define_type(logic, struct decl,
   struct decl { 
-    ast::core::label name; 
+    logic::variable name; 
     logic::term type;
 
-    decl(ast::core::label name, logic::term type) : name{name}, type{type} { }
-    decl(variable name, logic::term type) : decl(name.name(), type) { }
+    decl(variable name, logic::term type) 
+      : name{name}, type{type} { }
 
     bool operator==(decl const&) const = default;
     size_t hash() const { return support::hash(name, type); }

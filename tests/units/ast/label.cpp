@@ -31,10 +31,16 @@
 using namespace black::support;
 using namespace black::ast::core;
 
+inline void func(black::ast::core::internal::string_literal) {
+
+}
+
 TEST_CASE("labels") {
 
+  func("hello");
+
   label id = "hello";
-  label id2 = 42;
+  label id2 = label{42};
 
   label id3 = id;
 

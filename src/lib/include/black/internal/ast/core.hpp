@@ -211,6 +211,8 @@ namespace black::ast::core {
   template<typename Node>
   struct ast_node_custom_members { };
 
+  template<typename Node>
+  struct ast_node_custom_init { };
 }
 
 //
@@ -394,6 +396,13 @@ namespace black::ast::core::internal {
     explicit ast_node_base(Args ...args)
       : node_holder<AST>{node_holder<AST>::template allocate<Node>(args...)} { }
     
+    template<typename T>
+      requires requires(T v) { 
+        { ast_node_custom_init<Node>::init(v) } -> std::same_as<Node>; 
+      }
+    ast_node_base(T v) 
+      : node_holder<AST>(ast_node_custom_init<Node>::init(v).impl()) { }  
+
     ast_node_base &operator=(ast_node_base const&) = default;
     ast_node_base &operator=(ast_node_base &&) = default;
 

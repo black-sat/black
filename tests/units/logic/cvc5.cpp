@@ -52,11 +52,11 @@ TEST_CASE("cvc5") {
 
     SECTION("Definitions") 
     {    
-        variable a{"a"};
+        variable a = "a";
 
         object k = mod.declare({"k", integer_type()});
         object f = mod.define({"f", {{a, integer_type()}}, a * k});
-        
+
         mod.require(k >= 2);
         mod.require(f(21) >= 42);
 
@@ -69,7 +69,7 @@ TEST_CASE("cvc5") {
 
     SECTION("Declaration of functions/predicates") {
 
-        variable x{"x"};
+        variable x = "x";
 
         object p = mod.declare({
             "p", function_type({integer_type()}, boolean_type())

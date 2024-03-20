@@ -43,43 +43,31 @@ namespace black::logic {
   };
 
   struct def {
-    label name; 
+    variable name; 
     term type;
     term value;
 
-    def(label name, term type, term value)
-      : name{name}, type{type}, value{value} { }
-    
-    def(label name, term value)
-      : name{name}, type{inferred_type()}, value{value} { }
-    
     def(variable name, term type, term value) 
-      : def(name.name(), type, value) { }
+      : name{name.name()}, type{type}, value{value} { }
     
     def(variable name, term value)
-      : def(name.name(), value) { }
+      : def{name, inferred_type(), value} { }
   };
 
   struct function_def {
-    label name;
+    variable name;
     std::vector<decl> parameters;
     term range;
     term body;
 
-    function_def(label name, std::vector<decl> parms, term range, term body)
+    function_def(variable name, std::vector<decl> parms, term range, term body)
       : name{name}, parameters{std::move(parms)}, range{range}, body{body} { }
 
-    function_def(label name, std::vector<decl> parms, term body)
+    function_def(variable name, std::vector<decl> parms, term body)
       : name{name}, 
         parameters{std::move(parms)}, 
         range{inferred_type()}, 
         body{body} { }
-    
-    function_def(variable name, std::vector<decl> parms, term range, term body)
-      : function_def(name.name(), std::move(parms), range, body) { }
-
-    function_def(variable name, std::vector<decl> parms, term body)
-      : function_def(name.name(), std::move(parms), body) { }
   };
 
   class module;
@@ -130,8 +118,7 @@ namespace black::logic {
     //
     // Name lookup
     //
-    std::optional<object> lookup(label x) const;
-    std::optional<object> lookup(variable x) const { return lookup(x.name()); }
+    std::optional<object> lookup(variable x) const;
 
     //
     // requirements
@@ -209,7 +196,7 @@ namespace black::logic {
   };
 
   struct lookup : std::enable_shared_from_this<lookup> {
-    label name;
+    variable name;
     term type;
     std::optional<term> value;
 

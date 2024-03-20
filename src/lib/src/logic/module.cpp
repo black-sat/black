@@ -39,7 +39,7 @@ namespace black::logic {
     struct frame_t {
       immer::vector<module> imports;
       immer::vector<std::shared_ptr<struct lookup const>> lookups;
-      immer::map<label, struct lookup const*> scope;
+      immer::map<variable, struct lookup const*> scope;
       immer::vector<term> reqs;
 
       bool operator==(frame_t const&) const = default;
@@ -131,7 +131,7 @@ namespace black::logic {
       adopt(obj); 
   }
 
-  std::optional<object> module::lookup(label s) const 
+  std::optional<object> module::lookup(variable s) const 
   {
     for(auto it = _impl->stack.rbegin(); it != _impl->stack.rend(); it++)
       if(auto p = it->scope.find(s); p)
@@ -265,10 +265,10 @@ namespace black::logic {
     _impl->replay(from, target);
   }
   
-  static term resolved(module const& m, term t, immer::set<label> hidden);
+  static term resolved(module const& m, term t, immer::set<variable> hidden);
   
   static std::vector<term> resolved(
-    module const& m, std::vector<term> const &ts, immer::set<label> hidden
+    module const& m, std::vector<term> const &ts, immer::set<variable> hidden
   ) {
     std::vector<term> res;
     for(term t : ts)
@@ -277,7 +277,7 @@ namespace black::logic {
   }
 
   static 
-  term resolved(module const& m, term t, immer::set<label> hidden = {}) {
+  term resolved(module const& m, term t, immer::set<variable> hidden = {}) {
     return support::match(t)(
       [&](error v)         { return v; },
       [&](type_type v)     { return v; },
@@ -289,11 +289,11 @@ namespace black::logic {
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
       [&](object v)        { return v; },
-      [&](variable x, label name) -> term {
-        if(hidden.count(name))
+      [&](variable x) -> term {
+        if(hidden.count(x))
           return x;
 
-        if(auto lookup = m.lookup(name); lookup)
+        if(auto lookup = m.lookup(x); lookup)
           return *lookup;
         
         return x;

@@ -82,7 +82,7 @@ namespace black::backends::cvc5 {
     std::vector<CVC5::Term> 
     to_term(
       std::vector<term> const& ts, 
-      immer::map<label, CVC5::Term> const& vars
+      immer::map<variable, CVC5::Term> const& vars
     ) const 
     {
       std::vector<CVC5::Term> result;
@@ -92,7 +92,7 @@ namespace black::backends::cvc5 {
     }
 
     CVC5::Term 
-    to_term(term t, immer::map<label, CVC5::Term> const& vars) const {
+    to_term(term t, immer::map<variable, CVC5::Term> const& vars) const {
       return match(t)(
         [&](integer, int64_t v) { return slv->mkInteger(v); },
         [&](real, double v) { 
@@ -101,7 +101,7 @@ namespace black::backends::cvc5 {
         },
         [&](boolean, bool v) { return slv->mkBoolean(v); },
         [&](variable x) {
-          CVC5::Term const *var = vars.find(x.name());
+          CVC5::Term const *var = vars.find(x);
           
           black_assert(var != nullptr);
           return *var;
@@ -134,7 +134,7 @@ namespace black::backends::cvc5 {
         },
         [&]<any_of<exists,forall,lambda> T>(T v, auto decls, term body) {
           std::vector<CVC5::Term> varlist;
-          immer::map<label, CVC5::Term> newvars = vars;
+          immer::map<variable, CVC5::Term> newvars = vars;
 
           for(auto [name, type] : decls) {
             CVC5::Term term = slv->mkVar(to_sort(type));
@@ -209,7 +209,7 @@ namespace black::backends::cvc5 {
         match(*lu->value)(
           [&](lambda, auto const &decls, term body) {
             std::vector<CVC5::Term> vars;
-            immer::map<label, CVC5::Term> varmap;
+            immer::map<variable, CVC5::Term> varmap;
 
             for(auto [name, type] : decls) {
               CVC5::Term var = slv->mkVar(to_sort(type));
@@ -221,13 +221,14 @@ namespace black::backends::cvc5 {
             black_assert(fun_ty.has_value());
 
             return slv->defineFun(
-              std::format("{}", lu->name), vars, 
+              std::format("{}", lu->name.name()), vars, 
               to_sort(fun_ty->range()), to_term(body, varmap)
             );
           },
           [&](auto d) {
             return slv->defineFun(
-              std::format("{}", lu->name), {}, to_sort(lu->type), to_term(d, {})
+              std::format("{}", lu->name.name()), 
+              {}, to_sort(lu->type), to_term(d, {})
             );
           }
         ); 
