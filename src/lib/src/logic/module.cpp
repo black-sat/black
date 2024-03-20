@@ -34,11 +34,42 @@
 
 namespace black::logic {
 
+  //
+  // Recursive definitions
+  //
+  // 1. adopt() pushes directly to the stack, not to the pending set
+  // 2. resolve() has a new argument to choose linear or recursive scope
+  // 3. if the scope is linear the lookups are not popped from the pending set
+  //    before resolving
+  // 4. resolution checks for possible recursion 
+  //    a. not an actual DFS (for now)
+  //    b. we just check if the objects added from the pending set are actually 
+  //       used during resolve()
+  //    c. in this case we set recursive = true in the SCC
+  // 5. in this way we can:
+  //    - choose the right way to declare things in the backend
+  //    - choose `scope::linear` or `scope::recursive` appropriately during 
+  //      replay
+  // 6. objects pushed from pending with scope::recursive form an SCC with 
+  //    recursive = true only if we have scope::recursive and item 4 detected 
+  //    possible recursion
+  // 7. in this case adopt(vector<object>) is replayed
+  // 8. otherwise, a sequence of single adopt(object) are replayed
+  // 9. memory management is solved by using a weak reference in `object` only 
+  //    if a back-edge is detected at step 4.
+  //
   struct module::_impl_t 
   {
+    struct scc_t {
+      bool recursive;
+      immer::set<std::shared_ptr<struct lookup const>> lookups;
+
+      bool operator==(scc_t const&) const = default;
+    };
+    
     struct frame_t {
       immer::vector<module> imports;
-      immer::vector<std::shared_ptr<struct lookup const>> lookups;
+      immer::vector<scc_t> sccs;
       immer::map<variable, struct lookup const*> scope;
       immer::vector<term> reqs;
 
@@ -46,7 +77,7 @@ namespace black::logic {
     };
     
     immer::vector<frame_t> stack;
-    immer::vector<std::shared_ptr<struct lookup>> pending;
+    immer::set<std::shared_ptr<struct lookup>> pending;
 
     _impl_t() : stack{frame_t{}} { }
 
@@ -88,22 +119,22 @@ namespace black::logic {
 
   object module::declare(decl d, resolution r) {
     auto ptr = std::make_shared<struct lookup>(d);
-    _impl->pending = _impl->pending.push_back(ptr);
+    _impl->pending = _impl->pending.insert(ptr);
     
     if(r == resolution::immediate)
       resolve();
 
-    return object(ptr.get());
+    return object(ptr);
   }
   
   object module::define(def d, resolution r) {
     auto ptr = std::make_shared<struct lookup>(d);
-    _impl->pending = _impl->pending.push_back(ptr);
+    _impl->pending = _impl->pending.insert(ptr);
     
     if(r == resolution::immediate)
       resolve();
 
-    return object(ptr.get());
+    return object(ptr);
   }
 
   object module::define(function_def f, resolution r) {
@@ -116,26 +147,24 @@ namespace black::logic {
 
     return define(def{f.name, type, body}, r);
   }
-  
-  void module::adopt(object obj) {
-    auto lu = obj.lookup()->shared_from_this();
-    _impl->stack = _impl->stack.update(_impl->stack.size() - 1, [&](auto top) {
-      top.lookups = top.lookups.push_back(lu);
-      top.scope = top.scope.insert({lu->name, lu.get()});
-      return top;
-    });    
-  }
 
-  void module::adopt(std::vector<object> const& objs) {
-    for(object obj : objs) // TODO: handle recursivity
-      adopt(obj); 
+  void module::adopt(std::vector<object> const& objs, scope s) {
+    _impl_t::scc_t scc = {s == scope::recursive, {}};
+    for(object obj : objs) {
+      auto lu = obj.lookup()->shared_from_this();
+      scc.lookups = scc.lookups.insert(lu);
+    }
+    _impl->stack = _impl->stack.update(_impl->stack.size() - 1, [&](auto top) {
+      top.sccs = top.sccs.push_back(scc);
+      return top;
+    });
   }
 
   std::optional<object> module::lookup(variable s) const 
   {
     for(auto it = _impl->stack.rbegin(); it != _impl->stack.rend(); it++)
       if(auto p = it->scope.find(s); p)
-        return object(*p);  
+        return object(*p);
     
     for(auto it = _impl->stack.rbegin(); it != _impl->stack.rend(); it++) 
       for(auto im = it->imports.rbegin(); im != it->imports.rend(); im++)
@@ -172,7 +201,7 @@ namespace black::logic {
     // check vectors sizes
     if(inner.imports.size() > outer.imports.size())
       return {};
-    if(inner.lookups.size() > outer.lookups.size())
+    if(inner.sccs.size() > outer.sccs.size())
       return {};
     if(inner.reqs.size() > outer.reqs.size())
       return {};
@@ -182,8 +211,8 @@ namespace black::logic {
       if(inner.imports[i] != outer.imports[i])
         return {};
     
-    for(size_t i = 0; i < inner.lookups.size(); i++)
-      if(inner.lookups[i] != outer.lookups[i])
+    for(size_t i = 0; i < inner.sccs.size(); i++)
+      if(inner.sccs[i] != outer.sccs[i])
         return {};
     
     for(size_t i = 0; i < inner.reqs.size(); i++)
@@ -194,8 +223,8 @@ namespace black::logic {
     for(size_t i = inner.imports.size(); i < outer.imports.size(); i++)
       result.imports = result.imports.push_back(outer.imports[i]);
     
-    for(size_t i = inner.lookups.size(); i < outer.lookups.size(); i++)
-      result.lookups = result.lookups.push_back(outer.lookups[i]);
+    for(size_t i = inner.sccs.size(); i < outer.sccs.size(); i++)
+      result.sccs = result.sccs.push_back(outer.sccs[i]);
     
     for(size_t i = inner.reqs.size(); i < outer.reqs.size(); i++)
       result.reqs = result.reqs.push_back(outer.reqs[i]);
@@ -207,8 +236,14 @@ namespace black::logic {
   module::_impl_t::replay(frame_t const& f, replay_target_t *target) const {
     for(module m : f.imports)
       target->import(std::move(m));
-    for(auto lu : f.lookups)
-      target->adopt(object(lu.get()));
+    
+    for(scc_t scc : f.sccs) {
+      std::vector<object> objs;
+      for(auto lu : scc.lookups)
+        objs.push_back(object(lu));
+      target->adopt(objs, scc.recursive ? scope::recursive : scope::linear);
+    }
+    
     for(term req : f.reqs)
       target->require(req);
   }
@@ -265,19 +300,29 @@ namespace black::logic {
     _impl->replay(from, target);
   }
   
-  static term resolved(module const& m, term t, immer::set<variable> hidden);
+  static term resolved(
+    module const& m, term t, 
+    support::set<variable> const& pending, bool *recursive, 
+    immer::set<variable> hidden
+  );
   
   static std::vector<term> resolved(
-    module const& m, std::vector<term> const &ts, immer::set<variable> hidden
+    module const& m, std::vector<term> const &ts, 
+    support::set<variable> const& pending, bool *recursive, 
+    immer::set<variable> hidden
   ) {
     std::vector<term> res;
     for(term t : ts)
-      res.push_back(resolved(m, t, hidden));
+      res.push_back(resolved(m, t, pending, recursive, hidden));
     return res;
   }
 
   static 
-  term resolved(module const& m, term t, immer::set<variable> hidden = {}) {
+  term resolved(
+    module const& m, term t, 
+    support::set<variable> const& pending, bool *recursive, 
+    immer::set<variable> hidden
+  ) {
     return support::match(t)(
       [&](error v)         { return v; },
       [&](type_type v)     { return v; },
@@ -293,6 +338,9 @@ namespace black::logic {
         if(hidden.count(x))
           return x;
 
+        if(pending.contains(x))
+          *recursive = true;
+
         if(auto lookup = m.lookup(x); lookup)
           return *lookup;
         
@@ -301,38 +349,46 @@ namespace black::logic {
       [&]<any_of<exists,forall,lambda> T>(T, auto const& decls, term body) {
         std::vector<decl> rdecls;
         for(decl d : decls) {
-          rdecls.push_back(decl{d.name, resolved(m, d.type, hidden)});
+          rdecls.push_back(decl{
+            d.name, resolved(m, d.type, pending, recursive, hidden)
+          });
           hidden = hidden.insert(d.name);
         }
         
-        return T(rdecls, resolved(m, body, hidden));
+        return T(rdecls, resolved(m, body, pending, recursive, hidden));
       },
       [&]<typename T>(T, auto const &...args) {
-        return T(resolved(m, args, hidden)...);
+        return T(resolved(m, args, pending, recursive, hidden)...);
       }
     );
   }
 
   term module::resolved(term t) const {
-    return logic::resolved(*this, t);
+    return logic::resolved(*this, t, {}, nullptr, {});
   }
 
-  void module::resolve() {
-    for(auto p : _impl->pending)
-      _impl->stack = _impl->stack.update(_impl->stack.size() - 1, 
-        [&](auto top) {
-          top.lookups = top.lookups.push_back(p);
-          top.scope = top.scope.insert({p->name, p.get()});
-          return top;
-        });
+  void module::resolve(scope s) {
+    if(s == scope::recursive) {
+      std::vector<object> objs;
+      for(auto p : _impl->pending)
+        objs.push_back(object(p));
+      adopt(objs, scope::linear);
+    }
 
     auto pending = _impl->pending;
     _impl->pending = {};
 
+    bool recursive = false;
+    support::set<variable> pendingvars;
+    for(auto p : _impl->pending)
+      pendingvars.insert(p->name);
+
     for(auto p : pending) {
       p->type = resolved(p->type);
       if(p->value) {
-        *p->value = resolved(*p->value);
+        *p->value = 
+          logic::resolved(*this, *p->value, pendingvars, &recursive, {});
+
         p->type = support::match(p->type)(
           [&](inferred_type) {
             return type_of(*p->value);
@@ -355,11 +411,20 @@ namespace black::logic {
         );
       }
     }
+    
+    if(s == scope::recursive && recursive)
+      _impl->stack = _impl->stack.update(_impl->stack.size() - 1, [](auto top){
+        top.sccs = top.sccs.update(top.sccs.size() - 1, [](auto scc) {
+          scc.recursive = true;
+          return scc;
+        });
+        return top;
+      });
   }
 
-  module module::resolved() const {
+  module module::resolved(scope s) const {
     module m = *this;
-    m.resolve();
+    m.resolve(s);
     return m;
   }
 

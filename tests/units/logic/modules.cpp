@@ -45,14 +45,13 @@ struct debug_t {
 
     debug_t(module &mod) : mod{mod} { }
 
-
     void import(module m) { 
         steps.push_back(step::import);
         return mod.import(std::move(m));
     }
-    void adopt(object obj) { 
+    void adopt(std::vector<object> const& objs, scope s) { 
         steps.push_back(step::adopt);
-        return mod.adopt(obj);
+        return mod.adopt(objs, s);
     }
     void require(term r) { 
         steps.push_back(step::require);

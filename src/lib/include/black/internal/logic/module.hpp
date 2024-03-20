@@ -72,15 +72,19 @@ namespace black::logic {
 
   class module;
 
+  enum class scope {
+    recursive,
+    linear
+  };
+
   template<typename T>
   concept replay_target = requires(T v, object obj, module m, term t) {
     v.import(m);
-    v.adopt(obj);
+    v.adopt(std::vector<object>{}, scope::recursive);
     v.require(t);
     v.push();
     v.pop(42);
   };
-
 
   class module
   {
@@ -109,11 +113,8 @@ namespace black::logic {
     object define(def d, resolution r = resolution::immediate);
     object define(function_def f, resolution r = resolution::immediate);
 
-    // adopt an existing object (maybe declared in another module)
-    void adopt(object);
-
-    // adopt a set of possibly recursively interconnected existing objects
-    void adopt(std::vector<object> const& objs);
+    // adopt a set of existing possibly recursive objects (declared or defined)
+    void adopt(std::vector<object> const& objs, scope s = scope::recursive);
 
     //
     // Name lookup
@@ -126,24 +127,7 @@ namespace black::logic {
     void require(term req);
 
     //
-    // Comparisons
-    //
-
-    //
     // push()/pop() interface
-    //
-    // We need ad-hoc data structures to support both lookups and efficient
-    // replay of stack history.
-    // - we store the stack frames explicitly instead of copying the whole 
-    //   module.
-    //   * this implies changing the lookup logic but it will not affect 
-    //     semantics if we traverse the stack from top to bottom for lookups
-    // - now we can:
-    //   * efficiently find a common prefix of the stack history of two modules
-    //   * replay the stack history from a given prefix onwards
-    // - this should be presented as a general way to iterate through the module
-    // - we should also take this opportunity to account for groups of mutually 
-    //   recursive declarations
     //
     void push();
     void pop(size_t n = 1);
@@ -175,15 +159,15 @@ namespace black::logic {
     //
     // Fully resolve the whole module
     //
-    void resolve();
-    module resolved() const;
+    void resolve(scope s = scope::linear);
+    module resolved(scope s = scope::linear) const;
 
   private:
 
     struct replay_target_t {
       virtual ~replay_target_t() = default;
       virtual void import(module) = 0;
-      virtual void adopt(object) = 0;
+      virtual void adopt(std::vector<object> const&, scope s) = 0;
       virtual void require(term) = 0;
       virtual void push() = 0;
       virtual void pop(size_t) = 0;
@@ -216,7 +200,9 @@ namespace black::logic {
       wrap_t(T *t) : t{t} { }
 
       virtual void import(module m) override { return t->import(std::move(m)); }
-      virtual void adopt(object obj) override { return t->adopt(obj); }
+      virtual void adopt(std::vector<object> const& objs, scope s) override { 
+        return t->adopt(objs, s); 
+      }
       virtual void require(term r) override { return t->require(r); }
       virtual void push() override { t->push(); }
       virtual void pop(size_t n) override { t->pop(n); }
