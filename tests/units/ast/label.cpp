@@ -48,34 +48,3 @@ TEST_CASE("labels") {
   REQUIRE(str2 == "42");
 
 }
-
-TEST_CASE("identifiers and paths") {
-
-  enable_debug_msgs("test");
-
-  identifier id1 = {"hello", 42};
-  identifier id2 = {"hi", 0};
-
-  identifier id3 = "hello";
-
-  path p = "hello";
-
-  path p2 = id1 / id2;
-
-  path p3{id1};
-
-  REQUIRE(p.components().size() == 1);
-  REQUIRE(p2.components().size() == 2);
-  REQUIRE(p3.components().size() == 1);
-
-  REQUIRE(p.components()[0] == "hello");
-  REQUIRE(p2.components()[0] == id1);
-  REQUIRE(p2.components()[1] == id2);
-  REQUIRE(p3.components()[0] == id1);
-
-  path p4 = p3 / p;
-  path p5 = p / "world";
-
-  REQUIRE(p4.components().size() == 2);
-  REQUIRE(p5.components().size() == 2);
-}

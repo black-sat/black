@@ -46,8 +46,6 @@ namespace black::support {
     error &operator=(error &&) = default;
 
     bool operator==(error const&) const = default;
-
-    size_t hash() const { return support::hash(message); }
     
     std::string message; //!< The error message.
   };

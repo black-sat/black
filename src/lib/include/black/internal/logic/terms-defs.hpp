@@ -29,10 +29,6 @@
   #define section(Doc)
 #endif
 
-#ifndef declare_ast_factory
-  #define declare_ast_factory(NS, AST, Factory, Member)
-#endif
-
 #ifndef declare_ast_node
   #define declare_ast_node(NS, AST, Node, Doc)
 #endif
@@ -81,14 +77,13 @@ define_type(logic, struct decl,
     decl(ast::core::label name, logic::term type) : name{name}, type{type} { }
     decl(variable name, logic::term type) : decl(name.name(), type) { }
 
-    bool operator==(decl const&) const = default;
-    size_t hash() const { return support::hash(name, type); }
+    bool operator==(decl const& d) const {
+      return name == d.name && ast::core::ast_equal(type, d.type);
+    }
   };
 )
 
 declare_ast(logic, term)
-
-  declare_ast_factory(logic, term, alphabet, sigma)
 
   section("The error term")
     declare_ast_node(logic, term, error, "A logically erroneous term")
@@ -336,7 +331,6 @@ end_ast(logic, term)
 #undef declare_ast
 #undef ast_doc
 #undef section
-#undef declare_ast_factory
 #undef declare_ast_node
 #undef declare_type
 #undef define_type

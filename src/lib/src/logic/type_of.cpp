@@ -35,21 +35,19 @@ namespace black::logic {
   term type_of(term t) {
     using support::match;
 
-    alphabet *sigma = t.sigma();
-
     return match(t)(
       [&](error e)       { return e; },
-      [&](type_type)     { return sigma->type_type(); },
-      [&](inferred_type) { return sigma->type_type(); },
-      [&](integer_type)  { return sigma->type_type(); },
-      [&](real_type)     { return sigma->type_type(); },
-      [&](boolean_type)  { return sigma->type_type(); },
-      [&](function_type) { return sigma->type_type(); },
-      [&](integer)       { return sigma->integer_type(); },
-      [&](real)          { return sigma->real_type(); },
-      [&](boolean)       { return sigma->boolean_type(); },
-      [&](equal)         { return sigma->boolean_type(); },
-      [&](distinct)      { return sigma->boolean_type(); },
+      [&](type_type)     { return type_type(); },
+      [&](inferred_type) { return type_type(); },
+      [&](integer_type)  { return type_type(); },
+      [&](real_type)     { return type_type(); },
+      [&](boolean_type)  { return type_type(); },
+      [&](function_type) { return type_type(); },
+      [&](integer)       { return integer_type(); },
+      [&](real)          { return real_type(); },
+      [&](boolean)       { return boolean_type(); },
+      [&](equal)         { return boolean_type(); },
+      [&](distinct)      { return boolean_type(); },
       [&](type_cast c)   { return c.target(); },
       [&](variable x) -> term {
         return error(x, "use of unbound free variable");
@@ -75,7 +73,7 @@ namespace black::logic {
         return fty->range();
       },
       [&](quantifier auto, auto const& decls, term body) -> term {
-        module env(sigma);
+        module env;
         for(decl d : decls)
           env.declare(d);
 
@@ -83,7 +81,7 @@ namespace black::logic {
         if(!cast<boolean_type>(bodyty))
           return error(body, "quantified terms must be boolean");
         
-        return sigma->boolean_type();
+        return boolean_type();
       },
       [&](any_of<negation, implication> auto c, auto ...args) -> term {
         term argtypes[] = {type_of(args)...};
@@ -93,7 +91,7 @@ namespace black::logic {
               error(c, "connectives can be applied only to boolean terms");
         }
 
-        return sigma->boolean_type();
+        return boolean_type();
       },
       [&](any_of<conjunction, disjunction> auto c, auto const& args) -> term {
         for(term arg : args) 
@@ -101,7 +99,7 @@ namespace black::logic {
             return 
               error(c, "connectives can be applied only to boolean terms");
 
-        return sigma->boolean_type();
+        return boolean_type();
       },
       [&](ite f, term guard, term iftrue, term iffalse) -> term {
         if(!cast<boolean_type>(type_of(guard)))
@@ -122,7 +120,7 @@ namespace black::logic {
         for(decl d : decls)
           argtypes.push_back(d.type);
         
-        module env(sigma);
+        module env;
         for(decl d : decls)
           env.declare(d);
 
@@ -139,14 +137,14 @@ namespace black::logic {
                 "temporal operators can be applied only to boolean terms"
               );
 
-        return sigma->boolean_type();
+        return boolean_type();
       },
       [&](minus m, term arg) -> term {
         term type = type_of(arg);
         
         if(
-          bool(type != sigma->integer_type()) && 
-          bool(type != sigma->real_type())
+          bool(type != integer_type()) && 
+          bool(type != real_type())
         )
           return 
             error(m, "arithmetic operators only work on integers or reals");
@@ -158,8 +156,8 @@ namespace black::logic {
         term type2 = type_of(right);
         
         if(
-          bool(type1 != sigma->integer_type()) && 
-          bool(type1 != sigma->real_type())
+          bool(type1 != integer_type()) && 
+          bool(type1 != real_type())
         )
           return 
             error(a, 
@@ -167,8 +165,8 @@ namespace black::logic {
             );
         
         if(
-          bool(type2 != sigma->integer_type()) && 
-          bool(type2 != sigma->real_type())
+          bool(type2 != integer_type()) && 
+          bool(type2 != real_type())
         )
           return 
             error(a, 
@@ -186,8 +184,8 @@ namespace black::logic {
         term type2 = type_of(right);
         
         if(
-          bool(type1 != sigma->integer_type()) && 
-          bool(type1 != sigma->real_type())
+          bool(type1 != integer_type()) && 
+          bool(type1 != real_type())
         )
           return 
             error(r, 
@@ -195,8 +193,8 @@ namespace black::logic {
             );
         
         if(
-          bool(type2 != sigma->integer_type()) && 
-          bool(type2 != sigma->real_type())
+          bool(type2 != integer_type()) && 
+          bool(type2 != real_type())
         )
           return 
             error(r, 
@@ -207,7 +205,7 @@ namespace black::logic {
           return 
             error(r, "relational operators can only be applied to equal types");
         
-        return sigma->boolean_type();
+        return boolean_type();
       }
     );
   }

@@ -56,22 +56,22 @@ namespace black::ast::core {
 
 namespace black::logic::internal {
 
-  inline term arg_to_term(alphabet *, term t) {
+  inline term arg_to_term(term t) {
     return t;
   }
   
-  inline term arg_to_term(alphabet *sigma, std::integral auto v) {
-    return sigma->integer(int64_t(v));
+  inline term arg_to_term(std::integral auto v) {
+    return integer(int64_t(v));
   }
   
-  inline term arg_to_term(alphabet *sigma, std::floating_point auto v) {
-    return sigma->real(double(v));
+  inline term arg_to_term(std::floating_point auto v) {
+    return real(double(v));
   }
 
   atom term_custom_members::operator()(term_arg auto ...terms) const {
       term const&self = static_cast<term const&>(*this);
       
-      return atom(self, std::vector<term>{arg_to_term(self.sigma(), terms)...});
+      return atom(self, std::vector<term>{arg_to_term(terms)...});
   };
 }
 

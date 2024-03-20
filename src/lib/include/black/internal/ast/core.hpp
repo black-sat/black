@@ -78,25 +78,6 @@ namespace black::ast::core {
   concept ast_type_of = std::same_as<T, AST> || ast_node_of<T, AST>;
 
   template<ast AST>
-  struct ast_factory_type { };
-  
-  template<ast AST>
-  using ast_factory_type_t = typename ast_factory_type<AST>::type;
-  
-  template<ast AST>
-  struct ast_factory_name { };
-  
-  template<ast AST>
-  inline constexpr auto ast_factory_name_v = ast_factory_name<AST>::value;
-  
-  template<ast AST>
-  struct ast_factory_member_name { };
-  
-  template<ast AST>
-  inline constexpr auto ast_factory_member_name_v = 
-    ast_factory_member_name<AST>::value;
-
-  template<ast AST>
   struct ast_name { };
 
   template<ast AST>
@@ -192,9 +173,6 @@ namespace black::ast::core {
   >
   struct ast_node_field_member_base { };
 
-  template<typename Derived, ast AST>
-  struct ast_factory_named_member { };
-
   //
   // The following traits do not need x-expansion to be implemented
   //
@@ -222,33 +200,7 @@ namespace black::ast::core {
   namespace internal {
     template<ast AST>
     class node_holder;
-
-    template<ast AST, typename T>
-    struct has_factory : std::false_type { };
-    
-    template<ast AST, typename T>
-    inline constexpr bool has_factory_v = has_factory<AST, T>::value;
-
-    template<ast AST, std::derived_from<node_holder<AST>> T>
-    struct has_factory<AST, T> : std::true_type { };
-
-    template<ast AST, std::ranges::range R>
-    struct has_factory<AST, R> 
-      : has_factory<AST, std::ranges::range_value_t<R>> { };
   }
-
-  template<
-    ast AST, ast_node_of<AST> Node, typename = ast_node_field_types_t<AST, Node>
-  >
-  struct ast_node_is_composite : std::false_type { };
-
-  template<ast AST, ast_node_of<AST> Node, typename ...Args>
-  struct ast_node_is_composite<AST, Node, std::tuple<Args...>>
-    : std::disjunction<internal::has_factory<AST, Args>...> { };
-
-  template<ast AST, ast_node_of<AST> Node>
-  inline constexpr bool ast_node_is_composite_v = 
-    ast_node_is_composite<AST, Node>::value;
 
   template<typename AST>
   struct ast_custom_members { };
@@ -287,15 +239,8 @@ namespace black::ast::core::internal {
     
     bool operator==(ast_impl const&) const = default;
 
-    size_t hash() const {
-      return support::hash(this->index, data);
-    }
-
     const ast_node_field_types_t<AST, Node> data;
   };
-
-  template<ast AST>
-  struct ast_factory;
 
   enum class unique_id_t : uintptr_t { };
   
@@ -311,28 +256,23 @@ namespace black::ast::core::internal {
   class node_holder {
     public:
       using index_t = ast_node_index_t<AST>;
-
-      size_t hash() const { return support::hash(_factory, _impl); }
     
       unique_id_t unique_id() const { 
         return unique_id_t(reinterpret_cast<uintptr_t>(_impl.get()));
       }
       
       index_t index() const { return _impl->index; }
-      ast_factory<AST> *factory() const { return _factory; }
+
+      template<ast_node_of<AST> Node, typename ...Args>
+      static ast_impl_ref<AST> allocate(Args ...args) {
+        ast_node_field_types_t<AST, Node> data{args...};
+        return std::make_shared<ast_impl<AST, Node>>(std::move(data));
+      }
+
     protected:
       ast_impl_ref<AST> impl() const { return _impl; }
 
-      node_holder(ast_factory<AST> *f, ast_impl_ref<AST> i)
-        : _factory{f}, _impl{i} { }
-
-      template<
-        ast A, ast_node_of<A>, size_t, 
-        std::derived_from<node_holder<A>> T, typename ...Others
-      >
-      friend ast_factory<A> *factory_of(
-        std::source_location, T const& h, Others...
-      );
+      explicit node_holder(ast_impl_ref<AST> i) : _impl{i} { }
 
       template<ast A, ast_node_of<A> N, ast_node_field_index_t<A, N>>
       friend struct ast_node_fields_base;
@@ -341,7 +281,6 @@ namespace black::ast::core::internal {
         requires ast_node_of<Node, A>
       friend std::optional<Node> cast(node_holder<A> const& h);
 
-      ast_factory<AST> *_factory;
       ast_impl_ref<AST> _impl;
   };
 
@@ -349,7 +288,7 @@ namespace black::ast::core::internal {
     requires ast_node_of<Node, AST>
   std::optional<Node> cast(node_holder<AST> const& h) {
     if(h._impl->index == ast_node_index_of_v<AST, Node>)
-      return Node{h._factory, h._impl};
+      return Node{h._impl};
     return {};
   }
 
@@ -359,9 +298,7 @@ namespace black::ast::core::internal {
   struct ast_node_base;
 
   template<ast AST>
-  struct ast_base 
-    : node_holder<AST>, ast_factory_named_member<AST, AST>,
-      ast_custom_members<AST>
+  struct ast_base : node_holder<AST>, ast_custom_members<AST>
   {
     using node_holder<AST>::node_holder;
 
@@ -371,7 +308,7 @@ namespace black::ast::core::internal {
     
     template<ast_node_of<AST> Node>
     ast_base(Node n) 
-      : node_holder<AST>(n._factory, n._impl) { }
+      : node_holder<AST>(n._impl) { }
 
     ast_base &operator=(ast_base const&) = default;
     ast_base &operator=(ast_base &&) = default;
@@ -379,40 +316,7 @@ namespace black::ast::core::internal {
     template<ast A, ast_node_of<A>, typename>
       friend struct ast_node_base;
   };
-
-  template<
-    ast AST, ast_node_of<AST> Node, size_t I = 0,
-    typename T, typename ...Args
-  >
-  ast_factory<AST> *factory_of(std::source_location loc, T const&, Args...args) 
-  {
-    return factory_of<AST, Node, I + 1>(loc, args...);
-  }
-
-  template<
-    ast AST, ast_node_of<AST>, size_t = 0, 
-    std::derived_from<node_holder<AST>> T, typename ...Args
-  >
-  ast_factory<AST> *factory_of(std::source_location, T const& v, Args...) {
-    return v._factory;
-  }
-
-  template<
-    ast AST, ast_node_of<AST> Node, size_t I = 0,
-    std::ranges::range R, typename ...Args
-  >
-    requires has_factory_v<AST, std::ranges::range_value_t<R>>
-  ast_factory<AST> *factory_of(std::source_location loc, R const& r, Args ...) {
-    black_assume(
-      !empty(r), loc, 
-      "argument `{}` of `{}` cannot be empty", 
-      ast_node_field_name_v<AST, Node, ast_node_field_index_t<AST, Node>(I)>, 
-      ast_node_name_v<AST, Node>
-    );
-    
-    return factory_of<AST, Node>(loc, *begin(r));
-  }
-
+  
   template<
     ast AST, ast_node_of<AST> Node, ast_node_field_index_t<AST, Node> Field
   >
@@ -457,142 +361,30 @@ namespace black::ast::core::internal {
   template<ast AST, ast_node_of<AST> Node, typename ...Args>
   struct ast_node_base<AST, Node, std::tuple<Args...>>
     : node_holder<AST>, 
-      ast_factory_named_member<Node, AST>,
       ast_node_named_fields<AST, Node>,
       ast_node_custom_members<Node>
   {
     using node_holder<AST>::node_holder;
 
-    ast_node_base() = delete;
-
     ast_node_base(ast_node_base const&) = default;
     ast_node_base(ast_node_base &&) = default;
 
-    ast_node_base(
-      Args ...args, std::source_location loc = std::source_location::current()
-    ) requires ast_node_is_composite_v<AST, Node>
-      : ast_node_base(factory_of<AST, Node>(loc, args...), args...) { }
+    explicit ast_node_base(Args ...args)
+      : node_holder<AST>{node_holder<AST>::template allocate<Node>(args...)} { }
     
     ast_node_base &operator=(ast_node_base const&) = default;
     ast_node_base &operator=(ast_node_base &&) = default;
 
-    Node rebuild(Args ...args) const {
-      return Node(this->factory(), args...);
-    }
-
     template<ast>
       friend struct ast_base;
-    
-    template<typename, ast A, ast_node_of<A>, typename>
-      friend struct ast_factory_ctor_base;
-
-    private:
-      ast_node_base(
-        ast_factory<AST> *f, Args ...args
-      ) : node_holder<AST>(
-            f, f->template allocate<Node>(std::move(args)...)
-          ) { }
   };
-
-  template<ast_type T1, ast_type T2>
-  bool operator==(T1 const& t1, T2 const& t2) {
-    return t1.unique_id() == t2.unique_id();
-  }
-
-  template<ast_type T1, ast_type T2>
-  bool operator!=(T1 const& t1, T2 const& t2) {
-    return t1.unique_id() != t2.unique_id();
-  }
 
   template<size_t I, ast_node Node>
   auto get(Node n) {
     constexpr auto Field = ast_node_field_index_t<ast_of_t<Node>, Node>(I);
     return n.template field<Field>();
-  } 
-
-  template<ast AST, ast_node_of<AST> Node>
-  class ast_factory_allocator_base { 
-  protected:
-    template<typename ...Args>
-    ast_impl_ref<AST> allocate(Args ...args) {
-      ast_impl<AST, Node> impl{{std::move(args)...}};
-
-      if(auto it = _pool.find(impl); it != _pool.end())
-        if(auto ptr = it->second.lock(); ptr)
-          return ptr;
-
-      auto ptr = std::make_shared<ast_impl<AST, Node> const>(std::move(impl));
-      _pool[*ptr] = ptr;
-      
-      return ptr;
-    }
-
-  private:
-    support::map<ast_impl<AST, Node>, ast_impl_weak_ref<AST>> _pool;
-  };
-
-  template<
-    typename Derived,
-    ast AST, ast_node_of<AST> Node, 
-    typename Args = ast_node_field_types_t<AST, Node>
-  >
-  struct ast_factory_ctor_base { };
-
-  template<typename Derived, ast AST, ast_node_of<AST> Node, typename ...Args>
-  struct ast_factory_ctor_base<Derived, AST, Node, std::tuple<Args...>> 
-    : ast_factory_allocator_base<AST, Node>
-  {
-    Node construct(Args ...args) {
-      return Node{
-        static_cast<Derived *>(this), this->allocate(std::move(args)...)
-      };
-    }
-  };
-
-  template<typename Derived, ast AST, ast_node_of<AST> Node>
-  struct ast_factory_ctor :
-    ast_factory_ctor_base<Derived, AST, Node>,
-    std::conditional_t<
-      ast_node_is_composite_v<AST, Node>,
-      std::monostate,
-      ast_node_member_base<
-        Derived, AST, Node, 
-        &ast_factory_ctor_base<Derived, AST, Node>::construct
-      >
-    > { };
-
-
-  template<typename Derived, ast AST, typename = ast_node_list_t<AST>>
-  struct ast_factory_base { };
-
-  template<typename Derived, ast AST, ast_node_of<AST> ...Nodes>
-  struct ast_factory_base<Derived, AST, std::tuple<Nodes...>>
-    : ast_factory_ctor<Derived, AST, Nodes>... 
-  { 
-    template<ast_node_of<AST> Node, typename ...Args>
-    auto construct(Args&& ...args) 
-      requires (!ast_node_is_composite_v<AST, Node>)
-    {
-      return ast_factory_ctor_base<Derived, AST, Node>::construct(
-        std::forward<Args>(args)...
-      );
-    }
-  
-  protected:
-    template<ast_node_of<AST> Node, typename ...Args>
-    auto allocate(Args&& ...args) {
-      return ast_factory_ctor<Derived, AST, Node>::allocate(
-        std::forward<Args>(args)...
-      );
-    }
-
-    template<ast A, ast_node_of<A>, typename>
-      friend struct ast_node_base;
-  };
-
-  template<ast AST>
-  struct ast_factory : ast_factory_base<ast_factory<AST>, AST> { };
-}
+  }
+} // black::ast::core::internal
 
 namespace black::ast::core {
 
@@ -659,6 +451,58 @@ namespace black::support {
       return {};
     }
   };
+}
+
+namespace black::ast::core {
+
+  template<typename T1, typename T2>
+  bool ast_equal(T1 const&t1, T2 const&t2) {
+    return t1 == t2;
+  }
+
+  template<ast_type T1, ast_type T2>
+    requires (!std::is_same_v<T1, T2>)
+  bool ast_equal(T1 const&, T2 const&) { 
+    return false; 
+  }
+
+  template<ast_node Node>
+  bool ast_equal(Node n1, Node n2) 
+  {
+    if(n1.unique_id() == n2.unique_id())
+      return true;
+
+    constexpr size_t n_fields = 
+      std::tuple_size_v<ast_node_field_list_t<ast_of_t<Node>, Node>>;
+    
+    return [&]<size_t ...F>(std::index_sequence<F...>){
+      return (ast_equal(
+        n1.template field<ast_node_field_index_t<ast_of_t<Node>, Node>(F)>(), 
+        n2.template field<ast_node_field_index_t<ast_of_t<Node>, Node>(F)>()
+      ) && ...);
+    }(std::make_index_sequence<n_fields>{});
+  }
+
+  template<ast AST>
+  bool ast_equal(AST t1, AST t2) {
+    return support::match(t1)(
+      [&](auto v1){
+        return support::match(t2)(
+          [&](auto v2){
+            return ast_equal(v1, v2);
+          }
+        );
+      }
+    );
+  }
+
+  // namespace internal {
+  //   template<ast_type T1, ast_type T2>
+  //   bool operator==(T1 const& t1, T2 const& t2) {
+  //     return ast_equal(t1, t2);
+  //   }
+  // }
+
 }
 
 template<black::ast::core::ast_node Node>

@@ -25,13 +25,13 @@
 
 #include <black/logic>
 
-using namespace black::support;
-using namespace black::ast::core;
-using namespace black::logic;
-
 #include <string_view>
 
 TEST_CASE("Static reflection") {
+
+    using namespace black::support;
+    using namespace black::ast::core;
+    using namespace black::logic;
 
     STATIC_REQUIRE(is_ast_v<term>);
     STATIC_REQUIRE(is_ast_node_of_v<integer, term>);
@@ -101,12 +101,8 @@ TEST_CASE("Static reflection") {
     REQUIRE(test{}.variable(21) == 42);
     REQUIRE(test{}.name() == 42);
 
-    alphabet sigma;
-
-    integer p = sigma.integer(21);
-    integer q = sigma.integer(42);
-
-    REQUIRE_THROWS(conjunction(std::vector<term>{}));
+    integer p = integer(21);
+    integer q = integer(42);
 
     auto c = conjunction(std::vector<term>{p, q});
 
@@ -132,10 +128,6 @@ TEST_CASE("Static reflection") {
     );
 
     REQUIRE(result == 42);
-
-    map<term, int> m = {{t, result}};
-
-    REQUIRE(m[t] ==  result);
 
     REQUIRE((t == t));
 

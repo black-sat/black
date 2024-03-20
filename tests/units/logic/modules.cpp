@@ -71,12 +71,10 @@ struct debug_t {
 
 TEST_CASE("modules") {
 
-    alphabet sigma;
+    module ours;
 
-    module ours(&sigma);
-
-    object x = ours.declare({"x", sigma.integer_type()});
-    object y = ours.declare({"y", sigma.integer_type()});
+    object x = ours.declare({"x", integer_type()});
+    object y = ours.declare({"y", integer_type()});
 
     ours.require(x < y);
     ours.push();

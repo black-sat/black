@@ -51,7 +51,7 @@ namespace black::logic {
       : name{name}, type{type}, value{value} { }
     
     def(label name, term value)
-      : name{name}, type{value.sigma()->inferred_type()}, value{value} { }
+      : name{name}, type{inferred_type()}, value{value} { }
     
     def(variable name, term type, term value) 
       : def(name.name(), type, value) { }
@@ -72,7 +72,7 @@ namespace black::logic {
     function_def(label name, std::vector<decl> parms, term body)
       : name{name}, 
         parameters{std::move(parms)}, 
-        range{body.sigma()->inferred_type()}, 
+        range{inferred_type()}, 
         body{body} { }
     
     function_def(variable name, std::vector<decl> parms, term range, term body)
@@ -97,7 +97,7 @@ namespace black::logic {
   class module
   {
   public:
-    explicit module(alphabet *sigma);
+    module();
     module(module const&);
     module(module &&);
 
@@ -181,11 +181,6 @@ namespace black::logic {
     void replay(module const& from, T &target) const;
 
     //
-    // accessors
-    //
-    alphabet *sigma() const;
-
-    //
     // Resolve terms
     //
     term resolved(term t) const;
@@ -221,10 +216,6 @@ namespace black::logic {
     explicit lookup(decl d) : name{d.name}, type{d.type} { }
     
     explicit lookup(def d) : name{d.name}, type{d.type}, value{d.value} { }
-
-    bool operator==(lookup const& o) const {
-      return name == o.name && type == o.type && value == o.value;
-    }
   };
 
   //

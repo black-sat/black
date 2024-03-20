@@ -33,15 +33,13 @@ using namespace black::backends;
 
 TEST_CASE("cvc5") {
 
-    alphabet sigma;
+    module mod;
 
-    module mod(&sigma);
-
-    cvc5::solver slv(&sigma);
+    cvc5::solver slv;
 
     SECTION("Declarations") {
-        object x = mod.declare({"x", sigma.integer_type()});
-        object y = mod.declare({"y", sigma.integer_type()});
+        object x = mod.declare({"x", integer_type()});
+        object y = mod.declare({"y", integer_type()});
         
         mod.require(x <= y);
 
@@ -54,10 +52,10 @@ TEST_CASE("cvc5") {
 
     SECTION("Definitions") 
     {    
-        variable a = sigma.variable("a");
+        variable a{"a"};
 
-        object k = mod.declare({"k", sigma.integer_type()});
-        object f = mod.define({"f", {{a, sigma.integer_type()}}, a * k});
+        object k = mod.declare({"k", integer_type()});
+        object f = mod.define({"f", {{a, integer_type()}}, a * k});
         
         mod.require(k >= 2);
         mod.require(f(21) >= 42);
@@ -71,13 +69,13 @@ TEST_CASE("cvc5") {
 
     SECTION("Declaration of functions/predicates") {
 
-        variable x = sigma.variable("x");
+        variable x{"x"};
 
         object p = mod.declare({
-            "p", function_type({sigma.integer_type()}, sigma.boolean_type())
+            "p", function_type({integer_type()}, boolean_type())
         });
 
-        mod.require(forall({{x, sigma.integer_type()}}, p(x)));
+        mod.require(forall({{x, integer_type()}}, p(x)));
         mod.require(!p(42));
 
         REQUIRE(slv.check(mod) == false);
@@ -86,8 +84,8 @@ TEST_CASE("cvc5") {
 
     SECTION("Push/pop interface") {
         
-        object x = mod.declare({"x", sigma.integer_type()});
-        object y = mod.declare({"y", sigma.integer_type()});
+        object x = mod.declare({"x", integer_type()});
+        object y = mod.declare({"y", integer_type()});
         
         mod.require(x <= y);
         REQUIRE(slv.check(mod) == true);

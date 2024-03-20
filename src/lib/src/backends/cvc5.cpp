@@ -48,20 +48,17 @@ namespace black::backends::cvc5 {
   struct solver::impl_t {
 
     struct frame_t {
-      immer::map<object, CVC5::Term> objects;
-      immer::map<CVC5::Term, object> consts;
+      immer::map<lookup const *, CVC5::Term> objects;
+      immer::map<CVC5::Term, lookup const *> consts;
 
       bool operator==(frame_t const&) const = default;
     };
   
-    alphabet *sigma;
     module mod;
     std::stack<frame_t> stack;
     std::unique_ptr<CVC5::Solver> slv;
 
-    impl_t(alphabet *sigma) 
-      : sigma{sigma}, mod{sigma}, 
-        stack{{frame_t{}}}, slv{std::make_unique<CVC5::Solver>()} 
+    impl_t() : stack{{frame_t{}}}, slv{std::make_unique<CVC5::Solver>()} 
     { 
       slv->push();
     }
@@ -110,7 +107,7 @@ namespace black::backends::cvc5 {
           return *var;
         },
         [&](object o) {
-          CVC5::Term const *obj = stack.top().objects.find(o);
+          CVC5::Term const *obj = stack.top().objects.find(o.lookup());
 
           black_assert(obj != nullptr); // TODO: handle error well
 
@@ -235,8 +232,8 @@ namespace black::backends::cvc5 {
           }
         ); 
       
-      stack.top().objects = stack.top().objects.insert({obj, t});
-      stack.top().consts = stack.top().consts.insert({t, obj});
+      stack.top().objects = stack.top().objects.insert({obj.lookup(), t});
+      stack.top().consts = stack.top().consts.insert({t, obj.lookup()});
     }
 
     void require(term t) {
@@ -272,8 +269,7 @@ namespace black::backends::cvc5 {
   };
 
 
-  solver::solver(alphabet *sigma) 
-    : _impl{std::make_unique<impl_t>(sigma)} { }
+  solver::solver() : _impl{std::make_unique<impl_t>()} { }
 
   solver::~solver() = default;
 

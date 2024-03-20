@@ -37,7 +37,7 @@ if(Catch2_FOUND)
     units/support/hash.cpp
     units/support/functional.cpp
     units/ast/ast.cpp
-    units/ast/identifier.cpp
+    units/ast/label.cpp
     units/logic/logic.cpp
     units/logic/modules.cpp
     units/logic/cvc5.cpp

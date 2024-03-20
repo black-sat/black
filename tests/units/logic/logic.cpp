@@ -32,10 +32,8 @@ TEST_CASE("Terms") {
 
   using namespace black::logic;
   
-  alphabet sigma;
-
-  auto p = sigma.variable("p");
-  auto q = sigma.variable("q");
+  variable p{"p"};
+  variable q{"q"};
 
   negation n1 = !p;
   negation n2 = !q;    
@@ -58,75 +56,67 @@ TEST_CASE("Modules") {
   using namespace black::logic;
   namespace support = black::support;
   
-  alphabet sigma;
-
-  module m(&sigma);
+  module m;
 
   SECTION("Declarations") 
   {
     object p = m.declare(
-      {"p", function_type({sigma.integer_type()}, sigma.boolean_type())}
+      {"p", function_type({integer_type()}, boolean_type())}
     );
-    object x = m.declare({"x", sigma.integer_type()});
+    object x = m.declare({"x", integer_type()});
 
-    REQUIRE(type_of(p(x)) == sigma.boolean_type());
+    REQUIRE(type_of(p(x)) == boolean_type());
   }
 
   SECTION("Definitions") {
-    variable a = sigma.variable("a");
+    variable a = variable("a");
     
-    object x = m.define({"x", sigma.integer(40)});
-    object p = 
-      m.define({
-        "p", {{a, sigma.integer_type()}}, 
-        ite(a > sigma.integer(0), a + x, a - x)
-      });
-    object aobj = m.define({a, sigma.real(0.0)}); // this will be shadowed
+    object x = m.define({"x", integer(40)});
+    object p = m.define({"p", {{a, integer_type()}}, ite(a > 0, a + x, a - x)});
+    object aobj = m.define({a, real(0.0)}); // this will be shadowed
 
-    REQUIRE(type_of(x) == sigma.integer_type());
-    REQUIRE(type_of(aobj) == sigma.real_type());
+    REQUIRE(type_of(x) == integer_type());
+    REQUIRE(type_of(aobj) == real_type());
 
-    term ft = function_type({sigma.integer_type()}, sigma.integer_type());
+    term ft = function_type({integer_type()}, integer_type());
     REQUIRE(type_of(p) == ft);
 
-    term t = p(sigma.integer(2));
+    term t = p(2);
 
-    REQUIRE(type_of(t) == sigma.integer_type());
+    REQUIRE(type_of(t) == integer_type());
     
-    REQUIRE(evaluate(t) == sigma.integer(42));
-
-
+    REQUIRE(evaluate(t) == integer(42));
   }
 
   SECTION("Mixed declarations and definitions") {
-    auto a = sigma.variable("a");
+    auto a = variable("a");
 
-    object x = m.declare({"x", sigma.integer_type()});
+    object x = m.declare({"x", integer_type()});
     object p = 
-      m.define({"p", {{a, sigma.integer_type()}}, sigma.integer_type(), a + x});
+      m.define({"p", {{a, integer_type()}}, integer_type(), a + x});
 
-    term t = p(sigma.integer(40));
+    term t = p(40);
 
-    REQUIRE(type_of(t) == sigma.integer_type());
+    REQUIRE(type_of(t) == integer_type());
     
-    REQUIRE(evaluate(t) == sigma.integer(40) + x);
+    REQUIRE(evaluate(t) == 40 + x);
   }
 
 
   SECTION("Mutually recursive scope and type inference") {
 
-    variable f = sigma.variable("f");
-    variable a = sigma.variable("a");
-    variable x = sigma.variable("x");
-    variable y = sigma.variable("y");
+    variable f{"f"};
+    variable a{"a"};
+    variable x{"x"};
+    variable y{"y"};
 
     object fobj = 
       m.define(
-        {f, {{a, sigma.integer_type()}}, a + x + y}, resolution::delayed
+        {f, {{a, integer_type()}}, a + x + y}, resolution::delayed
       );
 
-    object xobj = m.define({x, sigma.integer_type(), y}, resolution::delayed);
-    object yobj = m.define({y, sigma.integer_type(), x}, resolution::delayed);
+    object xobj = m.define({x, integer_type(), y}, resolution::delayed);
+    object yobj = m.define({y, integer_type(), x}, resolution::delayed);
     
     m.resolve();
 
@@ -134,16 +124,16 @@ TEST_CASE("Modules") {
     REQUIRE(m.lookup(x) == xobj);
     REQUIRE(m.lookup(y) == yobj);
     
-    term ft = function_type({sigma.integer_type()}, sigma.integer_type());
+    term ft = function_type({integer_type()}, integer_type());
     REQUIRE(fobj.lookup()->type == ft);
     REQUIRE(xobj.lookup()->value == yobj);
     REQUIRE(yobj.lookup()->value == xobj);
 
     object wrongf = m.define(
-      {f, {{a, sigma.integer_type()}}, f(a)}
+      {f, {{a, integer_type()}}, f(a)}
     );
 
-    term wrongft = function_type({sigma.integer_type()}, sigma.inferred_type());
+    term wrongft = function_type({integer_type()}, inferred_type());
     REQUIRE(wrongf.lookup()->type == wrongft);
   }
 

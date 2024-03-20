@@ -45,11 +45,10 @@ namespace black::logic {
       bool operator==(frame_t const&) const = default;
     };
     
-    alphabet *sigma;
     immer::vector<frame_t> stack;
     immer::vector<std::shared_ptr<struct lookup>> pending;
 
-    _impl_t(alphabet *sigma) : sigma{sigma}, stack{frame_t{}} { }
+    _impl_t() : stack{frame_t{}} { }
 
     bool operator==(_impl_t const&) const = default;
 
@@ -60,8 +59,7 @@ namespace black::logic {
     void replay(module const &from, replay_target_t *target) const;
   };
 
-  module::module(alphabet *sigma) 
-    : _impl{std::make_unique<_impl_t>(sigma)} { } 
+  module::module() : _impl{std::make_unique<_impl_t>()} { } 
 
   module::module(module const& other)
     : _impl{std::make_unique<_impl_t>(_impl_t{*other._impl})} { }
@@ -95,7 +93,7 @@ namespace black::logic {
     if(r == resolution::immediate)
       resolve();
 
-    return _impl->sigma->object(ptr.get());
+    return object(ptr.get());
   }
   
   object module::define(def d, resolution r) {
@@ -105,7 +103,7 @@ namespace black::logic {
     if(r == resolution::immediate)
       resolve();
 
-    return _impl->sigma->object(ptr.get());
+    return object(ptr.get());
   }
 
   object module::define(function_def f, resolution r) {
@@ -137,7 +135,7 @@ namespace black::logic {
   {
     for(auto it = _impl->stack.rbegin(); it != _impl->stack.rend(); it++)
       if(auto p = it->scope.find(s); p)
-        return _impl->sigma->object(*p);  
+        return object(*p);  
     
     for(auto it = _impl->stack.rbegin(); it != _impl->stack.rend(); it++) 
       for(auto im = it->imports.rbegin(); im != it->imports.rend(); im++)
@@ -210,7 +208,7 @@ namespace black::logic {
     for(module m : f.imports)
       target->import(std::move(m));
     for(auto lu : f.lookups)
-      target->adopt(sigma->object(lu.get()));
+      target->adopt(object(lu.get()));
     for(term req : f.reqs)
       target->require(req);
   }
@@ -265,10 +263,6 @@ namespace black::logic {
   void module::replay(module const&from, replay_target_t *target) const 
   {
     _impl->replay(from, target);
-  }
-
-  alphabet *module::sigma() const {
-    return _impl->sigma;
   }
   
   static term resolved(module const& m, term t, immer::set<label> hidden);
@@ -350,7 +344,7 @@ namespace black::logic {
             if(!func)
               return t;
 
-            module m(_impl->sigma);
+            module m;
             m.import(*this);
             for(decl d : func->vars())
               m.declare(d);

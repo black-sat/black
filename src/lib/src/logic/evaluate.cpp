@@ -35,8 +35,6 @@ namespace black::logic {
   term evaluate(term t) {
     using support::match;
 
-    alphabet *sigma = t.sigma();
-
     return match(t)(
       [&](type_type v)     { return v; },
       [&](inferred_type v) { return v; },
@@ -64,7 +62,7 @@ namespace black::logic {
         if(!f || f->vars().size() != args.size())
           return atom(ehead, eargs);
         
-        module env(sigma);
+        module env;
 
         for(size_t i = 0; i < args.size(); i++)
           env.define({f->vars()[i].name, f->vars()[i].type, eargs[i]});
@@ -81,7 +79,7 @@ namespace black::logic {
       [&](negation, term arg) -> term {
         term earg = evaluate(arg);
         if(auto v = cast<boolean>(earg); v)
-          return sigma->boolean(!v->value());
+          return boolean(!v->value());
         
         return negation(earg);
       },
@@ -95,7 +93,7 @@ namespace black::logic {
           return conjunction(eargs);
         }
 
-        return sigma->boolean(result);
+        return boolean(result);
       },
       [&](disjunction, auto const& args) -> term {
         std::vector<term> eargs = evaluate(args);
@@ -107,7 +105,7 @@ namespace black::logic {
           return conjunction(eargs);
         }
 
-        return sigma->boolean(result);
+        return boolean(result);
       },
       [&](implication, term left, term right) -> term {
         term eleft = evaluate(left);
@@ -119,7 +117,7 @@ namespace black::logic {
         if(!vl || !vr)
           return implication(eleft, eright);
         
-        return sigma->boolean(!vl->value() || vr->value());
+        return boolean(!vl->value() || vr->value());
       },
       [&](ite, term guard, term iftrue, term iffalse) -> term {
         term eguard = evaluate(guard);
@@ -139,10 +137,10 @@ namespace black::logic {
         
         return match(earg)(
           [&](integer, auto value) {
-            return sigma->integer(-value);
+            return integer(-value);
           },
           [&](real, auto value) {
-            return sigma->real(-value);
+            return real(-value);
           },
           [&](auto) {
             return minus(earg);
@@ -156,7 +154,7 @@ namespace black::logic {
         auto ilv = cast<integer>(eleft);
         auto ilr = cast<integer>(eright);
         if(ilv && ilr)
-          return sigma->integer(
+          return integer(
             match(op)(
               [&](sum) { return ilv->value() + ilr->value(); },
               [&](product) { return ilv->value() * ilr->value(); },
@@ -168,7 +166,7 @@ namespace black::logic {
         auto rlv = cast<real>(eleft);
         auto rlr = cast<real>(eright);
         if(rlv && rlr)
-          return sigma->real(
+          return real(
             match(op)(
               [&](sum) { return rlv->value() + rlr->value(); },
               [&](product) { return rlv->value() * rlr->value(); },
@@ -186,7 +184,7 @@ namespace black::logic {
         auto ilv = cast<integer>(eleft);
         auto ilr = cast<integer>(eright);
         if(ilv && ilr)
-          return sigma->boolean(
+          return boolean(
             match(op)(
               [&](less_than) { return ilv->value() < ilr->value(); },
               [&](less_than_eq) { return ilv->value() <= ilr->value(); },
@@ -198,7 +196,7 @@ namespace black::logic {
         auto rlv = cast<real>(eleft);
         auto rlr = cast<real>(eright);
         if(rlv && rlr)
-          return sigma->boolean(
+          return boolean(
             match(op)(
               [&](less_than) { return rlv->value() < rlr->value(); },
               [&](less_than_eq) { return rlv->value() <= rlr->value(); },

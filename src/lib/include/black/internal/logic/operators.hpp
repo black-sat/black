@@ -35,11 +35,11 @@ namespace black::logic {
     term t2;
 
     operator bool() const requires (EQ) {
-      return t1.unique_id() == t2.unique_id();
+      return ast::core::ast_equal(t1, t2);
     }
 
     operator bool() const requires (!EQ) {
-      return t1.unique_id() != t2.unique_id();
+      return !ast::core::ast_equal(t1, t2);
     }
     
     eq_wrapper_t<!EQ> operator!() const { 
@@ -63,46 +63,36 @@ namespace black::logic {
     }
   };
 
-  template<ast::core::ast_type T1, ast::core::ast_type T2>
-    requires (
-      ast::core::ast_type_of<T1, term> && 
-      ast::core::ast_type_of<T2, term>
-    )
-  eq_wrapper_t<true> operator==(T1 const& n1, T2 const& n2) {
-    return {n1, n2};
+  inline eq_wrapper_t<true> operator==(term t1, term t2) {
+    return {t1, t2};
   }
   
-  template<ast::core::ast_type T1, ast::core::ast_type T2>
-    requires (
-      ast::core::ast_type_of<T1, term> && 
-      ast::core::ast_type_of<T2, term>
-    )
-  eq_wrapper_t<false> operator!=(T1 const& n1, T2 const& n2) {
-    return {n1, n2};
+  inline eq_wrapper_t<false> operator!=(term t1, term t2) {
+    return {t1, t2};
   }
 
   template<ast::core::ast_type T>
     requires ast::core::ast_type_of<T, term>
   term operator==(T const& n, std::integral auto v) {
-    return n == n.sigma()->integer(int64_t(v));
+    return n == integer(int64_t(v));
   }
   
   template<ast::core::ast_type T>
     requires ast::core::ast_type_of<T, term>
   term operator==(std::integral auto v, T const& n) {
-    return n.sigma()->integer(int64_t(v)) == n;
+    return integer(int64_t(v)) == n;
   }
   
   template<ast::core::ast_type T>
     requires ast::core::ast_type_of<T, term>
   term operator==(T const& n, std::floating_point auto v) {
-    return n == n.sigma()->real(double(v));
+    return n == real(double(v));
   }
   
   template<ast::core::ast_type T>
     requires ast::core::ast_type_of<T, term>
   term operator==(std::floating_point auto v, T const& n) {
-    return n.sigma()->real(double(v)) == n;
+    return real(double(v)) == n;
   }
 
   //
@@ -150,43 +140,43 @@ namespace black::logic {
   }
   
   inline sum operator+(term t1, term t2) {
-    return sum({t1, t2});
+    return sum(t1, t2);
   }
   
   inline sum operator+(std::integral auto t1, term t2) {
-    return sum({t2.sigma()->integer(uint64_t(t1)), t2});
+    return sum(integer(uint64_t(t1)), t2);
   }
   
   inline sum operator+(term t1, std::integral auto t2) {
-    return sum({t1, t1.sigma()->integer(uint64_t(t2))});
+    return sum(t1, integer(uint64_t(t2)));
   }
 
   inline sum operator+(std::floating_point auto t1, term t2) {
-    return sum({t2.sigma()->real(double(t1)), t2});
+    return sum(real(double(t1)), t2);
   }
   
   inline sum operator+(term t1, std::floating_point auto t2) {
-    return sum({t1, t1.sigma()->real(double(t2))});
+    return sum(t1, real(double(t2)));
   }
 
   inline product operator*(term t1, term t2) {
-    return product({t1, t2});
+    return product(t1, t2);
   }
 
   inline product operator*(std::integral auto t1, term t2) {
-    return product({t2.sigma()->integer(uint64_t(t1)), t2});
+    return product(integer(uint64_t(t1)), t2);
   }
   
   inline product operator*(term t1, std::integral auto t2) {
-    return product({t1, t1.sigma()->integer(uint64_t(t2))});
+    return product(t1, integer(uint64_t(t2)));
   }
 
   inline product operator*(std::floating_point auto t1, term t2) {
-    return product({t2.sigma()->real(double(t1)), t2});
+    return product(real(double(t1)), t2);
   }
   
   inline product operator*(term t1, std::floating_point auto t2) {
-    return product({t1, t1.sigma()->real(double(t2))});
+    return product(t1, real(double(t2)));
   }
 
   inline difference operator-(term t1, term t2) {
@@ -194,19 +184,19 @@ namespace black::logic {
   }
 
   inline difference operator-(std::integral auto t1, term t2) {
-    return difference({t2.sigma()->integer(uint64_t(t1)), t2});
+    return difference(integer(uint64_t(t1)), t2);
   }
   
   inline difference operator-(term t1, std::integral auto t2) {
-    return difference({t1, t1.sigma()->integer(uint64_t(t2))});
+    return difference(t1, integer(uint64_t(t2)));
   }
 
   inline difference operator-(std::floating_point auto t1, term t2) {
-    return difference({t2.sigma()->real(double(t1)), t2});
+    return difference(real(double(t1)), t2);
   }
   
   inline difference operator-(term t1, std::floating_point auto t2) {
-    return difference({t1, t1.sigma()->real(double(t2))});
+    return difference(t1, real(double(t2)));
   }
 
   inline division operator/(term t1, term t2) {
@@ -214,19 +204,19 @@ namespace black::logic {
   }
 
   inline division operator/(std::integral auto t1, term t2) {
-    return division({t2.sigma()->integer(uint64_t(t1)), t2});
+    return division(integer(uint64_t(t1)), t2);
   }
   
   inline division operator/(term t1, std::integral auto t2) {
-    return division({t1, t1.sigma()->integer(uint64_t(t2))});
+    return division(t1, integer(uint64_t(t2)));
   }
 
   inline division operator/(std::floating_point auto t1, term t2) {
-    return division({t2.sigma()->real(double(t1)), t2});
+    return division(real(double(t1)), t2);
   }
   
   inline division operator/(term t1, std::floating_point auto t2) {
-    return division({t1, t1.sigma()->real(double(t2))});
+    return division(t1, real(double(t2)));
   }
 
   //
@@ -237,19 +227,19 @@ namespace black::logic {
   }
 
   inline less_than operator<(std::integral auto t1, term t2) {
-    return less_than({t2.sigma()->integer(uint64_t(t1)), t2});
+    return less_than(integer(uint64_t(t1)), t2);
   }
   
   inline less_than operator<(term t1, std::integral auto t2) {
-    return less_than({t1, t1.sigma()->integer(uint64_t(t2))});
+    return less_than(t1, integer(uint64_t(t2)));
   }
 
   inline less_than operator<(std::floating_point auto t1, term t2) {
-    return less_than({t2.sigma()->real(double(t1)), t2});
+    return less_than(real(double(t1)), t2);
   }
   
   inline less_than operator<(term t1, std::floating_point auto t2) {
-    return less_than({t1, t1.sigma()->real(double(t2))});
+    return less_than(t1, real(double(t2)));
   }
   
   inline less_than_eq operator<=(term t1, term t2) {
@@ -257,19 +247,19 @@ namespace black::logic {
   }
 
   inline less_than_eq operator<=(std::integral auto t1, term t2) {
-    return less_than_eq({t2.sigma()->integer(uint64_t(t1)), t2});
+    return less_than_eq(integer(uint64_t(t1)), t2);
   }
   
   inline less_than_eq operator<=(term t1, std::integral auto t2) {
-    return less_than_eq({t1, t1.sigma()->integer(uint64_t(t2))});
+    return less_than_eq(t1, integer(uint64_t(t2)));
   }
 
   inline less_than_eq operator<=(std::floating_point auto t1, term t2) {
-    return less_than_eq({t2.sigma()->real(double(t1)), t2});
+    return less_than_eq(real(double(t1)), t2);
   }
   
   inline less_than_eq operator<=(term t1, std::floating_point auto t2) {
-    return less_than_eq({t1, t1.sigma()->real(double(t2))});
+    return less_than_eq(t1, real(double(t2)));
   }
   
   inline greater_than operator>(term t1, term t2) {
@@ -277,19 +267,19 @@ namespace black::logic {
   }
 
   inline greater_than operator>(std::integral auto t1, term t2) {
-    return greater_than({t2.sigma()->integer(uint64_t(t1)), t2});
+    return greater_than(integer(uint64_t(t1)), t2);
   }
   
   inline greater_than operator>(term t1, std::integral auto t2) {
-    return greater_than({t1, t1.sigma()->integer(uint64_t(t2))});
+    return greater_than(t1, integer(uint64_t(t2)));
   }
 
   inline greater_than operator>(std::floating_point auto t1, term t2) {
-    return greater_than({t2.sigma()->real(double(t1)), t2});
+    return greater_than(real(double(t1)), t2);
   }
   
   inline greater_than operator>(term t1, std::floating_point auto t2) {
-    return greater_than({t1, t1.sigma()->real(double(t2))});
+    return greater_than(t1, real(double(t2)));
   }
   
   inline greater_than_eq operator>=(term t1, term t2) {
@@ -297,19 +287,19 @@ namespace black::logic {
   }
 
   inline greater_than_eq operator>=(std::integral auto t1, term t2) {
-    return greater_than_eq({t2.sigma()->integer(uint64_t(t1)), t2});
+    return greater_than_eq(integer(uint64_t(t1)), t2);
   }
   
   inline greater_than_eq operator>=(term t1, std::integral auto t2) {
-    return greater_than_eq({t1, t1.sigma()->integer(uint64_t(t2))});
+    return greater_than_eq(t1, integer(uint64_t(t2)));
   }
 
   inline greater_than_eq operator>=(std::floating_point auto t1, term t2) {
-    return greater_than_eq({t2.sigma()->real(double(t1)), t2});
+    return greater_than_eq(real(double(t1)), t2);
   }
   
   inline greater_than_eq operator>=(term t1, std::floating_point auto t2) {
-    return greater_than_eq({t1, t1.sigma()->real(double(t2))});
+    return greater_than_eq(t1, real(double(t2)));
   }
 
 }

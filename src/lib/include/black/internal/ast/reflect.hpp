@@ -59,12 +59,6 @@ namespace BLACK_AST_REFLECT_BASE_NAMESPACE {
     }
   #include BLACK_AST_REFLECT_DEFS_FILE
 
-  #define declare_ast_factory(NS, AST, Factory, Member) \
-    namespace NS { \
-      struct Factory; \
-    }
-  #include BLACK_AST_REFLECT_DEFS_FILE
-
   #define declare_type(NS, Decl) \
     namespace NS { \
       Decl; \
@@ -84,25 +78,6 @@ namespace black::ast::core {
   #define declare_ast(NS, AST) \
     template<> \
     struct is_ast<NS::AST> : std::true_type { };
-  #include BLACK_AST_REFLECT_DEFS_FILE
-  
-  #define declare_ast_factory(NS, AST, Factory, Member) \
-    template<> \
-    struct ast_factory_type<NS::AST> : std::type_identity<NS::Factory> { };
-  #include BLACK_AST_REFLECT_DEFS_FILE
-  
-  #define declare_ast_factory(NS, AST, Factory, Member) \
-    template<> \
-    struct ast_factory_name<NS::AST> { \
-      static constexpr std::string_view value = #Factory; \
-    };
-  #include BLACK_AST_REFLECT_DEFS_FILE
-  
-  #define declare_ast_factory(NS, AST, Factory, Member) \
-    template<> \
-    struct ast_factory_member_name<NS::AST> { \
-      static constexpr std::string_view value = #Member; \
-    };
   #include BLACK_AST_REFLECT_DEFS_FILE
 
   #define declare_ast(NS, AST) \
@@ -270,33 +245,6 @@ namespace black::ast::core {
 
 namespace BLACK_AST_REFLECT_BASE_NAMESPACE {
 
-  #define declare_ast_factory(NS, AST, Factory, Member) \
-    namespace NS { \
-      struct Factory; \
-    }
-
-  #include BLACK_AST_REFLECT_DEFS_FILE
-
-}
-
-namespace black {
-
-  #define declare_ast_factory(NS, AST, Factory, Member) \
-    template<typename Derived> \
-    struct ast::core::ast_factory_named_member<Derived, NS::AST> { \
-      NS::Factory *Member() const { \
-        return static_cast<NS::Factory *>( \
-          static_cast<Derived const*>(this)->factory() \
-        ); \
-      } \
-    };
-
-  #include BLACK_AST_REFLECT_DEFS_FILE
-
-}
-
-namespace BLACK_AST_REFLECT_BASE_NAMESPACE {
-
   #define declare_ast(NS, AST) \
     struct NS::AST : ast::core::internal::ast_base<NS::AST> { \
       using ast::core::internal::ast_base<NS::AST>::ast_base; \
@@ -317,9 +265,6 @@ namespace BLACK_AST_REFLECT_BASE_NAMESPACE {
       __VA_ARGS__ \
     }
   #include BLACK_AST_REFLECT_DEFS_FILE
-
-  #define declare_ast_factory(NS, AST, Factory, Member) \
-    struct NS::Factory : ast::core::internal::ast_factory<NS::AST> { };
 
   #include BLACK_AST_REFLECT_DEFS_FILE
 

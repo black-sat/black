@@ -55,32 +55,17 @@ namespace black::python
       return T(std::move(args)...);
     }
   };
-  
-  template<core::ast AST, core::ast_node_of<AST> Node, typename Args>
-  struct factory_method { };
 
   template<core::ast_node Node>
   auto to_python(Node const& n) {
     return to_python(core::ast_of_t<Node>(n));
   }
 
-  template<core::ast AST, core::ast_node_of<AST> Node, typename ...Args>
-  struct factory_method<AST, Node, std::tuple<Args...>> {
-    auto operator()(core::ast_factory_type_t<AST> &self, Args ...args) const {
-      return to_python(self.template construct<Node>(std::move(args)...));
-    }
-  };
-
   template<core::ast AST>
   py::class_<AST> register_ast_types(py::module &m, auto f) 
   { 
     std::string ast_name = support::to_camel(core::ast_name_v<AST>);
     py::class_<AST> ast(m, ast_name.c_str());
-
-    py::class_<core::ast_factory_type_t<AST>> factory(
-      m, support::to_camel(core::ast_factory_name_v<AST>).c_str()
-    );
-    factory.def(py::init<>());
     
     register_range_iterable<AST>(m, std::format("{}Iterable", ast_name));
 
@@ -92,17 +77,9 @@ namespace black::python
         ast.def(py::init([](Node n) { return AST(n); }));
         py::implicitly_convertible<Node, AST>();
         
-        if constexpr(core::ast_node_is_composite_v<AST, Node>) {
-          node.def(
-            py::init(
-              constructor<Node, core::ast_node_field_types_t<AST, Node>>()
-            )
-          );
-        } else {
-          factory.def(core::ast_node_name_v<AST, Node>.data(), 
-            factory_method<AST, Node, core::ast_node_field_types_t<AST, Node>>()
-          );
-        }
+        node.def(
+          py::init(constructor<Node, core::ast_node_field_types_t<AST, Node>>())
+        );
 
         node.doc() = core::ast_node_doc_v<AST, Node>;
 
