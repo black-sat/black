@@ -119,4 +119,25 @@ TEST_CASE("cvc5") {
         REQUIRE(slv.check(mod) == false);        
     }
 
+    SECTION("Module imports") {
+
+        module math;
+
+        object pi = math.define({"pi", 3.14});
+
+        module geometry;
+
+        geometry.import(math);
+
+        variable r = "r";
+
+        object circle = 
+            geometry.define({"circle", {{r, real_type()}}, 2.0 * r * pi});
+
+        geometry.require(circle(4.0) != 25.12);
+
+        REQUIRE(slv.check(geometry) == false);
+
+    }
+
 }

@@ -35,6 +35,7 @@
 
 #include <algorithm>
 #include <ranges>
+#include <iostream>
 
 namespace black::backends::cvc5 {
 
@@ -57,6 +58,7 @@ namespace black::backends::cvc5 {
     module mod;
     std::stack<frame_t> stack;
     std::unique_ptr<CVC5::Solver> slv;
+    bool ignore_push = false;
 
     impl_t() : stack{{frame_t{}}}, slv{std::make_unique<CVC5::Solver>()} 
     { 
@@ -66,6 +68,10 @@ namespace black::backends::cvc5 {
 
     CVC5::Sort to_sort(term type) const {
       return match(type)(
+        [&](logic::error, term, auto err) {
+          std::cerr << "error: " << err << "\n";
+          return CVC5::Sort();
+        },
         [&](integer_type) { return slv->getIntegerSort(); },
         [&](real_type) { return slv->getRealSort(); },
         [&](boolean_type) { return slv->getBooleanSort(); },
@@ -200,9 +206,12 @@ namespace black::backends::cvc5 {
       );
     }
 
-    [[noreturn]]
-    void import(module) {
-      black_unreachable();
+    void import(module const& m) {
+      auto _ = support::checkpoint(ignore_push);
+      ignore_push = true;
+
+      module empty;
+      m.replay(empty, *this);
     } 
 
     void define(object obj) {
@@ -334,6 +343,7 @@ namespace black::backends::cvc5 {
         return true;
       if(res.isUnsat())
         return false;
+        
       return tribool::undef;
     }
 
