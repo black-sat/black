@@ -124,7 +124,7 @@ namespace black::logic {
     if(r == resolution::immediate)
       resolve();
 
-    return object(ptr.get());
+    return object(ptr);
   }
   
   object module::define(def d, resolution r) {
@@ -134,7 +134,7 @@ namespace black::logic {
     if(r == resolution::immediate)
       resolve();
 
-    return object(ptr.get());
+    return object(ptr);
   }
 
   object module::define(function_def f, resolution r) {
@@ -166,7 +166,7 @@ namespace black::logic {
   {
     for(auto it = _impl->stack.rbegin(); it != _impl->stack.rend(); it++)
       if(auto p = it->scope.find(s); p)
-        return object(*p);
+        return object((*p)->shared_from_this());
     
     for(auto it = _impl->stack.rbegin(); it != _impl->stack.rend(); it++) 
       for(auto im = it->imports.rbegin(); im != it->imports.rend(); im++)
@@ -242,7 +242,7 @@ namespace black::logic {
     for(scc_t scc : f.sccs) {
       std::vector<object> objs;
       for(auto lu : scc.lookups)
-        objs.push_back(object(lu.get()));
+        objs.push_back(object(lu));
       target->adopt(objs, scc.recursive ? scope::recursive : scope::linear);
     }
     
@@ -372,7 +372,7 @@ namespace black::logic {
   void module::resolve(scope s) {
     std::vector<object> objs;
     for(auto p : _impl->pending)
-      objs.push_back(object(p.get()));
+      objs.push_back(object(p));
     
     if(s == scope::recursive)
       adopt(objs, scope::linear);

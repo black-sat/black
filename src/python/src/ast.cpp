@@ -27,8 +27,6 @@
 
 #include <black/support>
 
-#include <iostream>
-
 namespace black::python {
 
   struct identifiable_wrapper {

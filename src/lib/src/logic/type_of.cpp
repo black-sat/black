@@ -23,8 +23,6 @@
 
 #include <black/logic>
 
-#include <iostream>
-
 namespace black::logic {
 
   std::vector<term> type_of(std::vector<term> const& ts) {

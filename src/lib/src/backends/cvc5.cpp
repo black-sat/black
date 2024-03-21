@@ -34,7 +34,7 @@
 #include <cvc5/cvc5.h>
 
 #include <algorithm>
-#include <iostream>
+#include <ranges>
 
 namespace black::backends::cvc5 {
 
@@ -60,6 +60,7 @@ namespace black::backends::cvc5 {
 
     impl_t() : stack{{frame_t{}}}, slv{std::make_unique<CVC5::Solver>()} 
     { 
+      slv->setOption("fmf-fun", "true");
       slv->push();
     }
 
@@ -107,7 +108,7 @@ namespace black::backends::cvc5 {
           return *var;
         },
         [&](object o) {
-          CVC5::Term const *obj = stack.top().objects.find(o.lookup());
+          CVC5::Term const *obj = stack.top().objects.find(o.lookup().get());
 
           black_assert(obj != nullptr); // TODO: handle error well
 
@@ -204,43 +205,104 @@ namespace black::backends::cvc5 {
       black_unreachable();
     } 
 
-    void adopt(object obj) {
+    void define(object obj) {
       auto lu = obj.lookup();
-      CVC5::Term t = !lu->value ? slv->mkConst(to_sort(lu->type)) : 
-        match(*lu->value)(
-          [&](lambda, auto const &decls, term body) {
-            std::vector<CVC5::Term> vars;
-            immer::map<variable, CVC5::Term> varmap;
+      black_assert(lu->value);
 
-            for(auto [name, type] : decls) {
-              CVC5::Term var = slv->mkVar(to_sort(type));
-              vars.push_back(var);
-              varmap = varmap.set(name, var);
-            }
+      CVC5::Term t = match(*lu->value)(
+        [&](lambda, auto const &decls, term body) {
+          std::vector<CVC5::Term> vars;
+          immer::map<variable, CVC5::Term> varmap;
 
-            auto fun_ty = cast<function_type>(lu->type);
-            black_assert(fun_ty.has_value());
-
-            return slv->defineFun(
-              std::format("{}", lu->name.name()), vars, 
-              to_sort(fun_ty->range()), to_term(body, varmap)
-            );
-          },
-          [&](auto d) {
-            return slv->defineFun(
-              std::format("{}", lu->name.name()), 
-              {}, to_sort(lu->type), to_term(d, {})
-            );
+          for(auto [name, type] : decls) {
+            CVC5::Term var = slv->mkVar(to_sort(type));
+            vars.push_back(var);
+            varmap = varmap.set(name, var);
           }
-        ); 
-      
-      stack.top().objects = stack.top().objects.insert({obj.lookup(), t});
-      stack.top().consts = stack.top().consts.insert({t, obj.lookup()});
+
+          auto fun_ty = cast<function_type>(lu->type);
+          black_assert(fun_ty.has_value());
+
+          return slv->defineFun(
+            std::format("{}", lu->name.name()), vars, 
+            to_sort(fun_ty->range()), to_term(body, varmap)
+          );
+        },
+        [&](auto d) {
+          return slv->defineFun(
+            std::format("{}", lu->name.name()), 
+            {}, to_sort(lu->type), to_term(d, {})
+          );
+        }
+      );
+
+      stack.top().objects = stack.top().objects.insert({obj.lookup().get(), t});
+      stack.top().consts = stack.top().consts.insert({t, obj.lookup().get()});
     }
 
-    void adopt(std::vector<object> const& objs, scope) { 
-      for(object obj : objs)
-        adopt(obj);
+    void define(std::vector<object> objs) {
+      std::vector<CVC5::Term> names;
+      for(object obj : objs) {
+        CVC5::Term name = slv->mkConst(to_sort(obj.lookup()->type));
+        names.push_back(name);
+        stack.top().objects = stack.top().objects.insert({obj.lookup().get(), name});
+        stack.top().consts = stack.top().consts.insert({name, obj.lookup().get()});
+      }
+
+      std::vector<std::vector<CVC5::Term>> vars;
+      std::vector<CVC5::Term> bodies;
+      for(object obj : objs) {
+        std::vector<CVC5::Term> thesevars;
+        
+        if(cast<function_type>(obj.lookup()->type)) {
+          function_type ty = unwrap(cast<function_type>(obj.lookup()->type));
+          lambda fun = unwrap(cast<lambda>(obj.lookup()->value));
+
+          immer::map<variable, CVC5::Term> boundvars;
+          for(decl d : fun.vars()) {
+            CVC5::Term var = slv->mkVar(to_sort(d.type));
+            boundvars = boundvars.insert({d.name, var});
+            thesevars.push_back(var);
+          }
+          vars.push_back(thesevars);
+
+          bodies.push_back(to_term(fun.body(), boundvars));
+        } else {
+          thesevars.push_back({});
+          bodies.push_back(to_term(unwrap(obj.lookup()->value), {}));
+        }
+      }
+
+      return slv->defineFunsRec(names, vars, bodies);
+    }
+
+    void declare(object obj) {
+      auto lu = obj.lookup();
+      black_assert(!lu->value);
+      
+      CVC5::Term t = slv->mkConst(to_sort(lu->type));
+      
+      stack.top().objects = stack.top().objects.insert({obj.lookup().get(), t});
+      stack.top().consts = stack.top().consts.insert({t, obj.lookup().get()});
+    }
+
+    void adopt(std::vector<object> objs, scope s) { 
+      // separate declarations and definitions
+      auto decls = std::remove_if(begin(objs), end(objs), [](object obj) {
+        return !obj.lookup()->value.has_value();
+      });
+
+      // declarations
+      for(auto it = decls; it != end(objs); it++)
+        declare(*it);
+
+      objs.erase(decls, end(objs)); // remove declarations
+
+      if(s == scope::linear)
+        for(object obj : objs)
+          define(obj);
+      else
+        define(objs);
     }
 
     void require(term t) {

@@ -98,4 +98,25 @@ TEST_CASE("cvc5") {
         REQUIRE(slv.check(mod) == true);
     }
 
+    SECTION("Recursive definitions") {
+        variable x = "x";
+        variable f = "f";
+        variable y = "y";
+
+        object fact = mod.define(
+            {
+                f, {{x, integer_type()}}, integer_type(), 
+                ite(x == 1, 1, x * f(x - 1)) 
+            }, resolution::delayed
+        );
+
+        mod.resolve(scope::recursive);
+
+        REQUIRE(slv.check(mod) == true);
+
+        mod.require(fact(4) != 24);
+
+        REQUIRE(slv.check(mod) == false);        
+    }
+
 }

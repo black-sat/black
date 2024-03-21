@@ -26,8 +26,6 @@
 #include <black/support>
 #include <black/logic>
 
-#include <iostream>
-
 using namespace black::support;
 using namespace black::logic;
 

@@ -105,6 +105,45 @@ namespace black::support {
     operation op; //!< The kind of operation that caused the error.
     int err; //!< The value of the `errno` variable describing the error.
   };  
+
+  //! A small function to unwrap std::optional/std::expected.
+  //! Basically a safe version of operator*
+  template<typename T>
+  T const& unwrap(
+    std::optional<T> const& opt, 
+    std::source_location loc = std::source_location::current()
+  ) {
+    black_assume(opt.has_value(), loc, "tried to unwrap an empty optional");
+    return *opt;
+  }
+
+  template<typename T>
+  T && unwrap(
+    std::optional<T> && opt, 
+    std::source_location loc = std::source_location::current()
+  ) {
+    black_assume(opt.has_value(), loc, "tried to unwrap an empty optional");
+    return *std::move(opt);
+  }
+  
+  template<typename T, typename E>
+  T & unwrap(
+    std::expected<T, E> const& exp, 
+    std::source_location loc = std::source_location::current()
+  ) {
+    black_assume(exp.has_value(), loc, "tried to unwrap an invalid expected");
+    return *exp;
+  }
+  
+  template<typename T, typename E>
+  T && unwrap(
+    std::expected<T, E> && exp, 
+    std::source_location loc = std::source_location::current()
+  ) {
+    black_assume(exp.has_value(), loc, "tried to unwrap an invalid expected");
+    return *std::move(exp);
+  }
+
 }
 
 
