@@ -34,30 +34,6 @@
 
 namespace black::logic {
 
-  //
-  // Recursive definitions
-  //
-  // 1. adopt() pushes directly to the stack, not to the pending set
-  // 2. resolve() has a new argument to choose linear or recursive scope
-  // 3. if the scope is linear the lookups are not popped from the pending set
-  //    before resolving
-  // 4. resolution checks for possible recursion 
-  //    a. not an actual DFS (for now)
-  //    b. we just check if the objects added from the pending set are actually 
-  //       used during resolve()
-  //    c. in this case we set recursive = true in the SCC
-  // 5. in this way we can:
-  //    - choose the right way to declare things in the backend
-  //    - choose `scope::linear` or `scope::recursive` appropriately during 
-  //      replay
-  // 6. objects pushed from pending with scope::recursive form an SCC with 
-  //    recursive = true only if we have scope::recursive and item 4 detected 
-  //    possible recursion
-  // 7. in this case adopt(vector<object>) is replayed
-  // 8. otherwise, a sequence of single adopt(object) are replayed
-  // 9. memory management is solved by using a weak reference in `object` only 
-  //    if a back-edge is detected at step 4.
-  //
   struct module::_impl_t 
   {
     struct scc_t {

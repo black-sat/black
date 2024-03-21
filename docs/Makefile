@@ -24,7 +24,7 @@ doxygen/xml: doxygen.conf
 
 %.rst: %.rst.in # %.json.in ast.json.in
 	@mkdir -p _build
-	@cc -x c++ -I../src/lib/include -I. -I_build -E \
+	cc -x c++ -I../src/lib/include -I. -I_build -E \
 		"$(shell dirname $@)/$(shell basename $@ .rst).json.in" | \
 		sed '/^#/d;/^$$/d' | \
 		jq 'del(..|select(. == null))' > _build/$(shell basename $@ .rst).json

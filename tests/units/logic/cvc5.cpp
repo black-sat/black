@@ -123,13 +123,14 @@ TEST_CASE("cvc5") {
 
         module math;
 
-        object pi = math.define({"pi", 3.14});
+        math.define({"pi", 3.14});
 
         module geometry;
 
         geometry.import(math);
 
         variable r = "r";
+        variable pi = "pi";
 
         object perimeter = 
             geometry.define({"perimeter", {{r, real_type()}}, 2.0 * r * pi});
@@ -137,11 +138,10 @@ TEST_CASE("cvc5") {
         object area = 
             geometry.define({"area", {{r, real_type()}}, 2.0 * r * r * pi});
 
-        variable x = "x";
         geometry.require(
             forall(
-                {{x, real_type()}}, 
-                implies(x > 1, perimeter(x) < area(x))
+                {{r, real_type()}}, 
+                implies(r > 1, perimeter(r) < area(r))
             )
         );
 

@@ -13,84 +13,126 @@ Terms and formulas
 
 
 
+The error term
+~~~~~~~~~~~~~~
+
+
+.. cpp:struct:: error
+
+   A logically erroneous term.
+
+   :constructor:
+      .. cpp:function:: error(logic::term source, std::string error)
+
+      
+         :param source: The erroneous term.
+      
+         :param error: The error.
+      
+
+      
+   :members:
+
+   
+      .. cpp:function:: logic::term source() const
+
+         :returns: The erroneous term.
+
+   
+      .. cpp:function:: std::string error() const
+
+         :returns: The error.
+
+   
+   
+        
+
+
+
 Sorts and declarations
 ~~~~~~~~~~~~~~~~~~~~~~
 
 
-.. cpp:struct:: sort_sort
+.. cpp:struct:: type_type
 
-   The sort of sorts.
+   The type of types.
 
-   
-   .. note::
-      This term type is *primitive*, therefore it has no 
-      constructors. Use :cpp:func:`alphabet::sort_sort()` to 
-      create objects of this type.
-   
-
-   
-        
-
-.. cpp:struct:: integer_sort
-
-   The sort of integer numbers.
-
-   
-   .. note::
-      This term type is *primitive*, therefore it has no 
-      constructors. Use :cpp:func:`alphabet::integer_sort()` to 
-      create objects of this type.
-   
-
-   
-        
-
-.. cpp:struct:: real_sort
-
-   The sort of real numbers.
-
-   
-   .. note::
-      This term type is *primitive*, therefore it has no 
-      constructors. Use :cpp:func:`alphabet::real_sort()` to 
-      create objects of this type.
-   
-
-   
-        
-
-.. cpp:struct:: boolean_sort
-
-   The sort of boolean values.
-
-   
-   .. note::
-      This term type is *primitive*, therefore it has no 
-      constructors. Use :cpp:func:`alphabet::boolean_sort()` to 
-      create objects of this type.
-   
-
-   
-        
-
-.. cpp:struct:: function_sort
-
-   The sort of functions.
-
-   
    :constructor:
-      .. cpp:function:: function_sort(logic::term range, std::vector<logic::term> arguments)
+      .. cpp:function:: type_type()
 
+      
+
+   
+        
+
+.. cpp:struct:: inferred_type
+
+   A type still to be inferred.
+
+   :constructor:
+      .. cpp:function:: inferred_type()
+
+      
+
+   
+        
+
+.. cpp:struct:: integer_type
+
+   The type of integer numbers.
+
+   :constructor:
+      .. cpp:function:: integer_type()
+
+      
+
+   
+        
+
+.. cpp:struct:: real_type
+
+   The type of real numbers.
+
+   :constructor:
+      .. cpp:function:: real_type()
+
+      
+
+   
+        
+
+.. cpp:struct:: boolean_type
+
+   The type of boolean values.
+
+   :constructor:
+      .. cpp:function:: boolean_type()
+
+      
+
+   
+        
+
+.. cpp:struct:: function_type
+
+   The type of functions.
+
+   :constructor:
+      .. cpp:function:: function_type(std::vector<logic::term> parameters, logic::term range)
+
+      
+         :param parameters: The parameters types.
       
          :param range: The function's range.
       
-         :param arguments: The function's arguments.
-      
-
-   
 
       
    :members:
+
+   
+      .. cpp:function:: std::vector<logic::term> parameters() const
+
+         :returns: The parameters types.
 
    
       .. cpp:function:: logic::term range() const
@@ -98,62 +140,21 @@ Sorts and declarations
          :returns: The function's range.
 
    
-      .. cpp:function:: std::vector<logic::term> arguments() const
-
-         :returns: The function's arguments.
-
-   
    
         
 
-.. cpp:struct:: decl
-
-   A declaration.
-
-   
-   :constructor:
-      .. cpp:function:: decl(logic::symbol name, logic::term sort)
-
-      
-         :param name: The declared symbol.
-      
-         :param sort: The sort of the declared symbol.
-      
-
-   
-
-      
-   :members:
-
-   
-      .. cpp:function:: logic::symbol name() const
-
-         :returns: The declared symbol.
-
-   
-      .. cpp:function:: logic::term sort() const
-
-         :returns: The sort of the declared symbol.
-
-   
-   
-        
-
-.. cpp:struct:: cast
+.. cpp:struct:: type_cast
 
    A type-cast expression.
 
-   
    :constructor:
-      .. cpp:function:: cast(logic::term target, logic::term expr)
+      .. cpp:function:: type_cast(logic::term target, logic::term expr)
 
       
-         :param target: The target sort.
+         :param target: The target type.
       
          :param expr: The term to cast.
       
-
-   
 
       
    :members:
@@ -161,7 +162,7 @@ Sorts and declarations
    
       .. cpp:function:: logic::term target() const
 
-         :returns: The target sort.
+         :returns: The target type.
 
    
       .. cpp:function:: logic::term expr() const
@@ -182,12 +183,12 @@ Constant terms
 
    A constant integer value (e.g., 42).
 
-   
-   .. note::
-      This term type is *primitive*, therefore it has no 
-      constructors. Use :cpp:func:`alphabet::integer()` to 
-      create objects of this type.
-   
+   :constructor:
+      .. cpp:function:: integer(int64_t value)
+
+      
+         :param value: The constant value.
+      
 
       
    :members:
@@ -205,12 +206,12 @@ Constant terms
 
    A constant real value (e.g., 3.14).
 
-   
-   .. note::
-      This term type is *primitive*, therefore it has no 
-      constructors. Use :cpp:func:`alphabet::real()` to 
-      create objects of this type.
-   
+   :constructor:
+      .. cpp:function:: real(double value)
+
+      
+         :param value: The constant value.
+      
 
       
    :members:
@@ -228,12 +229,12 @@ Constant terms
 
    A constant boolean value (i.e., `true` or `false`).
 
-   
-   .. note::
-      This term type is *primitive*, therefore it has no 
-      constructors. Use :cpp:func:`alphabet::boolean()` to 
-      create objects of this type.
-   
+   :constructor:
+      .. cpp:function:: boolean(bool value)
+
+      
+         :param value: The boolean value.
+      
 
       
    :members:
@@ -253,16 +254,16 @@ Boolean and first-order predicates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-.. cpp:struct:: symbol
+.. cpp:struct:: variable
 
-   A named symbol (e.g., a variable or a predicate).
+   An unbound variable.
 
-   
-   .. note::
-      This term type is *primitive*, therefore it has no 
-      constructors. Use :cpp:func:`alphabet::symbol()` to 
-      create objects of this type.
-   
+   :constructor:
+      .. cpp:function:: variable(ast::core::label name)
+
+      
+         :param name: The variable's name.
+      
 
       
    :members:
@@ -270,7 +271,30 @@ Boolean and first-order predicates
    
       .. cpp:function:: ast::core::label name() const
 
-         :returns: The symbol's label.
+         :returns: The variable's name.
+
+   
+   
+        
+
+.. cpp:struct:: object
+
+   A resolved object.
+
+   :constructor:
+      .. cpp:function:: object(support::wrap_ptr<logic::lookup const> lookup)
+
+      
+         :param lookup: The object's lookup info.
+      
+
+      
+   :members:
+
+   
+      .. cpp:function:: support::wrap_ptr<logic::lookup const> lookup() const
+
+         :returns: The object's lookup info.
 
    
    
@@ -280,15 +304,12 @@ Boolean and first-order predicates
 
    An equality constraint between terms.
 
-   
    :constructor:
       .. cpp:function:: equal(std::vector<logic::term> arguments)
 
       
          :param arguments: The operands.
       
-
-   
 
       
    :members:
@@ -306,15 +327,12 @@ Boolean and first-order predicates
 
    An inequality constraint between terms.
 
-   
    :constructor:
       .. cpp:function:: distinct(std::vector<logic::term> arguments)
 
       
          :param arguments: The operands.
       
-
-   
 
       
    :members:
@@ -332,17 +350,14 @@ Boolean and first-order predicates
 
    An atomic first-order term (e.g. `f(x, y)`).
 
-   
    :constructor:
       .. cpp:function:: atom(logic::term head, std::vector<logic::term> arguments)
 
       
-         :param head: The applied symbol.
+         :param head: The applied term.
       
          :param arguments: The arguments.
       
-
-   
 
       
    :members:
@@ -350,12 +365,72 @@ Boolean and first-order predicates
    
       .. cpp:function:: logic::term head() const
 
-         :returns: The applied symbol.
+         :returns: The applied term.
 
    
       .. cpp:function:: std::vector<logic::term> arguments() const
 
          :returns: The arguments.
+
+   
+   
+        
+
+.. cpp:struct:: exists
+
+   An existentially quantified term.
+
+   :constructor:
+      .. cpp:function:: exists(std::vector<logic::decl> binds, logic::term body)
+
+      
+         :param binds: The quantified variables.
+      
+         :param body: The quantified term.
+      
+
+      
+   :members:
+
+   
+      .. cpp:function:: std::vector<logic::decl> binds() const
+
+         :returns: The quantified variables.
+
+   
+      .. cpp:function:: logic::term body() const
+
+         :returns: The quantified term.
+
+   
+   
+        
+
+.. cpp:struct:: forall
+
+   An universally quantified term.
+
+   :constructor:
+      .. cpp:function:: forall(std::vector<logic::decl> binds, logic::term body)
+
+      
+         :param binds: The quantified variables.
+      
+         :param body: The quantified term.
+      
+
+      
+   :members:
+
+   
+      .. cpp:function:: std::vector<logic::decl> binds() const
+
+         :returns: The quantified variables.
+
+   
+      .. cpp:function:: logic::term body() const
+
+         :returns: The quantified term.
 
    
    
@@ -371,15 +446,12 @@ Boolean connectives
 
    A logical negation.
 
-   
    :constructor:
       .. cpp:function:: negation(logic::term argument)
 
       
          :param argument: The term to negate.
       
-
-   
 
       
    :members:
@@ -397,15 +469,12 @@ Boolean connectives
 
    A logical conjunction.
 
-   
    :constructor:
       .. cpp:function:: conjunction(std::vector<logic::term> arguments)
 
       
          :param arguments: The conjuncts.
       
-
-   
 
       
    :members:
@@ -423,15 +492,12 @@ Boolean connectives
 
    A logical disjunction.
 
-   
    :constructor:
       .. cpp:function:: disjunction(std::vector<logic::term> arguments)
 
       
          :param arguments: The disjuncts.
       
-
-   
 
       
    :members:
@@ -449,7 +515,6 @@ Boolean connectives
 
    A logical implication.
 
-   
    :constructor:
       .. cpp:function:: implication(logic::term left, logic::term right)
 
@@ -458,8 +523,6 @@ Boolean connectives
       
          :param right: The consequent.
       
-
-   
 
       
    :members:
@@ -488,7 +551,6 @@ Functional constructs
 
    An if/then/else selection construct.
 
-   
    :constructor:
       .. cpp:function:: ite(logic::term guard, logic::term iftrue, logic::term iffalse)
 
@@ -499,8 +561,6 @@ Functional constructs
       
          :param iffalse: The result if the guard is false.
       
-
-   
 
       
    :members:
@@ -526,19 +586,16 @@ Functional constructs
 
 .. cpp:struct:: lambda
 
-   A lambda abstraction.
+   A lambda abstraction (i.e., an anonymous function).
 
-   
    :constructor:
       .. cpp:function:: lambda(std::vector<logic::decl> vars, logic::term body)
 
       
-         :param vars: The abstracted variables.
+         :param vars: The lambda's parameters.
       
          :param body: The lambda's body.
       
-
-   
 
       
    :members:
@@ -546,92 +603,12 @@ Functional constructs
    
       .. cpp:function:: std::vector<logic::decl> vars() const
 
-         :returns: The abstracted variables.
+         :returns: The lambda's parameters.
 
    
       .. cpp:function:: logic::term body() const
 
          :returns: The lambda's body.
-
-   
-   
-        
-
-.. cpp:struct:: placeholder
-
-   A placeholder in a match expression.
-
-   
-   .. note::
-      This term type is *primitive*, therefore it has no 
-      constructors. Use :cpp:func:`alphabet::placeholder()` to 
-      create objects of this type.
-   
-
-   
-        
-
-.. cpp:struct:: pattern
-
-   A pattern in a match expression.
-
-   
-   :constructor:
-      .. cpp:function:: pattern(logic::term head, logic::term body)
-
-      
-         :param head: The pattern's head.
-      
-         :param body: The pattern's body.
-      
-
-   
-
-      
-   :members:
-
-   
-      .. cpp:function:: logic::term head() const
-
-         :returns: The pattern's head.
-
-   
-      .. cpp:function:: logic::term body() const
-
-         :returns: The pattern's body.
-
-   
-   
-        
-
-.. cpp:struct:: caseof
-
-   A pattern match expression over an ADT.
-
-   
-   :constructor:
-      .. cpp:function:: caseof(logic::term expr, std::vector<logic::pattern> cases)
-
-      
-         :param expr: The matched expression.
-      
-         :param cases: The match patterns.
-      
-
-   
-
-      
-   :members:
-
-   
-      .. cpp:function:: logic::term expr() const
-
-         :returns: The matched expression.
-
-   
-      .. cpp:function:: std::vector<logic::pattern> cases() const
-
-         :returns: The match patterns.
 
    
    
@@ -647,15 +624,12 @@ Linear Temporal Logic (future) temporal operators
 
    An *tomorrow* LTL formula.
 
-   
    :constructor:
       .. cpp:function:: tomorrow(logic::term argument)
 
       
          :param argument: The operator's argument.
       
-
-   
 
       
    :members:
@@ -673,15 +647,12 @@ Linear Temporal Logic (future) temporal operators
 
    A *weak tomorrow* LTL formula.
 
-   
    :constructor:
       .. cpp:function:: w_tomorrow(logic::term argument)
 
       
          :param argument: The operator's argument.
       
-
-   
 
       
    :members:
@@ -699,15 +670,12 @@ Linear Temporal Logic (future) temporal operators
 
    An *eventually* LTL formula.
 
-   
    :constructor:
       .. cpp:function:: eventually(logic::term argument)
 
       
          :param argument: The operator's argument.
       
-
-   
 
       
    :members:
@@ -725,15 +693,12 @@ Linear Temporal Logic (future) temporal operators
 
    An *always* LTL formula.
 
-   
    :constructor:
       .. cpp:function:: always(logic::term argument)
 
       
          :param argument: The operator's argument.
       
-
-   
 
       
    :members:
@@ -751,7 +716,6 @@ Linear Temporal Logic (future) temporal operators
 
    An *until* LTL formula.
 
-   
    :constructor:
       .. cpp:function:: until(logic::term left, logic::term right)
 
@@ -760,8 +724,6 @@ Linear Temporal Logic (future) temporal operators
       
          :param right: The existential argument.
       
-
-   
 
       
    :members:
@@ -784,7 +746,6 @@ Linear Temporal Logic (future) temporal operators
 
    A *release* LTL formula.
 
-   
    :constructor:
       .. cpp:function:: release(logic::term left, logic::term right)
 
@@ -793,8 +754,6 @@ Linear Temporal Logic (future) temporal operators
       
          :param right: The universal argument.
       
-
-   
 
       
    :members:
@@ -823,15 +782,12 @@ Linear Temporal Logic (past) temporal operators
 
    An *yesterday* LTL formula.
 
-   
    :constructor:
       .. cpp:function:: yesterday(logic::term argument)
 
       
          :param argument: The operator's argument.
       
-
-   
 
       
    :members:
@@ -849,15 +805,12 @@ Linear Temporal Logic (past) temporal operators
 
    A *weak yesterday* LTL formula.
 
-   
    :constructor:
       .. cpp:function:: w_yesterday(logic::term argument)
 
       
          :param argument: The operator's argument.
       
-
-   
 
       
    :members:
@@ -875,15 +828,12 @@ Linear Temporal Logic (past) temporal operators
 
    A *once* LTL formula.
 
-   
    :constructor:
       .. cpp:function:: once(logic::term argument)
 
       
          :param argument: The operator's argument.
       
-
-   
 
       
    :members:
@@ -901,15 +851,12 @@ Linear Temporal Logic (past) temporal operators
 
    An *historically* LTL formula.
 
-   
    :constructor:
       .. cpp:function:: historically(logic::term argument)
 
       
          :param argument: The operator's argument.
       
-
-   
 
       
    :members:
@@ -927,7 +874,6 @@ Linear Temporal Logic (past) temporal operators
 
    A *since* LTL formula.
 
-   
    :constructor:
       .. cpp:function:: since(logic::term left, logic::term right)
 
@@ -936,8 +882,6 @@ Linear Temporal Logic (past) temporal operators
       
          :param right: The existential argument.
       
-
-   
 
       
    :members:
@@ -960,7 +904,6 @@ Linear Temporal Logic (past) temporal operators
 
    A *triggered* LTL formula.
 
-   
    :constructor:
       .. cpp:function:: triggered(logic::term left, logic::term right)
 
@@ -969,8 +912,6 @@ Linear Temporal Logic (past) temporal operators
       
          :param right: The universal argument.
       
-
-   
 
       
    :members:
@@ -999,15 +940,12 @@ Arithmetic operators
 
    The unary minus.
 
-   
    :constructor:
       .. cpp:function:: minus(logic::term argument)
 
       
          :param argument: The operand.
       
-
-   
 
       
    :members:
@@ -1025,23 +963,27 @@ Arithmetic operators
 
    An arithmetic sum.
 
-   
    :constructor:
-      .. cpp:function:: sum(std::vector<logic::term> arguments)
+      .. cpp:function:: sum(logic::term left, logic::term right)
 
       
-         :param arguments: The addends.
+         :param left: The first summand.
       
-
-   
+         :param right: The second summand.
+      
 
       
    :members:
 
    
-      .. cpp:function:: std::vector<logic::term> arguments() const
+      .. cpp:function:: logic::term left() const
 
-         :returns: The addends.
+         :returns: The first summand.
+
+   
+      .. cpp:function:: logic::term right() const
+
+         :returns: The second summand.
 
    
    
@@ -1051,23 +993,27 @@ Arithmetic operators
 
    An arithmetic product.
 
-   
    :constructor:
-      .. cpp:function:: product(std::vector<logic::term> arguments)
+      .. cpp:function:: product(logic::term left, logic::term right)
 
       
-         :param arguments: The factors.
+         :param left: The first factor.
       
-
-   
+         :param right: The second factor.
+      
 
       
    :members:
 
    
-      .. cpp:function:: std::vector<logic::term> arguments() const
+      .. cpp:function:: logic::term left() const
 
-         :returns: The factors.
+         :returns: The first factor.
+
+   
+      .. cpp:function:: logic::term right() const
+
+         :returns: The second factor.
 
    
    
@@ -1077,7 +1023,6 @@ Arithmetic operators
 
    An arithmetic difference.
 
-   
    :constructor:
       .. cpp:function:: difference(logic::term left, logic::term right)
 
@@ -1086,8 +1031,6 @@ Arithmetic operators
       
          :param right: The subtrahend.
       
-
-   
 
       
    :members:
@@ -1110,7 +1053,6 @@ Arithmetic operators
 
    An arithmetic division.
 
-   
    :constructor:
       .. cpp:function:: division(logic::term left, logic::term right)
 
@@ -1119,8 +1061,6 @@ Arithmetic operators
       
          :param right: The denominator.
       
-
-   
 
       
    :members:
@@ -1149,7 +1089,6 @@ Relational comparisons
 
    A less-than comparison.
 
-   
    :constructor:
       .. cpp:function:: less_than(logic::term left, logic::term right)
 
@@ -1158,8 +1097,6 @@ Relational comparisons
       
          :param right: The greater argument.
       
-
-   
 
       
    :members:
@@ -1182,7 +1119,6 @@ Relational comparisons
 
    A less-than-or-equal comparison.
 
-   
    :constructor:
       .. cpp:function:: less_than_eq(logic::term left, logic::term right)
 
@@ -1191,8 +1127,6 @@ Relational comparisons
       
          :param right: The greater argument.
       
-
-   
 
       
    :members:
@@ -1215,7 +1149,6 @@ Relational comparisons
 
    A greater-than comparison.
 
-   
    :constructor:
       .. cpp:function:: greater_than(logic::term left, logic::term right)
 
@@ -1224,8 +1157,6 @@ Relational comparisons
       
          :param right: The lower argument.
       
-
-   
 
       
    :members:
@@ -1248,7 +1179,6 @@ Relational comparisons
 
    A greater-than-or-equal comparison.
 
-   
    :constructor:
       .. cpp:function:: greater_than_eq(logic::term left, logic::term right)
 
@@ -1257,8 +1187,6 @@ Relational comparisons
       
          :param right: The lower argument.
       
-
-   
 
       
    :members:

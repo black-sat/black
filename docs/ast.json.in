@@ -4,13 +4,12 @@
 #endif
 
 {
-    "ast": [
+    "ast": [ \
 
-#define declare_ast_factory(NS, AST, Factory, Member) \
+#define declare_ast(NS, AST) \
         { \
             "name": #AST, \
             "namespace": #NS, \
-            "factory": { "name": #Factory, "member": #Member }, \
             "sections": [
 
 #define section(Doc) \
