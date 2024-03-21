@@ -87,8 +87,9 @@ namespace black::logic {
   }
 
   void module::import(module m) {
+    m.resolve();
     _impl->stack = _impl->stack.update(_impl->stack.size() - 1, [&](auto top) {
-      top.imports = top.imports.push_back(m.resolved());
+      top.imports = top.imports.push_back(m);
       return top;
     });
   }
@@ -403,12 +404,6 @@ namespace black::logic {
       });
     else
       adopt(objs, scope::linear);
-  }
-
-  module module::resolved(scope s) const {
-    module m = *this;
-    m.resolve(s);
-    return m;
   }
 
 }

@@ -6,5 +6,6 @@ Logic module
    :caption: Contents
 
    logic/terms
+   logic/module
 
    

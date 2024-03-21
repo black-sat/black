@@ -37,44 +37,74 @@ namespace black::logic {
 
   struct lookup;
 
+  //! The resolution behavior of declarations and definitions in \ref module.
+  //!
+  //! Used in functions module::declare() and module::define() to specify
+  //! whether a declared/defined entity must be resolved immediately or at the
+  //! next call to module::resolve().
   enum class resolution : bool {
-    delayed = false,
-    immediate = true
+    delayed = false, //!< wait the next call to module::resolve().
+    immediate = true //!< resolve immediately.
   };
 
+  //!
+  //! The specification of an entity to be defined in a module.
+  //!
   struct def {
-    variable name; 
-    term type;
-    term value;
+    variable name; //!< the name of the entity.
+    term type; //!< the type of the entity.
+    term value; //!< the defining value of the entity.
 
+    //! \name Constructors
+    //!@{
+    
+    //! Constructs the \ref def object.
     def(variable name, term type, term value) 
       : name{name.name()}, type{type}, value{value} { }
     
+    //! Constructs the \ref def object with the type set to `inferred_type()`,
+    //! to be inferred automatically from `value`.
     def(variable name, term value)
       : def{name, inferred_type(), value} { }
+
+    //!@}
   };
 
+  //!
+  //! The specification of a function to be defined in a module.
+  //!
   struct function_def {
-    variable name;
-    std::vector<decl> parameters;
-    term range;
-    term body;
+    variable name; //!< the name of the function.
+    std::vector<decl> parameters; //!< the parameters of the function.
+    term range; //!< the range (return type) of the function.
+    term body; //!< the body of the function.
 
+    //! \name Constructors
+    //!@{
+
+    //! Constructs a \ref function_def
     function_def(variable name, std::vector<decl> parms, term range, term body)
       : name{name}, parameters{std::move(parms)}, range{range}, body{body} { }
 
+    //! Constructs a \ref function_def where the type is set to
+    //! `inferred_type()`, to be inferred automatically from the function body.
     function_def(variable name, std::vector<decl> parms, term body)
       : name{name}, 
         parameters{std::move(parms)}, 
         range{inferred_type()}, 
         body{body} { }
+
+    //!@}
   };
 
   class module;
 
+  //!
+  //! The scope resolution mode for `module::resolve()` and `module::adopt()`.
+  //!
   enum class scope {
-    recursive,
-    linear
+    recursive, //!< Recursive name resolution
+    linear //!< Non-recursive name resolution
   };
 
   template<typename T>
@@ -86,81 +116,296 @@ namespace black::logic {
     v.pop(42);
   };
 
+  //!
+  //! Entry point to build modules.
+  //!
+  //! \ref module is a **regular** type (also known as *value type*), meaning
+  //! that its instances are meant to be freely copied and passed around by
+  //! value. Copy of a \ref module is cheap thanks to the underlying usage of
+  //! persistent data structures.
+  //!
+  //! The \ref module class mantains sets of declarations, requirements
+  //! (sometimes called *assertions*), and other elements in a stack that can be
+  //! manipulated with the push() and pop() member functions.
+  //!
   class module
   {
   public:
-    module();
-    module(module const&);
-    module(module &&);
 
+    //! \name Constructors, assignment and comparison
+    //!@{
+
+    //! Default constructor. Constructs an empty module.
+    module();
+
+    //! Copy constructor.
+    module(module const&);
+
+    //! Move constructor.
+    module(module &&);
+    
     ~module();
     
-    module &operator=(module const&);
-    module &operator=(module &&);
+    //! Copy-assignment operator
+    module &operator=(module const&); 
 
+    //! Move-assignment operator
+    module &operator=(module &&); 
+
+    //! Equality comparison operator
     bool operator==(module const&) const;
+
+    //!@}
     
-    //
-    // Import other modules
-    //
+    //! \name Declarations, definitions, and name lookup.
+    //!@{
+    
+    //!
+    //! Imports another module.
+    //!
+    //! \param m the imported module.
+    //!
+    //! The names visible in the imported modules will be visible in this one,
+    //! but will be **shadowed** by those with the same name declared in this
+    //! module.
+    //!
+    //! If two imported modules declare the same names, the module imported last
+    //! has precedence and shadows the others.
+    //!
     void import(module m);
   
-    //
-    // declarations and definitions
-    //
+    //!
+    //! Declares a new entity.
+    //!
+    //! \param d the \ref decl object describing the new declaration. 
+    //!
+    //! \param r the resolution mode (see \ref resolution). 
+    //!
+    //! \returns an \ref object representing the newly declared entity.
+    //!
+    //! Declares an entity of name `d.name` and type `d.type`. 
+    //!
+    //! The resolution mode `r` determines when name lookup is applied to
+    //! unbound variables:
+    //! - if `r` is \ref resolution::immediate, any unbound \ref variable
+    //!   present in `d.type` is resolved immediately using \ref resolved();
+    //! - if `r` is \ref resolution::delayed, the name will **not** be visible
+    //!   until the next call to the resolve() function, which will resolve
+    //!   `d.type`.
+    //!
     object declare(decl d, resolution r = resolution::immediate);
     
+    //!
+    //! Defines a new entity
+    //!
+    //! \param d the \ref def object describing the new definition.
+    //!
+    //! \param r the resolution mode (see \ref resolution).
+    //!
+    //! \returns an \ref object representing the newly defined entity.
+    //!
+    //! Defines an entity of name `d.name`, type `d.type` and value `d.value`.
+    //! If `d.type` is an \ref inferred_type term, the type is inferred from
+    //! `d.value`, when possible (for now, recursive definitions cannot be
+    //! type-inferred).
+    //! 
+    //! The resolution mode `r` determines when name lookup is applied to
+    //! unbound variables:
+    //! - if `r` is \ref resolution::immediate, any unbound \ref variable
+    //!   present in `d.type` is resolved immediately using \ref resolved();
+    //! - if `r` is \ref resolution::delayed, the name will **not** be visible
+    //!   until the next call to the resolve() function, which will resolve
+    //!   `d.type`.
+    //!
     object define(def d, resolution r = resolution::immediate);
+
+    //!
+    //! Defines a new function
+    //!
+    //! \param f the \ref function_def object describing the new function.
+    //!
+    //! \param r the resolution mode (see \ref resolution).
+    //!
+    //! \returns an \ref object representing the newly defined function.
+    //!
+    //! Defines a function of name `f.name`, parameters described by \ref decl
+    //! objects in `f.parameters`, range `f.range`, and body `f.body`. If
+    //! `f.type` is an \ref inferred_type term, then the *range* type is
+    //! inferred from `f.body`, when possible (for now, recursive definitions
+    //! cannot be type-inferred).
+    //!
+    //! The resolution mode `r` determines when name lookup is applied to
+    //! unbound variables:
+    //! - if `r` is \ref resolution::immediate, any unbound \ref variable
+    //!   present in `d.type` is resolved immediately using \ref resolved();
+    //! - if `r` is \ref resolution::delayed, the name will **not** be visible
+    //!   until the next call to the resolve() function, which will resolve
+    //!   `f.type`.
+    //!
     object define(function_def f, resolution r = resolution::immediate);
 
-    // adopt a set of existing possibly recursive objects (declared or defined)
+    //!
+    //! Adopts a set of existing possibly recursive objects (declared or
+    //! defined).
+    //!
+    //! \param objs the vector of objects to adopt.
+    //!
+    //! \param s the scope resolution mode (see \ref scope)
+    //!
+    //! Adopts in this module a set of external objects, possibly created using
+    //! other modules. The entities referred to by the objects become visible in
+    //! the module as if they were declared or defined by the declare() or
+    //! define() functions.
+    //!
+    //! The scope resolution mode determines whether the adopted objects can
+    //! potentially recursively refer to other objects of the same set
+    //! (themselves included).
+    //!
     void adopt(std::vector<object> const& objs, scope s = scope::recursive);
 
-    //
-    // Name lookup
-    //
+    //!
+    //! Looks up a name in the current module and returns the corresponding
+    //! object.
+    //!
+    //! \param x the \ref variable to look up.
+    //!
+    //! \returns the \ref object associated to `x` in the current module, or an
+    //! empty optional if the name cannot be found.
+    //!
+    //! Name lookup is performed in this order:
+    //! 1. the entities declared, defined, or adopted in the current module, in
+    //!    the reverse order (i.e. most recent entities shadow previous ones);
+    //! 2. the entities declared, defined, or adopted in any imported module,
+    //!    with more recently imported modules shadowing previous ones.
+    //!
     std::optional<object> lookup(variable x) const;
 
-    //
-    // requirements
-    //
+    //!
+    //! Resolves unbound variables in a term by name lookup in the current
+    //! module.
+    //!
+    //! \param t a term.
+    //!
+    //! \returns the resolved term
+    //!
+    //! Returns a term obtained from the given term `t` where each unbound
+    //! variable is replaced by the corresponding object as found by lookup(),
+    //! or is left unchanged if lookup() returns an empty optional.
+    //!
+    term resolved(term t) const;
+
+    //!
+    //! Resolves and completes the declaration/definition of pending entities.
+    //!
+    //! \param s the scope resolution mode (see \ref scope).
+    //!
+    //! This function completes the declaration or definition of entities
+    //! declared or defined with declare() or define() where the `r` parameter
+    //! was set to resolution::delayed. The terms employed for types and bodies
+    //! of the entities are resolved similarly to resolved() using name lookup
+    //! in the current module.
+    //!
+    //! The scope resolution mode determines whether recursion is allowed.
+    //! - if `s` is scope::linear, the pending entities **do not** see each
+    //!   other, and therefore cannot refer recursively to each other or
+    //!   themselves.
+    //! - if `s` is scope::recursive, all the pending entities, regardless of
+    //!   the order of declaration/definiton, see each other, and thus can refer
+    //!   recursively to any other entity in the group (themselves included).
+    //!
+    //! \note As also noted in define(), types of recursive definitions cannot
+    //! be automatically inferred, at the moment.
+    void resolve(scope s = scope::linear);
+
+    //!@}
+
+    //! \name Specifications and requirements
+    //!@{
+
+    //!
+    //! Adds a requirement to the module.
+    //!
+    //! \param req the required term.
+    //!
+    //! Asserts that `req` must hold in any model of the module.
+    //!
     void require(term req);
 
-    //
-    // push()/pop() interface
-    //
+    //!@}
+
+    //! \name Stack management
+    //!@{
+
+    //!
+    //! Pushes a new frame on the module's stack.
+    //!
     void push();
+
+    //!
+    //! Pops a given number of frames from the module's stack.
+    //!
+    //! \param n the number of frames to pop.
+    //!
+    //! Calls to this function cause any call to the import(), declare(),
+    //! define(), adopt(), and require() functions, executed after the last `n`
+    //! calls to push(), to be undone.
+    //!
+    //! If less than `n` calls to push() have been issued before (e.g. `n==1`
+    //! and no call to push() happened at all), the module is reset empty, as
+    //! just after default construction.
+    //!
     void pop(size_t n = 1);
 
-    auto pushed(auto f) {
-      auto _ = support::finally([&]{ pop(); });
-      push();
-      return f();
-    }
+    //!@}
 
-    //
-    // Issues a sequence of calls to member functions of `target` for each 
-    // difference of `*this` and `from`.
-    //
-    // The calls are arranged in such a way that after the following call:
-    //
-    //    m.replay(from, from);
-    // 
-    // then `m == from` is guaranteed to hold.
-    //
+    //! \name Module traversal
+    //!@{
+
+    //!
+    //! Replays all the differences of the current module from a given one.
+    //!
+    //! \param from the module starting point of the replay.
+    //!
+    //! \param target the object where replay calls are issued.
+    //!
+    //! Issues a sequence of calls to a set of member functions of `target` for
+    //! each difference between `*this` and `from`.
+    //! 1. a call to `target.import(m)` for each module `m` imported in `*this`
+    //!    but not in `from`.
+    //! 2. a call to `target.adopt(objs, s)`, for each set of entities
+    //!    declared/defined/adopted in `*this` but not in `from`.
+    //! 3. a call to `target.require(req)` for each term `req` required in
+    //!    `*this` but not in `from`.
+    //! 4. a call to `target.push()` for each frame level pushed in `*this` but
+    //!    not in `from` (in the suitable order w.r.t. the previous items).
+    //! 5. a call to `target.pop(n)` for each `n` frames that have to be popped
+    //!    from `from` to make it a subset of `*this`.
+    //!
+    //! The types of the arguments of each call are the same as the
+    //! corresponding member functions of \ref module with the same name.
+    //!
+    //! The calls are arranged in such a way that, *for any* pair of modules `m`
+    //! and `from`, if the following call is issued:
+    //!
+    //! ```
+    //!    m.replay(from, from);
+    //! ```
+    //!
+    //! then `m == from` is guaranteed to hold.
+    //!
+    //! Note that a copy construction is sufficient to achieve the same. The
+    //! purpose of this function is rather to can be used with `target` objects
+    //! of different types, as a way of observing the changes made to a module
+    //! w.r.t. to `from`.
+    //!
+    //! This can also be used as a general iteration mechanism over all the
+    //! constituent elements of the module (e.g. by providing an empty `from`
+    //! module).
+    //!
     template<replay_target T>
     void replay(module const& from, T &target) const;
 
-    //
-    // Resolve terms
-    //
-    term resolved(term t) const;
-
-    //
-    // Fully resolve the whole module
-    //
-    void resolve(scope s = scope::linear);
-    module resolved(scope s = scope::linear) const;
+    //!@}
 
   private:
 
@@ -179,18 +424,40 @@ namespace black::logic {
     std::unique_ptr<_impl_t> _impl;
   };
 
+  //!
+  //! Internal representation of an entity declared or defined in a module.
+  //!
+  //! A \ref lookup object represents an entity declared or defined in a module.
+  //! Lookup objects are stored internally in modules and are usually not
+  //! handled explicitly during normal usage of the API.
+  //!
+  //! \ref lookup inherits publicly from `std::enable_shared_from_this`, and
+  //! \ref lookup objects are always handled internally by \ref module by means
+  //! of `std::shared_ptr`, therefore a call to the `shared_from_this()` member
+  //! function can be used to recover a strong reference to the object.
+  //! Nevertheless, handling lookups by constructing a wrapping \ref object
+  //! instance is preferred.
+  //!
   struct lookup : std::enable_shared_from_this<lookup> {
-    variable name;
-    term type;
-    std::optional<term> value;
+    variable name; //!< The name of the entity
+    term type; //!< The type of the entity
+    std::optional<term> value; //!< The value of the entity. 
+                               //!< Empty if the entity is declared
 
+    //! \name Constructors
+    //!@{
+
+    //! Constructs the lookup from a \ref decl.
     explicit lookup(decl d) : name{d.name}, type{d.type} { }
     
+    //! Constructs the lookup from a \ref def
     explicit lookup(def d) : name{d.name}, type{d.type}, value{d.value} { }
+
+    //@}
   };
 
   //
-  // Implementation of module::replay interface
+  // Implementation of the module::replay interface
   //
   template<replay_target T>
   void module::replay(module const &from, T &target) const {

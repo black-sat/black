@@ -39,7 +39,7 @@ breathe_projects = {'black': '../doxygen/xml'}
 
 breathe_default_project = 'black'
 
-breathe_default_members = ('members', 'undoc-members', 'members-only')
+breathe_default_members = ('members', 'members-only')
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
