@@ -245,8 +245,10 @@ namespace black::backends::cvc5 {
       for(object obj : objs) {
         CVC5::Term name = slv->mkConst(to_sort(obj.lookup()->type));
         names.push_back(name);
-        stack.top().objects = stack.top().objects.insert({obj.lookup().get(), name});
-        stack.top().consts = stack.top().consts.insert({name, obj.lookup().get()});
+        stack.top().objects = 
+          stack.top().objects.insert({obj.lookup().get(), name});
+        stack.top().consts = 
+          stack.top().consts.insert({name, obj.lookup().get()});
       }
 
       std::vector<std::vector<CVC5::Term>> vars;

@@ -269,7 +269,7 @@ namespace black::ast::core::internal {
       using index_t = ast_node_index_t<AST>;
     
       unique_id_t unique_id() const { 
-        return unique_id_t(reinterpret_cast<uintptr_t>(_impl.get()));
+        return unique_id_t(std::bit_cast<uintptr_t>(_impl.get()));
       }
       
       size_t hash() const {

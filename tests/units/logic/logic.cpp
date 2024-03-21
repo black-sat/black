@@ -129,8 +129,8 @@ TEST_CASE("Modules") {
     
     term ft = function_type({integer_type()}, integer_type());
     REQUIRE(fobj.lookup()->type == ft);
-    REQUIRE(xobj.lookup()->value == yobj);
-    REQUIRE(yobj.lookup()->value == xobj);
+    REQUIRE(xobj.lookup()->value == object(yobj.lookup().unlocked()));
+    REQUIRE(yobj.lookup()->value == object(xobj.lookup().unlocked()));
 
     object wrongf = m.define(
       {f, {{a, integer_type()}}, f(a)},

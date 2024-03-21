@@ -343,8 +343,11 @@ namespace black::logic {
         if(pending.contains(x))
           *recursive = true;
 
-        if(auto lookup = m.lookup(x); lookup)
-          return *lookup;
+        if(auto obj = m.lookup(x); obj) {
+          if(recursive && *recursive)
+            return object(obj->lookup().unlocked()); // break reference cycle
+          return *obj;
+        }
         
         return x;
       },

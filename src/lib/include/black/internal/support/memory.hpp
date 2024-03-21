@@ -94,7 +94,7 @@ namespace black::support {
     }
 
     wrap_ptr<T> unlocked() const {
-      return {
+      return wrap_ptr<T>{
         match(_data)(
           [](std::shared_ptr<T> p) { return p.get(); },
           [](T *p) { return p; }
