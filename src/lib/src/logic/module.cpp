@@ -124,7 +124,7 @@ namespace black::logic {
     if(r == resolution::immediate)
       resolve();
 
-    return object(ptr);
+    return object(ptr.get());
   }
   
   object module::define(def d, resolution r) {
@@ -134,7 +134,7 @@ namespace black::logic {
     if(r == resolution::immediate)
       resolve();
 
-    return object(ptr);
+    return object(ptr.get());
   }
 
   object module::define(function_def f, resolution r) {
@@ -156,6 +156,8 @@ namespace black::logic {
     }
     _impl->stack = _impl->stack.update(_impl->stack.size() - 1, [&](auto top) {
       top.sccs = top.sccs.push_back(scc);
+      for(auto lu : scc.lookups)
+        top.scope = top.scope.set(lu->name, lu.get());
       return top;
     });
   }
@@ -240,7 +242,7 @@ namespace black::logic {
     for(scc_t scc : f.sccs) {
       std::vector<object> objs;
       for(auto lu : scc.lookups)
-        objs.push_back(object(lu));
+        objs.push_back(object(lu.get()));
       target->adopt(objs, scc.recursive ? scope::recursive : scope::linear);
     }
     
@@ -350,7 +352,7 @@ namespace black::logic {
         std::vector<decl> rdecls;
         for(decl d : decls) {
           rdecls.push_back(decl{
-            d.name, resolved(m, d.type, pending, recursive, hidden)
+            d.name, resolved(m, d.type, {}, nullptr, hidden)
           });
           hidden = hidden.insert(d.name);
         }
@@ -368,19 +370,19 @@ namespace black::logic {
   }
 
   void module::resolve(scope s) {
-    if(s == scope::recursive) {
-      std::vector<object> objs;
-      for(auto p : _impl->pending)
-        objs.push_back(object(p));
+    std::vector<object> objs;
+    for(auto p : _impl->pending)
+      objs.push_back(object(p.get()));
+    
+    if(s == scope::recursive)
       adopt(objs, scope::linear);
-    }
 
     auto pending = _impl->pending;
     _impl->pending = {};
 
     bool recursive = false;
     support::set<variable> pendingvars;
-    for(auto p : _impl->pending)
+    for(auto p : pending)
       pendingvars.insert(p->name);
 
     for(auto p : pending) {
@@ -404,14 +406,14 @@ namespace black::logic {
             m.import(*this);
             for(decl d : func->vars())
               m.declare(d);
-            
+
             return function_type(params, type_of(m.resolved(func->body())));
           },
           [&](auto t) { return t; }
         );
       }
     }
-    
+
     if(s == scope::recursive && recursive)
       _impl->stack = _impl->stack.update(_impl->stack.size() - 1, [](auto top){
         top.sccs = top.sccs.update(top.sccs.size() - 1, [](auto scc) {
@@ -420,6 +422,8 @@ namespace black::logic {
         });
         return top;
       });
+    else
+      adopt(objs, scope::linear);
   }
 
   module module::resolved(scope s) const {

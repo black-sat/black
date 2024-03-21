@@ -34,6 +34,7 @@ using namespace black::logic;
 enum class step {
     import,
     adopt,
+    adopt_rec,
     require,
     push,
     pop
@@ -50,7 +51,10 @@ struct debug_t {
         return mod.import(std::move(m));
     }
     void adopt(std::vector<object> const& objs, scope s) { 
-        steps.push_back(step::adopt);
+        if(s == scope::linear)
+            steps.push_back(step::adopt);
+        else
+            steps.push_back(step::adopt_rec);
         return mod.adopt(objs, s);
     }
     void require(term r) { 
@@ -70,93 +74,123 @@ struct debug_t {
 
 TEST_CASE("modules") {
 
-    module ours;
+    SECTION("linear definitions") {
+        module ours;
 
-    object x = ours.declare({"x", integer_type()});
-    object y = ours.declare({"y", integer_type()});
+        object x = ours.declare({"x", integer_type()});
+        object y = ours.declare({"y", integer_type()});
 
-    ours.require(x < y);
-    ours.push();
-    
-    SECTION("theirs prefix of ours") {
-        module theirs = ours;
-
+        ours.require(x < y);
         ours.push();
-        ours.require(y <= x);
 
-        ours.push();
-        ours.require(y == 42);
+        SECTION("theirs prefix of ours") {
+            module theirs = ours;
 
-        debug_t debug{theirs};
-        ours.replay(theirs, debug);
+            ours.push();
+            ours.require(y <= x);
 
-        std::vector<step> expected = {
-            step::push, step::require, step::push, step::require
-        };
-        
-        REQUIRE(ours == theirs);
-        REQUIRE(debug.steps == expected);
+            ours.push();
+            ours.require(y == 42);
+
+            debug_t debug{theirs};
+            ours.replay(theirs, debug);
+
+            std::vector<step> expected = {
+                step::push, step::require, step::push, step::require
+            };
+            
+            REQUIRE(ours == theirs);
+            REQUIRE(debug.steps == expected);
+        }
+
+        SECTION("ours prefix of theirs") {
+            module theirs = ours;
+
+            theirs.push();
+            theirs.require(y <= x);
+
+            debug_t debug{theirs};
+            ours.replay(theirs, debug);
+
+            std::vector<step> expected = {step::pop};
+            
+            REQUIRE(ours == theirs);
+            REQUIRE(debug.steps == expected);
+        }
+
+        SECTION("diverging with different pivot frame") {
+            module theirs = ours;
+
+            ours.require(y >= x);
+            theirs.require(y <= x);
+
+            ours.push();
+            theirs.push();
+            ours.require(y == 2);
+            theirs.require(y == 3);
+
+            debug_t debug{theirs};
+            ours.replay(theirs, debug);
+
+            std::vector<step> expected = {
+                step::pop, step::pop, step::push, 
+                step::require, step::push, step::require
+            };
+            
+            REQUIRE(ours == theirs);
+            REQUIRE(debug.steps == expected);
+        }
+
+        SECTION("diverging with included pivot frame") {
+            module theirs = ours;
+
+            ours.require(y >= x);
+            ours.require(y <= x);
+            theirs.require(y >= x);
+
+            ours.push();
+            theirs.push();
+            ours.require(y == 2);
+            theirs.require(y == 3);
+
+            debug_t debug{theirs};
+            ours.replay(theirs, debug);
+
+            std::vector<step> expected = {
+                step::pop, step::require, step::push, step::require
+            };
+            
+            REQUIRE(ours == theirs);
+            REQUIRE(debug.steps == expected);
+        }
     }
 
-    SECTION("ours prefix of theirs") {
-        module theirs = ours;
+    SECTION("Recursive definitions") {
 
-        theirs.push();
-        theirs.require(y <= x);
+        module rec;
 
-        debug_t debug{theirs};
-        ours.replay(theirs, debug);
+        variable x = "x";
+        variable f = "f";
+        variable g = "g";
 
-        std::vector<step> expected = {step::pop};
-        
-        REQUIRE(ours == theirs);
-        REQUIRE(debug.steps == expected);
-    }
-    
-    SECTION("diverging with different pivot frame") {
-        module theirs = ours;
+        object fobj = 
+            rec.define({f, {{x, integer_type()}}, g(x)}, resolution::delayed);
+        object gobj = 
+            rec.define({g, {{x, integer_type()}}, f(x)}, resolution::delayed);
 
-        ours.require(y >= x);
-        theirs.require(y <= x);
+        rec.resolve(scope::recursive);
 
-        ours.push();
-        theirs.push();
-        ours.require(y == 2);
-        theirs.require(y == 3);
+        module other;
 
-        debug_t debug{theirs};
-        ours.replay(theirs, debug);
+        debug_t debug{other};
+        rec.replay(other, debug);
 
         std::vector<step> expected = {
-            step::pop, step::pop, step::push, 
-            step::require, step::push, step::require
+            step::adopt_rec
         };
-        
-        REQUIRE(ours == theirs);
+        REQUIRE(rec == other);
         REQUIRE(debug.steps == expected);
-    }
 
-    SECTION("diverging with included pivot frame") {
-        module theirs = ours;
-
-        ours.require(y >= x);
-        ours.require(y <= x);
-        theirs.require(y >= x);
-
-        ours.push();
-        theirs.push();
-        ours.require(y == 2);
-        theirs.require(y == 3);
-
-        debug_t debug{theirs};
-        ours.replay(theirs, debug);
-
-        std::vector<step> expected = {
-            step::pop, step::require, step::push, step::require
-        };
-        
-        REQUIRE(ours == theirs);
-        REQUIRE(debug.steps == expected);
     }
 
 }

@@ -26,8 +26,6 @@
 #include <black/support>
 #include <black/logic>
 
-#include <iostream>
-
 TEST_CASE("Terms") {
 
   using namespace black::logic;
@@ -83,7 +81,8 @@ TEST_CASE("Modules") {
     REQUIRE(type_of(aobj) == real_type());
 
     term ft = function_type({integer_type()}, integer_type());
-    REQUIRE(type_of(p) == ft);
+    term ty = type_of(p);
+    REQUIRE(ty == ft);
 
     term t = p(2);
 
@@ -122,7 +121,7 @@ TEST_CASE("Modules") {
     object xobj = m.define({x, integer_type(), y}, resolution::delayed);
     object yobj = m.define({y, integer_type(), x}, resolution::delayed);
     
-    m.resolve();
+    m.resolve(scope::recursive);
 
     REQUIRE(m.lookup(f) == fobj);
     REQUIRE(m.lookup(x) == xobj);
@@ -134,8 +133,11 @@ TEST_CASE("Modules") {
     REQUIRE(yobj.lookup()->value == xobj);
 
     object wrongf = m.define(
-      {f, {{a, integer_type()}}, f(a)}
+      {f, {{a, integer_type()}}, f(a)},
+      resolution::delayed
     );
+
+    m.resolve(scope::recursive);
 
     term wrongft = function_type({integer_type()}, inferred_type());
     REQUIRE(wrongf.lookup()->type == wrongft);

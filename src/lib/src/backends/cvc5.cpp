@@ -107,7 +107,7 @@ namespace black::backends::cvc5 {
           return *var;
         },
         [&](object o) {
-          CVC5::Term const *obj = stack.top().objects.find(o.lookup().get());
+          CVC5::Term const *obj = stack.top().objects.find(o.lookup());
 
           black_assert(obj != nullptr); // TODO: handle error well
 
@@ -234,8 +234,8 @@ namespace black::backends::cvc5 {
           }
         ); 
       
-      stack.top().objects = stack.top().objects.insert({obj.lookup().get(), t});
-      stack.top().consts = stack.top().consts.insert({t, obj.lookup().get()});
+      stack.top().objects = stack.top().objects.insert({obj.lookup(), t});
+      stack.top().consts = stack.top().consts.insert({t, obj.lookup()});
     }
 
     void adopt(std::vector<object> const& objs, scope) { 

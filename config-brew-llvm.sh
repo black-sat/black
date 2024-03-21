@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 CC=$(brew --prefix llvm)/bin/clang \

@@ -98,5 +98,4 @@ TEST_CASE("cvc5") {
         REQUIRE(slv.check(mod) == true);
     }
 
-
 }

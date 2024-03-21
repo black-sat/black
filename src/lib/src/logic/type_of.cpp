@@ -23,6 +23,8 @@
 
 #include <black/logic>
 
+#include <iostream>
+
 namespace black::logic {
 
   std::vector<term> type_of(std::vector<term> const& ts) {
@@ -50,7 +52,8 @@ namespace black::logic {
       [&](distinct)      { return boolean_type(); },
       [&](type_cast c)   { return c.target(); },
       [&](variable x) -> term {
-        return error(x, "use of unbound free variable");
+        return 
+          error(x, std::format("use of unbound free variable: {}", x.name()));
       },
       [&](object, auto lookup) {
         return lookup->type;
@@ -102,7 +105,8 @@ namespace black::logic {
         return boolean_type();
       },
       [&](ite f, term guard, term iftrue, term iffalse) -> term {
-        if(!cast<boolean_type>(type_of(guard)))
+        term ty = type_of(guard);
+        if(!cast<boolean_type>(ty))
           return error(f, "the guard of an `ite` expression must be boolean");
 
         auto truety = type_of(iftrue);
@@ -182,7 +186,7 @@ namespace black::logic {
       [&](relational auto r, term left, term right) -> term {
         term type1 = type_of(left);
         term type2 = type_of(right);
-        
+
         if(
           bool(type1 != integer_type()) && 
           bool(type1 != real_type())

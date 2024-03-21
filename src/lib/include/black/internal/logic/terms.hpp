@@ -97,9 +97,9 @@ namespace black::ast::core {
   struct ast_node_custom_init<logic::variable> 
     : logic::internal::variable_custom_init { };
   
-  template<>
-  struct ast_node_custom_init<logic::object> 
-    : logic::internal::object_custom_init { };  
+  // template<>
+  // struct ast_node_custom_init<logic::object> 
+  //   : logic::internal::object_custom_init { };  
 }
 
   //
@@ -224,11 +224,11 @@ namespace black::logic
     }
 
     inline object object_custom_init::init(std::shared_ptr<lookup const> l) {
-      return object(support::wrap_ptr<lookup const>{l});
+      return object(l.get());
     }
 
     inline object object_custom_init::init(lookup const *l) {
-      return object(support::wrap_ptr<lookup const>{l});
+      return object(l);
     }
 
   }
