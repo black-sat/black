@@ -354,6 +354,10 @@ namespace black::logic {
     //! and no call to push() happened at all), the module is reset empty, as
     //! just after default construction.
     //!
+    //! \note Declarations/definitions that are pending because of calls to
+    //! declare() or define() with delayed resolution mode are not affected by
+    //! push() and pop() calls until they are resolved with resolve().
+    //!
     void pop(size_t n = 1);
 
     //!@}
@@ -385,7 +389,8 @@ namespace black::logic {
     //! corresponding member functions of \ref module with the same name.
     //!
     //! The calls are arranged in such a way that, *for any* pair of modules `m`
-    //! and `from`, if the following call is issued:
+    //! and `from`, if `m` has no pending declaration/definitions, and the
+    //! following call is issued:
     //!
     //! ```
     //!    m.replay(from, from);
@@ -402,6 +407,9 @@ namespace black::logic {
     //! constituent elements of the module (e.g. by providing an empty `from`
     //! module).
     //!
+    //! \note Declarations/definitions that are pending because of calls to
+    //! declare() or define() with delayed resolution mode are not replayed by
+    //! `replay`, until they are resolved with resolve().
     template<replay_target T>
     void replay(module const& from, T &target) const;
 

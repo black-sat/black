@@ -34,6 +34,22 @@
 
 namespace black::logic {
 
+  //
+  // This is the internal layout of a `module` object.
+  //
+  // The entities are stored in a stack of frames, each of which contains:
+  // 1. a vector of imported modules
+  // 2. a vector of groups of lookups resolved together, called SCCs (although
+  //    they are not really strongly connected, at the moment).
+  // 3. a map from `variable` to `lookup`, for the name lookup.
+  // 4. a vector of required terms.
+  //
+  // Each SCC is marked recursive or not, and contains a set of lookups (because
+  // the order of declaration is irrelevant inside the single set).
+  //
+  // Pending declarations/definitions are stored separately, outside of the
+  // stack.
+  //
   struct module::_impl_t 
   {
     struct scc_t {
@@ -227,6 +243,12 @@ namespace black::logic {
       target->require(req);
   }
 
+  //
+  // Here we compute and issue the operations to replay from `from`.
+  // 1. We compute a "longest common prefix" of our two stacks
+  // 2. We pop from `from` the least we need to make it a subset of `*this`
+  // 3. We replay the additional material
+  //
   void 
   module::_impl_t::replay(module const&from, replay_target_t *target) const {
     auto ours = stack;
@@ -296,6 +318,11 @@ namespace black::logic {
     return res;
   }
 
+  //
+  // Main recursive implementation of the name resolution in terms. As a
+  // secondary outcome we set `*recursive` to true if any variable from
+  // `pending` is mentioned.
+  //
   static 
   term resolved(
     module const& m, term t, 
@@ -349,28 +376,43 @@ namespace black::logic {
     return logic::resolved(*this, t, {}, nullptr, {});
   }
 
+  //
+  // Main name resolution procedure.
+  //
   void module::resolve(scope s) {
+    // A collection of objects is made from the pending lookups
+    //  - 
     std::vector<object> objs;
     for(auto p : _impl->pending)
       objs.push_back(object(p));
     
+    // in recursive mode, such objects are adopted already so they will be
+    // visible to name lookup from now on. Note the scope::linear here, 
+    // which will be corrected at the end if needed.
     if(s == scope::recursive)
       adopt(objs, scope::linear);
 
+    // we save the pending lookups but reset the pending set of the module.
     auto pending = _impl->pending;
     _impl->pending = {};
 
+    // we collect the names of the entities
     bool recursive = false;
     support::set<variable> pendingvars;
     for(auto p : pending)
       pendingvars.insert(p->name);
 
+    // for each entity:
     for(auto p : pending) {
+      // 1. we resolve the type (recursion in types is not supported)
       p->type = resolved(p->type);
+      
+      // 2. if a definition, we resolve the value, detecting recursion
       if(p->value) {
         *p->value = 
           logic::resolved(*this, *p->value, pendingvars, &recursive, {});
 
+        // 3. we replace `inferred_type` with the type of the resolved value
         p->type = support::match(p->type)(
           [&](inferred_type) {
             return type_of(*p->value);
@@ -394,16 +436,22 @@ namespace black::logic {
       }
     }
 
-    if(s == scope::recursive && recursive)
-      _impl->stack = _impl->stack.update(_impl->stack.size() - 1, [](auto top){
-        top.sccs = top.sccs.update(top.sccs.size() - 1, [](auto scc) {
-          scc.recursive = true;
-          return scc;
-        });
-        return top;
-      });
-    else
-      adopt(objs, scope::linear);
+    // if in recursive mode, and when recursion is actually detected, we mark
+    // the last SCC as recursive
+    if(s == scope::recursive) {
+      if(recursive) {
+        _impl->stack = _impl->stack.update(_impl->stack.size() - 1, 
+          [](auto top){
+            top.sccs = top.sccs.update(top.sccs.size() - 1, [](auto scc) {
+              scc.recursive = true;
+              return scc;
+            });
+            return top;
+          });
+      }
+    } else { 
+      adopt(objs, scope::linear); // otherwise, we adopt the objects
+    }
   }
 
 }
