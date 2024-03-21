@@ -131,12 +131,21 @@ TEST_CASE("cvc5") {
 
         variable r = "r";
 
-        object circle = 
-            geometry.define({"circle", {{r, real_type()}}, 2.0 * r * pi});
+        object perimeter = 
+            geometry.define({"perimeter", {{r, real_type()}}, 2.0 * r * pi});
+        
+        object area = 
+            geometry.define({"area", {{r, real_type()}}, 2.0 * r * r * pi});
 
-        geometry.require(circle(4.0) != 25.12);
+        variable x = "x";
+        geometry.require(
+            forall(
+                {{x, real_type()}}, 
+                implies(x > 1, perimeter(x) < area(x))
+            )
+        );
 
-        REQUIRE(slv.check(geometry) == false);
+        REQUIRE(slv.check(geometry) == true);
 
     }
 

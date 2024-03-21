@@ -151,7 +151,7 @@ namespace black::logic {
   void module::adopt(std::vector<object> const& objs, scope s) {
     _impl_t::scc_t scc = {s == scope::recursive, {}};
     for(object obj : objs) {
-      auto lu = obj.lookup()->shared_from_this();
+      auto lu = obj.lookup().shared();
       scc.lookups = scc.lookups.insert(lu);
     }
     _impl->stack = _impl->stack.update(_impl->stack.size() - 1, [&](auto top) {
