@@ -35,8 +35,11 @@ namespace black::logic {
   struct lookup;
 
   namespace internal {
+    
+    template<typename Node>
     struct term_custom_members {
-      atom operator()(std::convertible_to<term> auto ...terms) const;
+      template<std::convertible_to<term> ...Ts>
+      atom operator()(Ts ...terms) const;
     };
 
     struct term_custom_init {
@@ -65,17 +68,22 @@ namespace black::logic {
       static object init(std::shared_ptr<lookup const> l);
       static object init(lookup const *l);
     };
+
+    struct object_custom_members : term_custom_members<object> {
+      object locked() const;
+      object unlocked() const;
+    };
   }
 }
 
 namespace black::ast::core {
   template<>
   struct ast_custom_members<logic::term> 
-    : logic::internal::term_custom_members { };
+    : logic::internal::term_custom_members<logic::term> { };
   
   template<ast_node_of<logic::term> Node>
   struct ast_node_custom_members<Node> 
-    : logic::internal::term_custom_members { };
+    : logic::internal::term_custom_members<Node> { };
   
   template<>
   struct ast_custom_init<logic::term> 
@@ -100,6 +108,10 @@ namespace black::ast::core {
   template<>
   struct ast_node_custom_init<logic::object> 
     : logic::internal::object_custom_init { };  
+  
+  template<>
+  struct ast_node_custom_members<logic::object> 
+    : logic::internal::object_custom_members { };  
 }
 
   //
@@ -188,11 +200,12 @@ namespace black::logic
   
   namespace internal {
 
-    atom 
-    term_custom_members::operator()(std::convertible_to<term> auto ...ts) const 
+    template<typename Node>
+    template<std::convertible_to<term> ...Ts>
+    atom term_custom_members<Node>::operator()(Ts ...ts) const 
     {
       return 
-        atom(static_cast<term const&>(*this), std::vector<term>{ts...});
+        atom(static_cast<Node const&>(*this), std::vector<term>{ts...});
     };
 
     inline term term_custom_init::init(std::integral auto v) {
@@ -229,6 +242,14 @@ namespace black::logic
 
     inline object object_custom_init::init(lookup const *l) {
       return object(support::wrap_ptr<lookup const>{l});
+    }
+    
+    inline object object_custom_members::locked() const {
+      return object(static_cast<object const&>(*this).lookup().locked());
+    }
+    
+    inline object object_custom_members::unlocked() const {
+      return object(static_cast<object const&>(*this).lookup().unlocked());
     }
 
   }

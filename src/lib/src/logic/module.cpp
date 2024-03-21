@@ -345,7 +345,7 @@ namespace black::logic {
 
         if(auto obj = m.lookup(x); obj) {
           if(recursive && *recursive)
-            return object(obj->lookup().unlocked()); // break reference cycle
+            return obj->unlocked(); // break reference cycle
           return *obj;
         }
         

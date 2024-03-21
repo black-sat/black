@@ -86,11 +86,17 @@ namespace black::support {
       );
     }
 
-    std::shared_ptr<T> lock() const {
-      return match(_data)(
-        [](std::shared_ptr<T> p) { return p; },
-        [](T *p) { return p->shared_from_this(); }
-      );
+    std::shared_ptr<T> shared() const {
+      return std::get<std::shared_ptr<T>>(locked()._data);
+    }
+
+    wrap_ptr<T> locked() const {
+      return wrap_ptr<T>{
+        match(_data)(
+          [](std::shared_ptr<T> p) { return p; },
+          [](T *p) { return p->shared_from_this(); }
+        )
+      };
     }
 
     wrap_ptr<T> unlocked() const {
@@ -123,13 +129,13 @@ namespace black::support {
         operator T&() const {
           return *locked;
         }
-      } ret_t{lock()}; 
+      } ret_t{shared()}; 
 
       return ret_t;
     }
 
     std::shared_ptr<T> operator->() const {
-      return lock();
+      return shared();
     }
 
     size_t hash() const {

@@ -52,7 +52,7 @@ TEST_CASE("wrap_ptr") {
         
         wrap_ptr<test_t> p = sptr;
 
-        REQUIRE(p.lock() == sptr);
+        REQUIRE(p.shared() == sptr);
         REQUIRE(*p == *sptr);
 
         test_t zero = 0;
@@ -65,7 +65,7 @@ TEST_CASE("wrap_ptr") {
 
         p = sptr.get();
 
-        REQUIRE(p.lock() == sptr);
+        REQUIRE(p.shared() == sptr);
         REQUIRE(*p == *sptr);
 
     }
@@ -75,13 +75,13 @@ TEST_CASE("wrap_ptr") {
         
         wrap_ptr<test_t const> p = sptr;
 
-        REQUIRE(p.lock() == sptr);
+        REQUIRE(p.shared() == sptr);
 
         REQUIRE(p->x == 42);
 
         p = sptr.get();
 
-        REQUIRE(p.lock() == sptr);
+        REQUIRE(p.shared() == sptr);
         REQUIRE(*p == *sptr);
 
         wrap_ptr<test_t> p2 = std::make_shared<test_t>(0);

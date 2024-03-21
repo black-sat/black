@@ -129,8 +129,8 @@ TEST_CASE("Modules") {
     
     term ft = function_type({integer_type()}, integer_type());
     REQUIRE(fobj.lookup()->type == ft);
-    REQUIRE(xobj.lookup()->value == object(yobj.lookup().unlocked()));
-    REQUIRE(yobj.lookup()->value == object(xobj.lookup().unlocked()));
+    REQUIRE(xobj.lookup()->value == yobj.unlocked());
+    REQUIRE(yobj.lookup()->value == xobj.unlocked());
 
     object wrongf = m.define(
       {f, {{a, integer_type()}}, f(a)},
@@ -141,6 +141,10 @@ TEST_CASE("Modules") {
 
     term wrongft = function_type({integer_type()}, inferred_type());
     REQUIRE(wrongf.lookup()->type == wrongft);
+
+    SECTION("Memory management") {
+
+    }
   }
 
 }
