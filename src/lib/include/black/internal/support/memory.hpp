@@ -151,41 +151,51 @@ namespace black::support {
 
 
   //
-  // Wrapper over std::shared_ptr to aid the implementation of Copy-on-Write
-  // PIMPL patterns.
+  // Wrapper over std::shared_ptr to aid the implementation of 
+  // a copy-on-write PIMPL pattern.
   //
   template<typename T>
   class cow_ptr 
   {
   public:
-    cow_ptr() = delete;
+    cow_ptr() = default;
 
-    cow_ptr(std::shared_ptr<T> ptr) : _ptr{std::move(ptr)} { }
+    cow_ptr(std::shared_ptr<T> ptr) : _fresh{true}, _ptr{std::move(ptr)} { }
 
-    cow_ptr(cow_ptr const&) = default;
+    cow_ptr(cow_ptr const& other) : _fresh{true}, _ptr{other._ptr} { }
+
     cow_ptr(cow_ptr &&) = default;
 
     cow_ptr &operator=(std::shared_ptr<T> ptr) {
+      _fresh = true;
       _ptr = ptr;
       return *this;
     }
 
-    cow_ptr &operator=(cow_ptr const&) = default;
+    cow_ptr &operator=(cow_ptr const&other) {
+      _fresh = true;
+      _ptr = other._ptr;
+      return *this;
+    }
+
     cow_ptr &operator=(cow_ptr &&) = default;
 
     bool operator==(cow_ptr const&) const = default;
 
+    explicit operator bool() const { return bool(_ptr); }
+
     T *get() const { return _ptr.get(); }
     std::shared_ptr<T> shared() const { return _ptr; }
 
-    std::shared_ptr<T> operator->() {
-      clone();
-      return _ptr;
-    }
+    std::shared_ptr<T> mutate() requires (!std::is_const_v<T>) {
+      if(!_ptr)
+        return nullptr;
 
-    T &operator*() {
-      clone();
-      return *_ptr;
+      if(_fresh) {
+        _ptr = std::make_shared<T>(*_ptr);
+        _fresh = false;
+      }
+      return _ptr;
     }
 
     std::shared_ptr<T const> operator->() const {
@@ -198,11 +208,47 @@ namespace black::support {
 
   private:
 
-    void clone() {
-      *this = std::make_shared<T>(*_ptr);
-    }
-    
+    bool _fresh = true;
     std::shared_ptr<T> _ptr;
+  };
+
+  //
+  // Utility base class for the internal pimpl structures in a copy-on-write
+  // PIMPL pattern
+  //
+  template<typename T, typename Impl>
+  struct pimpl_base;
+
+  template<typename T, typename Impl>
+    requires std::is_constructible_v<T, std::shared_ptr<Impl>>
+  struct pimpl_base<T, Impl> : std::enable_shared_from_this<Impl> {
+    pimpl_base() = default;
+    
+    T self() const {
+      Impl const* _self = static_cast<Impl const*>(this);
+
+      return T(std::make_shared<Impl>(*_self));
+    }
+
+    T self() {
+      return T(this->shared_from_this());
+    }
+
+    bool operator==(pimpl_base const&) const { return true; }
+  };
+  
+  template<typename T, typename Impl>
+    requires std::is_constructible_v<T, std::unique_ptr<Impl>>
+  struct pimpl_base<T, Impl> {
+    pimpl_base() = default;
+    
+    T self() const {
+      Impl const* _self = static_cast<Impl const*>(this);
+
+      return T(std::make_unique<Impl>(*_self));
+    }
+
+    bool operator==(pimpl_base const&) const { return true; }
   };
 
 }

@@ -160,6 +160,7 @@ namespace black::logic {
   //!
   class module
   {
+    struct impl_t;
   public:
 
     //! \name Constructors, assignment and comparison
@@ -174,10 +175,11 @@ namespace black::logic {
     //! Move constructor.
     module(module &&);
     
+    module(std::unique_ptr<impl_t> ptr);
     ~module();
     
     //! Copy-assignment operator
-    module &operator=(module const&); 
+    module &operator=(module const&);
 
     //! Move-assignment operator
     module &operator=(module &&); 
@@ -574,8 +576,7 @@ namespace black::logic {
 
     void replay(module const& from, replay_target_t *target) const;
 
-    struct _impl_t;
-    support::cow_ptr<_impl_t> _impl;
+    std::unique_ptr<impl_t> _impl;
   };
 
   //!

@@ -37,6 +37,7 @@ if(Catch2_FOUND)
     units/support/hash.cpp
     units/support/functional.cpp
     units/support/memory.cpp
+    units/support/immutable.cpp
     units/ast/ast.cpp
     units/ast/label.cpp
     units/logic/logic.cpp
@@ -53,6 +54,9 @@ if(Catch2_FOUND)
 
   add_executable(units ${UNIT_TESTS})
   target_include_directories(units PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/units)
+  target_include_directories(
+    units PRIVATE ${CMAKE_SOURCE_DIR}/src/lib/src/include
+  )
   target_link_libraries(units PRIVATE black ${CATCH_TARGET})
   target_enable_warnings(units)
   target_code_coverage(units)

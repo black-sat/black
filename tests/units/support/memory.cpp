@@ -114,7 +114,7 @@ public:
     }
 
     void set_x(int x) {
-        _impl->x = x;
+        _impl.mutate()->x = x;
     }
 
     impl_t *get() const { return _impl.get(); }
@@ -145,5 +145,11 @@ TEST_CASE("cow_ptr") {
 
     REQUIRE(a.x() == 25);
     REQUIRE(b.x() == 42);
+
+    void *p = b.get();
+    b.set_x(0);
+
+    REQUIRE(p == b.get());
+
 
 }
