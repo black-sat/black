@@ -25,16 +25,11 @@
 #include <black/support/private>
 #include <black/logic>
 
-#include <immer/vector.hpp>
-#include <immer/map.hpp>
-#include <immer/set.hpp>
-#include <immer/algorithm.hpp>
-
 #include <algorithm>
 
 namespace black::logic {
 
-  namespace immutable = support::immutable;
+  namespace persistent = support::persistent;
 
   //
   // This is the internal layout of a `module` object.
@@ -56,16 +51,16 @@ namespace black::logic {
   {
     struct scc_t {
       bool recursive;
-      immer::set<std::shared_ptr<struct lookup const>> lookups;
+      persistent::set<std::shared_ptr<struct lookup const>> lookups;
 
       bool operator==(scc_t const&) const = default;
     };
     
     struct frame_t {
-      immutable::vector<module> imports;
-      immutable::vector<scc_t> sccs;
-      immer::map<variable, struct lookup const*> scope;
-      immutable::vector<term> reqs;
+      persistent::vector<module> imports;
+      persistent::vector<scc_t> sccs;
+      persistent::map<variable, struct lookup const*> scope;
+      persistent::vector<term> reqs;
 
       bool operator==(frame_t const&) const = default;
     };
@@ -76,13 +71,13 @@ namespace black::logic {
 
     term resolved(
       term t, support::set<variable> const& pending, bool *recursive, 
-      immer::set<variable> hidden
+      persistent::set<variable> hidden
     ) const;
 
     std::vector<term> resolved(
       std::vector<term> const &ts, 
       support::set<variable> const& pending, bool *recursive, 
-      immer::set<variable> hidden
+      persistent::set<variable> hidden
     ) const;
 
     std::optional<frame_t>
@@ -101,8 +96,8 @@ namespace black::logic {
     void pop(size_t n);
     void replay(module const &from, replay_target_t *target) const;
 
-    immutable::vector<frame_t> _stack;
-    immer::set<std::shared_ptr<struct lookup>> _pending;
+    persistent::vector<frame_t> _stack;
+    persistent::set<std::shared_ptr<struct lookup>> _pending;
   };
 
   module::module() : _impl{std::make_unique<impl_t>()} { } 
@@ -141,7 +136,7 @@ namespace black::logic {
 
   object module::impl_t::declare(decl d, resolution r) {
     auto ptr = std::make_shared<struct lookup>(d);
-    _pending = _pending.insert(ptr);
+    _pending.insert(ptr);
     
     if(r == resolution::immediate)
       resolve(scope::linear);
@@ -159,7 +154,7 @@ namespace black::logic {
   
   object module::impl_t::define(def d, resolution r) {
     auto ptr = std::make_shared<struct lookup>(d);
-    _pending = _pending.insert(ptr);
+    _pending.insert(ptr);
     
     if(r == resolution::immediate)
       resolve(scope::linear);
@@ -208,12 +203,12 @@ namespace black::logic {
     impl_t::scc_t scc = {s == scope::recursive, {}};
     for(object obj : objs) {
       auto lu = obj.lookup().shared();
-      scc.lookups = scc.lookups.insert(lu);
+      scc.lookups.insert(lu);
     }
     _stack.update(_stack.size() - 1, [&](auto top) {
       top.sccs.push_back(scc);
       for(auto lu : scc.lookups)
-        top.scope = top.scope.set(lu->name, lu.get());
+        top.scope.set(lu->name, lu.get());
       return top;
     });
   }
@@ -386,7 +381,7 @@ namespace black::logic {
   std::vector<term> module::impl_t::resolved(
     std::vector<term> const &ts, 
     support::set<variable> const& pending, bool *recursive, 
-    immer::set<variable> hidden
+    persistent::set<variable> hidden
   ) const {
     std::vector<term> res;
     for(term t : ts)
@@ -401,7 +396,7 @@ namespace black::logic {
   //
   term module::impl_t::resolved(
     term t, support::set<variable> const& pending, bool *recursive, 
-    immer::set<variable> hidden
+    persistent::set<variable> hidden
   ) const {
     return support::match(t)(
       [&](error v)         { return v; },
@@ -435,7 +430,7 @@ namespace black::logic {
           rdecls.push_back(decl{
             d.name, resolved(d.type, {}, nullptr, hidden)
           });
-          hidden = hidden.insert(d.name);
+          hidden.insert(d.name);
         }
         
         return T(rdecls, resolved(body, pending, recursive, hidden));

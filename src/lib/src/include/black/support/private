@@ -24,7 +24,7 @@
 #ifndef BLACK_PRIVATE_HPP
 #define BLACK_PRIVATE_HPP
 
-#include <black/internal/support/immutable.hpp>
+#include <black/internal/support/persistent.hpp>
 
 #endif // BLACK_PRIVATE_HPP
 

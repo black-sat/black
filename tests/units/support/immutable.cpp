@@ -25,9 +25,11 @@
 
 #include <black/support/private>
 
-TEST_CASE("immutable vector") {
+#include <string>
 
-    using namespace black::support::immutable;
+TEST_CASE("persistent vector") {
+
+    using namespace black::support::persistent;
 
     vector<int> v = { 1, 2, 3 };
 
@@ -36,8 +38,7 @@ TEST_CASE("immutable vector") {
     REQUIRE(v == vector<int>{1, 2, 3, 4});
 
     v.update(v.size() - 1, [](int x) {
-        x++;
-        return x;
+        return x + 1;
     });
 
     REQUIRE(v == vector<int>{1, 2, 3, 5});
@@ -45,5 +46,53 @@ TEST_CASE("immutable vector") {
     v.take(3);
 
     REQUIRE(v == vector<int>{1, 2, 3});
+
+}
+
+TEST_CASE("persistent map") {
+
+    using namespace black::support::persistent;
+
+    map<std::string, int> v = { {"hello", 1}, {"ciao", 2}, {"hola", 3} };
+
+    v.insert({"halo", 4});
+
+    REQUIRE(
+        v == map<std::string, int>{
+            {"hello", 1}, {"ciao", 2}, {"hola", 3}, {"halo", 4}
+        }
+    );
+
+    v.update("halo", [](int x) {
+        return x + 1;
+    });
+
+    REQUIRE(
+        v == map<std::string, int>{
+            {"hello", 1}, {"ciao", 2}, {"hola", 3}, {"halo", 5}
+        }
+    );
+
+    v.erase("halo");
+
+    REQUIRE(
+        v == map<std::string, int>{{"hello", 1}, {"ciao", 2}, {"hola", 3}}
+    );
+
+}
+
+TEST_CASE("persistent set") {
+
+    using namespace black::support::persistent;
+
+    set<int> v = { 1, 2, 3 };
+
+    v.insert(4);
+
+    REQUIRE(v == set<int>{1, 2, 3, 4});
+
+    v.erase(4);
+
+    REQUIRE(v == set<int>{1, 2, 3});
 
 }
