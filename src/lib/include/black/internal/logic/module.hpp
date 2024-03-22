@@ -47,6 +47,36 @@ namespace black::logic {
     immediate = true //!< resolve immediately.
   };
 
+  //
+  // The following is here only to be extracted by Doxygen.
+  // The real declaration of `decl` is in terms-defs.hpp
+  //
+#ifdef DOXYGEN_IS_RUNNING
+
+  //!
+  //! The specification of an entity to be declared in a module.
+  //!
+  struct decl { 
+    logic::variable name; //!< The name of the entity.
+    logic::term type; //!< The type of the entity.
+
+    //! \name Constructors
+    //!@{
+
+    //! Constructs the object.
+    inline decl(variable name, logic::term type);
+
+    //!@}
+
+    //! Equality comparison.
+    bool operator==(decl const&) const = default;
+
+    //! Hash function.
+    inline size_t hash() const;
+  };
+
+#endif
+
   //!
   //! The specification of an entity to be defined in a module.
   //!
