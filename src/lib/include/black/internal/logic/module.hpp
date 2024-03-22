@@ -487,7 +487,7 @@ namespace black::logic {
     //! then `m == from` is guaranteed to hold.
     //!
     //! Note that a copy construction is sufficient to achieve the same. The
-    //! purpose of this function is rather to can be used with `target` objects
+    //! purpose of this function is rather to be used with `target` objects
     //! of different types, as a way of observing the changes made to a module
     //! w.r.t. to `from`.
     //!
