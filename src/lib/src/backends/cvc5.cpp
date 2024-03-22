@@ -321,6 +321,9 @@ namespace black::backends::cvc5 {
     }
 
     void push() {
+      if(ignore_push)
+        return;
+        
       if(stack.empty())
         stack.push({});
       else
@@ -329,6 +332,9 @@ namespace black::backends::cvc5 {
     }
 
     void pop(size_t n) {
+      if(ignore_push)
+        return;
+
       for(size_t i = 0; i < n; i++)
         stack.pop();
       slv->pop(unsigned(n));
