@@ -43,14 +43,14 @@ struct test_t : std::enable_shared_from_this<test_t> {
     }
 };
 
-TEST_CASE("wrap_ptr") {
+TEST_CASE("toggle_ptr") {
 
     using namespace black::support;
 
     SECTION("pointer") {
         auto sptr = std::make_shared<test_t>(42);
         
-        wrap_ptr<test_t> p = sptr;
+        toggle_ptr<test_t> p = sptr;
 
         REQUIRE(p.shared() == sptr);
         REQUIRE(*p == *sptr);
@@ -73,7 +73,7 @@ TEST_CASE("wrap_ptr") {
     SECTION("pointer to const") {
         auto sptr = std::make_shared<test_t const>(42);
         
-        wrap_ptr<test_t const> p = sptr;
+        toggle_ptr<test_t const> p = sptr;
 
         REQUIRE(p.shared() == sptr);
 
@@ -84,72 +84,13 @@ TEST_CASE("wrap_ptr") {
         REQUIRE(p.shared() == sptr);
         REQUIRE(*p == *sptr);
 
-        wrap_ptr<test_t> p2 = std::make_shared<test_t>(0);
+        toggle_ptr<test_t> p2 = std::make_shared<test_t>(0);
 
         p = p2;
 
         REQUIRE(p->x == 0);
 
     }
-
-
-}
-
-class cow_test 
-{
-    struct impl_t {
-        int x = 0;
-
-        impl_t() = default;
-    };
-
-public:
-
-    explicit cow_test() : _impl{std::make_shared<impl_t>()} { }
-
-    cow_test &operator=(cow_test const&) = default;
-
-    int x() const {
-        return _impl->x;
-    }
-
-    void set_x(int x) {
-        _impl.mutate()->x = x;
-    }
-
-    impl_t *get() const { return _impl.get(); }
-
-private:
-    black::support::cow_ptr<impl_t> _impl;
-};
-
-TEST_CASE("cow_ptr") {
-
-    using namespace black::support;
-
-    cow_test a;
-    cow_test b;
-
-    a.set_x(25);
-    b = a;
-
-    REQUIRE(a.get() == b.get());
-
-    REQUIRE(b.x() == 25);
-
-    REQUIRE(a.get() == b.get());
-
-    b.set_x(42);
-
-    REQUIRE(a.get() != b.get());
-
-    REQUIRE(a.x() == 25);
-    REQUIRE(b.x() == 42);
-
-    void *p = b.get();
-    b.set_x(0);
-
-    REQUIRE(p == b.get());
 
 
 }

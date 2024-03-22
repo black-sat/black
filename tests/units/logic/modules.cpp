@@ -39,33 +39,33 @@ enum class step {
 };
 
 struct debug_t {
-    module &mod;
+    module *mod;
     std::vector<step> steps;
 
-    debug_t(module &mod) : mod{mod} { }
+    debug_t(module *mod) : mod{mod} { }
 
     void import(module m) { 
         steps.push_back(step::import);
-        return mod.import(std::move(m));
+        return mod->import(std::move(m));
     }
     void adopt(std::vector<object> const& objs, scope s) { 
         if(s == scope::linear)
             steps.push_back(step::adopt);
         else
             steps.push_back(step::adopt_rec);
-        return mod.adopt(objs, s);
+        return mod->adopt(objs, s);
     }
     void require(term r) { 
         steps.push_back(step::require);
-        return mod.require(r);
+        return mod->require(r);
     }
     void push() { 
         steps.push_back(step::push);
-        mod.push();
+        mod->push();
     }
     void pop(size_t n) { 
         steps.push_back(step::pop);
-        mod.pop(n);
+        mod->pop(n);
     }
     
 };
@@ -85,13 +85,15 @@ TEST_CASE("modules") {
             module theirs = ours;
 
             ours.push();
+            REQUIRE(ours != theirs);
+
             ours.require(y <= x);
 
             ours.push();
             ours.require(y == 42);
 
-            debug_t debug{theirs};
-            ours.replay(theirs, debug);
+            debug_t debug{&theirs};
+            ours.replay(theirs, &debug);
 
             std::vector<step> expected = {
                 step::push, step::require, step::push, step::require
@@ -107,8 +109,8 @@ TEST_CASE("modules") {
             theirs.push();
             theirs.require(y <= x);
 
-            debug_t debug{theirs};
-            ours.replay(theirs, debug);
+            debug_t debug{&theirs};
+            ours.replay(theirs, &debug);
 
             std::vector<step> expected = {step::pop};
             
@@ -127,8 +129,8 @@ TEST_CASE("modules") {
             ours.require(y == 2);
             theirs.require(y == 3);
 
-            debug_t debug{theirs};
-            ours.replay(theirs, debug);
+            debug_t debug{&theirs};
+            ours.replay(theirs, &debug);
 
             std::vector<step> expected = {
                 step::pop, step::pop, step::push, 
@@ -151,8 +153,8 @@ TEST_CASE("modules") {
             ours.require(y == 2);
             theirs.require(y == 3);
 
-            debug_t debug{theirs};
-            ours.replay(theirs, debug);
+            debug_t debug{&theirs};
+            ours.replay(theirs, &debug);
 
             std::vector<step> expected = {
                 step::pop, step::require, step::push, step::require
@@ -180,8 +182,8 @@ TEST_CASE("modules") {
 
         module other;
 
-        debug_t debug{other};
-        rec.replay(other, debug);
+        debug_t debug{&other};
+        rec.replay(other, &debug);
 
         std::vector<step> expected = {
             step::adopt_rec

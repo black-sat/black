@@ -211,7 +211,7 @@ namespace black::backends::cvc5 {
       ignore_push = true;
 
       module empty;
-      m.replay(empty, *this);
+      m.replay(empty, this);
     } 
 
     void define(object obj) {
@@ -335,8 +335,8 @@ namespace black::backends::cvc5 {
     }
 
     support::tribool check(module m) {
-      m.replay(mod, *this);
-      mod = m;
+      m.replay(mod, this);
+      mod = std::move(m);
 
       CVC5::Result res = slv->checkSat();
       if(res.isSat())

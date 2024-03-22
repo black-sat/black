@@ -237,11 +237,11 @@ namespace black::logic
     }
 
     inline object object_custom_init::init(std::shared_ptr<lookup const> l) {
-      return object(support::wrap_ptr<lookup const>{l});
+      return object(support::toggle_ptr<lookup const>{l});
     }
 
     inline object object_custom_init::init(lookup const *l) {
-      return object(support::wrap_ptr<lookup const>{l});
+      return object(support::toggle_ptr<lookup const>{l});
     }
     
     inline object object_custom_members::locked() const {

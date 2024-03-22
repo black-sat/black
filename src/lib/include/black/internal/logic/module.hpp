@@ -152,7 +152,7 @@ namespace black::logic {
   //! \ref module is a **regular** type (also known as *value type*), meaning
   //! that its instances are meant to be freely copied and passed around by
   //! value. Copy of a \ref module is cheap thanks to the underlying usage of
-  //! persistent data structures and a copy-on-write policy. 
+  //! persistent data structures. 
   //!
   //! The \ref module class mantains sets of declarations, requirements
   //! (sometimes called *assertions*), and other elements in a stack that can be
@@ -160,7 +160,6 @@ namespace black::logic {
   //!
   class module
   {
-    struct impl_t;
   public:
 
     //! \name Constructors, assignment and comparison
@@ -175,7 +174,6 @@ namespace black::logic {
     //! Move constructor.
     module(module &&);
     
-    module(std::unique_ptr<impl_t> ptr);
     ~module();
     
     //! Copy-assignment operator
@@ -187,19 +185,19 @@ namespace black::logic {
     //!
     //! Equality comparison operator.
     //!
-    //! The equality is checked on the *contents* of the module.
+    //! The equality is checked against the *contents* of the module.
     //!
-    //! Thanks to copy-on-write and persistent data structures, equality
-    //! comparison is usually cheap, but some attention has to be payed. Because
-    //! of how the underlying data structures work, it is very cheap to compare
-    //! two copies of the same module, or two modules where one has been derived
-    //! from a copy of the other by a few edits.
+    //! Thanks to persistent data structures, equality comparison is relatively
+    //! cheap, but some attention has to be payed. Because of how the underlying
+    //! data structures work, it is cheap to compare two copies of the same
+    //! module, or two modules where one has been derived from a copy of the
+    //! other by a few edits.
     //!
     //! For example, the following is very cheap:
     //!
     //! ```cpp
     //! module m = very_large_module();
-    //! module m2 = m;
+    //! module m2 = m; // cheap copy
     //!
     //! assert(m2 == m); // the cheapest
     //!
@@ -518,10 +516,10 @@ namespace black::logic {
     //!
     //! \param from the module starting point of the replay.
     //!
-    //! \param target the object where replay calls are issued.
+    //! \param target a pointer to the object where replay calls are issued.
     //!
     //! Issues a sequence of calls to a set of member functions of `target` for
-    //! each difference between `*this` and `from`.
+    //! each difference between `*this` and `*from`.
     //! 1. a call to `target.import(m)` for each module `m` imported in `*this`
     //!    but not in `from`.
     //! 2. a call to `target.adopt(objs, s)`, for each set of entities
@@ -540,8 +538,8 @@ namespace black::logic {
     //! and `from`, if `m` has no pending declaration/definitions, and the
     //! following call is issued:
     //!
-    //! ```
-    //!    m.replay(from, from);
+    //! ```cpp
+    //!    m.replay(from, &from);
     //! ```
     //!
     //! then `m == from` is guaranteed to hold.
@@ -555,11 +553,20 @@ namespace black::logic {
     //! constituent elements of the module (e.g. by providing an empty `from`
     //! module).
     //!
+    //! If `target == nullptr`, the function does nothing.
+    //!
     //! \note Declarations/definitions that are pending because of calls to
     //! declare() or define() with delayed resolution mode are not replayed by
     //! `replay`, until they are resolved with resolve().
+    //!
+    //! \note This function can be very efficient for the intended use cases,
+    //! but the same caveat of the equality comparison operator apply, see the
+    //! discussion above. For instance, if `*this` and `*from` are equal, but
+    //! they are unrelated (i.e. one has not been obtained as a copy of the
+    //! other), replay() may take some time to realize there is nothing to
+    //! replay.
     template<replay_target T>
-    void replay(module const& from, T &target) const;
+    void replay(module from, T *target) const;
 
     //!@}
 
@@ -574,8 +581,11 @@ namespace black::logic {
       virtual void pop(size_t) = 0;
     };
 
-    void replay(module const& from, replay_target_t *target) const;
+    void _replay(module from, replay_target_t *target) const;
 
+    struct impl_t;
+    module(std::unique_ptr<impl_t> ptr);
+    
     std::unique_ptr<impl_t> _impl;
   };
 
@@ -615,7 +625,10 @@ namespace black::logic {
   // Implementation of the module::replay interface
   //
   template<replay_target T>
-  void module::replay(module const &from, T &target) const {
+  void module::replay(module from, T *target) const {
+    if(target == nullptr)
+      return;
+    
     struct wrap_t : replay_target_t {
       T *t;
 
@@ -629,9 +642,9 @@ namespace black::logic {
       virtual void push() override { t->push(); }
       virtual void pop(size_t n) override { t->pop(n); }
 
-    } wrap{&target};
+    } wrap{target};
 
-    return replay(from, &wrap);
+    return _replay(std::move(from), &wrap);
   }
 
 }

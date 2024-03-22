@@ -47,7 +47,7 @@ namespace black::logic {
   // Pending declarations/definitions are stored separately, outside of the
   // _stack.
   //
-  struct module::impl_t : support::pimpl_base<module, impl_t>
+  struct module::impl_t
   {
     struct scc_t {
       bool recursive;
@@ -68,6 +68,10 @@ namespace black::logic {
     impl_t() : _stack{frame_t{}} { }
 
     bool operator==(impl_t const&) const = default;
+
+    module self() const {
+      return module(std::make_unique<impl_t>(*this));
+    }
 
     term resolved(
       term t, support::set<variable> const& pending, bool *recursive, 
@@ -94,7 +98,7 @@ namespace black::logic {
     void require(term req);
     void push();
     void pop(size_t n);
-    void replay(module const &from, replay_target_t *target) const;
+    void replay(module from, replay_target_t *target) const;
 
     persistent::vector<frame_t> _stack;
     persistent::set<std::shared_ptr<struct lookup>> _pending;
@@ -328,7 +332,7 @@ namespace black::logic {
   // 3. We replay the additional material
   //
   void 
-  module::impl_t::replay(module const&from, replay_target_t *target) const {
+  module::impl_t::replay(module from, replay_target_t *target) const {
     auto ours = _stack;
     auto theirs = from._impl->_stack;
     size_t shortest = std::min(ours.size(), theirs.size());
@@ -374,7 +378,7 @@ namespace black::logic {
     }
   }
 
-  void module::replay(module const&from, replay_target_t *target) const {
+  void module::_replay(module from, replay_target_t *target) const {
     _impl->replay(from, target);
   }
   

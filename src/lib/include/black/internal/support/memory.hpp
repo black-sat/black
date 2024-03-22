@@ -37,45 +37,45 @@ namespace black::support {
   // depending on the case, while still be hashable (which a `weak_ptr` is not).
   //
   template<typename T>
-  class wrap_ptr 
+  class toggle_ptr 
   {
   public:
-    wrap_ptr() = delete;
-    wrap_ptr(nullptr_t) = delete;
+    toggle_ptr() = delete;
+    toggle_ptr(nullptr_t) = delete;
 
-    wrap_ptr(std::shared_ptr<T> ptr) : _data{std::move(ptr)} { }
+    toggle_ptr(std::shared_ptr<T> ptr) : _data{std::move(ptr)} { }
 
-    explicit wrap_ptr(T *ptr) : _data{ptr} { 
+    explicit toggle_ptr(T *ptr) : _data{ptr} { 
       black_assert(ptr);
     }
 
-    wrap_ptr(wrap_ptr const&) = default;
-    wrap_ptr(wrap_ptr &&) = default;
+    toggle_ptr(toggle_ptr const&) = default;
+    toggle_ptr(toggle_ptr &&) = default;
     
-    wrap_ptr &operator=(wrap_ptr const&) = default;
-    wrap_ptr &operator=(wrap_ptr &&) = default;
+    toggle_ptr &operator=(toggle_ptr const&) = default;
+    toggle_ptr &operator=(toggle_ptr &&) = default;
 
-    wrap_ptr &operator=(std::shared_ptr<T> ptr) { 
+    toggle_ptr &operator=(std::shared_ptr<T> ptr) { 
       _data = std::move(ptr);
       return *this;
     }
 
-    wrap_ptr &operator=(T *ptr) { 
+    toggle_ptr &operator=(T *ptr) { 
       black_assert(ptr);
       _data = ptr;
       return *this;
     }
 
-    wrap_ptr &operator=(nullptr_t) = delete;
+    toggle_ptr &operator=(nullptr_t) = delete;
 
-    bool operator==(wrap_ptr const&) const = default;
+    bool operator==(toggle_ptr const&) const = default;
 
-    operator wrap_ptr<T const>() const
+    operator toggle_ptr<T const>() const
       requires (!std::is_const_v<T>)
     { 
       return match(_data)(
-        [](std::shared_ptr<T> p) { return wrap_ptr<T const>(p); },
-        [](T *p) { return wrap_ptr<T const>(p); }
+        [](std::shared_ptr<T> p) { return toggle_ptr<T const>(p); },
+        [](T *p) { return toggle_ptr<T const>(p); }
       );
     }
 
@@ -90,8 +90,8 @@ namespace black::support {
       return std::get<std::shared_ptr<T>>(locked()._data);
     }
 
-    wrap_ptr<T> locked() const {
-      return wrap_ptr<T>{
+    toggle_ptr<T> locked() const {
+      return toggle_ptr<T>{
         match(_data)(
           [](std::shared_ptr<T> p) { return p; },
           [](T *p) { return p->shared_from_this(); }
@@ -99,8 +99,8 @@ namespace black::support {
       };
     }
 
-    wrap_ptr<T> unlocked() const {
-      return wrap_ptr<T>{
+    toggle_ptr<T> unlocked() const {
+      return toggle_ptr<T>{
         match(_data)(
           [](std::shared_ptr<T> p) { return p.get(); },
           [](T *p) { return p; }
@@ -147,108 +147,6 @@ namespace black::support {
 
   private:
     std::variant<std::shared_ptr<T>, T *> _data;
-  };
-
-
-  //
-  // Wrapper over std::shared_ptr to aid the implementation of 
-  // a copy-on-write PIMPL pattern.
-  //
-  template<typename T>
-  class cow_ptr 
-  {
-  public:
-    cow_ptr() = default;
-
-    cow_ptr(std::shared_ptr<T> ptr) : _fresh{true}, _ptr{std::move(ptr)} { }
-
-    cow_ptr(cow_ptr const& other) : _fresh{true}, _ptr{other._ptr} { }
-
-    cow_ptr(cow_ptr &&) = default;
-
-    cow_ptr &operator=(std::shared_ptr<T> ptr) {
-      _fresh = true;
-      _ptr = ptr;
-      return *this;
-    }
-
-    cow_ptr &operator=(cow_ptr const&other) {
-      _fresh = true;
-      _ptr = other._ptr;
-      return *this;
-    }
-
-    cow_ptr &operator=(cow_ptr &&) = default;
-
-    bool operator==(cow_ptr const&) const = default;
-
-    explicit operator bool() const { return bool(_ptr); }
-
-    T *get() const { return _ptr.get(); }
-    std::shared_ptr<T> shared() const { return _ptr; }
-
-    std::shared_ptr<T> mutate() requires (!std::is_const_v<T>) {
-      if(!_ptr)
-        return nullptr;
-
-      if(_fresh) {
-        _ptr = std::make_shared<T>(*_ptr);
-        _fresh = false;
-      }
-      return _ptr;
-    }
-
-    std::shared_ptr<T const> operator->() const {
-      return _ptr;
-    }
-
-    T const& operator*() const {
-      return *_ptr;
-    }
-
-  private:
-
-    bool _fresh = true;
-    std::shared_ptr<T> _ptr;
-  };
-
-  //
-  // Utility base class for the internal pimpl structures in a copy-on-write
-  // PIMPL pattern
-  //
-  template<typename T, typename Impl>
-  struct pimpl_base;
-
-  template<typename T, typename Impl>
-    requires std::is_constructible_v<T, std::shared_ptr<Impl>>
-  struct pimpl_base<T, Impl> : std::enable_shared_from_this<Impl> {
-    pimpl_base() = default;
-    
-    T self() const {
-      Impl const* _self = static_cast<Impl const*>(this);
-
-      return T(std::make_shared<Impl>(*_self));
-    }
-
-    T self() {
-      return T(this->shared_from_this());
-    }
-
-    bool operator==(pimpl_base const&) const { return true; }
-  };
-  
-  template<typename T, typename Impl>
-    requires std::is_constructible_v<T, std::unique_ptr<Impl>>
-  struct pimpl_base<T, Impl> {
-    pimpl_base() = default;
-    
-    T self() const {
-      Impl const* _self = static_cast<Impl const*>(this);
-
-      return T(std::make_unique<Impl>(*_self));
-    }
-
-    bool operator==(pimpl_base const&) const { return true; }
   };
 
 }
