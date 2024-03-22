@@ -38,8 +38,8 @@ TEST_CASE("cvc5") {
     cvc5::solver slv;
 
     SECTION("Declarations") {
-        object x = mod.declare({"x", integer_type()});
-        object y = mod.declare({"y", integer_type()});
+        object x = mod.declare("x", integer_type());
+        object y = mod.declare("y", integer_type());
         
         mod.require(x <= y);
 
@@ -54,8 +54,8 @@ TEST_CASE("cvc5") {
     {    
         variable a = "a";
 
-        object k = mod.declare({"k", integer_type()});
-        object f = mod.define({"f", {{a, integer_type()}}, a * k});
+        object k = mod.declare("k", integer_type());
+        object f = mod.define("f", {{a, integer_type()}}, a * k);
 
         mod.require(k >= 2);
         mod.require(f(21) >= 42);
@@ -71,9 +71,9 @@ TEST_CASE("cvc5") {
 
         variable x = "x";
 
-        object p = mod.declare({
+        object p = mod.declare(
             "p", function_type({integer_type()}, boolean_type())
-        });
+        );
 
         mod.require(forall({{x, integer_type()}}, p(x)));
         mod.require(!p(42));
@@ -84,8 +84,8 @@ TEST_CASE("cvc5") {
 
     SECTION("Push/pop interface") {
         
-        object x = mod.declare({"x", integer_type()});
-        object y = mod.declare({"y", integer_type()});
+        object x = mod.declare("x", integer_type());
+        object y = mod.declare("y", integer_type());
         
         mod.require(x <= y);
         REQUIRE(slv.check(mod) == true);
@@ -104,10 +104,9 @@ TEST_CASE("cvc5") {
         variable y = "y";
 
         object fact = mod.define(
-            {
-                f, {{x, integer_type()}}, integer_type(), 
-                ite(x == 1, 1, x * f(x - 1)) 
-            }, resolution::delayed
+            f, {{x, integer_type()}}, integer_type(), 
+            ite(x == 1, 1, x * f(x - 1)),
+            resolution::delayed
         );
 
         mod.resolve(scope::recursive);

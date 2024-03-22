@@ -63,7 +63,7 @@ TEST_CASE("Modules") {
     object p = m.declare(
       {"p", function_type({integer_type()}, boolean_type())}
     );
-    object x = m.declare({"x", integer_type()});
+    object x = m.declare("x", integer_type());
 
     REQUIRE(type_of(p(x)) == boolean_type());
   }
@@ -73,8 +73,8 @@ TEST_CASE("Modules") {
     
     term tint = 42;
 
-    object x = m.define({"x", integer(40)});
-    object p = m.define({"p", {{a, integer_type()}}, ite(a > 0, a + x, a - x)});
+    object x = m.define("x", integer(40));
+    object p = m.define("p", {{a, integer_type()}}, ite(a > 0, a + x, a - x));
     object aobj = m.define({a, real(0.0)}); // this will be shadowed
 
     REQUIRE(type_of(x) == integer_type());
@@ -94,9 +94,9 @@ TEST_CASE("Modules") {
   SECTION("Mixed declarations and definitions") {
     auto a = variable("a");
 
-    object x = m.declare({"x", integer_type()});
+    object x = m.declare("x", integer_type());
     object p = 
-      m.define({"p", {{a, integer_type()}}, integer_type(), a + x});
+      m.define("p", {{a, integer_type()}}, integer_type(), a + x);
 
     term t = p(40);
 
@@ -115,11 +115,11 @@ TEST_CASE("Modules") {
 
     object fobj = 
       m.define(
-        {f, {{a, integer_type()}}, a + x + y}, resolution::delayed
+        f, {{a, integer_type()}}, a + x + y, resolution::delayed
       );
 
-    object xobj = m.define({x, integer_type(), y}, resolution::delayed);
-    object yobj = m.define({y, integer_type(), x}, resolution::delayed);
+    object xobj = m.define(x, integer_type(), y, resolution::delayed);
+    object yobj = m.define(y, integer_type(), x, resolution::delayed);
     
     m.resolve(scope::recursive);
 

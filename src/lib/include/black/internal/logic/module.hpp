@@ -194,9 +194,23 @@ namespace black::logic {
     //!   `d.type`.
     //!
     object declare(decl d, resolution r = resolution::immediate);
+
+    //!
+    //! Declares a new entity.
+    //!
+    //! \param name the name of the entity.
+    //!
+    //! \param type the type of the entity.
+    //!
+    //! \param r the resolution mode (see \ref resolution)
+    //!
+    //! Calls `declare(decl{name, type}, r)`.
+    //!
+    object 
+    declare(variable name, term type, resolution r = resolution::immediate);
     
     //!
-    //! Defines a new entity
+    //! Defines a new entity.
     //!
     //! \param d the \ref def object describing the new definition.
     //!
@@ -220,7 +234,39 @@ namespace black::logic {
     object define(def d, resolution r = resolution::immediate);
 
     //!
-    //! Defines a new function
+    //! Defines a new entity.
+    //!
+    //! \param name the name of the entity.
+    //!
+    //! \param type the type of the entity.
+    //!
+    //! \param value the defining value of the entity.
+    //!
+    //! \param r the resolution mode (see \ref resolution)
+    //!
+    //! Calls `define(def{name, type, value}, r)`.
+    //!
+    object define(
+      variable name, term type, term value, resolution r = resolution::immediate
+    );
+
+    //!
+    //! Defines a new entity with an inferred type.
+    //!
+    //! \param name the name of the entity.
+    //!
+    //! \param value the defining value of the entity.
+    //!
+    //! \param r the resolution mode (see \ref resolution)
+    //!
+    //! Calls `define(def{name, value}, r)`.
+    //!
+    object define(
+      variable name, term value, resolution r = resolution::immediate
+    );
+
+    //!
+    //! Defines a new function.
     //!
     //! \param f the \ref function_def object describing the new function.
     //!
@@ -234,6 +280,10 @@ namespace black::logic {
     //! inferred from `f.body`, when possible (for now, recursive definitions
     //! cannot be type-inferred).
     //!
+    //! This function is equivalent to calling `define()` with a `def` object
+    //! specifying a `function_type` type and a  `lambda` with matching
+    //! parameters as value.
+    //!
     //! The resolution mode `r` determines when name lookup is applied to
     //! unbound variables:
     //! - if `r` is \ref resolution::immediate, any unbound \ref variable
@@ -243,6 +293,44 @@ namespace black::logic {
     //!   `f.type`.
     //!
     object define(function_def f, resolution r = resolution::immediate);
+
+    //!
+    //! Defines a new function.
+    //!
+    //! \param name the name of the function.
+    //!
+    //! \param parameters the parameters of the function.
+    //!
+    //! \param range the range (return type) of the function.
+    //!
+    //! \param body the body of the function.
+    //!
+    //! \param r the resolution mode (see \ref resolution)
+    //!
+    //! Calls `define(function_def{name, parameters, range, body}, r)`.
+    //!
+    object define(
+      variable name, std::vector<decl> parameters, term range, term body,
+      resolution r = resolution::immediate
+    );
+    
+    //!
+    //! Defines a new function with an inferred return type.
+    //!
+    //! \param name the name of the function.
+    //!
+    //! \param parameters the parameters of the function.
+    //!
+    //! \param body the body of the function.
+    //!
+    //! \param r the resolution mode (see \ref resolution)
+    //!
+    //! Calls `define(function_def{name, parameters, body}, r)`.
+    //!
+    object define(
+      variable name, std::vector<decl> parameters, term body,
+      resolution r = resolution::immediate
+    );
 
     //!
     //! Adopts a set of existing possibly recursive objects (declared or

@@ -119,6 +119,10 @@ namespace black::logic {
 
     return object(ptr);
   }
+
+  object module::declare(variable name, term type, resolution r) {
+    return declare(decl{name, type}, r);
+  }
   
   object module::define(def d, resolution r) {
     auto ptr = std::make_shared<struct lookup>(d);
@@ -130,6 +134,14 @@ namespace black::logic {
     return object(ptr);
   }
 
+  object module::define(variable name, term type, term value, resolution r) {
+    return define(def{name, type, value}, r);
+  }
+
+  object module::define(variable name, term value, resolution r) {
+    return define(def{name, value}, r);
+  }
+
   object module::define(function_def f, resolution r) {
     std::vector<term> argtypes;
     for(decl d : f.parameters)
@@ -139,6 +151,20 @@ namespace black::logic {
     auto body = lambda(f.parameters, f.body);
 
     return define(def{f.name, type, body}, r);
+  }
+
+  object module::define(
+    variable name, std::vector<decl> parameters,
+    term range, term body, resolution r
+  ) {
+    return define(function_def{name, std::move(parameters), range, body}, r);
+  }
+
+  object module::define(
+    variable name, std::vector<decl> parameters,
+    term body, resolution r
+  ) {
+    return define(function_def{name, std::move(parameters), body}, r);
   }
 
   void module::adopt(std::vector<object> const& objs, scope s) {

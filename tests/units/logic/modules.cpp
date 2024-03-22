@@ -75,8 +75,8 @@ TEST_CASE("modules") {
     SECTION("linear definitions") {
         module ours;
 
-        object x = ours.declare({"x", integer_type()});
-        object y = ours.declare({"y", integer_type()});
+        object x = ours.declare("x", integer_type());
+        object y = ours.declare("y", integer_type());
 
         ours.require(x < y);
         ours.push();
