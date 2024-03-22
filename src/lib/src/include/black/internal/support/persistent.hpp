@@ -83,20 +83,20 @@ namespace black::support::persistent {
     // Functions where this differs from immer::vector<T>
     //
     void push_back(value_type value) {
-      _data = _data.push_back(value);
+      _data = std::move(_data).push_back(value);
     }
 
     void set(size_type index, value_type value) {
-      _data = _data.set(index, value);
+      _data = std::move(_data).set(index, value);
     }
 
     template<typename F>
     void update(size_type index, F f) {
-      _data = _data.update(index, f);
+      _data = std::move(_data).update(index, f);
     }
 
     void take(size_type elems) {
-      _data = _data.take(elems);
+      _data = std::move(_data).take(elems);
     }
 
     immer_t immer() const { return _data; }
