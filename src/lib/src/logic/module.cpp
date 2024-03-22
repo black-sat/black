@@ -99,6 +99,9 @@ namespace black::logic {
   module &module::operator=(module &&) = default;
 
   bool module::operator==(module const& other) const {
+    if(_impl == other._impl)
+      return true;
+  
     return *_impl == *other._impl;
   }
 

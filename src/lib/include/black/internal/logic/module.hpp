@@ -152,7 +152,7 @@ namespace black::logic {
   //! \ref module is a **regular** type (also known as *value type*), meaning
   //! that its instances are meant to be freely copied and passed around by
   //! value. Copy of a \ref module is cheap thanks to the underlying usage of
-  //! persistent data structures.
+  //! persistent data structures and a copy-on-write policy. 
   //!
   //! The \ref module class mantains sets of declarations, requirements
   //! (sometimes called *assertions*), and other elements in a stack that can be
@@ -182,7 +182,35 @@ namespace black::logic {
     //! Move-assignment operator
     module &operator=(module &&); 
 
-    //! Equality comparison operator
+    //!
+    //! Equality comparison operator.
+    //!
+    //! The equality is checked on the *contents* of the module.
+    //!
+    //! Thanks to copy-on-write and persistent data structures, equality
+    //! comparison is usually cheap, but some attention has to be payed. Because
+    //! of how the underlying data structures work, it is very cheap to compare
+    //! two copies of the same module, or two modules where one has been derived
+    //! from a copy of the other by a few edits.
+    //!
+    //! For example, the following is very cheap:
+    //!
+    //! ```cpp
+    //! module m = very_large_module();
+    //! module m2 = m;
+    //!
+    //! assert(m2 == m); // the cheapest
+    //!
+    //! m2.require(x == y);
+    //!
+    //! assert(m != m2); // still cheap
+    //! ```
+    //!
+    //! Comparing two different modules is also usually cheap because of
+    //! short-curcuiting. However, comparing completely unrelated modules that
+    //! somehow happen to be equal or very similar is potentially expensive,
+    //! because all the contents of the modules will have to be compared.
+    //!
     bool operator==(module const&) const;
 
     //!@}
@@ -547,7 +575,7 @@ namespace black::logic {
     void replay(module const& from, replay_target_t *target) const;
 
     struct _impl_t;
-    std::unique_ptr<_impl_t> _impl;
+    support::cow_ptr<_impl_t> _impl;
   };
 
   //!

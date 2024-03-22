@@ -148,7 +148,63 @@ namespace black::support {
   private:
     std::variant<std::shared_ptr<T>, T *> _data;
   };
-  
+
+
+  //
+  // Wrapper over std::shared_ptr to aid the implementation of Copy-on-Write
+  // PIMPL patterns.
+  //
+  template<typename T>
+  class cow_ptr 
+  {
+  public:
+    cow_ptr() = delete;
+
+    cow_ptr(std::shared_ptr<T> ptr) : _ptr{std::move(ptr)} { }
+
+    cow_ptr(cow_ptr const&) = default;
+    cow_ptr(cow_ptr &&) = default;
+
+    cow_ptr &operator=(std::shared_ptr<T> ptr) {
+      _ptr = ptr;
+      return *this;
+    }
+
+    cow_ptr &operator=(cow_ptr const&) = default;
+    cow_ptr &operator=(cow_ptr &&) = default;
+
+    bool operator==(cow_ptr const&) const = default;
+
+    T *get() const { return _ptr.get(); }
+    std::shared_ptr<T> shared() const { return _ptr; }
+
+    std::shared_ptr<T> operator->() {
+      clone();
+      return _ptr;
+    }
+
+    T &operator*() {
+      clone();
+      return *_ptr;
+    }
+
+    std::shared_ptr<T const> operator->() const {
+      return _ptr;
+    }
+
+    T const& operator*() const {
+      return *_ptr;
+    }
+
+  private:
+
+    void clone() {
+      *this = std::make_shared<T>(*_ptr);
+    }
+    
+    std::shared_ptr<T> _ptr;
+  };
+
 }
 
 #endif // BLACK_SUPPORT_MEMORY_HPP

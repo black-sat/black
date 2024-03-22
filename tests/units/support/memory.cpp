@@ -94,3 +94,56 @@ TEST_CASE("wrap_ptr") {
 
 
 }
+
+class cow_test 
+{
+    struct impl_t {
+        int x = 0;
+
+        impl_t() = default;
+    };
+
+public:
+
+    explicit cow_test() : _impl{std::make_shared<impl_t>()} { }
+
+    cow_test &operator=(cow_test const&) = default;
+
+    int x() const {
+        return _impl->x;
+    }
+
+    void set_x(int x) {
+        _impl->x = x;
+    }
+
+    impl_t *get() const { return _impl.get(); }
+
+private:
+    black::support::cow_ptr<impl_t> _impl;
+};
+
+TEST_CASE("cow_ptr") {
+
+    using namespace black::support;
+
+    cow_test a;
+    cow_test b;
+
+    a.set_x(25);
+    b = a;
+
+    REQUIRE(a.get() == b.get());
+
+    REQUIRE(b.x() == 25);
+
+    REQUIRE(a.get() == b.get());
+
+    b.set_x(42);
+
+    REQUIRE(a.get() != b.get());
+
+    REQUIRE(a.x() == 25);
+    REQUIRE(b.x() == 42);
+
+}
