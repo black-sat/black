@@ -157,25 +157,25 @@ namespace black::support::persistent {
     // Functions where this differs from immer::map<K, T>
     //
     void insert(value_type pair) {
-      _data = _data.insert(pair);
+      _data = std::move(_data).insert(pair);
     }
 
     void set(key_type key, mapped_type value) {
-      _data = _data.set(key, value);
+      _data = std::move(_data).set(key, value);
     }
 
     template<typename F>
     void update(key_type key, F f) {
-      _data = _data.update(key, f);
+      _data = std::move(_data).update(key, f);
     }
 
     template<typename F>
     void update_if_exists(key_type key, F f) {
-      _data = _data.update_if_exists(key, f);
+      _data = std::move(_data).update_if_exists(key, f);
     }
 
     void erase(K const& key) {
-      _data = _data.erase(key);
+      _data = std::move(_data).erase(key);
     }
 
     immer_t immer() const { return _data; }
@@ -232,11 +232,11 @@ namespace black::support::persistent {
     // Functions where this differs from immer::set<T>
     //
     void insert(value_type value) {
-      _data = _data.insert(value);
+      _data = std::move(_data).insert(value);
     }
 
     void erase(value_type const &value) {
-      _data = _data.erase(value);
+      _data = std::move(_data).erase(value);
     }
 
     immer_t immer() const { return _data; }
