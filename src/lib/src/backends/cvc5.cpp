@@ -23,13 +23,9 @@
 
 
 #include <black/support>
+#include <black/support/private>
 #include <black/logic>
 #include <black/backends/cvc5>
-
-#include <immer/vector.hpp>
-#include <immer/map.hpp>
-#include <immer/set.hpp>
-#include <immer/algorithm.hpp>
 
 #include <cvc5/cvc5.h>
 
@@ -49,8 +45,8 @@ namespace black::backends::cvc5 {
   struct solver::impl_t {
 
     struct frame_t {
-      immer::map<lookup const *, CVC5::Term> objects;
-      immer::map<CVC5::Term, lookup const *> consts;
+      persistent::map<lookup const *, CVC5::Term> objects;
+      persistent::map<CVC5::Term, lookup const *> consts;
 
       bool operator==(frame_t const&) const = default;
     };
@@ -114,7 +110,7 @@ namespace black::backends::cvc5 {
           return *var;
         },
         [&](object o) {
-          CVC5::Term const *obj = stack.top().objects.find(o.lookup().get());
+          CVC5::Term const *obj = stack.top().objects.find(o.lookup());
 
           black_assert(obj != nullptr); // TODO: handle error well
 
@@ -214,8 +210,7 @@ namespace black::backends::cvc5 {
       m.replay(empty, this);
     } 
 
-    void define(object obj) {
-      auto lu = obj.lookup();
+    void define(lookup const *lu) {
       black_assert(lu->value);
 
       CVC5::Term t = match(*lu->value)(
@@ -245,29 +240,27 @@ namespace black::backends::cvc5 {
         }
       );
 
-      stack.top().objects = stack.top().objects.insert({obj.lookup().get(), t});
-      stack.top().consts = stack.top().consts.insert({t, obj.lookup().get()});
+      stack.top().objects.insert({lu, t});
+      stack.top().consts.insert({t, lu});
     }
 
-    void define(std::vector<object> objs) {
+    void define(std::vector<std::shared_ptr<lookup const>> lookups) {
       std::vector<CVC5::Term> names;
-      for(object obj : objs) {
-        CVC5::Term name = slv->mkConst(to_sort(obj.lookup()->type));
+      for(auto lu : lookups) {
+        CVC5::Term name = slv->mkConst(to_sort(lu->type));
         names.push_back(name);
-        stack.top().objects = 
-          stack.top().objects.insert({obj.lookup().get(), name});
-        stack.top().consts = 
-          stack.top().consts.insert({name, obj.lookup().get()});
+        stack.top().objects.insert({lu.get(), name});
+        stack.top().consts.insert({name, lu.get()});
       }
 
       std::vector<std::vector<CVC5::Term>> vars;
       std::vector<CVC5::Term> bodies;
-      for(object obj : objs) {
+      for(auto lu : lookups) {
         std::vector<CVC5::Term> thesevars;
         
-        if(cast<function_type>(obj.lookup()->type)) {
-          function_type ty = unwrap(cast<function_type>(obj.lookup()->type));
-          lambda fun = unwrap(cast<lambda>(obj.lookup()->value));
+        if(cast<function_type>(lu->type)) {
+          function_type ty = unwrap(cast<function_type>(lu->type));
+          lambda fun = unwrap(cast<lambda>(lu->value));
 
           immer::map<variable, CVC5::Term> boundvars;
           for(decl d : fun.vars()) {
@@ -280,40 +273,40 @@ namespace black::backends::cvc5 {
           bodies.push_back(to_term(fun.body(), boundvars));
         } else {
           thesevars.push_back({});
-          bodies.push_back(to_term(unwrap(obj.lookup()->value), {}));
+          bodies.push_back(to_term(unwrap(lu->value), {}));
         }
       }
 
       return slv->defineFunsRec(names, vars, bodies);
     }
 
-    void declare(object obj) {
-      auto lu = obj.lookup();
+    void declare(struct lookup const *lu) {
       black_assert(!lu->value);
       
       CVC5::Term t = slv->mkConst(to_sort(lu->type));
       
-      stack.top().objects = stack.top().objects.insert({obj.lookup().get(), t});
-      stack.top().consts = stack.top().consts.insert({t, obj.lookup().get()});
+      stack.top().objects.insert({lu, t});
+      stack.top().consts.insert({t, lu});
     }
 
-    void adopt(std::vector<object> objs, scope s) { 
+    void adopt(std::shared_ptr<root const> r) {
+      std::vector<std::shared_ptr<lookup const>> lookups = r->lookups;
       // separate declarations and definitions
-      auto decls = std::remove_if(begin(objs), end(objs), [](object obj) {
-        return !obj.lookup()->value.has_value();
+      auto decls = std::remove_if(begin(lookups), end(lookups), [](auto lu) {
+        return !lu->value.has_value();
       });
 
       // declarations
-      for(auto it = decls; it != end(objs); it++)
-        declare(*it);
+      for(auto it = decls; it != end(lookups); it++)
+        declare(it->get());
 
-      objs.erase(decls, end(objs)); // remove declarations
+      lookups.erase(decls, end(lookups)); // remove declarations
 
-      if(s == scope::linear)
-        for(object obj : objs)
-          define(obj);
+      if(r->mode == recursion::forbidden)
+        for(auto lu : lookups)
+          define(lu.get());
       else
-        define(objs);
+        define(lookups);
     }
 
     void require(term t) {
@@ -323,7 +316,7 @@ namespace black::backends::cvc5 {
     void push() {
       if(ignore_push)
         return;
-        
+
       if(stack.empty())
         stack.push({});
       else

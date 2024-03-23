@@ -35,7 +35,9 @@ namespace black::logic {
 
   using ast::core::label;
 
+  class module;
   struct lookup;
+  struct root;
 
   //! The resolution behavior of declarations and definitions in \ref module.
   //!
@@ -127,24 +129,23 @@ namespace black::logic {
     //!@}
   };
 
-  class module;
-
   //!
   //! The scope resolution mode for `module::resolve()` and `module::adopt()`.
   //!
-  enum class scope {
-    recursive, //!< Recursive name resolution
-    linear //!< Non-recursive name resolution
+  enum class recursion : bool {
+    forbidden = false, //!< Non-recursive name resolution
+    allowed = true     //!< Recursive name resolution
   };
 
   template<typename T>
-  concept replay_target = requires(T v, object obj, module m, term t) {
-    v.import(m);
-    v.adopt(std::vector<object>{}, scope::recursive);
-    v.require(t);
-    v.push();
-    v.pop(42);
-  };
+  concept replay_target = 
+    requires(T v, std::shared_ptr<root const> r, module m, term t) {
+      v.import(m);
+      v.adopt(r);
+      v.require(t);
+      v.push();
+      v.pop(42);
+    };
 
   //!
   //! Entry point to build modules.
@@ -407,7 +408,7 @@ namespace black::logic {
     //! potentially recursively refer to other objects of the same set
     //! (themselves included).
     //!
-    void adopt(std::vector<object> const& objs, scope s = scope::recursive);
+    void adopt(std::shared_ptr<root const> r);
 
     //!
     //! Looks up a name in the current module and returns the corresponding
@@ -461,7 +462,7 @@ namespace black::logic {
     //!
     //! \note As also noted in define(), types of recursive definitions cannot
     //! be automatically inferred, at the moment.
-    void resolve(scope s = scope::linear);
+    void resolve(recursion s = recursion::forbidden);
 
     //!@}
 
@@ -575,7 +576,7 @@ namespace black::logic {
     struct replay_target_t {
       virtual ~replay_target_t() = default;
       virtual void import(module) = 0;
-      virtual void adopt(std::vector<object> const&, scope s) = 0;
+      virtual void adopt(std::shared_ptr<root const> r) = 0;
       virtual void require(term) = 0;
       virtual void push() = 0;
       virtual void pop(size_t) = 0;
@@ -584,9 +585,7 @@ namespace black::logic {
     void _replay(module from, replay_target_t *target) const;
 
     struct impl_t;
-    module(std::unique_ptr<impl_t> ptr);
-    
-    std::unique_ptr<impl_t> _impl;
+    support::pimpl<impl_t> _impl;
   };
 
   //!
@@ -603,22 +602,41 @@ namespace black::logic {
   //! Nevertheless, handling lookups by constructing a wrapping \ref object
   //! instance is preferred.
   //!
-  struct lookup : std::enable_shared_from_this<lookup> {
+  struct lookup {
+    struct root const *root = nullptr;
+    
     variable name; //!< The name of the entity
     term type; //!< The type of the entity
     std::optional<term> value; //!< The value of the entity. 
                                //!< Empty if the entity is declared
 
+
     //! \name Constructors
     //!@{
 
     //! Constructs the lookup from a \ref decl.
-    explicit lookup(decl d) : name{d.name}, type{d.type} { }
+    explicit lookup(decl d) 
+      : name{d.name}, type{d.type} { }
     
     //! Constructs the lookup from a \ref def
-    explicit lookup(def d) : name{d.name}, type{d.type}, value{d.value} { }
+    explicit lookup(def d) 
+      : name{d.name}, type{d.type}, value{d.value} { }
 
     //@}
+  };
+
+  struct root : std::enable_shared_from_this<root> 
+  {
+    root() = default;
+
+    root(root const&) = default;
+    root(root &&) = default;
+    
+    root &operator=(root const&) = default;
+    root &operator=(root &&) = default;
+
+    recursion mode = recursion::forbidden;
+    std::vector<std::shared_ptr<lookup const>> lookups;
   };
 
   //
@@ -635,8 +653,8 @@ namespace black::logic {
       wrap_t(T *t) : t{t} { }
 
       virtual void import(module m) override { return t->import(std::move(m)); }
-      virtual void adopt(std::vector<object> const& objs, scope s) override { 
-        return t->adopt(objs, s); 
+      virtual void adopt(std::shared_ptr<root const> r) override { 
+        return t->adopt(r); 
       }
       virtual void require(term r) override { return t->require(r); }
       virtual void push() override { t->push(); }

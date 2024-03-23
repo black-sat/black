@@ -31,7 +31,6 @@ namespace black::logic {
   struct real;
   struct variable;
   struct boolean;
-  struct object;
   struct lookup;
 
   namespace internal {
@@ -62,16 +61,6 @@ namespace black::logic {
     
     struct variable_custom_init {
       static variable init(std::string s);
-    };
-    
-    struct object_custom_init {
-      static object init(std::shared_ptr<lookup const> l);
-      static object init(lookup const *l);
-    };
-
-    struct object_custom_members : term_custom_members<object> {
-      object locked() const;
-      object unlocked() const;
     };
   }
 }
@@ -104,14 +93,6 @@ namespace black::ast::core {
   template<>
   struct ast_node_custom_init<logic::variable> 
     : logic::internal::variable_custom_init { };
-  
-  template<>
-  struct ast_node_custom_init<logic::object> 
-    : logic::internal::object_custom_init { };  
-  
-  template<>
-  struct ast_node_custom_members<logic::object> 
-    : logic::internal::object_custom_members { };  
 }
 
   //
@@ -234,22 +215,6 @@ namespace black::logic
 
     inline variable variable_custom_init::init(std::string s) {
       return variable(ast::core::label{s});
-    }
-
-    inline object object_custom_init::init(std::shared_ptr<lookup const> l) {
-      return object(support::toggle_ptr<lookup const>{l});
-    }
-
-    inline object object_custom_init::init(lookup const *l) {
-      return object(support::toggle_ptr<lookup const>{l});
-    }
-    
-    inline object object_custom_members::locked() const {
-      return object(static_cast<object const&>(*this).lookup().locked());
-    }
-    
-    inline object object_custom_members::unlocked() const {
-      return object(static_cast<object const&>(*this).lookup().unlocked());
     }
 
   }

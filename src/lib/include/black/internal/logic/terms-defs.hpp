@@ -142,7 +142,7 @@ declare_ast(logic, term)
     end_ast_node(logic, term, variable)
     
     declare_ast_node(logic, term, object, "A resolved object")
-      declare_field(logic, term, object, lookup, support::toggle_ptr<logic::lookup const>, "The object's lookup info")
+      declare_field(logic, term, object, lookup, logic::lookup const *, "The object's lookup info")
     end_ast_node(logic, term, object)
 
     declare_ast_node(logic, term, equal, "An equality constraint between terms")

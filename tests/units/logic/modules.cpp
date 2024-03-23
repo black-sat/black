@@ -48,12 +48,12 @@ struct debug_t {
         steps.push_back(step::import);
         return mod->import(std::move(m));
     }
-    void adopt(std::vector<object> const& objs, scope s) { 
-        if(s == scope::linear)
+    void adopt(std::shared_ptr<root const> r) { 
+        if(r->mode == recursion::forbidden)
             steps.push_back(step::adopt);
         else
             steps.push_back(step::adopt_rec);
-        return mod->adopt(objs, s);
+        return mod->adopt(r);
     }
     void require(term r) { 
         steps.push_back(step::require);
@@ -178,7 +178,7 @@ TEST_CASE("modules") {
         object gobj = 
             rec.define({g, {{x, integer_type()}}, f(x)}, resolution::delayed);
 
-        rec.resolve(scope::recursive);
+        rec.resolve(recursion::allowed);
 
         module other;
 

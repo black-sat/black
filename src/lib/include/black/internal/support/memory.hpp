@@ -30,123 +30,47 @@
 namespace black::support {
 
   //
-  // a reference to an object managed through `std::shared_ptr`,
-  // forming either a strong or a weak reference, on demand.
-  //
-  // This allows it to be initialized as a strong or weak reference
-  // depending on the case, while still be hashable (which a `weak_ptr` is not).
+  // Boxes an instance of type T created on demand, to be used in pimpl
+  // patterns.
   //
   template<typename T>
-  class toggle_ptr 
+  class pimpl 
   {
   public:
-    toggle_ptr() = delete;
-    toggle_ptr(nullptr_t) = delete;
+    pimpl() = default;
 
-    toggle_ptr(std::shared_ptr<T> ptr) : _data{std::move(ptr)} { }
-
-    explicit toggle_ptr(T *ptr) : _data{ptr} { 
-      black_assert(ptr);
-    }
-
-    toggle_ptr(toggle_ptr const&) = default;
-    toggle_ptr(toggle_ptr &&) = default;
+    pimpl(std::unique_ptr<T> ptr) : _ptr{std::move(ptr)} { }
     
-    toggle_ptr &operator=(toggle_ptr const&) = default;
-    toggle_ptr &operator=(toggle_ptr &&) = default;
+    pimpl(pimpl const& other) 
+      : _ptr{other._ptr ? std::make_unique<T>(*other._ptr) : nullptr} { }
 
-    toggle_ptr &operator=(std::shared_ptr<T> ptr) { 
-      _data = std::move(ptr);
+    pimpl(pimpl &&) = default;
+
+    pimpl &operator=(pimpl const& other) {
+      _ptr = other._ptr ? std::make_unique<T>(*other._ptr) : nullptr;
       return *this;
     }
 
-    toggle_ptr &operator=(T *ptr) { 
-      black_assert(ptr);
-      _data = ptr;
-      return *this;
+    pimpl &operator=(pimpl &&) = default;
+
+    bool operator==(pimpl const&other) const {
+      return get() == other.get() || *get() == *other.get();
     }
 
-    toggle_ptr &operator=(nullptr_t) = delete;
-
-    bool operator==(toggle_ptr const&) const = default;
-
-    operator toggle_ptr<T const>() const
-      requires (!std::is_const_v<T>)
-    { 
-      return match(_data)(
-        [](std::shared_ptr<T> p) { return toggle_ptr<T const>(p); },
-        [](T *p) { return toggle_ptr<T const>(p); }
-      );
-    }
+    explicit operator bool() const { return true; }
 
     T *get() const {
-      return match(_data)(
-        [](std::shared_ptr<T> p) { return p.get(); },
-        [](T *p) { return p; }
-      );
+      if(!_ptr)
+        _ptr = std::make_unique<T>();
+      return _ptr.get();
     }
 
-    std::shared_ptr<T> shared() const {
-      return std::get<std::shared_ptr<T>>(locked()._data);
-    }
-
-    toggle_ptr<T> locked() const {
-      return toggle_ptr<T>{
-        match(_data)(
-          [](std::shared_ptr<T> p) { return p; },
-          [](T *p) { return p->shared_from_this(); }
-        )
-      };
-    }
-
-    toggle_ptr<T> unlocked() const {
-      return toggle_ptr<T>{
-        match(_data)(
-          [](std::shared_ptr<T> p) { return p.get(); },
-          [](T *p) { return p; }
-        )
-      };
-    }
-
-    auto operator*() const {
-      struct ret_t {
-        std::shared_ptr<T> locked;
-
-        T &operator=(T const& other) const 
-          requires (!std::is_const_v<T>) 
-        {
-          *locked = other;
-          return *locked;
-        }
-        
-        T &operator=(T && other) const 
-          requires (!std::is_const_v<T>) 
-        {
-          *locked = other;
-          return *locked;
-        }
-
-        operator T&() const {
-          return *locked;
-        }
-      } ret_t{shared()}; 
-
-      return ret_t;
-    }
-
-    std::shared_ptr<T> operator->() const {
-      return shared();
-    }
-
-    size_t hash() const {
-      return match(_data)(
-        [](std::shared_ptr<T> p) { return support::hash(p); },
-        [](T *p) { return support::hash(p); }
-      );
+    T *operator->() const {
+      return get();
     }
 
   private:
-    std::variant<std::shared_ptr<T>, T *> _data;
+    mutable std::unique_ptr<T> _ptr = nullptr;
   };
 
 }

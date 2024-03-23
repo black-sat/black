@@ -109,7 +109,7 @@ TEST_CASE("cvc5") {
             resolution::delayed
         );
 
-        mod.resolve(scope::recursive);
+        mod.resolve(recursion::allowed);
 
         REQUIRE(slv.check(mod) == true);
 

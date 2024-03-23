@@ -121,7 +121,7 @@ TEST_CASE("Modules") {
     object xobj = m.define(x, integer_type(), y, resolution::delayed);
     object yobj = m.define(y, integer_type(), x, resolution::delayed);
     
-    m.resolve(scope::recursive);
+    m.resolve(recursion::allowed);
 
     REQUIRE(m.lookup(f) == fobj);
     REQUIRE(m.lookup(x) == xobj);
@@ -129,15 +129,15 @@ TEST_CASE("Modules") {
     
     term ft = function_type({integer_type()}, integer_type());
     REQUIRE(fobj.lookup()->type == ft);
-    REQUIRE(xobj.lookup()->value == yobj.unlocked());
-    REQUIRE(yobj.lookup()->value == xobj.unlocked());
+    REQUIRE(xobj.lookup()->value == yobj);
+    REQUIRE(yobj.lookup()->value == xobj);
 
     object wrongf = m.define(
       {f, {{a, integer_type()}}, f(a)},
       resolution::delayed
     );
 
-    m.resolve(scope::recursive);
+    m.resolve(recursion::allowed);
 
     term wrongft = function_type({integer_type()}, inferred_type());
     REQUIRE(wrongf.lookup()->type == wrongft);
