@@ -99,7 +99,7 @@ namespace black::support::persistent {
       _data = std::move(_data).take(elems);
     }
 
-    immer_t immer() const { return _data; }
+    immer_t immutable() const { return _data; }
 
   private:
     immer_t _data;
@@ -178,7 +178,7 @@ namespace black::support::persistent {
       _data = std::move(_data).erase(key);
     }
 
-    immer_t immer() const { return _data; }
+    immer_t immutable() const { return _data; }
 
   private:
     immer_t _data;
@@ -239,7 +239,7 @@ namespace black::support::persistent {
       _data = std::move(_data).erase(value);
     }
 
-    immer_t immer() const { return _data; }
+    immer_t immutable() const { return _data; }
 
   private:
     immer_t _data;

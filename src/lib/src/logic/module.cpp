@@ -328,11 +328,11 @@ namespace black::logic {
     // 'start' is the index of the first different frame in `ours` and `theirs`
     // after the longest common prefix
     // if `start == shortest` one of the two is a strict subset of the other
-    size_t start = [&]{
-      for(size_t i = 0; i < shortest; i++)
-        if(ours[i] != theirs[i]) // TODO: study the performance of this
-          return i;
-      return shortest;
+    size_t start = [&]() -> size_t {
+      for(size_t n = shortest; n > 0; n--)
+        if(ours.immutable().take(n) == theirs.immutable().take(n))
+          return n;
+      return 0;
     }();
 
     // pop the extra levels except `theirs[start]`
