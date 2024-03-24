@@ -49,6 +49,8 @@ namespace black::support::persistent {
 
     vector() = default;
 
+    explicit vector(immer_t imm) : _data{imm} { }
+
     vector(std::initializer_list<T> data) : _data{data} { }
 
     template<typename Iter, typename Send>
@@ -124,6 +126,8 @@ namespace black::support::persistent {
     using const_iterator = typename immer_t::const_iterator;
 
     map() = default;
+
+    explicit map(immer_t imm) : _data{imm} { }
 
     map(std::initializer_list<value_type> data) : _data{data} { }
 
@@ -201,6 +205,8 @@ namespace black::support::persistent {
     using const_iterator = typename immer_t::const_iterator;
 
     set() = default;
+
+    explicit set(immer_t imm) : _data{imm} { }
 
     set(std::initializer_list<value_type> data) : _data{data} { }
 

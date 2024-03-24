@@ -601,7 +601,7 @@ namespace black::logic {
     void _replay(module from, replay_target_t *target) const;
 
     struct impl_t;
-    support::boxed<impl_t> _impl;
+    support::lazy<support::boxed<impl_t>> _impl;
   };
 
   //!

@@ -26,21 +26,22 @@
 
 #include <memory>
 #include <variant>
+#include <concepts>
 
 namespace black::support {
 
   //
-  // Boxes an instance of type T created on demand, to be used in pimpl
-  // patterns.
+  // Boxes an instance, managing it on the heap but keeping value semantics.
   //
   template<typename T>
   class boxed 
   {
   public:
-    boxed() = default;
+    boxed() : _ptr{std::make_unique<T>()} { }
+    boxed(T v) : _ptr{std::make_unique<T>(std::move(v))} { }
 
     boxed(std::unique_ptr<T> ptr) : _ptr{std::move(ptr)} { }
-    
+
     boxed(boxed const& other) 
       : _ptr{other._ptr ? std::make_unique<T>(*other._ptr) : nullptr} { }
 
@@ -57,24 +58,86 @@ namespace black::support {
       return get() == other.get() || *get() == *other.get();
     }
 
-    explicit operator bool() const { return true; }
+    bool empty() const { return _ptr; }
 
-    T *get() const {
-      if(!_ptr)
-        _ptr = std::make_unique<T>();
+    T const* get() const {
+      return _ptr.get();
+    }
+    
+    T *get() {
       return _ptr.get();
     }
 
-    std::unique_ptr<T> release() && {
+    std::unique_ptr<T> release() {
       return std::move(_ptr);
     }
 
-    T *operator->() const {
+    T const* operator->() const {
+      return get();
+    }
+    
+    T *operator->() {
       return get();
     }
 
   private:
-    mutable std::unique_ptr<T> _ptr = nullptr;
+    std::unique_ptr<T> _ptr;
+  };
+
+  //
+  // Manages an instance of type T which is, however, only constructed at first
+  // access.
+  //
+  template<typename T>
+  class lazy 
+  {
+  public:
+    lazy() = default;
+    lazy(T v) : _data{std::move(v)} { }
+    
+    lazy(lazy const&) = default;
+    lazy(lazy &&) = default;
+    
+    lazy &operator=(T v) {
+      _data = std::move(v);
+      return *this;
+    }
+
+    lazy &operator=(lazy const&) = default;
+    lazy &operator=(lazy &&) = default;
+
+    bool operator==(lazy const&) const = default;
+
+    T const*get() const {
+      if(!_data)
+        _data = T{};
+      return &(*_data);
+    }
+    
+    T *get() {
+      if(!_data)
+        _data = T{};
+      return &(*_data);
+    }
+
+    T const&operator*() const {
+      return *get();
+    }
+    
+    T &operator*() {
+      return *get();
+    }
+
+    T const*operator->() const {
+      return get();
+    }
+    
+    T *operator->() {
+      return get();
+    }
+  
+  private:
+    mutable std::optional<T> _data;
   };
 
 }

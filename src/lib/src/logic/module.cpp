@@ -122,7 +122,7 @@ namespace black::logic {
   }
 
   void module::import(module m) {
-    _impl->import(m);
+    _impl->get()->import(m);
   }
 
   object module::impl_t::declare(decl d, resolution r) {
@@ -137,7 +137,7 @@ namespace black::logic {
   }
 
   object module::declare(decl d, resolution r) {
-    return _impl->declare(d, r);
+    return _impl->get()->declare(d, r);
   }
 
   object module::declare(variable name, term type, resolution r) {
@@ -156,7 +156,7 @@ namespace black::logic {
   }
 
   object module::define(def d, resolution r) {
-    return _impl->define(d, r);
+    return _impl->get()->define(d, r);
   }
 
   object module::define(variable name, term type, term value, resolution r) {
@@ -205,7 +205,7 @@ namespace black::logic {
   }
 
   void module::adopt(std::shared_ptr<root const> r) {
-    _impl->adopt(r);
+    _impl->get()->adopt(r);
   }
 
   void module::adopt(object obj) {
@@ -228,7 +228,7 @@ namespace black::logic {
   }
 
   std::optional<object> module::lookup(variable s) const {
-    return _impl->lookup(s);
+    return _impl->get()->lookup(s);
   }
 
   void module::impl_t::require(term req) {
@@ -240,7 +240,7 @@ namespace black::logic {
   }
 
   void module::require(term req) {
-    _impl->require(req);
+    _impl->get()->require(req);
   }
 
   void module::impl_t::push() {
@@ -248,7 +248,7 @@ namespace black::logic {
   }
 
   void module::push() {
-    _impl->push();
+    _impl->get()->push();
   }
 
   void module::impl_t::pop(size_t n) {
@@ -259,7 +259,7 @@ namespace black::logic {
   }
 
   void module::pop(size_t n) {
-    _impl->pop(n);
+    _impl->get()->pop(n);
   }
 
   auto module::impl_t::diff(frame_t const&inner, frame_t const&outer) const 
@@ -322,18 +322,16 @@ namespace black::logic {
   void 
   module::impl_t::replay(module from, replay_target_t *target) const {
     auto ours = _stack;
-    auto theirs = from._impl->_stack;
+    auto theirs = from._impl->get()->_stack;
     size_t shortest = std::min(ours.size(), theirs.size());
 
     // 'start' is the index of the first different frame in `ours` and `theirs`
     // after the longest common prefix
     // if `start == shortest` one of the two is a strict subset of the other
-    size_t start = [&]() -> size_t {
-      for(size_t n = shortest; n > 0; n--)
-        if(ours.immutable().take(n) == theirs.immutable().take(n))
-          return n;
-      return 0;
-    }();
+    size_t start = 0;
+    for(size_t n = shortest; n > 0; n--)
+      if(ours.immutable().take(n) == theirs.immutable().take(n))
+        start = n;
 
     // pop the extra levels except `theirs[start]`
     size_t different = theirs.size() - std::min(theirs.size(), start);
@@ -367,7 +365,7 @@ namespace black::logic {
   }
 
   void module::_replay(module from, replay_target_t *target) const {
-    _impl->replay(from, target);
+    _impl->get()->replay(std::move(from), target);
   }
   
   std::vector<term> module::impl_t::resolved(
@@ -431,7 +429,7 @@ namespace black::logic {
   }
 
   term module::resolved(term t) const {
-    return _impl->resolved(t, {}, nullptr, {});
+    return _impl->get()->resolved(t, {}, nullptr, {});
   }
 
   term module::impl_t::infer(struct entity const *p) {
@@ -508,7 +506,7 @@ namespace black::logic {
   }
 
   std::shared_ptr<root const> module::resolve(recursion r) {
-    return _impl->resolve(r);
+    return _impl->get()->resolve(r);
   }
 
 }
