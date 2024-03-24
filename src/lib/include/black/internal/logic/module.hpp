@@ -414,12 +414,11 @@ namespace black::logic {
     //! the entities collected by the same root.
     //!
     //! The call to `m.adopt(obj)` is roughly the same as
-    //! `m.adopt(obj.entity()->root->shared_from_this())`.
+    //! `m.adopt(obj.entity()->root.lock())`.
     //!
-    //! If `obj.entity()->root == nullptr`, the function does nothing. This
-    //! happens when the object has been returned by a call to `declare()` or
-    //! `define()` with `resolution::delayed` and `resolve()` has not been
-    //! called yet.
+    //! If `obj.entity()->root` is null, the function does nothing. This happens
+    //! when the object has been returned by a call to `declare()` or `define()`
+    //! with `resolution::delayed` and `resolve()` has not been called yet.
     //!
     void adopt(object obj);
 
@@ -620,8 +619,8 @@ namespace black::logic {
   //! object is alive, the corresponding \ref entity instances are safe to use.
   //!
   struct entity {
-    struct root const *root = nullptr; //!< The pointer to the root collecting 
-                                       //!< this entity object
+    //< The pointer to the root collecting this entity object
+    std::weak_ptr<struct root const> root; 
     
     variable name; //!< The name of the entity
     term type; //!< The type of the entity
@@ -651,7 +650,10 @@ namespace black::logic {
     entity &operator=(entity const&) = default;
     entity &operator=(entity &&) = default;
 
-    bool operator==(entity const&) const = default;
+    bool operator==(entity const& other) const {
+      return bool(name == other.name) && bool(type == other.type) 
+          && value == other.value && root.lock() == other.root.lock();
+    }
 
     //@}
   };
@@ -667,7 +669,7 @@ namespace black::logic {
   //! pending declarations/definitions made to the module before.
   //!
   //!
-  struct root : std::enable_shared_from_this<root> 
+  struct root
   {
     root() = default;
 

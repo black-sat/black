@@ -57,7 +57,7 @@ namespace black::logic {
     };
 
     persistent::vector<frame_t> _stack = { frame_t{} };
-    std::vector<support::boxed<struct entity>> _pending;
+    std::vector<support::boxed<entity>> _pending;
 
     impl_t() = default;
 
@@ -128,7 +128,6 @@ namespace black::logic {
   object module::impl_t::declare(decl d, resolution r) {
     auto e = std::make_unique<struct entity>(d);
     object obj{e.get()};
-    
     _pending.push_back(std::move(e));
     
     if(r == resolution::immediate)
@@ -148,7 +147,6 @@ namespace black::logic {
   object module::impl_t::define(def d, resolution r) {
     auto e = std::make_unique<struct entity>(d);
     object obj{e.get()};
-    
     _pending.push_back(std::move(e));
     
     if(r == resolution::immediate)
@@ -211,8 +209,8 @@ namespace black::logic {
   }
 
   void module::adopt(object obj) {
-    if(auto r = obj.entity()->root; r)
-      adopt(r->shared_from_this());
+    if(auto r = obj.entity()->root.lock(); r)
+      adopt(r);
   }
 
   std::optional<object> module::impl_t::lookup(variable s) const 
@@ -472,7 +470,7 @@ namespace black::logic {
     std::unordered_set<variable> names;
     for(auto pending = std::move(_pending); auto & e : pending) {
       lookups.push_back(e.get());
-      e->root = root.get();
+      e->root = root;
       names.insert(e->name);
       root->entities.push_back(std::move(e).release());
     }
