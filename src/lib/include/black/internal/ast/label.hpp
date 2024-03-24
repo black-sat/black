@@ -47,14 +47,6 @@ namespace black::ast::core::internal
     !std::is_same_v<T, label> &&
     std::equality_comparable<T> && formattable<T>;
 
-  struct string_literal {
-    template<size_t N>
-    string_literal(const char (&arg)[N])
-      : str{arg} { }
-
-    const char *str;
-  };  
-
   //
   // Type-erased hashable, comparable and printable value
   //
@@ -84,6 +76,8 @@ namespace black::ast::core::internal
       : label{std::string{str}} { }
 
     size_t hash() const {
+      if(!_hash)
+        return 0;
       return _hash(_any);
     }
 
@@ -91,6 +85,8 @@ namespace black::ast::core::internal
     label &operator=(label&&) = default;
 
     bool operator==(label const&other) const {
+      if(!_cmp)
+        return !other._cmp;
       return _cmp(_any, other);
     }
 
@@ -129,6 +125,8 @@ namespace black::ast::core::internal
     std::any const&any() const { return _any; }
 
     std::string to_string() const {
+      if(!_printer)
+        return "<empty label>";
       return _printer(_any);
     }
 
@@ -138,9 +136,9 @@ namespace black::ast::core::internal
     using printer_t = std::string (*)(std::any const&);
 
     std::any _any;
-    hasher_t _hash;
-    comparator_t _cmp;
-    printer_t _printer;
+    hasher_t _hash = nullptr;
+    comparator_t _cmp = nullptr;
+    printer_t _printer = nullptr;
 
     //
     // note: these two function templates cause gcov false negatives

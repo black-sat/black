@@ -67,7 +67,7 @@
 //   };
 // )
 
-declare_type(logic, struct lookup)
+declare_type(logic, struct entity)
 
 define_type(logic, struct decl,
   struct decl { 
@@ -142,7 +142,7 @@ declare_ast(logic, term)
     end_ast_node(logic, term, variable)
     
     declare_ast_node(logic, term, object, "A resolved object")
-      declare_field(logic, term, object, lookup, logic::lookup const *, "The object's lookup info")
+      declare_field(logic, term, object, entity, logic::entity const *, "The object's underlying entity")
     end_ast_node(logic, term, object)
 
     declare_ast_node(logic, term, equal, "An equality constraint between terms")

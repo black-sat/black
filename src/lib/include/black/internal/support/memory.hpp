@@ -34,26 +34,26 @@ namespace black::support {
   // patterns.
   //
   template<typename T>
-  class pimpl 
+  class boxed 
   {
   public:
-    pimpl() = default;
+    boxed() = default;
 
-    pimpl(std::unique_ptr<T> ptr) : _ptr{std::move(ptr)} { }
+    boxed(std::unique_ptr<T> ptr) : _ptr{std::move(ptr)} { }
     
-    pimpl(pimpl const& other) 
+    boxed(boxed const& other) 
       : _ptr{other._ptr ? std::make_unique<T>(*other._ptr) : nullptr} { }
 
-    pimpl(pimpl &&) = default;
+    boxed(boxed &&) = default;
 
-    pimpl &operator=(pimpl const& other) {
+    boxed &operator=(boxed const& other) {
       _ptr = other._ptr ? std::make_unique<T>(*other._ptr) : nullptr;
       return *this;
     }
 
-    pimpl &operator=(pimpl &&) = default;
+    boxed &operator=(boxed &&) = default;
 
-    bool operator==(pimpl const&other) const {
+    bool operator==(boxed const&other) const {
       return get() == other.get() || *get() == *other.get();
     }
 
@@ -63,6 +63,10 @@ namespace black::support {
       if(!_ptr)
         _ptr = std::make_unique<T>();
       return _ptr.get();
+    }
+
+    std::unique_ptr<T> release() && {
+      return std::move(_ptr);
     }
 
     T *operator->() const {

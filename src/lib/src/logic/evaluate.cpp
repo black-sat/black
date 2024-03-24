@@ -47,9 +47,9 @@ namespace black::logic {
       [&](boolean v)       { return v; },
       [&](lambda v)        { return v; },
       [&](variable x)      { return x; },
-      [&](object x, auto lookup) -> term {
-        if(lookup->value)
-          return evaluate(*lookup->value);
+      [&](object x, auto e) -> term {
+        if(e->value)
+          return evaluate(*e->value);
         return x;
       },
       //[&](type_cast c)   { return c.target(); },

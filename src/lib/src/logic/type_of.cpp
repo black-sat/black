@@ -53,8 +53,8 @@ namespace black::logic {
         return 
           error(x, std::format("use of unbound free variable: {}", x.name()));
       },
-      [&](object, auto lookup) {
-        return lookup->type;
+      [&](object, auto e) {
+        return e->type;
       },
       [&](atom a, term head, auto const& args) -> term {
         auto fty = cast<function_type>(type_of(head));

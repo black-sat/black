@@ -128,9 +128,9 @@ TEST_CASE("Modules") {
     REQUIRE(m.lookup(y) == yobj);
     
     term ft = function_type({integer_type()}, integer_type());
-    REQUIRE(fobj.lookup()->type == ft);
-    REQUIRE(xobj.lookup()->value == yobj);
-    REQUIRE(yobj.lookup()->value == xobj);
+    REQUIRE(fobj.entity()->type == ft);
+    REQUIRE(xobj.entity()->value == yobj);
+    REQUIRE(yobj.entity()->value == xobj);
 
     object wrongf = m.define(
       {f, {{a, integer_type()}}, f(a)},
@@ -140,7 +140,7 @@ TEST_CASE("Modules") {
     m.resolve(recursion::allowed);
 
     term wrongft = function_type({integer_type()}, inferred_type());
-    REQUIRE(wrongf.lookup()->type == wrongft);
+    REQUIRE(wrongf.entity()->type == wrongft);
 
     SECTION("Memory management") {
 

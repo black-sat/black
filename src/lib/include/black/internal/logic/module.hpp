@@ -36,7 +36,7 @@ namespace black::logic {
   using ast::core::label;
 
   class module;
-  struct lookup;
+  struct entity;
   struct root;
 
   //! The resolution behavior of declarations and definitions in \ref module.
@@ -392,23 +392,36 @@ namespace black::logic {
     );
 
     //!
-    //! Adopts a set of existing possibly recursive objects (declared or
-    //! defined).
+    //! Adopts a \ref root and all the entities it collects.
     //!
-    //! \param objs the vector of objects to adopt.
+    //! \param r a shared pointer to the \ref root to be adopted
     //!
-    //! \param s the scope resolution mode (see \ref scope)
+    //! Adopts in this module a set of entities, possibly created using other
+    //! modules, collected by the given \ref root. The entities referred to by
+    //! the objects become visible in the module as if they were declared or
+    //! defined by the declare() or define() functions.
     //!
-    //! Adopts in this module a set of external objects, possibly created using
-    //! other modules. The entities referred to by the objects become visible in
-    //! the module as if they were declared or defined by the declare() or
-    //! define() functions.
-    //!
-    //! The scope resolution mode determines whether the adopted objects can
-    //! potentially recursively refer to other objects of the same set
-    //! (themselves included).
+    //! If the pointer is `nullptr` the function does nothing.
     //!
     void adopt(std::shared_ptr<root const> r);
+
+    //!
+    //! Adopts an object and its siblings.
+    //!
+    //! \param obj the object to adopt.
+    //!
+    //! The entity represented by the given object is adopted together with all
+    //! the entities collected by the same root.
+    //!
+    //! The call to `m.adopt(obj)` is roughly the same as
+    //! `m.adopt(obj.entity()->root->shared_from_this())`.
+    //!
+    //! If `obj.entity()->root == nullptr`, the function does nothing. This
+    //! happens when the object has been returned by a call to `declare()` or
+    //! `define()` with `resolution::delayed` and `resolve()` has not been
+    //! called yet.
+    //!
+    void adopt(object obj);
 
     //!
     //! Looks up a name in the current module and returns the corresponding
@@ -446,6 +459,9 @@ namespace black::logic {
     //!
     //! \param s the scope resolution mode (see \ref scope).
     //!
+    //! \returns a shared pointer to the \ref root collecting the entities
+    //! resolved in this call.
+    //!
     //! This function completes the declaration or definition of entities
     //! declared or defined with declare() or define() where the `r` parameter
     //! was set to resolution::delayed. The terms employed for types and bodies
@@ -460,9 +476,10 @@ namespace black::logic {
     //!   the order of declaration/definiton, see each other, and thus can refer
     //!   recursively to any other entity in the group (themselves included).
     //!
+    //! The
     //! \note As also noted in define(), types of recursive definitions cannot
     //! be automatically inferred, at the moment.
-    void resolve(recursion s = recursion::forbidden);
+    std::shared_ptr<root const> resolve(recursion s = recursion::forbidden);
 
     //!@}
 
@@ -585,25 +602,26 @@ namespace black::logic {
     void _replay(module from, replay_target_t *target) const;
 
     struct impl_t;
-    support::pimpl<impl_t> _impl;
+    support::boxed<impl_t> _impl;
   };
 
   //!
   //! Internal representation of an entity declared or defined in a module.
   //!
-  //! A \ref lookup object represents an entity declared or defined in a module.
-  //! Lookup objects are stored internally in modules and are usually not
-  //! handled explicitly during normal usage of the API.
+  //! An \ref entity object represents an entity declared or defined in a
+  //! module. Entity objects are stored internally in modules and are usually
+  //! not handled explicitly during normal usage of the API.
   //!
-  //! \ref lookup inherits publicly from `std::enable_shared_from_this`, and
-  //! \ref lookup objects are always handled internally by \ref module by means
-  //! of `std::shared_ptr`, therefore a call to the `shared_from_this()` member
-  //! function can be used to recover a strong reference to the object.
-  //! Nevertheless, handling lookups by constructing a wrapping \ref object
-  //! instance is preferred.
+  //! Entities are created in groups by collecting them at each call to
+  //! resolve(), or declare()/define() with resolution::immediate. The lifetime
+  //! of each entity in such groups is managed exclusively by \ref root objects
+  //! whose pointers are returned by the corresponding `resolve()` call, and
+  //! pointer by the `entity::root` field. Therefore as long as the \ref root
+  //! object is alive, the corresponding \ref entity instances are safe to use.
   //!
-  struct lookup {
-    struct root const *root = nullptr;
+  struct entity {
+    struct root const *root = nullptr; //!< The pointer to the root collecting 
+                                       //!< this entity object
     
     variable name; //!< The name of the entity
     term type; //!< The type of the entity
@@ -614,17 +632,41 @@ namespace black::logic {
     //! \name Constructors
     //!@{
 
-    //! Constructs the lookup from a \ref decl.
-    explicit lookup(decl d) 
+    //! Constructs an empty entity.
+    entity() 
+      : name{label{}}, type{inferred_type()} { }
+
+    //! Constructs the entity from a \ref decl.
+    explicit entity(decl d) 
       : name{d.name}, type{d.type} { }
     
-    //! Constructs the lookup from a \ref def
-    explicit lookup(def d) 
+    //! Constructs the entity from a \ref def
+    explicit entity(def d) 
       : name{d.name}, type{d.type}, value{d.value} { }
+    
+    
+    entity(entity const&) = default;
+    entity(entity &&) = default;
+    
+    entity &operator=(entity const&) = default;
+    entity &operator=(entity &&) = default;
+
+    bool operator==(entity const&) const = default;
 
     //@}
   };
 
+  //!
+  //! A structure collecting instances of \ref entity created together.
+  //!
+  //! This is the root (hence the name) of ownership of \ref entity objects,
+  //! since all the other references to them are weak (e.g. \ref object
+  //! internally stores a weak pointer).
+  //!
+  //! Roots live in modules and are created by resolve() collecting all the
+  //! pending declarations/definitions made to the module before.
+  //!
+  //!
   struct root : std::enable_shared_from_this<root> 
   {
     root() = default;
@@ -636,7 +678,7 @@ namespace black::logic {
     root &operator=(root &&) = default;
 
     recursion mode = recursion::forbidden;
-    std::vector<std::shared_ptr<lookup const>> lookups;
+    std::vector<std::unique_ptr<entity const>> entities;
   };
 
   //

@@ -45,8 +45,8 @@ namespace black::backends::cvc5 {
   struct solver::impl_t {
 
     struct frame_t {
-      persistent::map<lookup const *, CVC5::Term> objects;
-      persistent::map<CVC5::Term, lookup const *> consts;
+      persistent::map<entity const *, CVC5::Term> objects;
+      persistent::map<CVC5::Term, entity const *> consts;
 
       bool operator==(frame_t const&) const = default;
     };
@@ -110,7 +110,7 @@ namespace black::backends::cvc5 {
           return *var;
         },
         [&](object o) {
-          CVC5::Term const *obj = stack.top().objects.find(o.lookup());
+          CVC5::Term const *obj = stack.top().objects.find(o.entity());
 
           black_assert(obj != nullptr); // TODO: handle error well
 
@@ -210,10 +210,10 @@ namespace black::backends::cvc5 {
       m.replay(empty, this);
     } 
 
-    void define(lookup const *lu) {
-      black_assert(lu->value);
+    void define(entity const *e) {
+      black_assert(e->value);
 
-      CVC5::Term t = match(*lu->value)(
+      CVC5::Term t = match(*e->value)(
         [&](lambda, auto const &decls, term body) {
           std::vector<CVC5::Term> vars;
           immer::map<variable, CVC5::Term> varmap;
@@ -224,43 +224,43 @@ namespace black::backends::cvc5 {
             varmap = varmap.set(name, var);
           }
 
-          auto fun_ty = cast<function_type>(lu->type);
+          auto fun_ty = cast<function_type>(e->type);
           black_assert(fun_ty.has_value());
 
           return slv->defineFun(
-            std::format("{}", lu->name.name()), vars, 
+            std::format("{}", e->name.name()), vars, 
             to_sort(fun_ty->range()), to_term(body, varmap)
           );
         },
         [&](auto d) {
           return slv->defineFun(
-            std::format("{}", lu->name.name()), 
-            {}, to_sort(lu->type), to_term(d, {})
+            std::format("{}", e->name.name()), 
+            {}, to_sort(e->type), to_term(d, {})
           );
         }
       );
 
-      stack.top().objects.insert({lu, t});
-      stack.top().consts.insert({t, lu});
+      stack.top().objects.insert({e, t});
+      stack.top().consts.insert({t, e});
     }
 
-    void define(std::vector<std::shared_ptr<lookup const>> lookups) {
+    void define(std::vector<entity const *> lookups) {
       std::vector<CVC5::Term> names;
-      for(auto lu : lookups) {
-        CVC5::Term name = slv->mkConst(to_sort(lu->type));
+      for(auto e : lookups) {
+        CVC5::Term name = slv->mkConst(to_sort(e->type));
         names.push_back(name);
-        stack.top().objects.insert({lu.get(), name});
-        stack.top().consts.insert({name, lu.get()});
+        stack.top().objects.insert({e, name});
+        stack.top().consts.insert({name, e});
       }
 
       std::vector<std::vector<CVC5::Term>> vars;
       std::vector<CVC5::Term> bodies;
-      for(auto lu : lookups) {
+      for(auto e : lookups) {
         std::vector<CVC5::Term> thesevars;
         
-        if(cast<function_type>(lu->type)) {
-          function_type ty = unwrap(cast<function_type>(lu->type));
-          lambda fun = unwrap(cast<lambda>(lu->value));
+        if(cast<function_type>(e->type)) {
+          function_type ty = unwrap(cast<function_type>(e->type));
+          lambda fun = unwrap(cast<lambda>(e->value));
 
           immer::map<variable, CVC5::Term> boundvars;
           for(decl d : fun.vars()) {
@@ -273,40 +273,38 @@ namespace black::backends::cvc5 {
           bodies.push_back(to_term(fun.body(), boundvars));
         } else {
           thesevars.push_back({});
-          bodies.push_back(to_term(unwrap(lu->value), {}));
+          bodies.push_back(to_term(unwrap(e->value), {}));
         }
       }
 
       return slv->defineFunsRec(names, vars, bodies);
     }
 
-    void declare(struct lookup const *lu) {
-      black_assert(!lu->value);
+    void declare(struct entity const *e) {
+      black_assert(!e->value);
       
-      CVC5::Term t = slv->mkConst(to_sort(lu->type));
+      CVC5::Term t = slv->mkConst(to_sort(e->type));
       
-      stack.top().objects.insert({lu, t});
-      stack.top().consts.insert({t, lu});
+      stack.top().objects.insert({e, t});
+      stack.top().consts.insert({t, e});
     }
 
     void adopt(std::shared_ptr<root const> r) {
-      std::vector<std::shared_ptr<lookup const>> lookups = r->lookups;
-      // separate declarations and definitions
-      auto decls = std::remove_if(begin(lookups), end(lookups), [](auto lu) {
-        return !lu->value.has_value();
-      });
+      // first, declare the declarations and collect the definitions
+      std::vector<entity const *> defs;
+      for(auto const& e : r->entities) {
+        if(!e->value.has_value())
+          declare(e.get());
+        else
+          defs.push_back(e.get());
+      }
 
-      // declarations
-      for(auto it = decls; it != end(lookups); it++)
-        declare(it->get());
-
-      lookups.erase(decls, end(lookups)); // remove declarations
-
+      // then, define the definitions (recursively or not...)
       if(r->mode == recursion::forbidden)
-        for(auto lu : lookups)
-          define(lu.get());
+        for(auto d : defs)
+          define(d);
       else
-        define(lookups);
+        define(defs);
     }
 
     void require(term t) {

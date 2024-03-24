@@ -37,27 +37,27 @@ namespace black::logic {
   //
   // The entities are stored in a stack of frames, each of which contains:
   // 1. a vector of imported modules
-  // 2. a vector of groups of lookups resolved together, called SCCs (although
-  //    they are not really strongly connected, at the moment).
-  // 3. a map from `variable` to `lookup`, for the name lookup.
+  // 2. a vector of roots
+  // 3. a map from `variable` to `entity const *`, for the name lookup.
   // 4. a vector of required terms.
   //
-  // Each SCC is marked recursive or not, and contains a set of lookups (because
-  // the order of declaration is irrelevant inside the single set).
+  // Each root contains a vector of lookups and is marked recursive or not.
   //
-  // Pending declarations/definitions are stored separately, outside of the
-  // _stack.
+  // Pending entities are stored separately, outside of the stack.
   //
   struct module::impl_t
   {
     struct frame_t {
       persistent::vector<module> imports;
       persistent::vector<std::shared_ptr<root const>> roots;
-      persistent::map<variable, struct lookup const*> scope;
+      persistent::map<variable, struct entity const*> scope;
       persistent::vector<term> reqs;
 
       bool operator==(frame_t const&) const = default;
     };
+
+    persistent::vector<frame_t> _stack = { frame_t{} };
+    std::vector<support::boxed<struct entity>> _pending;
 
     impl_t() = default;
 
@@ -80,7 +80,7 @@ namespace black::logic {
       persistent::set<variable> hidden
     ) const;
 
-    term infer(struct lookup const *p);
+    term infer(struct entity const *p);
 
     std::optional<frame_t>
     diff(frame_t const& ours, frame_t const& theirs) const;
@@ -92,14 +92,11 @@ namespace black::logic {
     object define(def d, resolution r);
     void adopt(std::shared_ptr<root const> rs);
     std::optional<object> lookup(variable x) const;
-    void resolve(recursion s);
+    std::shared_ptr<root const> resolve(recursion s);
     void require(term req);
     void push();
     void pop(size_t n);
     void replay(module from, replay_target_t *target) const;
-
-    persistent::vector<frame_t> _stack = { frame_t{} };
-    std::vector<std::shared_ptr<struct lookup>> _pending;
   };
 
   module::module() = default;
@@ -129,10 +126,10 @@ namespace black::logic {
   }
 
   object module::impl_t::declare(decl d, resolution r) {
-    auto ptr = std::make_unique<struct lookup>(d);
-    object obj{ptr.get()};
+    auto e = std::make_unique<struct entity>(d);
+    object obj{e.get()};
     
-    _pending.push_back(std::move(ptr));
+    _pending.push_back(std::move(e));
     
     if(r == resolution::immediate)
       resolve(recursion::forbidden);
@@ -149,10 +146,10 @@ namespace black::logic {
   }
   
   object module::impl_t::define(def d, resolution r) {
-    auto ptr = std::make_unique<struct lookup>(d);
-    object obj{ptr.get()};
+    auto e = std::make_unique<struct entity>(d);
+    object obj{e.get()};
     
-    _pending.push_back(std::move(ptr));
+    _pending.push_back(std::move(e));
     
     if(r == resolution::immediate)
       resolve(recursion::forbidden);
@@ -198,16 +195,24 @@ namespace black::logic {
   }
 
   void module::impl_t::adopt(std::shared_ptr<root const> r) {
+    if(!r)
+      return;
+
     _stack.update(_stack.size() - 1, [&](auto top) {
       top.roots.push_back(r);
-      for(auto const& lu : r->lookups)
-        top.scope.set(lu->name, lu.get());
+      for(auto const& e : r->entities)
+        top.scope.set(e->name, e.get());
       return top;
     });
   }
 
   void module::adopt(std::shared_ptr<root const> r) {
     _impl->adopt(r);
+  }
+
+  void module::adopt(object obj) {
+    if(auto r = obj.entity()->root; r)
+      adopt(r->shared_from_this());
   }
 
   std::optional<object> module::impl_t::lookup(variable s) const 
@@ -431,7 +436,7 @@ namespace black::logic {
     return _impl->resolved(t, {}, nullptr, {});
   }
 
-  term module::impl_t::infer(struct lookup const *p) {
+  term module::impl_t::infer(struct entity const *p) {
     return support::match(p->type)(
       [&](inferred_type) {
         return type_of(*p->value);
@@ -459,38 +464,35 @@ namespace black::logic {
   //
   // Main name resolution procedure.
   //
-  void module::impl_t::resolve(recursion r) {
-    // at first, create the new root and reset the pending vector in the module
+  std::shared_ptr<root const> module::impl_t::resolve(recursion r) {
+    // at first, create the new root and reset the pending vector in the module,
+    // and we collect things from the vector while we move it.
     auto root = std::make_shared<struct root>();
-    std::vector<struct lookup *> pending;
-    for(auto & lu : _pending) {
-      pending.push_back(lu.get());
-      lu->root = root.get();
-      root->lookups.push_back(std::move(lu));
+    std::vector<struct entity *> lookups;
+    std::unordered_set<variable> names;
+    for(auto pending = std::move(_pending); auto & e : pending) {
+      lookups.push_back(e.get());
+      e->root = root.get();
+      names.insert(e->name);
+      root->entities.push_back(std::move(e).release());
     }
-    _pending.clear();
     
     // in recursive mode, the pending root is adopted already so its lookups
-    // will be visible to name lookup from now on. Note that the pending root,
-    // is initialized as non-recursive, but this will be corrected at the end if
-    // needed.
+    // will be visible to name lookup from now on. Note that `root.mode` is
+    // still `recursion::forbidden` for now but it will be corrected at the end
+    // if needed.
     if(r == recursion::allowed)
-      adopt(root);    
+      adopt(root);
 
-    // we collect the names of the entities
     recursion mode = recursion::forbidden;
-    std::unordered_set<variable> pendingvars;
-    for(auto p : pending)
-      pendingvars.insert(p->name);
-
     // for each pending entity:
-    for(auto p : pending) {
+    for(auto p : lookups) {
       // 1. we resolve the type (recursion in types is not supported)
       p->type = resolved(p->type, {}, nullptr, {});
       
       // 2. if a definition, we resolve the value, detecting recursion
       if(p->value) {
-        *p->value = resolved(*p->value, pendingvars, &mode, {});
+        *p->value = resolved(*p->value, names, &mode, {});
 
         // 3. we infer the type if needed
         p->type = infer(p);
@@ -498,14 +500,16 @@ namespace black::logic {
     }
 
     // finally, if recursion is allowed, we mark the root as recursive or not as
-    // detected, otherwise we adopt the entities now because we didn't before.
+    // detected, otherwise we adopt the root now because we didn't before.
     if(mode == recursion::allowed)
       root->mode = mode;
     else
       adopt(root);
+
+    return root;
   }
 
-  void module::resolve(recursion r) {
+  std::shared_ptr<root const> module::resolve(recursion r) {
     return _impl->resolve(r);
   }
 

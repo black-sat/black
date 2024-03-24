@@ -282,7 +282,7 @@ Boolean and first-order predicates
    A resolved object.
 
    :constructor:
-      .. cpp:function:: object(support::toggle_ptr<logic::lookup const> lookup)
+      .. cpp:function:: object(logic::entity const * lookup)
 
       
          :param lookup: The object's lookup info.
@@ -292,7 +292,7 @@ Boolean and first-order predicates
    :members:
 
    
-      .. cpp:function:: support::toggle_ptr<logic::lookup const> lookup() const
+      .. cpp:function:: logic::entity const * lookup() const
 
          :returns: The object's lookup info.
 

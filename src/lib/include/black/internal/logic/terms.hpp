@@ -31,7 +31,7 @@ namespace black::logic {
   struct real;
   struct variable;
   struct boolean;
-  struct lookup;
+  struct entity;
 
   namespace internal {
     

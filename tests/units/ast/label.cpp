@@ -31,26 +31,29 @@
 using namespace black::support;
 using namespace black::ast::core;
 
-inline void func(black::ast::core::internal::string_literal) {
-
-}
 
 TEST_CASE("labels") {
 
-  func("hello");
-
+  label empty;
   label id = "hello";
   label id2 = label{42};
 
   label id3 = id;
 
+  REQUIRE(empty == empty);
+  REQUIRE(empty != id);
+
   REQUIRE(id3 == id);
   REQUIRE(id3 != id2);
 
+  std::string stre = std::format("{}", empty);
   std::string str1 = std::format("{}", id);
   std::string str2 = std::format("{}", id2);
 
+  REQUIRE(stre == "<empty label>");
   REQUIRE(str1 == "hello");
   REQUIRE(str2 == "42");
+
+  REQUIRE(empty.hash() == 0);
 
 }
