@@ -101,7 +101,6 @@ TEST_CASE("cvc5") {
     SECTION("Recursive definitions") {
         variable x = "x";
         variable f = "f";
-        variable y = "y";
 
         object fact = mod.define(
             f, {{x, integer_type()}}, integer_type(), 
@@ -122,20 +121,19 @@ TEST_CASE("cvc5") {
 
         module math;
 
-        math.define({"pi", 3.14});
+        object pi = math.define("pi", 3.14);
 
         module geometry;
 
         geometry.import(math);
 
         variable r = "r";
-        variable pi = "pi";
 
         object perimeter = 
-            geometry.define({"perimeter", {{r, real_type()}}, 2.0 * r * pi});
+            geometry.define("perimeter", {{r, real_type()}}, 2.0 * r * pi);
         
         object area = 
-            geometry.define({"area", {{r, real_type()}}, 2.0 * r * r * pi});
+            geometry.define("area", {{r, real_type()}}, 2.0 * r * r * pi);
 
         geometry.require(
             forall(
