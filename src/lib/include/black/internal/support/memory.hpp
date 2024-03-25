@@ -85,6 +85,62 @@ namespace black::support {
   };
 
   //
+  // Manages an instance of type T which is, however, only constructed at first
+  // access.
+  //
+  template<typename T>
+  class lazy 
+  {
+  public:
+    lazy() = default;
+    lazy(T v) : _data{std::move(v)} { }
+    
+    lazy(lazy const&) = default;
+    lazy(lazy &&) = default;
+    
+    lazy &operator=(T v) {
+      _data = std::move(v);
+      return *this;
+    }
+
+    lazy &operator=(lazy const&) = default;
+    lazy &operator=(lazy &&) = default;
+
+    bool operator==(lazy const&) const = default;
+
+    T const*get() const {
+      if(!_data)
+        _data = T{};
+      return &(*_data);
+    }
+    
+    T *get() {
+      if(!_data)
+        _data = T{};
+      return &(*_data);
+    }
+
+    T const&operator*() const {
+      return *get();
+    }
+    
+    T &operator*() {
+      return *get();
+    }
+
+    T const*operator->() const {
+      return get();
+    }
+    
+    T *operator->() {
+      return get();
+    }
+  
+  private:
+    mutable std::optional<T> _data;
+  };
+
+  //
   // Similar to `std::any` but knows the base class of the contained type and
   // can compare two values of the same type. That is, value semantics and
   // virtual dispatch together.
@@ -166,12 +222,12 @@ namespace black::support {
     template<typename U>
     friend class erased;
 
-    using extractor_t = std::function<Base *(std::any *)>;
+    using extractor_t = std::function<std::remove_const_t<Base> *(std::any *)>;
     using comparator_t = std::function<bool(std::any const*, std::any const*)>;
 
     template<typename Derived>
     extractor_t make_extractor() {
-      return [](std::any *value) -> Base * {
+      return [](std::any *value) -> std::remove_const_t<Base> * {
         return std::any_cast<Derived>(value);
       };
     }
@@ -196,68 +252,20 @@ namespace black::support {
       };
     }
 
-    
-
     mutable std::any _value;
     extractor_t _extractor = nullptr;
     comparator_t _comparator = nullptr;
   };
 
-  //
-  // Manages an instance of type T which is, however, only constructed at first
-  // access.
-  //
-  template<typename T>
-  class lazy 
-  {
-  public:
-    lazy() = default;
-    lazy(T v) : _data{std::move(v)} { }
-    
-    lazy(lazy const&) = default;
-    lazy(lazy &&) = default;
-    
-    lazy &operator=(T v) {
-      _data = std::move(v);
-      return *this;
-    }
-
-    lazy &operator=(lazy const&) = default;
-    lazy &operator=(lazy &&) = default;
-
-    bool operator==(lazy const&) const = default;
-
-    T const*get() const {
-      if(!_data)
-        _data = T{};
-      return &(*_data);
-    }
-    
-    T *get() {
-      if(!_data)
-        _data = T{};
-      return &(*_data);
-    }
-
-    T const&operator*() const {
-      return *get();
-    }
-    
-    T &operator*() {
-      return *get();
-    }
-
-    T const*operator->() const {
-      return get();
-    }
-    
-    T *operator->() {
-      return get();
-    }
-  
-  private:
-    mutable std::optional<T> _data;
-  };
+  // //
+  // // Variant of different handles for a pointer to type T
+  // //
+  // template<typename T>
+  // class handle
+  // {
+  // private:
+  //   std::variant<T *, std::shared_ptr<T>, 
+  // };
 
 }
 

@@ -147,8 +147,15 @@ TEST_CASE("erased<T>") {
     erased<Base> b3 = MostDerived{2, 4};
     b1 = d1;
 
-    //REQUIRE(b1 == b3);
+    REQUIRE(b1 == b3);
     REQUIRE(b1->run(21) == 47);
     REQUIRE(b3->run(21) == 47);
+
+    erased<Base const> b4 = Derived{2};
+    // correctly does not compile: b4->set_factor(4);
+
+    erased<Base> b5 = b4;
+
+    REQUIRE(b5->run(21) == 42);
 
 }
