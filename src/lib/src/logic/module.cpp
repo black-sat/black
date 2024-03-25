@@ -50,7 +50,7 @@ namespace black::logic {
     struct frame_t {
       persistent::vector<module> imports;
       persistent::vector<std::shared_ptr<root const>> roots;
-      persistent::map<variable, struct entity const*> scope;
+      persistent::map<variable, entity const*> scope;
       persistent::vector<term> reqs;
 
       bool operator==(frame_t const&) const = default;
@@ -80,7 +80,7 @@ namespace black::logic {
       persistent::set<variable> hidden
     ) const;
 
-    term infer(struct entity const *p);
+    term infer(entity const *p);
 
     std::optional<frame_t>
     diff(frame_t const& ours, frame_t const& theirs) const;
@@ -126,7 +126,7 @@ namespace black::logic {
   }
 
   object module::impl_t::declare(decl d, resolution r) {
-    auto e = std::make_unique<struct entity>(d);
+    auto e = support::boxed(entity{d});
     object obj{e.get()};
     _pending.push_back(std::move(e));
     
@@ -145,7 +145,7 @@ namespace black::logic {
   }
   
   object module::impl_t::define(def d, resolution r) {
-    auto e = std::make_unique<struct entity>(d);
+    auto e = support::boxed(entity{d});
     object obj{e.get()};
     _pending.push_back(std::move(e));
     
@@ -432,7 +432,7 @@ namespace black::logic {
     return _impl->get()->resolved(t, {}, nullptr, {});
   }
 
-  term module::impl_t::infer(struct entity const *p) {
+  term module::impl_t::infer(entity const *p) {
     return support::match(p->type)(
       [&](inferred_type) {
         return type_of(*p->value);
@@ -464,7 +464,7 @@ namespace black::logic {
     // at first, create the new root and reset the pending vector in the module,
     // and we collect things from the vector while we move it.
     auto root = std::make_shared<struct root>();
-    std::vector<struct entity *> lookups;
+    std::vector<entity *> lookups;
     std::unordered_set<variable> names;
     for(auto pending = std::move(_pending); auto & e : pending) {
       lookups.push_back(e.get());

@@ -280,7 +280,7 @@ namespace black::backends::cvc5 {
       return slv->defineFunsRec(names, vars, bodies);
     }
 
-    void declare(struct entity const *e) {
+    void declare(entity const *e) {
       black_assert(!e->value);
       
       CVC5::Term t = slv->mkConst(to_sort(e->type));

@@ -26,6 +26,7 @@
 
 #include <memory>
 #include <variant>
+#include <any>
 #include <concepts>
 
 namespace black::support {
@@ -38,9 +39,8 @@ namespace black::support {
   {
   public:
     boxed() : _ptr{std::make_unique<T>()} { }
+    
     boxed(T v) : _ptr{std::make_unique<T>(std::move(v))} { }
-
-    boxed(std::unique_ptr<T> ptr) : _ptr{std::move(ptr)} { }
 
     boxed(boxed const& other) 
       : _ptr{other._ptr ? std::make_unique<T>(*other._ptr) : nullptr} { }
@@ -82,6 +82,125 @@ namespace black::support {
 
   private:
     std::unique_ptr<T> _ptr;
+  };
+
+  //
+  // Similar to `std::any` but knows the base class of the contained type and
+  // can compare two values of the same type. That is, value semantics and
+  // virtual dispatch together.
+  //
+  template<typename Base>
+  class erased 
+  {
+  public:
+    erased() = default;
+
+    template<typename Derived>
+      requires std::is_base_of_v<Base, Derived>
+    erased(Derived v)
+      : _value{std::move(v)}, 
+        _extractor{make_extractor<Derived>()},
+        _comparator{make_comparator<Derived>()} { }
+
+    template<typename Derived>
+      requires std::is_base_of_v<Base, Derived>
+    erased(erased<Derived> v)
+      : _value{std::move(v._value)},
+         _extractor{make_extractor<Derived>(v._extractor)}, 
+         _comparator{v._comparator} { }
+
+    erased(erased const&) = default;
+    erased(erased &&) = default;
+    
+    erased &operator=(erased const&) = default;
+    erased &operator=(erased &&) = default;
+
+    template<typename Derived>
+      requires std::is_base_of_v<Base, Derived>
+    erased &operator=(Derived v) {
+      *this = erased{std::move(v)};
+      return *this;
+    }
+
+    template<typename Derived>
+      requires std::is_base_of_v<Base, Derived>
+    erased &operator=(erased<Derived> v) {
+      *this = erased{std::move(v)};
+      return *this;
+    }
+
+    bool operator==(erased const& other) const {
+      if(!_value.has_value() || !other._value.has_value())
+        return _value.has_value() && other._value.has_value();
+
+      return _comparator(&_value, &other._value);
+    }
+
+    Base *get() {
+      return _extractor(&_value);
+    }
+    
+    Base const *get() const {
+      return _extractor(&_value);
+    }
+    
+    template<typename Derived>
+    Derived *extract() {
+      return std::any_cast<Derived>(&_value);
+    }
+    
+    template<typename Derived>
+    Derived const *extract() const {
+      return std::any_cast<Derived>(&_value);
+    }
+
+    Base *operator->() {
+      return get();
+    }
+
+    Base const*operator->() const {
+      return get();
+    }
+
+  private:
+    template<typename U>
+    friend class erased;
+
+    using extractor_t = std::function<Base *(std::any *)>;
+    using comparator_t = std::function<bool(std::any const*, std::any const*)>;
+
+    template<typename Derived>
+    extractor_t make_extractor() {
+      return [](std::any *value) -> Base * {
+        return std::any_cast<Derived>(value);
+      };
+    }
+
+    template<typename Derived>
+    extractor_t make_extractor(erased<Derived>::extractor_t ex) {
+      return [=](std::any *value) -> Base * {
+        return ex(value);
+      };
+    }
+
+    template<typename Derived>
+    comparator_t make_comparator() {
+      return [](std::any const *v1, std::any const *v2) {
+        if(!v1 || !v2)
+          return !v1 && !v2;
+        
+        Derived const *p1 = std::any_cast<Derived>(v1);
+        Derived const *p2 = std::any_cast<Derived>(v2);
+
+        return p1 && p2 && *p1 == *p2;
+      };
+    }
+
+    
+
+    mutable std::any _value;
+    extractor_t _extractor = nullptr;
+    comparator_t _comparator = nullptr;
   };
 
   //
