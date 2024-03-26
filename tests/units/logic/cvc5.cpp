@@ -107,14 +107,17 @@ TEST_CASE("cvc5") {
             ite(x == 1, 1, x * f(x - 1)),
             resolution::delayed
         );
-
+        
+        object a = mod.declare("a", integer_type());
+        
         mod.resolve(recursion::allowed);
-
+        
+        mod.require(fact(a) == 24);
+        
         REQUIRE(slv.check(mod) == true);
 
-        mod.require(fact(4) != 24);
-
-        REQUIRE(slv.check(mod) == false);        
+        REQUIRE(slv.value(a).has_value());
+        REQUIRE(slv.value(a) == 4);
     }
 
     SECTION("Module imports") {
@@ -144,6 +147,17 @@ TEST_CASE("cvc5") {
 
         REQUIRE(slv.check(geometry) == true);
 
+    }
+
+    SECTION("Model values") {
+        object x = mod.declare("x", integer_type());
+        
+        mod.require(x <= 0);
+        mod.require(x >= 0);
+        REQUIRE(slv.check(mod) == true);
+
+        REQUIRE(slv.value(x).has_value());
+        REQUIRE(slv.value(x) == 0);
     }
 
 }

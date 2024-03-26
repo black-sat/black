@@ -60,6 +60,7 @@ set(
   -Wno-newline-eof
   -Wno-ctad-maybe-unsupported
   -Wno-shadow-field-in-constructor
+  -Wno-switch-enum
 )
 
 # GCC

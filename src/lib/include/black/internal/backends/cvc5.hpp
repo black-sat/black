@@ -44,6 +44,8 @@ namespace black::backends::cvc5 {
 
     support::tribool check(logic::module m);
 
+    std::optional<logic::term> value(logic::term);
+
   private:
     struct impl_t;
     std::unique_ptr<impl_t> _impl;

@@ -282,19 +282,19 @@ Boolean and first-order predicates
    A resolved object.
 
    :constructor:
-      .. cpp:function:: object(logic::entity const * lookup)
+      .. cpp:function:: object(logic::entity const * entity)
 
       
-         :param lookup: The object's lookup info.
+         :param entity: The object's underlying entity.
       
 
       
    :members:
 
    
-      .. cpp:function:: logic::entity const * lookup() const
+      .. cpp:function:: logic::entity const * entity() const
 
-         :returns: The object's lookup info.
+         :returns: The object's underlying entity.
 
    
    

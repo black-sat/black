@@ -52,14 +52,28 @@ namespace black::backends::cvc5 {
     };
   
     module mod;
-    std::stack<frame_t> stack;
-    std::unique_ptr<CVC5::Solver> slv;
+    std::deque<frame_t> stack = { frame_t{} };
+    std::unique_ptr<CVC5::Solver> slv = std::make_unique<CVC5::Solver>();
     bool ignore_push = false;
 
-    impl_t() : stack{{frame_t{}}}, slv{std::make_unique<CVC5::Solver>()} 
-    { 
+    impl_t() { 
       slv->setOption("fmf-fun", "true");
+      slv->setOption("produce-models", "true");
       slv->push();
+    }
+
+    std::optional<CVC5::Term> get_const(entity const *e) const {
+      for(auto it = stack.rbegin(); it != stack.rend(); it++)
+        if(auto p = it->objects.find(e); p)
+          return *p;
+      return {};
+    }
+    
+    entity const *get_entity(CVC5::Term t) const {
+      for(auto it = stack.rbegin(); it != stack.rend(); it++)
+        if(auto p = it->consts.find(t); p)
+          return *p;
+      return nullptr;
     }
 
     CVC5::Sort to_sort(term type) const {
@@ -110,9 +124,9 @@ namespace black::backends::cvc5 {
           return *var;
         },
         [&](object o) {
-          CVC5::Term const *obj = stack.top().objects.find(o.entity());
+          std::optional<CVC5::Term> obj = get_const(o.entity());
 
-          black_assert(obj != nullptr); // TODO: handle error well
+          black_assert(obj.has_value()); // TODO: handle error well
 
           return *obj;
         },
@@ -202,6 +216,79 @@ namespace black::backends::cvc5 {
       );
     }
 
+    template<typename Node, typename ...Args>
+    term from_many_children(CVC5::Term t, Args ...args) {
+      std::vector<term> children;
+      size_t i = 0;
+      for(auto child : t)
+        if(i++ >= sizeof...(Args))
+          children.push_back(from_term(child));
+      return Node(args..., children);
+    }
+
+    template<typename Node, typename ...Args>
+    term from_children(CVC5::Term t, Args ...args) {
+      return [&]<size_t ...Idx>(std::index_sequence<Idx...>) {
+        return Node(args..., from_term(t[sizeof...(Args) + Idx])...);
+      }(std::make_index_sequence<std::tuple_size_v<Node> - sizeof...(Args)>{});
+    }
+
+    term from_term(CVC5::Term t) {
+      if(auto p = get_entity(t); p)
+        return object(p);
+
+      if(t.isUInt64Value())
+        return integer(t.getUInt64Value());
+      if(t.isInt64Value())
+        return integer(int64_t(t.getUInt64Value()));  
+      if(t.isBooleanValue()) 
+        return boolean(t.getBooleanValue());
+      if(t.isReal32Value()) {
+        auto [num, den] = t.getReal32Value();
+        return real((double) num / den);
+      }
+      
+      switch(t.getKind()) {
+        case CVC5::Kind::EQUAL:
+          return from_many_children<equal>(t);
+        case CVC5::Kind::DISTINCT:
+          return from_many_children<distinct>(t);
+        case CVC5::Kind::APPLY_UF:
+          return from_many_children<atom>(t, from_term(t[0]));
+        case CVC5::Kind::NOT:
+          return from_children<negation>(t);
+        case CVC5::Kind::AND:
+          return from_many_children<conjunction>(t);
+        case CVC5::Kind::OR:
+          return from_many_children<disjunction>(t);
+        case CVC5::Kind::IMPLIES:
+          return from_children<implication>(t);
+        case CVC5::Kind::ITE:
+          return from_children<ite>(t);
+        case CVC5::Kind::NEG:
+          return from_children<minus>(t);
+        case CVC5::Kind::ADD:
+          return from_children<sum>(t);
+        case CVC5::Kind::MULT:
+          return from_children<product>(t);
+        case CVC5::Kind::SUB:
+          return from_children<difference>(t);
+        case CVC5::Kind::INTS_DIVISION:
+        case CVC5::Kind::DIVISION:
+          return from_children<division>(t);
+        case CVC5::Kind::LT:
+          return from_children<less_than>(t);
+        case CVC5::Kind::LEQ:
+          return from_children<less_than_eq>(t);
+        case CVC5::Kind::GT:
+          return from_children<greater_than>(t);
+        case CVC5::Kind::GEQ:
+          return from_children<greater_than_eq>(t);
+        default:
+          black_unreachable();
+      }
+    }
+
     void import(module const& m) {
       auto _ = support::checkpoint(ignore_push);
       ignore_push = true;
@@ -240,8 +327,8 @@ namespace black::backends::cvc5 {
         }
       );
 
-      stack.top().objects.insert({e, t});
-      stack.top().consts.insert({t, e});
+      stack.back().objects.insert({e, t});
+      stack.back().consts.insert({t, e});
     }
 
     void define(std::vector<entity const *> lookups) {
@@ -249,8 +336,8 @@ namespace black::backends::cvc5 {
       for(auto e : lookups) {
         CVC5::Term name = slv->mkConst(to_sort(e->type));
         names.push_back(name);
-        stack.top().objects.insert({e, name});
-        stack.top().consts.insert({name, e});
+        stack.back().objects.insert({e, name});
+        stack.back().consts.insert({name, e});
       }
 
       std::vector<std::vector<CVC5::Term>> vars;
@@ -285,8 +372,8 @@ namespace black::backends::cvc5 {
       
       CVC5::Term t = slv->mkConst(to_sort(e->type));
       
-      stack.top().objects.insert({e, t});
-      stack.top().consts.insert({t, e});
+      stack.back().objects.insert({e, t});
+      stack.back().consts.insert({t, e});
     }
 
     void adopt(std::shared_ptr<root const> r) {
@@ -316,9 +403,9 @@ namespace black::backends::cvc5 {
         return;
 
       if(stack.empty())
-        stack.push({});
+        stack.push_back({});
       else
-        stack.push(stack.top());
+        stack.push_back(stack.back());
       slv->push();
     }
 
@@ -327,7 +414,7 @@ namespace black::backends::cvc5 {
         return;
 
       for(size_t i = 0; i < n; i++)
-        stack.pop();
+        stack.pop_back();
       slv->pop(unsigned(n));
     }
 
@@ -344,6 +431,15 @@ namespace black::backends::cvc5 {
       return tribool::undef;
     }
 
+    std::optional<term> value(term t) 
+    {
+      CVC5::Term v = slv->getValue(to_term(t, {}));
+      if(v.isNull())
+        return {};
+      
+      return from_term(v);
+    }
+
   };
 
 
@@ -353,6 +449,10 @@ namespace black::backends::cvc5 {
 
   support::tribool solver::check(module m) { 
     return _impl->check(std::move(m)); 
+  }
+
+  std::optional<term> solver::value(term t) {
+    return _impl->value(t);
   }
 
 }

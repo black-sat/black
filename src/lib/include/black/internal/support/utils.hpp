@@ -58,20 +58,24 @@ namespace black::support::internal
   // If <cxxabi.h> is not there (any compiler other than GCC and clang),
   // we just return the string as-is.
   //
-  template<typename T>
-  std::string type_name() {
+  inline std::string demangle(const char *name) {
     #if __has_include(<cxxabi.h>)
       int status = 0;
       
       auto result = std::unique_ptr<char, decltype(&free)>(
-        abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, &status),
+        abi::__cxa_demangle(name, nullptr, nullptr, &status),
         &free
       );
       
       return result.get();
     #else
-      return typeid(T).name();
+      return name;
     #endif
+  }
+
+  template<typename T>
+  std::string type_name() {
+    return demangle(typeid(T).name());
   }
 
   inline std::string to_camel(std::string_view name) {

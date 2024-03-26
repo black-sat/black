@@ -57,30 +57,40 @@ namespace black::logic {
     };
 
     persistent::vector<frame_t> _stack = { frame_t{} };
-    std::vector<support::boxed<entity>> _pending;
+    std::vector<std::unique_ptr<entity>> _pending;
 
     impl_t() = default;
 
-    impl_t(impl_t const&) = default;
-    impl_t(impl_t &&) = default;
+    impl_t(impl_t const& other) : _stack{other._stack}, _pending{} { } 
     
-    impl_t &operator=(impl_t const&) = default;
+    impl_t &operator=(impl_t const& other) {
+      *this = impl_t{other};
+      return *this;
+    }
+    
+    impl_t(impl_t &&) = default;
     impl_t &operator=(impl_t &&) = default;
 
     bool operator==(impl_t const&) const = default;
 
-    term resolved(
-      term t, std::unordered_set<variable> const& pending, recursion *mode, 
-      persistent::set<variable> hidden
-    ) const;
-
     std::vector<term> resolved(
       std::vector<term> const &ts, 
       std::unordered_set<variable> const& pending, recursion *mode, 
+      root const *ours, std::unordered_set<std::shared_ptr<root const>> *deps,
       persistent::set<variable> hidden
     ) const;
 
-    term infer(entity const *p);
+    term resolved(
+      term t, 
+      std::unordered_set<variable> const& pending, recursion *mode, 
+      root const*ours, std::unordered_set<std::shared_ptr<root const>> *deps,
+      persistent::set<variable> hidden
+    ) const;
+
+    term infer(
+      entity const *p, 
+      root const*ours, std::unordered_set<std::shared_ptr<root const>> *deps
+    );
 
     std::optional<frame_t>
     diff(frame_t const& ours, frame_t const& theirs) const;
@@ -92,7 +102,10 @@ namespace black::logic {
     object define(def d, resolution r);
     void adopt(std::shared_ptr<root const> rs);
     std::optional<object> lookup(variable x) const;
-    std::shared_ptr<root const> resolve(recursion s);
+    std::shared_ptr<root const> 
+    resolve(
+      recursion r, std::vector<std::unique_ptr<entity>> *pending
+    );
     void require(term req);
     void push();
     void pop(size_t n);
@@ -126,13 +139,17 @@ namespace black::logic {
   }
 
   object module::impl_t::declare(decl d, resolution r) {
-    auto e = support::boxed(entity{d});
+    auto e = std::make_unique<entity>(d);
     object obj{e.get()};
-    _pending.push_back(std::move(e));
     
-    if(r == resolution::immediate)
-      resolve(recursion::forbidden);
-
+    if(r == resolution::immediate) {
+      std::vector<std::unique_ptr<entity>> pending;
+      pending.push_back(std::move(e));
+      resolve(recursion::forbidden, &pending);
+    } else {
+      _pending.push_back(std::move(e));
+    }
+  
     return obj;
   }
 
@@ -145,13 +162,17 @@ namespace black::logic {
   }
   
   object module::impl_t::define(def d, resolution r) {
-    auto e = support::boxed(entity{d});
+    auto e = std::make_unique<entity>(d);
     object obj{e.get()};
-    _pending.push_back(std::move(e));
     
-    if(r == resolution::immediate)
-      resolve(recursion::forbidden);
-
+    if(r == resolution::immediate) {
+      std::vector<std::unique_ptr<entity>> pending;
+      pending.push_back(std::move(e));
+      resolve(recursion::forbidden, &pending);
+    } else {
+      _pending.push_back(std::move(e));
+    }
+  
     return obj;
   }
 
@@ -371,11 +392,12 @@ namespace black::logic {
   std::vector<term> module::impl_t::resolved(
     std::vector<term> const &ts, 
     std::unordered_set<variable> const& pending, recursion *mode, 
+    root const *ours, std::unordered_set<std::shared_ptr<root const>> *deps,
     persistent::set<variable> hidden
   ) const {
     std::vector<term> res;
     for(term t : ts)
-      res.push_back(resolved(t, pending, mode, hidden));
+      res.push_back(resolved(t, pending, mode, ours, deps, hidden));
     return res;
   }
 
@@ -385,7 +407,9 @@ namespace black::logic {
   // `pending` is mentioned.
   //
   term module::impl_t::resolved(
-    term t, std::unordered_set<variable> const& pending, recursion *mode, 
+    term t, 
+    std::unordered_set<variable> const& pending, recursion *mode, 
+    root const *ours, std::unordered_set<std::shared_ptr<root const>> *deps,
     persistent::set<variable> hidden
   ) const {
     return support::match(t)(
@@ -398,7 +422,12 @@ namespace black::logic {
       [&](integer v)       { return v; },
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
-      [&](object v)        { return v; },
+      [&](object v)        { 
+        if(auto r = v.entity()->root.lock(); deps && r && r.get() != ours)
+          deps->insert(r);
+        
+        return v;
+      },
       [&](variable x) -> term {
         if(hidden.count(x))
           return x;
@@ -415,24 +444,27 @@ namespace black::logic {
         std::vector<decl> rdecls;
         for(decl d : decls) {
           rdecls.push_back(decl{
-            d.name, resolved(d.type, {}, nullptr, hidden)
+            d.name, resolved(d.type, {}, nullptr, ours, deps, hidden)
           });
           hidden.insert(d.name);
         }
         
-        return T(rdecls, resolved(body, pending, mode, hidden));
+        return T(rdecls, resolved(body, pending, mode, ours, deps, hidden));
       },
       [&]<typename T>(T, auto const &...args) {
-        return T(resolved(args, pending, mode, hidden)...);
+        return T(resolved(args, pending, mode, ours, deps, hidden)...);
       }
     );
   }
 
   term module::resolved(term t) const {
-    return _impl->get()->resolved(t, {}, nullptr, {});
+    return _impl->get()->resolved(t, {}, nullptr, nullptr, nullptr, {});
   }
 
-  term module::impl_t::infer(entity const *p) {
+  term module::impl_t::infer(
+    entity const *p, 
+    root const*ours, std::unordered_set<std::shared_ptr<root const>> *deps
+  ) {
     return support::match(p->type)(
       [&](inferred_type) {
         return type_of(*p->value);
@@ -450,7 +482,7 @@ namespace black::logic {
 
         return function_type(
           params, 
-          type_of(nested.resolved(func->body(), {}, nullptr, {}))
+          type_of(nested.resolved(func->body(), {}, nullptr, ours, deps, {}))
         );
       },
       [&](auto t) { return t; }
@@ -460,40 +492,50 @@ namespace black::logic {
   //
   // Main name resolution procedure.
   //
-  std::shared_ptr<root const> module::impl_t::resolve(recursion r) {
+  std::shared_ptr<root const> 
+  module::impl_t::resolve(
+    recursion r, std::vector<std::unique_ptr<entity>> *pending
+  ) {
+    if(!pending)
+      pending = &this->_pending;
+
     // at first, create the new root and reset the pending vector in the module,
     // and we collect things from the vector while we move it.
     auto root = std::make_shared<struct root>();
     std::vector<entity *> lookups;
     std::unordered_set<variable> names;
-    for(auto pending = std::move(_pending); auto & e : pending) {
+    for(auto local = std::move(*pending); auto & e : local) {
       lookups.push_back(e.get());
       e->root = root;
       names.insert(e->name);
-      root->entities.push_back(std::move(e).release());
+      root->entities.push_back(std::move(e));
     }
     
-    // in recursive mode, the pending root is adopted already so its lookups
-    // will be visible to name lookup from now on. Note that `root.mode` is
+    // in recursive mode, the pending root is adopted already so its entities
+    // will be visible to name lookup from now on. Note that `root->mode` is
     // still `recursion::forbidden` for now but it will be corrected at the end
     // if needed.
     if(r == recursion::allowed)
       adopt(root);
 
     recursion mode = recursion::forbidden;
+    std::unordered_set<std::shared_ptr<struct root const>> deps;
     // for each pending entity:
     for(auto p : lookups) {
       // 1. we resolve the type (recursion in types is not supported)
-      p->type = resolved(p->type, {}, nullptr, {});
+      p->type = resolved(p->type, {}, nullptr, root.get(), &deps, {});
       
       // 2. if a definition, we resolve the value, detecting recursion
       if(p->value) {
-        *p->value = resolved(*p->value, names, &mode, {});
+        *p->value = resolved(*p->value, names, &mode, root.get(), &deps, {});
 
         // 3. we infer the type if needed
-        p->type = infer(p);
+        p->type = infer(p, root.get(), &deps);
       }
     }
+
+    root->dependencies = 
+      std::vector<std::shared_ptr<struct root const>>(deps.begin(), deps.end());
 
     // finally, if recursion is allowed, we mark the root as recursive or not as
     // detected, otherwise we adopt the root now because we didn't before.
@@ -506,7 +548,7 @@ namespace black::logic {
   }
 
   std::shared_ptr<root const> module::resolve(recursion r) {
-    return _impl->get()->resolve(r);
+    return _impl->get()->resolve(r, nullptr);
   }
 
 }

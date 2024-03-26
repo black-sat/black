@@ -150,14 +150,47 @@ namespace black::logic {
   //!
   //! Entry point to build modules.
   //!
-  //! \ref module is a **regular** type (also known as *value type*), meaning
-  //! that its instances are meant to be freely copied and passed around by
-  //! value. Copy of a \ref module is cheap thanks to the underlying usage of
-  //! persistent data structures. 
-  //!
   //! The \ref module class mantains sets of declarations, requirements
   //! (sometimes called *assertions*), and other elements in a stack that can be
   //! manipulated with the push() and pop() member functions.
+  //!
+  //! \ref module is a **regular** type (also known as *value type*), *i.e.*, it
+  //! is *default-initializable*, *copy-constructible*, *move-constructible*,
+  //! and *equality-comparable*. Thanks to the underlying usage of persistent
+  //! data structures, all these operations are quite fast, so \ref module
+  //! objects are mant to be freely passed around by value. A dynamic allocation
+  //! of a small object is still needed for copies, so moving is still preferred
+  //! when possible.
+  //!
+  //! \note Declarations/definitions that are pending because of calls to
+  //! declare() or define() with delayed resolution mode are **not** retained in
+  //! copies.
+  //!
+  //! Equality is checked *deeply* against the *contents* of the modules.
+  //!
+  //! Thanks to persistent data structures, equality comparison is relatively
+  //! cheap, but some attention has to be payed. Because of how the underlying
+  //! data structures work, it is cheap to compare two copies of the same
+  //! module, or two modules where one has been derived from a copy of the
+  //! other by a few edits.
+  //!
+  //! For example, the following is very cheap:
+  //!
+  //! ```cpp
+  //! module m = very_large_module();
+  //! module m2 = m; // cheap copy
+  //!
+  //! assert(m2 == m); // the cheapest
+  //!
+  //! m2.require(x == y);
+  //!
+  //! assert(m != m2); // still cheap
+  //! ```
+  //!
+  //! Comparing two different modules is also usually cheap because of
+  //! short-curcuiting. However, comparing completely unrelated modules that
+  //! somehow happen to be equal or very similar is potentially expensive,
+  //! because all the contents of the modules will have to be compared.
   //!
   class module
   {
@@ -169,10 +202,8 @@ namespace black::logic {
     //! Default constructor. Constructs an empty module.
     module();
 
-    //! Copy constructor.
     module(module const&);
 
-    //! Move constructor.
     module(module &&);
     
     ~module();
@@ -183,35 +214,7 @@ namespace black::logic {
     //! Move-assignment operator
     module &operator=(module &&); 
 
-    //!
     //! Equality comparison operator.
-    //!
-    //! The equality is checked against the *contents* of the module.
-    //!
-    //! Thanks to persistent data structures, equality comparison is relatively
-    //! cheap, but some attention has to be payed. Because of how the underlying
-    //! data structures work, it is cheap to compare two copies of the same
-    //! module, or two modules where one has been derived from a copy of the
-    //! other by a few edits.
-    //!
-    //! For example, the following is very cheap:
-    //!
-    //! ```cpp
-    //! module m = very_large_module();
-    //! module m2 = m; // cheap copy
-    //!
-    //! assert(m2 == m); // the cheapest
-    //!
-    //! m2.require(x == y);
-    //!
-    //! assert(m != m2); // still cheap
-    //! ```
-    //!
-    //! Comparing two different modules is also usually cheap because of
-    //! short-curcuiting. However, comparing completely unrelated modules that
-    //! somehow happen to be equal or very similar is potentially expensive,
-    //! because all the contents of the modules will have to be compared.
-    //!
     bool operator==(module const&) const;
 
     //!@}
@@ -252,6 +255,9 @@ namespace black::logic {
     //!   until the next call to the resolve() function, which will resolve
     //!   `d.type`.
     //!
+    //! \note Declarations that are pending because of calls to declare() or
+    //! with delayed resolution mode are **not** retained in copies.
+    //!
     object declare(decl d, resolution r = resolution::immediate);
 
     //!
@@ -281,7 +287,7 @@ namespace black::logic {
     //! If `d.type` is an \ref inferred_type term, the type is inferred from
     //! `d.value`, when possible (for now, recursive definitions cannot be
     //! type-inferred).
-    //! 
+    //!
     //! The resolution mode `r` determines when name lookup is applied to
     //! unbound variables:
     //! - if `r` is \ref resolution::immediate, any unbound \ref variable
@@ -289,6 +295,9 @@ namespace black::logic {
     //! - if `r` is \ref resolution::delayed, the name will **not** be visible
     //!   until the next call to the resolve() function, which will resolve
     //!   `d.type`.
+    //!
+    //! \note Definitions that are pending because of calls to define() with
+    //! delayed resolution mode are **not** retained in copies.
     //!
     object define(def d, resolution r = resolution::immediate);
 
@@ -681,6 +690,7 @@ namespace black::logic {
 
     recursion mode = recursion::forbidden;
     std::vector<std::unique_ptr<entity const>> entities;
+    std::vector<std::shared_ptr<root const>> dependencies;
   };
 
   //
