@@ -30,80 +30,87 @@ namespace black::logic {
   //
   // boolean connectives
   //
-  inline negation operator!(term t) {
-    return negation(t);
+  inline negation operator!(term_source auto t) {
+    return negation(term{t});
   }
   
-  inline conjunction operator&&(term t1, term t2) {
-    return conjunction({t1, t2});
+  inline conjunction operator&&(term_source auto t1, term_source auto t2) {
+    return conjunction({term{t1}, term{t2}});
   }
   
-  inline disjunction operator||(term t1, term t2) {
-    return disjunction({t1, t2});
+  inline disjunction operator||(term_source auto t1, term_source auto t2) {
+    return disjunction({term{t1}, term{t2}});
   }
   
-  inline implication implies(term t1, term t2) {
-    return implication(t1, t2);
+  inline implication implies(term_source auto t1, term_source auto t2) {
+    return implication(term{t1}, term{t2});
   }
 
   //
   // LTL operators
   //
 
-  inline tomorrow X(term t) { return tomorrow(t); }
-  inline w_tomorrow wX(term t) { return w_tomorrow(t); }
-  inline eventually F(term t) { return eventually(t); }
-  inline always G(term t) { return always(t); }
-  inline until U(term t1, term t2) { return until(t1, t2); }
-  inline release R(term t1, term t2) { return release(t1, t2); }
-
-  inline yesterday Y(term t) { return yesterday(t); }
-  inline w_yesterday Z(term t) { return w_yesterday(t); }
-  inline once O(term t) { return once(t); }
-  inline historically H(term t) { return historically(t); }
-  inline since S(term t1, term t2) { return since(t1, t2); }
-  inline triggered T(term t1, term t2) { return triggered(t1, t2); }
+  inline tomorrow X(term_source auto t) { return tomorrow(term{t}); }
+  inline w_tomorrow wX(term_source auto t) { return w_tomorrow(term{t}); }
+  inline eventually F(term_source auto t) { return eventually(term{t}); }
+  inline always G(term_source auto t) { return always(term{t}); }
+  inline until U(term_source auto t1, term_source auto t2) { 
+    return until(term{t1}, term{t2}); 
+  }
+  inline release R(term_source auto t1, term_source auto t2) { 
+    return release(term{t1}, term{t2}); 
+  }
+  inline yesterday Y(term_source auto t) { return yesterday(term{t}); }
+  inline w_yesterday Z(term_source auto t) { return w_yesterday(term{t}); }
+  inline once O(term_source auto t) { return once(term{t}); }
+  inline historically H(term_source auto t) { return historically(term{t}); }
+  inline since S(term_source auto t1, term_source auto t2) { 
+    return since(term{t1}, term{t2}); 
+  }
+  inline triggered T(term_source auto t1, term_source auto t2) { 
+    return triggered(term{t1}, term{t2}); 
+  }
 
   //
   // Arithmetic operators
   //
-  inline minus operator-(term t) {
-    return minus(t);
+  inline minus operator-(term_source auto t) {
+    return minus(term{t});
   }
   
-  inline sum operator+(term t1, term t2) {
-    return sum(t1, t2);
+  inline sum operator+(term_source auto t1, term_source auto t2) {
+    return sum(term{t1}, term{t2});
   }
   
-  inline product operator*(term t1, term t2) {
-    return product(t1, t2);
+  inline product operator*(term_source auto t1, term_source auto t2) {
+    return product(term{t1}, term{t2});
   }
 
-  inline difference operator-(term t1, term t2) {
-    return difference(t1, t2);
+  inline difference operator-(term_source auto t1, term_source auto t2) {
+    return difference(term{t1}, term{t2});
   }
 
-  inline division operator/(term t1, term t2) {
-    return division(t1, t2);
+  inline division operator/(term_source auto t1, term_source auto t2) {
+    return division(term{t1}, term{t2});
   }
 
   //
   // Relational comparisons
   //
-  inline less_than operator<(term t1, term t2) {
-    return less_than(t1, t2);
+  inline less_than operator<(term_source auto t1, term_source auto t2) {
+    return less_than(term{t1}, term{t2});
   }
 
-  inline less_than_eq operator<=(term t1, term t2) {
-    return less_than_eq(t1, t2);
+  inline less_than_eq operator<=(term_source auto t1, term_source auto t2) {
+    return less_than_eq(term{t1}, term{t2});
   }
 
-  inline greater_than operator>(term t1, term t2) {
-    return greater_than(t1, t2);
+  inline greater_than operator>(term_source auto t1, term_source auto t2) {
+    return greater_than(term{t1}, term{t2});
   }
 
-  inline greater_than_eq operator>=(term t1, term t2) {
-    return greater_than_eq(t1, t2);
+  inline greater_than_eq operator>=(term_source auto t1, term_source auto t2) {
+    return greater_than_eq(term{t1}, term{t2});
   }
 
 }

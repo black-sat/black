@@ -57,16 +57,6 @@
   #define end_ast(NS, AST)
 #endif
 
-// define_type(logic, struct pattern,
-//   struct pattern { 
-//     logic::term head; 
-//     logic::term body;
-
-//     bool operator==(pattern const&) const = default;
-//     size_t hash() const { return support::hash(head, body); }
-//   };
-// )
-
 declare_type(logic, struct entity)
 
 define_type(logic, struct decl,
@@ -74,11 +64,31 @@ define_type(logic, struct decl,
     logic::variable name; 
     logic::term type;
 
+    decl(decl const&) = default;
+    decl(decl &&) = default;
+
     decl(variable name, logic::term type) 
       : name{name}, type{type} { }
 
     bool operator==(decl const&) const = default;
     size_t hash() const { return support::hash(name, type); }
+  };
+)
+
+define_type(logic, struct def,
+  struct def {
+    variable name;
+    term type;
+    term value;
+
+    def(variable name, term type, term value) 
+      : name{name.name()}, type{type}, value{value} { }
+    
+    def(variable name, term value)
+      : def{name, inferred_type(), value} { }
+
+    bool operator==(def const&) const = default;
+    size_t hash() const { return support::hash(name, type, value); }
   };
 )
 

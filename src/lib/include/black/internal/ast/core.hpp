@@ -206,13 +206,13 @@ namespace black::ast::core {
   struct ast_custom_members { };
 
   template<typename AST>
-  struct ast_custom_init { };
+  struct ast_custom_ctor { }; 
   
   template<typename Node>
   struct ast_node_custom_members { };
 
   template<typename Node>
-  struct ast_node_custom_init { };
+  struct ast_node_custom_ctor { };
 }
 
 //
@@ -327,12 +327,23 @@ namespace black::ast::core::internal {
     ast_base(Node n) 
       : node_holder<AST>(n._impl) { }
 
-    template<typename T>
-      requires requires(T v) { 
-        { ast_custom_init<AST>::init(v) } -> std::same_as<AST>; 
+    template<typename ...Args>
+      requires requires(Args ...args) { 
+        ast_custom_ctor<AST>::convert(std::move(args)...);
       }
-    ast_base(T v) 
-      : node_holder<AST>(ast_custom_init<AST>::init(v).impl()) { }    
+    ast_base(Args ...args) 
+      : node_holder<AST>(
+          ast_custom_ctor<AST>::convert(std::move(args)...).impl()
+        ) { }
+
+    template<typename ...Args>
+      requires requires(Args ...args) { 
+        ast_custom_ctor<AST>::init(std::move(args)...); 
+      }
+    explicit ast_base(Args ...args) 
+      : node_holder<AST>(
+          ast_custom_ctor<AST>::init(std::move(args)...).impl()
+        ) { }
 
     ast_base &operator=(ast_base const&) = default;
     ast_base &operator=(ast_base &&) = default;
@@ -396,12 +407,23 @@ namespace black::ast::core::internal {
     explicit ast_node_base(Args ...args)
       : node_holder<AST>{node_holder<AST>::template allocate<Node>(args...)} { }
     
-    template<typename T>
-      requires requires(T v) { 
-        { ast_node_custom_init<Node>::init(v) } -> std::same_as<Node>; 
+    template<typename ...Ts>
+      requires requires(Ts ...args) { 
+        ast_node_custom_ctor<Node>::convert(std::move(args)...);
       }
-    ast_node_base(T v) 
-      : node_holder<AST>(ast_node_custom_init<Node>::init(v).impl()) { }  
+    ast_node_base(Ts ...args) 
+      : node_holder<AST>(
+          ast_node_custom_ctor<Node>::convert(std::move(args)...).impl()
+        ) { }
+    
+    template<typename ...Ts>
+      requires requires(Ts ...args) { 
+        ast_node_custom_ctor<Node>::init(std::move(args)...);
+      }
+    explicit ast_node_base(Ts ...args) 
+      : node_holder<AST>(
+          ast_node_custom_ctor<Node>::init(std::move(args)...).impl()
+        ) { }
 
     ast_node_base &operator=(ast_node_base const&) = default;
     ast_node_base &operator=(ast_node_base &&) = default;

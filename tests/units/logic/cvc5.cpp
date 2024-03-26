@@ -52,10 +52,10 @@ TEST_CASE("cvc5") {
 
     SECTION("Definitions") 
     {    
-        variable a = "a";
+        decl a = {"a", integer_type()};
 
         object k = mod.declare("k", integer_type());
-        object f = mod.define("f", {{a, integer_type()}}, a * k);
+        object f = mod.define("f", {a}, a * k);
 
         mod.require(k >= 2);
         mod.require(f(21) >= 42);
@@ -69,13 +69,13 @@ TEST_CASE("cvc5") {
 
     SECTION("Declaration of functions/predicates") {
 
-        variable x = "x";
-
         object p = mod.declare(
             "p", function_type({integer_type()}, boolean_type())
         );
+        
+        decl x = {"x", integer_type()};
 
-        mod.require(forall({{x, integer_type()}}, p(x)));
+        mod.require(forall(x, p(x)));
         mod.require(!p(42));
 
         REQUIRE(slv.check(mod) == false);
@@ -130,20 +130,15 @@ TEST_CASE("cvc5") {
 
         geometry.import(math);
 
-        variable r = "r";
+        decl r = {"r", real_type()};
 
         object perimeter = 
-            geometry.define("perimeter", {{r, real_type()}}, 2.0 * r * pi);
+            geometry.define("perimeter", {r}, 2.0 * r * pi);
         
         object area = 
-            geometry.define("area", {{r, real_type()}}, 2.0 * r * r * pi);
+            geometry.define("area", {r}, 2.0 * r * r * pi);
 
-        geometry.require(
-            forall(
-                {{r, real_type()}}, 
-                implies(r > 1, perimeter(r) < area(r))
-            )
-        );
+        geometry.require(forall(r, implies(r > 1, perimeter(r) < area(r))));
 
         REQUIRE(slv.check(geometry) == true);
 
@@ -161,3 +156,16 @@ TEST_CASE("cvc5") {
     }
 
 }
+
+
+// TEST("Mockup") {
+
+//     module mod;
+
+//     variable x
+
+//     object f = mod.define("f", {{x}})
+
+//     pipeline p = 
+
+// }

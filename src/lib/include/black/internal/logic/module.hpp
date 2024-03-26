@@ -50,8 +50,8 @@ namespace black::logic {
   };
 
   //
-  // The following is here only to be extracted by Doxygen.
-  // The real declaration of `decl` is in terms-defs.hpp
+  // The following are here only to be extracted by Doxygen.
+  // The real declarations of `decl` and `def` are in terms-defs.hpp
   //
 #ifdef DOXYGEN_IS_RUNNING
 
@@ -77,8 +77,6 @@ namespace black::logic {
     inline size_t hash() const;
   };
 
-#endif
-
   //!
   //! The specification of an entity to be defined in a module.
   //!
@@ -101,6 +99,8 @@ namespace black::logic {
 
     //!@}
   };
+
+#endif
 
   //!
   //! The specification of a function to be defined in a module.
@@ -130,7 +130,7 @@ namespace black::logic {
   };
 
   //!
-  //! The scope resolution mode for `module::resolve()` and `module::adopt()`.
+  //! The scope resolution mode for `module::resolve()` and `root::mode`
   //!
   enum class recursion : bool {
     forbidden = false, //!< Non-recursive name resolution
@@ -157,7 +157,7 @@ namespace black::logic {
   //! \ref module is a **regular** type (also known as *value type*), *i.e.*, it
   //! is *default-initializable*, *copy-constructible*, *move-constructible*,
   //! and *equality-comparable*. Thanks to the underlying usage of persistent
-  //! data structures, all these operations are quite fast, so \ref module
+  //! data structures, all these operations are also quite fast, so \ref module
   //! objects are mant to be freely passed around by value. A dynamic allocation
   //! of a small object is still needed for copies, so moving is still preferred
   //! when possible.
@@ -171,8 +171,8 @@ namespace black::logic {
   //! Thanks to persistent data structures, equality comparison is relatively
   //! cheap, but some attention has to be payed. Because of how the underlying
   //! data structures work, it is cheap to compare two copies of the same
-  //! module, or two modules where one has been derived from a copy of the
-  //! other by a few edits.
+  //! module, or two modules where one has been derived from a copy of the other
+  //! by a few edits.
   //!
   //! For example, the following is very cheap:
   //!
@@ -631,10 +631,10 @@ namespace black::logic {
     //< The pointer to the root collecting this entity object
     std::weak_ptr<struct root const> root; 
     
-    variable name; //!< The name of the entity
-    term type; //!< The type of the entity
+    variable name; //!< The name of the entity.
+    term type; //!< The type of the entity.
     std::optional<term> value; //!< The value of the entity. 
-                               //!< Empty if the entity is declared
+                               //!< Empty if the entity is declared.
 
 
     //! \name Constructors
@@ -688,8 +688,15 @@ namespace black::logic {
     root &operator=(root const&) = default;
     root &operator=(root &&) = default;
 
-    recursion mode = recursion::forbidden;
+    //! whether the entities collected by this root are defined recursively or
+    //! not.
+    recursion mode = recursion::forbidden; 
+
+    //! the entities collected by this root.
     std::vector<std::unique_ptr<entity const>> entities;
+    
+    //! the roots collecting all the entities referenced by the terms that
+    //! defined our entities.
     std::vector<std::shared_ptr<root const>> dependencies;
   };
 

@@ -31,36 +31,53 @@ namespace black::logic {
   struct real;
   struct variable;
   struct boolean;
+  struct exists;
+  struct forall;
   struct entity;
+  struct decl;
+  struct def;
+
+  template<typename T>
+  concept term_source = std::constructible_from<term, T>;
 
   namespace internal {
     
     template<typename Node>
     struct term_custom_members {
-      template<std::convertible_to<term> ...Ts>
+      template<term_source ...Ts>
       atom operator()(Ts ...terms) const;
     };
 
-    struct term_custom_init {
-      static term init(std::integral auto);
-      static term init(std::floating_point auto);
-      static term init(bool);
+    struct term_custom_ctor {
+      static term init(decl const&);
+      static term init(def const&);
+      static term convert(std::integral auto);
+      static term convert(std::floating_point auto);
+      static term convert(bool);
     };
     
-    struct integer_custom_init {
-      static integer init(std::integral auto);
+    struct integer_custom_ctor {
+      static integer convert(std::integral auto);
     };
     
-    struct real_custom_init {
-      static real init(std::floating_point auto);
+    struct real_custom_ctor {
+      static real convert(std::floating_point auto);
     };
     
-    struct boolean_custom_init {
-      static boolean init(bool);
+    struct boolean_custom_ctor {
+      static boolean convert(bool);
     };
     
-    struct variable_custom_init {
-      static variable init(std::string s);
+    struct variable_custom_ctor {
+      static variable convert(std::string s);
+    };
+
+    struct exists_custom_ctor {
+      static exists init(decl, term);
+    };
+    
+    struct forall_custom_ctor {
+      static forall init(decl, term);
     };
   }
 }
@@ -75,24 +92,32 @@ namespace black::ast::core {
     : logic::internal::term_custom_members<Node> { };
   
   template<>
-  struct ast_custom_init<logic::term> 
-    : logic::internal::term_custom_init { };
+  struct ast_custom_ctor<logic::term> 
+    : logic::internal::term_custom_ctor { };
   
   template<>
-  struct ast_node_custom_init<logic::integer> 
-    : logic::internal::integer_custom_init { };
+  struct ast_node_custom_ctor<logic::integer> 
+    : logic::internal::integer_custom_ctor { };
   
   template<>
-  struct ast_node_custom_init<logic::real> 
-    : logic::internal::real_custom_init { };
+  struct ast_node_custom_ctor<logic::real> 
+    : logic::internal::real_custom_ctor { };
   
   template<>
-  struct ast_node_custom_init<logic::boolean> 
-    : logic::internal::boolean_custom_init { };
+  struct ast_node_custom_ctor<logic::boolean> 
+    : logic::internal::boolean_custom_ctor { };
   
   template<>
-  struct ast_node_custom_init<logic::variable> 
-    : logic::internal::variable_custom_init { };
+  struct ast_node_custom_ctor<logic::variable> 
+    : logic::internal::variable_custom_ctor { };
+  
+  template<>
+  struct ast_node_custom_ctor<logic::exists> 
+    : logic::internal::exists_custom_ctor { };
+  
+  template<>
+  struct ast_node_custom_ctor<logic::forall> 
+    : logic::internal::forall_custom_ctor { };
 }
 
   //
@@ -182,39 +207,55 @@ namespace black::logic
   namespace internal {
 
     template<typename Node>
-    template<std::convertible_to<term> ...Ts>
+    template<term_source ...Ts>
     atom term_custom_members<Node>::operator()(Ts ...ts) const 
     {
       return 
-        atom(static_cast<Node const&>(*this), std::vector<term>{ts...});
+        atom(static_cast<Node const&>(*this), std::vector<term>{term{ts}...});
     };
 
-    inline term term_custom_init::init(std::integral auto v) {
+    inline term term_custom_ctor::init(decl const &d) {
+      return term{d.name};
+    }
+    
+    inline term term_custom_ctor::init(def const &d) {
+      return term{d.name};
+    }
+
+    inline term term_custom_ctor::convert(std::integral auto v) {
       return integer(v);
     }
 
-    inline term term_custom_init::init(std::floating_point auto v) {
+    inline term term_custom_ctor::convert(std::floating_point auto v) {
       return real(v);
     }
     
-    inline term term_custom_init::init(bool v) {
+    inline term term_custom_ctor::convert(bool v) {
       return boolean(v);
     }
 
-    inline integer integer_custom_init::init(std::integral auto v) {
+    inline integer integer_custom_ctor::convert(std::integral auto v) {
       return integer(int64_t(v));
     }
 
-    inline real real_custom_init::init(std::floating_point auto v) {
+    inline real real_custom_ctor::convert(std::floating_point auto v) {
       return real(v);
     }
 
-    inline boolean boolean_custom_init::init(bool v) {
+    inline boolean boolean_custom_ctor::convert(bool v) {
       return boolean(v);
     }
 
-    inline variable variable_custom_init::init(std::string s) {
+    inline variable variable_custom_ctor::convert(std::string s) {
       return variable(ast::core::label{s});
+    }
+
+    inline exists exists_custom_ctor::init(decl d, term body) {
+      return exists({d}, body);
+    }
+    
+    inline forall forall_custom_ctor::init(decl d, term body) {
+      return forall({d}, body);
     }
 
   }
