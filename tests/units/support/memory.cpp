@@ -112,13 +112,13 @@ public:
     virtual int run(int x) const override { return x * _k + _c + 1; }
 };
 
-TEST_CASE("erased<T>") {
+TEST_CASE("any<T>") {
 
-    using black::support::erased;
+    using black::support::any;
 
-    erased<Base> b1 = Derived{2};
+    any<Base> b1 = Derived{2};
 
-    erased<Base> b2 = b1;
+    any<Base> b2 = b1;
 
     REQUIRE(b1 == b2);
 
@@ -137,24 +137,24 @@ TEST_CASE("erased<T>") {
     REQUIRE(b1 != b2);
     REQUIRE(b2->run(21) == 45);
 
-    erased<OtherDerived> d1 = MostDerived{2, 3};
+    any<OtherDerived> d1 = MostDerived{2, 3};
 
     REQUIRE(d1->run(21) == 46);
     
     d1->set_offset(4);
     REQUIRE(d1->run(21) == 47);
 
-    erased<Base> b3 = MostDerived{2, 4};
+    any<Base> b3 = MostDerived{2, 4};
     b1 = d1;
 
     REQUIRE(b1 == b3);
     REQUIRE(b1->run(21) == 47);
     REQUIRE(b3->run(21) == 47);
 
-    erased<Base const> b4 = Derived{2};
+    any<Base const> b4 = Derived{2};
     // correctly does not compile: b4->set_factor(4);
 
-    erased<Base> b5 = b4;
+    any<Base> b5 = b4;
 
     REQUIRE(b5->run(21) == 42);
 

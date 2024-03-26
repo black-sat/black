@@ -146,50 +146,54 @@ namespace black::support {
   // virtual dispatch together.
   //
   template<typename Base>
-  class erased 
+  class any 
   {
   public:
-    erased() = default;
+    any() = default;
 
-    template<typename Derived>
+    template<std::equality_comparable Derived>
       requires std::is_base_of_v<Base, Derived>
-    erased(Derived v)
+    any(Derived v)
       : _value{std::move(v)}, 
         _extractor{make_extractor<Derived>()},
         _comparator{make_comparator<Derived>()} { }
 
     template<typename Derived>
       requires std::is_base_of_v<Base, Derived>
-    erased(erased<Derived> v)
+    any(any<Derived> v)
       : _value{std::move(v._value)},
          _extractor{make_extractor<Derived>(v._extractor)}, 
          _comparator{v._comparator} { }
 
-    erased(erased const&) = default;
-    erased(erased &&) = default;
+    any(any const&) = default;
+    any(any &&) = default;
     
-    erased &operator=(erased const&) = default;
-    erased &operator=(erased &&) = default;
+    any &operator=(any const&) = default;
+    any &operator=(any &&) = default;
 
-    template<typename Derived>
+    template<std::equality_comparable Derived>
       requires std::is_base_of_v<Base, Derived>
-    erased &operator=(Derived v) {
-      *this = erased{std::move(v)};
+    any &operator=(Derived v) {
+      *this = any{std::move(v)};
       return *this;
     }
 
     template<typename Derived>
       requires std::is_base_of_v<Base, Derived>
-    erased &operator=(erased<Derived> v) {
-      *this = erased{std::move(v)};
+    any &operator=(any<Derived> v) {
+      *this = any{std::move(v)};
       return *this;
     }
 
-    bool operator==(erased const& other) const {
+    bool operator==(any const& other) const {
       if(!_value.has_value() || !other._value.has_value())
-        return _value.has_value() && other._value.has_value();
+        return !_value.has_value() && !other._value.has_value();
 
       return _comparator(&_value, &other._value);
+    }
+
+    bool has_value() const {
+      return _value.has_value();
     }
 
     Base *get() {
@@ -198,16 +202,6 @@ namespace black::support {
     
     Base const *get() const {
       return _extractor(&_value);
-    }
-    
-    template<typename Derived>
-    Derived *extract() {
-      return std::any_cast<Derived>(&_value);
-    }
-    
-    template<typename Derived>
-    Derived const *extract() const {
-      return std::any_cast<Derived>(&_value);
     }
 
     Base *operator->() {
@@ -218,9 +212,26 @@ namespace black::support {
       return get();
     }
 
+    template<typename Derived>
+    friend Derived extract(any v) {
+      return std::any_cast<Derived>(std::move(v._value));
+    }
+
+    template<typename Derived>
+    friend Derived *extract(any *v) {
+      return std::any_cast<Derived>(&v->_value);
+    }
+    
+    template<typename Derived>
+    friend Derived const *extract(any const*v) {
+      return std::any_cast<Derived>(&v->_value);
+    }
+    
+    
+
   private:
     template<typename U>
-    friend class erased;
+    friend class any;
 
     using extractor_t = std::function<std::remove_const_t<Base> *(std::any *)>;
     using comparator_t = std::function<bool(std::any const*, std::any const*)>;
@@ -233,7 +244,7 @@ namespace black::support {
     }
 
     template<typename Derived>
-    extractor_t make_extractor(erased<Derived>::extractor_t ex) {
+    extractor_t make_extractor(any<Derived>::extractor_t ex) {
       return [=](std::any *value) -> Base * {
         return ex(value);
       };

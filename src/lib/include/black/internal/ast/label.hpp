@@ -40,12 +40,16 @@ namespace black::ast::core::internal
   class label;
 
   template<typename T>
-  concept formattable = std::is_constructible<std::formatter<T>>::value;
+  concept formattable = std::is_constructible_v<std::formatter<T>>;
+
+  template<typename T>
+  concept hashable = requires (T v) { 
+    { std::hash<T>{}(v) } -> std::convertible_to<size_t>;
+  };
 
   template<typename T>
   concept identifiable = 
-    !std::is_same_v<T, label> &&
-    std::equality_comparable<T> && formattable<T>;
+    std::equality_comparable<T> && hashable<T> && formattable<T>;
 
   //
   // Type-erased hashable, comparable and printable value
@@ -59,36 +63,16 @@ namespace black::ast::core::internal
 
     template<typename T>
       requires identifiable<std::remove_cvref_t<T>>
-    explicit label(T&& value)
-      : _any(std::forward<T>(value)),
-        _hash(make_hasher(value)),
-        _cmp(make_cmp(value)),
-        _printer(make_printer(value)) { }
-
-    explicit label(std::string_view view) 
-      : label{std::string{view}} { }
-
-    explicit label(char const* c_str) 
-      : label{std::string{c_str}} { }
+    explicit label(T value) : _any(wrap(std::move(value))) { }
 
     template<size_t N>
     label(const char (&str)[N])
-      : label{std::string{str}} { }
-
-    size_t hash() const {
-      if(!_hash)
-        return 0;
-      return _hash(_any);
-    }
+      : label(std::string{str}) { }
 
     label &operator=(label const&) = default;
     label &operator=(label&&) = default;
 
-    bool operator==(label const&other) const {
-      if(!_cmp)
-        return !other._cmp;
-      return _cmp(_any, other);
-    }
+    bool operator==(label const&) const = default;
 
     template<typename T>
     label &operator=(T&& value)
@@ -97,83 +81,81 @@ namespace black::ast::core::internal
       return *this;
     }
 
+    size_t hash() const {
+      return _any.has_value() ? _any->hash() : 0;
+    }
+
+    std::string to_string() const {
+      using namespace std::literals;
+      return _any.has_value() ? _any->to_string() : "<empty label>"s;
+    }
+
     template<typename T>
     bool is() const {
-      return std::any_cast<T>(&_any) != nullptr;
+      return extract<T>(&_any) != nullptr;
     }
 
     template<typename T>
     std::optional<T> to() const & {
-      if(T const*ptr = std::any_cast<T>(&_any); ptr)
+      if(T const*ptr = extract<T>(&_any); ptr)
         return std::optional<T>{*ptr};
       return std::nullopt;
     }
 
     template<typename T>
     std::optional<T> to() && {
-      if(T const*ptr = std::any_cast<T>(&_any); ptr)
+      if(T const*ptr = extract<T>(&_any); ptr)
         return std::optional<T>{std::move(*ptr)};
       return std::nullopt;
     }
 
     template<typename T>
-    T const* get() const & { return std::any_cast<T>(&_any); }
+    T const* get() const { return extract<T>(&_any); }
 
     template<typename T>
-    T *get() & { return std::any_cast<T>(&_any); }
-
-    std::any const&any() const { return _any; }
-
-    std::string to_string() const {
-      if(!_printer)
-        return "<empty label>";
-      return _printer(_any);
-    }
+    T *get() { return extract<T>(&_any); }
 
   private:
-    using hasher_t = size_t (*)(std::any const&);
-    using comparator_t = bool (*)(std::any const&, label const&);
-    using printer_t = std::string (*)(std::any const&);
+    struct label_t {
+      label_t() = default;
+      label_t(label_t const&) = default;
+      label_t &operator=(label_t const&) = default;
 
-    std::any _any;
-    hasher_t _hash = nullptr;
-    comparator_t _cmp = nullptr;
-    printer_t _printer = nullptr;
+      bool operator==(label_t const&) const = default;
 
-    //
-    // note: these two function templates cause gcov false negatives
-    template<typename T>
-    hasher_t make_hasher(T const&) { // LCOV_EXCL_LINE
-      return [](std::any const&me) -> size_t { // LCOV_EXCL_LINE
-        T const *v = std::any_cast<T>(&me); // LCOV_EXCL_LINE
-        if(v == nullptr)
-          return 0;
-
-        return support::hash(*v); // LCOV_EXCL_LINE
-      };
-    }
-    
-    template<typename T>
-    comparator_t make_cmp(T const&) { // LCOV_EXCL_LINE
-      return [](std::any const&me, label const&other) -> bool { // LCOV_EXCL_LINE
-        T const* v = std::any_cast<T>(&me); // LCOV_EXCL_LINE
-        T const* otherv = other.get<T>(); // LCOV_EXCL_LINE
-
-        black_assert(v != nullptr); // LCOV_EXCL_LINE
-
-        return otherv != nullptr && *v == *otherv; // LCOV_EXCL_LINE
-      };
-    }
+      virtual ~label_t() = default;
+      virtual size_t hash() const = 0;
+      virtual std::string to_string() const = 0;
+    };
 
     template<typename T>
-    printer_t make_printer(T const&) {
-      return [](std::any const& me) {
-        T const *v = std::any_cast<T>(&me);
-        black_assert(v != nullptr);
+    support::any<label_t> wrap(T arg) {
+      struct wrap_t : label_t {
+        T _v;
 
-        return std::format("{}", *v);
-      };
+        wrap_t() = default;
+        wrap_t(T v) : _v{std::move(v)} { }
+
+        bool operator==(wrap_t const&) const = default;
+
+        virtual size_t hash() const override { return support::hash(_v); }
+        virtual std::string to_string() const override { 
+          return std::format("{}", _v); 
+        }
+      }; 
+      
+      return support::any<label_t>{wrap_t{std::move(arg)}};
     }
+
+    support::any<label_t> wrap(std::string_view view) {
+      return wrap(std::string(view));
+    }
+
+    support::any<label_t> wrap(const char *str) {
+      return wrap(std::string(str));
+    }
+
+    support::any<label_t> _any;
   };
 }
 
