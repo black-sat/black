@@ -42,7 +42,7 @@ namespace black::backends::cvc5 {
 
   namespace CVC5 = ::cvc5;
 
-  struct solver::impl_t {
+  struct solver::impl_t : processing::consumer {
 
     struct frame_t {
       persistent::map<entity const *, CVC5::Term> objects;
@@ -289,7 +289,7 @@ namespace black::backends::cvc5 {
       }
     }
 
-    void import(module const& m) {
+    virtual void import(module m) override {
       auto _ = support::checkpoint(ignore_push);
       ignore_push = true;
 
@@ -376,7 +376,7 @@ namespace black::backends::cvc5 {
       stack.back().consts.insert({t, e});
     }
 
-    void adopt(std::shared_ptr<root const> r) {
+    virtual void adopt(std::shared_ptr<root const> r) override {
       // first, declare the declarations and collect the definitions
       std::vector<entity const *> defs;
       for(auto const& e : r->entities) {
@@ -394,11 +394,11 @@ namespace black::backends::cvc5 {
         define(defs);
     }
 
-    void require(term t) {
+    virtual void require(term t) override {
       slv->assertFormula(to_term(t, {}));
     }
 
-    void push() {
+    virtual void push() override {
       if(ignore_push)
         return;
 
@@ -409,7 +409,7 @@ namespace black::backends::cvc5 {
       slv->push();
     }
 
-    void pop(size_t n) {
+    virtual void pop(size_t n) override {
       if(ignore_push)
         return;
 

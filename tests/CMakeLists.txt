@@ -43,6 +43,7 @@ if(Catch2_FOUND)
     units/logic/logic.cpp
     units/logic/modules.cpp
     units/logic/cvc5.cpp
+    units/processing/pipeline.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)

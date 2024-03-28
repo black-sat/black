@@ -32,6 +32,51 @@
 #include <black/support>
 
 namespace black::logic {
+  class module;
+  struct root;
+}
+
+namespace black::processing {
+
+  struct consumer {
+    consumer() = default;
+    consumer(consumer const&) = default;
+    consumer(consumer &&) = default;
+
+    virtual ~consumer() = default;
+
+    consumer &operator=(consumer const&) = default;
+    consumer &operator=(consumer &&) = default;
+
+    bool operator==(consumer const&) const = default;
+
+    virtual void import(logic::module) = 0;
+    virtual void adopt(std::shared_ptr<logic::root const>) = 0;
+    virtual void require(logic::term) = 0;
+    virtual void push() = 0;
+    virtual void pop(size_t) = 0;
+  };
+
+  class producer 
+  {
+  public:
+    producer() = default; 
+    producer(producer const&) = default;
+    producer(producer &&) = default;
+
+    virtual ~producer() = default;
+
+    producer &operator=(producer const&) = default;
+    producer &operator=(producer &&) = default;
+
+    bool operator==(producer const&) const = default;
+
+    virtual void replay(logic::module mod, consumer *target) = 0;
+  };
+
+}
+
+namespace black::logic {
 
   using ast::core::label;
 
@@ -137,16 +182,6 @@ namespace black::logic {
     allowed = true     //!< Recursive name resolution
   };
 
-  template<typename T>
-  concept replay_target = 
-    requires(T v, std::shared_ptr<root const> r, module m, term t) {
-      v.import(m);
-      v.adopt(r);
-      v.require(t);
-      v.push();
-      v.pop(42);
-    };
-
   //!
   //! Entry point to build modules.
   //!
@@ -192,7 +227,7 @@ namespace black::logic {
   //! somehow happen to be equal or very similar is potentially expensive,
   //! because all the contents of the modules will have to be compared.
   //!
-  class module
+  class module : public processing::consumer, public processing::producer
   {
   public:
 
@@ -206,7 +241,7 @@ namespace black::logic {
 
     module(module &&);
     
-    ~module();
+    virtual ~module() override;
     
     //! Copy-assignment operator
     module &operator=(module const&);
@@ -234,7 +269,7 @@ namespace black::logic {
     //! If two imported modules declare the same names, the module imported last
     //! has precedence and shadows the others.
     //!
-    void import(module m);
+    virtual void import(module m) override;
   
     //!
     //! Declares a new entity.
@@ -412,7 +447,7 @@ namespace black::logic {
     //!
     //! If the pointer is `nullptr` the function does nothing.
     //!
-    void adopt(std::shared_ptr<root const> r);
+    virtual void adopt(std::shared_ptr<root const> r) override;
 
     //!
     //! Adopts an object and its siblings.
@@ -501,7 +536,7 @@ namespace black::logic {
     //!
     //! Asserts that `req` must hold in any model of the module.
     //!
-    void require(term req);
+    virtual void require(term req) override;
 
     //!@}
 
@@ -511,7 +546,7 @@ namespace black::logic {
     //!
     //! Pushes a new frame on the module's stack.
     //!
-    void push();
+    virtual void push() override;
 
     //!
     //! Pops a given number of frames from the module's stack.
@@ -530,7 +565,7 @@ namespace black::logic {
     //! declare() or define() with delayed resolution mode are not affected by
     //! push() and pop() calls until they are resolved with resolve().
     //!
-    void pop(size_t n = 1);
+    virtual void pop(size_t n = 1) override;
 
     //!@}
 
@@ -591,24 +626,16 @@ namespace black::logic {
     //! they are unrelated (i.e. one has not been obtained as a copy of the
     //! other), replay() may take some time to realize there is nothing to
     //! replay.
-    template<replay_target T>
-    void replay(module from, T *target) const;
+    void replay(module from, processing::consumer *target) const;
+
+    //!
+    //! Non-const version of the above to inherit from `processing::producer`.
+    //!
+    virtual void replay(module from, processing::consumer *target) override;
 
     //!@}
 
   private:
-
-    struct replay_target_t {
-      virtual ~replay_target_t() = default;
-      virtual void import(module) = 0;
-      virtual void adopt(std::shared_ptr<root const> r) = 0;
-      virtual void require(term) = 0;
-      virtual void push() = 0;
-      virtual void pop(size_t) = 0;
-    };
-
-    void _replay(module from, replay_target_t *target) const;
-
     struct impl_t;
     support::lazy<support::boxed<impl_t>> _impl;
   };
@@ -699,32 +726,6 @@ namespace black::logic {
     //! defined our entities.
     std::vector<std::shared_ptr<root const>> dependencies;
   };
-
-  //
-  // Implementation of the module::replay interface
-  //
-  template<replay_target T>
-  void module::replay(module from, T *target) const {
-    if(target == nullptr)
-      return;
-    
-    struct wrap_t : replay_target_t {
-      T *t;
-
-      wrap_t(T *t) : t{t} { }
-
-      virtual void import(module m) override { return t->import(std::move(m)); }
-      virtual void adopt(std::shared_ptr<root const> r) override { 
-        return t->adopt(r); 
-      }
-      virtual void require(term r) override { return t->require(r); }
-      virtual void push() override { t->push(); }
-      virtual void pop(size_t n) override { t->pop(n); }
-
-    } wrap{target};
-
-    return _replay(std::move(from), &wrap);
-  }
 
 }
 

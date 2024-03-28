@@ -28,6 +28,7 @@
 
 using namespace black::support;
 using namespace black::logic;
+using namespace black::processing;
 
 enum class step {
     import,
@@ -38,32 +39,32 @@ enum class step {
     pop
 };
 
-struct debug_t {
+struct debug_t : consumer {
     module *mod;
     std::vector<step> steps;
 
     debug_t(module *mod) : mod{mod} { }
 
-    void import(module m) { 
+    virtual void import(module m) override { 
         steps.push_back(step::import);
         return mod->import(std::move(m));
     }
-    void adopt(std::shared_ptr<root const> r) { 
+    virtual void adopt(std::shared_ptr<root const> r) override { 
         if(r->mode == recursion::forbidden)
             steps.push_back(step::adopt);
         else
             steps.push_back(step::adopt_rec);
         return mod->adopt(r);
     }
-    void require(term r) { 
+    virtual void require(term r) override { 
         steps.push_back(step::require);
         return mod->require(r);
     }
-    void push() { 
+    virtual void push() override { 
         steps.push_back(step::push);
         mod->push();
     }
-    void pop(size_t n) { 
+    virtual void pop(size_t n) override { 
         steps.push_back(step::pop);
         mod->pop(n);
     }
