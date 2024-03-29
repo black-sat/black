@@ -118,6 +118,7 @@ namespace black::pipes {
     base *get() { return _instance.get(); }
 
     support::tribool check(logic::module mod);
+    std::optional<logic::term> value(logic::term t);
 
   private:
     logic::module _last;
@@ -129,6 +130,8 @@ namespace black::pipes {
     virtual ~base() override = default;
 
     virtual support::tribool check() = 0;
+
+    virtual std::optional<logic::term> value(logic::term) = 0;
   };
 
   inline solver::solver(pipeline p) : _instance{p()} { }
@@ -137,6 +140,10 @@ namespace black::pipes {
     mod.replay(_last, _instance->consumer());
     _last = std::move(mod);
     return _instance->check();
+  }
+
+  inline std::optional<logic::term> solver::value(logic::term t) {
+    return _instance->value(t);
   }
 
   template<typename P>

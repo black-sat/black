@@ -25,17 +25,18 @@
 
 #include <black/support>
 #include <black/logic>
-#include <black/backends/cvc5>
+#include <black/pipes>
+#include <black/solvers/cvc5>
 
+using namespace black;
 using namespace black::support;
 using namespace black::logic;
-using namespace black::backends;
 
 TEST_CASE("cvc5") {
 
     module mod;
 
-    cvc5::solver slv;
+    solvers::solver slv = black::solvers::cvc5();
 
     SECTION("Declarations") {
         object x = mod.declare("x", integer_type());

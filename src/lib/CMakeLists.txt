@@ -147,19 +147,19 @@ set (
 )
 
 # if(Z3_FOUND)
-#   set(LIB_SRC ${LIB_SRC} src/smt/backends/z3.cpp)
+#   set(LIB_SRC ${LIB_SRC} src/smt/solvers/z3.cpp)
 # endif()
 
 if(CVC5_FOUND)
-  set(LIB_SRC ${LIB_SRC} src/backends/cvc5.cpp)
+  set(LIB_SRC ${LIB_SRC} src/solvers/cvc5.cpp)
 endif()
 
 # if(MathSAT_FOUND)
-#   set(LIB_SRC ${LIB_SRC} src/sat/backends/mathsat.cpp)
+#   set(LIB_SRC ${LIB_SRC} src/sat/solvers/mathsat.cpp)
 # endif()
 
 # if(CryptoMiniSAT_FOUND)
-#   set(LIB_SRC ${LIB_SRC} src/sat/backends/cmsat.cpp)
+#   set(LIB_SRC ${LIB_SRC} src/sat/solvers/cmsat.cpp)
 # endif()
 
 

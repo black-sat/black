@@ -28,10 +28,11 @@ namespace black::solvers {
 
   using pipes::solver;
   
-  class unsat_t : public solver::base, private pipes::consumer
+  template<bool V>
+  class const_t : public solver::base, private pipes::consumer
   {
   public:
-    unsat_t() = default;
+    const_t() = default;
 
     virtual void import(logic::module) override { }
     virtual void adopt(std::shared_ptr<logic::root const>) override { }
@@ -41,10 +42,15 @@ namespace black::solvers {
 
     virtual pipes::consumer *consumer() override { return this; }
 
-    virtual support::tribool check() override { return false; }
+    virtual support::tribool check() override { return V; }
+
+    virtual std::optional<logic::term> value(logic::term) override {
+      return {};
+    }
   };
 
-  inline constexpr auto unsat = pipes::make_solver<unsat_t>{};
+  inline constexpr auto sat = pipes::make_solver<const_t<true>>{};
+  inline constexpr auto unsat = pipes::make_solver<const_t<false>>{};
 
 
   class preprocessed_t : public solver::base
@@ -55,6 +61,9 @@ namespace black::solvers {
 
     virtual pipes::consumer *consumer() override { return _pipe->consumer(); }
     virtual support::tribool check() override { return _slv->check(); }
+    virtual std::optional<logic::term> value(logic::term t) override {
+      return _slv->value(t);
+    }
 
   private:
     solver::instance _slv;

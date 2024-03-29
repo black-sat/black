@@ -21,9 +21,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_BACKENDS_CVC5_HPP
-#define BLACK_BACKENDS_CVC5_HPP
+#ifndef BLACK_INTERNAL_BACKENDS_CVC5_HPP
+#define BLACK_INTERNAL_BACKENDS_CVC5_HPP
 
-#include <black/internal/backends/cvc5.hpp>
+#include <black/logic>
+#include <black/pipes>
 
-#endif // BLACK_BACKENDS_CVC5_HPP
+#include <memory>
+
+namespace black::solvers {
+
+  class cvc5_t : public solver::base
+  {
+  public:
+    cvc5_t();
+    
+    virtual ~cvc5_t() override;
+
+    virtual pipes::consumer *consumer() override;
+    virtual support::tribool check() override;
+    virtual std::optional<logic::term> value(logic::term) override;
+
+  private:
+    struct impl_t;
+    std::unique_ptr<impl_t> _impl;
+  };
+
+  inline constexpr auto cvc5 = pipes::make_solver<cvc5_t>{};
+
+}
+
+#endif // BLACK_INTERNAL_BACKENDS_CVC5_HPP

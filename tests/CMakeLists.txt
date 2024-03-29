@@ -42,8 +42,8 @@ if(Catch2_FOUND)
     units/ast/label.cpp
     units/logic/logic.cpp
     units/logic/modules.cpp
-    units/logic/cvc5.cpp
-    units/processing/pipeline.cpp
+    units/pipes/pipeline.cpp
+    units/solvers/cvc5.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)

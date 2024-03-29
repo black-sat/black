@@ -25,7 +25,7 @@
 #include <black/support>
 #include <black/support/private>
 #include <black/logic>
-#include <black/backends/cvc5>
+#include <black/solvers/cvc5>
 
 #include <cvc5/cvc5.h>
 
@@ -33,7 +33,7 @@
 #include <ranges>
 #include <iostream>
 
-namespace black::backends::cvc5 {
+namespace black::solvers {
 
   using namespace black::support;
   using namespace black::logic;
@@ -42,7 +42,7 @@ namespace black::backends::cvc5 {
 
   namespace CVC5 = ::cvc5;
 
-  struct solver::impl_t : pipes::consumer {
+  struct cvc5_t::impl_t : pipes::consumer {
 
     struct frame_t {
       persistent::map<entity const *, CVC5::Term> objects;
@@ -418,10 +418,7 @@ namespace black::backends::cvc5 {
       slv->pop(unsigned(n));
     }
 
-    support::tribool check(module m) {
-      m.replay(mod, this);
-      mod = std::move(m);
-
+    support::tribool check() {
       CVC5::Result res = slv->checkSat();
       if(res.isSat())
         return true;
@@ -443,15 +440,19 @@ namespace black::backends::cvc5 {
   };
 
 
-  solver::solver() : _impl{std::make_unique<impl_t>()} { }
+  cvc5_t::cvc5_t() : _impl{std::make_unique<impl_t>()} { }
 
-  solver::~solver() = default;
+  cvc5_t::~cvc5_t() = default;
 
-  support::tribool solver::check(module m) { 
-    return _impl->check(std::move(m)); 
+  pipes::consumer *cvc5_t::consumer() { 
+    return _impl.get();
   }
 
-  std::optional<term> solver::value(term t) {
+  support::tribool cvc5_t::check() { 
+    return _impl->check(); 
+  }
+
+  std::optional<term> cvc5_t::value(term t) {
     return _impl->value(t);
   }
 

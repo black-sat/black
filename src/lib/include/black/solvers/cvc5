@@ -21,38 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <catch.hpp>
+#ifndef BLACK_SOLVERS_CVC5_HPP
+#define BLACK_SOLVERS_CVC5_HPP
 
-#include <black/support>
-#include <black/logic>
-#include <black/pipes>
+#include <black/internal/solvers/cvc5.hpp>
 
-using namespace black;
-using namespace black::support;
-using namespace black::logic;
-using namespace black::pipes;
-
-TEST_CASE("Pipeline") {
-
-    module mod;
-
-    object x = mod.declare("x", integer_type());
-
-    mod.require(x == 0);
-
-    transform t = pipes::id() | pipes::id();
-
-    module mod2 = t(mod);
-
-    REQUIRE(mod2 == mod);
-
-    mod.require(x == 42);
-
-    mod2 = t(mod);
-
-    REQUIRE(mod2 == mod);
-
-    solver slv = pipes::id() | solvers::unsat();
-
-    REQUIRE(slv.check(mod) == false);
-}
+#endif // BLACK_SOLVERS_CVC5_HPP

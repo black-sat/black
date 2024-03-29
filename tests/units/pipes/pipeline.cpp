@@ -21,36 +21,59 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_INTERNAL_BACKENDS_CVC5_HPP
-#define BLACK_INTERNAL_BACKENDS_CVC5_HPP
+#include <catch.hpp>
 
+#include <black/support>
 #include <black/logic>
+#include <black/pipes>
+#include <black/solvers/cvc5>
 
-#include <memory>
+using namespace black;
+using namespace black::support;
+using namespace black::logic;
 
-namespace black::backends::cvc5 {
+TEST_CASE("Pipeline") {
 
-  class solver
-  {
-  public:
-    solver();
-    solver(solver const&) = delete;
-    solver(solver &&) = delete;
-    
-    ~solver();
+    SECTION("Basics") {
 
-    solver &operator=(solver const&) = delete;
-    solver &operator=(solver &&) = delete;
+        module mod;
 
-    support::tribool check(logic::module m);
+        object x = mod.declare("x", integer_type());
 
-    std::optional<logic::term> value(logic::term);
+        mod.require(x == 0);
 
-  private:
-    struct impl_t;
-    std::unique_ptr<impl_t> _impl;
-  };
+        pipes::transform t = pipes::id() | pipes::id();
 
+        module mod2 = t(mod);
+
+        REQUIRE(mod2 == mod);
+
+        mod.require(x == 42);
+
+        mod2 = t(mod);
+
+        REQUIRE(mod2 == mod);
+
+        solvers::solver slv = pipes::id() | solvers::unsat();
+
+        REQUIRE(slv.check(mod) == false);
+    }
+
+    SECTION("With a real solver") {
+        module mod;
+
+        object x = mod.declare("x", integer_type());
+        object y = mod.declare("y", integer_type());
+
+        mod.require(x > y);
+
+        solvers::solver slv = pipes::id() | pipes::id() | solvers::cvc5();
+
+        REQUIRE(slv.check(mod) == true);
+
+        mod.require(x < y);
+
+        REQUIRE(slv.check(mod) == false);
+
+    }
 }
-
-#endif // BLACK_INTERNAL_BACKENDS_CVC5_HPP
