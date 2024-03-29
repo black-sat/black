@@ -182,10 +182,24 @@ namespace black::support::persistent {
       _data = std::move(_data).erase(key);
     }
 
+    void push() {
+      _stack.push_back(_data);
+    }
+
+    void pop(size_t n) {
+      if(_stack.size() < n)
+        _data = {};
+      else {
+        _data = _stack.back();
+        _stack.take(_stack.size() - n);
+      }
+    }
+
     immer_t immutable() const { return _data; }
 
   private:
     immer_t _data;
+    vector<immer_t> _stack;
   };
 
 
@@ -245,10 +259,24 @@ namespace black::support::persistent {
       _data = std::move(_data).erase(value);
     }
 
+    void push() {
+      _stack.push_back(_data);
+    }
+
+    void pop(size_t n) {
+      if(_stack.size() < n)
+        _data = {};
+      else {
+        _data = _stack.back();
+        _stack.take(_stack.size() - n);
+      }
+    }
+
     immer_t immutable() const { return _data; }
 
   private:
     immer_t _data;
+    vector<immer_t> _stack;
   };
 
 }

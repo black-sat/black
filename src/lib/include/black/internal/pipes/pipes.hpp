@@ -64,6 +64,21 @@ namespace black::pipes {
     return composed(std::move(first), std::move(second));
   }
 
+  // class map_t : public transform::base
+  // {
+  // public:
+  //   map_t(class consumer *next, std::function<logic::term(logic::term)> f);
+  //   virtual ~map_t() override;
+      
+  //   virtual class consumer *consumer() override;
+
+  // private:
+  //   struct impl_t;
+  //   std::unique_ptr<impl_t> _impl;
+  // };
+
+  // inline constexpr auto map = make_transform<map_t>{};
+
 }
 
 #endif // BLACK_PIPES_PIPES_HPP

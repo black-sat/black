@@ -28,9 +28,32 @@
 #include <black/pipes>
 #include <black/solvers/cvc5>
 
+#include <cmath>
+
 using namespace black;
 using namespace black::support;
 using namespace black::logic;
+
+term to_ints(term t);
+
+template<typename T>
+T to_ints_(T v) { return std::move(v); }
+
+static std::vector<term> to_ints_(std::vector<term> ts) {
+    for(auto &t : ts)
+        t = to_ints(t);
+    return ts;
+}
+
+static term to_ints_(term t) {
+    return match(t)(
+        [](real_type) { return integer_type(); },
+        [](real, double v) { return integer(uint64_t(std::floor(v))); },
+        []<typename T>(T, auto ...args) { return T(to_ints_(args)...); }
+    );
+}
+
+term to_ints(term t) { return to_ints_(t); }
 
 TEST_CASE("Pipeline") {
 
@@ -76,4 +99,24 @@ TEST_CASE("Pipeline") {
         REQUIRE(slv.check(mod) == false);
 
     }
+
+    // SECTION("map") {
+    //     module mod;
+
+    //     object x = mod.declare("x", real_type());
+    //     object y = mod.define("y", 3.0);
+    //     object z = mod.define("z", 4.0);
+
+    //     mod.require(x > y);
+    //     mod.require(x < z);
+
+    //     solvers::solver slv = solvers::cvc5();
+
+    //     REQUIRE(slv.check(mod) == true);
+
+    //     solvers::solver slv2 = pipes::map(to_ints) | solvers::cvc5();
+
+    //     REQUIRE(slv.check(mod) == false);
+        
+    // }
 }
