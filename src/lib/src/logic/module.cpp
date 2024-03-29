@@ -95,7 +95,7 @@ namespace black::logic {
     std::optional<frame_t>
     diff(frame_t const& ours, frame_t const& theirs) const;
 
-    void replay(frame_t const& f, processing::consumer *target) const;
+    void replay(frame_t const& f, pipes::consumer *target) const;
     
     void import(module m);
     object declare(decl d, resolution r);
@@ -109,7 +109,7 @@ namespace black::logic {
     void require(term req);
     void push();
     void pop(size_t n);
-    void replay(module from, processing::consumer *target) const;
+    void replay(module from, pipes::consumer *target) const;
   };
 
   module::module() = default;
@@ -323,7 +323,7 @@ namespace black::logic {
   }
     
   void 
-  module::impl_t::replay(frame_t const& f, processing::consumer *target) const {
+  module::impl_t::replay(frame_t const& f, pipes::consumer *target) const {
     for(module m : f.imports)
       target->import(std::move(m));
     
@@ -341,7 +341,7 @@ namespace black::logic {
   // 3. We replay the additional material
   //
   void 
-  module::impl_t::replay(module from, processing::consumer *target) const {
+  module::impl_t::replay(module from, pipes::consumer *target) const {
     auto ours = _stack;
     auto theirs = from._impl->get()->_stack;
     size_t shortest = std::min(ours.size(), theirs.size());
@@ -385,12 +385,8 @@ namespace black::logic {
     }
   }
 
-  void module::replay(module from, processing::consumer *target) const {
+  void module::replay(module from, pipes::consumer *target) const {
     _impl->get()->replay(std::move(from), target);
-  }
-  
-  void module::replay(module from, processing::consumer *target) {
-    std::as_const(*this).replay(std::move(from), target);
   }
   
   std::vector<term> module::impl_t::resolved(

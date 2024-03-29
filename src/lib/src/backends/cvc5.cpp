@@ -42,7 +42,7 @@ namespace black::backends::cvc5 {
 
   namespace CVC5 = ::cvc5;
 
-  struct solver::impl_t : processing::consumer {
+  struct solver::impl_t : pipes::consumer {
 
     struct frame_t {
       persistent::map<entity const *, CVC5::Term> objects;

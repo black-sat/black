@@ -96,7 +96,9 @@ namespace black::support {
     lazy(T v) : _data{std::move(v)} { }
     
     lazy(lazy const&) = default;
-    lazy(lazy &&) = default;
+    lazy(lazy && from) : _data{std::move(from._data)} {
+      from._data = {};
+    }
     
     lazy &operator=(T v) {
       _data = std::move(v);
@@ -104,7 +106,11 @@ namespace black::support {
     }
 
     lazy &operator=(lazy const&) = default;
-    lazy &operator=(lazy &&) = default;
+    lazy &operator=(lazy && from) {
+      _data = std::move(from._data);
+      from._data = {};
+      return *this;
+    }
 
     bool operator==(lazy const&) const = default;
 
@@ -267,16 +273,6 @@ namespace black::support {
     extractor_t _extractor = nullptr;
     comparator_t _comparator = nullptr;
   };
-
-  // //
-  // // Variant of different handles for a pointer to type T
-  // //
-  // template<typename T>
-  // class handle
-  // {
-  // private:
-  //   std::variant<T *, std::shared_ptr<T>, 
-  // };
 
 }
 

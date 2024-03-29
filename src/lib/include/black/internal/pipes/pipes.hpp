@@ -21,19 +21,49 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_PROCESSING_CONSUMER_HPP
-#define BLACK_PROCESSING_CONSUMER_HPP
+#ifndef BLACK_PIPES_PIPES_HPP
+#define BLACK_PIPES_PIPES_HPP
 
-#include <memory>
+namespace black::pipes {
 
-namespace logic {
-  struct root;
-  struct term;
-}
+  class id_t : public transform::base
+  {
+  public:
+    id_t(class consumer *next) : _next{next} { }
+      
+    virtual class consumer *consumer() override { return _next; }
 
-namespace black::processing {
+  private:
+    class consumer *_next;
+  };
 
+  inline constexpr auto id = make_transform<id_t>{};
+
+
+  class composed_t : public transform::base
+  {
+  public:
+    composed_t(
+      class consumer *next, 
+      transform::pipeline first, transform::pipeline second
+    ) : _second{second(next)}, _first{first(_second->consumer())} { }
+      
+    virtual class consumer *consumer() override {
+      return _first->consumer();
+    }
   
+  private:
+    transform::instance _second;
+    transform::instance _first;
+  };
+
+  inline constexpr auto composed = make_transform<composed_t>{};
+
+  inline transform::pipeline 
+  operator|(transform::pipeline first, transform::pipeline second) {
+    return composed(std::move(first), std::move(second));
+  }
+
 }
 
-#endif // BLACK_PROCESSING_CONSUMER_HPP
+#endif // BLACK_PIPES_PIPES_HPP

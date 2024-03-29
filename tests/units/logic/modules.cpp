@@ -28,7 +28,7 @@
 
 using namespace black::support;
 using namespace black::logic;
-using namespace black::processing;
+using namespace black::pipes;
 
 enum class step {
     import,

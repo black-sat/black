@@ -25,11 +25,12 @@
 
 #include <black/support>
 #include <black/logic>
-#include <black/processing>
+#include <black/pipes>
 
+using namespace black;
 using namespace black::support;
 using namespace black::logic;
-using namespace black::processing;
+using namespace black::pipes;
 
 TEST_CASE("Pipeline") {
 
@@ -39,22 +40,19 @@ TEST_CASE("Pipeline") {
 
     mod.require(x == 0);
 
-    pipeline p = id() | id() | id();
+    transform t = pipes::id() | pipes::id();
 
-    pipeline::instance inst = p.create(&mod);
+    module mod2 = t(mod);
 
-    module mod2 = inst();
-
-    REQUIRE(mod == mod2);
+    REQUIRE(mod2 == mod);
 
     mod.require(x == 42);
 
-    mod2 = inst();
+    mod2 = t(mod);
 
-    REQUIRE(mod == mod2);
+    REQUIRE(mod2 == mod);
 
-    module mod3 = p(mod);
+    solver slv = pipes::id() | solvers::unsat();
 
-    REQUIRE(mod == mod3);
-
+    REQUIRE(slv.check(mod) == false);
 }

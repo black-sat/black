@@ -36,9 +36,11 @@ namespace black::logic {
   struct root;
 }
 
-namespace black::processing {
+namespace black::pipes {
 
-  struct consumer {
+  class consumer 
+  {
+  public:
     consumer() = default;
     consumer(consumer const&) = default;
     consumer(consumer &&) = default;
@@ -55,23 +57,6 @@ namespace black::processing {
     virtual void require(logic::term) = 0;
     virtual void push() = 0;
     virtual void pop(size_t) = 0;
-  };
-
-  class producer 
-  {
-  public:
-    producer() = default; 
-    producer(producer const&) = default;
-    producer(producer &&) = default;
-
-    virtual ~producer() = default;
-
-    producer &operator=(producer const&) = default;
-    producer &operator=(producer &&) = default;
-
-    bool operator==(producer const&) const = default;
-
-    virtual void replay(logic::module mod, consumer *target) = 0;
   };
 
 }
@@ -227,7 +212,7 @@ namespace black::logic {
   //! somehow happen to be equal or very similar is potentially expensive,
   //! because all the contents of the modules will have to be compared.
   //!
-  class module : public processing::consumer, public processing::producer
+  class module : public pipes::consumer
   {
   public:
 
@@ -626,12 +611,7 @@ namespace black::logic {
     //! they are unrelated (i.e. one has not been obtained as a copy of the
     //! other), replay() may take some time to realize there is nothing to
     //! replay.
-    void replay(module from, processing::consumer *target) const;
-
-    //!
-    //! Non-const version of the above to inherit from `processing::producer`.
-    //!
-    virtual void replay(module from, processing::consumer *target) override;
+    void replay(module from, pipes::consumer *target) const;
 
     //!@}
 

@@ -21,12 +21,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_PROCESSING_HPP
-#define BLACK_PROCESSING_HPP
+#ifndef BLACK_PIPES_HPP
+#define BLACK_PIPES_HPP
 
 #include <black/support>
 #include <black/logic>
 
-#include <black/internal/processing/pipeline.hpp>
+#include <black/internal/pipes/pipeline.hpp>
+#include <black/internal/pipes/pipes.hpp>
+#include <black/internal/pipes/solvers.hpp>
 
-#endif // BLACK_PROCESSING_HPP
+#endif // BLACK_PIPES_HPP
