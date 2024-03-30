@@ -62,12 +62,15 @@ declare_type(logic, struct entity)
 define_type(logic, struct decl,
   struct decl { 
     logic::variable name; 
-    logic::term type;
+    logic::types::type type;
 
     decl(decl const&) = default;
     decl(decl &&) = default;
+    
+    decl &operator=(decl const&) = default;
+    decl &operator=(decl &&) = default;
 
-    decl(variable name, logic::term type) 
+    decl(variable name, logic::types::type type) 
       : name{name}, type{type} { }
 
     bool operator==(decl const&) const = default;
@@ -78,19 +81,58 @@ define_type(logic, struct decl,
 define_type(logic, struct def,
   struct def {
     variable name;
-    term type;
+    types::type type;
     term value;
 
-    def(variable name, term type, term value) 
+    def(def const&) = default;
+    def(def &&) = default;
+    
+    def &operator=(def const&) = default;
+    def &operator=(def &&) = default;
+
+    def(variable name, types::type type, term value) 
       : name{name.name()}, type{type}, value{value} { }
     
     def(variable name, term value)
-      : def{name, inferred_type(), value} { }
+      : name{name.name()}, type{types::inferred()}, value{value} { }
 
     bool operator==(def const&) const = default;
     size_t hash() const { return support::hash(name, type, value); }
   };
 )
+
+declare_ast(logic::types, type)
+
+  section("Basic types")
+    declare_ast_node(logic::types, type, integer, "The type of integer numbers")
+    end_ast_node(logic::types, type, integer)
+    
+    declare_ast_node(logic::types, type, real, "The type of real numbers")
+    end_ast_node(logic::types, type, real)
+    
+    declare_ast_node(logic::types, type, boolean, "The type of boolean values")
+    end_ast_node(logic::types, type, boolean)
+    
+    declare_ast_node(logic::types, type, function, "The type of functions")
+      declare_field(logic::types, type, function, parameters, std::vector<logic::types::type>, "The parameters types")
+      declare_field(logic::types, type, function, range, logic::types::type, "The function's range")
+    end_ast_node(logic::types, type, function)
+  end_section()
+
+  section("Inferred types placeholder")
+    declare_ast_node(logic::types, type, inferred, "Placeholder for type inference")
+    end_ast_node(logic::types, type, inferred)
+  end_section()
+
+  section("The error type")
+    declare_ast_node(logic::types, type, error, "A logically erroneous term")
+      declare_field(logic::types, type, error, source, logic::term, "The erroneous term")
+      declare_field(logic::types, type, error, error, std::string, "The error")
+      // TODO: variadic args to format the error
+    end_ast_node(logic::types, type, error)
+  end_section()
+
+end_ast(logic::types, type)
 
 declare_ast(logic, term)
 
@@ -100,35 +142,6 @@ declare_ast(logic, term)
       declare_field(logic, term, error, error, std::string, "The error")
       // TODO: variadic args to format the error
     end_ast_node(logic, term, error)
-  end_section()
-
-  section("Sorts and declarations")
-
-    declare_ast_node(logic, term, type_type, "The type of types")
-    end_ast_node(logic, term, type_type)
-
-    declare_ast_node(logic, term, inferred_type, "A type still to be inferred")
-    end_ast_node(logic, term, inferred_type)
-
-    declare_ast_node(logic, term, integer_type, "The type of integer numbers")
-    end_ast_node(logic, term, integer_type)
-    
-    declare_ast_node(logic, term, real_type, "The type of real numbers")
-    end_ast_node(logic, term, real_type)
-    
-    declare_ast_node(logic, term, boolean_type, "The type of boolean values")
-    end_ast_node(logic, term, boolean_type)
-    
-    declare_ast_node(logic, term, function_type, "The type of functions")
-      declare_field(logic, term, function_type, parameters, std::vector<logic::term>, "The parameters types")
-      declare_field(logic, term, function_type, range, logic::term, "The function's range")
-    end_ast_node(logic, term, function_type)
-
-    declare_ast_node(logic, term, type_cast, "A type-cast expression")
-      declare_field(logic, term, type_cast, target, logic::term, "The target type")
-      declare_field(logic, term, type_cast, expr, logic::term, "The term to cast")
-    end_ast_node(logic, term, type_cast)
-
   end_section()
 
   section("Constant terms")

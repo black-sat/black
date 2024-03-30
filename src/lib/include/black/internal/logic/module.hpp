@@ -90,13 +90,13 @@ namespace black::logic {
   //!
   struct decl { 
     logic::variable name; //!< The name of the entity.
-    logic::term type; //!< The type of the entity.
+    logic::types::type type; //!< The type of the entity.
 
     //! \name Constructors
     //!@{
 
     //! Constructs the object.
-    inline decl(variable name, logic::term type);
+    inline decl(variable name, logic::types::type type);
 
     //!@}
 
@@ -112,20 +112,18 @@ namespace black::logic {
   //!
   struct def {
     variable name; //!< the name of the entity.
-    term type; //!< the type of the entity.
+    types::type type; //!< the type of the entity.
     term value; //!< the defining value of the entity.
 
     //! \name Constructors
     //!@{
     
     //! Constructs the \ref def object.
-    def(variable name, term type, term value) 
-      : name{name.name()}, type{type}, value{value} { }
+    def(variable name, types::type type, term value);
     
     //! Constructs the \ref def object with the type set to `inferred_type()`,
     //! to be inferred automatically from `value`.
-    def(variable name, term value)
-      : def{name, inferred_type(), value} { }
+    def(variable name, type value);
 
     //!@}
   };
@@ -138,14 +136,14 @@ namespace black::logic {
   struct function_def {
     variable name; //!< the name of the function.
     std::vector<decl> parameters; //!< the parameters of the function.
-    term range; //!< the range (return type) of the function.
+    type range; //!< the range (return type) of the function.
     term body; //!< the body of the function.
 
     //! \name Constructors
     //!@{
 
     //! Constructs a \ref function_def
-    function_def(variable name, std::vector<decl> parms, term range, term body)
+    function_def(variable name, std::vector<decl> parms, type range, term body)
       : name{name}, parameters{std::move(parms)}, range{range}, body{body} { }
 
     //! Constructs a \ref function_def where the type is set to
@@ -153,7 +151,7 @@ namespace black::logic {
     function_def(variable name, std::vector<decl> parms, term body)
       : name{name}, 
         parameters{std::move(parms)}, 
-        range{inferred_type()}, 
+        range{types::inferred()}, 
         body{body} { }
 
     //!@}
@@ -292,7 +290,9 @@ namespace black::logic {
     //! Calls `declare(decl{name, type}, r)`.
     //!
     object 
-    declare(variable name, term type, resolution r = resolution::immediate);
+    declare(
+      variable name, types::type type, resolution r = resolution::immediate
+    );
     
     //!
     //! Defines a new entity.
@@ -335,7 +335,8 @@ namespace black::logic {
     //! Calls `define(def{name, type, value}, r)`.
     //!
     object define(
-      variable name, term type, term value, resolution r = resolution::immediate
+      variable name, types::type type, term value, 
+      resolution r = resolution::immediate
     );
 
     //!
@@ -398,7 +399,7 @@ namespace black::logic {
     //! Calls `define(function_def{name, parameters, range, body}, r)`.
     //!
     object define(
-      variable name, std::vector<decl> parameters, term range, term body,
+      variable name, std::vector<decl> parameters, types::type range, term body,
       resolution r = resolution::immediate
     );
     
@@ -639,7 +640,7 @@ namespace black::logic {
     std::weak_ptr<struct root const> root; 
     
     variable name; //!< The name of the entity.
-    term type; //!< The type of the entity.
+    types::type type; //!< The type of the entity.
     std::optional<term> value; //!< The value of the entity. 
                                //!< Empty if the entity is declared.
 
@@ -648,8 +649,7 @@ namespace black::logic {
     //!@{
 
     //! Constructs an empty entity.
-    entity() 
-      : name{label{}}, type{inferred_type()} { }
+    entity() : name{label{}}, type{types::inferred()} { }
 
     //! Constructs the entity from a \ref decl.
     explicit entity(decl d) 

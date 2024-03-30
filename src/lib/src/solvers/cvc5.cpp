@@ -31,7 +31,6 @@
 
 #include <algorithm>
 #include <ranges>
-#include <iostream>
 
 namespace black::solvers {
 
@@ -76,16 +75,15 @@ namespace black::solvers {
       return nullptr;
     }
 
-    CVC5::Sort to_sort(term type) const {
-      return match(type)(
-        [&](logic::error, term, auto err) {
-          std::cerr << "error: " << err << "\n";
+    CVC5::Sort to_sort(type ty) const {
+      return match(ty)(
+        [&](types::error) {
           return CVC5::Sort();
         },
-        [&](integer_type) { return slv->getIntegerSort(); },
-        [&](real_type) { return slv->getRealSort(); },
-        [&](boolean_type) { return slv->getBooleanSort(); },
-        [&](function_type, auto args, term range) {
+        [&](types::integer) { return slv->getIntegerSort(); },
+        [&](types::real) { return slv->getRealSort(); },
+        [&](types::boolean) { return slv->getBooleanSort(); },
+        [&](types::function, auto args, type range) {
           CVC5::Sort range_s = to_sort(range);
           std::vector<CVC5::Sort> args_s;
           for(auto arg : args)
@@ -196,7 +194,7 @@ namespace black::solvers {
             [](product) { return CVC5::Kind::MULT; },
             [](difference) { return CVC5::Kind::SUB; },
             [&](division) {
-              if((cast<integer_type>(type_of(args)) || ...))
+              if((cast<types::integer>(type_of(args)) || ...))
                 return CVC5::Kind::INTS_DIVISION;
               return CVC5::Kind::DIVISION; 
             }
@@ -311,7 +309,7 @@ namespace black::solvers {
             varmap = varmap.set(name, var);
           }
 
-          auto fun_ty = cast<function_type>(e->type);
+          auto fun_ty = cast<types::function>(e->type);
           black_assert(fun_ty.has_value());
 
           return slv->defineFun(
@@ -345,8 +343,8 @@ namespace black::solvers {
       for(auto e : lookups) {
         std::vector<CVC5::Term> thesevars;
         
-        if(cast<function_type>(e->type)) {
-          function_type ty = unwrap(cast<function_type>(e->type));
+        if(cast<types::function>(e->type)) {
+          types::function ty = unwrap(cast<types::function>(e->type));
           lambda fun = unwrap(cast<lambda>(e->value));
 
           immer::map<variable, CVC5::Term> boundvars;

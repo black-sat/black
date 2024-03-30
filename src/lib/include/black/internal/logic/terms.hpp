@@ -37,6 +37,12 @@ namespace black::logic {
   struct decl;
   struct def;
 
+  namespace types {
+    struct type;
+  }
+
+  using types::type;
+
   template<typename T>
   concept term_source = std::constructible_from<term, T>;
 
@@ -133,6 +139,10 @@ namespace black::logic {
   inline eq_wrapper_t<true> operator==(term t1, term t2);
 
   inline eq_wrapper_t<false> operator!=(term t1, term t2);
+
+  namespace types {
+    inline bool operator==(type t1, type t2);
+  }
 }
 
 
@@ -259,9 +269,6 @@ namespace black::logic
     }
 
   }
-}
-
-namespace black::logic {
 
   template<typename T, typename ...Ts>
   concept any_of = (std::same_as<T, Ts> || ...);
@@ -290,6 +297,33 @@ namespace black::logic {
   template<typename T>
   concept relational = 
     any_of<T, less_than, less_than_eq, greater_than, greater_than_eq>;
+
+}
+
+namespace black::logic::types {
+
+  inline bool type_equal(type t1, type t2) {
+    if(t1.unique_id() == t2.unique_id())
+      return true;
+
+    if(t1.hash() != t2.hash())
+      return false;
+
+    return support::match(t1)(
+      [&]<typename Node>(Node, auto const& ...args1) {
+        return support::match(t2)(
+          [&](Node, auto const& ...args2) {
+            return (bool(args1 == args2) && ...);
+          },
+          [](auto) { return false; }
+        );
+      }
+    );
+  }
+
+  inline bool operator==(type t1, type t2) {
+    return type_equal(t1, t2);
+  }
 
 }
 

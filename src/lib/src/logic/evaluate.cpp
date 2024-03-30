@@ -36,12 +36,6 @@ namespace black::logic {
     using support::match;
 
     return match(t)(
-      [&](type_type v)     { return v; },
-      [&](inferred_type v) { return v; },
-      [&](integer_type v)  { return v; },
-      [&](real_type v)     { return v; },
-      [&](boolean_type v)  { return v; },
-      [&](function_type v) { return v; },
       [&](integer v)       { return v; },
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },

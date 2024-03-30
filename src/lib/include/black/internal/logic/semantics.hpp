@@ -28,8 +28,8 @@
 
 namespace black::logic {
 
-  term type_of(term);
-  std::vector<term> type_of(std::vector<term> const&);
+  type type_of(term);
+  std::vector<type> type_of(std::vector<term> const&);
 
   term evaluate(term);
   std::vector<term> evaluate(std::vector<term> const&);

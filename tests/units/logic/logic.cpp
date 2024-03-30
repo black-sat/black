@@ -61,11 +61,11 @@ TEST_CASE("Modules") {
   SECTION("Declarations") 
   {
     object p = m.declare(
-      {"p", function_type({integer_type()}, boolean_type())}
+      {"p", types::function({types::integer()}, types::boolean())}
     );
-    object x = m.declare("x", integer_type());
+    object x = m.declare("x", types::integer());
 
-    REQUIRE(type_of(p(x)) == boolean_type());
+    REQUIRE(type_of(p(x)) == types::boolean());
   }
 
   SECTION("Definitions") {
@@ -74,19 +74,19 @@ TEST_CASE("Modules") {
     term tint = 42;
 
     object x = m.define("x", integer(40));
-    object p = m.define("p", {{a, integer_type()}}, ite(a > 0, a + x, a - x));
+    object p = m.define("p", {{a, types::integer()}}, ite(a > 0, a + x, a - x));
     object aobj = m.define({a, real(0.0)}); // this will be shadowed
 
-    REQUIRE(type_of(x) == integer_type());
-    REQUIRE(type_of(aobj) == real_type());
+    REQUIRE(type_of(x) == types::integer());
+    REQUIRE(type_of(aobj) == types::real());
 
-    term ft = function_type({integer_type()}, integer_type());
-    term ty = type_of(p);
+    type ft = types::function({types::integer()}, types::integer());
+    type ty = type_of(p);
     REQUIRE(ty == ft);
 
     term t = p(2);
 
-    REQUIRE(type_of(t) == integer_type());
+    REQUIRE(type_of(t) == types::integer());
     
     REQUIRE(evaluate(t) == 42);
   }
@@ -94,13 +94,13 @@ TEST_CASE("Modules") {
   SECTION("Mixed declarations and definitions") {
     auto a = variable("a");
 
-    object x = m.declare("x", integer_type());
+    object x = m.declare("x", types::integer());
     object p = 
-      m.define("p", {{a, integer_type()}}, integer_type(), a + x);
+      m.define("p", {{a, types::integer()}}, types::integer(), a + x);
 
     term t = p(40);
 
-    REQUIRE(type_of(t) == integer_type());
+    REQUIRE(type_of(t) == types::integer());
     
     REQUIRE(evaluate(t) == 40 + x);
   }
@@ -115,11 +115,11 @@ TEST_CASE("Modules") {
 
     object fobj = 
       m.define(
-        f, {{a, integer_type()}}, a + x + y, resolution::delayed
+        f, {{a, types::integer()}}, a + x + y, resolution::delayed
       );
 
-    object xobj = m.define(x, integer_type(), y, resolution::delayed);
-    object yobj = m.define(y, integer_type(), x, resolution::delayed);
+    object xobj = m.define(x, types::integer(), y, resolution::delayed);
+    object yobj = m.define(y, types::integer(), x, resolution::delayed);
     
     m.resolve(recursion::allowed);
 
@@ -127,24 +127,20 @@ TEST_CASE("Modules") {
     REQUIRE(m.lookup(x) == xobj);
     REQUIRE(m.lookup(y) == yobj);
     
-    term ft = function_type({integer_type()}, integer_type());
+    type ft = types::function({types::integer()}, types::integer());
     REQUIRE(fobj.entity()->type == ft);
     REQUIRE(xobj.entity()->value == yobj);
     REQUIRE(yobj.entity()->value == xobj);
 
     object wrongf = m.define(
-      {f, {{a, integer_type()}}, f(a)},
+      {f, {{a, types::integer()}}, f(a)},
       resolution::delayed
     );
 
     m.resolve(recursion::allowed);
 
-    term wrongft = function_type({integer_type()}, inferred_type());
+    type wrongft = types::function({types::integer()}, types::inferred());
     REQUIRE(wrongf.entity()->type == wrongft);
-
-    SECTION("Memory management") {
-
-    }
   }
 
 }

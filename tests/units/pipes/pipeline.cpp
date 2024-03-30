@@ -47,7 +47,7 @@ static std::vector<term> to_ints_(std::vector<term> ts) {
 
 static term to_ints_(term t) {
     return match(t)(
-        [](real_type) { return integer_type(); },
+        [](types::real) { return types::integer(); },
         [](real, double v) { return integer(uint64_t(std::floor(v))); },
         []<typename T>(T, auto ...args) { return T(to_ints_(args)...); }
     );
@@ -61,7 +61,7 @@ TEST_CASE("Pipeline") {
 
         module mod;
 
-        object x = mod.declare("x", integer_type());
+        object x = mod.declare("x", types::integer());
 
         mod.require(x == 0);
 
@@ -85,8 +85,8 @@ TEST_CASE("Pipeline") {
     SECTION("With a real solver") {
         module mod;
 
-        object x = mod.declare("x", integer_type());
-        object y = mod.declare("y", integer_type());
+        object x = mod.declare("x", types::integer());
+        object y = mod.declare("y", types::integer());
 
         mod.require(x > y);
 
@@ -103,7 +103,7 @@ TEST_CASE("Pipeline") {
     // SECTION("map") {
     //     module mod;
 
-    //     object x = mod.declare("x", real_type());
+    //     object x = mod.declare("x", types::real());
     //     object y = mod.define("y", 3.0);
     //     object z = mod.define("z", 4.0);
 

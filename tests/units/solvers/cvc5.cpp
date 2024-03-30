@@ -39,8 +39,8 @@ TEST_CASE("cvc5") {
     solvers::solver slv = black::solvers::cvc5();
 
     SECTION("Declarations") {
-        object x = mod.declare("x", integer_type());
-        object y = mod.declare("y", integer_type());
+        object x = mod.declare("x", types::integer());
+        object y = mod.declare("y", types::integer());
         
         mod.require(x <= y);
 
@@ -53,9 +53,9 @@ TEST_CASE("cvc5") {
 
     SECTION("Definitions") 
     {    
-        decl a = {"a", integer_type()};
+        decl a = {"a", types::integer()};
 
-        object k = mod.declare("k", integer_type());
+        object k = mod.declare("k", types::integer());
         object f = mod.define("f", {a}, a * k);
 
         mod.require(k >= 2);
@@ -71,10 +71,10 @@ TEST_CASE("cvc5") {
     SECTION("Declaration of functions/predicates") {
 
         object p = mod.declare(
-            "p", function_type({integer_type()}, boolean_type())
+            "p", types::function({types::integer()}, types::boolean())
         );
         
-        decl x = {"x", integer_type()};
+        decl x = {"x", types::integer()};
 
         mod.require(forall(x, p(x)));
         mod.require(!p(42));
@@ -85,8 +85,8 @@ TEST_CASE("cvc5") {
 
     SECTION("Push/pop interface") {
         
-        object x = mod.declare("x", integer_type());
-        object y = mod.declare("y", integer_type());
+        object x = mod.declare("x", types::integer());
+        object y = mod.declare("y", types::integer());
         
         mod.require(x <= y);
         REQUIRE(slv.check(mod) == true);
@@ -104,12 +104,12 @@ TEST_CASE("cvc5") {
         variable f = "f";
 
         object fact = mod.define(
-            f, {{x, integer_type()}}, integer_type(), 
+            f, {{x, types::integer()}}, types::integer(), 
             ite(x == 1, 1, x * f(x - 1)),
             resolution::delayed
         );
         
-        object a = mod.declare("a", integer_type());
+        object a = mod.declare("a", types::integer());
         
         mod.resolve(recursion::allowed);
         
@@ -131,7 +131,7 @@ TEST_CASE("cvc5") {
 
         geometry.import(math);
 
-        decl r = {"r", real_type()};
+        decl r = {"r", types::real()};
 
         object perimeter = 
             geometry.define("perimeter", {r}, 2.0 * r * pi);
@@ -146,7 +146,7 @@ TEST_CASE("cvc5") {
     }
 
     SECTION("Model values") {
-        object x = mod.declare("x", integer_type());
+        object x = mod.declare("x", types::integer());
         
         mod.require(x <= 0);
         mod.require(x >= 0);
@@ -157,16 +157,3 @@ TEST_CASE("cvc5") {
     }
 
 }
-
-
-// TEST("Mockup") {
-
-//     module mod;
-
-//     variable x
-
-//     object f = mod.define("f", {{x}})
-
-//     pipeline p = 
-
-// }

@@ -76,8 +76,8 @@ TEST_CASE("modules") {
     SECTION("linear definitions") {
         module ours;
 
-        object x = ours.declare("x", integer_type());
-        object y = ours.declare("y", integer_type());
+        object x = ours.declare("x", types::integer());
+        object y = ours.declare("y", types::integer());
 
         ours.require(x < y);
         ours.push();
@@ -175,9 +175,9 @@ TEST_CASE("modules") {
         variable g = "g";
 
         object fobj = 
-            rec.define({f, {{x, integer_type()}}, g(x)}, resolution::delayed);
+            rec.define({f, {{x, types::integer()}}, g(x)}, resolution::delayed);
         object gobj = 
-            rec.define({g, {{x, integer_type()}}, f(x)}, resolution::delayed);
+            rec.define({g, {{x, types::integer()}}, f(x)}, resolution::delayed);
 
         rec.resolve(recursion::allowed);
 

@@ -87,7 +87,7 @@ namespace black::logic {
       persistent::set<variable> hidden
     ) const;
 
-    term infer(
+    type infer(
       entity const *p, 
       root const*ours, std::unordered_set<std::shared_ptr<root const>> *deps
     );
@@ -157,7 +157,7 @@ namespace black::logic {
     return _impl->get()->declare(d, r);
   }
 
-  object module::declare(variable name, term type, resolution r) {
+  object module::declare(variable name, types::type type, resolution r) {
     return declare(decl{name, type}, r);
   }
   
@@ -180,7 +180,8 @@ namespace black::logic {
     return _impl->get()->define(d, r);
   }
 
-  object module::define(variable name, term type, term value, resolution r) {
+  object 
+  module::define(variable name, types::type type, term value, resolution r) {
     return define(def{name, type, value}, r);
   }
 
@@ -189,11 +190,11 @@ namespace black::logic {
   }
 
   object module::define(function_def f, resolution r) {
-    std::vector<term> argtypes;
+    std::vector<type> argtypes;
     for(decl d : f.parameters)
       argtypes.push_back(d.type);
 
-    auto type = function_type(argtypes, f.range);
+    auto type = types::function(argtypes, f.range);
     auto body = lambda(f.parameters, f.body);
 
     return define(def{f.name, type, body}, r);
@@ -201,7 +202,7 @@ namespace black::logic {
 
   object module::define(
     variable name, std::vector<decl> parameters,
-    term range, term body, resolution r
+    type range, term body, resolution r
   ) {
     return define(function_def{name, std::move(parameters), range, body}, r);
   }
@@ -414,11 +415,6 @@ namespace black::logic {
   ) const {
     return support::match(t)(
       [&](error v)         { return v; },
-      [&](type_type v)     { return v; },
-      [&](inferred_type v) { return v; },
-      [&](integer_type v)  { return v; },
-      [&](real_type v)     { return v; },
-      [&](boolean_type v)  { return v; },
       [&](integer v)       { return v; },
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
@@ -441,15 +437,10 @@ namespace black::logic {
         return x;
       },
       [&]<any_of<exists,forall,lambda> T>(T, auto const& decls, term body) {
-        std::vector<decl> rdecls;
-        for(decl d : decls) {
-          rdecls.push_back(decl{
-            d.name, resolved(d.type, {}, nullptr, ours, deps, hidden)
-          });
+        for(decl d : decls)
           hidden.insert(d.name);
-        }
         
-        return T(rdecls, resolved(body, pending, mode, ours, deps, hidden));
+        return T(decls, resolved(body, pending, mode, ours, deps, hidden));
       },
       [&]<typename T>(T, auto const &...args) {
         return T(resolved(args, pending, mode, ours, deps, hidden)...);
@@ -461,16 +452,16 @@ namespace black::logic {
     return _impl->get()->resolved(t, {}, nullptr, nullptr, nullptr, {});
   }
 
-  term module::impl_t::infer(
+  type module::impl_t::infer(
     entity const *p, 
     root const*ours, std::unordered_set<std::shared_ptr<root const>> *deps
   ) {
     return support::match(p->type)(
-      [&](inferred_type) {
+      [&](types::inferred) -> type {
         return type_of(*p->value);
       },
-      [&](function_type t, auto const& params, term range) {
-        if(!cast<inferred_type>(range))
+      [&](types::function t, auto const& params, type range) -> type {
+        if(!cast<types::inferred>(range))
           return t;
         auto func = cast<lambda>(p->value);
         if(!func)
@@ -480,7 +471,7 @@ namespace black::logic {
         for(decl d : func->vars())
           nested.declare(d, resolution::immediate);
 
-        return function_type(
+        return types::function(
           params, 
           type_of(nested.resolved(func->body(), {}, nullptr, ours, deps, {}))
         );
@@ -522,14 +513,12 @@ namespace black::logic {
     std::unordered_set<std::shared_ptr<struct root const>> deps;
     // for each pending entity:
     for(auto p : lookups) {
-      // 1. we resolve the type (recursion in types is not supported)
-      p->type = resolved(p->type, {}, nullptr, root.get(), &deps, {});
-      
-      // 2. if a definition, we resolve the value, detecting recursion
+      // if a definition, ...
       if(p->value) {
+        // ... we resolve the value, detecting recursion, and ...
         *p->value = resolved(*p->value, names, &mode, root.get(), &deps, {});
 
-        // 3. we infer the type if needed
+        // ... we infer the type if needed
         p->type = infer(p, root.get(), &deps);
       }
     }
