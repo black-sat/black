@@ -87,9 +87,9 @@ namespace black::pipes {
     bool flag = false;
     for(auto const& e : r->entities) {
       types::type type = e->type == types::real() ? types::integer() : e->type;
-      std::optional<term> value;
-      if(e->value)
-        value = to_ints(*e->value);
+      std::optional<term> value = e->value;
+      if(value)
+        value = to_ints(*value);
 
       if(type != e->type || value != e->value) {
         object obj = e->value ? 
