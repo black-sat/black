@@ -157,3 +157,23 @@ TEST_CASE("cvc5") {
     }
 
 }
+
+TEST_CASE("Example transform") {
+
+    module mod;
+
+    object x = mod.declare("x", types::real());
+    object y = mod.define("y", 3.0);
+    object z = mod.define("z", 4.0);
+
+    mod.require(y < x && x < z);
+
+    solvers::solver slv = solvers::cvc5();
+
+    REQUIRE(slv.check(mod) == true);
+
+    solvers::solver slv2 = pipes::example() | solvers::cvc5();
+
+    REQUIRE(slv2.check(mod) == false);
+
+}
