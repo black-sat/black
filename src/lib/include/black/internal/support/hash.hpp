@@ -107,15 +107,6 @@ namespace black::support::internal {
     ((h = hash_combine(h, hash(args))), ...);
     return h;
   }
-
-  //
-  // Short aliases for hopscotch map/set
-  //
-  template<typename Key, typename Value>
-  using map = tsl::hopscotch_map<Key, Value>;
-  
-  template<typename T>
-  using set = tsl::hopscotch_set<T>;
 }
 
 template<typename T>
@@ -128,8 +119,6 @@ struct std::hash<T> {
 
 namespace black::support {
   using internal::hash;
-  using internal::map;
-  using internal::set;
 }
 
 #endif // BLACK_SUPPORT_HASH_HPP

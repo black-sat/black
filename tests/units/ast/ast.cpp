@@ -24,6 +24,7 @@
 #include <catch.hpp>
 
 #include <black/logic>
+#include <black/ast/algorithms>
 
 #include <string_view>
 
@@ -142,5 +143,23 @@ TEST_CASE("Static reflection") {
     std::unordered_map<term, int> m = {{t, 42}};
 
     REQUIRE(m[t] == 42);
+
+}
+
+TEST_CASE("Traverse") {
+
+    using namespace black::logic;
+    using namespace black::ast;
+
+    tree_ast tree = node(1, {leaf(), node(2, {leaf(), leaf()})});
+
+    size_t sum = traverse<size_t>(tree)(
+        [](leaf) { return 0; },
+        [](node, size_t value, auto children) { 
+            return value + std::reduce(children.begin(), children.end()); 
+        }
+    );
+
+    REQUIRE(sum == 3);
 
 }

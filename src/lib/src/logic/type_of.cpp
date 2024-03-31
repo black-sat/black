@@ -33,9 +33,7 @@ namespace black::logic {
   }
 
   type type_of(term t) {
-    using support::match;
-
-    return match(t)(
+    return support::match(t)(
       [&](error e, term, auto err) { 
         return types::error(e, err); 
       },

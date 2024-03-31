@@ -24,6 +24,7 @@
 #include <black/support>
 #include <black/support/private>
 #include <black/logic>
+#include <black/ast/algorithms>
 #include <black/pipes>
 
 namespace black::pipes {
@@ -31,6 +32,7 @@ namespace black::pipes {
   namespace persistent = support::persistent;
   using namespace support;
   using namespace logic;
+  using namespace ast;
 
   struct example_t::impl_t : public consumer
   {
@@ -39,9 +41,7 @@ namespace black::pipes {
     class consumer *_next;
     persistent::map<entity const *, entity const *> _replacements;
 
-    decltype(auto) to_ints(auto const& v) { return v; }
     term to_ints(term);
-    std::vector<term> to_ints(std::vector<term>);
 
     virtual void import(logic::module) override;
     virtual void adopt(std::shared_ptr<logic::root const>) override;
@@ -58,21 +58,14 @@ namespace black::pipes {
   consumer *example_t::consumer() { return _impl.get(); }
   
   term example_t::impl_t::to_ints(term t) {
-    return match(t)(
+    return map(t)(
       [](real, double v) { return integer(uint64_t(v)); },
       [&](object o, auto e) {
         if(auto ptr = _replacements.find(e); ptr)
           return object(*ptr);
         return o;
-      },
-      [&]<typename T>(T, auto ...args) { return T(to_ints(args)...); }
+      }
     );
-  }
-
-  std::vector<term> example_t::impl_t::to_ints(std::vector<term> ts) {
-    for(term &t : ts)
-      t = to_ints(t);
-    return ts;
   }
 
   void example_t::impl_t::import(logic::module m) {

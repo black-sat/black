@@ -174,8 +174,8 @@ namespace black::support::internal {
   template<typename F, matchable M>
   struct visit_result : visit_result_<F, match_cases_t<M>> { };
 
-  template<typename F, typename Cases>
-  using visit_result_t = typename visit_result<F, Cases>::type;
+  template<typename F, typename M>
+  using visit_result_t = typename visit_result<F, M>::type;
 
   template<typename M, typename F>
   concept can_visit_over = matchable<M> && requires {
@@ -370,10 +370,12 @@ namespace black::support::internal {
 
 namespace black::support {
   using internal::unpacking;
+  using internal::dispatch;
   using internal::dispatching;
   using internal::otherwise;
   using internal::visit;
   using internal::visitor;
+  using internal::can_visit_over;
   using internal::match;
   using internal::matching;
   using internal::finally;

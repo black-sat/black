@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 #include <black/logic>
+#include <black/ast/algorithms>
 
 namespace black::logic {
 
@@ -34,8 +35,9 @@ namespace black::logic {
 
   term evaluate(term t) {
     using support::match;
+    using ast::map;
 
-    return match(t)(
+    return map(t)(
       [&](integer v)       { return v; },
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
@@ -46,90 +48,69 @@ namespace black::logic {
           return evaluate(*e->value);
         return x;
       },
-      //[&](type_cast c)   { return c.target(); },
       [&](atom, term head, auto const& args) -> term {
 
-        term ehead = evaluate(head);
-        std::vector<term> eargs = evaluate(args);
-
-        auto f = cast<lambda>(ehead);
+        auto f = cast<lambda>(head);
         if(!f || f->vars().size() != args.size())
-          return atom(ehead, eargs);
+          return atom(head, args);
         
         module env;
 
         for(size_t i = 0; i < args.size(); i++)
-          env.define({f->vars()[i].name, f->vars()[i].type, eargs[i]});
+          env.define({f->vars()[i].name, f->vars()[i].type, args[i]});
 
         return evaluate(env.resolved(f->body()));
       },
-      // equal, distinct
-      [&]<quantifier T>(T, auto const& binds, term body) {
-        return T(binds, evaluate(body));
-      },
-      [&]<temporal T>(T, auto ...args) {
-        return T(evaluate(args)...);
-      },
       [&](negation, term arg) -> term {
-        term earg = evaluate(arg);
-        if(auto v = cast<boolean>(earg); v)
+        if(auto v = cast<boolean>(arg); v)
           return boolean(!v->value());
         
-        return negation(earg);
+        return negation(arg);
       },
       [&](conjunction, auto const& args) -> term {
-        std::vector<term> eargs = evaluate(args);
         bool result = true;
         
-        for(auto earg : eargs) {
-          if(auto v = cast<boolean>(earg); v)
+        for(auto arg : args) {
+          if(auto v = cast<boolean>(arg); v)
             result = result && v->value();
-          return conjunction(eargs);
+          else
+            return conjunction(args);
         }
 
         return boolean(result);
       },
       [&](disjunction, auto const& args) -> term {
-        std::vector<term> eargs = evaluate(args);
         bool result = false;
         
-        for(auto earg : eargs) {
-          if(auto v = cast<boolean>(earg); v)
+        for(auto arg : args) {
+          if(auto v = cast<boolean>(arg); v)
             result = result || v->value();
-          return conjunction(eargs);
+          else
+            return disjunction(args);
         }
 
         return boolean(result);
       },
       [&](implication, term left, term right) -> term {
-        term eleft = evaluate(left);
-        term eright = evaluate(right);
-        
-        auto vl = cast<boolean>(eleft);
-        auto vr = cast<boolean>(eright);
+        auto vl = cast<boolean>(left);
+        auto vr = cast<boolean>(right);
 
         if(!vl || !vr)
-          return implication(eleft, eright);
+          return implication(left, right);
         
         return boolean(!vl->value() || vr->value());
       },
       [&](ite, term guard, term iftrue, term iffalse) -> term {
-        term eguard = evaluate(guard);
-        term etrue = evaluate(iftrue);
-        term efalse = evaluate(iffalse);
-
-        auto guardv = cast<boolean>(eguard);
+        auto guardv = cast<boolean>(guard);
         if(!guardv)
-          return ite(eguard, etrue, efalse);
+          return ite(guard, iftrue, iffalse);
 
         if(guardv->value())
-          return etrue;
-        return efalse;
+          return iftrue;
+        return iffalse;
       },
       [&](minus, term arg) -> term {
-        term earg = evaluate(arg);
-        
-        return match(earg)(
+        return match(arg)(
           [&](integer, auto value) {
             return integer(-value);
           },
@@ -137,16 +118,13 @@ namespace black::logic {
             return real(-value);
           },
           [&](auto) {
-            return minus(earg);
+            return minus(arg);
           }
         );
       },
       [&]<arithmetic T>(T op, term left, term right) -> term {
-        term eleft = evaluate(left);
-        term eright = evaluate(right);
-
-        auto ilv = cast<integer>(eleft);
-        auto ilr = cast<integer>(eright);
+        auto ilv = cast<integer>(left);
+        auto ilr = cast<integer>(right);
         if(ilv && ilr)
           return integer(
             match(op)(
@@ -157,8 +135,8 @@ namespace black::logic {
             )
           );
         
-        auto rlv = cast<real>(eleft);
-        auto rlr = cast<real>(eright);
+        auto rlv = cast<real>(left);
+        auto rlr = cast<real>(right);
         if(rlv && rlr)
           return real(
             match(op)(
@@ -169,14 +147,11 @@ namespace black::logic {
             )
           );
 
-        return T(eleft, eright);
+        return T(left, right);
       },
       [&]<relational T>(T op, term left, term right) -> term {
-        term eleft = evaluate(left);
-        term eright = evaluate(right);
-
-        auto ilv = cast<integer>(eleft);
-        auto ilr = cast<integer>(eright);
+        auto ilv = cast<integer>(left);
+        auto ilr = cast<integer>(right);
         if(ilv && ilr)
           return boolean(
             match(op)(
@@ -187,8 +162,8 @@ namespace black::logic {
             )
           );
         
-        auto rlv = cast<real>(eleft);
-        auto rlr = cast<real>(eright);
+        auto rlv = cast<real>(left);
+        auto rlr = cast<real>(right);
         if(rlv && rlr)
           return boolean(
             match(op)(
@@ -199,7 +174,7 @@ namespace black::logic {
             )
           );
 
-        return T(eleft, eright);
+        return T(left, right);
       }
     );
   }

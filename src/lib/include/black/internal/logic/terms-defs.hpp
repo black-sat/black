@@ -101,6 +101,18 @@ define_type(logic, struct def,
   };
 )
 
+declare_ast(logic, tree_ast)
+
+  declare_ast_node(logic, tree_ast, leaf, "Leaves")
+  end_ast_node(logic, tree_ast, leaf)
+  
+  declare_ast_node(logic, tree_ast, node, "Nodes")
+    declare_field(logic, tree_ast, node, value, size_t, "Value")
+    declare_field(logic, tree_ast, node, left, std::vector<logic::tree_ast>, "Children")
+  end_ast_node(logic, tree_ast, node)
+
+end_ast(logic, tree_ast)
+
 declare_ast(logic::types, type)
 
   section("Basic types")
