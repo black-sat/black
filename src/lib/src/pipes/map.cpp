@@ -34,14 +34,15 @@ namespace black::pipes {
   using namespace logic;
   using namespace ast;
 
-  struct example_t::impl_t : public consumer
+  struct map_t::impl_t : public consumer
   {
-    impl_t(class consumer *next) : _next{next} { }
+    impl_t(class consumer *next, type_mapping_t ty_map, term_mapping_t te_map)
+      : _next{next}, _ty_map{ty_map}, _te_map{te_map} { }
 
     class consumer *_next;
+    type_mapping_t _ty_map;
+    term_mapping_t _te_map;
     persistent::map<entity const *, entity const *> _replacements;
-
-    term to_ints(term);
 
     virtual void import(logic::module) override;
     virtual void adopt(std::shared_ptr<logic::root const>) override;
@@ -50,47 +51,44 @@ namespace black::pipes {
     virtual void pop(size_t) override;
   };
 
-  example_t::example_t(class consumer *next)
-    : _impl{std::make_unique<impl_t>(next)} { }
+  map_t::map_t(
+    class consumer *next, type_mapping_t ty_map, term_mapping_t te_map
+  )
+    : _impl{std::make_unique<impl_t>(next, ty_map, te_map)} { }
 
-  example_t::~example_t() = default;
+  map_t::~map_t() = default;
 
-  consumer *example_t::consumer() { return _impl.get(); }
-  
-  term example_t::impl_t::to_ints(term t) {
-    return map(t)(
-      [](real, double v) { return integer(uint64_t(v)); },
-      [&](object o, auto e) {
-        if(auto ptr = _replacements.find(e); ptr)
-          return object(*ptr);
-        return o;
-      }
-    );
-  }
+  consumer *map_t::consumer() { return _impl.get(); }
 
-  void example_t::impl_t::import(logic::module m) {
+  void map_t::impl_t::import(logic::module m) {
     _next->import(std::move(m));
   }
 
-  void example_t::impl_t::adopt(std::shared_ptr<logic::root const> r) {
+  void map_t::impl_t::adopt(std::shared_ptr<logic::root const> r) {
     using namespace logic;
 
     module m;
 
     bool flag = false;
     for(auto const& e : r->entities) {
-      types::type type = e->type == types::real() ? types::integer() : e->type;
-      std::optional<term> value = e->value;
-      if(value)
-        value = to_ints(*value);
-
-      if(type != e->type || value != e->value) {
-        object obj = e->value ? 
-          m.define(e->name, type, *value, resolution::delayed) 
-        : m.declare(e->name, type, resolution::delayed);
+      if(!e->value) {
+        types::type type = _ty_map(e->type);
+        if(type != e->type) {
+          object obj = m.declare(e->name, type, resolution::delayed);
+          _replacements.set(e.get(), obj.entity());
+          flag = true;
+        }
+      } else {
+        term value = _te_map(*e->value);
         
-        _replacements.set(e.get(), obj.entity());
-        flag = true;
+        if(value != e->value) {
+          types::type type = r->mode == recursion::allowed ? 
+            _ty_map(e->type) : types::inferred();
+
+          object obj = m.define(e->name, type, value, resolution::delayed);
+          _replacements.set(e.get(), obj.entity());
+          flag = true;
+        }        
       }
     }
 
@@ -100,16 +98,23 @@ namespace black::pipes {
       _next->adopt(r);
   }
 
-  void example_t::impl_t::require(logic::term t) {
-    _next->require(to_ints(t));
+  void map_t::impl_t::require(logic::term t) {
+    term res = ast::map(_te_map(t))(
+      [&](object x, auto e) {
+        if(auto ptr = _replacements.find(e); ptr)
+          return object(*ptr);
+        return x;
+      }
+    );
+    _next->require(res);
   }
 
-  void example_t::impl_t::push() {
+  void map_t::impl_t::push() {
     _replacements.push();
     _next->push();
   }
 
-  void example_t::impl_t::pop(size_t n) {
+  void map_t::impl_t::pop(size_t n) {
     _replacements.pop(n);
     _next->pop(n);
   }

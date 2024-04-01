@@ -26,6 +26,7 @@
 #include <black/support>
 #include <black/logic>
 #include <black/pipes>
+#include <black/ast/algorithms>
 #include <black/solvers/cvc5>
 
 using namespace black;
@@ -172,7 +173,14 @@ TEST_CASE("Example transform") {
 
     REQUIRE(slv.check(mod) == true);
 
-    solvers::solver slv2 = pipes::example() | solvers::cvc5();
+    auto to_ints = []() {
+        return pipes::map(
+            [](types::real) { return types::integer(); },
+            [](real, double v) { return integer(uint64_t(v)); }
+        );
+    };
+
+    solvers::solver slv2 = to_ints() | solvers::cvc5();
 
     REQUIRE(slv2.check(mod) == false);
 

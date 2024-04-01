@@ -38,7 +38,8 @@ namespace black::ast {
       };
   }
 
-  template<typename R, typename T, typename ...Fs>
+  template<typename R, core::ast AST, typename T, typename ...Fs>
+    requires (!std::same_as<T, AST>)
   decltype(auto) traverse_(T const& v, Fs ...fs);
 
   template<typename R, core::ast AST, typename ...Fs>
@@ -52,7 +53,7 @@ namespace black::ast {
       [=](auto n, auto ...args) -> R {
         return dispatch(
           std::make_tuple(
-            n, traverse_<R>(args, fs...)...
+            n, traverse_<R, AST>(args, fs...)...
           ), 
           unpacking(ignore(fs))...
         );
@@ -64,17 +65,19 @@ namespace black::ast {
   std::vector<R> traverse_(std::vector<AST> const& ts, Fs ...fs) {
     std::vector<R> result;
     for(auto t : ts)
-      result.push_back(traverse_<R>(t, fs...));
+      result.push_back(traverse_<R, AST>(t, fs...));
     return result;
   }
 
-  template<typename R, typename T, typename ...Fs>
+  template<
+    typename R, core::ast AST, typename T, typename ...Fs
+  > requires (!std::same_as<T, AST>)
   decltype(auto) traverse_(T const& v, Fs ...) { return v; }
 
   template<typename R, core::ast AST>
   auto traverse(AST t) { 
     return [=](auto ...fs) {
-      return traverse_<R>(t, fs...); 
+      return traverse_<R, AST>(t, fs...); 
     };
   }
 
@@ -90,15 +93,15 @@ namespace black::ast {
 
   template<typename R, typename ...Fs>
   auto traversal(Fs ...fs) {
-    return [=](core::ast auto t) {
-      return traverse_<R>(t, fs...);
+    return [=]<core::ast AST>(AST t) {
+      return traverse_<R, AST>(t, fs...);
     };
   }
 
   template<typename ...Fs>
   auto mapping(Fs ...fs) {
     return [=](core::ast auto t) {
-      return map(t, fs...);
+      return map(t)(fs...);
     };
   }
 

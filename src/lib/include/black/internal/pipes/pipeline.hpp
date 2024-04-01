@@ -57,6 +57,7 @@ namespace black::pipes {
   {
   public:
     class base;
+    class common;
     using instance = std::unique_ptr<base>;
     using pipeline = std::function<instance(consumer *next)>;
 
@@ -95,7 +96,6 @@ namespace black::pipes {
 
   template<typename P>
   using make_transform = make_pipe<P, transform, consumer *>;
-
 
   //
   //

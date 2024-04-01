@@ -24,6 +24,8 @@
 #ifndef BLACK_PIPES_PIPES_HPP
 #define BLACK_PIPES_PIPES_HPP
 
+#include <black/ast/algorithms>
+
 namespace black::pipes {
 
   class id_t : public transform::base
@@ -64,11 +66,21 @@ namespace black::pipes {
     return composed(std::move(first), std::move(second));
   }
 
-  class example_t : public transform::base
+  class map_t : public transform::base
   {
   public:
-    example_t(class consumer *next);
-    virtual ~example_t() override;
+    using type_mapping_t = std::function<logic::type(logic::type)>;
+    using term_mapping_t = std::function<logic::term(logic::term)>;
+
+    map_t(class consumer *next, type_mapping_t ty_map, term_mapping_t te_map);
+
+    template<typename ...Fs>
+    map_t(class consumer *next, Fs ...fs) : map_t(
+      next, 
+      type_mapping_t(ast::mapping(fs...)), term_mapping_t(ast::mapping(fs...))
+    ) { }
+
+    virtual ~map_t() override;
       
     virtual class consumer *consumer() override;
 
@@ -77,7 +89,7 @@ namespace black::pipes {
     std::unique_ptr<impl_t> _impl;
   };
 
-  inline constexpr auto example = make_transform<example_t>{};
+  inline constexpr auto map = make_transform<map_t>{};
 
 }
 
