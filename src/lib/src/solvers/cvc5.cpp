@@ -41,37 +41,27 @@ namespace black::solvers {
 
   namespace CVC5 = ::cvc5;
 
-  struct cvc5_t::impl_t : pipes::consumer {
-
-    struct frame_t {
-      persistent::map<entity const *, CVC5::Term> objects;
-      persistent::map<CVC5::Term, entity const *> consts;
-
-      bool operator==(frame_t const&) const = default;
-    };
-  
-    module mod;
-    std::deque<frame_t> stack = { frame_t{} };
+  struct cvc5_t::impl_t : pipes::consumer 
+  {
+    persistent::map<entity const *, CVC5::Term> objects;
+    persistent::map<CVC5::Term, entity const *> consts;
     std::unique_ptr<CVC5::Solver> slv = std::make_unique<CVC5::Solver>();
     bool ignore_push = false;
 
     impl_t() { 
       slv->setOption("fmf-fun", "true");
       slv->setOption("produce-models", "true");
-      slv->push();
     }
 
     std::optional<CVC5::Term> get_const(entity const *e) const {
-      for(auto it = stack.rbegin(); it != stack.rend(); it++)
-        if(auto p = it->objects.find(e); p)
-          return *p;
+      if(auto p = objects.find(e); p)
+        return *p;
       return {};
     }
     
     entity const *get_entity(CVC5::Term t) const {
-      for(auto it = stack.rbegin(); it != stack.rend(); it++)
-        if(auto p = it->consts.find(t); p)
-          return *p;
+      if(auto p = consts.find(t); p)
+        return *p;  
       return nullptr;
     }
 
@@ -325,8 +315,8 @@ namespace black::solvers {
         }
       );
 
-      stack.back().objects.insert({e, t});
-      stack.back().consts.insert({t, e});
+      objects.insert({e, t});
+      consts.insert({t, e});
     }
 
     void define(std::vector<entity const *> lookups) {
@@ -334,8 +324,8 @@ namespace black::solvers {
       for(auto e : lookups) {
         CVC5::Term name = slv->mkConst(to_sort(e->type));
         names.push_back(name);
-        stack.back().objects.insert({e, name});
-        stack.back().consts.insert({name, e});
+        objects.insert({e, name});
+        consts.insert({name, e});
       }
 
       std::vector<std::vector<CVC5::Term>> vars;
@@ -370,8 +360,8 @@ namespace black::solvers {
       
       CVC5::Term t = slv->mkConst(to_sort(e->type));
       
-      stack.back().objects.insert({e, t});
-      stack.back().consts.insert({t, e});
+      objects.insert({e, t});
+      consts.insert({t, e});
     }
 
     virtual void adopt(std::shared_ptr<root const> r) override {
@@ -400,10 +390,8 @@ namespace black::solvers {
       if(ignore_push)
         return;
 
-      if(stack.empty())
-        stack.push_back({});
-      else
-        stack.push_back(stack.back());
+      objects.push();
+      consts.push();
       slv->push();
     }
 
@@ -411,8 +399,8 @@ namespace black::solvers {
       if(ignore_push)
         return;
 
-      for(size_t i = 0; i < n; i++)
-        stack.pop_back();
+      objects.pop(n);
+      consts.pop(n);
       slv->pop(unsigned(n));
     }
 
