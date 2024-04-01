@@ -60,9 +60,13 @@ namespace black::solvers {
       : _slv{slv()}, _pipe{pipe(_slv->consumer())} { }
 
     virtual pipes::consumer *consumer() override { return _pipe->consumer(); }
+    
     virtual support::tribool check() override { return _slv->check(); }
+    
     virtual std::optional<logic::term> value(logic::term t) override {
-      return _slv->value(t);
+      return _slv->value(ast::map(t)(
+        [&](logic::object x) { return _pipe->translate(x); }
+      ));
     }
 
   private:

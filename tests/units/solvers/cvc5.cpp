@@ -163,25 +163,33 @@ TEST_CASE("Example transform") {
 
     module mod;
 
-    object x = mod.declare("x", types::real());
-    object y = mod.define("y", 3.0);
-    object z = mod.define("z", 4.0);
-
-    mod.require(y < x && x < z);
-
     solvers::solver slv = solvers::cvc5();
 
-    REQUIRE(slv.check(mod) == true);
-
-    auto to_ints = []() {
+    auto discretize = []() {
         return pipes::map(
             [](types::real) { return types::integer(); },
             [](real, double v) { return integer(uint64_t(v)); }
         );
     };
 
-    solvers::solver slv2 = to_ints() | solvers::cvc5();
+    
+    object x = mod.declare("x", types::real());
 
-    REQUIRE(slv2.check(mod) == false);
+    mod.push();
+    mod.require(3.0 < x && x < 4.0);
+
+    REQUIRE(slv.check(mod) == true);
+
+    slv = discretize() | solvers::cvc5();
+
+    REQUIRE(slv.check(mod) == false);
+    
+    mod.pop();
+    mod.require(3.0 < x && x < 5.0);
+
+    REQUIRE(slv.check(mod) == true);
+
+    REQUIRE(slv.value(x) == 4);
+
 
 }

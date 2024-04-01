@@ -44,6 +44,8 @@ namespace black::pipes {
     term_mapping_t _te_map;
     persistent::map<entity const *, entity const *> _replacements;
 
+    object translate(object x);
+
     virtual void import(logic::module) override;
     virtual void adopt(std::shared_ptr<logic::root const>) override;
     virtual void require(logic::term) override;
@@ -59,6 +61,8 @@ namespace black::pipes {
   map_t::~map_t() = default;
 
   consumer *map_t::consumer() { return _impl.get(); }
+
+  object map_t::translate(object x) { return _impl->translate(x); }
 
   void map_t::impl_t::import(logic::module m) {
     _next->import(std::move(m));
@@ -100,11 +104,7 @@ namespace black::pipes {
 
   void map_t::impl_t::require(logic::term t) {
     term res = ast::map(_te_map(t))(
-      [&](object x, auto e) {
-        if(auto ptr = _replacements.find(e); ptr)
-          return object(*ptr);
-        return x;
-      }
+      [&](object x) { return translate(x); }
     );
     _next->require(res);
   }
@@ -117,6 +117,12 @@ namespace black::pipes {
   void map_t::impl_t::pop(size_t n) {
     _replacements.pop(n);
     _next->pop(n);
+  }
+
+  object map_t::impl_t::translate(object x) {
+    if(auto ptr = _replacements.find(x.entity()); ptr)
+      return object(*ptr);
+    return x;
   }
 
 

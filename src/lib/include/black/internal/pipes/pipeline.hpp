@@ -84,6 +84,8 @@ namespace black::pipes {
     virtual ~base() = default;
 
     virtual class consumer *consumer() = 0;
+
+    virtual logic::object translate(logic::object) = 0;
   };
 
   inline transform::transform(pipeline p) : _instance{p(&_output)} { }
@@ -125,9 +127,11 @@ namespace black::pipes {
     instance _instance;
   };
 
-  class solver::base  : public transform::base {
+  class solver::base {
   public:
-    virtual ~base() override = default;
+    virtual ~base() = default;
+
+    virtual pipes::consumer *consumer() = 0;
 
     virtual support::tribool check() = 0;
 

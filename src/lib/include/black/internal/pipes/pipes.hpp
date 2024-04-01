@@ -35,6 +35,8 @@ namespace black::pipes {
       
     virtual class consumer *consumer() override { return _next; }
 
+    virtual logic::object translate(logic::object x) override { return x; }
+
   private:
     class consumer *_next;
   };
@@ -52,6 +54,10 @@ namespace black::pipes {
       
     virtual class consumer *consumer() override {
       return _first->consumer();
+    }
+
+    virtual logic::object translate(logic::object x) override { 
+      return _second->translate(_first->translate(x));
     }
   
   private:
@@ -83,6 +89,8 @@ namespace black::pipes {
     virtual ~map_t() override;
       
     virtual class consumer *consumer() override;
+
+    virtual logic::object translate(logic::object x) override;
 
   private:
     struct impl_t;
