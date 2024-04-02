@@ -34,7 +34,7 @@ enum class step {
     import,
     adopt,
     adopt_rec,
-    require,
+    state,
     push,
     pop
 };
@@ -56,9 +56,9 @@ struct debug_t : consumer {
             steps.push_back(step::adopt_rec);
         return mod->adopt(r);
     }
-    virtual void require(term r) override { 
-        steps.push_back(step::require);
-        return mod->require(r);
+    virtual void state(term t, statement s) override { 
+        steps.push_back(step::state);
+        return mod->state(t, s);
     }
     virtual void push() override { 
         steps.push_back(step::push);
@@ -97,7 +97,7 @@ TEST_CASE("modules") {
             ours.replay(theirs, &debug);
 
             std::vector<step> expected = {
-                step::push, step::require, step::push, step::require
+                step::push, step::state, step::push, step::state
             };
             
             REQUIRE(ours == theirs);
@@ -135,7 +135,7 @@ TEST_CASE("modules") {
 
             std::vector<step> expected = {
                 step::pop, step::pop, step::push, 
-                step::require, step::push, step::require
+                step::state, step::push, step::state
             };
             
             REQUIRE(ours == theirs);
@@ -158,7 +158,7 @@ TEST_CASE("modules") {
             ours.replay(theirs, &debug);
 
             std::vector<step> expected = {
-                step::pop, step::require, step::push, step::require
+                step::pop, step::state, step::push, step::state
             };
             
             REQUIRE(ours == theirs);

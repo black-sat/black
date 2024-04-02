@@ -359,7 +359,8 @@ namespace black::solvers {
         define(defs);
     }
 
-    virtual void require(term t) override {
+    virtual void state(term t, statement s) override {
+      black_assert(s == statement::requirement);
       slv->assertFormula(to_term(t, {}));
     }
 

@@ -34,6 +34,8 @@
 namespace black::logic {
   class module;
   struct root;
+
+  enum class statement : uint8_t;
 }
 
 namespace black::pipes {
@@ -54,7 +56,7 @@ namespace black::pipes {
 
     virtual void import(logic::module) = 0;
     virtual void adopt(std::shared_ptr<logic::root const>) = 0;
-    virtual void require(logic::term) = 0;
+    virtual void state(logic::term, logic::statement s) = 0;
     virtual void push() = 0;
     virtual void pop(size_t) = 0;
   };
@@ -163,6 +165,16 @@ namespace black::logic {
   enum class recursion : bool {
     forbidden = false, //!< Non-recursive name resolution
     allowed = true     //!< Recursive name resolution
+  };
+
+  //!
+  //! Kind of statements that can be given to `module::state()`.
+  //!
+  enum class statement : uint8_t {
+    requirement,
+    init,
+    transition,
+    final
   };
 
   //!
@@ -516,13 +528,44 @@ namespace black::logic {
     //!@{
 
     //!
-    //! Adds a requirement to the module.
+    //! Adds a statement to the module.
     //!
-    //! \param req the required term.
+    //! \param t the statement.
     //!
-    //! Asserts that `req` must hold in any model of the module.
+    //! \param s the kind of statement
     //!
-    virtual void require(term req) override;
+    //! Statements can be of different kinds:
+    //! 1. requirements (`statement::requirement`):  
+    //!    asserts that `t` holds in any model of the module;
+    //! 2. initial states (`statement::init`):  
+    //!    asserts that `t` holds in the initial state of the module;
+    //! 3. transitions (`statement::transition`):  
+    //!    asserts that `t` holds during any transition of the module;
+    //! 4. final states (`statement::final`):  
+    //!    asserts that `req` must hold at the end of any execution of ht e
+    //!    module.
+    //!
+    virtual void state(logic::term t, statement s) override;
+
+    //!
+    //! Same as `state(req, statement::requirement)`.
+    //!
+    void require(term req) { state(req, statement::requirement); }
+    
+    //!
+    //! Same as `state(req, statement::requirement)`.
+    //!
+    void init(term t) { state(t, statement::init); }
+    
+    //!
+    //! Same as `state(t, statement::requirement)`.
+    //!
+    void transition(term t) { state(t, statement::transition); }
+    
+    //!
+    //! Same as `state(t, statement::requirement)`.
+    //!
+    void final(term t) { state(t, statement::final); }
 
     //!@}
 
@@ -540,7 +583,7 @@ namespace black::logic {
     //! \param n the number of frames to pop.
     //!
     //! Calls to this function cause any call to the import(), declare(),
-    //! define(), adopt(), and require() functions, executed after the last `n`
+    //! define(), adopt(), and state() functions, executed after the last `n`
     //! calls to push(), to be undone.
     //!
     //! If less than `n` calls to push() have been issued before (e.g. `n==1`
@@ -571,8 +614,8 @@ namespace black::logic {
     //!    but not in `from`.
     //! 2. a call to `target.adopt(objs, s)`, for each set of entities
     //!    declared/defined/adopted in `*this` but not in `from`.
-    //! 3. a call to `target.require(req)` for each term `req` required in
-    //!    `*this` but not in `from`.
+    //! 3. a call to `target.state(t, s)` for each term `t` of kind `s` stated
+    //!    with `state() in `*this` but not in `from`.
     //! 4. a call to `target.push()` for each frame level pushed in `*this` but
     //!    not in `from` (in the suitable order w.r.t. the previous items).
     //! 5. a call to `target.pop(n)` for each `n` frames that have to be popped

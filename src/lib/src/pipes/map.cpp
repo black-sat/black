@@ -48,7 +48,7 @@ namespace black::pipes {
 
     virtual void import(logic::module) override;
     virtual void adopt(std::shared_ptr<logic::root const>) override;
-    virtual void require(logic::term) override;
+    virtual void state(logic::term t, logic::statement s) override;
     virtual void push() override;
     virtual void pop(size_t) override;
   };
@@ -102,11 +102,11 @@ namespace black::pipes {
       _next->adopt(r);
   }
 
-  void map_t::impl_t::require(logic::term t) {
+  void map_t::impl_t::state(logic::term t, logic::statement s) {
     term res = ast::map(_te_map(t))(
       [&](object x) { return translate(x); }
     );
-    _next->require(res);
+    _next->state(res, s);
   }
 
   void map_t::impl_t::push() {

@@ -47,11 +47,18 @@ namespace black::logic {
   //
   struct module::impl_t
   {
+    struct req_t {
+      term t;
+      statement s;
+
+      bool operator==(req_t const&) const = default;
+    };
+
     struct frame_t {
       persistent::vector<module> imports;
       persistent::vector<std::shared_ptr<root const>> roots;
       persistent::map<variable, entity const*> scope;
-      persistent::vector<term> reqs;
+      persistent::vector<req_t> statements;
 
       bool operator==(frame_t const&) const = default;
     };
@@ -106,7 +113,7 @@ namespace black::logic {
     resolve(
       recursion r, std::vector<std::unique_ptr<entity>> *pending
     );
-    void require(term req);
+    void state(term t, statement s);
     void push();
     void pop(size_t n);
     void replay(module from, pipes::consumer *target) const;
@@ -253,16 +260,16 @@ namespace black::logic {
     return _impl->get()->lookup(s);
   }
 
-  void module::impl_t::require(term req) {
+  void module::impl_t::state(term t, statement s) {
     black_assert(!_stack.empty());
     _stack.update(_stack.size() - 1, [&](auto top) {
-      top.reqs.push_back(req);
+      top.statements.push_back({t, s});
       return top;
     });
   }
 
-  void module::require(term req) {
-    _impl->get()->require(req);
+  void module::state(term t, statement s) {
+    _impl->get()->state(t, s);
   }
 
   void module::impl_t::push() {
@@ -294,7 +301,7 @@ namespace black::logic {
       return {};
     if(inner.roots.size() > outer.roots.size())
       return {};
-    if(inner.reqs.size() > outer.reqs.size())
+    if(inner.statements.size() > outer.statements.size())
       return {};
 
     // check that inner is a prefix
@@ -306,8 +313,8 @@ namespace black::logic {
       if(inner.roots[i] != outer.roots[i])
         return {};
     
-    for(size_t i = 0; i < inner.reqs.size(); i++)
-      if(inner.reqs[i] != outer.reqs[i])
+    for(size_t i = 0; i < inner.statements.size(); i++)
+      if(inner.statements[i] != outer.statements[i])
         return {};
     
     // collect the additional one from outer
@@ -317,8 +324,8 @@ namespace black::logic {
     for(size_t i = inner.roots.size(); i < outer.roots.size(); i++)
       result.roots.push_back(outer.roots[i]);
     
-    for(size_t i = inner.reqs.size(); i < outer.reqs.size(); i++)
-      result.reqs.push_back(outer.reqs[i]);
+    for(size_t i = inner.statements.size(); i < outer.statements.size(); i++)
+      result.statements.push_back(outer.statements[i]);
 
     return result;
   }
@@ -331,8 +338,8 @@ namespace black::logic {
     for(auto root : f.roots)
       target->adopt(root);
     
-    for(term req : f.reqs)
-      target->require(req);
+    for(auto [t,s] : f.statements)
+      target->state(t, s);
   }
 
   //

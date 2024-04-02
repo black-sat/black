@@ -36,7 +36,7 @@ namespace black::solvers {
 
     virtual void import(logic::module) override { }
     virtual void adopt(std::shared_ptr<logic::root const>) override { }
-    virtual void require(logic::term) override { }
+    virtual void state(logic::term, logic::statement) override { }
     virtual void push() override { }
     virtual void pop(size_t) override { }
 
