@@ -175,7 +175,7 @@ static black::logic::term nnf(black::logic::term t) {
                         !(implies(guard, iftrue) && implies(!guard, iffalse))
                     );
                 },
-                [](tomorrow,     term arg) { return wX(nnf(!arg)) },
+                [](tomorrow,     term arg) { return wX(nnf(!arg)); },
                 [](w_tomorrow,   term arg) { return X(nnf(!arg)); },
                 [](eventually,   term arg) { return G(nnf(!arg)); },
                 [](always,       term arg) { return F(nnf(!arg)); },

@@ -485,7 +485,7 @@ namespace black::support {
   template<typename T, ast::core::ast_node Node>
     requires ast::core::castable_to<T, Node>
   struct match_downcast<T, Node> {
-    static std::optional<Node> downcast(T t) {
+    static std::optional<Node> downcast(T const& t) {
       return ast::core::cast<Node>(t);
     }
   };
@@ -493,7 +493,7 @@ namespace black::support {
   template<ast::core::ast_node Node>
   struct match_downcast<Node, Node> {
     static std::optional<Node> downcast(Node t) {
-      return t;
+      return std::move(t);
     }
   };
   

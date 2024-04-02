@@ -34,7 +34,7 @@ namespace black::support::internal {
   // unpacking() combinator
   //
   template<typename F, typename Arg, size_t ...I>
-  auto do_unpack(F f, Arg arg, std::index_sequence<I...>) 
+  auto do_unpack(F f, Arg const& arg, std::index_sequence<I...>) 
     -> decltype(std::invoke(f, arg, get<I>(arg)...))
   {
     return std::invoke(f, arg, get<I>(arg)...);
@@ -43,7 +43,7 @@ namespace black::support::internal {
   struct no_unpack_t { };
 
   template<size_t N, typename F, typename Arg>
-  auto unpackN(F f, Arg arg) {
+  auto unpackN(F f, Arg const& arg) {
     if constexpr (requires{ do_unpack(f, arg, std::make_index_sequence<N>{}); })
       return do_unpack(f, arg, std::make_index_sequence<N>{});
     else if constexpr (N > 0)
@@ -53,14 +53,14 @@ namespace black::support::internal {
   }
 
   template<typename F, typename Arg>
-  auto unpack(F f, Arg arg)
+  auto unpack(F f, Arg const& arg)
   {
     return unpackN<0>(f, arg);
   }
   
   template<typename F, typename Arg>
     requires requires { std::tuple_size<Arg>::value; }
-  auto unpack(F f, Arg arg) {
+  auto unpack(F f, Arg const& arg) {
     return unpackN<std::tuple_size_v<Arg>>(f, arg);
   }
 
@@ -72,7 +72,7 @@ namespace black::support::internal {
   template<typename F>
   auto unpacking(F f) {
     return [=](can_unpack_over<F> auto arg) {
-      return unpack(f, arg);
+      return unpack(f, std::move(arg));
     };
   }
 
@@ -82,7 +82,7 @@ namespace black::support::internal {
   struct no_dispatch_t { };
 
   template<typename Arg, typename F, typename ...Fs>
-  auto dispatch(Arg arg, F f, Fs ...fs) 
+  auto dispatch(Arg const& arg, F f, Fs ...fs) 
   {
     if constexpr (requires { std::invoke(f, arg); })
       return std::invoke(f, arg);
@@ -99,7 +99,7 @@ namespace black::support::internal {
 
   template<typename ...Fs>
   auto dispatching(Fs ...fs) {
-    return [=](can_dispatch_over<Fs...> auto arg) {
+    return [=](can_dispatch_over<Fs...> auto const& arg) {
       return dispatch(arg, fs...);
     };
   }
@@ -183,12 +183,13 @@ namespace black::support::internal {
   };
 
   template<matchable M, typename F, size_t I, size_t ...Is>
-  visit_result_t<F, M> visit(M m, F f, std::index_sequence<I, Is...>)
+  visit_result_t<F, M> visit(M const& m, F f, std::index_sequence<I, Is...>)
   {
     using T = std::tuple_element_t<I, match_cases_t<M>>;
     auto casted = match_downcast<M, T>::downcast(m);
     if(casted) 
-      return static_cast<visit_result_t<F, M>>(std::invoke(f, *casted));
+      return 
+        static_cast<visit_result_t<F, M>>(std::invoke(f, *casted));
 
     if constexpr(sizeof...(Is) > 0)
       return visit(m, f, std::index_sequence<Is...>{});
@@ -197,7 +198,7 @@ namespace black::support::internal {
   }
 
   template<matchable M, typename F>
-  auto visit(M m, F f) {
+  auto visit(M const& m, F f) {
     constexpr auto N = std::tuple_size_v<match_cases_t<M>>;
     
     return visit(m, f, std::make_index_sequence<N>{});
@@ -205,7 +206,7 @@ namespace black::support::internal {
 
   template<typename F>
   auto visitor(F f) {
-    return [=](can_visit_over<F> auto arg) {
+    return [=](can_visit_over<F> auto const& arg) {
       return visit(arg, f);
     };
   }
@@ -219,7 +220,9 @@ namespace black::support::internal {
   };
   
   template<matchable M>
-  auto match(M m, std::source_location loc = std::source_location::current()) {
+  auto 
+  match(M const& m, std::source_location loc = std::source_location::current()) 
+  {
     return [=](auto ...fs) {
       return visitor(
         dispatching(
