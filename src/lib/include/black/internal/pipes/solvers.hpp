@@ -44,7 +44,7 @@ namespace black::solvers {
 
     virtual support::tribool check() override { return V; }
 
-    virtual std::optional<logic::term> value(logic::term) override {
+    virtual std::optional<logic::term> value(logic::object) override {
       return {};
     }
   };
@@ -63,10 +63,17 @@ namespace black::solvers {
     
     virtual support::tribool check() override { return _slv->check(); }
     
-    virtual std::optional<logic::term> value(logic::term t) override {
-      return _slv->value(ast::map(t)(
-        [&](logic::object x) { return _pipe->translate(x); }
-      ));
+    virtual std::optional<logic::term> value(logic::object x) override {
+      auto y = _pipe->translate(x);
+      auto v = _slv->value(y ? *y : x);
+
+      if(!v)
+        return {};
+
+      if(y)
+        return _pipe->undo(*v);
+      
+      return *v;
     }
 
   private:

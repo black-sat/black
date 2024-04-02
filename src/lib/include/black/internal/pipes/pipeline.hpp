@@ -85,7 +85,9 @@ namespace black::pipes {
 
     virtual class consumer *consumer() = 0;
 
-    virtual logic::object translate(logic::object) = 0;
+    virtual std::optional<logic::object> translate(logic::object) = 0;
+
+    virtual logic::term undo(logic::term) = 0;
   };
 
   inline transform::transform(pipeline p) : _instance{p(&_output)} { }
@@ -120,7 +122,7 @@ namespace black::pipes {
     base *get() { return _instance.get(); }
 
     support::tribool check(logic::module mod);
-    std::optional<logic::term> value(logic::term t);
+    std::optional<logic::term> value(logic::object x);
 
   private:
     logic::module _last;
@@ -135,7 +137,7 @@ namespace black::pipes {
 
     virtual support::tribool check() = 0;
 
-    virtual std::optional<logic::term> value(logic::term) = 0;
+    virtual std::optional<logic::term> value(logic::object) = 0;
   };
 
   inline solver::solver(pipeline p) : _instance{p()} { }
@@ -146,8 +148,8 @@ namespace black::pipes {
     return _instance->check();
   }
 
-  inline std::optional<logic::term> solver::value(logic::term t) {
-    return _instance->value(t);
+  inline std::optional<logic::term> solver::value(logic::object x) {
+    return _instance->value(x);
   }
 
   template<typename P>

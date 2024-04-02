@@ -167,13 +167,16 @@ TEST_CASE("Example transform") {
 
     auto discretize = []() {
         return pipes::map(
-            [](types::real) { return types::integer(); },
-            [](real, double v) { return integer(uint64_t(v)); }
+            ast::mapping([](types::real) { return types::integer(); }),
+            ast::mapping([](real, double v) { return integer(uint64_t(v)); }),
+            ast::mapping([](integer, uint64_t v) { return real(double(v)); })
         );
     };
-
     
     object x = mod.declare("x", types::real());
+
+    object y = mod.declare("y", types::integer());
+    mod.require(y == 42);
 
     mod.push();
     mod.require(3.0 < x && x < 4.0);
@@ -189,7 +192,9 @@ TEST_CASE("Example transform") {
 
     REQUIRE(slv.check(mod) == true);
 
-    REQUIRE(slv.value(x) == 4);
+    REQUIRE(slv.value(x) == 4.0);
+
+    REQUIRE(slv.value(y) == 42);
 
 
 }

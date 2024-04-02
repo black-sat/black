@@ -40,7 +40,7 @@ namespace black::solvers {
 
     virtual pipes::consumer *consumer() override;
     virtual support::tribool check() override;
-    virtual std::optional<logic::term> value(logic::term) override;
+    virtual std::optional<logic::term> value(logic::object) override;
 
   private:
     struct impl_t;

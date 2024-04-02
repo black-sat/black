@@ -35,7 +35,11 @@ namespace black::pipes {
       
     virtual class consumer *consumer() override { return _next; }
 
-    virtual logic::object translate(logic::object x) override { return x; }
+    virtual std::optional<logic::object> translate(logic::object) override { 
+      return {};
+    }
+
+    virtual logic::term undo(logic::term t) override { return t; }
 
   private:
     class consumer *_next;
@@ -56,8 +60,15 @@ namespace black::pipes {
       return _first->consumer();
     }
 
-    virtual logic::object translate(logic::object x) override { 
-      return _second->translate(_first->translate(x));
+    virtual std::optional<logic::object> translate(logic::object x) override { 
+      auto f = _first->translate(x);
+      if(!f)
+        return {};
+      return _second->translate(*f);
+    }
+
+    virtual logic::term undo(logic::term t) override {
+      return _first->undo(_second->undo(t));
     }
   
   private:
@@ -78,19 +89,18 @@ namespace black::pipes {
     using type_mapping_t = std::function<logic::type(logic::type)>;
     using term_mapping_t = std::function<logic::term(logic::term)>;
 
-    map_t(class consumer *next, type_mapping_t ty_map, term_mapping_t te_map);
-
-    template<typename ...Fs>
-    map_t(class consumer *next, Fs ...fs) : map_t(
-      next, 
-      type_mapping_t(ast::mapping(fs...)), term_mapping_t(ast::mapping(fs...))
-    ) { }
+    map_t(
+      class consumer *next, 
+      type_mapping_t ty_map, term_mapping_t te_map, term_mapping_t back_map
+    );
 
     virtual ~map_t() override;
       
     virtual class consumer *consumer() override;
 
-    virtual logic::object translate(logic::object x) override;
+    virtual std::optional<logic::object> translate(logic::object x) override;
+
+    virtual logic::term undo(logic::term x) override;
 
   private:
     struct impl_t;

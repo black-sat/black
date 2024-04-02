@@ -36,15 +36,20 @@ namespace black::pipes {
 
   struct map_t::impl_t : public consumer
   {
-    impl_t(class consumer *next, type_mapping_t ty_map, term_mapping_t te_map)
-      : _next{next}, _ty_map{ty_map}, _te_map{te_map} { }
+    impl_t(
+      class consumer *next, 
+      type_mapping_t ty_map, term_mapping_t te_map, term_mapping_t back_map
+    )
+      : _next{next}, _ty_map{ty_map}, _te_map{te_map}, _back_map{back_map} { }
 
     class consumer *_next;
     type_mapping_t _ty_map;
     term_mapping_t _te_map;
+    term_mapping_t _back_map;
     persistent::map<entity const *, entity const *> _replacements;
 
-    object translate(object x);
+    std::optional<object> translate(object x);
+    term undo(term x);
 
     virtual void import(logic::module) override;
     virtual void adopt(std::shared_ptr<logic::root const>) override;
@@ -54,15 +59,20 @@ namespace black::pipes {
   };
 
   map_t::map_t(
-    class consumer *next, type_mapping_t ty_map, term_mapping_t te_map
+    class consumer *next, 
+    type_mapping_t ty_map, term_mapping_t te_map, term_mapping_t back_map
   )
-    : _impl{std::make_unique<impl_t>(next, ty_map, te_map)} { }
+    : _impl{std::make_unique<impl_t>(next, ty_map, te_map, back_map)} { }
 
   map_t::~map_t() = default;
 
   consumer *map_t::consumer() { return _impl.get(); }
 
-  object map_t::translate(object x) { return _impl->translate(x); }
+  std::optional<object> map_t::translate(object x) { 
+    return _impl->translate(x); 
+  }
+  
+  term map_t::undo(term x) { return _impl->undo(x); }
 
   void map_t::impl_t::import(logic::module m) {
     _next->import(std::move(m));
@@ -104,7 +114,11 @@ namespace black::pipes {
 
   void map_t::impl_t::state(logic::term t, logic::statement s) {
     term res = ast::map(_te_map(t))(
-      [&](object x) { return translate(x); }
+      [&](object x) { 
+        if(auto y = translate(x); y)
+          return *y;
+        return x;
+      }
     );
     _next->state(res, s);
   }
@@ -119,10 +133,14 @@ namespace black::pipes {
     _next->pop(n);
   }
 
-  object map_t::impl_t::translate(object x) {
+  std::optional<object> map_t::impl_t::translate(object x) {
     if(auto ptr = _replacements.find(x.entity()); ptr)
       return object(*ptr);
-    return x;
+    return {};
+  }
+
+  term map_t::impl_t::undo(term t) {
+    return _back_map(t);
   }
 
 

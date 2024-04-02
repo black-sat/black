@@ -392,9 +392,9 @@ namespace black::solvers {
       return tribool::undef;
     }
 
-    std::optional<term> value(term t) 
+    std::optional<term> value(object x) 
     {
-      CVC5::Term v = slv->getValue(to_term(t, {}));
+      CVC5::Term v = slv->getValue(to_term(x, {}));
       if(v.isNull())
         return {};
       
@@ -416,8 +416,8 @@ namespace black::solvers {
     return _impl->check(); 
   }
 
-  std::optional<term> cvc5_t::value(term t) {
-    return _impl->value(t);
+  std::optional<term> cvc5_t::value(object x) {
+    return _impl->value(x);
   }
 
 }
