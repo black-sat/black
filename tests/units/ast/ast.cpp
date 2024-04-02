@@ -146,20 +146,73 @@ TEST_CASE("Static reflection") {
 
 }
 
-TEST_CASE("Traverse") {
-
+static black::logic::term nnf(black::logic::term t) {
+    using namespace black::support;
     using namespace black::logic;
     using namespace black::ast;
 
-    tree_ast tree = node(1, {leaf(), node(2, {leaf(), leaf()})});
-
-    size_t sum = traverse<size_t>(tree)(
-        [](leaf) { return 0; },
-        [](node, size_t value, auto children) { 
-            return value + std::reduce(children.begin(), children.end()); 
+    return map(t)(
+        [](implication m) {
+            return nnf(!m.left() || m.right());
+        },
+        [](negation n) {
+            return match(n.argument())(
+                [](conjunction, std::vector<term> args) {
+                    for(auto &arg : args)
+                        arg = nnf(!arg);
+                    return disjunction(args);
+                },
+                [](disjunction, std::vector<term> args) {
+                    for(auto &arg : args)
+                        arg = nnf(!arg);
+                    return conjunction(args);
+                },
+                [](implication, term left, term right) {
+                    return nnf(left) && nnf(!right);
+                },
+                [](ite, term guard, term iftrue, term iffalse) {
+                    return nnf(
+                        !(implies(guard, iftrue) && implies(!guard, iffalse))
+                    );
+                },
+                [](tomorrow, term arg)     { return wX(nnf(!arg)); },
+                [](w_tomorrow, term arg)   { return X(nnf(!arg));  },
+                [](eventually, term arg)   { return G(nnf(!arg));  },
+                [](always, term arg)       { return F(nnf(!arg));  },
+                [](yesterday, term arg)    { return Z(nnf(!arg));  },
+                [](w_yesterday, term arg)  { return Y(nnf(!arg));  },
+                [](once, term arg)         { return H(nnf(!arg));  },
+                [](historically, term arg) { return O(nnf(!arg));  },
+                [](until, term left, term right) {
+                    return release(nnf(!left), nnf(!right));
+                },
+                [](release, term left, term right) {
+                    return until(nnf(!left), nnf(!right));
+                },
+                [](since, term left, term right) {
+                    return triggered(nnf(!left), nnf(!right));
+                },
+                [](triggered, term left, term right) {
+                    return since(nnf(!left), nnf(!right));
+                },
+                [](auto x) { return !x; }
+            );
         }
     );
+}
 
-    REQUIRE(sum == 3);
+TEST_CASE("NNF") {
+
+    using namespace black::logic;
+
+    variable p = "p";
+    variable q = "q";
+    variable r = "r";
+
+    term t = !(p && q);
+
+    term n = nnf(t);
+
+    REQUIRE(n == (!p || !q));
 
 }
