@@ -84,21 +84,10 @@ namespace black::solvers {
       );
     }
 
-    std::vector<CVC5::Term> 
-    to_term(
-      std::vector<term> const& ts, 
-      immer::map<variable, CVC5::Term> const& vars
-    ) const 
-    {
-      std::vector<CVC5::Term> result;
-      for(term t : ts)
-        result.push_back(to_term(t, vars));
-      return result;
-    }
-
     CVC5::Term 
-    to_term(term t, immer::map<variable, CVC5::Term> const& vars) const {
-      return match(t)(
+    to_term(term t, persistent::map<variable, CVC5::Term> vars) const 
+    {
+      return ast::traverse<CVC5::Term>(t)(
         [&](integer, int64_t v) { return slv->mkInteger(v); },
         [&](real, double v) { 
           auto [num, den] = support::double_to_fraction(v);
@@ -122,29 +111,27 @@ namespace black::solvers {
           if(args.size() < 2)
             return slv->mkTrue();
 
-          return slv->mkTerm(CVC5::Kind::EQUAL, to_term(args, vars));
+          return slv->mkTerm(CVC5::Kind::EQUAL, std::move(args));
         },
         [&](distinct, auto args) {
           if(args.size() < 2)
             return slv->mkFalse();
 
-          return slv->mkTerm(CVC5::Kind::DISTINCT, to_term(args, vars));
+          return slv->mkTerm(CVC5::Kind::DISTINCT, std::move(args));
         },
-        [&](atom, term head, auto args) {
-          std::vector<CVC5::Term> argterms = { to_term(head, vars) };
-          for(auto arg : args)
-            argterms.push_back(to_term(arg, vars));
-          
-          return slv->mkTerm(CVC5::Kind::APPLY_UF, argterms);
+        [&](atom, auto head, auto args) {
+          args.insert(args.begin(), head);
+          return slv->mkTerm(CVC5::Kind::APPLY_UF, std::move(args));
         },
-        [&]<any_of<exists,forall,lambda> T>(T v, auto decls, term body) {
+        [&](any_of<exists,forall,lambda> auto v, auto decls/*, auto body*/) {
           std::vector<CVC5::Term> varlist;
-          immer::map<variable, CVC5::Term> newvars = vars;
+          
+          persistent::map<variable, CVC5::Term> newvars = vars;
 
           for(auto [name, type] : decls) {
             CVC5::Term term = slv->mkVar(to_sort(type));
             varlist.push_back(term);
-            newvars = newvars.set(name, term);
+            newvars.set(name, term);
           }
 
           CVC5::Kind kind = match(v)(
@@ -155,27 +142,23 @@ namespace black::solvers {
 
           return slv->mkTerm(kind, { 
             slv->mkTerm(CVC5::Kind::VARIABLE_LIST, varlist), 
-            to_term(body, newvars)
+            to_term(v.body(), newvars)
           });
         },
-        [&](negation, term arg) {
-          return slv->mkTerm(CVC5::Kind::NOT, { to_term(arg, vars) });
+        [&](negation, auto arg) {
+          return slv->mkTerm(CVC5::Kind::NOT, { arg });
         },
-        [&](conjunction, auto const& args) {
-          return slv->mkTerm(CVC5::Kind::AND, to_term(args, vars));
+        [&](conjunction, auto args) {
+          return slv->mkTerm(CVC5::Kind::AND, std::move(args));
         },
-        [&](disjunction, auto const& args) {
-          return slv->mkTerm(CVC5::Kind::OR, to_term(args, vars));
+        [&](disjunction, auto args) {
+          return slv->mkTerm(CVC5::Kind::OR, std::move(args));
         },
-        [&](implication, term left, term right) {
-          return slv->mkTerm(
-            CVC5::Kind::IMPLIES, { to_term(left, vars), to_term(right, vars) }
-          );
+        [&](implication, auto left, auto right) {
+          return slv->mkTerm(CVC5::Kind::IMPLIES, { left, right });
         },
-        [&](ite, term guard, term iftrue, term iffalse) {
-          return slv->mkTerm(CVC5::Kind::ITE, {
-            to_term(guard, vars), to_term(iftrue, vars), to_term(iffalse, vars)
-          });
+        [&](ite, auto guard, auto iftrue, auto iffalse) {
+          return slv->mkTerm(CVC5::Kind::ITE, { guard, iftrue, iffalse });
         },
         [&](arithmetic auto v, auto ...args) {
           CVC5::Kind kind = match(v)(
@@ -184,22 +167,21 @@ namespace black::solvers {
             [](product) { return CVC5::Kind::MULT; },
             [](difference) { return CVC5::Kind::SUB; },
             [&](division) {
-              if((cast<types::integer>(type_of(args)) || ...))
+              if((args.getSort().isInteger() || ...))
                 return CVC5::Kind::INTS_DIVISION;
               return CVC5::Kind::DIVISION; 
             }
           );
-          return slv->mkTerm(kind, { to_term(args, vars)... });
+          return slv->mkTerm(kind, { args... });
         },
-        [&](relational auto v, term left, term right) {
+        [&](relational auto v, auto left, auto right) {
           CVC5::Kind kind = match(v)(
             [](less_than) { return CVC5::Kind::LT; },
             [](less_than_eq) { return CVC5::Kind::LEQ; },
             [](greater_than) { return CVC5::Kind::GT; },
             [](greater_than_eq) { return CVC5::Kind::GEQ; }
           );
-          return 
-            slv->mkTerm(kind, { to_term(left, vars), to_term(right, vars) });
+          return slv->mkTerm(kind, { left, right });
         }
       );
     }
@@ -291,12 +273,12 @@ namespace black::solvers {
       CVC5::Term t = match(*e->value)(
         [&](lambda, auto const &decls, term body) {
           std::vector<CVC5::Term> vars;
-          immer::map<variable, CVC5::Term> varmap;
+          persistent::map<variable, CVC5::Term> varmap;
 
           for(auto [name, type] : decls) {
             CVC5::Term var = slv->mkVar(to_sort(type));
             vars.push_back(var);
-            varmap = varmap.set(name, var);
+            varmap.set(name, var);
           }
 
           auto fun_ty = cast<types::function>(e->type);
@@ -337,10 +319,10 @@ namespace black::solvers {
           types::function ty = unwrap(cast<types::function>(e->type));
           lambda fun = unwrap(cast<lambda>(e->value));
 
-          immer::map<variable, CVC5::Term> boundvars;
+          persistent::map<variable, CVC5::Term> boundvars;
           for(decl d : fun.vars()) {
             CVC5::Term var = slv->mkVar(to_sort(d.type));
-            boundvars = boundvars.insert({d.name, var});
+            boundvars.insert({d.name, var});
             thesevars.push_back(var);
           }
           vars.push_back(thesevars);

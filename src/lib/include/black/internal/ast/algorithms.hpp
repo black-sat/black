@@ -29,63 +29,71 @@
 namespace black::ast {
 
   template<typename F>
-  auto ignore(F f) {
+  auto wrap(F f) {
     return 
-      [=]<typename ...Args>(auto&&, Args ...args) 
-        requires std::invocable<F, Args...>
+      [=]<typename N, typename ...Args>(auto&&, N n, Args ...args) 
+        requires std::invocable<F, N, std::invoke_result_t<Args>...>
       {
-        return f(std::move(args)...);
+        return f(n, args()...);
       };
   }
 
   template<typename R, core::ast AST, typename T, typename ...Fs>
     requires (!std::same_as<T, AST>)
-  decltype(auto) traverse_(T const& v, Fs ...fs);
+  decltype(auto) traverse_(T const& v, std::source_location loc, Fs ...fs);
 
   template<typename R, core::ast AST, typename ...Fs>
-  std::vector<R> traverse_(std::vector<AST> const& ts, Fs ...fs);
+  std::vector<R> 
+  traverse_(std::vector<AST> const& ts, std::source_location loc, Fs ...fs);
 
   template<typename R, core::ast AST, typename ...Fs>
-  R traverse_(AST const& t, Fs ...fs) {
+  R traverse_(AST const& t, std::source_location loc, Fs ...fs) {
     using namespace black::support;
 
     return match(t)( 
       [=](auto n, auto ...args) -> R {
         return dispatch(
           std::make_tuple(
-            n, traverse_<R, AST>(args, fs...)...
+            n, [=]{ return traverse_<R, AST>(args, loc, fs...); }... 
           ), 
-          unpacking(ignore(fs))...
+          unpacking(wrap(fs))...,
+          [&](auto missing) -> R { 
+            throw bad_pattern(missing, loc); 
+          }
         );
       }
     );
   }
 
   template<typename R, core::ast AST, typename ...Fs>
-  std::vector<R> traverse_(std::vector<AST> const& ts, Fs ...fs) {
+  std::vector<R> 
+  traverse_(std::vector<AST> const& ts, std::source_location loc, Fs ...fs) {
     std::vector<R> result;
     for(auto t : ts)
-      result.push_back(traverse_<R, AST>(t, fs...));
+      result.push_back(traverse_<R, AST>(t, loc, fs...));
     return result;
   }
 
   template<
     typename R, core::ast AST, typename T, typename ...Fs
   > requires (!std::same_as<T, AST>)
-  decltype(auto) traverse_(T const& v, Fs ...) { return v; }
+  decltype(auto) traverse_(T const& v, std::source_location, Fs ...) {   
+    return v; 
+  }
 
   template<typename R, core::ast AST>
-  auto traverse(AST t) { 
+  auto 
+  traverse(AST t, std::source_location loc = std::source_location::current()) { 
     return [=](auto ...fs) {
-      return traverse_<R, AST>(t, fs...); 
+      return traverse_<R, AST>(t, loc, fs...); 
     };
   }
 
   template<core::ast AST>
   auto map(AST t) { 
     return [=](auto ...fs) {
-      return traverse_<AST>(
-        t, fs..., []<typename N>(N, auto ...args) {
+      return traverse<AST>(t)(
+        fs..., []<typename N>(N, auto ...args) {
           return N(std::move(args)...);
         }); 
     };
@@ -93,8 +101,10 @@ namespace black::ast {
 
   template<typename R, typename ...Fs>
   auto traversal(Fs ...fs) {
-    return [=]<core::ast AST>(AST t) {
-      return traverse_<R, AST>(t, fs...);
+    return [=]<core::ast AST>(
+      AST t, std::source_location loc = std::source_location::current()
+    ) {
+      return traverse_<R, AST>(t, loc, fs...);
     };
   }
 
