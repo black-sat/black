@@ -160,12 +160,12 @@ static black::logic::term nnf(black::logic::term t) {
                 [](conjunction, std::vector<term> args) {
                     for(auto &arg : args)
                         arg = nnf(!arg);
-                    return disjunction(args);
+                    return disjunction(std::move(args));
                 },
                 [](disjunction, std::vector<term> args) {
                     for(auto &arg : args)
                         arg = nnf(!arg);
-                    return conjunction(args);
+                    return conjunction(std::move(args));
                 },
                 [](implication, term left, term right) {
                     return nnf(left) && nnf(!right);
@@ -175,14 +175,14 @@ static black::logic::term nnf(black::logic::term t) {
                         !(implies(guard, iftrue) && implies(!guard, iffalse))
                     );
                 },
-                [](tomorrow, term arg)     { return wX(nnf(!arg)); },
-                [](w_tomorrow, term arg)   { return X(nnf(!arg));  },
-                [](eventually, term arg)   { return G(nnf(!arg));  },
-                [](always, term arg)       { return F(nnf(!arg));  },
-                [](yesterday, term arg)    { return Z(nnf(!arg));  },
-                [](w_yesterday, term arg)  { return Y(nnf(!arg));  },
-                [](once, term arg)         { return H(nnf(!arg));  },
-                [](historically, term arg) { return O(nnf(!arg));  },
+                [](tomorrow,     term arg) { return wX(nnf(!arg)) },
+                [](w_tomorrow,   term arg) { return X(nnf(!arg)); },
+                [](eventually,   term arg) { return G(nnf(!arg)); },
+                [](always,       term arg) { return F(nnf(!arg)); },
+                [](yesterday,    term arg) { return Z(nnf(!arg)); },
+                [](w_yesterday,  term arg) { return Y(nnf(!arg)); },
+                [](once,         term arg) { return H(nnf(!arg)); },
+                [](historically, term arg) { return O(nnf(!arg)); },
                 [](until, term left, term right) {
                     return release(nnf(!left), nnf(!right));
                 },
