@@ -66,20 +66,15 @@ namespace black::solvers {
     }
 
     CVC5::Sort to_sort(type ty) const {
-      return match(ty)(
+      return ast::traverse<CVC5::Sort>(ty)(
         [&](types::error) {
           return CVC5::Sort();
         },
         [&](types::integer) { return slv->getIntegerSort(); },
         [&](types::real) { return slv->getRealSort(); },
         [&](types::boolean) { return slv->getBooleanSort(); },
-        [&](types::function, auto args, type range) {
-          CVC5::Sort range_s = to_sort(range);
-          std::vector<CVC5::Sort> args_s;
-          for(auto arg : args)
-            args_s.push_back(to_sort(arg));
-
-          return slv->mkFunctionSort(args_s, range_s);
+        [&](types::function, auto args, auto range) {
+          return slv->mkFunctionSort(args, range);
         }
       );
     }
