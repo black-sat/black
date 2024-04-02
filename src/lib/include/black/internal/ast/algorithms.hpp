@@ -40,7 +40,7 @@ namespace black::ast {
 
   template<typename R, core::ast AST, typename T, typename ...Fs>
     requires (!std::same_as<T, AST>)
-  decltype(auto) traverse_(T const& v, std::source_location loc, Fs ...fs);
+  T const& traverse_(T const& v, std::source_location loc, Fs ...fs);
 
   template<typename R, core::ast AST, typename ...Fs>
   std::vector<R> 
@@ -77,7 +77,7 @@ namespace black::ast {
   template<
     typename R, core::ast AST, typename T, typename ...Fs
   > requires (!std::same_as<T, AST>)
-  decltype(auto) traverse_(T const& v, std::source_location, Fs ...) {   
+  T const& traverse_(T const& v, std::source_location, Fs ...) {   
     return v; 
   }
 
