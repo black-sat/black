@@ -297,10 +297,6 @@ namespace black::ast::core::internal {
       template<ast_node Node, ast A>
         requires ast_node_of<Node, A>
       friend std::optional<Node> cast(node_holder<A> const& h);
-      
-      template<ast_node Node, ast A>
-        requires ast_node_of<Node, A>
-      friend std::optional<Node> cast(node_holder<A>&& h);
 
       ast_impl_ref<AST> _impl;
   };
@@ -310,14 +306,6 @@ namespace black::ast::core::internal {
   std::optional<Node> cast(node_holder<AST> const& h) {
     if(h._impl->index == ast_node_index_of_v<AST, Node>)
       return Node{h._impl};
-    return {};
-  }
-  
-  template<ast_node Node, ast AST>
-    requires ast_node_of<Node, AST>
-  std::optional<Node> cast(node_holder<AST>&& h) {
-    if(h._impl->index == ast_node_index_of_v<AST, Node>)
-      return Node{std::move(h._impl)};
     return {};
   }
 
@@ -499,10 +487,6 @@ namespace black::support {
   struct match_downcast<T, Node> {
     static std::optional<Node> downcast(T const& t) {
       return ast::core::cast<Node>(t);
-    }
-    
-    static std::optional<Node> downcast(T&& t) {
-      return ast::core::cast<Node>(std::move(t));
     }
   };
   
