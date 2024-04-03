@@ -53,15 +53,54 @@ namespace black::pipes {
     }
   };
 
+  //!
+  //! Class handling instances of tranform pipelines.
+  //!
+  //! A \ref transform can be created from any transform::pipeline and actually
+  //! instantiates the pipeline components and sets them up to stream the
+  //! transform.
+  //!
+  //! One can actually apply the transform by calling the \ref transform object
+  //! on a given \ref module, obtaining the transformed one. The transformation
+  //! is incremental: at the next call only the differences with the previous
+  //! one will be streamed.
+  //!
+  //! Example:
+  //!
+  //! ```cpp
+  //!    module mod = ...;
+  //!    pipes::transform nothing = pipes::id() | pipes::id();
+  //!
+  //!    module mod2 = nothing(mod);
+  //!    assert(mod == mod2);
+  //!
+  //!    mod.require(x > 0);
+  //!    mod2 = nothing(mod); // only the last requirement is streamed here
+  //!
+  //!    assert(mod == mod2);
+  //! ```
+  //!
+  //! \note Since transforms will generally carry complex state with them, \ref
+  //! transform objects are *move-only*.
+  //!
   class transform
   {
   public:
     class base;
-    class common;
+    
+    //! Type reprsenting an instantiated pipeline stage.
     using instance = std::unique_ptr<base>;
+
+    //! Type representing transform pipeline stages before instantiation.
     using pipeline = std::function<instance(consumer *next)>;
 
+    //! @name Constructor
+    //! @{
+
+    //! Constructs the transform from a transform::pipeline object.
     transform(pipeline p);
+
+    //! @}
 
     transform(transform const&) = delete;
     transform(transform &&) = default;
@@ -69,8 +108,10 @@ namespace black::pipes {
     transform &operator=(transform const&) = delete;
     transform &operator=(transform &&) = default;
 
+    //! Gets a pointer to the underlying instance of \ref transform::base.
     base *get() { return _instance.get(); }
 
+    //! Applies the transform to the given module.
     logic::module operator()(logic::module mod);
 
   private:
@@ -79,14 +120,28 @@ namespace black::pipes {
     instance _instance;
   };
 
+  //!
+  //! Abstract base class for transform pipeline stages.
+  //!
+  //! A pipeline stage has to provide three elements:
+  //! 1. a pointer to a \ref consumer objects ready to stream (the consumer()
+  //!    function);
+  //! 2. a way to translate \ref object instances from the world before the
+  //!    transform to the world after the transform (the translate() function);
+  //! 3. a way to map back values from models obtained by solvers after the
+  //!    transform to terms that make sense before the transform.
+  //!
   class transform::base {
   public:
     virtual ~base() = default;
 
+    //! The consumer implementing the transform.
     virtual class consumer *consumer() = 0;
 
+    //! The translation function for \ref object instances.
     virtual std::optional<logic::object> translate(logic::object) = 0;
 
+    //! The back-mapping function for model terms.
     virtual logic::term undo(logic::term) = 0;
   };
 
@@ -98,6 +153,36 @@ namespace black::pipes {
     return _output;
   }
 
+  //!
+  //! Utility type to declare pipeline factory objects.
+  //!
+  //! Given a type deriving from transform::base, the result is an object usable
+  //! as a factory for the corresponding transform::pipeline.
+  //!
+  //! For example, this is the implementation of the pipes::id() transform:
+  //!
+  //! ```cpp
+  //! class id_t : public transform::base
+  //! {
+  //! public:
+  //!   id_t(class consumer *next) : _next{next} { }
+  //!     
+  //!   virtual class consumer *consumer() override { return _next; }
+  //! 
+  //!   virtual std::optional<logic::object> translate(logic::object) override 
+  //!   { 
+  //!     return {};
+  //!   }
+  //! 
+  //!   virtual logic::term undo(logic::term t) override { return t; }
+  //! 
+  //! private:
+  //!   class consumer *_next;
+  //! };
+  //!
+  //! inline constexpr auto id = make_transform<internal::id_t>{};
+  //! ```
+  //!
   template<typename P>
   using make_transform = make_pipe<P, transform, consumer *>;
 

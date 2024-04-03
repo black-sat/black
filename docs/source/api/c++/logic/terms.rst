@@ -7,6 +7,8 @@ Terms and formulas
 
 
 
+
+
 ``using namespace black::logic;``
 
 .. cpp:namespace:: black::logic
@@ -42,132 +44,6 @@ The error term
       .. cpp:function:: std::string error() const
 
          :returns: The error.
-
-   
-   
-        
-
-
-
-Sorts and declarations
-~~~~~~~~~~~~~~~~~~~~~~
-
-
-.. cpp:struct:: type_type
-
-   The type of types.
-
-   :constructor:
-      .. cpp:function:: type_type()
-
-      
-
-   
-        
-
-.. cpp:struct:: inferred_type
-
-   A type still to be inferred.
-
-   :constructor:
-      .. cpp:function:: inferred_type()
-
-      
-
-   
-        
-
-.. cpp:struct:: integer_type
-
-   The type of integer numbers.
-
-   :constructor:
-      .. cpp:function:: integer_type()
-
-      
-
-   
-        
-
-.. cpp:struct:: real_type
-
-   The type of real numbers.
-
-   :constructor:
-      .. cpp:function:: real_type()
-
-      
-
-   
-        
-
-.. cpp:struct:: boolean_type
-
-   The type of boolean values.
-
-   :constructor:
-      .. cpp:function:: boolean_type()
-
-      
-
-   
-        
-
-.. cpp:struct:: function_type
-
-   The type of functions.
-
-   :constructor:
-      .. cpp:function:: function_type(std::vector<logic::term> parameters, logic::term range)
-
-      
-         :param parameters: The parameters types.
-      
-         :param range: The function's range.
-      
-
-      
-   :members:
-
-   
-      .. cpp:function:: std::vector<logic::term> parameters() const
-
-         :returns: The parameters types.
-
-   
-      .. cpp:function:: logic::term range() const
-
-         :returns: The function's range.
-
-   
-   
-        
-
-.. cpp:struct:: type_cast
-
-   A type-cast expression.
-
-   :constructor:
-      .. cpp:function:: type_cast(logic::term target, logic::term expr)
-
-      
-         :param target: The target type.
-      
-         :param expr: The term to cast.
-      
-
-      
-   :members:
-
-   
-      .. cpp:function:: logic::term target() const
-
-         :returns: The target type.
-
-   
-      .. cpp:function:: logic::term expr() const
-
-         :returns: The term to cast.
 
    
    

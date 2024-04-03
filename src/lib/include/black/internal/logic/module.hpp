@@ -40,6 +40,16 @@ namespace black::logic {
 
 namespace black::pipes {
 
+  //!
+  //! Abstract base class for objects capable of receiving streams of elements
+  //! from modules and pipeline stages.
+  //!
+  //! Consumers are the objects that can be passed to the module::replay()
+  //! function and receive a stream of elements (declarations, statements, etc.)
+  //! from a module or from a preceding pass of a processing pipeline.
+  //!
+  //! Modules are consumer themselves.
+  //!
   class consumer 
   {
   public:
@@ -54,11 +64,23 @@ namespace black::pipes {
 
     bool operator==(consumer const&) const = default;
 
+    //! Streams the import of a module.
     virtual void import(logic::module) = 0;
-    virtual void adopt(std::shared_ptr<logic::root const>) = 0;
+
+    //! Streams the adoption of a \ref root object managing a set of
+    //! declared/defined \ref entity objects. In calls to adopt(), `r` cannot be
+    //! null.
+    virtual void adopt(std::shared_ptr<logic::root const> r) = 0;
+
+    //! Streams the statement of a requirement or an automaton constraint.
     virtual void state(logic::term, logic::statement s) = 0;
+
+    //! Streams the push of a frame on the assertion stack.
     virtual void push() = 0;
-    virtual void pop(size_t) = 0;
+
+    //! Streams the pop of `n` frames from the assertion stack. Note that `n`
+    //! might be greater than the number of previous push() calls.
+    virtual void pop(size_t n) = 0;
   };
 
 }
@@ -171,10 +193,10 @@ namespace black::logic {
   //! Kind of statements that can be given to `module::state()`.
   //!
   enum class statement : uint8_t {
-    requirement,
-    init,
-    transition,
-    final
+    requirement, //!< A requirement
+    init, //!< A constraint on the initial state
+    transition, //!< A constraint on the transition relation
+    final //!< A constraint on the final state
   };
 
   //!
@@ -535,13 +557,13 @@ namespace black::logic {
     //! \param s the kind of statement
     //!
     //! Statements can be of different kinds:
-    //! 1. requirements (`statement::requirement`):  
+    //! 1. requirements (`statement::requirement`):
     //!    asserts that `t` holds in any model of the module;
-    //! 2. initial states (`statement::init`):  
+    //! 2. initial states (`statement::init`):
     //!    asserts that `t` holds in the initial state of the module;
-    //! 3. transitions (`statement::transition`):  
+    //! 3. transitions (`statement::transition`):
     //!    asserts that `t` holds during any transition of the module;
-    //! 4. final states (`statement::final`):  
+    //! 4. final states (`statement::final`):
     //!    asserts that `req` must hold at the end of any execution of ht e
     //!    module.
     //!
@@ -675,11 +697,11 @@ namespace black::logic {
   //! resolve(), or declare()/define() with resolution::immediate. The lifetime
   //! of each entity in such groups is managed exclusively by \ref root objects
   //! whose pointers are returned by the corresponding `resolve()` call, and
-  //! pointer by the `entity::root` field. Therefore as long as the \ref root
+  //! pointed by the `entity::root` field. Therefore as long as the \ref root
   //! object is alive, the corresponding \ref entity instances are safe to use.
   //!
   struct entity {
-    //< The pointer to the root collecting this entity object
+    //! The pointer to the root managing this entity object
     std::weak_ptr<struct root const> root; 
     
     variable name; //!< The name of the entity.

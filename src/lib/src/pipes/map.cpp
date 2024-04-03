@@ -27,7 +27,7 @@
 #include <black/ast/algorithms>
 #include <black/pipes>
 
-namespace black::pipes {
+namespace black::pipes::internal {
 
   namespace persistent = support::persistent;
   using namespace support;

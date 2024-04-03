@@ -26,7 +26,7 @@
 
 #include <black/ast/algorithms>
 
-namespace black::pipes {
+namespace black::pipes::internal {
 
   class id_t : public transform::base
   {
@@ -44,8 +44,6 @@ namespace black::pipes {
   private:
     class consumer *_next;
   };
-
-  inline constexpr auto id = make_transform<id_t>{};
 
 
   class composed_t : public transform::base
@@ -76,13 +74,6 @@ namespace black::pipes {
     transform::instance _first;
   };
 
-  inline constexpr auto composed = make_transform<composed_t>{};
-
-  inline transform::pipeline 
-  operator|(transform::pipeline first, transform::pipeline second) {
-    return composed(std::move(first), std::move(second));
-  }
-
   class map_t : public transform::base
   {
   public:
@@ -107,8 +98,17 @@ namespace black::pipes {
     std::unique_ptr<impl_t> _impl;
   };
 
-  inline constexpr auto map = make_transform<map_t>{};
+}
 
+namespace black::pipes {
+  inline constexpr auto id = make_transform<internal::id_t>{};
+  inline constexpr auto composed = make_transform<internal::composed_t>{};
+  inline constexpr auto map = make_transform<internal::map_t>{};
+
+  inline transform::pipeline 
+  operator|(transform::pipeline first, transform::pipeline second) {
+    return composed(std::move(first), std::move(second));
+  }
 }
 
 #endif // BLACK_PIPES_PIPES_HPP

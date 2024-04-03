@@ -12,5 +12,6 @@ solved.
 .. doxygenstruct:: black::logic::def
 .. doxygenstruct:: black::logic::function_def
 .. doxygenenum:: black::logic::resolution
-.. doxygenenum:: black::logic::scope
-.. doxygenstruct:: black::logic::lookup
+.. doxygenenum:: black::logic::recursion
+.. doxygenenum:: black::logic::statement
+.. doxygenstruct:: black::logic::entity
