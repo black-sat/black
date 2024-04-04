@@ -182,12 +182,12 @@ declare_ast(logic, term)
     end_ast_node(logic, term, atom)
 
     declare_ast_node(logic, term, exists, "An existentially quantified term")
-      declare_field(logic, term, exists, binds, std::vector<logic::decl>, "The quantified variables")
+      declare_field(logic, term, exists, decls, std::vector<logic::decl>, "The quantified variables")
       declare_field(logic, term, exists, body, logic::term, "The quantified term")
     end_ast_node(logic, term, exists)
 
     declare_ast_node(logic, term, forall, "An universally quantified term")
-      declare_field(logic, term, forall, binds, std::vector<logic::decl>, "The quantified variables")
+      declare_field(logic, term, forall, decls, std::vector<logic::decl>, "The quantified variables")
       declare_field(logic, term, forall, body, logic::term, "The quantified term")
     end_ast_node(logic, term, forall)
 

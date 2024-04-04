@@ -145,6 +145,7 @@ set (
   src/logic/type_of.cpp
   src/logic/evaluate.cpp
   src/pipes/map.cpp
+  src/io/lexer.cpp
 )
 
 # if(Z3_FOUND)

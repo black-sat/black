@@ -44,6 +44,7 @@ if(Catch2_FOUND)
     units/logic/modules.cpp
     units/pipes/pipeline.cpp
     units/solvers/cvc5.cpp
+    units/io/lexer.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)

@@ -119,13 +119,38 @@ namespace black::support::internal
 
     return {num, denum};
   }
+
+  //
+  // Utilities for variants
+  //
+
+  template<typename T>
+  struct variant_alternatives { };
+
+  template<typename ...Ts>
+  struct variant_alternatives<std::variant<Ts...>> 
+    : std::type_identity<std::tuple<Ts...>> { };
+
+  template<typename T>
+  using variant_alternatives_t = typename variant_alternatives<T>::type;
   
+  template<typename T, typename V>
+  struct is_in_variant : std::false_type { };
+
+  template<typename T, typename ...Ts>
+  struct is_in_variant<T, std::variant<Ts...>>
+    : std::bool_constant<(std::same_as<T, Ts> || ...)> { };
+
+  template<typename T, typename V>
+  inline constexpr bool is_in_variant_v = is_in_variant<T, V>::value;
+
+
   inline constexpr std::string_view license =
 R"(
 BLACK - Bounded Lᴛʟ sAtisfiability ChecKer
 
-(C) 2019-2023 Nicola Gigante
-    2019-2021 Luca Geatti
+(C) 2019-2024 Nicola Gigante
+    2019-2024 Luca Geatti
     2020      Gabriele Venturato
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -151,6 +176,11 @@ SOFTWARE.
 namespace black::support {
   using internal::type_name;
   using internal::double_to_fraction;
+  using internal::to_camel;
+  using internal::variant_alternatives;
+  using internal::variant_alternatives_t;
+  using internal::is_in_variant;
+  using internal::is_in_variant_v;
   using internal::to_camel;
   using internal::license;
 }
