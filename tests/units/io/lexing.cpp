@@ -25,38 +25,50 @@
 
 #include <black/io>
 
+struct my_parselet {
+
+    static bool is_keyword(std::string_view str) {
+        return str == "hi";
+    }
+
+    static bool is_symbol(std::string_view str) {
+        return str == "<=" || str == "<" || str == "," || str == ":";
+    }
+};
+
+
 TEST_CASE("Lexer") {
 
     using namespace black::io;
 
-    std::string test = "hello: 1234, hi: 45.6e-2, 45.e";
+    std::string test = "hello: 12 < 34, hi: 45.6e-2 <= 45.e";
 
-    lexer lex{test};
+    buffer buf{test};
+    my_parselet p;
 
-    REQUIRE(lex.peek() == token::identifier{"hello"});
-
-    REQUIRE(lex.peek<token::identifier>() == token::identifier{"hello"});
-    REQUIRE(lex.peek<token::real>() == token::null{});
+    REQUIRE(lex(&buf, p) == token::identifier{"hello"});
 
     std::vector<token> toks;
-    for(token tok = lex.peek(); tok; tok = lex.get())
+    token tok;
+    while((tok = lex(&buf, p)))
         toks.push_back(tok);
 
     std::vector<token> expected = {
-        token::identifier{"hello"},
         token::punctuation{":"},
-        token::integer{1234},
+        token::integer{12},
+        token::punctuation{"<"},
+        token::integer{34},
         token::punctuation{","},
-        token::identifier{"hi"},
+        token::keyword{"hi"},
         token::punctuation{":"},
         token::real{45.6e-2},
-        token::punctuation{","}
+        token::punctuation{"<="}
     };
 
     REQUIRE(toks == expected);
 
-    REQUIRE(lex.peek() == token::invalid{"45.e"});
+    REQUIRE(tok == token::invalid{"45.e"});
 
-    REQUIRE(lex.get() == token::eof{});
+    REQUIRE(lex(&buf, p) == token::eof{});
 
 }
