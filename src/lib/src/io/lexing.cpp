@@ -23,7 +23,6 @@
 
 #include <black/io>
 
-#include <cstring>
 #include <charconv>
 #include <iostream>
 
@@ -65,24 +64,26 @@ namespace black::io
   }
 
   static bool space(char c) { 
-    return strchr(" \t\r\n", c) != nullptr;
+    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
   }
   
   static bool punct(char c) { 
-    return strchr(R"--(,./<>?~!@#$%^&*()_-+=:;'"[]{})--", c) != nullptr;
+    return (c >= '!' && c <= '/') || (c >= ':' && c <= '@')
+        || (c >= '[' && c <= '`') || (c >= '{' && c <= '~');
   }
 
   static bool num(char c) {
     return c >= '0' && c <= '9';
   }
 
-  static bool alphanum(char c) { 
-    return strchr("abcdefghijklmnopqrstuvwxyz0123456789_", c) != nullptr;
+  static bool alpha(char c) { 
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
   }
   
-  static bool alpha(char c) { 
-    return strchr("abcdefghijklmnopqrstuvwxyz_", c) != nullptr;
+  static bool alphanum(char c) { 
+    return alpha(c) || num(c);
   }
+  
 
   token lex(buffer *buf, lex_acceptor_t symbols, lex_acceptor_t keywords) 
   {

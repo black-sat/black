@@ -39,36 +39,36 @@ struct my_parselet {
 
 TEST_CASE("Lexer") {
 
-    using namespace black::io;
+    using namespace black;
 
     std::string test = "hello: 12 < 34, hi: 45.6e-2 <= 45.e";
 
-    buffer buf{test};
+    io::buffer buf{test};
     my_parselet p;
 
-    REQUIRE(lex(&buf, p) == token::identifier{"hello"});
+    REQUIRE(io::lex(&buf, p) == io::token::identifier{"hello"});
 
-    std::vector<token> toks;
-    token tok;
-    while((tok = lex(&buf, p)))
+    std::vector<io::token> toks;
+    io::token tok;
+    while((tok = io::lex(&buf, p)))
         toks.push_back(tok);
 
-    std::vector<token> expected = {
-        token::punctuation{":"},
-        token::integer{12},
-        token::punctuation{"<"},
-        token::integer{34},
-        token::punctuation{","},
-        token::keyword{"hi"},
-        token::punctuation{":"},
-        token::real{45.6e-2},
-        token::punctuation{"<="}
+    std::vector<io::token> expected = {
+        io::token::punctuation{":"},
+        io::token::integer{12},
+        io::token::punctuation{"<"},
+        io::token::integer{34},
+        io::token::punctuation{","},
+        io::token::keyword{"hi"},
+        io::token::punctuation{":"},
+        io::token::real{45.6e-2},
+        io::token::punctuation{"<="}
     };
 
     REQUIRE(toks == expected);
 
-    REQUIRE(tok == token::invalid{"45.e"});
+    REQUIRE(tok == io::token::invalid{"45.e"});
 
-    REQUIRE(lex(&buf, p) == token::eof{});
+    REQUIRE(io::lex(&buf, p) == io::token::eof{});
 
 }
