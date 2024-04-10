@@ -35,18 +35,97 @@ TEST_CASE("Parsing") {
     
     using namespace black::io::parsing;
 
-    auto pippo =
-        act(
-            (string("hello") | string("mandi")) + 
-            string(", ") + lexeme(&isalpha) + string("!"), 
-            [&](std::string_view name) { return name == "world"; }
-        );
 
-    std::string s = GENERATE("hello, world!", "mandi, world!");
+    SECTION("Basics") {
 
-    auto res = pippo.parse(s.c_str(), s.c_str() + s.size());
+        auto parser =
+            act(
+                (string("hello") | string("mandi")) + 
+                string(", ") + pattern(&isalpha) + string("!"), 
+                [&](std::string_view name) { return name == "world"; }
+            );
 
-    REQUIRE(res.is<success<bool>>());
-    REQUIRE(std::get<0>(res.get<success<bool>>()->values) == true);
+        std::string s = GENERATE("hello, world!", "mandi, world!");
+
+        auto res = parser.parse(s.c_str(), s.c_str() + s.size());
+
+        REQUIRE(res.success().has_value());
+        REQUIRE(std::get<0>(res.success()->values) == true);
+
+    }
+
+
+    SECTION("Many") {
+
+        auto sep_by = [](auto parser, auto sep) { 
+            return act(
+                parser + many(sep + parser),
+                [](auto v, auto vs) {
+                    vs.insert(begin(vs), v);
+                    return vs;
+                }
+            );
+        };
+
+        auto parser = sep_by(pattern(&isalpha), string(":"));
+
+        std::string s = "one:two:three:four";
+
+        auto res = parser.parse(s.c_str(), s.c_str() + s.size());
+
+        std::vector<std::string_view> expected = {
+            "one", "two", "three", "four"
+        };
+
+        REQUIRE(res.success().has_value());
+        REQUIRE(std::get<0>(res.success()->values) == expected);
+
+    }
+
+    SECTION("Optional and ignore") {
+
+        auto spaces = [] {
+            return ignore(pattern(&isspace));
+        };
+
+        struct func_t {
+            bool is_static;
+            std::string_view name;
+            bool operator==(func_t const&) const = default;
+        };
+
+        auto parser =
+            act(
+                optional(string("static") + spaces()) + 
+                string("void") + spaces() + pattern(&isalpha) + string("();"),
+                [&](auto st, auto name) {
+                    return func_t{ st, name };
+                }
+            );
+
+        SECTION("static void main();") {
+
+            std::string s = "static void main();";
+
+            auto res = parser.parse(s.c_str(), s.c_str() + s.size());
+
+            REQUIRE(res.success().has_value());
+            REQUIRE(std::get<0>(res.success()->values) == func_t{true, "main"});
+
+        }
+
+        SECTION("void exit();") {
+            std::string s = "void exit();";
+
+            auto res = parser.parse(s.c_str(), s.c_str() + s.size());
+
+            REQUIRE(res.success().has_value());
+            REQUIRE(
+                std::get<0>(res.success()->values) == func_t{false, "exit"}
+            );
+        }
+
+
+    }
 
 }
