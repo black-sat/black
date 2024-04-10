@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2023 Nicola Gigante
+// (C) 2024 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,50 +25,28 @@
 
 #include <black/io>
 
-struct my_parselet {
-
-    static bool is_keyword(std::string_view str) {
-        return str == "hi";
-    }
-
-    static bool is_symbol(std::string_view str) {
-        return str == "<=" || str == "<" || str == "," || str == ":";
-    }
-};
+#include <string>
+#include <iostream>
+#include <tuple>
+#include <cctype>
 
 
-TEST_CASE("Lexer") {
+TEST_CASE("Parsing") {
+    
+    using namespace black::io::parsing;
 
-    using namespace black;
+    auto pippo =
+        act(
+            (string("hello") | string("mandi")) + 
+            string(", ") + lexeme(&isalpha) + string("!"), 
+            [&](std::string_view name) { return name == "world"; }
+        );
 
-    std::string test = "hello: 12 < 34, hi: 45.6e-2 <= 45.e";
+    std::string s = GENERATE("hello, world!", "mandi, world!");
 
-    io::buffer buf{test};
-    my_parselet p;
+    auto res = pippo.parse(s.c_str(), s.c_str() + s.size());
 
-    REQUIRE(io::lex(&buf, p) == io::token::identifier{"hello"});
-
-    std::vector<io::token> toks;
-    io::token tok;
-    while((tok = io::lex(&buf, p)))
-        toks.push_back(tok);
-
-    std::vector<io::token> expected = {
-        io::token::punctuation{":"},
-        io::token::integer{12},
-        io::token::punctuation{"<"},
-        io::token::integer{34},
-        io::token::punctuation{","},
-        io::token::keyword{"hi"},
-        io::token::punctuation{":"},
-        io::token::real{45.6e-2},
-        io::token::punctuation{"<="}
-    };
-
-    REQUIRE(toks == expected);
-
-    REQUIRE(tok == io::token::invalid{"45.e"});
-
-    REQUIRE(io::lex(&buf, p) == io::token::eof{});
+    REQUIRE(res.is<success<bool>>());
+    REQUIRE(std::get<0>(res.get<success<bool>>()->values) == true);
 
 }
