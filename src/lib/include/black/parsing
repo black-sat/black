@@ -27,6 +27,7 @@
 #include <black/support>
 #include <black/logic>
 
-#include <black/internal/io/parsing.hpp>
+#include <black/internal/parsing/result.hpp>
+#include <black/internal/parsing/combinators.hpp>
 
 #endif // BLACK_IO_HPP

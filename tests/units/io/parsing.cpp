@@ -23,7 +23,7 @@
 
 #include <catch.hpp>
 
-#include <black/io>
+#include <black/parsing>
 
 #include <string>
 #include <iostream>
@@ -33,21 +33,149 @@
 
 TEST_CASE("Parsing") {
     
-    using namespace black::io::parsing;
+    using namespace black::parsing;
 
 
     SECTION("Basics") {
+        std::string str = "hello";
+
+        success succ{begin(str), 42, 3.14};
+
+        STATIC_REQUIRE(
+            std::same_as<
+                decltype(succ), 
+                success<std::string::iterator, int, double>
+            >
+        );
+
+        auto [p, ans, pi] = succ;
+
+        REQUIRE(p == str.begin());
+        REQUIRE(ans == 42);
+        REQUIRE(pi == 3.14);
+
+        failure fail{str.begin()};
+
+        REQUIRE(get<0>(fail) == str.begin());
+
+        result<std::string::iterator, int, double> r = succ;
+
+        REQUIRE(r.success() == succ);
+
+        r = fail;
+
+        REQUIRE(r.failure() == fail);
+    }
+
+    SECTION("Primitive combinators") {
+
+        std::string s1 = "hello, world!";
+        std::string s2 = "42, the answer!";
+
+        SECTION("symbol()") {
+            auto h = symbol('h');
+
+            auto res1 = h(s1.begin(), s1.end());
+            auto res2 = h(s2.begin(), s2.end());
+
+            REQUIRE(res1.success());
+            REQUIRE(*res1.success()->current == 'e');
+            REQUIRE(res2.failure());
+        }
+    
+        SECTION("pattern()") {
+            auto id = pattern(&isalpha);
+
+            auto res1 = id(s1.begin(), s1.end());
+            auto res2 = id(s2.begin(), s2.end());
+
+            REQUIRE(res1.success());
+            REQUIRE(res2.failure());
+        }
+
+        SECTION("seq()") {
+
+            auto he = seq(symbol('h'), symbol('e'));
+
+            auto res1 = he(s1.begin(), s1.end());
+            auto res2 = he(s2.begin(), s2.end());
+
+            REQUIRE(res1.success());
+            REQUIRE(res2.failure());
+
+        }
+
+        SECTION("either()") {
+            auto h4 = either(symbol('h'), symbol('4'));
+
+            auto res1 = h4(s1.begin(), s1.end());
+            auto res2 = h4(s2.begin(), s2.end());
+
+            REQUIRE(res1.success());
+            REQUIRE(res2.success());
+        }
+
+        SECTION("exactly()") {
+            auto hello = exactly("hello");
+
+            auto res1 = hello(s1.begin(), s1.end());
+            auto res2 = hello(s2.begin(), s2.end());
+
+            REQUIRE(res1.success());
+            REQUIRE(res2.failure());
+        }
+
+        SECTION("apply()") {
+            auto hello = apply(
+                pattern(&isalpha),
+                [](auto matched) {
+                    return std::ranges::size(matched);
+                }
+            );
+
+            auto res1 = hello(s1.begin(), s1.end());
+            auto res2 = hello(s2.begin(), s2.end());
+
+            REQUIRE(res1.success());
+            REQUIRE(std::get<0>(res1.success()->values) == 5);
+            REQUIRE(res2.failure());
+        }
+
+    }
+
+    SECTION("Derived combinators") {
+        
+        std::string s1 = "hello, world!";
+        std::string s2 = "42, the answer!";
+
+        SECTION("string()") {
+            auto hello = string(&isalpha);
+
+            auto res1 = hello(s1.begin(), s1.end());
+            auto res2 = hello(s2.begin(), s2.end());
+
+            REQUIRE(res1.success());
+            REQUIRE(std::get<0>(res1.success()->values) == "hello");
+            REQUIRE(res2.failure());
+        }
+
+    }
+
+
+    SECTION("Complex examples") {
 
         auto parser =
-            act(
-                (string("hello") | string("mandi")) + 
-                string(", ") + pattern(&isalpha) + string("!"), 
+            apply(
+                seq(
+                    either(exactly("hello"), exactly("mandi")),
+                    exactly(", "), string(&isalpha), exactly("!")
+                ),
                 [&](std::string_view name) { return name == "world"; }
             );
 
         std::string s = GENERATE("hello, world!", "mandi, world!");
 
-        auto res = parser.parse(s.c_str(), s.c_str() + s.size());
+        auto res = parser(s.begin(), s.end());
 
         REQUIRE(res.success().has_value());
         REQUIRE(std::get<0>(res.success()->values) == true);
@@ -55,23 +183,13 @@ TEST_CASE("Parsing") {
     }
 
 
-    SECTION("Many") {
+    SECTION("sep_by() (and therefore many())") {
 
-        auto sep_by = [](auto parser, auto sep) { 
-            return act(
-                parser + many(sep + parser),
-                [](auto v, auto vs) {
-                    vs.insert(begin(vs), v);
-                    return vs;
-                }
-            );
-        };
-
-        auto parser = sep_by(pattern(&isalpha), string(":"));
+        auto parser = sep_by(string(&isalpha), exactly(":"));
 
         std::string s = "one:two:three:four";
 
-        auto res = parser.parse(s.c_str(), s.c_str() + s.size());
+        auto res = parser(s.begin(), s.end());
 
         std::vector<std::string_view> expected = {
             "one", "two", "three", "four"
@@ -82,11 +200,7 @@ TEST_CASE("Parsing") {
 
     }
 
-    SECTION("Optional and ignore") {
-
-        auto spaces = [] {
-            return ignore(pattern(&isspace));
-        };
+    SECTION("optional() and spaces()") {
 
         struct func_t {
             bool is_static;
@@ -94,11 +208,25 @@ TEST_CASE("Parsing") {
             bool operator==(func_t const&) const = default;
         };
 
+        auto keyword = [](std::string_view key){
+            return trying(
+                ignore(
+                    token(
+                        filter(string(&isalpha), [=](auto k){
+                            return k == key;
+                        })
+                    )
+                )
+            );
+        };
+
         auto parser =
-            act(
-                optional(string("static") + spaces()) + 
-                string("void") + spaces() + pattern(&isalpha) + string("();"),
-                [&](auto st, auto name) {
+            apply(
+                seq(
+                    optional(keyword("static")),
+                    keyword("void"), string(&isalpha), exactly("();")
+                ),
+                [&](bool st, auto name) {
                     return func_t{ st, name };
                 }
             );
@@ -107,7 +235,7 @@ TEST_CASE("Parsing") {
 
             std::string s = "static void main();";
 
-            auto res = parser.parse(s.c_str(), s.c_str() + s.size());
+            auto res = parser(s.begin(), s.end());
 
             REQUIRE(res.success().has_value());
             REQUIRE(std::get<0>(res.success()->values) == func_t{true, "main"});
@@ -117,7 +245,7 @@ TEST_CASE("Parsing") {
         SECTION("void exit();") {
             std::string s = "void exit();";
 
-            auto res = parser.parse(s.c_str(), s.c_str() + s.size());
+            auto res = parser(s.begin(), s.end());
 
             REQUIRE(res.success().has_value());
             REQUIRE(
