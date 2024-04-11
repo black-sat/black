@@ -318,9 +318,13 @@ namespace black::parsing {
   inline auto sep_by(auto parser, auto sep) {
     return apply(
       seq(parser, many(seq(sep, parser))),
-      [](auto v, auto vs) {
-          vs.insert(begin(vs), v);
-          return vs;
+      [](auto ...args) {
+        if constexpr(sizeof...(args) == 2) {
+          return [](auto v, auto vs) {
+            vs.insert(begin(vs), v);
+            return vs;
+          }(std::move(args)...);
+        }
       }
     );
   }

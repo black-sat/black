@@ -253,7 +253,33 @@ TEST_CASE("Parsing") {
             );
         }
 
+    }
 
+    SECTION("CSV example") {
+        size_t rows = 0;
+        size_t fields = 0;
+
+        auto field = apply(
+            string([](char c) { return c != ',' && c != '\n'; }), 
+            [&](auto...) { fields++; }
+        );
+
+        auto row = apply(
+            sep_by(field, exactly(",")),
+            [&](auto...) { rows++; }
+        );
+
+        auto csv = sep_by(row, exactly("\n"));
+
+        std::string s = 
+            "primo,field,del,csv\n"
+            "secondo,field,del,csv";
+
+        auto res = csv(s.begin(), s.end());
+
+        REQUIRE(res.success());
+        REQUIRE(rows == 2);
+        REQUIRE(fields == 8);
     }
 
 }
