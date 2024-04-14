@@ -29,5 +29,6 @@
 
 #include <black/internal/parsing/result.hpp>
 #include <black/internal/parsing/combinators.hpp>
+#include <black/internal/parsing/parsers.hpp>
 
 #endif // BLACK_IO_HPP

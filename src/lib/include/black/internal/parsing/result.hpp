@@ -33,119 +33,110 @@
 
 namespace black::parsing {
 
-  template<std::forward_iterator It, typename ...Ts>
+  template<typename Out>
   class result;
 
-  template<std::forward_iterator It, typename ...Ts>
+  template<typename Out>
   struct success { 
-    It current;
-    std::tuple<Ts ...> values;
+    const char *current;
+    Out output;
 
-    explicit success(It current, Ts ...values) 
-      : current{current}, values{std::move(values)...} { }
+    success(const char *current, Out out) 
+      : current{current}, output{std::move(out)} { }
     
-    success(It current, std::tuple<Ts ...> values) 
-      : current{current}, values{std::move(values)} { }
-    
+    success(const char *current) : current{current} { }
+
     success(success const&) = default;
     success(success &&) = default;
-
+    
     success &operator=(success const&) = default;
     success &operator=(success &&) = default;
 
     bool operator==(success const& other) const = default;
   };
 
-  template<size_t I, typename It, typename ...Ts>
-    requires (I < sizeof...(Ts) + 1)
-  auto const& get(success<It, Ts...> const& s) {
+  template<typename Out>
+  success(const char *, Out) -> success<Out>;
+  
+  success(const char *) -> success<std::monostate>;
+
+  struct failure {
+    const char *current;
+
+    bool operator==(failure const& other) const = default;
+  };
+
+  template<size_t I, typename Out>
+  auto & get(success<Out> & s) {
     if constexpr(I == 0)
       return s.current;
     else
-      return std::get<I - 1>(s.values);    
+      return s.output;
   }
-  
-  template<size_t I, typename It, typename ...Ts>
-    requires (I < sizeof...(Ts) + 1)
-  auto && get(success<It, Ts...> && s) {
+
+  template<size_t I, typename Out>
+  auto const& get(success<Out> const& s) {
     if constexpr(I == 0)
-      return std::move(s.current);
+      return s.current;
     else
-      return std::move(std::get<I - 1>(s.values));
+      return s.output;
   }
 
-  template<std::forward_iterator It>
-  struct failure {
-    It current;
-
-    explicit failure(It current) : current{current} { }
-
-    failure(failure const&) = default;
-    failure(failure &&) = default;
-
-    failure &operator=(failure const&) = default;
-    failure &operator=(failure &&) = default;
-
-    bool operator==(failure const& other) const = default;
-
-  };
-
-  template<size_t I, typename It>
+  
+  template<size_t I>
     requires (I == 0)
-  auto get(failure<It> f) {
+  auto get(failure f) {
     return f.current;
   }
 
 }
 
-template<typename It, typename ...Ts>
-struct std::tuple_size<black::parsing::success<It, Ts...>>
-  : std::integral_constant<size_t, sizeof...(Ts) + 1> { };
+template<typename Out>
+struct std::tuple_size<black::parsing::success<Out>>
+  : std::integral_constant<size_t, 2> { };
 
-template<typename It, typename ...Ts>
-struct std::tuple_element<0, black::parsing::success<It, Ts...>> 
-  : std::type_identity<It> { };
+template<typename Out>
+struct std::tuple_element<0, black::parsing::success<Out>> 
+  : std::type_identity<const char *> { };
 
-template<size_t I, typename It, typename ...Ts>
-struct std::tuple_element<I, black::parsing::success<It, Ts...>> 
-  : std::tuple_element<I - 1, std::tuple<Ts...>> { };
+template<typename Out>
+struct std::tuple_element<1, black::parsing::success<Out>> 
+  : std::type_identity<Out> { };
 
-template<typename It>
-struct std::tuple_size<black::parsing::failure<It>>
+template<>
+struct std::tuple_size<black::parsing::failure>
   : std::integral_constant<size_t, 1> { };
 
-template<typename It>
-struct std::tuple_element<0, black::parsing::failure<It>> 
-  : std::type_identity<It> { };
+template<>
+struct std::tuple_element<0, black::parsing::failure> 
+  : std::type_identity<const char *> { };
 
 namespace black::support {
 
-  template<typename It, typename ...Ts>
+  template<typename Out>
   struct common_result<
-    black::parsing::success<It, Ts...>, 
-    black::parsing::failure<It>
-  > : std::type_identity<black::parsing::result<It, Ts...>> { };
+    black::parsing::success<Out>, 
+    black::parsing::failure
+  > : std::type_identity<black::parsing::result<Out>> { };
   
-  template<typename It, typename ...Ts>
+  template<typename Out>
   struct common_result<
-    black::parsing::failure<It>,
-    black::parsing::success<It, Ts...>
-  > : std::type_identity<black::parsing::result<It, Ts...>> { };
+    black::parsing::failure,
+    black::parsing::success<Out>
+  > : std::type_identity<black::parsing::result<Out>> { };
 
 }
 
-
 namespace black::parsing {
 
-  template<std::forward_iterator It, typename ...Ts>
+  template<typename Out>
   class result 
   {
   public:
-    using success_t = parsing::success<It, Ts...>;
-    using failure_t = parsing::failure<It>;
+    using output_t = Out;
 
-    result(success_t s) : _data{s} { }
-    result(failure_t f) : _data{f} { }
+    result(parsing::success<Out> s) : _data{s} { }
+    result(parsing::failure f) : _data{f} { }
 
     result(result const&) = default;
     result(result &&) = default;
@@ -153,77 +144,80 @@ namespace black::parsing {
     result &operator=(result const&) = default;
     result &operator=(result &&) = default;
 
-    std::optional<success_t> success() const {
-      if(std::holds_alternative<success_t>(_data))
-        return std::get<success_t>(_data);
+    std::optional<parsing::success<Out>> success() const {
+      if(std::holds_alternative<parsing::success<Out>>(_data))
+        return std::get<parsing::success<Out>>(_data);
       return {};
     }
     
-    std::optional<failure_t> failure() const {
-      if(std::holds_alternative<failure_t>(_data))
-        return std::get<failure_t>(_data);
+    std::optional<parsing::failure> failure() const {
+      if(std::holds_alternative<parsing::failure>(_data))
+        return std::get<parsing::failure>(_data);
       return {};
     }
 
     template<typename F>
     auto map(F func) const {
       return support::match(_data)(
-        [&](success_t, auto it, Ts ...vs) {
-          if constexpr(std::same_as<std::invoke_result_t<F, Ts...>, void>) {
-            func(std::move(vs)...);
-            return parsing::success{it};
-          } else {
-            return parsing::success{it, func(std::move(vs)...)};
-          }
+        [&](parsing::success<Out>, const char *p, Out out) {
+          return parsing::success{p, func(std::move(out))};
         },
-        [](failure_t f) { return f; }
+        [](parsing::failure f) { return f; }
       );
     }
 
     template<typename F>
     auto then(F func) const {
       return support::match(_data)(
-        [&](success_t, It it, Ts ...vs) {
-          return func(std::move(it), std::move(vs)...);
+        [&](parsing::success<Out>, const char *p, Out out) {
+          return func(p, std::move(out));
         },
-        [](failure_t f) { return f; }
+        [](parsing::failure f) { return f; }
+      );
+    }
+
+    template<typename F>
+    auto or_else(F func) const {
+      return support::match(_data)(
+        [&](parsing::failure, const char *p) {
+          return func(p);
+        },
+        [](auto s) { return std::move(s); }
       );
     }
 
     explicit operator bool() const {
-      return std::holds_alternative<success_t>(_data);
+      return std::holds_alternative<parsing::success<Out>>(_data);
     }
 
   private:
-    std::variant<success_t, failure_t> _data;
+    std::variant<parsing::success<Out>, parsing::failure> _data;
   };
 
 }
 
 namespace black::support {
-
-  template<typename It, typename ...Ts>
-  struct match_cases<parsing::result<It, Ts...>> 
+  template<typename Out>
+  struct match_cases<parsing::result<Out>> 
     : std::type_identity<
-        std::tuple<parsing::success<It, Ts...>, parsing::failure<It>>
+        std::tuple<parsing::success<Out>, parsing::failure>
       > { };
   
-  template<typename It, typename ...Ts>
+  template<typename Out>
   struct 
-  match_downcast<parsing::result<It, Ts...>, parsing::success<It, Ts...>> {
-    static auto downcast(parsing::result<It, Ts...> r) {
+  match_downcast<parsing::result<Out>, parsing::success<Out>> {
+    static auto downcast(parsing::result<Out> r) {
       return r.success();
     }
   };
   
-  template<typename It, typename ...Ts>
+  template<typename Out>
   struct 
-  match_downcast<parsing::result<It, Ts...>, parsing::failure<It>> {
-    static auto downcast(parsing::result<It, Ts...> r) {
+  match_downcast<parsing::result<Out>, parsing::failure> {
+    static auto downcast(parsing::result<Out> r) {
       return r.failure();
     }
   };
-
 }
 
 

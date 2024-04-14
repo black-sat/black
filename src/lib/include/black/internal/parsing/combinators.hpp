@@ -25,339 +25,369 @@
 #define BLACK_INTERNAL_PARSING_COMBINATORS_HPP
 
 #include <cctype>
+#include <ranges>
 
 namespace black::parsing {
 
   using support::match;
-
-  //!
-  //! Traits to get info about parsers
-  //!
-
-  template<typename P, typename It, typename End>
-  struct parser_result { };
-
-  template<typename P, typename It, typename End>
-    requires (
-      std::forward_iterator<It> && std::sentinel_for<End, It> &&
-      std::invocable<P, It, End>
-    )
-  struct parser_result<P, It, End> : std::invoke_result<P, It, End> { };
-
-  template<typename P, typename It, typename End>
-  using parser_result_t = typename parser_result<P, It, End>::type;
-
-  template<typename R>
-  struct parser_result_output { };
-
-  template<typename It, typename ...Ts>
-  struct parser_result_output<result<It, Ts...>>
-    : std::type_identity<std::tuple<Ts...>> { };
-
-  template<typename R>
-  using parser_result_output_t = typename parser_result_output<R>::type;
-
-  template<typename P, typename It, typename End>
-  struct parser_output 
-    : parser_result_output<parser_result_t<P, It, End>> { };
-
-  template<typename P, typename It, typename End>
-  using parser_output_t = typename parser_output<P, It, End>::type;
-
-  template<typename It, typename T>
-  struct result_from { };
-
-  template<std::forward_iterator It, typename ...Ts>
-  struct result_from<It, std::tuple<Ts...>> 
-    : std::type_identity<result<It, Ts...>> { };
-
-  template<typename It, typename T>
-  using result_from_t = typename result_from<It, T>::type;
-
-  //!
-  //! Matches a single element with no output value.
-  //!
-  template<typename T>
-  inline auto symbol(T v) {
-    return [=]<typename It>(It begin, auto end) -> result<It>
-    {
-        if(begin != end && *begin == v)
-          return success{begin + 1};
-
-        return failure{begin};
-      };
-  }
-
-  //!
-  //! Matches a sequence of one or more elements satisfying `pred`.
-  //! The output value is the matched subrange.
-  //!
-  template<typename F>
-  inline auto pattern(F pred) {
-    return [=]<typename It>(It begin, auto end) 
-      -> result<It, std::ranges::subrange<It, It>>
-    {
-      auto it = begin;
-      while(it != end && pred(*it))
-        it++;
-      
-      if(it == begin)
-        return failure{it};
-
-      return success{it, std::ranges::subrange(begin, it)};
-    };
-  }
-
-  //!
-  //! Matches a sequence of parsers and fails if any of the sequence fails/
-  //! The output value is the tuple of output values of each parser of the 
-  //! sequence.
-  //!
-  inline auto seq(auto p) { return p; }
-
-  inline auto seq(auto p1, auto p2) {
-    return [=](auto begin, auto end) {
-      return p1(begin, end).then([&](auto it1, auto ...vs1) {
-        return p2(it1, end).then([&](auto it2, auto ...vs2) {
-          return success{it2, std::move(vs1)..., std::move(vs2)...};
-        });
-      });
-    };
-  }
-  
-  inline auto seq(auto p1, auto p2, auto ...ps) {
-    return seq(std::move(p1), seq(std::move(p2), std::move(ps)...));
-  }
-
-  //!
-  //! Matches the first parser and, only if the first fails without consuming
-  //! any input, matches the second.
-  //!
-  inline auto either(auto p1, auto p2) {
-    return [=]<typename It>(It begin, auto end) -> result<It> {
-      auto r1 = p1(begin, end);
-      if(auto s = r1.success(); s)
-        return result{*s};
-      
-      auto it = r1.failure()->current;
-      if(it != begin)
-        return *r1.failure();
-      
-      return p2(it, end);
-    };
-  }
-
-  //!
-  //! Matches the given parser and, if it fails, does not consume input.
-  //!
-  inline auto trying(auto p) {
-    return [=](auto begin, auto end) {
-      return match(p(begin, end))(
-        [=]<typename It>(failure<It>) {
-          return failure<It>{begin};
-        },
-        [](auto s) { return s; }
-      );
-    };
-  }
-
-  //!
-  //! Matches exactly the range given as input. Consumes the input until the end
-  //! of the matched string or the first different character. There is no
-  //! output.
-  //!
-  inline auto exactly(std::ranges::range auto r) {    
-    return [p = std::move(r)]<typename It>(It b, auto end) -> result<It> {
-      auto it = b;
-      auto it2 = std::ranges::begin(p);
-
-      while(it != end && it2 != std::ranges::end(p) && *it == *it2) {
-        it++;
-        it2++;
-      }
-
-      if(it2 == std::ranges::end(p))
-        return success{it};
-      
-      return failure{it};
-    };
-  }
-
-  inline auto exactly(std::string_view str) {
-    return exactly(std::ranges::subrange(begin(str), end(str)));
-  }
-
-  //!
-  //! Transform the output value of a matched parser, fails if the parser fails.
-  //!
-  inline auto apply(auto p, auto f) {
-    return [=](auto begin, auto end) -> decltype(p(begin, end).map(f)) {
-      return p(begin, end).map(f);
-    };
-  }
-
-  //!
-  //! Matches the given parser and, if successful, filters it with the predicate
-  //! and fails if it returns false.
-  //!
-  inline auto filter(auto p, auto f) {
-    return [=](auto begin, auto end) {
-      return p(begin, end).then(
-        [&]<typename It, typename ...Ts>(It it, Ts ...vs) -> result<It, Ts...> {
-          if(f(vs...))
-            return success{it, std::move(vs)...};
-          return failure{it};
-        }
-      );
-    };
-  }
+  using support::matching;
 
   //! 
-  //! Utility for many() below.
+  //! Traits and concepts
   //! 
-  template<typename T, template<typename ...> class F>
-  struct tuple_map { };
-
-  template<typename ...Ts, template<typename ...> class F>
-  struct tuple_map<std::tuple<Ts...>, F> 
-    : std::type_identity<std::tuple<F<Ts>...>> { };
-
-  template<typename T, template<typename ...> class F>
-  using tuple_map_t = typename tuple_map<T, F>::type;
-  
-
-  //!
-  //! Matches zero or more matches of the given parser.
-  //! Outputs a tuple of vectors of the matches' outputs.
-  //!
   template<typename P>
-  auto many(P p) {
-    return [=]<
-        typename It, typename End,
-        typename R = tuple_map_t<parser_output_t<P, It, End>, std::vector>
-      >(It begin, End end) -> result_from_t<It, R> 
-    {
-      R res;
+  struct parser_output { };
 
-      auto it = begin;
-      auto parsed = p(it, end);
-      while(parsed) {
-        std::apply([&]<typename ...Ts>(Ts ...values) {
-          [&]<size_t ...Idx>(std::index_sequence<Idx...>) {
-            (std::get<Idx>(res).push_back(values), ...);
-          }(std::index_sequence_for<Ts...>{});
-        }, std::move(parsed.success()->values));
+  template<typename R>
+  struct parser_output_aux { };
 
-        it = parsed.success()->current;
-        begin = it;
-        parsed = p(it, end);
-      }
+  template<typename Out>
+  struct parser_output_aux<result<Out>> 
+    : std::type_identity<Out> { };
 
-      if(it == begin)
-        return success{it, res};
+  template<typename P>
+    requires std::invocable<P, const char *, const char *>
+  struct parser_output<P> 
+    : parser_output_aux<std::invoke_result_t<P, const char *, const char *>>
+  { };
+  
+  template<typename P>
+    requires std::invocable<P, P, const char *, const char *>
+  struct parser_output<P> 
+    : parser_output_aux<std::invoke_result_t<P, P, const char *, const char *>>
+  { };
 
-      return failure{it};
-    };
+  template<typename P>
+  using parser_output_t = typename parser_output<P>::type;
+
+  template<typename P>
+  concept parser = requires { 
+    typename parser_output<P>::type;
+  };
+
+  template<typename F, typename P>
+  struct is_applicable_on_parser : std::false_type { };
+
+  template<typename F, typename P>
+    requires parser<P>
+  struct is_applicable_on_parser<F, P> :
+    std::is_invocable<F, parser_output_t<P>> { };
+
+  template<typename F, typename P>
+  inline constexpr bool is_applicable_on_parser_v = 
+    is_applicable_on_parser<F, P>::value;
+
+  template<typename F, typename P>
+  concept applicable_on_parser = is_applicable_on_parser_v<F, P>;
+
+  // template<typename R, template<typename ...> class T>
+  // struct wrap_results_with { };
+  
+  // template<typename ...Outs, template<typename ...> class T>
+  // struct wrap_results_with<result<Outs...>, T>
+  //   : std::type_identity<result<T<Outs>...>> { };
+
+  // template<typename R, template<typename ...> class T>
+  // using wrap_results_with_t = typename wrap_results_with<R, T>::type;
+
+  inline constexpr auto concat(auto v1, auto v2) {
+    return std::tuple{std::move(v1), std::move(v2)};
   }
 
-  //!
-  //! Utility for optional() below
-  //!
-  template<typename T, typename Tu>
-  struct tuple_cons { };
+  inline constexpr auto concat(auto v1, std::monostate) {
+    return v1;
+  }
+  
+  inline constexpr auto concat(std::monostate, auto v2) {
+    return v2;
+  }
+  
+  inline constexpr auto concat(std::monostate, std::monostate) {
+    return std::monostate{};
+  }
+
+  template<typename ...Ts>
+  inline constexpr auto concat(auto v1, std::tuple<Ts...> t) {
+    return std::apply([=](Ts ...vs) {
+      return std::tuple{v1, vs...};
+    }, std::move(t));
+  }
+
+  template<typename ...Ts>
+  inline constexpr auto concat(std::tuple<Ts...> t, auto v2) {
+    return std::apply([=](Ts ...vs) {
+      return std::tuple{vs..., v2};
+    }, std::move(t));
+  }
+
+  template<typename ...Ts1, typename ...Ts2>
+  inline constexpr auto concat(std::tuple<Ts1...> t1, std::tuple<Ts2...> t2) {
+    return std::tuple_cat(std::move(t1), std::move(t2));
+  }
+
+  inline constexpr auto clean(auto v) {
+    return v;
+  }
+
+  template<typename T>
+  inline constexpr auto clean(std::tuple<T> t) {
+    return clean(std::move(std::get<0>(t)));
+  }
+
+  template<typename T>
+  inline constexpr auto clean(std::variant<T> v) {
+    return clean(std::move(std::get<T>(v)));
+  }
+
+  template<typename T1, typename T2>
+  struct choice : std::type_identity<std::variant<T1, T2>> { };
+  
+  template<typename T1, typename T2>
+  using choice_t = typename choice<T1, T2>::type;
+  
+  template<typename T>
+  struct choice<T, T> : std::type_identity<T> { };
+
+  template<typename T1, typename ...Ts2>
+  struct choice<T1, std::variant<Ts2...>>
+    : std::conditional<
+        (std::is_same_v<T1, Ts2> || ...), 
+        std::variant<Ts2...>,
+        std::variant<T1, Ts2...>
+      > { };
+
+  template<typename ...Ts1, typename T2>
+  struct choice<std::variant<Ts1...>, T2>
+    : std::conditional<
+        (std::is_same_v<Ts1, T2> || ...),
+        std::variant<Ts1...>,
+        std::variant<Ts1..., T2>
+      > { };
+
+  template<typename ...Ts1, typename T2>
+  struct choice<std::variant<Ts1...>, std::variant<T2>>
+    : choice<std::variant<Ts1...>, T2> { };
+
+  template<typename ...Ts1, typename T2, typename ...Ts2>
+  struct choice<std::variant<Ts1...>, std::variant<T2, Ts2...>> 
+    : choice<choice_t<std::variant<Ts1...>, T2>, std::variant<Ts2...>> { };
+
+  template<typename T>
+  auto upcast(auto v) {
+    return T{std::move(v)};
+  }
 
   template<typename T, typename ...Ts>
-  struct tuple_cons<T, std::tuple<Ts...>> 
-    : std::type_identity<std::tuple<T, Ts...>> { };
-
-  template<typename T, typename Tu>
-  using tuple_cons_t = typename tuple_cons<T, Tu>::type;
-
-  
-  template<typename P, typename It, typename End>
-  using optional_output_t = 
-    tuple_cons_t<
-      bool, tuple_map_t<parser_output_t<P, It, End>, std::optional>
-    >;
-
-  //!
-  //! Matches a parser optionally. Fails only if the parser fails after
-  //! consuming input. Outputs the parsers' output with the addition of a
-  //! boolean flag.
-  //!
-  template<typename P>
-  inline auto optional(P p) {
-    return [=]<
-        typename It, typename End, typename R = optional_output_t<P, It, End>  
-      >(It begin, End end) -> result_from_t<It, R>
-    {
-      return match(p(begin, end))(
-        []<typename ...Ts>(success<It, Ts...>, It it, Ts ...vs) {
-          return success(it, true, std::optional<Ts>{vs}...);
-        },
-        [&](failure<It> f, It it) -> result_from_t<It, R> {
-          if(it != begin)
-            return f;
-          return success{it, R{}};
-        }
-      );
-    };
-  }
-
-  //!
-  //! Matches a parser and throws away the output value.
-  //!
-  inline auto ignore(auto p) {
-    return apply(std::move(p), [](auto...){ });
-  }
-
-  //!
-  //! Matches one or more matches of the given parser separated by the given
-  //! separator parser. The output is a vector of all the matches.
-  //!
-  inline auto sep_by(auto parser, auto sep) {
-    return apply(
-      seq(parser, many(seq(sep, parser))),
-      [](auto ...args) {
-        if constexpr(sizeof...(args) == 2) {
-          return [](auto v, auto vs) {
-            vs.insert(begin(vs), v);
-            return vs;
-          }(std::move(args)...);
-        }
+  auto upcast(std::variant<Ts...> v) {
+    return match(v)(
+      [](auto vv) {
+        return T{vv};
       }
     );
   }
 
-  //
-  // Combinators specific to character iterators
-  //
+  //!
+  //! Wrapper type for parsers.
+  //!
+  template<typename P>
+  class wrap
+  {
+  public:
+    constexpr wrap(P p) : _parser{std::move(p)} { }
+
+    template<std::contiguous_iterator It, std::sentinel_for<It> End>
+      requires std::same_as<std::remove_const_t<std::iter_value_t<It>>, char>
+    auto operator()(It begin, End end) const {
+      return _parser(std::to_address(begin), std::to_address(end));
+    }
+    
+    template<std::ranges::contiguous_range Rng>
+      requires 
+        std::same_as<std::remove_const_t<std::ranges::range_value_t<Rng>>, char>
+    auto operator()(Rng const&rng) const {
+      return (*this)(std::ranges::cbegin(rng), std::ranges::cend(rng));
+    }
+
+  private:
+    P _parser;
+  };
 
   //!
-  //! Same as `pattern()` but works on contiguous ranges of chars and the output
-  //! value is a `std::string_view`.
+  //! Always succeeds.
   //!
-  inline auto string(auto f) {
-    return apply(pattern(f), [](std::ranges::contiguous_range auto rng) {
-      return std::string_view{
-        std::to_address(std::ranges::begin(rng)), 
-        std::to_address(std::ranges::end(rng))
-      };
+  inline constexpr auto succeed() {
+    return wrap{
+      [=](const char *begin, const char *) -> result<std::monostate> {
+        return success{begin, std::monostate{}};
+      }
+    };
+  }
+  
+  
+  //!
+  //! Always fails.
+  //!
+  inline constexpr auto fail() {
+    return wrap{
+      [=](const char *begin, const char *) -> result<std::monostate> {
+        return failure{begin};
+      }
+    };
+  }
+
+  //!
+  //! Matches a sequence of parsers failing if any one fails.
+  //! Output: all the outputs of the sequence elements.
+  //!
+  inline constexpr auto seq(parser auto p1, parser auto p2) {
+    return wrap{
+      [=](const char *begin, const char *end) {
+        return p1(begin, end).then([&](const char *it1, auto out1) {
+          return p2(it1, end).then([&](const char *it2, auto out2) {
+            return 
+              success{it2, clean(concat(std::move(out1), std::move(out2)))};
+          });
+        });
+      }
+    };
+  }
+
+  template<typename ...Ps>
+    requires (sizeof...(Ps) >= 2)
+  inline constexpr auto seq(auto p1, Ps ...ps) {
+    return seq(p1, seq(ps...));
+  }
+
+  //!
+  //! Matches the parsers in the sequence in order, trying the next if one fails
+  //! without consuming inputs. It fails if one fails consuming input or if no
+  //! one succeeds.
+  //! Output: the output of the matching parser.
+  //!
+  template<
+    parser P1, parser P2,
+    typename Out1 = parser_output_t<P1>,
+    typename Out2 = parser_output_t<P2>,
+    typename R = choice_t<Out1, Out2>
+  >
+  inline constexpr auto either(P1 p1, P2 p2) {
+    return wrap{
+      [=](const char *begin, const char *end) -> result<R> {
+        return match(p1(begin, end))(
+          [](success<Out1>, const char *it, Out1 out) -> result<R> {
+            return success{it, upcast<R>(std::move(out))};
+          },
+          [&](failure, const char *it1) -> result<R> {
+            if(it1 != begin)
+              return failure{it1};
+            return match(p2(begin, end))(
+              [](success<Out2>, const char *it2, Out2 out) -> result<R> {
+                return success{it2, upcast<R>(std::move(out))};
+              },
+              [](failure f) -> result<R> {
+                return f;
+              }
+            );
+          }
+        );
+      }
+    };
+  }
+
+  template<typename ...Ps>
+    requires (sizeof...(Ps) >= 2)
+  inline constexpr auto either(parser auto p1, parser auto ...ps) {
+    return either(p1, either(ps...));
+  }
+
+  //!
+  //! Matches the given parser transforming the outputs by the given function
+  //!
+  template<parser P, applicable_on_parser<P> F>
+  inline constexpr auto apply(P p, F func) {
+    return wrap{
+      [=](const char *begin, const char *end) {
+        return p(begin, end).map(func);
+      }
+    };
+  }
+
+
+  //! 
+  //! Matches the given parser but accepts if it fails without consuming input.
+  //! Output: an std::optional of a tuple containing the results.
+  //!
+  template<parser P>
+  inline constexpr auto optional(P p) {
+    return apply(
+      either(p, succeed()),
+      matching(
+        [](std::monostate) { return std::nullopt; },
+        [](auto v) { return std::optional{v}; }
+      )
+    );
+  }
+
+  // Waiting for 'deducing this' in clang 18
+  template<typename P, typename Out>
+  struct recursive_t {
+    P _p;
+
+    recursive_t(P p) : _p{std::move(p)} { }
+
+    result<Out> operator()(const char *begin, const char *end) const {
+      return _p(*this)(begin, end);
+    }
+  };
+
+  //!
+  //! Creates a recursive parser. See `many()` below as an example.
+  //!
+  template<typename Out, typename F>
+  inline constexpr auto recursive(F f) {
+    return wrap{ recursive_t<F, Out>{f} };
+  }
+
+  //!
+  //! Matches one or more occurrences of the given parser. It fails if one fails
+  //! after consuming input.
+  //!
+  template<typename P>
+  inline constexpr auto many(P p) {
+    using Out = std::deque<parser_output_t<P>>;
+
+    return recursive<Out>([=](auto self) { 
+      return apply(
+        optional(seq(p, optional(self))),
+        [](auto v) {
+          if(!v)
+            return Out{};
+          
+          return std::apply([](auto vv, auto opt){
+            if(!opt)
+              return std::deque{vv};
+            opt->push_front(vv);
+            return std::move(*opt);
+          }, std::move(*v));
+        }
+      );
     });
   }
 
   //!
-  //! Matches and ignores any amount of spaces, if any.
+  //! Matches one or more occurrences of the given parser separated by the given
+  //! separator parser.
   //!
-  inline auto spaces() {
-    return ignore(optional(pattern(&isspace)));
-  }
-
-  //!
-  //! Matches the given parser ignoring any subsequent space, if any.
-  //!
-  inline auto token(auto p) {
-    return seq(p, spaces());
+  inline constexpr auto sep_by(parser auto p, parser auto sep) {
+    return apply(
+      seq(p, many(seq(sep, p))),
+      [](auto t) {
+        return std::apply([](auto head, auto tail) {
+          tail.push_front(head);
+          return tail;
+        }, std::move(t));
+      }
+    );
   }
 
 }

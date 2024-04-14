@@ -369,12 +369,24 @@ namespace black::support::internal {
       *original = saved;
     });
   }
+
+  //
+  // Helper to make recursive lambdas
+  //
+  inline constexpr auto fix(auto f) {
+    return [=]<typename ...Ts>(Ts&& ...vs) 
+      -> decltype(f(f, std::forward<Ts>(vs)...))
+    {
+      return f(f, std::forward<Ts>(vs)...);
+    };
+  }
 }
 
 namespace black::support {
   using internal::unpacking;
   using internal::dispatch;
   using internal::dispatching;
+  using internal::can_dispatch_over;
   using internal::otherwise;
   using internal::visit;
   using internal::visitor;
@@ -383,6 +395,7 @@ namespace black::support {
   using internal::matching;
   using internal::finally;
   using internal::checkpoint;
+  using internal::fix;
 }
 
 #endif // BLACK_SUPPORT_FUNCTIONAL_HPP

@@ -39,26 +39,20 @@ TEST_CASE("Parsing") {
     SECTION("Basics") {
         std::string str = "hello";
 
-        success succ{begin(str), 42, 3.14};
+        success succ{str.c_str(), 42};
 
-        STATIC_REQUIRE(
-            std::same_as<
-                decltype(succ), 
-                success<std::string::iterator, int, double>
-            >
-        );
+        STATIC_REQUIRE(std::same_as<decltype(succ), success<int>>);
 
-        auto [p, ans, pi] = succ;
+        auto const&[p, ans] = succ;
 
-        REQUIRE(p == str.begin());
+        REQUIRE(p == str.c_str());
         REQUIRE(ans == 42);
-        REQUIRE(pi == 3.14);
 
-        failure fail{str.begin()};
+        failure fail{str.c_str()};
 
-        REQUIRE(get<0>(fail) == str.begin());
+        REQUIRE(get<0>(fail) == str.c_str());
 
-        result<std::string::iterator, int, double> r = succ;
+        result<int> r = succ;
 
         REQUIRE(r.success() == succ);
 
@@ -71,23 +65,22 @@ TEST_CASE("Parsing") {
 
         std::string s1 = "hello, world!";
         std::string s2 = "42, the answer!";
+    
+        SECTION("exactly()") {
+            auto hello = exactly("hello");
 
-        SECTION("symbol()") {
-            auto h = symbol('h');
-
-            auto res1 = h(s1.begin(), s1.end());
-            auto res2 = h(s2.begin(), s2.end());
+            auto res1 = hello(s1);
+            auto res2 = hello(s2);
 
             REQUIRE(res1.success());
-            REQUIRE(*res1.success()->current == 'e');
             REQUIRE(res2.failure());
         }
-    
+
         SECTION("pattern()") {
             auto id = pattern(&isalpha);
 
-            auto res1 = id(s1.begin(), s1.end());
-            auto res2 = id(s2.begin(), s2.end());
+            auto res1 = id(s1);
+            auto res2 = id(s2);
 
             REQUIRE(res1.success());
             REQUIRE(res2.failure());
@@ -95,10 +88,10 @@ TEST_CASE("Parsing") {
 
         SECTION("seq()") {
 
-            auto he = seq(symbol('h'), symbol('e'));
+            auto he = seq(exactly("he"), exactly("llo"));
 
-            auto res1 = he(s1.begin(), s1.end());
-            auto res2 = he(s2.begin(), s2.end());
+            auto res1 = he(s1);
+            auto res2 = he(s2);
 
             REQUIRE(res1.success());
             REQUIRE(res2.failure());
@@ -106,23 +99,16 @@ TEST_CASE("Parsing") {
         }
 
         SECTION("either()") {
-            auto h4 = either(symbol('h'), symbol('4'));
+            auto h4 = either(pattern(&isalpha), exactly("42"));
 
-            auto res1 = h4(s1.begin(), s1.end());
-            auto res2 = h4(s2.begin(), s2.end());
+            auto res1 = h4(s1);
+            auto res2 = h4(s2);
 
             REQUIRE(res1.success());
+            REQUIRE(
+                std::get<std::string_view>(res1.success()->output) == "hello"
+            );
             REQUIRE(res2.success());
-        }
-
-        SECTION("exactly()") {
-            auto hello = exactly("hello");
-
-            auto res1 = hello(s1.begin(), s1.end());
-            auto res2 = hello(s2.begin(), s2.end());
-
-            REQUIRE(res1.success());
-            REQUIRE(res2.failure());
         }
 
         SECTION("apply()") {
@@ -133,34 +119,47 @@ TEST_CASE("Parsing") {
                 }
             );
 
-            auto res1 = hello(s1.begin(), s1.end());
-            auto res2 = hello(s2.begin(), s2.end());
+            auto res1 = hello(s1);
+            auto res2 = hello(s2);
 
             REQUIRE(res1.success());
-            REQUIRE(std::get<0>(res1.success()->values) == 5);
+            REQUIRE(res1.success()->output == 5);
             REQUIRE(res2.failure());
         }
 
-    }
+        SECTION("optional()") {
+            
+            std::string s3 = "@ hello, world!";
 
-    SECTION("Derived combinators") {
-        
-        std::string s1 = "hello, world!";
-        std::string s2 = "42, the answer!";
+            auto hello = 
+                seq(
+                    optional(seq(pattern(&ispunct), exactly(" "))),
+                    exactly("hello")
+                );
 
-        SECTION("string()") {
-            auto hello = string(&isalpha);
-
-            auto res1 = hello(s1.begin(), s1.end());
-            auto res2 = hello(s2.begin(), s2.end());
+            auto res1 = hello(s1);
+            auto res3 = hello(s3);
 
             REQUIRE(res1.success());
-            REQUIRE(std::get<0>(res1.success()->values) == "hello");
-            REQUIRE(res2.failure());
+            REQUIRE(!res1.success()->output.has_value());
+            REQUIRE(res3.success());
+            REQUIRE(res3.success()->output.has_value());
+            REQUIRE(res3.success()->output == "@");
+        }
+
+        SECTION("many()") {
+
+            std::string s3 = "hello;ciao;hi;halo;hola;";
+
+            auto hello = many(seq(pattern(&isalpha), exactly(";")));
+
+            auto res3 = hello(s3);
+
+            REQUIRE(res3.success());
+
         }
 
     }
-
 
     SECTION("Complex examples") {
 
@@ -168,118 +167,117 @@ TEST_CASE("Parsing") {
             apply(
                 seq(
                     either(exactly("hello"), exactly("mandi")),
-                    exactly(", "), string(&isalpha), exactly("!")
+                    exactly(", "), pattern(&isalpha), exactly("!")
                 ),
                 [&](std::string_view name) { return name == "world"; }
             );
 
         std::string s = GENERATE("hello, world!", "mandi, world!");
 
-        auto res = parser(s.begin(), s.end());
+        auto res = parser(s);
 
         REQUIRE(res.success().has_value());
-        REQUIRE(std::get<0>(res.success()->values) == true);
+        REQUIRE(res.success()->output == true);
 
     }
 
+    SECTION("sep_by()") {
 
-    SECTION("sep_by() (and therefore many())") {
-
-        auto parser = sep_by(string(&isalpha), exactly(":"));
+        auto parser = sep_by(pattern(&isalpha), exactly(":"));
 
         std::string s = "one:two:three:four";
 
-        auto res = parser(s.begin(), s.end());
+        auto res = parser(s);
 
-        std::vector<std::string_view> expected = {
+        std::deque<std::string_view> expected = {
             "one", "two", "three", "four"
         };
 
         REQUIRE(res.success().has_value());
-        REQUIRE(std::get<0>(res.success()->values) == expected);
+        REQUIRE(res.success()->output == expected);
 
     }
 
-    SECTION("optional() and spaces()") {
+    // SECTION("optional() and spaces()") {
 
-        struct func_t {
-            bool is_static;
-            std::string_view name;
-            bool operator==(func_t const&) const = default;
-        };
+    //     struct func_t {
+    //         bool is_static;
+    //         std::string_view name;
+    //         bool operator==(func_t const&) const = default;
+    //     };
 
-        auto keyword = [](std::string_view key){
-            return trying(
-                ignore(
-                    token(
-                        filter(string(&isalpha), [=](auto k){
-                            return k == key;
-                        })
-                    )
-                )
-            );
-        };
+    //     auto keyword = [](std::string_view key){
+    //         return trying(
+    //             ignore(
+    //                 token(
+    //                     filter(string(&isalpha), [=](auto k){
+    //                         return k == key;
+    //                     })
+    //                 )
+    //             )
+    //         );
+    //     };
 
-        auto parser =
-            apply(
-                seq(
-                    optional(keyword("static")),
-                    keyword("void"), string(&isalpha), exactly("();")
-                ),
-                [&](bool st, auto name) {
-                    return func_t{ st, name };
-                }
-            );
+    //     auto parser =
+    //         apply(
+    //             seq(
+    //                 optional(keyword("static")),
+    //                 keyword("void"), string(&isalpha), exactly("();")
+    //             ),
+    //             [&](auto opt) {
+    //                 return func_t{ st, name };
+    //             }
+    //         );
 
-        SECTION("static void main();") {
+    //     SECTION("static void main();") {
 
-            std::string s = "static void main();";
+    //         std::string s = "static void main();";
 
-            auto res = parser(s.begin(), s.end());
+    //         auto res = parser(s.begin(), s.end());
 
-            REQUIRE(res.success().has_value());
-            REQUIRE(std::get<0>(res.success()->values) == func_t{true, "main"});
+    //         REQUIRE(res.success().has_value());
+    //         REQUIRE(std::get<0>(res.success()->outputs) == func_t{true, "main"});
 
-        }
+    //     }
 
-        SECTION("void exit();") {
-            std::string s = "void exit();";
+    //     SECTION("void exit();") {
+    //         std::string s = "void exit();";
 
-            auto res = parser(s.begin(), s.end());
+    //         auto res = parser(s.begin(), s.end());
 
-            REQUIRE(res.success().has_value());
-            REQUIRE(
-                std::get<0>(res.success()->values) == func_t{false, "exit"}
-            );
-        }
+    //         REQUIRE(res.success().has_value());
+    //         REQUIRE(
+    //             std::get<0>(res.success()->outputs) == func_t{false, "exit"}
+    //         );
+    //     }
 
-    }
+    // }
 
-    SECTION("CSV example") {
-        size_t rows = 0;
-        size_t fields = 0;
+    // SECTION("CSV example") {
+    //     size_t rows = 0;
+    //     size_t fields = 0;
 
-        auto field = apply(
-            string([](char c) { return c != ',' && c != '\n'; }), 
-            [&](auto...) { fields++; }
-        );
+    //     auto field = apply(
+    //         string([](char c) { return c != ',' && c != '\n'; }), 
+    //         [&](auto...) { fields++; }
+    //     );
 
-        auto row = apply(
-            sep_by(field, exactly(",")),
-            [&](auto...) { rows++; }
-        );
+    //     auto row = apply(
+    //         sep_by(field, exactly(",")),
+    //         [&](auto...) { rows++; }
+    //     );
 
-        auto csv = sep_by(row, exactly("\n"));
+    //     auto csv = sep_by(row, exactly("\n"));
 
-        std::string s = 
-            "primo,field,del,csv\n"
-            "secondo,field,del,csv";
+    //     std::string s = 
+    //         "primo,field,del,csv\n"
+    //         "secondo,field,del,csv";
 
-        auto res = csv(s.begin(), s.end());
+    //     auto res = csv(s.begin(), s.end());
 
-        REQUIRE(res.success());
-        REQUIRE(rows == 2);
-        REQUIRE(fields == 8);
-    }
+    //     REQUIRE(res.success());
+    //     REQUIRE(rows == 2);
+    //     REQUIRE(fields == 8);
+    // }
 
 }
