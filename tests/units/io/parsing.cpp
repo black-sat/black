@@ -26,7 +26,6 @@
 #include <black/parsing>
 
 #include <string>
-#include <iostream>
 #include <tuple>
 #include <cctype>
 
@@ -35,249 +34,19 @@ TEST_CASE("Parsing") {
     
     using namespace black::parsing;
 
+    auto s = succeed(42);
+    auto f = fail();
+    auto e = error("unexpected everything");
 
-    SECTION("Basics") {
-        std::string str = "hello";
+    std::string msg = "question?";
 
-        success succ{str.c_str(), 42};
+    REQUIRE(s(msg));
+    REQUIRE(s(msg)->value == 42);
 
-        STATIC_REQUIRE(std::same_as<decltype(succ), success<int>>);
+    REQUIRE(!f(msg));
 
-        auto const&[p, ans] = succ;
-
-        REQUIRE(p == str.c_str());
-        REQUIRE(ans == 42);
-
-        failure fail{str.c_str()};
-
-        REQUIRE(get<0>(fail) == str.c_str());
-
-        result<int> r = succ;
-
-        REQUIRE(r.success() == succ);
-
-        r = fail;
-
-        REQUIRE(r.failure() == fail);
-    }
-
-    SECTION("Primitive combinators") {
-
-        std::string s1 = "hello, world!";
-        std::string s2 = "42, the answer!";
+    REQUIRE(!e(msg));
+    REQUIRE(e(msg).error().log.errors[0] == "unexpected everything");
     
-        SECTION("exactly()") {
-            auto hello = exactly("hello");
-
-            auto res1 = hello(s1);
-            auto res2 = hello(s2);
-
-            REQUIRE(res1.success());
-            REQUIRE(res2.failure());
-        }
-
-        SECTION("pattern()") {
-            auto id = pattern(&isalpha);
-
-            auto res1 = id(s1);
-            auto res2 = id(s2);
-
-            REQUIRE(res1.success());
-            REQUIRE(res2.failure());
-        }
-
-        SECTION("seq()") {
-
-            auto he = seq(exactly("he"), exactly("llo"));
-
-            auto res1 = he(s1);
-            auto res2 = he(s2);
-
-            REQUIRE(res1.success());
-            REQUIRE(res2.failure());
-
-        }
-
-        SECTION("either()") {
-            auto h4 = either(pattern(&isalpha), exactly("42"));
-
-            auto res1 = h4(s1);
-            auto res2 = h4(s2);
-
-            REQUIRE(res1.success());
-            REQUIRE(
-                std::get<std::string_view>(res1.success()->output) == "hello"
-            );
-            REQUIRE(res2.success());
-        }
-
-        SECTION("apply()") {
-            auto hello = apply(
-                pattern(&isalpha),
-                [](auto matched) {
-                    return std::ranges::size(matched);
-                }
-            );
-
-            auto res1 = hello(s1);
-            auto res2 = hello(s2);
-
-            REQUIRE(res1.success());
-            REQUIRE(res1.success()->output == 5);
-            REQUIRE(res2.failure());
-        }
-
-        SECTION("optional()") {
-            
-            std::string s3 = "@ hello, world!";
-
-            auto hello = 
-                seq(
-                    optional(seq(pattern(&ispunct), exactly(" "))),
-                    exactly("hello")
-                );
-
-            auto res1 = hello(s1);
-            auto res3 = hello(s3);
-
-            REQUIRE(res1.success());
-            REQUIRE(!res1.success()->output.has_value());
-            REQUIRE(res3.success());
-            REQUIRE(res3.success()->output.has_value());
-            REQUIRE(res3.success()->output == "@");
-        }
-
-        SECTION("many()") {
-
-            std::string s3 = "hello;ciao;hi;halo;hola;";
-
-            auto hello = many(seq(pattern(&isalpha), exactly(";")));
-
-            auto res3 = hello(s3);
-
-            REQUIRE(res3.success());
-
-        }
-
-    }
-
-    SECTION("Complex examples") {
-
-        auto parser =
-            apply(
-                seq(
-                    either(exactly("hello"), exactly("mandi")),
-                    exactly(", "), pattern(&isalpha), exactly("!")
-                ),
-                [&](std::string_view name) { return name == "world"; }
-            );
-
-        std::string s = GENERATE("hello, world!", "mandi, world!");
-
-        auto res = parser(s);
-
-        REQUIRE(res.success().has_value());
-        REQUIRE(res.success()->output == true);
-
-    }
-
-    SECTION("sep_by()") {
-
-        auto parser = sep_by(pattern(&isalpha), exactly(":"));
-
-        std::string s = "one:two:three:four";
-
-        auto res = parser(s);
-
-        std::deque<std::string_view> expected = {
-            "one", "two", "three", "four"
-        };
-
-        REQUIRE(res.success().has_value());
-        REQUIRE(res.success()->output == expected);
-
-    }
-
-    // SECTION("optional() and spaces()") {
-
-    //     struct func_t {
-    //         bool is_static;
-    //         std::string_view name;
-    //         bool operator==(func_t const&) const = default;
-    //     };
-
-    //     auto keyword = [](std::string_view key){
-    //         return trying(
-    //             ignore(
-    //                 token(
-    //                     filter(string(&isalpha), [=](auto k){
-    //                         return k == key;
-    //                     })
-    //                 )
-    //             )
-    //         );
-    //     };
-
-    //     auto parser =
-    //         apply(
-    //             seq(
-    //                 optional(keyword("static")),
-    //                 keyword("void"), string(&isalpha), exactly("();")
-    //             ),
-    //             [&](auto opt) {
-    //                 return func_t{ st, name };
-    //             }
-    //         );
-
-    //     SECTION("static void main();") {
-
-    //         std::string s = "static void main();";
-
-    //         auto res = parser(s.begin(), s.end());
-
-    //         REQUIRE(res.success().has_value());
-    //         REQUIRE(std::get<0>(res.success()->outputs) == func_t{true, "main"});
-
-    //     }
-
-    //     SECTION("void exit();") {
-    //         std::string s = "void exit();";
-
-    //         auto res = parser(s.begin(), s.end());
-
-    //         REQUIRE(res.success().has_value());
-    //         REQUIRE(
-    //             std::get<0>(res.success()->outputs) == func_t{false, "exit"}
-    //         );
-    //     }
-
-    // }
-
-    // SECTION("CSV example") {
-    //     size_t rows = 0;
-    //     size_t fields = 0;
-
-    //     auto field = apply(
-    //         string([](char c) { return c != ',' && c != '\n'; }), 
-    //         [&](auto...) { fields++; }
-    //     );
-
-    //     auto row = apply(
-    //         sep_by(field, exactly(",")),
-    //         [&](auto...) { rows++; }
-    //     );
-
-    //     auto csv = sep_by(row, exactly("\n"));
-
-    //     std::string s = 
-    //         "primo,field,del,csv\n"
-    //         "secondo,field,del,csv";
-
-    //     auto res = csv(s.begin(), s.end());
-
-    //     REQUIRE(res.success());
-    //     REQUIRE(rows == 2);
-    //     REQUIRE(fields == 8);
-    // }
 
 }
