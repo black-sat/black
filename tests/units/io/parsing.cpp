@@ -37,16 +37,45 @@ TEST_CASE("Parsing") {
     auto s = succeed(42);
     auto f = fail();
     auto e = error("unexpected everything");
-
-    std::string msg = "question?";
-
-    REQUIRE(s(msg));
-    REQUIRE(s(msg)->value == 42);
-
-    REQUIRE(!f(msg));
-
-    REQUIRE(!e(msg));
-    REQUIRE(e(msg).error().log.errors[0] == "unexpected everything");
+    auto q = element('q');
+    auto a = element('a');
     
+    auto qa = either(q, a);
+
+    std::string msg1 = "question?";
+    std::string msg2 = "answer!";
+    std::string msg3 = "42!";
+
+    REQUIRE(s(msg1));
+    REQUIRE(s(msg1)->value == 42);
+
+    REQUIRE(!f(msg1));
+
+    REQUIRE(!e(msg1));
+    REQUIRE(e(msg1).error().log.errors[0] == "unexpected everything");
+
+    REQUIRE(q(msg1));
+    REQUIRE(q(msg1)->value == 'q');
+
+    REQUIRE(qa(msg1));
+    REQUIRE(qa(msg1)->value == 'q');
+    REQUIRE(qa(msg2));
+    REQUIRE(qa(msg2)->value == 'a');
+    REQUIRE(!qa(msg3));
+
+    auto b = bind(qa, [](auto...vs) { return succeed(std::move(vs)...); });
+
+    REQUIRE(b(msg1));
+    REQUIRE(b(msg1)->value == 'q');
+
+    auto Q = apply(q, [](char c) { return (char)toupper(c); } );
+
+    REQUIRE(Q(msg1));
+    REQUIRE(Q(msg1)->value == 'Q');
+
+    auto ans = seq(element('a'), element('n'), element('s'));
+
+    REQUIRE(ans(msg2));
+    REQUIRE(ans(msg2)->value == 's');
 
 }

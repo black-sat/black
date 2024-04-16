@@ -61,6 +61,7 @@ set(
   -Wno-ctad-maybe-unsupported
   -Wno-shadow-field-in-constructor
   -Wno-switch-enum
+  -Wno-shadow-uncaptured-local
 )
 
 # GCC
