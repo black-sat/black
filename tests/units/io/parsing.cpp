@@ -78,4 +78,36 @@ TEST_CASE("Parsing") {
     REQUIRE(ans(msg2));
     REQUIRE(ans(msg2)->value == 's');
 
+    parser<char, std::monostate, char> ansp = ans;
+    REQUIRE(ansp(msg2));
+    REQUIRE(ansp(msg2)->value == 's');
+
+    auto maybe_ans = optional(seq(element('4'), element('2')));
+
+    REQUIRE(maybe_ans(msg1));
+    REQUIRE(!maybe_ans(msg1)->value.has_value());
+    REQUIRE(maybe_ans(msg3));
+    REQUIRE(maybe_ans(msg3)->value.has_value());
+    REQUIRE(maybe_ans(msg3)->value.value() == '2');
+
+    auto all = collect(element('4'), element('2'));
+
+    REQUIRE(all(msg3));
+    REQUIRE(all(msg3)->value == std::tuple{'4', '2'});
+
+    auto allstring = apply(all, [](auto ...chars) {
+        char str[] = { chars..., '\0' };
+        return std::string{str};
+    });
+
+    REQUIRE(allstring(msg3));
+    REQUIRE(allstring(msg3)->value == "42");
+
+    auto integer = some(satisfies(&isdigit));
+
+    std::deque<char> expected = {'4', '2'};
+
+    REQUIRE(integer(msg3));
+    REQUIRE(integer(msg3)->value == expected);
+
 }
