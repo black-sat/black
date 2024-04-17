@@ -42,17 +42,6 @@ namespace black::parsing {
     std::vector<std::string> errors; // TODO: to expand on this
   };
 
-  template<typename T>
-  struct success {
-    T value;
-    struct log log;
-  };
-
-  struct failure {
-    enum { empty, error } kind;
-    struct log log;
-  };
-
   template<
     std::contiguous_iterator It, std::sentinel_for<It> End, typename State
   >
@@ -65,6 +54,17 @@ namespace black::parsing {
     void append(struct log l2) {
       log.errors.insert(log.errors.end(), l2.errors.begin(), l2.errors.end());
     }
+  };
+
+  template<typename T>
+  struct success {
+    T value;
+    struct log log;
+  };
+
+  struct failure {
+    enum { empty, error } kind;
+    struct log log;
   };
 
   template<typename T>
@@ -100,7 +100,8 @@ namespace black::parsing {
         }, 
         [](log l) -> result<Out> { 
           return std::unexpected(failure{failure::error, l});  // error failure
-        }
+        },
+        []{ black_unreachable(); }
       );
     }
 
@@ -118,55 +119,12 @@ namespace black::parsing {
   }
 
   //!
-  //! Erased interface for parsers hiding the underlying closure type.
-  //!
-  template<typename In, typename State, typename Out>
-  class erased_parser_t
-  {
-  public:
-    using closure_t = result<Out>(const In *, const In *, State);
-
-    template<typename P>
-    erased_parser_t(P p) 
-      : _parser{[=](const In *begin, const In *end, State state) {
-        return make_parser<In, State, Out>(p)(begin, end, state);
-      }} { }
-
-    auto operator()(auto state, auto succ, auto fail, auto err) const {
-      result<Out> res = _parser(
-        std::to_address(state.begin), std::to_address(state.end), 
-        std::move(state.state)
-      );
-
-      if(res.has_value())
-        return succ(res->value, std::move(state));
-      
-      failure f = res.error();
-      if(f.kind == failure::empty)
-        return fail(f.log);
-      
-      return err(f.log);
-    }
-
-  private:
-    std::function<closure_t> _parser;
-  };
-
-  template<typename In, typename State, typename Out>
-  using parser = parser_t<In, State, Out, erased_parser_t<In, State, Out>>;
-
-  template<typename In, typename State, typename Out, typename P>
-  parser<In, State, Out> erased(parser_t<In, State, Out, P> p) {
-    return parser<In, State, Out>{p};
-  }
-
-  //!
   //! Alwasys succeeds returning the given value.
   //!
   template<typename In = char, typename State = std::monostate, typename Out>
   inline constexpr auto succeed(Out out) {
     return make_parser<In, State, Out>(
-      [out = std::move(out)](auto state, auto succ, auto&&, auto&&) {
+      [out = std::move(out)](auto state, auto succ, auto, auto, auto) {
         return succ(std::move(out), std::move(state));
       }
     );
@@ -181,7 +139,7 @@ namespace black::parsing {
   >
   inline constexpr auto fail() {
     return make_parser<In, State, Out>(
-      [=](auto&&, auto&&, auto f, auto&&) {
+      [=](auto&&, auto&&, auto f, auto, auto) {
         return f({});
       }
     );
@@ -196,7 +154,7 @@ namespace black::parsing {
   >
   inline constexpr auto error(std::string err) {
     return make_parser<In, State, Out>(
-      [=](auto state, auto&&, auto&&, auto e) {
+      [=](auto state, auto&&, auto&&, auto e, auto) {
         state.log.errors.push_back(err);
         return e(std::move(state.log));
       }
@@ -209,7 +167,7 @@ namespace black::parsing {
   template<typename In = char, typename State = std::monostate>
   inline constexpr auto anything() {
     return make_parser<In, State, In>(
-      [](auto state, auto succ, auto fail, auto&&) {
+      [](auto state, auto succ, auto fail, auto, auto) {
         if(state.begin == state.end)
           return fail(std::move(state.log));
         return succ(std::move(*state.begin++), std::move(state));
@@ -226,12 +184,12 @@ namespace black::parsing {
   constexpr auto 
   either(parser_t<In, State, Out, P1> p1, parser_t<In, State, Out, P2> p2) {
     return make_parser<In, State, Out>(
-      [=](auto state, auto succ, auto fail, auto err) {
+      [=](auto state, auto succ, auto fail, auto err, auto rec) {
         auto second = [=](log l) mutable {
           state.append(l);
-          return p2.run(std::move(state), succ, fail, err);
+          return p2.run(std::move(state), succ, fail, err, rec);
         };
-        return p1.run(std::move(state), succ, std::move(second), err);
+        return p1.run(std::move(state), succ, std::move(second), err, rec);
       }
     );
   }
@@ -245,28 +203,70 @@ namespace black::parsing {
     using Res = typename std::invoke_result_t<F, Out>::output_type;
 
     return make_parser<In, State, Res>(
-      [=](auto state1, auto succ, auto fail, auto err) {
-        auto ok = [=](Out out, auto state2) {
-          return f(std::move(out)).run(std::move(state2), succ, fail, err);
+      [=](auto state1, auto succ, auto fail, auto err, auto rec) {
+        auto ok = [=](auto out, auto state2) {
+          return f(std::move(out)).run(std::move(state2), succ, fail, err, rec);
         };
-        return p.run(std::move(state1), std::move(ok), fail, err);
+        return p.run(std::move(state1), std::move(ok), fail, err, rec);
       }
     );
   }
 
-  //!
-  //! Constructs a parser that lazily build another one by callling a lambda.
-  //!
-  template<typename F>
-  constexpr auto recursive(F f) {
-    using P     = std::invoke_result_t<F>;
-    using In    = typename P::input_type;
-    using State = typename P::state_type;
-    using Out   = typename P::output_type;
+  template<typename P>
+  struct type_eval_tag_t { 
+    P run;
+  };
 
+  template<typename T>
+  struct is_eval_tag : std::false_type { };
+  
+  template<typename T>
+  inline constexpr bool is_eval_tag_v = is_eval_tag<T>::value;
+
+  template<typename P>
+  struct is_eval_tag<type_eval_tag_t<P>> : std::true_type { };
+
+  template<typename In, typename State, typename Out>
+  inline constexpr auto self() {
     return make_parser<In, State, Out>(
-      [=](auto state, auto succ, auto fail, auto err) {
-        return f().run(std::move(state), succ, fail, err);
+      []<typename St, typename S, typename F, typename E, typename R>
+      (St state, S succ, F fail, E err, R rec) {
+        return rec(std::move(state), succ, fail, err);
+      }
+    );
+  }
+
+  template<typename In, typename State, typename Out, typename P>
+  struct rec_cont_t {
+
+    rec_cont_t(parser_t<In, State, Out, P> parser) : _parser{parser} { }
+
+    template<
+      typename St, typename S, typename F, typename E,
+      typename SuccRet = std::invoke_result_t<S, Out, St>,
+      typename FailRet = std::invoke_result_t<F, log>,
+      typename ErrRet  = std::invoke_result_t<E, log>,
+      typename SuccFun = std::function<SuccRet(Out, St)>,
+      typename FailFun = std::function<FailRet(log)>,
+      typename ErrFun  = std::function<ErrRet(log)>,
+      typename Rec = std::function<SuccRet(St, SuccFun, FailFun, ErrFun)>
+    >
+    SuccRet operator()(St state, S succ, F fail, E err) const {
+      return _parser.run(std::move(state), succ, fail, err, Rec{*this});
+    }
+
+    parser_t<In, State, Out, P> _parser;
+  };
+
+  template<typename In, typename State, typename Out, typename P>
+  constexpr auto recursive(parser_t<In, State, Out, P> p) {
+    return make_parser<In, State, Out>( 
+      [=]<
+        typename St, typename S, typename F, typename E, typename R,
+        typename Ret = std::invoke_result_t<S, Out, St>
+      >
+      (St state, S succ, F fail, E err, R) -> Ret {
+        return p.run(std::move(state), succ, fail, err, rec_cont_t{ p });
       }
     );
   }
@@ -331,11 +331,13 @@ namespace black::parsing {
   //!
   template<typename In = char, typename State = std::monostate, typename F>
   constexpr auto satisfies(F pred) {
-    return bind(anything<In, State>(), [=](In x) -> parser<In, State, In> {
-      if(pred(x))
-        return succeed<In, State>(x);
-      return fail<In, State, In>();
-    });
+    return make_parser<In, State, In>(
+      [=](auto state, auto succ, auto fail, auto, auto) {
+        if(state.begin == state.end || !pred(*state.begin))
+          return fail(std::move(state.log));
+        return succ(std::move(*state.begin++), std::move(state));
+      }
+    );
   }
 
   //!
@@ -370,15 +372,19 @@ namespace black::parsing {
   //! Matches zero or more occurrences of the given parser and returns an
   //! `std::deque` of the return values.
   //!
-  template<typename In, typename State, typename Out, typename P>
-  constexpr 
-  parser<In, State, std::deque<Out>> some(parser_t<In, State, Out, P> p) {
-    return apply(
-      collect(p, maybe(std::deque<Out>{}, recursive([=]{ return many(p); }))),
-      [](Out out, std::deque<Out> outs) {
-        outs.push_front(out);
-        return outs;
-      }
+  template<
+    typename In, typename State, typename Out, typename P,
+    typename Res = std::deque<Out>
+  >
+  constexpr auto some(parser_t<In, State, Out, P> p) {
+    return recursive(
+      apply(
+        collect(p, maybe(Res{}, self<In, State, Res>())),
+        [](Out out, Res outs) {
+          outs.push_front(out);
+          return outs;
+        }
+      )
     );
   }
   
