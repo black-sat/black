@@ -92,8 +92,8 @@ namespace black::parsing {
 
       return run(
         StateT{begin, end, std::move(init), log{}}, 
-        [](Out out, auto state) -> result<Out> { 
-          return success{std::move(out), std::move(state.log)}; // success
+        [](Out const& out, auto state) -> result<Out> { 
+          return success{out, std::move(state.log)}; // success
         },
         [](log l) -> result<Out> { 
           return std::unexpected(failure{failure::empty, l});  // empty failure
@@ -263,8 +263,8 @@ namespace black::parsing {
 
     return make_parser<In, State, Res>(
       [=](auto state1, auto succ, auto fail, auto err, auto rec) {
-        auto ok = [=](auto out, auto state2) {
-          return f(std::move(out)).run(std::move(state2), succ, fail, err, rec);
+        auto ok = [=](auto const& out, auto state2) {
+          return f(out).run(std::move(state2), succ, fail, err, rec);
         };
         return p.run(std::move(state1), std::move(ok), fail, err, rec);
       }
@@ -330,11 +330,11 @@ namespace black::parsing {
   //!
   template<typename In, typename State, typename Out, typename P, typename F>
   constexpr auto apply(parser_t<In, State, Out, P> p, F f) {
-    return bind(p, [=](Out x) {
+    return bind(p, [=](Out const& out) {
       if constexpr( is_applicable_v<F, Out> )
-        return succeed(std::apply(f, std::move(x)));
+        return succeed(std::apply(f, out));
       else
-        return succeed(f(std::move(x))); 
+        return succeed(f(out)); 
     }
     );
   }
@@ -354,15 +354,15 @@ namespace black::parsing {
   //! Matches the given parsers in sequence and collects all the results in a
   //! tuple.
   //!
-  //! TODO: see if we can avoid copying `out1`.
+  //! TODO: check if copies of output values are avoided correctly.
   //!
   constexpr auto collect(auto p1, auto p2) {
-    return bind(p1, [=](auto out1) {
-      return apply(p2, [=]<typename Out2>(Out2 out2) {
+    return bind(p1, [=]<typename Out1>(Out1 const& out1) {
+      return apply(p2, [&](auto out2) {
         if constexpr( requires {std::tuple_cat(std::tuple{out1}, out2);} )
-          return std::tuple_cat(std::tuple{out1}, std::move(out2));
+          return std::tuple_cat(std::tuple<Out1 const&>{out1}, out2);
         else
-          return std::tuple{out1, std::move(out2)};
+          return std::tuple{out1, out2};
       });
     });
   }
@@ -398,7 +398,7 @@ namespace black::parsing {
   //!
   template<typename In, typename State, typename Out, typename P>
   constexpr auto maybe(Out x, parser_t<In, State, Out, P> p) {
-    return either(p, succeed<In, State>(std::move(x)));
+    return either(p, succeed<In, State>(x));
   }
 
   //!
@@ -408,7 +408,7 @@ namespace black::parsing {
   template<typename In, typename State, typename Out, typename P>
   constexpr auto optional(parser_t<In, State, Out, P> p) {
     return either(
-      apply(p, [](Out x) { return std::optional<Out>{std::move(x)}; }), 
+      apply(p, [](Out const& x) { return std::optional<Out>{x}; }), 
       succeed<In, State>(std::optional<Out>{})
     );
   }
