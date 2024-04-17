@@ -394,6 +394,23 @@ namespace black::parsing {
   }
 
   //!
+  //! Matches the given parser and returns the object of the given type
+  //! constructed from the return type.
+  //!
+  template<typename To, typename In, typename State, typename Out, typename P>
+  constexpr auto to(parser_t<In, State, Out, P> p) {
+    return apply(p, [](auto const& ...vs) { return To{vs...}; });
+  }
+  
+  template<
+    template<typename ...> class To, 
+    typename In, typename State, typename Out, typename P
+  >
+  constexpr auto to(parser_t<In, State, Out, P> p) {
+    return apply(p, [](auto const& ...vs) { return To{vs...}; });
+  }
+
+  //!
   //! Matches a parser and if it fails succeds returning a default value
   //!
   template<typename In, typename State, typename Out, typename P>
@@ -408,7 +425,7 @@ namespace black::parsing {
   template<typename In, typename State, typename Out, typename P>
   constexpr auto optional(parser_t<In, State, Out, P> p) {
     return either(
-      apply(p, [](Out const& x) { return std::optional<Out>{x}; }), 
+      to<std::optional>(p), 
       succeed<In, State>(std::optional<Out>{})
     );
   }
