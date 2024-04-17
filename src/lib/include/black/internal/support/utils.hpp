@@ -175,6 +175,7 @@ SOFTWARE.
 
 namespace black::support {
   using internal::type_name;
+  using internal::demangle;
   using internal::double_to_fraction;
   using internal::to_camel;
   using internal::variant_alternatives;

@@ -123,16 +123,41 @@ namespace black::parsing {
   
   template<typename Result>
   using fail_err_closure_t = Result(log);
-  
-  template<typename St, typename Out, typename Result>
+
+  template<typename St>
+  struct erased_state { };
+
+  template<
+    std::contiguous_iterator It, std::sentinel_for<It> End, typename State
+  >
+  struct erased_state<state_t<It, End, State>>
+    : std::type_identity<state_t<
+        const std::iter_value_t<It> *, const std::iter_value_t<It> *, State
+      >> { };
+
+  template<typename St>
+  using erased_state_t = typename erased_state<St>::type;
+
+  template<typename In, typename State, typename Out, typename Result>
   using erased_closure_t = 
     std::function<
       Result(
-        St, std::function<success_closure_t<St, Out, Result>>, 
+        state_t<const In *, const In *, State>,
+        std::function<
+          success_closure_t<state_t<const In *, const In *, State>, Out, Result>
+        >, 
         std::function<fail_err_closure_t<Result>>, 
         std::function<fail_err_closure_t<Result>>
       )
     >;
+
+  template<typename St>
+  erased_state_t<St> erase_state(St st) {
+    return {
+      std::to_address(st.begin), std::to_address(st.end), 
+      std::move(st.state), std::move(st.log)
+    };
+  }
 
   //!
   //! Parser with an erased internal closure.
@@ -140,8 +165,7 @@ namespace black::parsing {
   template<typename In, typename State, typename Out>
   class erased_parser_t
   {
-    using erased_state_t = state_t<const In *, const In *, State>;
-    using closure_t = erased_closure_t<erased_state_t, Out, std::any>;
+    using closure_t = erased_closure_t<In, State, Out, std::any>;
 
   public:
     template<typename P>
@@ -154,19 +178,17 @@ namespace black::parsing {
 
     template<typename St, typename S, typename F, typename E, typename R>
     auto operator()(St state, S succ, F fail, E err, R) const {
-      using Ret = std::invoke_result_t<S, Out, St>;
+      using Ret = std::invoke_result_t<S, Out, erased_state_t<St>>;
       
-      erased_state_t st = { 
-        std::to_address(state.begin),
-        std::to_address(state.end),
-        std::move(state.state),
-        std::move(state.log)
-      };
+      auto result = _closure(erase_state(std::move(state)), succ, fail, err);
+      
+      if constexpr(std::same_as<Ret, std::any>)
+        return std::move(result);
+      else {
+        black_assert(any_cast<Ret>(&result) != nullptr);
 
-      auto result = _closure(std::move(st), succ, fail, err);
-      black_assert(any_cast<Ret>(&result) != nullptr);
-
-      return any_cast<Ret>(std::move(result));
+        return any_cast<Ret>(std::move(result));
+      }
     }
   
   private:
@@ -280,7 +302,7 @@ namespace black::parsing {
     return make_parser<In, State, Out>(
       []<typename St, typename S, typename F, typename E, typename R>
       (St state, S succ, F fail, E err, R rec) {
-        return rec(std::move(state), succ, fail, err);
+        return rec(erase_state(state), succ, fail, err);
       }
     );
   }
@@ -295,7 +317,7 @@ namespace black::parsing {
       typename Ret = std::invoke_result_t<S, Out, St>
     >
     Ret operator()(St state, S succ, F fail, E err) const {
-      using Closure = erased_closure_t<St, Out, Ret>;
+      using Closure = erased_closure_t<In, State, Out, Ret>;
       return _parser.run(std::move(state), succ, fail, err, Closure{*this});
     }
 
@@ -376,11 +398,12 @@ namespace black::parsing {
   //!
   template<typename In = char, typename State = std::monostate, typename F>
   constexpr auto satisfies(F pred) {
-    return make_parser<In, State, In>(
-      [=](auto state, auto succ, auto fail, auto, auto) {
-        if(state.begin == state.end || !pred(*state.begin))
-          return fail(std::move(state.log));
-        return succ(std::move(*state.begin++), std::move(state));
+    return bind(
+      anything<In, State>(), 
+      [=](In const& x) -> parser<In, State, In> {
+        if(pred(x))
+          return succeed(x);
+        return fail<In, State, In>();
       }
     );
   }
