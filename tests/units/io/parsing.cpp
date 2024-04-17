@@ -110,4 +110,8 @@ TEST_CASE("Parsing") {
     REQUIRE(integer(msg3));
     REQUIRE(integer(msg3)->value == expected);
 
+    parser<char, std::monostate, std::string> erased = allstring;
+
+    REQUIRE(erased(msg3));
+    REQUIRE(erased(msg3)->value == "42");
 }
