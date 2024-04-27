@@ -6,7 +6,7 @@ RUN yum install -y make cmake gcc gcc-c++ python3.10 python3-pip java flex
 RUN yum install -y zlib-devel fmt-devel catch-devel git wget rpm-build m4
 RUN yum install -y z3-devel cryptominisat-devel gmp-devel gmp-c++
 
-RUN python3.10 -m ensurepip && python3.10 -m pip install toml pyparsing
+RUN python3.12 -m ensurepip && python3.12 -m pip install toml pyparsing
 
 ENV Python3_EXECUTABLE=/usr/bin/python3.10
 ENV PYTHON_EXECUTABLE=/usr/bin/python3.10
