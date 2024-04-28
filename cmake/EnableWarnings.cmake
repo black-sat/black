@@ -62,6 +62,7 @@ set(
   -Wno-shadow-field-in-constructor
   -Wno-switch-enum
   -Wno-shadow-uncaptured-local
+  -Wno-deprecated-declarations # Remove when `immer` removes `aligned_storage`
 )
 
 # GCC
