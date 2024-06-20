@@ -85,7 +85,7 @@ build_script:
     -DZ3_LIBRARY=C:\Projects\z3\bin\libz3.lib \
     -DZ3_INCLUDE_DIR=C:\Projects\z3\include ..
   - cmake --build .
-  - cmake --build . --target pyblack
+  # - cmake --build . --target pyblack
   - copy C:\Projects\z3\bin\libz3.dll .
   - mkdir C:\BLACK
   - cd C:\
