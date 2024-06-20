@@ -13,13 +13,13 @@ task:
         docker_arguments:
           VERSION: 24.04
           GCC_VERSION: 12
-    - name: Ubuntu 22.04 (g++ 13)
+    - name: Ubuntu 24.04 (g++ 13)
       container:
         dockerfile: docker/Dockerfile.ubuntu
         docker_arguments:
           VERSION: 24.04
           GCC_VERSION: 13
-    - name: Ubuntu 22.04 (g++ 14)
+    - name: Ubuntu 24.04 (g++ 14)
       container:
         dockerfile: docker/Dockerfile.ubuntu
         docker_arguments:
