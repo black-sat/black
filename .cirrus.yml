@@ -44,7 +44,7 @@ task:
 
 
 task:
-  name: macOS (Homebrew clang 13)
+  name: macOS (LLVM latest)
   osx_instance:
     image: ghcr.io/cirruslabs/macos-monterey-xcode:13.4
   download_dependencies_script:
@@ -60,40 +60,40 @@ task:
     - cd build 
     - ctest -j2 -R black --output-on-failure
 
-task:
-  name: FreeBSD 14.0
-  freebsd_instance:
-    image_family: freebsd-14-0
-  download_dependencies_script:
-    - yes | pkg install git cmake libfmt nlohmann-json z3 cryptominisat
-  install_hopscotch_script:
-    - git clone https://github.com/Tessil/hopscotch-map.git
-    - cd hopscotch-map
-    - cmake .
-    - make install
-  debug_build_script:
-    - mkdir -p build && cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug ..
-    - make
-  test_script:
-    - cd build
-    - ctest -j2 -R black --output-on-failure
+# task:
+#   name: FreeBSD 14.0
+#   freebsd_instance:
+#     image_family: freebsd-14-0
+#   download_dependencies_script:
+#     - yes | pkg install git cmake libfmt nlohmann-json z3 cryptominisat
+#   install_hopscotch_script:
+#     - git clone https://github.com/Tessil/hopscotch-map.git
+#     - cd hopscotch-map
+#     - cmake .
+#     - make install
+#   debug_build_script:
+#     - mkdir -p build && cd build
+#     - cmake -DCMAKE_BUILD_TYPE=Debug ..
+#     - make
+#   test_script:
+#     - cd build
+#     - ctest -j2 -R black --output-on-failure
 
 task:
   matrix:
-    - name: Fedora 36 (with CryptoMiniSAT backend)
+    - name: Fedora 40 (with CryptoMiniSAT backend)
       environment:
         BACKEND: cmsat
-    - name: Fedora 36 (with MathSAT backend)
+    - name: Fedora 40 (with MathSAT backend)
       environment:
         BACKEND: mathsat
-    - name: Fedora 36 (with CVC5 backend)
+    - name: Fedora 40 (with CVC5 backend)
       environment:
         BACKEND: cvc5
   container:
     dockerfile: docker/Dockerfile.fedora
     docker_arguments:
-      VERSION: 36
+      VERSION: 40
   environment:
     CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
   download_mathsat_script:

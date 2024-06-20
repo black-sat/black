@@ -1,4 +1,4 @@
-ARG VERSION=36
+ARG VERSION=40
 FROM fedora:$VERSION
 RUN echo 'fastestmirror=1' >> /etc/dnf/dnf.conf
 RUN yum update -y
@@ -8,8 +8,8 @@ RUN yum install -y z3-devel cryptominisat-devel gmp-devel gmp-c++
 
 RUN python3.12 -m ensurepip && python3.12 -m pip install tomli pyparsing
 
-ENV Python3_EXECUTABLE=/usr/bin/python3.10
-ENV PYTHON_EXECUTABLE=/usr/bin/python3.10
+ENV Python3_EXECUTABLE=/usr/bin/python3.12
+ENV PYTHON_EXECUTABLE=/usr/bin/python3.12
 
 RUN git clone https://github.com/cvc5/cvc5.git /cvc5
 WORKDIR /cvc5
