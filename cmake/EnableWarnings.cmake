@@ -55,6 +55,7 @@ set(
   -Wno-missing-braces
   -Wno-zero-as-null-pointer-constant
   -Wno-unsafe-buffer-usage
+  -Wno-switch-default
 )
 
 # GCC
