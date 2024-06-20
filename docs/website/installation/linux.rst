@@ -31,14 +31,14 @@ the packages should work but do not, please open a GitHub `issue
 <https://github.com/black-sat/black/issues>`_.
 
 
-.. |Ubuntu20.04Badge| image:: https://badgen.net/badge/Download%20v0.10.6/.deb/green
-.. _Ubuntu20.04Badge: https://github.com/black-sat/black/releases/download/v0.10.6/black-sat-0.10.6.ubuntu20.04.x86_64.deb
-.. |Ubuntu22.04Badge| image:: https://badgen.net/badge/Download%20v0.10.6/.deb/green
-.. _Ubuntu22.04Badge: https://github.com/black-sat/black/releases/download/v0.10.6/black-sat-0.10.6.ubuntu22.04.x86_64.deb
-.. |Fedora37Badge| image:: https://badgen.net/badge/Download%20v0.10.6/.rpm/green
-.. _Fedora37Badge: https://github.com/black-sat/black/releases/download/v0.10.6/black-sat-0.10.6.fedora37.x86_64.rpm
-.. |Fedora38Badge| image:: https://badgen.net/badge/Download%20v0.10.6/.rpm/green
-.. _Fedora38Badge: https://github.com/black-sat/black/releases/download/v0.10.6/black-sat-0.10.6.fedora38.x86_64.rpm
+.. |Ubuntu20.04Badge| image:: https://badgen.net/badge/Download%20v0.10.7/.deb/green
+.. _Ubuntu20.04Badge: https://github.com/black-sat/black/releases/download/v0.10.7/black-sat-0.10.7.ubuntu20.04.x86_64.deb
+.. |Ubuntu22.04Badge| image:: https://badgen.net/badge/Download%20v0.10.7/.deb/green
+.. _Ubuntu22.04Badge: https://github.com/black-sat/black/releases/download/v0.10.7/black-sat-0.10.7.ubuntu22.04.x86_64.deb
+.. |Fedora37Badge| image:: https://badgen.net/badge/Download%20v0.10.7/.rpm/green
+.. _Fedora37Badge: https://github.com/black-sat/black/releases/download/v0.10.7/black-sat-0.10.7.fedora37.x86_64.rpm
+.. |Fedora38Badge| image:: https://badgen.net/badge/Download%20v0.10.7/.rpm/green
+.. _Fedora38Badge: https://github.com/black-sat/black/releases/download/v0.10.7/black-sat-0.10.7.fedora38.x86_64.rpm
 
 Compilation from source
 ------------------------
