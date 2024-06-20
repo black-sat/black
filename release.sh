@@ -25,15 +25,10 @@ setup() {
 
 images() {
   docker build docker \
-    -f docker/Dockerfile.ubuntu -t black:ubuntu20.04 \
-    --build-arg VERSION=20.04 --build-arg GCC_VERSION=10
+    -f docker/Dockerfile.ubuntu -t black:ubuntu24.04 \
+    --build-arg VERSION=24.04 --build-arg GCC_VERSION=14
   docker build docker \
-    -f docker/Dockerfile.ubuntu -t black:ubuntu22.04 \
-    --build-arg VERSION=22.04 --build-arg GCC_VERSION=12
-  docker build docker \
-    -f docker/Dockerfile.fedora -t black:fedora37 --build-arg VERSION=37
-  docker build docker \
-    -f docker/Dockerfile.fedora -t black:fedora38 --build-arg VERSION=38
+    -f docker/Dockerfile.fedora -t black:fedora40 --build-arg VERSION=40
 }
 
 launch() {
@@ -189,13 +184,13 @@ python-build-one() {
 
   rm -rf "$SRC_DIR/build"
   mkdir "$SRC_DIR/build"
-  ubuntu 20.04 cmake \
+  ubuntu 24.04 cmake \
     -DENABLE_CMSAT=NO -DENABLE_CVC5=NO \
     -DPython3_EXECUTABLE=$python -DPYTHON_EXECUTABLE=$python .. || die
-  ubuntu 20.04 make -j $(cat /proc/cpuinfo | grep processor | wc -l) || die
-  ubuntu 20.04 root \
+  ubuntu 24.04 make -j $(cat /proc/cpuinfo | grep processor | wc -l) || die
+  ubuntu 24.04 root \
     bash -c "make install && $python python/setup.py bdist_wheel" || die
-  ubuntu 20.04 root chown -R $(id -u):$(id -u) /black/build || die
+  ubuntu 24.04 root chown -R $(id -u):$(id -u) /black/build || die
   
   wheel=$(echo "$SRC_DIR"/build/dist/*.whl)
   manylinux=$(echo $wheel | sed 's/linux/manylinux1/g')
@@ -206,10 +201,11 @@ python-build-one() {
 }
 
 python-build() {
-  python-build-one 3.8
+  # python-build-one 3.8
   python-build-one 3.9
   python-build-one 3.10
   python-build-one 3.11
+  python-build-one 3.12
 }
 
 python-upload() {
@@ -233,14 +229,10 @@ main () {
 
   case "$1" in
     build-only)
-      build ubuntu 20.04
-      test_pkg ubuntu 20.04
-      build ubuntu 22.04
-      test_pkg ubuntu 22.04
-      build fedora 37
-      test_pkg fedora 37
-      build fedora 38
-      test_pkg fedora 38
+      build ubuntu 24.04
+      test_pkg ubuntu 24.04
+      build fedora 40
+      test_pkg fedora 40
       appveyor
     ;;
     upload-only)
@@ -255,14 +247,10 @@ main () {
       python-upload
     ;;
     all)
-      build ubuntu 20.04
-      test_pkg ubuntu 20.04
-      build ubuntu 22.04
-      test_pkg ubuntu 22.04
-      build fedora 37
-      test_pkg fedora 37
-      build fedora 38
-      test_pkg fedora 38
+      build ubuntu 24.04
+      test_pkg ubuntu 24.04
+      build fedora 40
+      test_pkg fedora 40
       appveyor
       release
       homebrew
