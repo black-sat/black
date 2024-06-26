@@ -230,6 +230,6 @@ CMakeSettings.json
 gh.token
 appveyor.token
 
-docs/website/_build
+docs/_build
 
 .disabled-solvers.cfg

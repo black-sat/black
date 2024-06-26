@@ -1,0 +1,2 @@
+#define BLACK_AST_REFLECT_DEFS_FILE <black/internal/logic/terms-defs.hpp>
+#include <ast.json.in>

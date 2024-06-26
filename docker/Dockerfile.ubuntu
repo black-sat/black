@@ -4,7 +4,8 @@ FROM ubuntu:$VERSION
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y make cmake gdb
 RUN apt-get update && \
-    apt-get install -y libz-dev libtsl-hopscotch-map-dev libfmt-dev libz3-dev 
+    apt-get install -y libz-dev libtsl-hopscotch-map-dev \
+                       libfmt-dev libz3-dev libcereal-dev
 RUN apt-get update && apt-get install -y git wget python3 python-is-python3 curl
 
 ARG GCC_VERSION=12
@@ -20,11 +21,6 @@ WORKDIR /catch2
 RUN git checkout v2.13.9
 WORKDIR /catch2/build
 RUN cmake -DBUILD_TESTING=OFF ..
-RUN make install
-
-RUN git clone https://github.com/nlohmann/json.git /json
-WORKDIR /json/build
-RUN cmake -DJSON_BuildTests=OFF -DBUILD_TESTING=OFF ..
 RUN make install
 
 ENTRYPOINT ["/usr/bin/env", "--"]

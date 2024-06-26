@@ -32,7 +32,8 @@
 set(
   CLANG_WARNINGS -Weverything -pedantic -Werror
   -Wno-c++98-compat -Wno-c++98-compat-pedantic
-  -Wno-c++98-c++11-c++14-compat
+  -Wno-c++98-c++11-c++14--compat
+  -Wno-c++20-compat
   -Wno-padded 
   -Wno-weak-vtables 
   -Wno-unknown-pragmas
@@ -54,18 +55,28 @@ set(
   -Wno-extra-semi-stmt
   -Wno-missing-braces
   -Wno-zero-as-null-pointer-constant
+  -Wno-unsafe-buffer-usage
+  -Wno-sign-conversion
+  -Wno-newline-eof
+  -Wno-ctad-maybe-unsupported
+  -Wno-shadow-field-in-constructor
+  -Wno-switch-enum
+  -Wno-shadow-uncaptured-local
+  -Wno-deprecated-declarations # Remove when `immer` removes `aligned_storage`
 )
 
 # GCC
 set(
   GNU_WARNINGS -Wall -Wextra -pedantic -Werror
   -Wno-pragmas -Wno-unknown-pragmas -Wno-unused-but-set-parameter
+  -Wno-sign-conversion
 )
 
 # MSVC
 set(
   MSVC_WARNINGS 
   /wd4068 /wd4702 /wd4127 /wd4459 /wd4573 /wd4251 /wd4244
+  /D_CRT_SECURE_NO_WARNINGS
 )
 
 #

@@ -1,0 +1,46 @@
+#ifndef BLACK_AST_REFLECT_DEFS_FILE
+    #error "Please define the " BLACK_AST_REFLECT_DEFS_FILE " macro before" \
+           "preprocessing ast.json.in"
+#endif
+
+{
+    "ast": [ \
+
+#define declare_ast(NS, AST) \
+        { \
+            "name": #AST, \
+            "namespace": #NS, \
+            "sections": [
+
+#define section(Doc) \
+                { \
+                    "doc": Doc, \
+                    "nodes": [
+
+#define declare_ast_node(NS, AST, Node, Doc) \
+                        { \
+                            "doc": Doc, \
+                            "name": #Node, \
+                            "fields": [
+
+#define declare_field(NS, AST, Node, Field, Type, Doc) \
+                                { "name": #Field, "type": #Type, "doc": Doc },
+
+#define end_ast_node(NS, AST, Node) \
+                                null \
+                            ] \
+                        },
+
+#define end_section() \
+                        null \
+                    ] \
+                },
+        
+#define end_ast(NS, AST) \
+                null \
+            ] \
+        },
+#include BLACK_AST_REFLECT_DEFS_FILE
+        null
+    ]
+}

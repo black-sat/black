@@ -1,0 +1,46 @@
+{% macro build_ast(astlist, name) %}
+{% for ast in astlist %}
+{% if ast.name == name %}
+
+``using namespace black::{{ast.namespace}};``
+
+.. cpp:namespace:: black::{{ast.namespace}}
+
+{% for section in ast.sections %}
+
+{{section.doc}}
+{{'~' * (section.doc|length)}}
+
+{% for node in section.nodes %}
+.. cpp:struct:: {{node.name}}
+
+   {{node.doc}}.
+
+   :constructor:
+      .. cpp:function:: {{ node.name }}(
+            {%- for field in node.fields -%}
+            {{field.type}} {{field.name}}{{", " if not loop.last else ""}}
+            {%- endfor -%}
+      )
+
+      {% for field in node.fields %}
+         :param {{field.name}}: {{field.doc}}.
+      {% endfor %}
+
+   {% if (node.fields|length) > 0 %}   
+   :members:
+
+   {% for field in node.fields %}
+      .. cpp:function:: {{field.type}} {{field.name}}() const
+
+         :returns: {{field.doc}}.
+
+   {% endfor %}
+   {% endif %}
+        
+{% endfor %}
+{% endfor %}
+
+{% endif %}
+{% endfor %}
+{% endmacro %}

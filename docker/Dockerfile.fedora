@@ -2,15 +2,15 @@ ARG VERSION=36
 FROM fedora:$VERSION
 RUN echo 'fastestmirror=1' >> /etc/dnf/dnf.conf
 RUN yum update -y
-RUN yum install -y make cmake gcc gcc-c++ python3-pip java 
+RUN yum install -y make cmake gcc gcc-c++ python3-pip java flex
 RUN yum install -y zlib-devel fmt-devel catch-devel git wget rpm-build m4
-RUN yum install -y z3-devel cryptominisat-devel gmp-devel gmp-c++
+RUN yum install -y z3-devel cryptominisat-devel gmp-devel gmp-c++ cereal-devel
 
-RUN pip3 install toml
+RUN pip3 install toml pyparsing
 
 RUN git clone https://github.com/cvc5/cvc5.git /cvc5
 WORKDIR /cvc5
-RUN git checkout cvc5-1.0.0
+RUN git checkout cvc5-1.1.0
 RUN ./configure.sh production --no-python-bindings --no-java-bindings --auto-download
 
 WORKDIR /cvc5/build
@@ -23,12 +23,6 @@ RUN git checkout v2.3.0
 
 WORKDIR /tsl/build
 RUN cmake ..
-RUN make
-RUN make install
-
-RUN git clone https://github.com/nlohmann/json.git /json
-WORKDIR /json/build
-RUN cmake -DJSON_BuildTests=OFF -DBUILD_TESTING=OFF ..
 RUN make
 RUN make install
 

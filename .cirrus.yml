@@ -29,14 +29,9 @@ task:
     - mkdir build && cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ..
     - make
-  always:
-    binaries_artifacts:
-      path: "build/black"
-      path: "build/src/lib/libblack.so"
   test_script:
     - cd build
-    - ./unit_tests
-    - ../tests/cli-tests.sh
+    - ./units
     - ctest -j2 -R black --output-on-failure
   coverage_script:
     - cd build
@@ -44,12 +39,12 @@ task:
 
 
 task:
-  name: macOS (Homebrew clang 13)
+  name: macOS (Homebrew clang)
   osx_instance:
     image: ghcr.io/cirruslabs/macos-monterey-xcode:13.4
   download_dependencies_script:
     - brew update
-    - brew install llvm cmake fmt catch2 z3 cryptominisat nlohmann-json
+    - brew install llvm cmake fmt catch2 z3 cryptominisat cereal
     - brew install black-sat/black/hopscotch-map
     - ./download-mathsat.sh
   release_build_script:
@@ -61,11 +56,11 @@ task:
     - ctest -j2 -R black --output-on-failure
 
 task:
-  name: FreeBSD 13.1 (Clang 13)
+  name: FreeBSD 13.2 (Clang 14)
   freebsd_instance:
-    image_family: freebsd-13-1
+    image_family: freebsd-13-2
   download_dependencies_script:
-    - yes | pkg install git cmake libfmt nlohmann-json z3 cryptominisat
+    - yes | pkg install git cmake libfmt cereal z3 cryptominisat
   install_hopscotch_script:
     - git clone https://github.com/Tessil/hopscotch-map.git
     - cd hopscotch-map
@@ -104,8 +99,7 @@ task:
     - make
   test_script:
     - cd build 
-    - ./unit_tests
-    - ../tests/cli-tests.sh
+    - ./units
     - ctest -j2 -R black
   coverage_script:
     - cd build
