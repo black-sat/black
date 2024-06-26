@@ -257,10 +257,10 @@ Boolean and first-order predicates
    An existentially quantified term.
 
    :constructor:
-      .. cpp:function:: exists(std::vector<logic::decl> binds, logic::term body)
+      .. cpp:function:: exists(std::vector<logic::decl> decls, logic::term body)
 
       
-         :param binds: The quantified variables.
+         :param decls: The quantified variables.
       
          :param body: The quantified term.
       
@@ -269,7 +269,7 @@ Boolean and first-order predicates
    :members:
 
    
-      .. cpp:function:: std::vector<logic::decl> binds() const
+      .. cpp:function:: std::vector<logic::decl> decls() const
 
          :returns: The quantified variables.
 
@@ -287,10 +287,10 @@ Boolean and first-order predicates
    An universally quantified term.
 
    :constructor:
-      .. cpp:function:: forall(std::vector<logic::decl> binds, logic::term body)
+      .. cpp:function:: forall(std::vector<logic::decl> decls, logic::term body)
 
       
-         :param binds: The quantified variables.
+         :param decls: The quantified variables.
       
          :param body: The quantified term.
       
@@ -299,7 +299,7 @@ Boolean and first-order predicates
    :members:
 
    
-      .. cpp:function:: std::vector<logic::decl> binds() const
+      .. cpp:function:: std::vector<logic::decl> decls() const
 
          :returns: The quantified variables.
 

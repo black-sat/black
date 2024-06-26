@@ -10,6 +10,6 @@ The following pages document BLACK's C++ API.
    :maxdepth: 1
    :caption: Modules
 
-   c++/processing
-   c++/logic
    c++/support
+   c++/logic
+   c++/processing
