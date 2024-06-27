@@ -65,3 +65,5 @@ html_static_path = ['_static']
 html_title = 'BLACK &bullet; Bounded Lᴛʟ sAtisfiability ChecKer'
 
 primary_domain = 'cpp'
+
+highlight_language = 'c++'

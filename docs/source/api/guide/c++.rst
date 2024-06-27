@@ -5,4 +5,4 @@ API Guide (C++)
    :maxdepth: 2
    :caption: Contents
 
-   c++/logic
+   c++/basics
