@@ -156,7 +156,7 @@ The call to ``define()`` above takes the following arguments:
 4. the body of the function: ``ite`` is the *if/then/else* construct, so if ``n`` is 1 the expression is equal to 1, otherwise to ``f(x-1)``;
 5. a flag, ``resolution::delayed``, telling BLACK to wait before resolve the scope of the mentioned names.
 
-Without the last flag, the name of `f` would not be found before at this point
+Without the last flag, the name of `f` would not be found because at this point
 is not declared yet. Now we can actually resolve the names, closing the circle::
 
     mod.resolve(recursion::allowed);
