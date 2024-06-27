@@ -210,9 +210,9 @@ namespace black::logic {
   //! is *default-initializable*, *copy-constructible*, *move-constructible*,
   //! and *equality-comparable*. Thanks to the underlying usage of persistent
   //! data structures, all these operations are also quite fast, so \ref module
-  //! objects are mant to be freely passed around by value. A dynamic allocation
-  //! of a small object is still needed for copies, so moving is still preferred
-  //! when possible.
+  //! objects are meant to be freely passed around by value. A dynamic
+  //! allocation of a small object is still needed for copies, so moving is
+  //! still preferred when possible.
   //!
   //! \note Declarations/definitions that are pending because of calls to
   //! declare() or define() with delayed resolution mode are **not** retained in

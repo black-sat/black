@@ -180,7 +180,7 @@ namespace black::pipes {
   //!   class consumer *_next;
   //! };
   //!
-  //! inline constexpr auto id = make_transform<internal::id_t>{};
+  //! inline constexpr auto id = make_transform<id_t>{};
   //! ```
   //!
   template<typename P>

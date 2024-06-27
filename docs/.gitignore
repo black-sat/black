@@ -175,5 +175,6 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 
-doxygen/xmlsource/api/c++/logic/terms.rst
+source/api/reference/c++/logic/terms.rst
+doxygen/xml
 doxygen

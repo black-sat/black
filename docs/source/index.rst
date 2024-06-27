@@ -25,6 +25,6 @@ look at its `GitHub repository <https://github.com/black-sat/black>`_.
    :maxdepth: 2
    :caption: Contents
 
-   api/c++
-   api/python
+   api/guide
+   api/reference
    publications

@@ -20,7 +20,7 @@ import os
 # -- Project information -----------------------------------------------------
 
 project = 'black-sat'
-copyright = '2022, The BLACK team'
+copyright = '2024, The BLACK team'
 author = 'The BLACK team'
 
 
