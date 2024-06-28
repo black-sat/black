@@ -7,6 +7,9 @@ such as terms and formulas and solve reasoning tasks over them.
 Here we explain the basic concepts of the API usage by writing small pieces of
 C++ code that solve simple math problems.
 
+You find the complete code for the following examples in BLACK's source tree
+under ``docs/examples/cpp``.
+
 Quadratic equations
 ~~~~~~~~~~~~~~~~~~~~~
 
