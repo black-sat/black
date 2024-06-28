@@ -3,10 +3,11 @@ build:
   os: "ubuntu-22.04"
   tools:
     python: "3.10"
+  apt_packages:
+    - jq
   jobs:
     pre_build:
       - pip install furo
       - pip install breathe
       - pip install sphinxcontrib-bibtex
-      - apt-get install -y jq
       - make env
