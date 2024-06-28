@@ -10,4 +10,4 @@ build:
       - pip install furo
       - pip install breathe
       - pip install sphinxcontrib-bibtex
-      - make env
+      - cd .. && make env
