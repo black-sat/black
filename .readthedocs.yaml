@@ -8,5 +8,5 @@ build:
       - pip install furo
       - pip install breathe
       - pip install sphinxcontrib-bibtex
-      - apt install -y jq
+      - apt-get install -y jq
       - make env
