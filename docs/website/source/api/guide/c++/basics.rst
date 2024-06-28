@@ -17,13 +17,13 @@ We start by including the relevant headers::
 
     #include <cassert> // for the standard `assert` macro
 
-What follows is assumed to go inside our program's ``main()`` function.
-
 Everything in BLACK's API is exposed by the :cpp:any:`black` namespace, and
 using the :cpp:any:`black::logic` namespace is also convenient::
 
     using namespace black;
     using namespace black::logic;
+
+What follows is assumed to go inside our program's ``main()`` function.
 
 The :cpp:class:`module` class is the entry point for declaring and defining
 variables, constants, functions, etc., so we start by declaring an object of
