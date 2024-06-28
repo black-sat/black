@@ -48,7 +48,7 @@ int main() {
 
     mod.require(fact(x) == 3628800);
 
-    solvers::solver slv = black::solvers::cvc5();
+    solvers::solver slv = solvers::cvc5();
 
     assert(slv.check(mod) == true);
 

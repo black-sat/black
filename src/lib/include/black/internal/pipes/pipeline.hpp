@@ -206,6 +206,7 @@ namespace black::pipes {
 
     base *get() { return _instance.get(); }
 
+    void set_smt_logic(std::string const& logic);
     support::tribool check(logic::module mod);
     std::optional<logic::term> value(logic::object x);
 
@@ -218,6 +219,8 @@ namespace black::pipes {
   public:
     virtual ~base() = default;
 
+    virtual void set_smt_logic(std::string const&logic) = 0;
+
     virtual pipes::consumer *consumer() = 0;
 
     virtual support::tribool check() = 0;
@@ -226,6 +229,10 @@ namespace black::pipes {
   };
 
   inline solver::solver(pipeline p) : _instance{p()} { }
+
+  inline void solver::set_smt_logic(std::string const& logic) {
+    _instance->set_smt_logic(logic);
+  }
 
   inline support::tribool solver::check(logic::module mod) {
     mod.replay(_last, _instance->consumer());

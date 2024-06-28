@@ -32,10 +32,11 @@ project(
 
 find_package(BLACK)
 
-add_executable(basics basics.cpp)
+add_executable(quadratic basics/quadratic.cpp)
+target_link_libraries(quadratic black::black)
 
-target_link_libraries(basics black::black)
-
-add_executable(factorial factorial.cpp)
-
+add_executable(factorial basics/factorial.cpp)
 target_link_libraries(factorial black::black)
+
+add_executable(formulas logic/formulas.cpp)
+target_link_libraries(formulas black::black)

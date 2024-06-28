@@ -6,3 +6,4 @@ API Guide (C++)
    :caption: Contents
 
    c++/basics
+   c++/formulas

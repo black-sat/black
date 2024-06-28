@@ -64,11 +64,17 @@ equations? I do not, so let BLACK help us here::
 Here we are requiring the equation :math:`ax^2 + bx + c = 0` to hold. To
 actually solve it we need a *solver*::
 
-    solvers::solver slv = black::solvers::cvc5();
+    solvers::solver slv = solvers::cvc5();
 
 .. note::
     In the current development source tree, only the `cvc5` backend is 
     available, but others will be added soon.
+
+Since our equation is non-linear, we need to give the solver some hint on how to
+solve it. For ``cvc5``, it is sufficient to correctly set the underlying SMT
+logic::
+
+    slv.set_smt_logic("QF_NRA");
 
 Now we can just ask the solver to check the satisfiability of the module's
 requirements::
@@ -180,7 +186,7 @@ Note that here we have to use ``fact``, which is the defined object, and not
 
 We instantiate the solver and check that the requirements are consistent::
 
-    solvers::solver slv = black::solvers::cvc5();
+    solvers::solver slv = solvers::cvc5();
 
     assert(slv.check(mod) == true);
 

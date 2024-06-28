@@ -21,35 +21,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_INTERNAL_BACKENDS_CVC5_HPP
-#define BLACK_INTERNAL_BACKENDS_CVC5_HPP
-
 #include <black/logic>
-#include <black/pipes>
+#include <black/solvers/cvc5>
 
-#include <memory>
+#include <cassert> // for the standard `assert` macro
 
-namespace black::solvers {
+using namespace black;
+using namespace black::support;
+using namespace black::logic;
 
-  class cvc5_t : public solver::base
-  {
-  public:
-    cvc5_t();
+int main() {
+
     
-    virtual ~cvc5_t() override;
-
-    virtual void set_smt_logic(std::string const&) override;
-    virtual pipes::consumer *consumer() override;
-    virtual support::tribool check() override;
-    virtual std::optional<logic::term> value(logic::object) override;
-
-  private:
-    struct impl_t;
-    std::unique_ptr<impl_t> _impl;
-  };
-
-  inline constexpr auto cvc5 = pipes::make_solver<cvc5_t>{};
 
 }
-
-#endif // BLACK_INTERNAL_BACKENDS_CVC5_HPP

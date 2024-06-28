@@ -40,6 +40,8 @@ namespace black::solvers {
     virtual void push() override { }
     virtual void pop(size_t) override { }
 
+    void set_smt_logic(std::string const&) override { }
+
     virtual pipes::consumer *consumer() override { return this; }
 
     virtual support::tribool check() override { return V; }
@@ -58,6 +60,10 @@ namespace black::solvers {
   public:
     preprocessed_t(pipes::transform::pipeline pipe, solver::pipeline slv)
       : _slv{slv()}, _pipe{pipe(_slv->consumer())} { }
+
+    void set_smt_logic(std::string const& logic) override {
+      _slv->set_smt_logic(logic);
+    }
 
     virtual pipes::consumer *consumer() override { return _pipe->consumer(); }
     

@@ -41,23 +41,20 @@ int main() {
 
     mod.require(a * x * x + b * x + c == 0.0);
 
-    solvers::solver slv = black::solvers::cvc5();
+    solvers::solver slv = solvers::cvc5();
 
-    std::cout << "start\n";
+    slv.set_smt_logic("QF_NRA");
 
     support::tribool result = slv.check(mod);
     
     assert(result == true);
 
-    assert(slv.value(x) == 4.0);
-
-    std::cout << "here\n";
+    assert(slv.value(x).has_value());
+    assert(slv.value(x).value() == 4.0);
 
     mod.require(x != 4.0);
 
     assert(slv.check(mod) == false);
-
-    std::cout << "there\n";
 
     return 0;
 }

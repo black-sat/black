@@ -54,6 +54,10 @@ namespace black::solvers {
       slv->setOption("produce-models", "true");
     }
 
+    void set_smt_logic(std::string const& logic) {
+      slv->setLogic(logic);
+    }
+
     std::optional<CVC5::Term> get_const(entity const *e) const {
       if(auto p = objects.find(e); p)
         return *p;
@@ -206,13 +210,16 @@ namespace black::solvers {
       if(auto p = get_entity(t); p)
         return object(p);
 
-      if(t.isUInt64Value())
+      if(t.getSort().isInteger() && t.isUInt64Value())
         return integer(t.getUInt64Value());
-      if(t.isInt64Value())
+      
+      if(t.getSort().isInteger() && t.isInt64Value())
         return integer(int64_t(t.getUInt64Value()));  
-      if(t.isBooleanValue()) 
+      
+      if(t.getSort().isBoolean() && t.isBooleanValue()) 
         return boolean(t.getBooleanValue());
-      if(t.isReal32Value()) {
+
+      if(t.getSort().isReal() && t.isReal32Value()) {
         auto [num, den] = t.getReal32Value();
         return real((double) num / den);
       }
@@ -411,6 +418,10 @@ namespace black::solvers {
   cvc5_t::cvc5_t() : _impl{std::make_unique<impl_t>()} { }
 
   cvc5_t::~cvc5_t() = default;
+
+  void cvc5_t::set_smt_logic(std::string const&logic) {
+    _impl->set_smt_logic(logic);
+  }
 
   pipes::consumer *cvc5_t::consumer() { 
     return _impl.get();
