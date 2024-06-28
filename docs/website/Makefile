@@ -17,7 +17,7 @@ export PYTHONPATH=../build/src/python
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile $(ASTSOURCE) ast.json.in doxygen.conf
+.PHONY: help Makefile $(ASTSOURCE) ast.json.in doxygen.conf env
 
 doxygen/xml: doxygen.conf
 	doxygen doxygen.conf
@@ -31,6 +31,8 @@ doxygen/xml: doxygen.conf
 	@python3 gen-ast-rst.py _build/$(shell basename $@ .rst).json $< > $@
 
 .SECONDARY: $(ASTFILES)
+
+env: $(ASTFILES) doxygen/xml
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
