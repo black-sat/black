@@ -21,35 +21,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_INTERNAL_BACKENDS_CVC5_HPP
-#define BLACK_INTERNAL_BACKENDS_CVC5_HPP
-
 #include <black/logic>
-#include <black/pipes>
+#include <black/solvers/cvc5>
 
-#include <memory>
+#include <cassert> // for the standard `assert` macro
+#include <iostream>
 
-namespace black::solvers {
+using namespace black;
+using namespace black::logic;
 
-  class cvc5_t : public solver::base
-  {
-  public:
-    cvc5_t();
+int main() {
+
+    module mod;
+
+    object x = mod.declare("x", types::real());
+    object a = mod.define("a",  types::real(),   1.0);
+    object b = mod.define("b",  types::real(),  -8.0);
+    object c = mod.define("c",  types::real(),  16.0);
+
+    mod.require(a * x * x + b * x + c == 0.0);
+
+    solvers::solver slv = solvers::cvc5();
+
+    slv.set_smt_logic("QF_NRA");
+
+    support::tribool result = slv.check(mod);
     
-    virtual ~cvc5_t() override;
+    assert(result == true);
 
-    virtual void set_smt_logic(std::string const&) override;
-    virtual pipes::consumer *consumer() override;
-    virtual support::tribool check() override;
-    virtual std::optional<logic::term> value(logic::object) override;
+    assert(slv.value(x).has_value());
+    assert(slv.value(x).value() == 4.0);
 
-  private:
-    struct impl_t;
-    std::unique_ptr<impl_t> _impl;
-  };
+    mod.require(x != 4.0);
 
-  inline constexpr auto cvc5 = pipes::make_solver<cvc5_t>{};
+    assert(slv.check(mod) == false);
 
+    return 0;
 }
-
-#endif // BLACK_INTERNAL_BACKENDS_CVC5_HPP

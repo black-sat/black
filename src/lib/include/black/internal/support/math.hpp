@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2024 Nicola Gigante
+// (C) 2019 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,35 +21,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_INTERNAL_BACKENDS_CVC5_HPP
-#define BLACK_INTERNAL_BACKENDS_CVC5_HPP
+#ifndef BLACK_MATH_HPP
+#define BLACK_MATH_HPP
 
-#include <black/logic>
-#include <black/pipes>
-
-#include <memory>
-
-namespace black::solvers {
-
-  class cvc5_t : public solver::base
-  {
-  public:
-    cvc5_t();
+namespace black::support {
+  
+  //
+  // Thanks to Leonardo Taglialegne
+  //
+  inline std::pair<int64_t, int64_t> double_to_fraction(double n) {
+    black_assert(n >= 0);
     
-    virtual ~cvc5_t() override;
+    uint64_t a = (uint64_t)floor(n), b = 1;
+    uint64_t c = (uint64_t)ceil(n), d = 1;
 
-    virtual void set_smt_logic(std::string const&) override;
-    virtual pipes::consumer *consumer() override;
-    virtual support::tribool check() override;
-    virtual std::optional<logic::term> value(logic::object) override;
+    uint64_t num = 1;
+    uint64_t denum = 1;
+    while(
+      a + c <= (uint64_t)std::numeric_limits<int64_t>::max() &&
+      b + d <= (uint64_t)std::numeric_limits<int64_t>::max() &&
+      ((double)num/(double)denum != n)
+    ) {
+      num = a + c;
+      denum = b + d;
 
-  private:
-    struct impl_t;
-    std::unique_ptr<impl_t> _impl;
-  };
+      if((double)num/(double)denum > n) {
+        c = num;
+        d = denum;
+      } else {
+        a = num;
+        b = denum;
+      }
+    }
 
-  inline constexpr auto cvc5 = pipes::make_solver<cvc5_t>{};
+    return {num, denum};
+  }
 
 }
 
-#endif // BLACK_INTERNAL_BACKENDS_CVC5_HPP
+
+#endif // BLACK_MATH_HPP

@@ -20,7 +20,7 @@ import os
 # -- Project information -----------------------------------------------------
 
 project = 'black-sat'
-copyright = '2022, The BLACK team'
+copyright = '2024, The BLACK team'
 author = 'The BLACK team'
 
 
@@ -65,3 +65,5 @@ html_static_path = ['_static']
 html_title = 'BLACK &bullet; Bounded Lᴛʟ sAtisfiability ChecKer'
 
 primary_domain = 'cpp'
+
+highlight_language = 'c++'

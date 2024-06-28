@@ -92,35 +92,6 @@ namespace black::support::internal
   }
 
   //
-  // Thanks to Leonardo Taglialegne
-  //
-  inline std::pair<int64_t, int64_t> double_to_fraction(double n) {
-    uint64_t a = (uint64_t)floor(n), b = 1;
-    uint64_t c = (uint64_t)ceil(n), d = 1;
-
-    uint64_t num = 1;
-    uint64_t denum = 1;
-    while(
-      a + c <= (uint64_t)std::numeric_limits<int64_t>::max() &&
-      b + d <= (uint64_t)std::numeric_limits<int64_t>::max() &&
-      ((double)num/(double)denum != n)
-    ) {
-      num = a + c;
-      denum = b + d;
-
-      if((double)num/(double)denum > n) {
-        c = num;
-        d = denum;
-      } else {
-        a = num;
-        b = denum;
-      }
-    }
-
-    return {num, denum};
-  }
-
-  //
   // Utilities for variants
   //
 
@@ -176,7 +147,6 @@ SOFTWARE.
 namespace black::support {
   using internal::type_name;
   using internal::demangle;
-  using internal::double_to_fraction;
   using internal::to_camel;
   using internal::variant_alternatives;
   using internal::variant_alternatives_t;

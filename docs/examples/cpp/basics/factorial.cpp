@@ -21,35 +21,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_INTERNAL_BACKENDS_CVC5_HPP
-#define BLACK_INTERNAL_BACKENDS_CVC5_HPP
-
 #include <black/logic>
-#include <black/pipes>
+#include <black/solvers/cvc5>
 
-#include <memory>
+#include <cassert> // for the standard `assert` macro
 
-namespace black::solvers {
+using namespace black;
+using namespace black::logic;
 
-  class cvc5_t : public solver::base
-  {
-  public:
-    cvc5_t();
-    
-    virtual ~cvc5_t() override;
+int main() {
 
-    virtual void set_smt_logic(std::string const&) override;
-    virtual pipes::consumer *consumer() override;
-    virtual support::tribool check() override;
-    virtual std::optional<logic::term> value(logic::object) override;
+    module mod;
 
-  private:
-    struct impl_t;
-    std::unique_ptr<impl_t> _impl;
-  };
+    variable f = "f";
+    variable n = "n";
 
-  inline constexpr auto cvc5 = pipes::make_solver<cvc5_t>{};
+    object fact = mod.define(
+        f, {{n, types::integer()}}, types::integer(),
+        ite(n == 1, 1, n * f(n - 1)),
+        resolution::delayed
+    );
 
+    mod.resolve(recursion::allowed);
+
+    object x = mod.declare("x", types::integer());
+
+    mod.require(fact(x) == 3628800);
+
+    solvers::solver slv = solvers::cvc5();
+
+    assert(slv.check(mod) == true);
+
+    assert(slv.value(x) == 10);
+
+    return 0;
 }
-
-#endif // BLACK_INTERNAL_BACKENDS_CVC5_HPP

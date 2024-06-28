@@ -3,7 +3,9 @@ build:
   os: "ubuntu-22.04"
   tools:
     python: "3.10"
+  apt_packages:
+    - jq
   jobs:
     pre_build:
-      - pip install furo
-      - pip install sphinxcontrib-bibtex
+      - pip install -r docs/website/requirements.txt
+      - cd docs/website && make env
