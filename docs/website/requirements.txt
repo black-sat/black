@@ -5,3 +5,4 @@ furo
 jinja-cli
 breathe
 click
+sphinx-autobuild
