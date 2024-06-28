@@ -6,4 +6,5 @@ build:
   jobs:
     pre_build:
       - pip install furo
+      - pip install breathe
       - pip install sphinxcontrib-bibtex
