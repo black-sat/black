@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <ranges>
+#include <cmath>
 
 namespace black::solvers {
 
@@ -85,8 +86,11 @@ namespace black::solvers {
       return ast::traverse<CVC5::Term>(t)(
         [&](integer, int64_t v) { return slv->mkInteger(v); },
         [&](real, double v) { 
-          auto [num, den] = support::double_to_fraction(v);
-          return slv->mkReal(num, den);
+          double abs = std::abs(v);
+          auto [num, den] = support::double_to_fraction(abs);
+          if(v >= 0)
+            return slv->mkReal(num, den);
+          return slv->mkReal(-num, den);
         },
         [&](boolean, bool v) { return slv->mkBoolean(v); },
         [&](variable x) {

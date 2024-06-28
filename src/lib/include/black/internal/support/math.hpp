@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2020 Nicola Gigante
+// (C) 2019 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,20 +21,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SUPPORT_HPP
-#define BLACK_SUPPORT_HPP
+#ifndef BLACK_MATH_HPP
+#define BLACK_MATH_HPP
+
+namespace black::support {
+  
+  //
+  // Thanks to Leonardo Taglialegne
+  //
+  inline std::pair<int64_t, int64_t> double_to_fraction(double n) {
+    black_assert(n >= 0);
+    
+    uint64_t a = (uint64_t)floor(n), b = 1;
+    uint64_t c = (uint64_t)ceil(n), d = 1;
+
+    uint64_t num = 1;
+    uint64_t denum = 1;
+    while(
+      a + c <= (uint64_t)std::numeric_limits<int64_t>::max() &&
+      b + d <= (uint64_t)std::numeric_limits<int64_t>::max() &&
+      ((double)num/(double)denum != n)
+    ) {
+      num = a + c;
+      denum = b + d;
+
+      if((double)num/(double)denum > n) {
+        c = num;
+        d = denum;
+      } else {
+        a = num;
+        b = denum;
+      }
+    }
+
+    return {num, denum};
+  }
+
+}
 
 
-#include <black/internal/support/config.hpp>
-#include <black/internal/support/utils.hpp>
-#include <black/internal/support/exceptions.hpp>
-#include <black/internal/support/assert.hpp>
-#include <black/internal/support/debug.hpp>
-#include <black/internal/support/tribool.hpp>
-#include <black/internal/support/hash.hpp>
-#include <black/internal/support/functional.hpp>
-#include <black/internal/support/errors.hpp>
-#include <black/internal/support/memory.hpp>
-#include <black/internal/support/math.hpp>
-
-#endif // BLACK_SUPPORT_HPP
+#endif // BLACK_MATH_HPP

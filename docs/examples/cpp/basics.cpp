@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2020 Nicola Gigante
+// (C) 2024 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,20 +21,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SUPPORT_HPP
-#define BLACK_SUPPORT_HPP
+#include <black/logic>
+#include <black/solvers/cvc5>
 
+#include <cassert> // for the standard `assert` macro
+#include <iostream>
 
-#include <black/internal/support/config.hpp>
-#include <black/internal/support/utils.hpp>
-#include <black/internal/support/exceptions.hpp>
-#include <black/internal/support/assert.hpp>
-#include <black/internal/support/debug.hpp>
-#include <black/internal/support/tribool.hpp>
-#include <black/internal/support/hash.hpp>
-#include <black/internal/support/functional.hpp>
-#include <black/internal/support/errors.hpp>
-#include <black/internal/support/memory.hpp>
-#include <black/internal/support/math.hpp>
+using namespace black;
+using namespace black::logic;
 
-#endif // BLACK_SUPPORT_HPP
+int main() {
+
+    module mod;
+
+    object x = mod.declare("x", types::real());
+    object a = mod.define("a",  types::real(),   1.0);
+    object b = mod.define("b",  types::real(),  -8.0);
+    object c = mod.define("c",  types::real(),  16.0);
+
+    mod.require(a * x * x + b * x + c == 0.0);
+
+    solvers::solver slv = black::solvers::cvc5();
+
+    std::cout << "start\n";
+
+    support::tribool result = slv.check(mod);
+    
+    assert(result == true);
+
+    assert(slv.value(x) == 4.0);
+
+    std::cout << "here\n";
+
+    mod.require(x != 4.0);
+
+    assert(slv.check(mod) == false);
+
+    std::cout << "there\n";
+
+    return 0;
+}

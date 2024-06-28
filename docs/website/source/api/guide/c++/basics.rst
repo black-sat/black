@@ -34,12 +34,12 @@ this type::
 Within a module we can *declare* or *define* logical entities::
 
     object x = mod.declare("x", types::real());
-    object a = mod.define("a", types::integer(),  1);
-    object b = mod.define("b", types::integer(), -8);
-    object c = mod.define("c", types::integer(),  16);
+    object a = mod.define("a",  types::real(),  1.0);
+    object b = mod.define("b",  types::real(), -8.0);
+    object c = mod.define("c",  types::real(),  16.0);
 
 Here we have *declared* an object named ``a`` of type ``real`` and defined three
-objects, ``a``, ``b``, and ``c``, of type ``integer`` as well. The difference is
+objects, ``a``, ``b``, and ``c``, of type ``real`` as well. The difference is
 the following:
 
 1. a *declared* entity is given a name and a *type*, its value is unknown and 
@@ -48,11 +48,15 @@ will have to be found by a solver;
 2. a *defined* entity is given a name, a type, and a *value*, therefore its 
 value is known and is available to solvers for reasoning.
 
+Note that above we had to write ``1.0``, not just ``1``, because ``x`` is of
+type ``real`` (and ``1.0`` is correspondingly a ``double`` in C++), and ``1``
+would be an ``integer`` (an ``int`` in C++).
+
 Modules track a set of *requirements*, that is, assertions that must hold over
 the declared and defined objects. Do you remember how to solve quadratic
 equations? I do not, so let BLACK help us here::
 
-    mod.require(a * x * x + b * x + c == 0);
+    mod.require(a * x * x + b * x + c == 0.0);
 
 Here we are requiring the equation :math:`ax^2 + bx + c = 0` to hold. To
 actually solve it we need a *solver*::
@@ -78,10 +82,6 @@ The equation's polynomial is actually a square, so the equation has a unique
 solution which is 4. We can check that the solver agrees::
 
     assert(slv.value(x) == 4.0);
-
-Note that we had to write ``4.0``, not just ``4``, because ``x`` is of type
-``real`` (and ``4.0`` is correspondingly a ``double`` in C++), and ``4`` would
-be an ``integer`` (an ``int`` in C++).
 
 .. note::
     Of course, the really useful thing here would be to print the value, 
@@ -170,7 +170,10 @@ be our answer, and we ask its factorial to be 3628800::
 
     object x = mod.declare("x", types::integer());
 
-    mod.require(f(x) == 3628800);
+    mod.require(fact(x) == 3628800);
+
+Note that here we have to use ``fact``, which is the defined object, and not
+``f``, which is only an unbound name used in the recursive definition.
 
 We instantiate the solver and check that the requirements are consistent::
 

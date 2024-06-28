@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2020 Nicola Gigante
+// (C) 2024 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,20 +21,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SUPPORT_HPP
-#define BLACK_SUPPORT_HPP
+#include <black/logic>
+#include <black/solvers/cvc5>
 
+#include <cassert> // for the standard `assert` macro
 
-#include <black/internal/support/config.hpp>
-#include <black/internal/support/utils.hpp>
-#include <black/internal/support/exceptions.hpp>
-#include <black/internal/support/assert.hpp>
-#include <black/internal/support/debug.hpp>
-#include <black/internal/support/tribool.hpp>
-#include <black/internal/support/hash.hpp>
-#include <black/internal/support/functional.hpp>
-#include <black/internal/support/errors.hpp>
-#include <black/internal/support/memory.hpp>
-#include <black/internal/support/math.hpp>
+using namespace black;
+using namespace black::logic;
 
-#endif // BLACK_SUPPORT_HPP
+int main() {
+
+    module mod;
+
+    variable f = "f";
+    variable n = "n";
+
+    object fact = mod.define(
+        f, {{n, types::integer()}}, types::integer(),
+        ite(n == 1, 1, n * f(n - 1)),
+        resolution::delayed
+    );
+
+    mod.resolve(recursion::allowed);
+
+    object x = mod.declare("x", types::integer());
+
+    mod.require(fact(x) == 3628800);
+
+    solvers::solver slv = black::solvers::cvc5();
+
+    assert(slv.check(mod) == true);
+
+    assert(slv.value(x) == 10);
+
+    return 0;
+}
