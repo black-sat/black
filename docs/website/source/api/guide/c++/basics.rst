@@ -1,3 +1,5 @@
+.. _guide_basics:
+
 Basic usage
 =====================
 

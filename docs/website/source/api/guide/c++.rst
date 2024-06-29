@@ -7,3 +7,4 @@ API Guide (C++)
 
    c++/basics
    c++/formulas
+   c++/modules
