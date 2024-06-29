@@ -110,17 +110,31 @@ namespace black::logic {
 #ifdef DOXYGEN_IS_RUNNING
 
   //!
+  //! Which role a declaration have in a module.
+  //!
+  enum class role : uint8_t {
+    rigid, //!< rigid declaration, does not change over time
+    input, //!< input variable of the module
+    state, //!< state variable of the module
+    output //!< output variable of the module
+  };
+
+  //!
   //! The specification of an entity to be declared in a module.
   //!
   struct decl { 
     logic::variable name; //!< The name of the entity.
     logic::types::type type; //!< The type of the entity.
+    
+    //! The role of the entity.
+    //! The role is ignored when \ref decl is used in \ref lambda terms
+    enum role role; 
 
     //! \name Constructors
     //!@{
 
     //! Constructs the object.
-    inline decl(variable name, logic::types::type type);
+    inline decl(variable name, logic::types::type type, enum role role);
 
     //!@}
 
@@ -325,7 +339,9 @@ namespace black::logic {
     //!
     object 
     declare(
-      variable name, types::type type, resolution r = resolution::immediate
+      variable name, types::type type, 
+      enum role role = role::rigid, 
+      resolution r = resolution::immediate
     );
     
     //!
@@ -575,17 +591,17 @@ namespace black::logic {
     void require(term req) { state(req, statement::requirement); }
     
     //!
-    //! Same as `state(req, statement::requirement)`.
+    //! Same as `state(req, statement::init)`.
     //!
     void init(term t) { state(t, statement::init); }
     
     //!
-    //! Same as `state(t, statement::requirement)`.
+    //! Same as `state(t, statement::transition)`.
     //!
     void transition(term t) { state(t, statement::transition); }
     
     //!
-    //! Same as `state(t, statement::requirement)`.
+    //! Same as `state(t, statement::final)`.
     //!
     void final(term t) { state(t, statement::final); }
 
@@ -708,7 +724,8 @@ namespace black::logic {
     types::type type; //!< The type of the entity.
     std::optional<term> value; //!< The value of the entity. 
                                //!< Empty if the entity is declared.
-
+    std::optional<enum role> role; //!< The role of the entity
+                                   //!< Empty if the entity is defined.
 
     //! \name Constructors
     //!@{

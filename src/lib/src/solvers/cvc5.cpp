@@ -131,7 +131,7 @@ namespace black::solvers {
           
           persistent::map<variable, CVC5::Term> newvars = vars;
 
-          for(auto [name, type] : decls) {
+          for(auto [name, type, role] : decls) {
             CVC5::Term term = slv->mkVar(to_sort(type));
             varlist.push_back(term);
             newvars.set(name, term);
@@ -281,7 +281,7 @@ namespace black::solvers {
           std::vector<CVC5::Term> vars;
           persistent::map<variable, CVC5::Term> varmap;
 
-          for(auto [name, type] : decls) {
+          for(auto [name, type, role] : decls) {
             CVC5::Term var = slv->mkVar(to_sort(type));
             vars.push_back(var);
             varmap.set(name, var);

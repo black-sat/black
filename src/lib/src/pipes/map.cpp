@@ -88,7 +88,7 @@ namespace black::pipes::internal {
       if(!e->value) {
         types::type type = _ty_map(e->type);
         if(type != e->type) {
-          object obj = m.declare(e->name, type, resolution::delayed);
+          object obj = m.declare(e->name, type, *e->role, resolution::delayed);
           _replacements.set(e.get(), obj.entity());
           flag = true;
         }

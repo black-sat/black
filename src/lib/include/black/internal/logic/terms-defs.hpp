@@ -59,10 +59,20 @@
 
 declare_type(logic, struct entity)
 
+define_type(logic, enum class role : uint8_t,
+  enum class role : uint8_t {
+    rigid,
+    input,
+    state,
+    output
+  };
+)
+
 define_type(logic, struct decl,
   struct decl { 
     logic::variable name; 
     logic::types::type type;
+    enum role role;
 
     decl(decl const&) = default;
     decl(decl &&) = default;
@@ -70,11 +80,14 @@ define_type(logic, struct decl,
     decl &operator=(decl const&) = default;
     decl &operator=(decl &&) = default;
 
-    decl(variable name, logic::types::type type) 
-      : name{name}, type{type} { }
+    decl(variable name, logic::types::type type, enum role role) 
+      : name{name}, type{type}, role{role} { }
+
+    decl(logic::variable name, logic::types::type type)
+      : name{name}, type{type}, role{role::rigid} { }
 
     bool operator==(decl const&) const = default;
-    size_t hash() const { return support::hash(name, type); }
+    size_t hash() const { return support::hash(name, type, role); }
   };
 )
 

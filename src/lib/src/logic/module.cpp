@@ -164,8 +164,10 @@ namespace black::logic {
     return _impl->get()->declare(d, r);
   }
 
-  object module::declare(variable name, types::type type, resolution r) {
-    return declare(decl{name, type}, r);
+  object module::declare(
+    variable name, types::type type, enum role role, resolution r
+  ) {
+    return declare(decl{name, type, role}, r);
   }
   
   object module::impl_t::define(def d, resolution r) {
