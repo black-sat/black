@@ -10,7 +10,7 @@ BLACK
 
 Welcome to **BLACK**'s website.
 
-BLACK is temporal reasoning framework for Linear Temporal Logic (LTL) and
+BLACK is a temporal reasoning framework for Linear Temporal Logic (LTL) and
 related logics. 
 
 BLACK is open-source and released under the MIT license. For its source code,
