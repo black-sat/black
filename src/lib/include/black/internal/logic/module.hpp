@@ -127,7 +127,7 @@ namespace black::logic {
     logic::types::type type; //!< The type of the entity.
     
     //! The role of the entity.
-    //! The role is ignored when \ref decl is used in \ref lambda terms
+    //! The role is ignored when \ref decl is used in \ref lambda terms.
     enum role role; 
 
     //! \name Constructors
@@ -135,6 +135,9 @@ namespace black::logic {
 
     //! Constructs the object.
     inline decl(variable name, logic::types::type type, enum role role);
+
+    //! Constructs the object with a default role of `role::rigid`.
+    inline decl(logic::variable name, logic::types::type type);
 
     //!@}
 

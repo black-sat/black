@@ -1,3 +1,5 @@
+.. _guide_basics:
+
 Basic usage
 =====================
 
@@ -159,7 +161,7 @@ Now we can define the function::
 
 The call to ``define()`` above takes the following arguments:
 
-1. the variable `f` which tells the name of the function;
+1. the variable ``f`` which tells the name of the function;
 2. the functions' arguments, as a list of pairs of variables and types; in this case we have only one, ``{{n, types::integer()}}``;
 3. the return type of the function, ``types::integer()``;
 4. the body of the function: ``ite`` is the *if/then/else* construct, so if ``n`` is 1 the expression is equal to 1, otherwise to ``f(x-1)``;

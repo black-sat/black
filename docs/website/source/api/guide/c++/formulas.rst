@@ -23,8 +23,8 @@ terms.
 
 In the API, terms are built by instantiating the corresponding C++ types and
 building upon them with operators and functions provided by the API. One of the
-simplest terms that one can obtain are instances of :cpp:struct:`object`, which represent
-bound names (such as variables declared or defined in a ``module``)::
+simplest terms that one can obtain are instances of :cpp:struct:`object`, which
+represent bound names (such as variables declared or defined in a ``module``)::
 
     module mod;
 
