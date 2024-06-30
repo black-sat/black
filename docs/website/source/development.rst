@@ -17,6 +17,12 @@ distribution's package manager on Linux systems. The only exception is ``cvc5``
 which has to be installed from the binary distribution available on their
 website or recompiled from source.
 
+.. note:: 
+    The version of Clang bundled with **macOS** is not enough up-to-date. 
+    Please install the latest version with Homebrew (``brew install llvm``) and 
+    follow the instructions in the note below to use this version for building 
+    BLACK.
+
 Building instructions
 -----------------------
 
@@ -30,4 +36,10 @@ From BLACK's source directory::
 
 Refer to ``docs/README.md`` for how to build the documentation.
 
-    
+.. note::
+    On **macOS**, to use the Clang version installed with Homebrew, a few 
+    additional CMake parameters are needed. The ``config-brew-llvm.sh`` script 
+    does this. It accepts as arguments all the additional arguments to pass to 
+    CMake, so one must replace the second line above with the following::
+
+        $ ../config-brew-llvm.sh -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=~/.local -DBLACK_ENABLE_PYTHON_BINDINGS=YES ..
