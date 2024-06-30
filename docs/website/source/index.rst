@@ -10,21 +10,22 @@ BLACK
 
 Welcome to **BLACK**'s website.
 
-BLACK is a tool for testing the satisfiability of formulas in Linear
-Temporal Logic (LTL) and related logics. 
-
-LTL is a very popular specification language in the fields of *formal
-verification* and *artificial intelligence*. In these fields, it is important to
-be able to understand whether a given specification is satisfiable,
-unsatisfiable, or vacuously true. BLACK helps with this task.
+BLACK is temporal reasoning framework for Linear Temporal Logic (LTL) and
+related logics. 
 
 BLACK is open-source and released under the MIT license. For its source code,
 look at its `GitHub repository <https://github.com/black-sat/black>`_. 
+
+.. note::
+   This is the documentation for the **development** branch, which is 
+   undergoing a major overhaul of the whole system. Please refer to stable 
+   releases if you want to use BLACK.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents
 
+   development
    api/guide
    api/reference
    publications
