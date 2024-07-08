@@ -79,7 +79,7 @@ TEST_CASE("Pipeline") {
 
         solvers::solver slv = pipes::id() | solvers::unsat();
 
-        REQUIRE(slv.check(mod) == false);
+        REQUIRE(mod.is_sat(slv) == false);
     }
 
     SECTION("With a real solver") {
@@ -92,11 +92,11 @@ TEST_CASE("Pipeline") {
 
         solvers::solver slv = pipes::id() | pipes::id() | solvers::cvc5();
 
-        REQUIRE(slv.check(mod) == true);
+        REQUIRE(mod.is_sat(slv) == true);
 
         mod.require(x < y);
 
-        REQUIRE(slv.check(mod) == false);
+        REQUIRE(mod.is_sat(slv) == false);
 
     }
 
@@ -112,11 +112,11 @@ TEST_CASE("Pipeline") {
 
     //     solvers::solver slv = solvers::cvc5();
 
-    //     REQUIRE(slv.check(mod) == true);
+    //     REQUIRE(mod.is_sat(slv) == true);
 
     //     solvers::solver slv2 = pipes::map(to_ints) | solvers::cvc5();
 
-    //     REQUIRE(slv.check(mod) == false);
+    //     REQUIRE(mod.is_sat(slv) == false);
         
     // }
 }

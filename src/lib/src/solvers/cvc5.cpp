@@ -54,10 +54,6 @@ namespace black::solvers {
       slv->setOption("produce-models", "true");
     }
 
-    void set_smt_logic(std::string const& logic) {
-      slv->setLogic(logic);
-    }
-
     std::optional<CVC5::Term> get_const(entity const *e) const {
       if(auto p = objects.find(e); p)
         return *p;
@@ -419,8 +415,13 @@ namespace black::solvers {
 
   cvc5_t::~cvc5_t() = default;
 
-  void cvc5_t::set_smt_logic(std::string const&logic) {
-    _impl->set_smt_logic(logic);
+  void cvc5_t::set(std::string option, std::string value) {
+    _impl->slv->setOption(option, value);
+  }
+
+  void cvc5_t::set(solvers::option option, std::string value) {
+    if(option == solvers::option::logic)
+      _impl->slv->setLogic(value);
   }
 
   pipes::consumer *cvc5_t::consumer() { 

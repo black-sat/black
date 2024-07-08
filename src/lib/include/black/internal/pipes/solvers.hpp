@@ -26,8 +26,6 @@
 
 namespace black::solvers {
 
-  using pipes::solver;
-  
   template<bool V>
   class const_t : public solver::base, private pipes::consumer
   {
@@ -40,7 +38,8 @@ namespace black::solvers {
     virtual void push() override { }
     virtual void pop(size_t) override { }
 
-    void set_smt_logic(std::string const&) override { }
+    virtual void set(std::string, std::string) override { }
+    virtual void set(option, std::string) override { }
 
     virtual pipes::consumer *consumer() override { return this; }
 
@@ -51,27 +50,33 @@ namespace black::solvers {
     }
   };
 
-  inline constexpr auto sat = pipes::make_solver<const_t<true>>{};
-  inline constexpr auto unsat = pipes::make_solver<const_t<false>>{};
+  inline constexpr auto sat = make_solver<const_t<true>>;
+  inline constexpr auto unsat = make_solver<const_t<false>>;
 
 
   class preprocessed_t : public solver::base
   {
   public:
-    preprocessed_t(pipes::transform::pipeline pipe, solver::pipeline slv)
-      : _slv{slv()}, _pipe{pipe(_slv->consumer())} { }
+    preprocessed_t(pipes::transform::pipeline pipe, solver slv)
+      : _slv{std::move(slv)}, _pipe{pipe(_slv.pointer()->consumer())} { }
 
-    void set_smt_logic(std::string const& logic) override {
-      _slv->set_smt_logic(logic);
+    virtual void set(std::string option, std::string value) override { 
+      _slv.pointer()->set(option, value);
+    }
+    
+    virtual void set(option option, std::string value) override { 
+      _slv.pointer()->set(option, value);
     }
 
     virtual pipes::consumer *consumer() override { return _pipe->consumer(); }
     
-    virtual support::tribool check() override { return _slv->check(); }
+    virtual support::tribool check() override { 
+      return _slv.pointer()->check(); 
+    }
     
     virtual std::optional<logic::term> value(logic::object x) override {
       auto y = _pipe->translate(x);
-      auto v = _slv->value(y ? *y : x);
+      auto v = _slv.pointer()->value(y ? *y : x);
 
       if(!v)
         return {};
@@ -83,19 +88,19 @@ namespace black::solvers {
     }
 
   private:
-    solver::instance _slv;
+    solver _slv;
     pipes::transform::instance _pipe;
   };
 
-  inline constexpr auto preprocessed = pipes::make_solver<preprocessed_t>{};
+  inline constexpr auto preprocessed = make_solver<preprocessed_t>;
 
 }
 
 
 namespace black::pipes {
 
-  inline solver::pipeline
-  operator|(pipes::transform::pipeline pipe, solver::pipeline slv) {
+  inline solvers::solver 
+  operator|(pipes::transform::pipeline pipe, solvers::solver slv) {
     return solvers::preprocessed(std::move(pipe), std::move(slv));
   }
   

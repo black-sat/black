@@ -24,6 +24,7 @@
 #include <black/support>
 #include <black/support/private>
 #include <black/logic>
+#include <black/pipes>
 
 #include <algorithm>
 #include <unordered_set>
@@ -65,6 +66,9 @@ namespace black::logic {
 
     persistent::vector<frame_t> _stack = { frame_t{} };
     std::vector<std::unique_ptr<entity>> _pending;
+
+    std::optional<solvers::solver> _solver; // last used
+    module _checked; // screenshot of the model at the last check
 
     impl_t() = default;
 
@@ -116,6 +120,7 @@ namespace black::logic {
     void state(term t, statement s);
     void push();
     void pop(size_t n);
+    support::tribool is_sat(module self, solvers::solver slv);
     void replay(module from, pipes::consumer *target) const;
   };
 
@@ -291,6 +296,41 @@ namespace black::logic {
 
   void module::pop(size_t n) {
     _impl->get()->pop(n);
+  }
+
+  support::tribool module::impl_t::is_sat(module self, solvers::solver slv) {
+    if(slv != _solver) {
+      _solver = slv;
+      _checked = {};
+    }
+    
+    replay(_checked, _solver->pointer()->consumer());
+    _checked = std::move(self);
+    return _solver->pointer()->check();
+  }
+
+  support::tribool module::is_sat(solvers::solver slv) {
+    return _impl->get()->is_sat(*this, std::move(slv));
+  }
+  
+  support::tribool module::is_valid(solvers::solver slv) {
+    return !_impl->get()->is_sat(*this, pipes::negate() | std::move(slv));
+  }
+  
+  support::tribool module::is_sat(solvers::solver slv, term assumption) {
+    push();
+    require(assumption);
+    support::tribool result = is_sat(std::move(slv));
+    pop();
+    
+    return result;
+  }
+
+  std::optional<term> module::value(object x) const {
+    if(!_impl->get()->_solver)
+      return {};
+
+    return _impl->get()->_solver->pointer()->value(x);
   }
 
   auto module::impl_t::diff(frame_t const&inner, frame_t const&outer) const 

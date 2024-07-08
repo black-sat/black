@@ -85,6 +85,12 @@ namespace black::pipes {
 
 }
 
+namespace black::solvers {
+  // Declared later in <black/pipes>
+  class solver;
+  enum class option : uint8_t;
+}
+
 namespace black::logic {
 
   using ast::core::label;
@@ -638,6 +644,54 @@ namespace black::logic {
     virtual void pop(size_t n = 1) override;
 
     //!@}
+
+    //! \name Satisfiability and validity checking
+    //! @{
+
+    //!
+    //! Check for satisfiability.
+    //!
+    //! \param slv the solver to use to check for satisfiability.
+    //!
+    //! Checks if the current module's stack is satisfiable, using the \ref slv
+    //! solver.
+    //!
+    support::tribool is_sat(solvers::solver slv);
+
+    //!
+    //! Check for satisfiability with an assumption.
+    //!
+    //! \param slv the solver to use to check for satisfiability.
+    //!
+    //! \param assumption the term to assume for this satisfiability check.
+    //!
+    //! Checks if the current module's stack is satisfiable, using the \ref slv
+    //! solver, while assuming the truth of \ref assumption.
+    //!
+    support::tribool is_sat(solvers::solver slv, term assumption);
+
+    //!
+    //! Check for validity.
+    //!
+    //! \param slv the solver to use to check for validity.
+    //!
+    //! Checks if the current module's stack is valid, using the \ref slv
+    //! solver.
+    //!
+    support::tribool is_valid(solvers::solver slv);
+
+    //!
+    //! Retrieves the value of an \ref object in the most recent model or
+    //! counterexample.
+    //!
+    //! \param x the object to retrieve the value of.
+    //!
+    //! Returns the value of the given object from the last model or
+    //! counterexample found by a call to \ref is_sat() or \ref is_valid().
+    //!
+    std::optional<term> value(object x) const;
+
+    //! @}
 
     //! \name Module traversal
     //!@{

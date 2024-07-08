@@ -32,26 +32,38 @@
 
 namespace black::pipes {
 
-  template<typename P, typename T, typename ...Args>
-  struct make_pipe {
-    constexpr make_pipe() = default;
+  // template<typename P, typename T, typename ...Args>
+  // struct make_pipe {
+  //   constexpr make_pipe() = default;
     
-    make_pipe(make_pipe const&) = default;
-    make_pipe(make_pipe &&) = default;
+  //   make_pipe(make_pipe const&) = default;
+  //   make_pipe(make_pipe &&) = default;
 
-    make_pipe &operator=(make_pipe const&) = default;
-    make_pipe &operator=(make_pipe &&) = default;
+  //   make_pipe &operator=(make_pipe const&) = default;
+  //   make_pipe &operator=(make_pipe &&) = default;
 
-    template<typename ...Args2>
+  //   template<typename ...Args2>
+  //     requires std::is_constructible_v<P, Args..., Args2...>
+  //   typename T::pipeline operator()(Args2 ...args2) const {
+  //     return [... args3 = std::move(args2)](Args ...args) 
+  //       -> typename T::instance 
+  //     { 
+  //       return std::make_unique<P>( std::move(args)..., std::move(args3)... );
+  //     };
+  //   }
+  // };
+
+  template<typename P, typename T, typename ...Args>
+  inline constexpr auto make_pipe = 
+    []<typename ...Args2>(Args2 ...args2) -> typename T::pipeline
       requires std::is_constructible_v<P, Args..., Args2...>
-    typename T::pipeline operator()(Args2 ...args2) const {
+    {
       return [... args3 = std::move(args2)](Args ...args) 
         -> typename T::instance 
       { 
         return std::make_unique<P>( std::move(args)..., std::move(args3)... );
       };
-    }
-  };
+    };
 
   //!
   //! Class handling instances of tranform pipelines.
@@ -184,69 +196,99 @@ namespace black::pipes {
   //! ```
   //!
   template<typename P>
-  using make_transform = make_pipe<P, transform, consumer *>;
+  inline constexpr auto make_transform = make_pipe<P, transform, consumer *>;
 
-  //
-  //
-  //
+}
+
+namespace black::solvers {
+
+  //! Enum of known solver-agnostic options that can be passed to solvers.
+  enum class option : uint8_t {
+    logic //!< Set the SMT logic.
+  };
+
+  //!
+  //! Opaque handle type representing solvers.
+  //!
   class solver
   {
   public:
     class base;
-    using instance = std::unique_ptr<base>;
-    using pipeline = std::function<instance()>;
+    using ptr = std::shared_ptr<base>;
 
-    solver(pipeline p);
 
-    solver(solver const&) = delete;
+    //! @name Constructor
+    //! @{
+
+    //! Constructs a \ref solver from a shared pointer to \ref solver::base.
+    solver(ptr p);
+
+    //! @}
+
+    solver(solver const&) = default;
     solver(solver &&) = default;
     
-    solver &operator=(solver const&) = delete;
+    solver &operator=(solver const&) = default;
     solver &operator=(solver &&) = default;
 
-    base *get() { return _instance.get(); }
+    bool operator==(solver const&) const = default;
 
-    void set_smt_logic(std::string const& logic);
-    support::tribool check(logic::module mod);
-    std::optional<logic::term> value(logic::object x);
+    //! Returns the underlying shared pointer to \ref solver::base.
+    ptr pointer() const { return _ptr; }
+
+    //! Sets solver-specific options
+    void set(std::string option, std::string value);
+
+    //! Sets solver-agnostic options
+    void set(option opt, std::string value);
 
   private:
-    logic::module _last;
-    instance _instance;
+    ptr _ptr;
   };
 
+  //!
+  //! Virtual base class to be implemented by solvers.
+  //!
   class solver::base {
   public:
     virtual ~base() = default;
 
-    virtual void set_smt_logic(std::string const&logic) = 0;
+    //! Sets solver-specific options
+    virtual void set(std::string option, std::string value) = 0;
 
+    //! Sets solver-agnostic options
+    virtual void set(option opt, std::string value) = 0;
+
+    //! Returns the solver's underlying \ref pipes::consumer
     virtual pipes::consumer *consumer() = 0;
 
+    //! Check the satisfiability of the current solver's assertions stack
     virtual support::tribool check() = 0;
 
+    //! Ask the value of an object in the solver's current module.
+    //! This works only after a call to \ref check() that returned true.
     virtual std::optional<logic::term> value(logic::object) = 0;
   };
 
-  inline solver::solver(pipeline p) : _instance{p()} { }
+  inline solver::solver(ptr p) : _ptr{p} { }
 
-  inline void solver::set_smt_logic(std::string const& logic) {
-    _instance->set_smt_logic(logic);
+  //! Sets solver-specific options
+  inline void solver::set(std::string opt, std::string value) {
+    _ptr->set(opt, value);
   }
 
-  inline support::tribool solver::check(logic::module mod) {
-    mod.replay(_last, _instance->consumer());
-    _last = std::move(mod);
-    return _instance->check();
+  //! Sets solver-agnostic options
+  inline void solver::set(option opt, std::string value) {
+    _ptr->set(opt, value);
   }
 
-  inline std::optional<logic::term> solver::value(logic::object x) {
-    return _instance->value(x);
-  }
-
-  template<typename P>
-  using make_solver = make_pipe<P, solver>;
-
+  //!
+  //! Helper type to declare a new solver factory object.
+  //!
+  template<typename S>
+  inline constexpr auto make_solver = [](auto ...args) {
+    return solver{std::make_shared<S>(std::move(args)...)};
+  };
 }
 
 #endif // BLACK_PIPES_PIPELINE_HPP
