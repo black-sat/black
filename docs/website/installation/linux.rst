@@ -6,22 +6,16 @@ Installation on Linux
 Binary packages
 ----------------
 
-We provide binary packages for **Ubuntu 20.04**, **Ubuntu 22.04** (the latest LTS) and **Fedora 37** and **38** (the latest versions).
+We provide binary packages for **Ubuntu 24.04**, (the latest LTS) and **Fedora 40**.
 
 .. list-table::
    :header-rows: 1
 
-   * - Ubuntu 20.04
-     - Ubuntu 22.04
-     - Fedora 37
-     - Fedora 38
-   * - |Ubuntu20.04Badge|_
-     - |Ubuntu22.04Badge|_
-     - |Fedora37Badge|_
-     - |Fedora38Badge|_
+   * - Ubuntu 24.04
+     - Fedora 40
+   * - |Ubuntu24.04Badge|_
+     - |Fedora40Badge|_
    * - ``sudo apt install ⟨file⟩``
-     - ``sudo apt install ⟨file⟩``
-     - ``sudo dnf install ⟨file⟩``
      - ``sudo dnf install ⟨file⟩``
 
 These packages should work on other Debian-based and RedHat-based distributions
@@ -31,14 +25,10 @@ the packages should work but do not, please open a GitHub `issue
 <https://github.com/black-sat/black/issues>`_.
 
 
-.. |Ubuntu20.04Badge| image:: https://badgen.net/badge/Download%20v0.10.7/.deb/green
-.. _Ubuntu20.04Badge: https://github.com/black-sat/black/releases/download/v0.10.7/black-sat-0.10.7.ubuntu20.04.x86_64.deb
-.. |Ubuntu22.04Badge| image:: https://badgen.net/badge/Download%20v0.10.7/.deb/green
-.. _Ubuntu22.04Badge: https://github.com/black-sat/black/releases/download/v0.10.7/black-sat-0.10.7.ubuntu22.04.x86_64.deb
-.. |Fedora37Badge| image:: https://badgen.net/badge/Download%20v0.10.7/.rpm/green
-.. _Fedora37Badge: https://github.com/black-sat/black/releases/download/v0.10.7/black-sat-0.10.7.fedora37.x86_64.rpm
-.. |Fedora38Badge| image:: https://badgen.net/badge/Download%20v0.10.7/.rpm/green
-.. _Fedora38Badge: https://github.com/black-sat/black/releases/download/v0.10.7/black-sat-0.10.7.fedora38.x86_64.rpm
+.. |Ubuntu24.04Badge| image:: https://badgen.net/badge/Download%20v0.10.7/.deb/green
+.. _Ubuntu24.04Badge: https://github.com/black-sat/black/releases/download/v0.10.7/black-sat-0.10.7.ubuntu24.04.x86_64.deb
+.. |Fedora40Badge| image:: https://badgen.net/badge/Download%20v0.10.7/.rpm/green
+.. _Fedora40Badge: https://github.com/black-sat/black/releases/download/v0.10.7/black-sat-0.10.7.fedora40.x86_64.rpm
 
 Compilation from source
 ------------------------
