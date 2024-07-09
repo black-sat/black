@@ -45,38 +45,31 @@ namespace black::solvers {
 
     virtual support::tribool check() override { return V; }
 
-    virtual std::optional<logic::term> value(logic::object) override {
-      return {};
+    virtual std::optional<logic::model> model() const override {
+      if constexpr (V)
+        return {logic::model{}};
+      else
+        return {};
     }
   };
 
   inline constexpr auto sat = make_solver<const_t<true>>;
   inline constexpr auto unsat = make_solver<const_t<false>>;
 
-
-  class preprocessed_t : public solver::base
+  class preprocessed_t : 
+    public solver::base, 
+    public logic::model::base,
+    public std::enable_shared_from_this<preprocessed_t>
   {
-  public:
-    preprocessed_t(pipes::transform::pipeline pipe, solver slv)
-      : _slv{std::move(slv)}, _pipe{pipe(_slv.pointer()->consumer())} { }
-
-    virtual void set(std::string option, std::string value) override { 
-      _slv.pointer()->set(option, value);
-    }
-    
-    virtual void set(option option, std::string value) override { 
-      _slv.pointer()->set(option, value);
-    }
-
-    virtual pipes::consumer *consumer() override { return _pipe->consumer(); }
-    
-    virtual support::tribool check() override { 
-      return _slv.pointer()->check(); 
-    }
-    
-    virtual std::optional<logic::term> value(logic::object x) override {
+  private:
+    virtual 
+    std::optional<logic::term> value(logic::object x) const override {
       auto y = _pipe->translate(x);
-      auto v = _slv.pointer()->value(y ? *y : x);
+      auto m = _slv.model();
+      
+      black_assert(m.has_value());
+      
+      auto v = m->value(y ? *y : x);
 
       if(!v)
         return {};
@@ -85,6 +78,57 @@ namespace black::solvers {
         return _pipe->undo(*v);
       
       return *v;
+    }
+    
+    virtual 
+    std::optional<logic::term> value(logic::object x, size_t t) const override {
+      auto y = _pipe->translate(x);
+      auto m = _slv.model();
+      
+      black_assert(m.has_value());
+      
+      auto v = m->value(y ? *y : x, t);
+
+      if(!v)
+        return {};
+
+      if(y)
+        return _pipe->undo(*v);
+      
+      return *v;
+    }
+
+    virtual size_t size() const override {
+      black_assert(_slv.model().has_value());
+
+      return _slv.model()->size();
+    }
+
+  public:
+    preprocessed_t(pipes::transform::pipeline pipe, solver slv)
+      : _slv{std::move(slv)}, _pipe{pipe(_slv.ptr()->consumer())} { }
+
+    virtual ~preprocessed_t() override { }
+
+    virtual void set(std::string option, std::string value) override { 
+      _slv.set(option, value);
+    }
+    
+    virtual void set(option option, std::string value) override { 
+      _slv.set(option, value);
+    }
+
+    virtual pipes::consumer *consumer() override { return _pipe->consumer(); }
+    
+    virtual support::tribool check() override { 
+      return _slv.ptr()->check(); 
+    }
+    
+    virtual std::optional<logic::model> model() const override {
+      if(_slv.model().has_value())
+        return logic::model{this->shared_from_this()};
+
+      return {};
     }
 
   private:

@@ -42,11 +42,11 @@ namespace black::solvers {
     virtual void set(option opt, std::string value) override;
     virtual pipes::consumer *consumer() override;
     virtual support::tribool check() override;
-    virtual std::optional<logic::term> value(logic::object) override;
+    virtual std::optional<logic::model> model() const override;
 
   private:
     struct impl_t;
-    std::unique_ptr<impl_t> _impl;
+    std::shared_ptr<impl_t> _impl;
   };
 
   inline constexpr auto cvc5 = make_solver<cvc5_t>;

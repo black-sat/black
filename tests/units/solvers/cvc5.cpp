@@ -45,20 +45,11 @@ TEST_CASE("cvc5") {
         
         mod.require(x <= y);
 
-        REQUIRE(mod.is_sat(slv) == true);
+        REQUIRE(slv.check(mod) == true);
         
         mod.require(x > y);
 
-        REQUIRE(mod.is_sat(slv) == false);
-    }
-
-    SECTION("Validity") {
-        object x = mod.declare("x", types::integer());
-        object y = mod.declare("y", types::integer());
-
-        mod.require(implies(y == x + 1, x == y - 1));
-
-        REQUIRE(mod.is_valid(slv) == true);
+        REQUIRE(slv.check(mod) == false);
     }
 
     SECTION("Definitions") 
@@ -71,11 +62,11 @@ TEST_CASE("cvc5") {
         mod.require(k >= 2);
         mod.require(f(21) >= 42);
 
-        REQUIRE(mod.is_sat(slv) == true);
+        REQUIRE(slv.check(mod) == true);
         
         mod.require(f(21) < 42);
 
-        REQUIRE(mod.is_sat(slv) == false);
+        REQUIRE(slv.check(mod) == false);
     }
 
     SECTION("Declaration of functions/predicates") {
@@ -89,7 +80,7 @@ TEST_CASE("cvc5") {
         mod.require(forall(x, p(x)));
         mod.require(!p(42));
 
-        REQUIRE(mod.is_sat(slv) == false);
+        REQUIRE(slv.check(mod) == false);
 
     }
 
@@ -99,14 +90,14 @@ TEST_CASE("cvc5") {
         object y = mod.declare("y", types::integer());
         
         mod.require(x <= y);
-        REQUIRE(mod.is_sat(slv) == true);
+        REQUIRE(slv.check(mod) == true);
 
         mod.push();
         mod.require(x > y);
-        REQUIRE(mod.is_sat(slv) == false);
+        REQUIRE(slv.check(mod) == false);
         
         mod.pop();
-        REQUIRE(mod.is_sat(slv) == true);
+        REQUIRE(slv.check(mod) == true);
     }
 
     SECTION("Recursive definitions") {
@@ -125,10 +116,12 @@ TEST_CASE("cvc5") {
         
         mod.require(fact(a) == 24);
         
-        REQUIRE(mod.is_sat(slv) == true);
+        REQUIRE(slv.check(mod) == true);
 
-        REQUIRE(mod.value(a).has_value());
-        REQUIRE(mod.value(a) == 4);
+        REQUIRE(slv.model().has_value());
+
+        REQUIRE(slv.model()->value(a).has_value());
+        REQUIRE(slv.model()->value(a) == 4);
     }
 
     SECTION("Module imports") {
@@ -151,7 +144,7 @@ TEST_CASE("cvc5") {
 
         geometry.require(forall(r, implies(r > 1, perimeter(r) < area(r))));
 
-        REQUIRE(geometry.is_sat(slv) == true);
+        REQUIRE(slv.check(geometry) == true);
 
     }
 
@@ -160,10 +153,12 @@ TEST_CASE("cvc5") {
         
         mod.require(x <= 0);
         mod.require(x >= 0);
-        REQUIRE(mod.is_sat(slv) == true);
+        REQUIRE(slv.check(mod) == true);
 
-        REQUIRE(mod.value(x).has_value());
-        REQUIRE(mod.value(x) == 0);
+        REQUIRE(slv.model().has_value());
+
+        REQUIRE(slv.model()->value(x).has_value());
+        REQUIRE(slv.model()->value(x) == 0);
     }
 
 }
@@ -190,20 +185,22 @@ TEST_CASE("Example transform") {
     mod.push();
     mod.require(3.0 < x && x < 4.0);
 
-    REQUIRE(mod.is_sat(slv) == true);
+    REQUIRE(slv.check(mod) == true);
 
     slv = discretize() | solvers::cvc5();
 
-    REQUIRE(mod.is_sat(slv) == false);
+    REQUIRE(slv.check(mod) == false);
     
     mod.pop();
     mod.require(3.0 < x && x < 5.0);
 
-    REQUIRE(mod.is_sat(slv) == true);
+    REQUIRE(slv.check(mod) == true);
 
-    REQUIRE(mod.value(x) == 4.0);
+    REQUIRE(slv.model().has_value());
 
-    REQUIRE(mod.value(y) == 42);
+    REQUIRE(slv.model()->value(x) == 4.0);
+
+    REQUIRE(slv.model()->value(y) == 42);
 
 
 }

@@ -214,14 +214,12 @@ namespace black::solvers {
   {
   public:
     class base;
-    using ptr = std::shared_ptr<base>;
-
 
     //! @name Constructor
     //! @{
 
     //! Constructs a \ref solver from a shared pointer to \ref solver::base.
-    solver(ptr p);
+    solver(std::shared_ptr<base> p);
 
     //! @}
 
@@ -233,8 +231,8 @@ namespace black::solvers {
 
     bool operator==(solver const&) const = default;
 
-    //! Returns the underlying shared pointer to \ref solver::base.
-    ptr pointer() const { return _ptr; }
+    //! Returns the solver's underlying pointer to \ref solver::base
+    std::shared_ptr<base> ptr() const;
 
     //! Sets solver-specific options
     void set(std::string option, std::string value);
@@ -242,8 +240,16 @@ namespace black::solvers {
     //! Sets solver-agnostic options
     void set(option opt, std::string value);
 
+    //! Check the satisfiability of the given module
+    support::tribool check(logic::module mod);
+
+    //! Ask the value of an object in the solver's current model.
+    //! This works only after a call to \ref check() that returned true.
+    std::optional<logic::model> model() const;
+
   private:
-    ptr _ptr;
+    std::shared_ptr<base> _ptr;
+    logic::module _last;
   };
 
   //!
@@ -265,21 +271,33 @@ namespace black::solvers {
     //! Check the satisfiability of the current solver's assertions stack
     virtual support::tribool check() = 0;
 
-    //! Ask the value of an object in the solver's current module.
+    //! Ask the value of an object in the solver's current model.
     //! This works only after a call to \ref check() that returned true.
-    virtual std::optional<logic::term> value(logic::object) = 0;
+    virtual std::optional<logic::model> model() const = 0;
   };
 
-  inline solver::solver(ptr p) : _ptr{p} { }
+  inline solver::solver(std::shared_ptr<base> p) : _ptr{p} { }
 
-  //! Sets solver-specific options
+  inline std::shared_ptr<solver::base> solver::ptr() const {
+    return _ptr;
+  }
+
   inline void solver::set(std::string opt, std::string value) {
     _ptr->set(opt, value);
   }
 
-  //! Sets solver-agnostic options
   inline void solver::set(option opt, std::string value) {
     _ptr->set(opt, value);
+  }
+
+  inline support::tribool solver::check(logic::module mod) {
+    mod.replay(_last, _ptr->consumer());
+    _last = mod;
+    return _ptr->check();
+  }
+
+  inline std::optional<logic::model> solver::model() const {
+    return _ptr->model();
   }
 
   //!

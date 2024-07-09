@@ -98,49 +98,12 @@ namespace black::pipes::internal {
     std::unique_ptr<impl_t> _impl;
   };
 
-  class negate_t : public transform::base, consumer
-  {
-  private:
-    virtual void import(logic::module mod) override { 
-      _next->import(std::move(mod));
-    }
-
-    virtual void adopt(std::shared_ptr<logic::root const> root) override { 
-      _next->adopt(std::move(root));
-    }
-
-    virtual void state(logic::term t, logic::statement s) override { 
-      if(s == logic::statement::requirement)
-        _next->state(!t, s);
-      else
-        _next->state(t, s);
-    }
-
-    virtual void push() override { _next->push(); }
-    virtual void pop(size_t n) override { _next->pop(n); }
-
-  public:
-    negate_t(class consumer *next) : _next{next} { }
-      
-    virtual class consumer *consumer() override { return this; }
-
-    virtual std::optional<logic::object> translate(logic::object) override { 
-      return {};
-    }
-
-    virtual logic::term undo(logic::term t) override { return t; }
-
-  private:
-    class consumer *_next;
-  };
-
 }
 
 namespace black::pipes {
   inline constexpr auto id = make_transform<internal::id_t>;
   inline constexpr auto composed = make_transform<internal::composed_t>;
   inline constexpr auto map = make_transform<internal::map_t>;
-  inline constexpr auto negate = make_transform<internal::negate_t>;
 
   inline transform::pipeline 
   operator|(transform::pipeline first, transform::pipeline second) {

@@ -158,11 +158,11 @@ namespace black::logic
     term t1;
     term t2;
 
-    operator bool() const requires (EQ) {
+    explicit operator bool() const requires (EQ) {
       return term_equal(t1, t2);
     }
 
-    operator bool() const requires (!EQ) {
+    explicit operator bool() const requires (!EQ) {
       return !term_equal(t1, t2);
     }
     
@@ -194,6 +194,42 @@ namespace black::logic
   inline eq_wrapper_t<false> operator!=(term t1, term t2) {
     return {t1, t2};
   }
+  
+  inline eq_wrapper_t<true> operator==(
+    std::convertible_to<term> auto t1, 
+    std::convertible_to<term> auto t2
+  ) {
+    return {term{t1}, term{t2}};
+  }
+  
+  inline eq_wrapper_t<false> operator!=(
+    std::convertible_to<term> auto t1, 
+    std::convertible_to<term> auto t2
+  ) {
+    return {term{t1}, term{t2}};
+  }
+
+  inline bool operator==(std::optional<term> t1, std::optional<term> t2) {
+    if(t1.has_value() && t2.has_value())
+      return bool(*t1 == *t2);
+    return t1.has_value() == t2.has_value();
+  }
+
+  inline bool operator!=(std::optional<term> t1, std::optional<term> t2) {
+    return !(t1 == t2);
+  }
+
+  inline bool _test_equal(auto v1, auto v2) {
+    return bool(v1 == v2);
+  }
+  
+  inline bool 
+  _test_equal(std::vector<term> const&v1, std::vector<term> const&v2) {
+    return std::equal(begin(v1), end(v1), begin(v2), [](term t1, term t2) {
+      return bool(t1 == t2);
+    });
+  }
+
 
   inline bool term_equal(term t1, term t2) {
     if(t1.unique_id() == t2.unique_id())
@@ -206,13 +242,43 @@ namespace black::logic
       [&]<typename Node>(Node, auto const& ...args1) {
         return support::match(t2)(
           [&](Node, auto const& ...args2) {
-            return (bool(args1 == args2) && ...);
+            return (_test_equal(args1, args2) && ...);
           },
           [](auto) { return false; }
         );
       }
     );
   }
+
+  template<typename T = void>
+  struct term_equal_to {
+    term_equal_to() = default;
+    term_equal_to(term_equal_to const&) = default;
+    term_equal_to(term_equal_to &&) = default;
+    
+    term_equal_to &operator=(term_equal_to const&) = default;
+    term_equal_to &operator=(term_equal_to &&) = default;
+
+    bool operator()(T v1, T v2) const {
+      return bool(v1 == v2);
+    }
+
+  };
+  
+  template<>
+  struct term_equal_to<void> {
+    term_equal_to() = default;
+    term_equal_to(term_equal_to const&) = default;
+    term_equal_to(term_equal_to &&) = default;
+    
+    term_equal_to &operator=(term_equal_to const&) = default;
+    term_equal_to &operator=(term_equal_to &&) = default;
+
+    bool operator()(auto v1, auto v2) const {
+      return bool(v1 == v2);
+    }
+
+  };
   
   namespace internal {
 
