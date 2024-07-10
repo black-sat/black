@@ -18,7 +18,7 @@ Quadratic equations
 We start by including the relevant headers::
     
     #include <black/logic>
-    #include <black/solvers/cvc5>
+    #include <black/backends/cvc5>
 
     #include <cassert> // for the standard `assert` macro
 
@@ -76,7 +76,7 @@ Since our equation is non-linear, we need to give the solver some hint on how to
 solve it. For ``cvc5``, it is sufficient to correctly set the underlying SMT
 logic::
 
-    slv.set_smt_logic("QF_NRA");
+    slv.set(solvers::option::logic, "QF_NRA");
 
 Now we can just ask the solver to check the satisfiability of the module's
 requirements::
@@ -90,9 +90,16 @@ actually ``true`` because the equation above has solutions::
     assert(result == true);
 
 The equation's polynomial is actually a square, so the equation has a unique
-solution which is 4. We can check that the solver agrees::
+solution which is 4. We can check that the solver agrees. To do that, we have
+access to the *model* found by the solver. When :cpp:func:`check()` returns
+``true``, we are guaranteed the model exists::
 
-    assert(slv.value(x) == 4.0);
+    assert(slv.model().has_value());
+
+Therefore we can ask it the value of ``x`` and check if it is what we expect::
+
+    assert(slv.model()->value(x).has_value());
+    assert(slv.model()->value(x) == 4.0);
 
 .. note::
     Of course, the really useful thing here would be to print the value, 
@@ -119,7 +126,7 @@ Factorials
 What's the number whose factorial is 3628800? Let's find out::
 
     #include <black/logic>
-    #include <black/solvers/cvc5>
+    #include <black/backends/cvc5>
 
     #include <cassert> // for the standard `assert` macro
 
@@ -195,7 +202,9 @@ We instantiate the solver and check that the requirements are consistent::
 Somebody told me the answer is 10 (see the note above on why we are not printing
 it). Let's check if my source is trustable::
 
-    assert(slv.value(x) == 10);
+    assert(slv.model().has_value());
+
+    assert(slv.model()->value(x) == 10);
 
 Everything's worked well!
 

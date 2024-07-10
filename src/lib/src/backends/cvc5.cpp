@@ -26,7 +26,7 @@
 #include <black/support/private>
 #include <black/logic>
 #include <black/ast/algorithms>
-#include <black/solvers/cvc5>
+#include <black/backends/cvc5>
 
 #include <cvc5/cvc5.h>
 

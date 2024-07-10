@@ -24,6 +24,6 @@
 #ifndef BLACK_BACKENDS_CVC5_HPP
 #define BLACK_BACKENDS_CVC5_HPP
 
-#include <black/internal/solvers/cvc5.hpp>
+#include <black/internal/backends/cvc5.hpp>
 
 #endif // BLACK_BACKENDS_CVC5_HPP

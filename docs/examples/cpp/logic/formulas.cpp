@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 #include <black/logic>
-#include <black/solvers/cvc5>
+#include <black/backends/cvc5>
 
 #include <cassert> // for the standard `assert` macro
 
