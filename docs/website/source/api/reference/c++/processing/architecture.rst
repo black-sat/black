@@ -6,4 +6,4 @@ infrastructure.
 
 .. doxygenclass:: black::pipes::consumer
 .. doxygenclass:: black::pipes::transform
-.. doxygentypedef:: black::pipes::make_transform
+.. doxygenvariable:: black::pipes::make_transform

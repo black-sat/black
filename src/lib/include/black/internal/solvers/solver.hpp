@@ -34,6 +34,10 @@ namespace black::solvers {
   //!
   //! Opaque handle type representing solvers.
   //!
+  //! Solvers can be instantiated in various ways (see e.g., `backends::cvc5`).
+  //! Independently from their origin, this class wraps solver instances and
+  //! provides a unified interface.
+  //!
   class solver
   {
   public:
@@ -69,7 +73,7 @@ namespace black::solvers {
 
     //! Ask the value of an object in the solver's current model.
     //! This works only after a call to \ref check() that returned true.
-    std::optional<logic::model> model() const;
+    std::optional<model> model() const;
 
   private:
     std::shared_ptr<base> _ptr;
@@ -97,7 +101,7 @@ namespace black::solvers {
 
     //! Ask the value of an object in the solver's current model.
     //! This works only after a call to \ref check() that returned true.
-    virtual std::optional<logic::model> model() const = 0;
+    virtual std::optional<class model> model() const = 0;
   };
 
   inline solver::solver(std::shared_ptr<base> p) : _ptr{p} { }
@@ -120,7 +124,7 @@ namespace black::solvers {
     return _ptr->check();
   }
 
-  inline std::optional<logic::model> solver::model() const {
+  inline std::optional<model> solver::model() const {
     return _ptr->model();
   }
 

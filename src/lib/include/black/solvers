@@ -27,6 +27,7 @@
 #include <black/logic>
 #include <black/pipes>
 
+#include <black/internal/solvers/models.hpp>
 #include <black/internal/solvers/solver.hpp>
 #include <black/internal/solvers/basic.hpp>
 

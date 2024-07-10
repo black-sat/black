@@ -13,3 +13,4 @@ The following pages document BLACK's C++ API.
    c++/support
    c++/logic
    c++/processing
+   c++/solvers

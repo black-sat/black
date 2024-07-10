@@ -45,9 +45,9 @@ namespace black::solvers {
 
     virtual support::tribool check() override { return V; }
 
-    virtual std::optional<logic::model> model() const override {
+    virtual std::optional<class model> model() const override {
       if constexpr (V)
-        return {logic::model{}};
+        return {solvers::model{}};
       else
         return {};
     }
@@ -58,7 +58,7 @@ namespace black::solvers {
 
   class preprocessed_t : 
     public solver::base, 
-    public logic::model::base,
+    public model::base,
     public std::enable_shared_from_this<preprocessed_t>
   {
   private:
@@ -124,9 +124,9 @@ namespace black::solvers {
       return _slv.ptr()->check(); 
     }
     
-    virtual std::optional<logic::model> model() const override {
+    virtual std::optional<class model> model() const override {
       if(_slv.model().has_value())
-        return logic::model{this->shared_from_this()};
+        return solvers::model{this->shared_from_this()};
 
       return {};
     }

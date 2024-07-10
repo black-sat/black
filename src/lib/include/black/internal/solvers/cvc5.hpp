@@ -42,7 +42,7 @@ namespace black::solvers {
     virtual void set(option opt, std::string value) override;
     virtual pipes::consumer *consumer() override;
     virtual support::tribool check() override;
-    virtual std::optional<logic::model> model() const override;
+    virtual std::optional<class model> model() const override;
 
   private:
     struct impl_t;

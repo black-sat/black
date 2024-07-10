@@ -12,9 +12,5 @@ ensures they are always handled explicitly.
 
 .. doxygenstruct:: black::support::syntax_error
 
-.. doxygenstruct:: black::support::type_error
-
-.. doxygenstruct:: black::support::backend_error
-
 .. doxygenstruct:: black::support::io_error
 

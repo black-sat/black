@@ -33,7 +33,6 @@
 
 namespace black::logic {
   class module;
-  class model;
   struct root;
 
   enum class statement : uint8_t;
@@ -84,12 +83,6 @@ namespace black::pipes {
     virtual void pop(size_t n) = 0;
   };
 
-}
-
-namespace black::solvers {
-  // Declared later in <black/solvers>
-  class solver;
-  enum class option : uint8_t;
 }
 
 namespace black::logic {

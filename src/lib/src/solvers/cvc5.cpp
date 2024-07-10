@@ -43,7 +43,7 @@ namespace black::solvers {
 
   namespace CVC5 = ::cvc5;
 
-  struct cvc5_t::impl_t : pipes::consumer, logic::model::base
+  struct cvc5_t::impl_t : pipes::consumer, model::base
   {
     persistent::map<entity const *, CVC5::Term> objects;
     persistent::map<CVC5::Term, entity const *> consts;
@@ -444,7 +444,7 @@ namespace black::solvers {
 
   std::optional<model> cvc5_t::model() const {
     if(_impl->last_answer == true)
-      return logic::model{_impl};
+      return solvers::model{_impl};
 
     return {};
   }
