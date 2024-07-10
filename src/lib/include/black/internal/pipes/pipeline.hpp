@@ -32,27 +32,6 @@
 
 namespace black::pipes {
 
-  // template<typename P, typename T, typename ...Args>
-  // struct make_pipe {
-  //   constexpr make_pipe() = default;
-    
-  //   make_pipe(make_pipe const&) = default;
-  //   make_pipe(make_pipe &&) = default;
-
-  //   make_pipe &operator=(make_pipe const&) = default;
-  //   make_pipe &operator=(make_pipe &&) = default;
-
-  //   template<typename ...Args2>
-  //     requires std::is_constructible_v<P, Args..., Args2...>
-  //   typename T::pipeline operator()(Args2 ...args2) const {
-  //     return [... args3 = std::move(args2)](Args ...args) 
-  //       -> typename T::instance 
-  //     { 
-  //       return std::make_unique<P>( std::move(args)..., std::move(args3)... );
-  //     };
-  //   }
-  // };
-
   template<typename P, typename T, typename ...Args>
   inline constexpr auto make_pipe = 
     []<typename ...Args2>(Args2 ...args2) -> typename T::pipeline
@@ -200,113 +179,89 @@ namespace black::pipes {
 
 }
 
-namespace black::solvers {
+namespace black::pipes::internal {
 
-  //! Enum of known solver-agnostic options that can be passed to solvers.
-  enum class option : uint8_t {
-    logic //!< Set the SMT logic.
-  };
-
-  //!
-  //! Opaque handle type representing solvers.
-  //!
-  class solver
+  class id_t : public transform::base
   {
   public:
-    class base;
+    id_t(class consumer *next) : _next{next} { }
+      
+    virtual class consumer *consumer() override { return _next; }
 
-    //! @name Constructor
-    //! @{
+    virtual std::optional<logic::object> translate(logic::object) override { 
+      return {};
+    }
 
-    //! Constructs a \ref solver from a shared pointer to \ref solver::base.
-    solver(std::shared_ptr<base> p);
-
-    //! @}
-
-    solver(solver const&) = default;
-    solver(solver &&) = default;
-    
-    solver &operator=(solver const&) = default;
-    solver &operator=(solver &&) = default;
-
-    bool operator==(solver const&) const = default;
-
-    //! Returns the solver's underlying pointer to \ref solver::base
-    std::shared_ptr<base> ptr() const;
-
-    //! Sets solver-specific options
-    void set(std::string option, std::string value);
-
-    //! Sets solver-agnostic options
-    void set(option opt, std::string value);
-
-    //! Check the satisfiability of the given module
-    support::tribool check(logic::module mod);
-
-    //! Ask the value of an object in the solver's current model.
-    //! This works only after a call to \ref check() that returned true.
-    std::optional<logic::model> model() const;
+    virtual logic::term undo(logic::term t) override { return t; }
 
   private:
-    std::shared_ptr<base> _ptr;
-    logic::module _last;
+    class consumer *_next;
   };
 
-  //!
-  //! Virtual base class to be implemented by solvers.
-  //!
-  class solver::base {
+
+  class composed_t : public transform::base
+  {
   public:
-    virtual ~base() = default;
+    composed_t(
+      class consumer *next, 
+      transform::pipeline first, transform::pipeline second
+    ) : _second{second(next)}, _first{first(_second->consumer())} { }
+      
+    virtual class consumer *consumer() override {
+      return _first->consumer();
+    }
 
-    //! Sets solver-specific options
-    virtual void set(std::string option, std::string value) = 0;
+    virtual std::optional<logic::object> translate(logic::object x) override { 
+      auto f = _first->translate(x);
+      if(!f)
+        return {};
+      return _second->translate(*f);
+    }
 
-    //! Sets solver-agnostic options
-    virtual void set(option opt, std::string value) = 0;
-
-    //! Returns the solver's underlying \ref pipes::consumer
-    virtual pipes::consumer *consumer() = 0;
-
-    //! Check the satisfiability of the current solver's assertions stack
-    virtual support::tribool check() = 0;
-
-    //! Ask the value of an object in the solver's current model.
-    //! This works only after a call to \ref check() that returned true.
-    virtual std::optional<logic::model> model() const = 0;
+    virtual logic::term undo(logic::term t) override {
+      return _first->undo(_second->undo(t));
+    }
+  
+  private:
+    transform::instance _second;
+    transform::instance _first;
   };
 
-  inline solver::solver(std::shared_ptr<base> p) : _ptr{p} { }
+  class map_t : public transform::base
+  {
+  public:
+    using type_mapping_t = std::function<logic::type(logic::type)>;
+    using term_mapping_t = std::function<logic::term(logic::term)>;
 
-  inline std::shared_ptr<solver::base> solver::ptr() const {
-    return _ptr;
-  }
+    map_t(
+      class consumer *next, 
+      type_mapping_t ty_map, term_mapping_t te_map, term_mapping_t back_map
+    );
 
-  inline void solver::set(std::string opt, std::string value) {
-    _ptr->set(opt, value);
-  }
+    virtual ~map_t() override;
+      
+    virtual class consumer *consumer() override;
 
-  inline void solver::set(option opt, std::string value) {
-    _ptr->set(opt, value);
-  }
+    virtual std::optional<logic::object> translate(logic::object x) override;
 
-  inline support::tribool solver::check(logic::module mod) {
-    mod.replay(_last, _ptr->consumer());
-    _last = mod;
-    return _ptr->check();
-  }
+    virtual logic::term undo(logic::term x) override;
 
-  inline std::optional<logic::model> solver::model() const {
-    return _ptr->model();
-  }
-
-  //!
-  //! Helper type to declare a new solver factory object.
-  //!
-  template<typename S>
-  inline constexpr auto make_solver = [](auto ...args) {
-    return solver{std::make_shared<S>(std::move(args)...)};
+  private:
+    struct impl_t;
+    std::unique_ptr<impl_t> _impl;
   };
+
+}
+
+namespace black::pipes {
+  inline constexpr auto id = make_transform<internal::id_t>;
+  inline constexpr auto composed = make_transform<internal::composed_t>;
+  inline constexpr auto map = make_transform<internal::map_t>;
+
+  inline transform::pipeline 
+  operator|(transform::pipeline first, transform::pipeline second) {
+    return composed(std::move(first), std::move(second));
+  }
 }
 
 #endif // BLACK_PIPES_PIPELINE_HPP

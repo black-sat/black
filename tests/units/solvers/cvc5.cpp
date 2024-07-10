@@ -27,7 +27,7 @@
 #include <black/logic>
 #include <black/pipes>
 #include <black/ast/algorithms>
-#include <black/solvers/cvc5>
+#include <black/backends/cvc5>
 
 using namespace black;
 using namespace black::support;

@@ -25,6 +25,7 @@
 #include <black/support/private>
 #include <black/logic>
 #include <black/pipes>
+#include <black/solvers>
 
 #include <algorithm>
 #include <unordered_set>

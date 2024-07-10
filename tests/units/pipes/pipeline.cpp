@@ -26,7 +26,7 @@
 #include <black/support>
 #include <black/logic>
 #include <black/pipes>
-#include <black/solvers/cvc5>
+#include <black/backends/cvc5>
 
 #include <cmath>
 

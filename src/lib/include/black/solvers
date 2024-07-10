@@ -21,9 +21,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_SOLVERS_CVC5_HPP
-#define BLACK_SOLVERS_CVC5_HPP
+#ifndef BLACK_SOLVERS_CORE_HPP
+#define BLACK_SOLVERS_CORE_HPP
 
-#include <black/internal/solvers/cvc5.hpp>
+#include <black/logic>
+#include <black/pipes>
 
-#endif // BLACK_SOLVERS_CVC5_HPP
+#include <black/internal/solvers/solver.hpp>
+#include <black/internal/solvers/basic.hpp>
+
+#endif // BLACK_SOLVERS_CORE_HPP

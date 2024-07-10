@@ -21,8 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_PIPES_SOLVERS_HPP
-#define BLACK_PIPES_SOLVERS_HPP
+#ifndef BLACK_SOLVERS_BASIC_HPP
+#define BLACK_SOLVERS_BASIC_HPP
 
 namespace black::solvers {
 
@@ -138,17 +138,13 @@ namespace black::solvers {
 
   inline constexpr auto preprocessed = make_solver<preprocessed_t>;
 
-}
-
-
-namespace black::pipes {
-
   inline solvers::solver 
   operator|(pipes::transform::pipeline pipe, solvers::solver slv) {
     return solvers::preprocessed(std::move(pipe), std::move(slv));
   }
-  
 
 }
 
-#endif // BLACK_PIPES_SOLVERS_HPP
+  
+  
+#endif // BLACK_SOLVERS_BASIC_HPP

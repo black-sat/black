@@ -87,7 +87,7 @@ namespace black::pipes {
 }
 
 namespace black::solvers {
-  // Declared later in <black/pipes>
+  // Declared later in <black/solvers>
   class solver;
   enum class option : uint8_t;
 }
