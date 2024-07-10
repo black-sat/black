@@ -33,25 +33,16 @@
 namespace black::pipes {
 
   template<typename P, typename T, typename ...Args>
-  struct make_pipe {
-    constexpr make_pipe() = default;
-    
-    make_pipe(make_pipe const&) = default;
-    make_pipe(make_pipe &&) = default;
-
-    make_pipe &operator=(make_pipe const&) = default;
-    make_pipe &operator=(make_pipe &&) = default;
-
-    template<typename ...Args2>
+  inline constexpr auto make_pipe = 
+    []<typename ...Args2>(Args2 ...args2) -> typename T::pipeline
       requires std::is_constructible_v<P, Args..., Args2...>
-    typename T::pipeline operator()(Args2 ...args2) const {
+    {
       return [... args3 = std::move(args2)](Args ...args) 
         -> typename T::instance 
       { 
         return std::make_unique<P>( std::move(args)..., std::move(args3)... );
       };
-    }
-  };
+    };
 
   //!
   //! Class handling instances of tranform pipelines.
@@ -184,69 +175,93 @@ namespace black::pipes {
   //! ```
   //!
   template<typename P>
-  using make_transform = make_pipe<P, transform, consumer *>;
+  inline constexpr auto make_transform = make_pipe<P, transform, consumer *>;
 
-  //
-  //
-  //
-  class solver
+}
+
+namespace black::pipes::internal {
+
+  class id_t : public transform::base
   {
   public:
-    class base;
-    using instance = std::unique_ptr<base>;
-    using pipeline = std::function<instance()>;
+    id_t(class consumer *next) : _next{next} { }
+      
+    virtual class consumer *consumer() override { return _next; }
 
-    solver(pipeline p);
+    virtual std::optional<logic::object> translate(logic::object) override { 
+      return {};
+    }
 
-    solver(solver const&) = delete;
-    solver(solver &&) = default;
-    
-    solver &operator=(solver const&) = delete;
-    solver &operator=(solver &&) = default;
-
-    base *get() { return _instance.get(); }
-
-    void set_smt_logic(std::string const& logic);
-    support::tribool check(logic::module mod);
-    std::optional<logic::term> value(logic::object x);
+    virtual logic::term undo(logic::term t) override { return t; }
 
   private:
-    logic::module _last;
-    instance _instance;
+    class consumer *_next;
   };
 
-  class solver::base {
+
+  class composed_t : public transform::base
+  {
   public:
-    virtual ~base() = default;
+    composed_t(
+      class consumer *next, 
+      transform::pipeline first, transform::pipeline second
+    ) : _second{second(next)}, _first{first(_second->consumer())} { }
+      
+    virtual class consumer *consumer() override {
+      return _first->consumer();
+    }
 
-    virtual void set_smt_logic(std::string const&logic) = 0;
+    virtual std::optional<logic::object> translate(logic::object x) override { 
+      auto f = _first->translate(x);
+      if(!f)
+        return {};
+      return _second->translate(*f);
+    }
 
-    virtual pipes::consumer *consumer() = 0;
-
-    virtual support::tribool check() = 0;
-
-    virtual std::optional<logic::term> value(logic::object) = 0;
+    virtual logic::term undo(logic::term t) override {
+      return _first->undo(_second->undo(t));
+    }
+  
+  private:
+    transform::instance _second;
+    transform::instance _first;
   };
 
-  inline solver::solver(pipeline p) : _instance{p()} { }
+  class map_t : public transform::base
+  {
+  public:
+    using type_mapping_t = std::function<logic::type(logic::type)>;
+    using term_mapping_t = std::function<logic::term(logic::term)>;
 
-  inline void solver::set_smt_logic(std::string const& logic) {
-    _instance->set_smt_logic(logic);
+    map_t(
+      class consumer *next, 
+      type_mapping_t ty_map, term_mapping_t te_map, term_mapping_t back_map
+    );
+
+    virtual ~map_t() override;
+      
+    virtual class consumer *consumer() override;
+
+    virtual std::optional<logic::object> translate(logic::object x) override;
+
+    virtual logic::term undo(logic::term x) override;
+
+  private:
+    struct impl_t;
+    std::unique_ptr<impl_t> _impl;
+  };
+
+}
+
+namespace black::pipes {
+  inline constexpr auto id = make_transform<internal::id_t>;
+  inline constexpr auto composed = make_transform<internal::composed_t>;
+  inline constexpr auto map = make_transform<internal::map_t>;
+
+  inline transform::pipeline 
+  operator|(transform::pipeline first, transform::pipeline second) {
+    return composed(std::move(first), std::move(second));
   }
-
-  inline support::tribool solver::check(logic::module mod) {
-    mod.replay(_last, _instance->consumer());
-    _last = std::move(mod);
-    return _instance->check();
-  }
-
-  inline std::optional<logic::term> solver::value(logic::object x) {
-    return _instance->value(x);
-  }
-
-  template<typename P>
-  using make_solver = make_pipe<P, solver>;
-
 }
 
 #endif // BLACK_PIPES_PIPELINE_HPP

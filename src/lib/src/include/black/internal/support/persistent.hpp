@@ -108,11 +108,11 @@ namespace black::support::persistent {
   };
 
 
-  template<typename K, typename T>
+  template<typename K, typename T, typename Equal = std::equal_to<K>>
   class map 
   {
   public:
-    using immer_t = ::immer::map<K, T>;
+    using immer_t = ::immer::map<K, T, std::hash<K>, Equal>;
     using key_type = typename immer_t::key_type;
     using mapped_type = typename immer_t::mapped_type;
     using value_type = typename immer_t::value_type;
@@ -203,11 +203,11 @@ namespace black::support::persistent {
   };
 
 
-  template<typename T>
+  template<typename T, typename Equal = std::equal_to<T>>
   class set 
   {
   public:
-    using immer_t = ::immer::set<T>;
+    using immer_t = ::immer::set<T, std::hash<T>, Equal>;
     using value_type = typename immer_t::value_type;
     using size_type = typename immer_t::size_type;
     using difference_type = typename immer_t::diference_type;

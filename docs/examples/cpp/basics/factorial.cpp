@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 #include <black/logic>
-#include <black/solvers/cvc5>
+#include <black/backends/cvc5>
 
 #include <cassert> // for the standard `assert` macro
 
@@ -51,8 +51,10 @@ int main() {
     solvers::solver slv = solvers::cvc5();
 
     assert(slv.check(mod) == true);
+    
+    assert(slv.model().has_value());
 
-    assert(slv.value(x) == 10);
+    assert(slv.model()->value(x) == 10);
 
     return 0;
 }

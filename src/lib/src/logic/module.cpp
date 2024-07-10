@@ -24,6 +24,8 @@
 #include <black/support>
 #include <black/support/private>
 #include <black/logic>
+#include <black/pipes>
+#include <black/solvers>
 
 #include <algorithm>
 #include <unordered_set>
@@ -57,7 +59,7 @@ namespace black::logic {
     struct frame_t {
       persistent::vector<module> imports;
       persistent::vector<std::shared_ptr<root const>> roots;
-      persistent::map<variable, entity const*> scope;
+      persistent::map<variable, entity const*, term_equal_to<>> scope;
       persistent::vector<req_t> statements;
 
       bool operator==(frame_t const&) const = default;
@@ -65,6 +67,16 @@ namespace black::logic {
 
     persistent::vector<frame_t> _stack = { frame_t{} };
     std::vector<std::unique_ptr<entity>> _pending;
+
+    std::optional<solvers::solver> _solver; // last used
+    module _checked; // screenshot of the model at the last check
+    
+    enum class last_call_t {
+      none = 0,
+      is_sat,
+      is_valid
+    };
+    last_call_t _last_call = last_call_t::none;
 
     impl_t() = default;
 
@@ -82,16 +94,19 @@ namespace black::logic {
 
     std::vector<term> resolved(
       std::vector<term> const &ts, 
-      std::unordered_set<variable> const& pending, recursion *mode, 
+      std::unordered_set<variable, std::hash<variable>, term_equal_to<>>
+      const& pending, 
+      recursion *mode, 
       root const *ours, std::unordered_set<std::shared_ptr<root const>> *deps,
-      persistent::set<variable> hidden
+      persistent::set<variable, term_equal_to<>> hidden
     ) const;
 
     term resolved(
       term t, 
-      std::unordered_set<variable> const& pending, recursion *mode, 
+      std::unordered_set<variable, std::hash<variable>, term_equal_to<>>
+      const& pending, recursion *mode, 
       root const*ours, std::unordered_set<std::shared_ptr<root const>> *deps,
-      persistent::set<variable> hidden
+      persistent::set<variable, term_equal_to<>> hidden
     ) const;
 
     type infer(
@@ -116,6 +131,7 @@ namespace black::logic {
     void state(term t, statement s);
     void push();
     void pop(size_t n);
+    support::tribool is_sat(module self, solvers::solver slv);
     void replay(module from, pipes::consumer *target) const;
   };
 
@@ -401,9 +417,10 @@ namespace black::logic {
   
   std::vector<term> module::impl_t::resolved(
     std::vector<term> const &ts, 
-    std::unordered_set<variable> const& pending, recursion *mode, 
+    std::unordered_set<variable, std::hash<variable>, term_equal_to<>> 
+    const& pending, recursion *mode, 
     root const *ours, std::unordered_set<std::shared_ptr<root const>> *deps,
-    persistent::set<variable> hidden
+    persistent::set<variable, term_equal_to<>> hidden
   ) const {
     std::vector<term> res;
     for(term t : ts)
@@ -418,9 +435,11 @@ namespace black::logic {
   //
   term module::impl_t::resolved(
     term t, 
-    std::unordered_set<variable> const& pending, recursion *mode, 
+    std::unordered_set<variable, std::hash<variable>, term_equal_to<>> 
+    const& pending, 
+    recursion *mode, 
     root const *ours, std::unordered_set<std::shared_ptr<root const>> *deps,
-    persistent::set<variable> hidden
+    persistent::set<variable, term_equal_to<>> hidden
   ) const {
     return support::match(t)(
       [&](error v)         { return v; },
@@ -503,7 +522,7 @@ namespace black::logic {
     // and we collect things from the vector while we move it.
     auto root = std::make_shared<struct root>();
     std::vector<entity *> lookups;
-    std::unordered_set<variable> names;
+    std::unordered_set<variable, std::hash<variable>, term_equal_to<>> names;
     for(auto local = std::move(*pending); auto & e : local) {
       lookups.push_back(e.get());
       e->root = root;

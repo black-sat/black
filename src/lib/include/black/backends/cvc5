@@ -21,17 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <black/logic>
-#include <black/backends/cvc5>
+#ifndef BLACK_BACKENDS_CVC5_HPP
+#define BLACK_BACKENDS_CVC5_HPP
 
-#include <cassert> // for the standard `assert` macro
+#include <black/internal/backends/cvc5.hpp>
 
-using namespace black;
-using namespace black::support;
-using namespace black::logic;
-
-int main() {
-
-    
-
-}
+#endif // BLACK_BACKENDS_CVC5_HPP

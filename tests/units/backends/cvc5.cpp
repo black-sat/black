@@ -27,7 +27,7 @@
 #include <black/logic>
 #include <black/pipes>
 #include <black/ast/algorithms>
-#include <black/solvers/cvc5>
+#include <black/backends/cvc5>
 
 using namespace black;
 using namespace black::support;
@@ -118,8 +118,10 @@ TEST_CASE("cvc5") {
         
         REQUIRE(slv.check(mod) == true);
 
-        REQUIRE(slv.value(a).has_value());
-        REQUIRE(slv.value(a) == 4);
+        REQUIRE(slv.model().has_value());
+
+        REQUIRE(slv.model()->value(a).has_value());
+        REQUIRE(slv.model()->value(a) == 4);
     }
 
     SECTION("Module imports") {
@@ -153,8 +155,10 @@ TEST_CASE("cvc5") {
         mod.require(x >= 0);
         REQUIRE(slv.check(mod) == true);
 
-        REQUIRE(slv.value(x).has_value());
-        REQUIRE(slv.value(x) == 0);
+        REQUIRE(slv.model().has_value());
+
+        REQUIRE(slv.model()->value(x).has_value());
+        REQUIRE(slv.model()->value(x) == 0);
     }
 
 }
@@ -192,9 +196,11 @@ TEST_CASE("Example transform") {
 
     REQUIRE(slv.check(mod) == true);
 
-    REQUIRE(slv.value(x) == 4.0);
+    REQUIRE(slv.model().has_value());
 
-    REQUIRE(slv.value(y) == 42);
+    REQUIRE(slv.model()->value(x) == 4.0);
+
+    REQUIRE(slv.model()->value(y) == 42);
 
 
 }

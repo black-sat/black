@@ -25,7 +25,8 @@
 #include <black/support>
 #include <black/support/private>
 #include <black/logic>
-#include <black/solvers/cvc5>
+#include <black/ast/algorithms>
+#include <black/backends/cvc5>
 
 #include <cvc5/cvc5.h>
 
@@ -42,20 +43,17 @@ namespace black::solvers {
 
   namespace CVC5 = ::cvc5;
 
-  struct cvc5_t::impl_t : pipes::consumer 
+  struct cvc5_t::impl_t : pipes::consumer, model::base
   {
     persistent::map<entity const *, CVC5::Term> objects;
     persistent::map<CVC5::Term, entity const *> consts;
     std::unique_ptr<CVC5::Solver> slv = std::make_unique<CVC5::Solver>();
     bool ignore_push = false;
+    support::tribool last_answer = false;
 
     impl_t() { 
       slv->setOption("fmf-fun", "true");
       slv->setOption("produce-models", "true");
-    }
-
-    void set_smt_logic(std::string const& logic) {
-      slv->setLogic(logic);
     }
 
     std::optional<CVC5::Term> get_const(entity const *e) const {
@@ -85,8 +83,9 @@ namespace black::solvers {
     }
 
     CVC5::Term 
-    to_term(term t, persistent::map<variable, CVC5::Term> vars) const 
-    {
+    to_term(
+      term t, persistent::map<variable, CVC5::Term, term_equal_to<>> vars
+    ) const {
       return ast::traverse<CVC5::Term>(t)(
         [&](integer, int64_t v) { return slv->mkInteger(v); },
         [&](real, double v) { 
@@ -129,7 +128,7 @@ namespace black::solvers {
         [&](any_of<exists,forall,lambda> auto v, auto decls/*, auto body*/) {
           std::vector<CVC5::Term> varlist;
           
-          persistent::map<variable, CVC5::Term> newvars = vars;
+          persistent::map<variable, CVC5::Term, term_equal_to<>> newvars = vars;
 
           for(auto [name, type, role] : decls) {
             CVC5::Term term = slv->mkVar(to_sort(type));
@@ -190,7 +189,7 @@ namespace black::solvers {
     }
 
     template<typename Node, typename ...Args>
-    term from_many_children(CVC5::Term t, Args ...args) {
+    term from_many_children(CVC5::Term t, Args ...args) const {
       std::vector<term> children;
       size_t i = 0;
       for(auto child : t)
@@ -200,13 +199,13 @@ namespace black::solvers {
     }
 
     template<typename Node, typename ...Args>
-    term from_children(CVC5::Term t, Args ...args) {
+    term from_children(CVC5::Term t, Args ...args) const {
       return [&]<size_t ...Idx>(std::index_sequence<Idx...>) {
         return Node(args..., from_term(t[sizeof...(Args) + Idx])...);
       }(std::make_index_sequence<std::tuple_size_v<Node> - sizeof...(Args)>{});
     }
 
-    term from_term(CVC5::Term t) {
+    term from_term(CVC5::Term t) const {
       if(auto p = get_entity(t); p)
         return object(p);
 
@@ -279,7 +278,7 @@ namespace black::solvers {
       CVC5::Term t = match(*e->value)(
         [&](lambda, auto const &decls, term body) {
           std::vector<CVC5::Term> vars;
-          persistent::map<variable, CVC5::Term> varmap;
+          persistent::map<variable, CVC5::Term, term_equal_to<>> varmap;
 
           for(auto [name, type, role] : decls) {
             CVC5::Term var = slv->mkVar(to_sort(type));
@@ -325,7 +324,7 @@ namespace black::solvers {
           types::function ty = unwrap(cast<types::function>(e->type));
           lambda fun = unwrap(cast<lambda>(e->value));
 
-          persistent::map<variable, CVC5::Term> boundvars;
+          persistent::map<variable, CVC5::Term, term_equal_to<>> boundvars;
           for(decl d : fun.vars()) {
             CVC5::Term var = slv->mkVar(to_sort(d.type));
             boundvars.insert({d.name, var});
@@ -396,15 +395,14 @@ namespace black::solvers {
     support::tribool check() {
       CVC5::Result res = slv->checkSat();
       if(res.isSat())
-        return true;
+        return last_answer = true;
       if(res.isUnsat())
-        return false;
+        return last_answer = false;
         
-      return tribool::undef;
+      return last_answer = tribool::undef;
     }
 
-    std::optional<term> value(object x) 
-    {
+    std::optional<term> value(object x) const override {
       CVC5::Term v = slv->getValue(to_term(x, {}));
       if(v.isNull())
         return {};
@@ -412,15 +410,28 @@ namespace black::solvers {
       return from_term(v);
     }
 
+    std::optional<term> value(object, size_t) const override {
+      return {};
+    }
+
+    size_t size() const override {
+      return 0;
+    }
+
   };
 
 
-  cvc5_t::cvc5_t() : _impl{std::make_unique<impl_t>()} { }
+  cvc5_t::cvc5_t() : _impl{std::make_shared<impl_t>()} { }
 
   cvc5_t::~cvc5_t() = default;
 
-  void cvc5_t::set_smt_logic(std::string const&logic) {
-    _impl->set_smt_logic(logic);
+  void cvc5_t::set(std::string option, std::string value) {
+    _impl->slv->setOption(option, value);
+  }
+
+  void cvc5_t::set(solvers::option option, std::string value) {
+    if(option == solvers::option::logic)
+      _impl->slv->setLogic(value);
   }
 
   pipes::consumer *cvc5_t::consumer() { 
@@ -431,8 +442,11 @@ namespace black::solvers {
     return _impl->check(); 
   }
 
-  std::optional<term> cvc5_t::value(object x) {
-    return _impl->value(x);
+  std::optional<model> cvc5_t::model() const {
+    if(_impl->last_answer == true)
+      return solvers::model{_impl};
+
+    return {};
   }
 
 }

@@ -25,7 +25,7 @@
 #define BLACK_INTERNAL_BACKENDS_CVC5_HPP
 
 #include <black/logic>
-#include <black/pipes>
+#include <black/solvers>
 
 #include <memory>
 
@@ -38,17 +38,18 @@ namespace black::solvers {
     
     virtual ~cvc5_t() override;
 
-    virtual void set_smt_logic(std::string const&) override;
+    virtual void set(std::string option, std::string value) override;
+    virtual void set(option opt, std::string value) override;
     virtual pipes::consumer *consumer() override;
     virtual support::tribool check() override;
-    virtual std::optional<logic::term> value(logic::object) override;
+    virtual std::optional<class model> model() const override;
 
   private:
     struct impl_t;
-    std::unique_ptr<impl_t> _impl;
+    std::shared_ptr<impl_t> _impl;
   };
 
-  inline constexpr auto cvc5 = pipes::make_solver<cvc5_t>{};
+  inline constexpr auto cvc5 = make_solver<cvc5_t>;
 
 }
 

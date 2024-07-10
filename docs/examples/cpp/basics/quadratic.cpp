@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 #include <black/logic>
-#include <black/solvers/cvc5>
+#include <black/backends/cvc5>
 
 #include <cassert> // for the standard `assert` macro
 #include <iostream>
@@ -43,14 +43,16 @@ int main() {
 
     solvers::solver slv = solvers::cvc5();
 
-    slv.set_smt_logic("QF_NRA");
+    slv.set(solvers::option::logic, "QF_NRA");
 
     support::tribool result = slv.check(mod);
     
     assert(result == true);
 
-    assert(slv.value(x).has_value());
-    assert(slv.value(x).value() == 4.0);
+    assert(slv.model().has_value());
+
+    assert(slv.model()->value(x).has_value());
+    assert(slv.model()->value(x) == 4.0);
 
     mod.require(x != 4.0);
 

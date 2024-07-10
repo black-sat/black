@@ -753,7 +753,7 @@ namespace black::logic {
 
     bool operator==(entity const& other) const {
       return bool(name == other.name) && bool(type == other.type) 
-          && value == other.value && root.lock() == other.root.lock();
+          && bool(value == other.value) && root.lock() == other.root.lock();
     }
 
     //@}

@@ -140,7 +140,9 @@ TEST_CASE("Static reflection") {
 
     REQUIRE(r == 42);
 
-    std::unordered_map<term, int> m = {{t, 42}};
+    std::unordered_map<
+        term, int, std::hash<term>, term_equal_to<>
+    > m = {{t, 42}};
 
     REQUIRE(m[t] == 42);
 
