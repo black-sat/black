@@ -72,7 +72,7 @@ endif()
 #
 # External dependencies
 #
-find_package(immer REQUIRED)
+find_package(Immer REQUIRED)
 
 add_subdirectory(external/clipp EXCLUDE_FROM_ALL)
 
