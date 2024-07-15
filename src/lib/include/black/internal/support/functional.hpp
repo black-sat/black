@@ -241,7 +241,9 @@ namespace black::support::internal {
     std::source_location loc = std::source_location::current()
   ) 
   {
-    return [=](auto ...fs) -> std::optional<decltype(match(*m, loc)(fs...))> {
+    return [=](auto ...fs) 
+      -> std::optional<decltype(match(std::declval<M>(), loc)(fs...))> 
+    {
       if(m)
         return match(*m, loc)(fs...);
       return {};
@@ -253,7 +255,8 @@ namespace black::support::internal {
     std::expected<M, E> m, 
     std::source_location loc = std::source_location::current()
   ) {
-    return [=](auto ...fs) -> std::expected<decltype(match(*m, loc)(fs...)), E> 
+    return [=](auto ...fs) 
+      -> std::expected<decltype(match(std::declval<M>(), loc)(fs...)), E> 
     {
       if(m)
         return match(*m, loc)(fs...);
