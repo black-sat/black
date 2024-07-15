@@ -107,6 +107,19 @@ namespace black::support::persistent {
     immer_t _data;
   };
 
+  //
+  // Hack to support an old version of `immer` which mispelled
+  // `difference_type`.
+  //
+  template<typename T>
+  struct wrong_difference_type
+    : std::type_identity<typename T::difference_type> { };
+
+  template<typename T>
+    requires requires { typename T::diference_type; }
+  struct wrong_difference_type<T>
+    : std::type_identity<typename T::diference_type> { };
+
 
   template<typename K, typename T, typename Equal = std::equal_to<K>>
   class map 
@@ -117,7 +130,7 @@ namespace black::support::persistent {
     using mapped_type = typename immer_t::mapped_type;
     using value_type = typename immer_t::value_type;
     using size_type = typename immer_t::size_type;
-    using difference_type = typename immer_t::diference_type;
+    using difference_type = typename wrong_difference_type<immer_t>::type;
     using hasher = typename immer_t::hasher;
     using key_equal = typename immer_t::key_equal;
     using reference = typename immer_t::reference;
@@ -210,7 +223,7 @@ namespace black::support::persistent {
     using immer_t = ::immer::set<T, std::hash<T>, Equal>;
     using value_type = typename immer_t::value_type;
     using size_type = typename immer_t::size_type;
-    using difference_type = typename immer_t::diference_type;
+    using difference_type = typename wrong_difference_type<immer_t>::type;
     using hasher = typename immer_t::hasher;
     using key_equal = typename immer_t::key_equal;
     using reference = typename immer_t::reference;

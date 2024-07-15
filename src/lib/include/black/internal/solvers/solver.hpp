@@ -73,7 +73,7 @@ namespace black::solvers {
 
     //! Ask the value of an object in the solver's current model.
     //! This works only after a call to \ref check() that returned true.
-    std::optional<model> model() const;
+    std::optional<class model> model() const;
 
   private:
     std::shared_ptr<base> _ptr;
