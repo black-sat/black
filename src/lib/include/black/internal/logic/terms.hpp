@@ -158,13 +158,42 @@ namespace black::logic
     term t1;
     term t2;
 
-    explicit operator bool() const requires (EQ) {
-      return term_equal(t1, t2);
+    // work-around for a difference between Clang and G++ that causes an
+    // incompatibility with Catch2 macros.
+
+    //
+    // This code would be the simple thing to do...
+    //
+    // explicit operator bool() const requires (EQ) {
+    //   return term_equal(t1, t2);
+    // }
+
+    // explicit operator bool() const requires (!EQ) {
+    //   return !term_equal(t1, t2);
+    // }
+
+    //
+    // Instead we have to do the following...
+    //
+
+    inline static constexpr bool True = true;
+    inline static constexpr bool False = false;
+
+    explicit operator const bool&() const requires (EQ) {
+      if(term_equal(t1, t2))
+        return True;
+      else
+        return False;
     }
 
-    explicit operator bool() const requires (!EQ) {
-      return !term_equal(t1, t2);
+    explicit operator const bool&() const requires (!EQ) {
+      if(!term_equal(t1, t2))
+        return True;
+      else
+        return False;
     }
+
+    // END work-around
     
     eq_wrapper_t<!EQ> operator!() const { 
       return {t1, t2};

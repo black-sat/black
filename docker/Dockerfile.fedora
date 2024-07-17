@@ -1,29 +1,16 @@
-ARG VERSION=36
+ARG VERSION=40
 FROM fedora:$VERSION
 RUN echo 'fastestmirror=1' >> /etc/dnf/dnf.conf
 RUN yum update -y
-RUN yum install -y make cmake gcc gcc-c++ python3-pip java flex
-RUN yum install -y zlib-devel fmt-devel catch-devel git wget rpm-build m4
-RUN yum install -y z3-devel cryptominisat-devel gmp-devel gmp-c++ cereal-devel
+RUN yum install -y make cmake gcc gcc-c++ \
+                   fmt-devel catch-devel git \
+                   z3-devel cvc5-devel \
+                   python3
 
-RUN pip3 install toml pyparsing
 
-RUN git clone https://github.com/cvc5/cvc5.git /cvc5
-WORKDIR /cvc5
-RUN git checkout cvc5-1.1.0
-RUN ./configure.sh production --no-python-bindings --no-java-bindings --auto-download
-
-WORKDIR /cvc5/build
-RUN make -j $(cat /proc/cpuinfo | grep processor | wc -l)
-RUN make install
-
-RUN git clone https://github.com/Tessil/hopscotch-map.git /tsl
-WORKDIR /tsl
-RUN git checkout v2.3.0
-
-WORKDIR /tsl/build
+RUN git clone https://github.com/arximboldi/immer.git
+WORKDIR /immer/build
 RUN cmake ..
-RUN make
 RUN make install
 
 ENTRYPOINT ["/usr/bin/env", "--"]
