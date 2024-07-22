@@ -30,7 +30,7 @@ project(
   DESCRIPTION "Usage examples of BLACK's API"
 )
 
-find_package(BLACK)
+find_package(black)
 
 add_executable(quadratic basics/quadratic.cpp)
 target_link_libraries(quadratic black::black)
@@ -40,3 +40,6 @@ target_link_libraries(factorial black::black)
 
 add_executable(formulas logic/formulas.cpp)
 target_link_libraries(formulas black::black)
+
+add_executable(tutorial API_test/tutorial.cpp)
+target_link_libraries(tutorial black::black)
