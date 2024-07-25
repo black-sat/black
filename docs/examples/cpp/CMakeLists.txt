@@ -46,3 +46,6 @@ target_link_libraries(tutorial black::black)
 
 add_executable(1_future_to_past API_test/1_future_to_past.cpp)
 target_link_libraries(1_future_to_past black::black)
+
+add_executable(2_to_nnf API_test/2_to_nnf.cpp)
+target_link_libraries(2_to_nnf black::black)
