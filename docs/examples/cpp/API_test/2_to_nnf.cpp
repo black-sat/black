@@ -15,7 +15,6 @@ term push_negation(term t) {
             CASE: !(!(t)). RETURNS NNF OF: t.
         */
         [](negation, term argument) {
-            std::cout << "!negation" << std::endl;
             return to_nnf(argument);
         },
 
@@ -23,7 +22,6 @@ term push_negation(term t) {
             CASE: !(t1 && t2). RETURNS NNF OF: (!t1 || !t2).
         */
         [](conjunction, std::vector<term> arguments) {
-            std::cout << "!conjunction" << std::endl;
             return to_nnf(!(arguments[0])) || to_nnf(!(arguments[1]));
         },
         
@@ -57,11 +55,9 @@ term push_negation(term t) {
 term to_nnf(term t) {
     return match(t)(
         [](negation, term argument) {
-            std::cout << "Negation" << std::endl;
             return push_negation(argument);
         },
         []<typename T>(T, std::vector<term> arguments) {
-            std::cout << "Conjunction" << std::endl;
             return T({
                 to_nnf(arguments[0]),
                 to_nnf(arguments[1])
@@ -78,6 +74,30 @@ std::string term_to_string(term t) {
         */
         [](object obj)  { return object_to_string(obj); },
         [](variable var){ return var.name().to_string(); },
+
+        /*
+            Boolean and first-order predicates.
+        */
+        [](equal, std::vector<term> arguments)      { return "(" + term_to_string(arguments[0]) + " == " + term_to_string(arguments[1]) + ")"; },
+        [](distinct, std::vector<term> arguments)   { return "(" + term_to_string(arguments[0]) + " != " + term_to_string(arguments[1]) + ")"; },
+        
+        [](exists, std::vector<decl> decls, term body) {
+            std::string result = "exists ";
+            for (decl d : decls) {
+                result = result + term_to_string(d.name().head()) + " ";
+            }
+            result = result + ". (" + term_to_string(body) + ")";
+            return result;
+        },
+        [](forall, std::vector<decl> decls, term body) {
+            std::string result = "forall ";
+            for (decl d : decls) {
+                result = result + term_to_string(d.name().head()) + " ";
+            }
+            result = result + ". (" + term_to_string(body) + ")";
+            return result;
+        },
+
         /*
             Boolean connectives.
         */
@@ -158,6 +178,18 @@ int main() {
     std::cout << "t1: " << term_to_string(t1) << std::endl;
     std::cout << "t2: " << term_to_string(t2) << std::endl;
     std::cout << "t3: " << term_to_string(t3) << std::endl;
+
+    std::cout << std::endl;
+    /////////////////////////////////////////////////////   
+
+    variable y = "y";
+    variable z = "z";
+
+    term e = exists({{y, types::integer()}}, y > z);
+    term f = forall({{z, types::integer()}}, e);
+
+    std::cout << term_to_string(f) << std::endl;
+    
 
     return 0;
 }
