@@ -9,61 +9,119 @@ using namespace black::logic;
 term to_nnf(term t);
 std::string object_to_string(object obj);
 
+/*
+    Given term t, returns !t in NNF.
+*/
 term push_negation(term t) {
     return match(t)(
-        /*
-            CASE: !(!(t)). RETURNS NNF OF: t.
-        */
-        [](negation, term argument) {
-            return to_nnf(argument);
-        },
 
         /*
-            CASE: !(t1 && t2). RETURNS NNF OF: (!t1 || !t2).
+            Boolean and first-order predicates.
         */
-        [](conjunction, std::vector<term> arguments) {
-            return to_nnf(!(arguments[0])) || to_nnf(!(arguments[1]));
-        },
+        [](equal, std::vector<term> arguments)      { return arguments[0] != arguments[1]; },
+        [](distinct, std::vector<term> arguments)   { return arguments[0] == arguments[1]; },
+        [](atom a) { return a; },
+        [](exists, std::vector<decl> decls, term body) { return forall(decls, to_nnf(!(body))); },
+        [](forall, std::vector<decl> decls, term body) { return exists(decls, to_nnf(!(body))); },
+
+        /*
+            Boolean connectives.
+        */
+        [](negation, term argument)                  { return to_nnf(argument); },
+        [](conjunction, std::vector<term> arguments) { return to_nnf(!(arguments[0])) || to_nnf(!(arguments[1])); },
+        [](disjunction, std::vector<term> arguments) { return to_nnf(!(arguments[0])) && to_nnf(!(arguments[1])); },
+        [](implication, std::vector<term> arguments) { return to_nnf(arguments[0]) && to_nnf(!(arguments[1])); },
         
         /*
-            CASE: !(t1 || t2). RETURNS NNF OF: (!t1 && !t2).
+            Future LTL operators.
         */
-        [](disjunction, std::vector<term> arguments) {
-            return to_nnf(!(arguments[0])) && to_nnf(!(arguments[1]));
-        },
-        
-        /*
-            CASE: !(t1 => t2). RETURNS NNF OF: (t1 && !t2).
-        */
-        [](implication, std::vector<term> arguments) {
-            return to_nnf(arguments[0]) && to_nnf(!(arguments[1]));
-        },
+        [](tomorrow, term argument)         { return X(to_nnf(!(argument))); },
+        [](w_tomorrow, term argument)       { return wX(to_nnf(!(argument))); },
+        [](eventually, term argument)       { return G(to_nnf(!(argument))); },
+        [](always, term argument)           { return F(to_nnf(!(argument))); },
+        [](until, term left, term right)    { return R(to_nnf(!left), to_nnf(!right)); },
+        [](release, term left, term right)  { return U(to_nnf(!left), to_nnf(!right)); },
 
         /*
-            CASE: !(X(t)). RETURNS NNF OF: X(!(t)).
+            Past LTL operators.
         */
-        [](tomorrow, term argument) {
-            return X(to_nnf(!(argument)));
-        },
+        [](yesterday, term argument)            { return Y(to_nnf(!(argument))); },
+        [](w_yesterday, term argument)          { return Z(to_nnf(!(argument))); },
+        [](once, term argument)                 { return H(to_nnf(!(argument))); },
+        [](historically, term argument)         { return O(to_nnf(!(argument))); },
+        [](since, term left, term right)        { return T(to_nnf(!left), to_nnf(!right)); },
+        [](triggered, term left, term right)    { return S(to_nnf(!left), to_nnf(!right)); },
 
-        [](object obj) {
-            return !obj;
-        }
+        /*
+            Relational comparisons.
+        */
+        [](less_than, term left, term right)         { return left >= right; },
+        [](less_than_eq, term left, term right)      { return left > right;  },
+        [](greater_than, term left, term right)      { return left <= right; },
+        [](greater_than_eq, term left, term right)   { return left < right;  },
+
+        [](boolean b) { return !b; }
     );
 }
 
 term to_nnf(term t) {
     return match(t)(
-        [](negation, term argument) {
-            return push_negation(argument);
-        },
-        []<typename T>(T, std::vector<term> arguments) {
-            return T({
-                to_nnf(arguments[0]),
-                to_nnf(arguments[1])
-            });
-        },
-        [](object obj) { return obj; }
+
+        /*
+            If t is a negation, the negation is pushed inside.
+        */
+        [](negation, term argument) { return push_negation(argument); },
+
+
+        /*
+            Object terms.
+        */
+        [](object obj)   { return obj; },
+        [](variable var) { return var; },
+
+        /*
+            Boolean and first-order predicates
+        */
+        [](equal eq)     { return eq; },
+        [](distinct in)  { return in; },
+        [](atom a)       { return a; },
+        [](exists, std::vector<decl> decls, term body) { return exists(decls, to_nnf(body)); },
+        [](forall, std::vector<decl> decls, term body) { return forall(decls, to_nnf(body)); },
+
+        /*
+            Boolean connectives (not negation).
+        */
+        [](conjunction, std::vector<term> arguments) { return to_nnf(arguments[0]) && to_nnf(arguments[1]); },
+        [](disjunction, std::vector<term> arguments) { return to_nnf(arguments[0]) || to_nnf(arguments[1]); },
+        [](implication, std::vector<term> arguments) { return implication(to_nnf(arguments[0]), to_nnf(arguments[1])); },
+
+        /*
+            Future LTL operators.
+        */
+        [](tomorrow, term argument)         { return X(to_nnf(argument)); },
+        [](w_tomorrow, term argument)       { return wX(to_nnf(argument)); },
+        [](eventually, term argument)       { return F(to_nnf(argument)); },
+        [](always, term argument)           { return G(to_nnf(argument)); },
+        [](until, term left, term right)    { return U(to_nnf(left), to_nnf(right)); },
+        [](release, term left, term right)  { return R(to_nnf(left), to_nnf(right)); },
+
+        /*
+            Past LTL operators.
+        */
+        [](yesterday, term argument)            { return Y(to_nnf(argument)); },
+        [](w_yesterday, term argument)          { return Z(to_nnf(argument)); },
+        [](once, term argument)                 { return O(to_nnf(argument)); },
+        [](historically, term argument)         { return H(to_nnf(argument)); },
+        [](since, term left, term right)        { return S(to_nnf(left), to_nnf(right)); },
+        [](triggered, term left, term right)    { return T(to_nnf(left), to_nnf(right)); },
+
+        /*
+            Relational comparisons.
+        */
+        [](less_than, term left, term right)         { return left < right; },
+        [](less_than_eq, term left, term right)      { return left <= right;  },
+        [](greater_than, term left, term right)      { return left > right; },
+        [](greater_than_eq, term left, term right)   { return left >= right;  }
     );
 }
 
@@ -72,8 +130,8 @@ std::string term_to_string(term t) {
         /*
             Object terms.
         */
-        [](object obj)  { return object_to_string(obj); },
-        [](variable var){ return var.name().to_string(); },
+        [](object obj)   { return object_to_string(obj); },
+        [](variable var) { return var.name().to_string(); },
 
         /*
             Boolean and first-order predicates.
@@ -180,15 +238,17 @@ int main() {
     std::cout << "t3: " << term_to_string(t3) << std::endl;
 
     std::cout << std::endl;
-    /////////////////////////////////////////////////////   
+
+    ////////////////////// TEST 2 //////////////////////   
 
     variable y = "y";
     variable z = "z";
 
     term e = exists({{y, types::integer()}}, y > z);
-    term f = forall({{z, types::integer()}}, e);
+    term f = !(F(G (forall({{z, types::integer()}}, e))));
 
-    std::cout << term_to_string(f) << std::endl;
+    std::cout << "Term f: " << term_to_string(f) << std::endl; 
+    std::cout << "Term f (NNF): " << term_to_string(to_nnf(f)) << std::endl;
     
 
     return 0;
