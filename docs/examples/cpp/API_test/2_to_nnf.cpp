@@ -64,14 +64,15 @@ term push_negation(term t) {
     );
 }
 
+/*
+    Given a term t, returns t in NNF.
+*/
 term to_nnf(term t) {
     return match(t)(
-
         /*
             If t is a negation, the negation is pushed inside.
         */
         [](negation, term argument) { return push_negation(argument); },
-
 
         /*
             Object terms.
