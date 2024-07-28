@@ -49,3 +49,6 @@ target_link_libraries(1_future_to_past black::black)
 
 add_executable(2_to_nnf API_test/2_to_nnf.cpp)
 target_link_libraries(2_to_nnf black::black)
+
+add_executable(3_free_vars_counter API_test/3_free_vars_counter.cpp)
+target_link_libraries(3_free_vars_counter black::black)
