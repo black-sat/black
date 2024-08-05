@@ -116,6 +116,15 @@ term to_nnf(term t) {
         [](since, term left, term right)        { return S(to_nnf(left), to_nnf(right)); },
         [](triggered, term left, term right)    { return T(to_nnf(left), to_nnf(right)); },
 
+        /* 
+            Arithmetic operators.
+        */
+        [](minus m)         { return m; },
+        [](sum s)           { return s; },
+        [](product p)       { return p; },
+        [](difference diff) { return diff; },
+        [](division div)    { return div; },
+
         /*
             Relational comparisons.
         */
@@ -250,6 +259,13 @@ int main() {
 
     std::cout << "Term f: " << term_to_string(f) << std::endl; 
     std::cout << "Term f (NNF): " << term_to_string(to_nnf(f)) << std::endl;
+
+    std::cout << std::endl;
+
+    ///// TEST 3 ////
+    term expr = x + c;
+    std::cout << "Term expr: " << term_to_string(expr) << std::endl; 
+    std::cout << "Term expr (NNF): " << term_to_string(to_nnf(expr)) << std::endl; 
     
 
     return 0;
