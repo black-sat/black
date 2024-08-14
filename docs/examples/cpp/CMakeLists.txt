@@ -30,7 +30,7 @@ project(
   DESCRIPTION "Usage examples of BLACK's API"
 )
 
-find_package(BLACK)
+find_package(black)
 
 add_executable(quadratic basics/quadratic.cpp)
 target_link_libraries(quadratic black::black)
