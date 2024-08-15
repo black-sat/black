@@ -17,7 +17,17 @@ std::string term_to_string(term t) {
         /*
             Object terms.
         */
-        [](object obj)   { return object_to_string(obj); },
+        [](object obj)   {            
+            if(obj.entity()->value.has_value()) { 
+                return match(obj.entity()->value.value())(
+                    [](integer i)  { return std::to_string(i.value()); },
+                    [](real r)     { return std::to_string(r.value()); },                    
+                    [](boolean b)  { return std::to_string(b.value()); },
+                    [obj] (lambda) { return obj.entity()->name.name().to_string(); }
+                );
+            }
+            return obj.entity()->name.name().to_string();
+        },
         [](variable var) { return var.name().to_string(); },
 
         /*
@@ -26,6 +36,15 @@ std::string term_to_string(term t) {
         [](equal, std::vector<term> arguments)      { return "(" + term_to_string(arguments[0]) + " == " + term_to_string(arguments[1]) + ")"; },
         [](distinct, std::vector<term> arguments)   { return "(" + term_to_string(arguments[0]) + " != " + term_to_string(arguments[1]) + ")"; },
         
+        [](atom, term head, std::vector<term> arguments) {
+            std::string result = term_to_string(head) + "(";
+            for (auto i = arguments.begin(); i != arguments.end(); i ++) {
+                if (i != arguments.begin()) result = result + ", ";
+                result = result + term_to_string(*i);
+            }
+            return result + ")";
+        }, 
+
         [](exists, std::vector<decl> decls, term body) {
             std::string result = "exists ";
             for (decl d : decls) {
@@ -41,7 +60,7 @@ std::string term_to_string(term t) {
             }
             result = result + ". (" + term_to_string(body) + ")";
             return result;
-        },
+        },      
 
         /*
             Boolean connectives.
@@ -91,22 +110,8 @@ std::string term_to_string(term t) {
 }
 
 /*
-    If obj is a constant, return its value. If obj is a variable, return its label name.
+    The following functions have nothing to do with term_to_string. Their use strictly involves the identification of free variables as strings.
 */
-std::string object_to_string(object obj) {
-    try {
-        return match(obj.entity()->value.value())(
-            [](integer i)   { return std::to_string(i.value()); },
-            [](real r)      { return std::to_string(r.value()); },
-            [](boolean b)   { return std::to_string(b.value()); }
-        );
-    }
-    catch(std::bad_optional_access const&) {
-        return obj.entity()->name.name().to_string();
-    }
-}
-
-
 std::string var_to_string(variable v) {
     return v.name().to_string();
 }
