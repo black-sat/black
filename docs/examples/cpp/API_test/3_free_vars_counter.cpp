@@ -34,7 +34,7 @@ set_term free_vars(term t) {
             Base cases. In case of an object, distinguish between declared and defined objects.
         */
         [](variable var) -> set_term { return { var }; },
-        [](object obj)   -> set_term { return { }; },
+        [](object)   -> set_term { return { }; },
 
         /*
             Quantifiers.
