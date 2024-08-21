@@ -21,7 +21,7 @@ term push_negation(term t) {
         */
         [](equal, std::vector<term> arguments)      { return arguments[0] != arguments[1]; },
         [](distinct, std::vector<term> arguments)   { return arguments[0] == arguments[1]; },
-        [](atom a) { return a; },
+        [](atom a) { return !a; },
         [](exists, std::vector<decl> decls, term body) { return forall(decls, to_nnf(!(body))); },
         [](forall, std::vector<decl> decls, term body) { return exists(decls, to_nnf(!(body))); },
 
@@ -169,11 +169,24 @@ int main() {
 
     std::cout << std::endl;
 
-    ///// TEST 3 ////
+    //// TEST 3 ///
     term expr = x + c;
     std::cout << "Term expr: " << term_to_string(expr) << std::endl; 
     std::cout << "Term expr (NNF): " << term_to_string(to_nnf(expr)) << std::endl; 
-    
+
+    /// TEST 4: Atoms ///
+
+    std::cout << std::endl;
+
+    variable P = "P";
+    object a = mod.define(
+        P, {{y, types::boolean()}, {z, types::boolean()}}, types::boolean(),
+        y && z,
+        resolution::immediate
+    );
+    term u = !(a(p, q));
+    std::cout << "Term not P(p, q): " << term_to_string(u) << std::endl; 
+    std::cout << "Term not P(p, q) (NNF): " << term_to_string(to_nnf(u)) << std::endl; 
 
     return 0;
 }
