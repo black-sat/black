@@ -2,14 +2,14 @@
 {% for ast in astlist %}
 {% if ast.name == name %}
 
-``using namespace black::{{ast.namespace}};``
-
-.. cpp:namespace:: black::{{ast.namespace}}
-
 {% for section in ast.sections %}
 
 {{section.doc}}
 {{'~' * (section.doc|length)}}
+
+``using namespace black::{{ast.namespace}};``
+
+.. cpp:namespace:: black::{{ast.namespace}}
 
 {% for node in section.nodes %}
 .. cpp:struct:: {{node.name}}
