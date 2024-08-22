@@ -4,3 +4,5 @@ Terms and formulas
 {% from "ast.jinja" import build_ast %}
 
 {{ build_ast(ast, "term") }}
+
+{{ build_ast(ast, "type") }}

@@ -43,13 +43,8 @@ namespace black::ast::core::internal
   concept formattable = std::is_constructible_v<std::formatter<T>>;
 
   template<typename T>
-  concept hashable = requires (T v) { 
-    { std::hash<T>{}(v) } -> std::convertible_to<size_t>;
-  };
-
-  template<typename T>
   concept identifiable = 
-    std::equality_comparable<T> && hashable<T> && formattable<T>;
+    std::equality_comparable<T> && support::hashable<T> && formattable<T>;
 
   //
   // Type-erased hashable, comparable and printable value

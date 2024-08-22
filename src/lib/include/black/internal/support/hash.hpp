@@ -52,13 +52,23 @@ namespace black::support::internal {
   }
 
   template<typename T>
+  concept std_hashable = requires(T v) { 
+    { std::hash<T>{}(v) } -> std::same_as<size_t>; 
+  };
+
+  template<typename T>
+  concept member_hashable = requires(T v) {
+    { v.hash() } -> std::same_as<size_t>;
+  };
+
+  template<std_hashable T>
   size_t hash(T const& arg)
   {
     return std::hash<T>{}(arg);
   }
 
   template<typename T>
-    requires requires(T v) { v.hash(); }
+    requires (member_hashable<T> && !std_hashable<T>)
   size_t hash(T const& v) {
     return v.hash();
   }
@@ -66,6 +76,7 @@ namespace black::support::internal {
   // The following functions are declared before being defined in order to 
   // allow each of them to find each other by unqualified lookup
   template<std::ranges::range R>
+    requires (!std_hashable<R>)
   size_t hash(R const& r);
 
   template<typename Arg, typename ...Args>
@@ -75,6 +86,7 @@ namespace black::support::internal {
 
   // Implementations
   template<std::ranges::range R>
+    requires (!std_hashable<R>)
   size_t hash(R const& r) {
     size_t h = 0;
     for(auto elem : r)
@@ -94,6 +106,11 @@ namespace black::support::internal {
 
   inline size_t hash(std::tuple<>) {
     return 0;
+  }
+
+  template<typename T, typename U>
+  size_t hash(std::pair<T, U> const& p) {
+    return hash_combine(hash(p.first), hash(p.second));
   }
 
   // Variadic version
@@ -116,6 +133,11 @@ struct std::hash<T> {
 
 namespace black::support {
   using internal::hash;
+
+  template<typename T>
+  concept hashable = requires (T v) { 
+    { hash(v) } -> std::same_as<size_t>;
+  };
 }
 
 #endif // BLACK_SUPPORT_HASH_HPP
