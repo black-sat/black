@@ -23,6 +23,7 @@
 
 #include "pipeline.hpp"
 #include "utils.hpp"
+#include "encoding.hpp"
 #include <black/support>
 #include <black/logic>
 #include <black/ast/algorithms>
@@ -77,13 +78,9 @@ namespace black::pipes::internal {
   void automaton_t::impl_t::state(logic::term t, logic::statement s) {
     if(s == logic::statement::requirement) {
       std::cout << "state -> requirement" << std::endl;
-      module mod;
-      object surrogate = mod.declare(decl("s", types::function({}, types::boolean())), resolution::delayed);
-    
-      _next->adopt(mod.resolve());
-
-      _next->state(t, statement::init);
-      //mod.require(implication(surrogate, t) && implication(t, surrogate));
+      
+      module mod = surrogates(to_snf(t), _next);
+      _next->adopt(mod.resolve());      
     }
     if(s == logic::statement::init) {
       std::cout << "state -> init" << std::endl;
@@ -121,23 +118,21 @@ using namespace black;
 using namespace black::logic;
 
 int main () {
-  // phi è la formula FOLTL
-  module phi;
+  
+  module Sigma;
 
-  object p = phi.declare("p", types::boolean(), role::rigid, resolution::delayed); // no adopt
-  object q = phi.declare("q", types::boolean(), role::rigid, resolution::immediate); // adopt
+  object p = Sigma.declare({"p", types::boolean()}, resolution::immediate); // adopt
+  object q = Sigma.declare({"q", types::boolean()}, resolution::delayed); // no adopt
 
-  phi.resolve(recursion::forbidden); // adopt
+  Sigma.resolve(recursion::forbidden); // adopt
 
-  // ...
-  // Definisco la mia formula in FO_LTL
-  // ...
+  term phi = X(p && q);
 
-  phi.require(p && q); // state
+  Sigma.require(phi); // state
   
   
   pipes::transform encoding = pipes::automaton();
-  module A = encoding(phi);
+  module A = encoding(Sigma);
   object r = A.declare("r", types::boolean());
 
   return 0;
