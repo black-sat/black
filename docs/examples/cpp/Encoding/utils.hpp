@@ -4,39 +4,16 @@
 #include <set>
 #include <iterator>
 #include <algorithm>
-#include <unordered_set>
 
 using namespace black;
 using namespace black::support;
 using namespace black::logic;
 
-using set_term = std::unordered_set<term, std::hash<term>, black::logic::term_equal_to<>>;
-using set_term_ID = std::unordered_set<std::pair<term, int>, std::hash<term>, black::logic::term_equal_to<>>;
 
-enum Surrogate { XS, WS, YS, ZS };
-
-std::string term_to_string(term t);
-
-/*
-    Exercise 2.
-*/
-term push_negation(term t);
-term to_nnf(term t);
-
-/*
-    Exercise 3.
-*/
-set_term set_union(set_term set1, set_term set2);
-set_term quantify(std::vector<decl> q_vars, set_term vars);
-set_term free_vars(term t);
-
-/*
-    Surrogates
-*/
-std::optional<set_term> closure(term t);
-set_term closure_1(term t);
-std::unordered_map<Surrogate, set_term> surrogates(term t);
-
+std::string term_to_string(term);
+term push_negation(term);
+term to_nnf(term);
+term to_snf(term);
 
 
 std::string term_to_string(term t) {
@@ -259,103 +236,6 @@ term to_nnf(term t) {
         [](less_than_eq, term left, term right)      { return left <= right; },
         [](greater_than, term left, term right)      { return left > right; },
         [](greater_than_eq, term left, term right)   { return left >= right; }
-    );
-}
-
-/*
-    Exercise 3. Free variables.
-*/
-
-set_term set_union(set_term set1, set_term set2) {
-    set1.insert (set2.begin(), set2.end());
-    return set1;
-}
-set_term set_union(set_term set1, set_term set2, set_term set3) {
-    set1 = set_union(set1, set2);
-    return set_union(set1, set3);
-}
-
-/*
-    Removes any quantified variable (q_vars) from the set of free variables vars.
-*/
-set_term quantify(std::vector<decl> q_vars, set_term vars) {
-    for (decl d : q_vars) {
-        vars.erase(vars.find(d.name));
-    }
-    return vars;
-}
-
-set_term free_vars(term t) { 
-    return match(t)(
-        /*
-            Base cases. In case of an object, distinguish between declared and defined objects.
-        */
-        [](variable var) -> set_term { return { var }; },
-        [](object)   -> set_term { return { }; },
-
-        /*
-            Quantifiers.
-        */
-        [](exists, std::vector<decl> decls, term body) -> set_term { return quantify(decls, free_vars(body)); },
-        [](forall, std::vector<decl> decls, term body) -> set_term { return quantify(decls, free_vars(body)); },
-        
-        /*
-            Boolean connectives.
-        */
-        [](negation, term argument)                  -> set_term { return free_vars(argument); },
-        [](conjunction, std::vector<term> arguments) -> set_term { return set_union(free_vars(arguments[0]), free_vars(arguments[1])); },
-        [](disjunction, std::vector<term> arguments) -> set_term { return set_union(free_vars(arguments[0]), free_vars(arguments[1])); },
-        [](implication, std::vector<term> arguments) -> set_term { return set_union(free_vars(arguments[0]), free_vars(arguments[1])); },
-
-        /*
-            Boolean and first-order predicates
-        */
-        [](equal, std::vector<term> arguments)    -> set_term   { return set_union(free_vars(arguments[0]), free_vars(arguments[1])); },
-        [](distinct, std::vector<term> arguments) -> set_term   { return set_union(free_vars(arguments[0]), free_vars(arguments[1])); },
-        [](atom, std::vector<term> arguments)     -> set_term   { 
-                                                                    set_term fv = { };
-                                                                    for (term t : arguments){
-                                                                        fv = set_union(fv, free_vars(t));
-                                                                    }
-                                                                    return fv;
-                                                                },
-
-        /*
-            Future LTL operators.
-        */
-        [](tomorrow, term argument)        -> set_term { return free_vars(argument); },
-        [](w_tomorrow, term argument)      -> set_term { return free_vars(argument); },
-        [](eventually, term argument)      -> set_term { return free_vars(argument); },
-        [](always, term argument)          -> set_term { return free_vars(argument); },
-        [](until, term left, term right)   -> set_term { return set_union(free_vars(left), free_vars(right)); },
-        [](release, term left, term right) -> set_term { return set_union(free_vars(left), free_vars(right)); },
-
-        /*
-            Past LTL operators.
-        */
-        [](yesterday, term argument)            -> set_term { return free_vars(argument); },
-        [](w_yesterday, term argument)          -> set_term { return free_vars(argument); },
-        [](once, term argument)                 -> set_term { return free_vars(argument); },
-        [](historically, term argument)         -> set_term { return free_vars(argument); },
-        [](since, term left, term right)        -> set_term { return set_union(free_vars(left), free_vars(right)); },
-        [](triggered, term left, term right)    -> set_term { return set_union(free_vars(left), free_vars(right)); },
-        
-        /*
-            Arithmetic operators.
-        */
-        [](minus, term argument)                -> set_term { return free_vars(argument); },
-        [](sum, term left, term right)          -> set_term { return set_union(free_vars(left), free_vars(right)); },
-        [](product, term left, term right)      -> set_term { return set_union(free_vars(left), free_vars(right)); },
-        [](difference, term left, term right)   -> set_term { return set_union(free_vars(left), free_vars(right)); },
-        [](division, term left, term right)     -> set_term { return set_union(free_vars(left), free_vars(right)); },
-
-        /*
-            Relational comparisons
-        */
-        [](less_than, term left, term right)        -> set_term { return set_union(free_vars(left), free_vars(right)); },
-        [](less_than_eq, term left, term right)     -> set_term { return set_union(free_vars(left), free_vars(right)); },
-        [](greater_than, term left, term right)     -> set_term { return set_union(free_vars(left), free_vars(right)); },
-        [](greater_than_eq, term left, term right)  -> set_term { return set_union(free_vars(left), free_vars(right)); }
     );
 }
 

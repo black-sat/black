@@ -53,8 +53,5 @@ target_link_libraries(2_to_nnf black::black)
 add_executable(3_free_vars_counter API_test/3_free_vars_counter.cpp)
 target_link_libraries(3_free_vars_counter black::black)
 
-add_executable(FOLTL_to_aut API_test/FOLTL_to_FOautomaton.cpp)
-target_link_libraries(FOLTL_to_aut black::black)
-
-add_executable(automaton Encoding/automaton.cpp)
-target_link_libraries(automaton black::black)
+add_executable(main Encoding/main.cpp)
+target_link_libraries(main black::black)

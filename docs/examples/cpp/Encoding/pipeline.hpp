@@ -270,7 +270,30 @@ namespace black::pipes::internal {
     struct impl_t;
     std::unique_ptr<impl_t> _impl;
   };
+
+  /*
+    Debug
+  */
+
+  class debug_t : public transform::base
+  {
+  public:
+    debug_t(class consumer *next);
+
+    virtual ~debug_t() override;
+      
+    virtual class consumer *consumer() override;
+
+    virtual std::optional<logic::object> translate(logic::object x) override;
+
+    virtual logic::term undo(logic::term x) override;
+
+  private:
+    struct impl_t;
+    std::unique_ptr<impl_t> _impl;
+  };
 }
+
 
 
 namespace black::pipes {
@@ -278,6 +301,7 @@ namespace black::pipes {
   inline constexpr auto composed = make_transform<internal::composed_t>;
   inline constexpr auto map = make_transform<internal::map_t>;
   inline constexpr auto automaton = make_transform<internal::automaton_t>;
+  inline constexpr auto debug = make_transform<internal::debug_t>;
 
   inline transform::pipeline 
   operator|(transform::pipeline first, transform::pipeline second) {

@@ -21,7 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "encoding.hpp"
 #include <black/support>
 #include <black/logic>
 #include <black/ast/algorithms>
@@ -34,7 +33,7 @@ namespace black::pipes::internal {
   using namespace logic;
   using namespace ast;
 
-  struct automaton_t::impl_t : public consumer
+  struct  debug_t::impl_t : public consumer
   {
     impl_t(class consumer *next) : _next{next}{ }
 
@@ -50,64 +49,59 @@ namespace black::pipes::internal {
     virtual void pop(size_t) override;
   };
 
-  automaton_t::automaton_t( class consumer *next ) : _impl{std::make_unique<impl_t>(next)} {
-    std::cout << "Automaton -> costruttore" << std::endl;
+   debug_t:: debug_t( class consumer *next ) : _impl{std::make_unique<impl_t>(next)} {
+    std::cout << "Debug -> costruttore" << std::endl;
   }
 
-  automaton_t::~automaton_t() = default;
+   debug_t::~ debug_t() = default;
 
-  consumer *automaton_t::consumer() { return _impl.get(); }
+  consumer * debug_t::consumer() { return _impl.get(); }
 
-  std::optional<object> automaton_t::translate(object x) { 
+  std::optional<object>  debug_t::translate(object x) { 
     return _impl->translate(x); 
   }
   
-  term automaton_t::undo(term x) { return _impl->undo(x); }
+  term  debug_t::undo(term x) { return _impl->undo(x); }
 
-  void automaton_t::impl_t::import(logic::module m) {
-    std::cout << "Automaton -> import";
+  void  debug_t::impl_t::import(logic::module m) {
+    std::cout << "Debug -> import" << std::endl;
     _next->import(std::move(m));
   }
 
-  void automaton_t::impl_t::adopt(std::shared_ptr<logic::root const>) {
-    std::cout << "Automaton -> adopt" << std::endl;
+  void  debug_t::impl_t::adopt(std::shared_ptr<logic::root const>) {
+    std::cout << "Debug -> adopt" << std::endl;
   }
 
-  void automaton_t::impl_t::state(logic::term t, logic::statement s) {
-    if(s == logic::statement::requirement) {
-      std::cout << "Automaton -> state -> requirement" << std::endl;
-      
-      module mod = surrogates(to_snf(t), _next);
-      _next->adopt(mod.resolve());      
-    }
+  void  debug_t::impl_t::state(logic::term t, logic::statement s) {
     if(s == logic::statement::init) {
-      std::cout << "Automaton -> state -> init" << std::endl;
+      std::cout << "Debug -> state -> init" << std::endl;
     }
     if(s == logic::statement::transition) {
-      std::cout << "Automaton -> state -> transition" << std::endl;
+      std::cout << "Debug -> state -> transition" << std::endl;
     }
     if(s == logic::statement::final) {
-      std::cout << "Automaton -> state -> final" << std::endl;
+      std::cout << "Debug -> state -> final" << std::endl;
     }
 
     std::cout << term_to_string(t) << std::endl << std::endl;
+
   }
 
-  void automaton_t::impl_t::push() {
-    std::cout << "push" << std::endl;
+  void  debug_t::impl_t::push() {
+    std::cout << "Debug -> push" << std::endl;
   }
 
-  void automaton_t::impl_t::pop(size_t n) {
+  void  debug_t::impl_t::pop(size_t n) {
     std::cout << "pop" << std::endl;
     _next->pop(n);
   }
 
-  std::optional<object> automaton_t::impl_t::translate(object) {
+  std::optional<object>  debug_t::impl_t::translate(object) {
     
     return {};
   }
 
-  term automaton_t::impl_t::undo(term t) {
+  term  debug_t::impl_t::undo(term t) {
     return t;
   }
 }
