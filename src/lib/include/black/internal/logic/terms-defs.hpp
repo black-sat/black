@@ -181,6 +181,10 @@ declare_ast(logic, term)
       declare_field(logic, term, object, entity, logic::entity const *, "The object's underlying entity")
     end_ast_node(logic, term, object)
 
+    declare_ast_node(logic, term, prime, "A reference to an state variable's value at the next step in a transition relation")
+      declare_field(logic, term, prime, object, logic::object, "The object refering to the state variable")
+    end_ast_node(logic, term, prime)
+
     declare_ast_node(logic, term, equal, "An equality constraint between terms")
       declare_field(logic, term, equal, arguments, std::vector<logic::term>, "The operands")
     end_ast_node(logic, term, equal)

@@ -706,6 +706,12 @@ namespace black::logic {
   };
 
   //!
+  //! Returns a term obtained by `t` where the referred state variables are
+  //! primed.
+  //!
+  term primed(term t);
+
+  //!
   //! Internal representation of an entity declared or defined in a module.
   //!
   //! An \ref entity object represents an entity declared or defined in a
@@ -738,7 +744,7 @@ namespace black::logic {
 
     //! Constructs the entity from a \ref decl.
     explicit entity(decl d) 
-      : name{d.name}, type{d.type} { }
+      : name{d.name}, type{d.type}, role{d.role} { }
     
     //! Constructs the entity from a \ref def
     explicit entity(def d) 

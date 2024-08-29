@@ -23,6 +23,7 @@
 
 #include <black/support>
 #include <black/support/private>
+#include <black/ast/algorithms>
 #include <black/logic>
 #include <black/pipes>
 #include <black/solvers>
@@ -446,6 +447,7 @@ namespace black::logic {
       [&](integer v)       { return v; },
       [&](real v)          { return v; },
       [&](boolean v)       { return v; },
+      [&](prime p)         { return p; },
       [&](object v)        { 
         if(auto r = v.entity()->root.lock(); deps && r && r.get() != ours)
           deps->insert(r);
@@ -566,6 +568,17 @@ namespace black::logic {
 
   std::shared_ptr<root const> module::resolve(recursion r) {
     return _impl->get()->resolve(r, nullptr);
+  }
+
+  term primed(term t) {
+    return ast::map(t)(
+      [](object x) -> term {
+        if(x.entity()->role == role::state)
+          return prime(x);
+        return x;
+      },
+      [](prime p) -> term { return p; }
+    );
   }
 
 }
