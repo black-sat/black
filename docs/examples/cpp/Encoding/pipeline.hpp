@@ -249,9 +249,6 @@ namespace black::pipes::internal {
     std::unique_ptr<impl_t> _impl;
   };
 
-  /*
-    Automaton
-  */
 
   class automaton_t : public transform::base
   {
@@ -293,8 +290,6 @@ namespace black::pipes::internal {
     std::unique_ptr<impl_t> _impl;
   };
 }
-
-
 
 namespace black::pipes {
   inline constexpr auto id = make_transform<internal::id_t>;

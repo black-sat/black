@@ -21,12 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "encoding.hpp"
 #include <black/support>
 #include <black/logic>
 #include <black/ast/algorithms>
 #include <black/pipes>
-#include <iostream>
 
 namespace black::pipes::internal {
 
@@ -48,11 +46,19 @@ namespace black::pipes::internal {
     virtual void state(logic::term t, logic::statement s) override;
     virtual void push() override;
     virtual void pop(size_t) override;
+
+    private:
+    term to_snf(term t);
+    std::vector<variable>::iterator find_var(std::vector<variable> &, variable);
+    std::vector<variable> vec_union(std::vector<variable>, std::vector<variable>);
+    std::vector<variable> quantify(std::vector<decl>, std::vector<variable>);
+    types::type type_from_module(module, variable);
+    module surrogates(term);
+    std::vector<variable> surrogates(module &, module &, term);
+
   };
 
-  automaton_t::automaton_t( class consumer *next ) : _impl{std::make_unique<impl_t>(next)} {
-    std::cout << "Automaton -> costruttore" << std::endl;
-  }
+  automaton_t::automaton_t( class consumer *next ) : _impl{std::make_unique<impl_t>(next)} { }
 
   automaton_t::~automaton_t() = default;
 
@@ -65,49 +71,330 @@ namespace black::pipes::internal {
   term automaton_t::undo(term x) { return _impl->undo(x); }
 
   void automaton_t::impl_t::import(logic::module m) {
-    std::cout << "Automaton -> import";
     _next->import(std::move(m));
   }
 
-  void automaton_t::impl_t::adopt(std::shared_ptr<logic::root const>) {
-    std::cout << "Automaton -> adopt" << std::endl;
-  }
+  void automaton_t::impl_t::adopt(std::shared_ptr<logic::root const>) { }
 
   void automaton_t::impl_t::state(logic::term t, logic::statement s) {
     if(s == logic::statement::requirement) {
-      std::cout << "Automaton -> state -> requirement" << std::endl;
-      
-      module mod = surrogates(to_snf(t), _next);
+      module mod = surrogates(to_snf(t));
       _next->adopt(mod.resolve());      
     }
-    if(s == logic::statement::init) {
-      std::cout << "Automaton -> state -> init" << std::endl;
+  }
+
+  void automaton_t::impl_t::push() { }
+
+  void automaton_t::impl_t::pop(size_t n) { _next->pop(n); }
+
+  std::optional<object> automaton_t::impl_t::translate(object) { return {}; }
+
+  term automaton_t::impl_t::undo(term t) { return t; }
+     
+  term automaton_t::impl_t::to_snf(term t) {
+    return match(t)(
+      [](object obj)   { return obj; },
+      [](variable var) { return var; },
+
+      /*
+        Boolean and first-order predicates.
+      */
+      [](equal e)     { return e; },
+      [](distinct d)  { return d; },
+      [](atom a)      { return a; },
+      [&](exists, std::vector<decl> decls, term body) { return exists(decls, to_snf(body)); },
+      [&](forall, std::vector<decl> decls, term body) { return forall(decls, to_snf(body)); },
+
+      /*
+        Boolean connectives.
+      */
+      [&](negation, term argument)                  { return !to_snf(argument); },
+      [&](conjunction, std::vector<term> arguments) { return to_snf(arguments[0]) && to_snf(arguments[1]); },
+      [&](disjunction, std::vector<term> arguments) { return to_snf(arguments[0]) || to_snf(arguments[1]); },
+      [&](implication, std::vector<term> arguments) { return implication(to_snf(arguments[0]), to_snf(arguments[1])); },
+      
+      /*
+        Future LTL operators.
+      */
+      [&](tomorrow t) { return t; },
+      [&](w_tomorrow wt) { return wt; },
+      [&](eventually f, term argument)       { return to_snf(argument) || X(f); },
+      [&](always a, term argument)           { return to_snf(argument) && wX(a); },
+      [&](until u, term left, term right)    { return to_snf(right) || (to_snf(left) && X(u)); },
+      [&](release r, term left, term right)  { return to_snf(right) && (to_snf(left) || wX(r)); },
+
+      /*
+        Past LTL operators.
+      */
+      [](yesterday y)            { return y; },
+      [](w_yesterday z)          { return z; },
+      [&](once o, term argument)                 { return to_snf(argument) || Y(o); },
+      [&](historically h, term argument)         { return to_snf(argument) && Z(h); },
+      [&](since s, term left, term right)        { return to_snf(right) || (to_snf(left) && Y(s)); },
+      [&](triggered t, term left, term right)    { return to_snf(right) && (to_snf(left) && Z(t)); },
+
+      /* 
+        Arithmetic operators.
+      */
+      [](minus m)         { return m; },
+      [](sum s)           { return s; },
+      [](product p)       { return p; },
+      [](difference diff) { return diff; },
+      [](division div)    { return div; },
+      
+      /*
+        Relational comparisons.
+      */
+      [](less_than lt)            { return lt; },
+      [](less_than_eq lte)        { return lte;  },
+      [](greater_than gt)         { return gt; },
+      [](greater_than_eq gte)     { return gte;  }
+    );
+  }
+
+  /*
+    Returns an iterator pointing to the first occurrence of target in vec.
+  */
+  std::vector<variable>::iterator automaton_t::impl_t::find_var(std::vector<variable> &vec, variable target) {
+    return std::find_if(vec.begin(), vec.end(), [target](variable var) {
+        return term_equal(target, var);
+    });
+  }
+
+  std::vector<variable> automaton_t::impl_t::vec_union(std::vector<variable> vec1, std::vector<variable> vec2) {
+    for(variable var2: vec2) {
+        if(find_var(vec1, var2) == vec1.end()) {
+            vec1.push_back(var2);
+        }
     }
-    if(s == logic::statement::transition) {
-      std::cout << "Automaton -> state -> transition" << std::endl;
+    return vec1;
+  }
+
+  std::vector<variable> automaton_t::impl_t::quantify(std::vector<decl> q_vars, std::vector<variable> vars) {
+    for (decl d : q_vars) {
+        vars.erase(find_var(vars, d.name));
     }
-    if(s == logic::statement::final) {
-      std::cout << "Automaton -> state -> final" << std::endl;
-    }
-
-    std::cout << term_to_string(t) << std::endl << std::endl;
+    return vars;
   }
 
-  void automaton_t::impl_t::push() {
-    std::cout << "push" << std::endl;
+  types::type automaton_t::impl_t::type_from_module(module mod, variable var) {
+    return mod.lookup(var).value().entity()->type;
   }
 
-  void automaton_t::impl_t::pop(size_t n) {
-    std::cout << "pop" << std::endl;
-    _next->pop(n);
-  }
+  module automaton_t::impl_t::surrogates(term t){
+    module gamma, aux;
+    object xs_phi = gamma.declare({"XPHI", types::boolean()}, resolution::delayed);
 
-  std::optional<object> automaton_t::impl_t::translate(object) {
-    
-    return {};
+    _next->state(xs_phi,         logic::statement::init);
+    _next->state(t == xs_phi,    logic::statement::transition);
+    _next->state(!xs_phi,        logic::statement::final);
+    std::vector<variable> free = surrogates(gamma, aux, t);
+  
+    return gamma;
   }
+  
+  std::vector<variable> automaton_t::impl_t::surrogates(module &gamma, module &aux, term t) {
+    return match(t)(
+      /*
+        Base cases.
+      */
+      [](variable var) -> std::vector<variable> { return { var }; },
+      [](object)       -> std::vector<variable> { return { }; },
 
-  term automaton_t::impl_t::undo(term t) {
-    return t;
+      /*
+        Quantifiers. All quantified variables are stored (declared) in a new module aux2. The recursive relies on aux2 to retrieve the types
+        of all free variables in term body.
+      */
+      [&](exists, std::vector<decl> decls, term body) -> std::vector<variable> {
+        module aux2 = aux;
+        for(decl d : decls) {
+            aux2.declare(d, resolution::immediate);
+        }
+        
+        return quantify(decls, surrogates(gamma, aux2, body));
+      },
+      [&](forall, std::vector<decl> decls, term body) -> std::vector<variable> {
+        module aux2 = aux;
+        for(decl d : decls) {
+            aux2.declare(d, resolution::immediate);
+        }
+
+        return quantify(decls, surrogates(gamma, aux2, body));
+      },
+
+      /*
+          Temporal operators.
+              (i) Free variables in term body are retrieved;
+              (ii) The surrogate is defined accordingly;
+              (iii) The conjuncts containing the surrogate are passed to the next stage in the pipeline.
+      */
+      [&](tomorrow to, term body) -> std::vector<variable> {
+          
+        // (i)
+        std::vector<variable> free_vars = surrogates(gamma, aux, body);
+        std::vector<term> free_terms = { };
+        std::vector<decl> decls = { };
+
+        // Retrieve free variable types.
+        std::vector<types::type> types = { };
+        for(variable var : free_vars){
+            types::type t = type_from_module(aux, var);
+            decls.push_back({var, t});
+            types.push_back(t);
+            free_terms.push_back(var);
+        }
+
+        // (ii)
+        object surr = gamma.declare(
+            {"XS", types::function(types, types::boolean())},
+            resolution::delayed
+        );
+        term a = atom(surr, free_terms);
+
+        // (iii)
+        _next->state(forall(decls, to == a),   logic::statement::transition);
+        _next->state(forall(decls, !a),         logic::statement::final);
+
+        return free_vars;
+      },
+      [&](w_tomorrow w_to, term body) -> std::vector<variable> {
+          
+        // (i)
+        std::vector<variable> free_vars = surrogates(gamma, aux, body);
+        std::vector<term> free_terms = { };
+        std::vector<decl> decls = { };
+
+        // Retrieve free variable types.
+        std::vector<types::type> types = { };
+        for(variable var : free_vars){
+            types::type t = type_from_module(aux, var);
+            decls.push_back({var, t});
+            types.push_back(t);
+            free_terms.push_back(var);
+        }
+
+        // (ii)
+        object surr = gamma.declare(
+            {"XW", types::function(types, types::boolean())},
+            resolution::delayed
+        );
+        term a = atom(surr, free_terms);
+
+        // (iii)
+        _next->state(forall(decls, w_to == a),   logic::statement::transition);
+        _next->state(forall(decls, a),         logic::statement::final);
+
+        return free_vars;
+      },
+
+      [&](yesterday y, term body) -> std::vector<variable> {
+          
+        // (i)
+        std::vector<variable> free_vars = surrogates(gamma, aux, body);
+        std::vector<term> free_terms = { };
+        std::vector<decl> decls = { };
+
+        // Retrieve free variable types.
+        std::vector<types::type> types = { };
+        for(variable var : free_vars){
+            types::type t = type_from_module(aux, var);
+            decls.push_back({var, t});
+            types.push_back(t);
+            free_terms.push_back(var);
+        }
+
+        // (ii)
+        object surr = gamma.declare(
+            {"XY", types::function(types, types::boolean())},
+            resolution::delayed
+        );
+        term a = atom(surr, free_terms);
+
+        // (iii)
+        _next->state(forall(decls, y == a),   logic::statement::transition);
+        _next->state(forall(decls, !y),         logic::statement::init);
+
+        return free_vars;
+      },
+
+      [&](w_yesterday z, term body) -> std::vector<variable> {
+        // (i)
+        std::vector<variable> free_vars = surrogates(gamma, aux, body);
+        std::vector<term> free_terms = { };
+        std::vector<decl> decls = { };
+
+        // Retrieve free variable types.
+        std::vector<types::type> types = { };
+        for(variable var : free_vars){
+            types::type t = type_from_module(aux, var);
+            decls.push_back({var, t});
+            types.push_back(t);
+            free_terms.push_back(var);
+        }
+
+        // (ii)
+        object surr = gamma.declare(
+            {"XY", types::function(types, types::boolean())},
+            resolution::delayed
+        );
+        term a = atom(surr, free_terms);
+
+        // (iii)
+        _next->state(forall(decls, z == a),   logic::statement::transition);
+        _next->state(forall(decls, z),         logic::statement::init);
+
+        return free_vars;
+      },
+
+      /* 
+          Boolean and first-order predicates
+      */
+      [&](equal, std::vector<term> arguments) -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0]), surrogates(gamma, aux, arguments[1])); },
+      [&](distinct, std::vector<term> arguments) -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0]), surrogates(gamma, aux, arguments[1])); },
+      [&](atom, std::vector<term> arguments) -> std::vector<variable> { 
+        std::vector<variable> result = { };
+        for(term t : arguments) {
+            result = vec_union(result, surrogates(gamma, aux, t));
+        }
+        return result;
+      },
+
+      /*
+          Boolean connectives.
+      */
+      [&](negation, term argument)                    -> std::vector<variable> { return surrogates(gamma, aux, argument); },
+      [&](conjunction, std::vector<term> arguments)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0]), surrogates(gamma, aux, arguments[1])); },
+      [&](disjunction, std::vector<term> arguments)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0]), surrogates(gamma, aux, arguments[1])); },
+      [&](implication, term left, term right)         -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+
+      /*
+          Other temporal operators.
+      */
+      [&](eventually, term argument)          -> std::vector<variable> { return surrogates(gamma, aux, argument); },
+      [&](always, term argument)              -> std::vector<variable> { return surrogates(gamma, aux, argument); },
+      [&](until, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+      [&](release, term left, term right)     -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+      [&](once, term argument)                -> std::vector<variable> { return surrogates(gamma, aux, argument); },
+      [&](historically, term argument)        -> std::vector<variable> { return surrogates(gamma, aux, argument); },
+      [&](since, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+      [&](triggered, term left, term right)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+
+      /* 
+          Arithmetic operators.
+      */
+      [&](minus, term argument)                -> std::vector<variable> { return surrogates(gamma, aux, argument); },
+      [&](sum, term left, term right)          -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+      [&](product, term left, term right)      -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+      [&](difference, term left, term right)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+      [&](division, term left, term right)     -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+
+      /*
+          Relational comparisons.
+      */
+      [&](less_than, term left, term right)          -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+      [&](less_than_eq, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+      [&](greater_than, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+      [&](greater_than_eq, term left, term right)    -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); }
+    );
   }
 }

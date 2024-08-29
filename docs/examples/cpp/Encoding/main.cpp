@@ -1,4 +1,3 @@
-#include "utils.hpp"
 #include "pipeline.hpp"
 #include "automaton.cpp"
 #include "debug.cpp"
@@ -14,7 +13,7 @@ int main () {
   object c = Sigma.define("c", types::integer(), 3);
   object q = Sigma.declare("q", types::boolean());
 
-  term phi = exists({{x, types::integer()}}, X(x > c) && q);
+  term phi = exists({{x, types::integer()}}, S(x > c, q));
   Sigma.require(phi);
 
   pipes::transform encoding = pipes::automaton() | pipes::debug();
