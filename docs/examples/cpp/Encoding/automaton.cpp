@@ -54,7 +54,7 @@ namespace black::pipes::internal {
     std::vector<variable> quantify(std::vector<decl>, std::vector<variable>);
     types::type type_from_module(module, variable);
     module surrogates(term);
-    std::vector<variable> surrogates(module &, module &, term);
+    std::vector<variable> surrogates(module &, module &, term, bool &);
 
   };
 
@@ -183,17 +183,26 @@ namespace black::pipes::internal {
 
   module automaton_t::impl_t::surrogates(term t){
     module gamma, aux;
-    object xs_phi = gamma.declare({"XPHI", types::boolean()}, resolution::delayed);
+    object x_phi = gamma.declare({"X_PHI", types::boolean()}, resolution::delayed);
+    
+    _next->state(t == x_phi,    logic::statement::transition);
 
-    _next->state(xs_phi,         logic::statement::init);
-    _next->state(t == xs_phi,    logic::statement::transition);
-    _next->state(!xs_phi,        logic::statement::final);
-    std::vector<variable> free = surrogates(gamma, aux, t);
-  
+    bool future = false;
+
+    std::vector<variable> free = surrogates(gamma, aux, t, future);
+    
+    if(future) {
+      _next->state(x_phi,         logic::statement::init);
+      _next->state(!x_phi,        logic::statement::final);
+    }
+    else{
+      _next->state(x_phi,         logic::statement::final);
+      _next->state(!x_phi,        logic::statement::init);
+    }
     return gamma;
   }
   
-  std::vector<variable> automaton_t::impl_t::surrogates(module &gamma, module &aux, term t) {
+  std::vector<variable> automaton_t::impl_t::surrogates(module &gamma, module &aux, term t, bool &future) {
     return match(t)(
       /*
         Base cases.
@@ -211,7 +220,7 @@ namespace black::pipes::internal {
             aux2.declare(d, resolution::immediate);
         }
         
-        return quantify(decls, surrogates(gamma, aux2, body));
+        return quantify(decls, surrogates(gamma, aux2, body, future));
       },
       [&](forall, std::vector<decl> decls, term body) -> std::vector<variable> {
         module aux2 = aux;
@@ -219,7 +228,7 @@ namespace black::pipes::internal {
             aux2.declare(d, resolution::immediate);
         }
 
-        return quantify(decls, surrogates(gamma, aux2, body));
+        return quantify(decls, surrogates(gamma, aux2, body, future));
       },
 
       /*
@@ -228,10 +237,11 @@ namespace black::pipes::internal {
               (ii) The surrogate is defined accordingly;
               (iii) The conjuncts containing the surrogate are passed to the next stage in the pipeline.
       */
-      [&](tomorrow to, term body) -> std::vector<variable> {
-          
+      [&](tomorrow, term body) -> std::vector<variable> {
+        future = true;
+
         // (i)
-        std::vector<variable> free_vars = surrogates(gamma, aux, body);
+        std::vector<variable> free_vars = surrogates(gamma, aux, body, future);
         std::vector<term> free_terms = { };
         std::vector<decl> decls = { };
 
@@ -252,15 +262,15 @@ namespace black::pipes::internal {
         term a = atom(surr, free_terms);
 
         // (iii)
-        _next->state(forall(decls, to == a),   logic::statement::transition);
+        _next->state(forall(decls, body == a),   logic::statement::transition);
         _next->state(forall(decls, !a),         logic::statement::final);
 
         return free_vars;
       },
-      [&](w_tomorrow w_to, term body) -> std::vector<variable> {
-          
+      [&](w_tomorrow, term body) -> std::vector<variable> {
+        future = true;
         // (i)
-        std::vector<variable> free_vars = surrogates(gamma, aux, body);
+        std::vector<variable> free_vars = surrogates(gamma, aux, body, future);
         std::vector<term> free_terms = { };
         std::vector<decl> decls = { };
 
@@ -281,16 +291,16 @@ namespace black::pipes::internal {
         term a = atom(surr, free_terms);
 
         // (iii)
-        _next->state(forall(decls, w_to == a),   logic::statement::transition);
+        _next->state(forall(decls, body == a),   logic::statement::transition);
         _next->state(forall(decls, a),         logic::statement::final);
 
         return free_vars;
       },
 
-      [&](yesterday y, term body) -> std::vector<variable> {
+      [&](yesterday, term body) -> std::vector<variable> {
           
         // (i)
-        std::vector<variable> free_vars = surrogates(gamma, aux, body);
+        std::vector<variable> free_vars = surrogates(gamma, aux, body, future);
         std::vector<term> free_terms = { };
         std::vector<decl> decls = { };
 
@@ -311,15 +321,15 @@ namespace black::pipes::internal {
         term a = atom(surr, free_terms);
 
         // (iii)
-        _next->state(forall(decls, y == a),   logic::statement::transition);
-        _next->state(forall(decls, !y),         logic::statement::init);
+        _next->state(forall(decls, body == a),   logic::statement::transition);
+        _next->state(forall(decls, !a),         logic::statement::init);
 
         return free_vars;
       },
 
-      [&](w_yesterday z, term body) -> std::vector<variable> {
+      [&](w_yesterday, term body) -> std::vector<variable> {
         // (i)
-        std::vector<variable> free_vars = surrogates(gamma, aux, body);
+        std::vector<variable> free_vars = surrogates(gamma, aux, body, future);
         std::vector<term> free_terms = { };
         std::vector<decl> decls = { };
 
@@ -340,8 +350,8 @@ namespace black::pipes::internal {
         term a = atom(surr, free_terms);
 
         // (iii)
-        _next->state(forall(decls, z == a),   logic::statement::transition);
-        _next->state(forall(decls, z),         logic::statement::init);
+        _next->state(forall(decls, body == a),   logic::statement::transition);
+        _next->state(forall(decls, a),         logic::statement::init);
 
         return free_vars;
       },
@@ -349,12 +359,12 @@ namespace black::pipes::internal {
       /* 
           Boolean and first-order predicates
       */
-      [&](equal, std::vector<term> arguments) -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0]), surrogates(gamma, aux, arguments[1])); },
-      [&](distinct, std::vector<term> arguments) -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0]), surrogates(gamma, aux, arguments[1])); },
+      [&](equal, std::vector<term> arguments) -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0], future), surrogates(gamma, aux, arguments[1], future)); },
+      [&](distinct, std::vector<term> arguments) -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0], future), surrogates(gamma, aux, arguments[1], future)); },
       [&](atom, std::vector<term> arguments) -> std::vector<variable> { 
         std::vector<variable> result = { };
         for(term t : arguments) {
-            result = vec_union(result, surrogates(gamma, aux, t));
+            result = vec_union(result, surrogates(gamma, aux, t, future));
         }
         return result;
       },
@@ -362,39 +372,39 @@ namespace black::pipes::internal {
       /*
           Boolean connectives.
       */
-      [&](negation, term argument)                    -> std::vector<variable> { return surrogates(gamma, aux, argument); },
-      [&](conjunction, std::vector<term> arguments)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0]), surrogates(gamma, aux, arguments[1])); },
-      [&](disjunction, std::vector<term> arguments)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0]), surrogates(gamma, aux, arguments[1])); },
-      [&](implication, term left, term right)         -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+      [&](negation, term argument)                    -> std::vector<variable> { return surrogates(gamma, aux, argument, future); },
+      [&](conjunction, std::vector<term> arguments)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0], future), surrogates(gamma, aux, arguments[1], future)); },
+      [&](disjunction, std::vector<term> arguments)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0], future), surrogates(gamma, aux, arguments[1], future)); },
+      [&](implication, term left, term right)         -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
 
       /*
           Other temporal operators.
       */
-      [&](eventually, term argument)          -> std::vector<variable> { return surrogates(gamma, aux, argument); },
-      [&](always, term argument)              -> std::vector<variable> { return surrogates(gamma, aux, argument); },
-      [&](until, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
-      [&](release, term left, term right)     -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
-      [&](once, term argument)                -> std::vector<variable> { return surrogates(gamma, aux, argument); },
-      [&](historically, term argument)        -> std::vector<variable> { return surrogates(gamma, aux, argument); },
-      [&](since, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
-      [&](triggered, term left, term right)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+      [&](eventually, term argument)          -> std::vector<variable> { return surrogates(gamma, aux, argument, future); },
+      [&](always, term argument)              -> std::vector<variable> { return surrogates(gamma, aux, argument, future); },
+      [&](until, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
+      [&](release, term left, term right)     -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
+      [&](once, term argument)                -> std::vector<variable> { return surrogates(gamma, aux, argument, future); },
+      [&](historically, term argument)        -> std::vector<variable> { return surrogates(gamma, aux, argument, future); },
+      [&](since, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
+      [&](triggered, term left, term right)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
 
       /* 
           Arithmetic operators.
       */
-      [&](minus, term argument)                -> std::vector<variable> { return surrogates(gamma, aux, argument); },
-      [&](sum, term left, term right)          -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
-      [&](product, term left, term right)      -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
-      [&](difference, term left, term right)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
-      [&](division, term left, term right)     -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
+      [&](minus, term argument)                -> std::vector<variable> { return surrogates(gamma, aux, argument, future); },
+      [&](sum, term left, term right)          -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
+      [&](product, term left, term right)      -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
+      [&](difference, term left, term right)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
+      [&](division, term left, term right)     -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
 
       /*
           Relational comparisons.
       */
-      [&](less_than, term left, term right)          -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
-      [&](less_than_eq, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
-      [&](greater_than, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); },
-      [&](greater_than_eq, term left, term right)    -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left), surrogates(gamma, aux, right)); }
+      [&](less_than, term left, term right)          -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
+      [&](less_than_eq, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
+      [&](greater_than, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
+      [&](greater_than_eq, term left, term right)    -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); }
     );
   }
 }
