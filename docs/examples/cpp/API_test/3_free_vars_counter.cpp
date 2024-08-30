@@ -106,34 +106,16 @@ set_var free_vars(term t) {
     );
 }
 
-void surrogates(term t, module &Gamma) {
-    match(t)(
-        [&](tomorrow t, term body) {
-            std::vector<decl> freevars;
-            std::optional<object> obj
-            for ( variable var : free_vars(body)) { 
-                obj = Gamma.lookup(var);
-                freevars.push_back(decl(obj.value().entity()->name, obj.value().entity()->type));
-            }
-            object a = Gamma.declare(decl(variable{label{std::pair{"xs", t.unique_id()}}}, types::function(freevars, types::boolean())), resolution::delayed);
-        }
-    );
-}
+
 
 int main() {
     module mod;
 
     object c = mod.define("c", types::integer(), 3);
-    object w = mod.declare("w", types::integer());
     variable x = "x";
     variable y = "y";
-    variable z = "z";
 
-    // Free variables as variable objects: z.
-    exists t = exists({{x, types::integer()}}, forall({{y, types::integer()}}, ((x > y) && (X(x) < c)) || (x + z) < (y + w)));
+    exists phi = exists({{x, types::integer()}}, X(x > c));
     
-    module mod2;
-    surrogates(X(t), mod2);
-    std::cout << mod2.lookup(z).has_value() << std::endl;
     return 0;
 }
