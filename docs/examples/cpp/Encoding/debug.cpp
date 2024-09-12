@@ -127,6 +127,7 @@ namespace black::pipes::internal {
         return obj.entity()->name.name().to_string();
       },
       [](variable var) { return var.name().to_string(); },
+      [&](prime p)     { return term_to_string(p.object()) + "'"; },
 
       /*
         Boolean and first-order predicates.

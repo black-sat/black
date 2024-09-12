@@ -13,7 +13,10 @@ int main () {
   object c = Sigma.define("c", types::integer(), 3);
   object q = Sigma.declare("q", types::boolean());
 
-  term phi = exists({{x, types::integer()}}, U(x > c, q));
+  object p = Sigma.declare("p", types::boolean());
+
+  term phi = exists({{x, types::integer()}}, Y(x + x) > c);
+  
   Sigma.require(phi);
 
   pipes::transform encoding = pipes::automaton() | pipes::debug();

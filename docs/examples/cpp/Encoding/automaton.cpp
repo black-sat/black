@@ -25,12 +25,19 @@
 #include <black/logic>
 #include <black/ast/algorithms>
 #include <black/pipes>
+#include <vector>
 
 namespace black::pipes::internal {
 
   using namespace support;
   using namespace logic;
   using namespace ast;
+
+  struct SNFSer
+  {
+    term SNFSed;
+    std::vector<variable> free_vars;
+  };
 
   struct automaton_t::impl_t : public consumer
   {
@@ -48,13 +55,12 @@ namespace black::pipes::internal {
     virtual void pop(size_t) override;
 
     private:
-    term to_snf(term t);
     std::vector<variable>::iterator find_var(std::vector<variable> &, variable);
     std::vector<variable> vec_union(std::vector<variable>, std::vector<variable>);
     std::vector<variable> quantify(std::vector<decl>, std::vector<variable>);
     types::type type_from_module(module, variable);
     module surrogates(term);
-    std::vector<variable> surrogates(module &, module &, term, bool &);
+    SNFSer to_SNFS(module &, module &, term, bool &, int &);
 
   };
 
@@ -78,7 +84,7 @@ namespace black::pipes::internal {
 
   void automaton_t::impl_t::state(logic::term t, logic::statement s) {
     if(s == logic::statement::requirement) {
-      module mod = surrogates(to_snf(t));
+      module mod = surrogates(t);
       _next->adopt(mod.resolve());      
     }
   }
@@ -90,67 +96,6 @@ namespace black::pipes::internal {
   std::optional<object> automaton_t::impl_t::translate(object) { return {}; }
 
   term automaton_t::impl_t::undo(term t) { return t; }
-     
-  term automaton_t::impl_t::to_snf(term t) {
-    return match(t)(
-      [](object obj)   { return obj; },
-      [](variable var) { return var; },
-
-      /*
-        Boolean and first-order predicates.
-      */
-      [](equal e)     { return e; },
-      [](distinct d)  { return d; },
-      [](atom a)      { return a; },
-      [&](exists, std::vector<decl> decls, term body) { return exists(decls, to_snf(body)); },
-      [&](forall, std::vector<decl> decls, term body) { return forall(decls, to_snf(body)); },
-
-      /*
-        Boolean connectives.
-      */
-      [&](negation, term argument)                  { return !to_snf(argument); },
-      [&](conjunction, std::vector<term> arguments) { return to_snf(arguments[0]) && to_snf(arguments[1]); },
-      [&](disjunction, std::vector<term> arguments) { return to_snf(arguments[0]) || to_snf(arguments[1]); },
-      [&](implication, std::vector<term> arguments) { return implication(to_snf(arguments[0]), to_snf(arguments[1])); },
-      
-      /*
-        Future LTL operators.
-      */
-      [&](tomorrow t) { return t; },
-      [&](w_tomorrow wt) { return wt; },
-      [&](eventually f, term argument)       { return to_snf(argument) || X(f); },
-      [&](always a, term argument)           { return to_snf(argument) && wX(a); },
-      [&](until u, term left, term right)    { return to_snf(right) || (to_snf(left) && X(u)); },
-      [&](release r, term left, term right)  { return to_snf(right) && (to_snf(left) || wX(r)); },
-
-      /*
-        Past LTL operators.
-      */
-      [](yesterday y)            { return y; },
-      [](w_yesterday z)          { return z; },
-      [&](once o, term argument)                 { return to_snf(argument) || Y(o); },
-      [&](historically h, term argument)         { return to_snf(argument) && Z(h); },
-      [&](since s, term left, term right)        { return to_snf(right) || (to_snf(left) && Y(s)); },
-      [&](triggered t, term left, term right)    { return to_snf(right) && (to_snf(left) && Z(t)); },
-
-      /* 
-        Arithmetic operators.
-      */
-      [](minus m)         { return m; },
-      [](sum s)           { return s; },
-      [](product p)       { return p; },
-      [](difference diff) { return diff; },
-      [](division div)    { return div; },
-      
-      /*
-        Relational comparisons.
-      */
-      [](less_than lt)            { return lt; },
-      [](less_than_eq lte)        { return lte;  },
-      [](greater_than gt)         { return gt; },
-      [](greater_than_eq gte)     { return gte;  }
-    );
-  }
 
   /*
     Returns an iterator pointing to the first occurrence of target in vec.
@@ -183,94 +128,137 @@ namespace black::pipes::internal {
 
   module automaton_t::impl_t::surrogates(term t){
     module gamma, aux;
-    object x_phi = gamma.declare({"X_PHI", types::boolean()}, resolution::delayed);
     
-    _next->state(t == x_phi,    logic::statement::transition);
-
     bool future = false;
+    int surrID = 0;
 
-    std::vector<variable> free = surrogates(gamma, aux, t, future);
+    SNFSer phi = to_SNFS(gamma, aux, t, future, surrID);
     
     if(future) {
+      object x_phi = gamma.declare({"xs_phi", types::boolean()}, resolution::delayed);
       _next->state(x_phi,         logic::statement::init);
+      _next->state(x_phi == primed(phi.SNFSed),    logic::statement::transition);
       _next->state(!x_phi,        logic::statement::final);
     }
     else{
+      object x_phi = gamma.declare({"xy_phi", types::boolean()}, resolution::delayed);
       _next->state(x_phi,         logic::statement::final);
+      _next->state(primed(x_phi) == phi.SNFSed,    logic::statement::transition);
       _next->state(!x_phi,        logic::statement::init);
     }
     return gamma;
   }
-  
-  std::vector<variable> automaton_t::impl_t::surrogates(module &gamma, module &aux, term t, bool &future) {
+
+  SNFSer automaton_t::impl_t::to_SNFS(module &gamma, module &aux, term t, bool &future, int &surrID) {
     return match(t)(
       /*
         Base cases.
       */
-      [](variable var) -> std::vector<variable> { return { var }; },
-      [](object)       -> std::vector<variable> { return { }; },
+      [&](variable var) -> SNFSer { return {var, { var }}; },
+      [&](object obj)   -> SNFSer { return {obj, {     }}; },
 
       /*
-        Quantifiers. All quantified variables are stored (declared) in a new module aux2. The recursive relies on aux2 to retrieve the types
-        of all free variables in term body.
+        Quantifiers.
       */
-      [&](exists, std::vector<decl> decls, term body) -> std::vector<variable> {
+      [&]<any_of<exists, forall> T>(T, std::vector<decl> decls, term body) -> SNFSer {
         module aux2 = aux;
+
         for(decl d : decls) {
-            aux2.declare(d, resolution::immediate);
+          aux2.declare(d, resolution::immediate);
         }
+
+        SNFSer rec = to_SNFS(gamma, aux2, body, future, surrID);
         
-        return quantify(decls, surrogates(gamma, aux2, body, future));
-      },
-      [&](forall, std::vector<decl> decls, term body) -> std::vector<variable> {
-        module aux2 = aux;
-        for(decl d : decls) {
-            aux2.declare(d, resolution::immediate);
-        }
-
-        return quantify(decls, surrogates(gamma, aux2, body, future));
+        return {
+          T(decls, rec.SNFSed),
+          quantify(decls, rec.free_vars)
+        };
       },
 
       /*
-          Temporal operators.
-              (i) Free variables in term body are retrieved;
-              (ii) The surrogate is defined accordingly;
-              (iii) The conjuncts containing the surrogate are passed to the next stage in the pipeline.
+          LTL operators.
       */
-      [&](tomorrow, term body) -> std::vector<variable> {
-        future = true;
+      [&](any_of<tomorrow, w_tomorrow, yesterday, w_yesterday, eventually, always, once, historically> auto t, term argument) -> SNFSer {
+        surrID ++;
+        SNFSer rec = to_SNFS(gamma, aux, argument, future, surrID);
 
-        // (i)
-        std::vector<variable> free_vars = surrogates(gamma, aux, body, future);
         std::vector<term> free_terms = { };
         std::vector<decl> decls = { };
-
-        // Retrieve free variable types.
         std::vector<types::type> types = { };
-        for(variable var : free_vars){
+
+        for(variable var : rec.free_vars){
             types::type t = type_from_module(aux, var);
             decls.push_back({var, t});
             types.push_back(t);
             free_terms.push_back(var);
         }
 
-        // (ii)
-        object surr = gamma.declare(
-            {"XS", types::function(types, types::boolean())},
+        std::string surr_label = match(t)(
+          [&](any_of<tomorrow, eventually> auto)      { future = true; return "xs_"; },
+          [&](any_of<w_tomorrow, always> auto)        { future = true; return "xw_"; },
+          [&](any_of<yesterday, once> auto)           { return "xy_"; },
+          [&](any_of<w_yesterday, historically> auto) { return "xz_"; }
+        ) + std::to_string(surrID);
+
+        term surrogate = atom(
+          gamma.declare(
+            surr_label, types::function(types, types::boolean()),
+            role::state,
             resolution::delayed
+          ),
+          free_terms
         );
-        term a = atom(surr, free_terms);
 
-        // (iii)
-        _next->state(forall(decls, body == a),   logic::statement::transition);
-        _next->state(forall(decls, !a),         logic::statement::final);
-
-        return free_vars;
+        return match(t)(
+          [&](tomorrow) -> SNFSer {
+            _next->state(forall(decls, surrogate == primed(rec.SNFSed)), logic::statement::transition);
+            _next->state(forall(decls, !surrogate),                      logic::statement::final);
+            return { surrogate, rec.free_vars };
+          },
+          [&](w_tomorrow) -> SNFSer {
+            _next->state(forall(decls, surrogate == primed(rec.SNFSed)), logic::statement::transition);
+            _next->state(forall(decls, surrogate),                       logic::statement::final);
+            return { surrogate, rec.free_vars };
+          },
+          [&](yesterday) -> SNFSer {
+            _next->state(forall(decls, primed(surrogate) == rec.SNFSed), logic::statement::transition);
+            _next->state(forall(decls, !surrogate),                      logic::statement::init);
+            return { surrogate, rec.free_vars };
+          },
+          [&](w_yesterday) -> SNFSer {
+            _next->state(forall(decls, primed(surrogate) == rec.SNFSed), logic::statement::transition);
+            _next->state(forall(decls, surrogate),                       logic::statement::init);
+            return { surrogate, rec.free_vars };
+          },
+          [&](eventually) -> SNFSer {
+            _next->state(forall(decls, surrogate == primed(rec.SNFSed || surrogate)), logic::statement::transition);
+            _next->state(forall(decls, !surrogate), logic::statement::final);
+            return { rec.SNFSed || surrogate, rec.free_vars };
+          },
+          [&](always) -> SNFSer {
+            _next->state(forall(decls, surrogate == primed(rec.SNFSed && surrogate)), logic::statement::transition);
+            _next->state(forall(decls, surrogate), logic::statement::final);
+            return { rec.SNFSed && surrogate, rec.free_vars };
+          },
+          [&](once) -> SNFSer {
+            _next->state(forall(decls, primed(surrogate) == rec.SNFSed || surrogate), logic::statement::transition);
+            _next->state(forall(decls, !surrogate), logic::statement::init);
+            return { rec.SNFSed || surrogate, rec.free_vars };
+          },
+          [&](historically) -> SNFSer {
+            _next->state(forall(decls, primed(surrogate) == rec.SNFSed && surrogate), logic::statement::transition);
+            _next->state(forall(decls, surrogate), logic::statement::init);
+            return { rec.SNFSed && surrogate, rec.free_vars };
+          }
+        );
       },
-      [&](w_tomorrow, term body) -> std::vector<variable> {
-        future = true;
-        // (i)
-        std::vector<variable> free_vars = surrogates(gamma, aux, body, future);
+      [&](any_of<until, release, since, triggered> auto t, term left, term right) -> SNFSer {
+        surrID ++;
+
+        SNFSer rec_left  = to_SNFS(gamma, aux, left,  future, surrID);
+        SNFSer rec_right = to_SNFS(gamma, aux, right, future, surrID);
+
+        std::vector<variable> free_vars = vec_union(rec_left.free_vars, rec_right.free_vars);
         std::vector<term> free_terms = { };
         std::vector<decl> decls = { };
 
@@ -283,128 +271,76 @@ namespace black::pipes::internal {
             free_terms.push_back(var);
         }
 
-        // (ii)
-        object surr = gamma.declare(
-            {"XW", types::function(types, types::boolean())},
+        std::string surr_label = match(t)(
+          [&](until)      { future = true; return "xs_"; },
+          [&](release)    { future = true; return "xw_"; },
+          [&](since)      { return "xy_"; },
+          [&](triggered)  { return "xz_"; }
+        ) + std::to_string(surrID);
+
+        term surrogate = atom(
+          gamma.declare(
+            surr_label, types::function(types, types::boolean()),
+            role::state,
             resolution::delayed
+          ),
+          free_terms
         );
-        term a = atom(surr, free_terms);
 
-        // (iii)
-        _next->state(forall(decls, body == a),   logic::statement::transition);
-        _next->state(forall(decls, a),         logic::statement::final);
+        return match(t)(
+          [&](until) -> SNFSer {
+            _next->state(forall(decls, surrogate == primed((rec_right.SNFSed || (rec_left.SNFSed && surrogate)))), logic::statement::transition);
+            _next->state(forall(decls, !surrogate), logic::statement::final);
+            return { rec_right.SNFSed || (rec_left.SNFSed && surrogate), free_vars };
+          },
 
-        return free_vars;
-      },
+          [&](release) -> SNFSer {            
+            _next->state(forall(decls, surrogate == primed((rec_right.SNFSed && (rec_left.SNFSed || surrogate)))), logic::statement::transition);
+            _next->state(forall(decls, surrogate), logic::statement::final);
+            return { rec_right.SNFSed && (rec_left.SNFSed || surrogate), free_vars };
+          },
 
-      [&](yesterday, term body) -> std::vector<variable> {
-          
-        // (i)
-        std::vector<variable> free_vars = surrogates(gamma, aux, body, future);
-        std::vector<term> free_terms = { };
-        std::vector<decl> decls = { };
+          [&](since) -> SNFSer {
+            _next->state(forall(decls, primed(surrogate) == rec_right.SNFSed || (rec_left.SNFSed && surrogate)), logic::statement::transition);
+            _next->state(forall(decls, !surrogate), logic::statement::init);
+            return { rec_right.SNFSed || (rec_left.SNFSed && surrogate), free_vars };
+          },
 
-        // Retrieve free variable types.
-        std::vector<types::type> types = { };
-        for(variable var : free_vars){
-            types::type t = type_from_module(aux, var);
-            decls.push_back({var, t});
-            types.push_back(t);
-            free_terms.push_back(var);
-        }
-
-        // (ii)
-        object surr = gamma.declare(
-            {"XY", types::function(types, types::boolean())},
-            resolution::delayed
+          [&](triggered) -> SNFSer {
+            _next->state(forall(decls, primed(surrogate) == rec_right.SNFSed && (rec_left.SNFSed || surrogate)), logic::statement::transition);
+            _next->state(forall(decls, surrogate), logic::statement::init);
+            return { rec_right.SNFSed && (rec_left.SNFSed || surrogate), free_vars };
+          }
         );
-        term a = atom(surr, free_terms);
-
-        // (iii)
-        _next->state(forall(decls, body == a),   logic::statement::transition);
-        _next->state(forall(decls, !a),         logic::statement::init);
-
-        return free_vars;
-      },
-
-      [&](w_yesterday, term body) -> std::vector<variable> {
-        // (i)
-        std::vector<variable> free_vars = surrogates(gamma, aux, body, future);
-        std::vector<term> free_terms = { };
-        std::vector<decl> decls = { };
-
-        // Retrieve free variable types.
-        std::vector<types::type> types = { };
-        for(variable var : free_vars){
-            types::type t = type_from_module(aux, var);
-            decls.push_back({var, t});
-            types.push_back(t);
-            free_terms.push_back(var);
-        }
-
-        // (ii)
-        object surr = gamma.declare(
-            {"XY", types::function(types, types::boolean())},
-            resolution::delayed
-        );
-        term a = atom(surr, free_terms);
-
-        // (iii)
-        _next->state(forall(decls, body == a),   logic::statement::transition);
-        _next->state(forall(decls, a),         logic::statement::init);
-
-        return free_vars;
       },
 
       /* 
-          Boolean and first-order predicates
+        Other terms.
       */
-      [&](equal, std::vector<term> arguments) -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0], future), surrogates(gamma, aux, arguments[1], future)); },
-      [&](distinct, std::vector<term> arguments) -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0], future), surrogates(gamma, aux, arguments[1], future)); },
-      [&](atom, std::vector<term> arguments) -> std::vector<variable> { 
+      [&]<any_of<equal, distinct, conjunction, disjunction> T>(T, std::vector<term> arguments) -> SNFSer { 
+        SNFSer rec_left = to_SNFS(gamma, aux, arguments[0], future, surrID);
+        SNFSer rec_right = to_SNFS(gamma, aux, arguments[1], future, surrID);
+        return { T({rec_left.SNFSed, rec_right.SNFSed}), vec_union(rec_left.free_vars, rec_right.free_vars) };
+      },
+
+      [&](atom a, std::vector<term> arguments) -> SNFSer { 
         std::vector<variable> result = { };
         for(term t : arguments) {
-            result = vec_union(result, surrogates(gamma, aux, t, future));
+          result = vec_union(result, to_SNFS(gamma, aux, t, future, surrID).free_vars);
         }
-        return result;
+        return { a, result };
       },
 
-      /*
-          Boolean connectives.
-      */
-      [&](negation, term argument)                    -> std::vector<variable> { return surrogates(gamma, aux, argument, future); },
-      [&](conjunction, std::vector<term> arguments)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0], future), surrogates(gamma, aux, arguments[1], future)); },
-      [&](disjunction, std::vector<term> arguments)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, arguments[0], future), surrogates(gamma, aux, arguments[1], future)); },
-      [&](implication, term left, term right)         -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
+      [&]<any_of<negation, minus> T>(T, term argument) -> SNFSer {
+        SNFSer rec = to_SNFS(gamma, aux, argument, future, surrID);
+        return { T(rec.SNFSed), rec.free_vars };
+      },
 
-      /*
-          Other temporal operators.
-      */
-      [&](eventually, term argument)          -> std::vector<variable> { return surrogates(gamma, aux, argument, future); },
-      [&](always, term argument)              -> std::vector<variable> { return surrogates(gamma, aux, argument, future); },
-      [&](until, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
-      [&](release, term left, term right)     -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
-      [&](once, term argument)                -> std::vector<variable> { return surrogates(gamma, aux, argument, future); },
-      [&](historically, term argument)        -> std::vector<variable> { return surrogates(gamma, aux, argument, future); },
-      [&](since, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
-      [&](triggered, term left, term right)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
-
-      /* 
-          Arithmetic operators.
-      */
-      [&](minus, term argument)                -> std::vector<variable> { return surrogates(gamma, aux, argument, future); },
-      [&](sum, term left, term right)          -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
-      [&](product, term left, term right)      -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
-      [&](difference, term left, term right)   -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
-      [&](division, term left, term right)     -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
-
-      /*
-          Relational comparisons.
-      */
-      [&](less_than, term left, term right)          -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
-      [&](less_than_eq, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
-      [&](greater_than, term left, term right)       -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); },
-      [&](greater_than_eq, term left, term right)    -> std::vector<variable> { return vec_union(surrogates(gamma, aux, left, future), surrogates(gamma, aux, right, future)); }
+      [&]<any_of<sum, product, difference, division, implication, less_than, less_than_eq, greater_than, greater_than_eq> T>(T, term left, term right) -> SNFSer {
+        SNFSer rec_left = to_SNFS(gamma, aux, left, future, surrID);
+        SNFSer rec_right = to_SNFS(gamma, aux, right, future, surrID);
+        return { T(rec_left.SNFSed, rec_right.SNFSed), vec_union(rec_left.free_vars, rec_right.free_vars) };
+      }
     );
   }
 }
