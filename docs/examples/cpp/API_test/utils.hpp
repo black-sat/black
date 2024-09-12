@@ -12,6 +12,7 @@ std::string term_to_string(term t) {
             Object terms.
         */
         [](variable var) { return var.name().to_string(); },
+        [](prime p)      { return term_to_string(p.object()) + "'"; },
         [](object obj)   {            
             if(obj.entity()->value.has_value()) { 
                 return match(obj.entity()->value.value())(

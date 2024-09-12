@@ -55,6 +55,3 @@ target_link_libraries(3_free_vars_counter black::black)
 
 add_executable(main Encoding/main.cpp)
 target_link_libraries(main black::black)
-
-add_executable(test API_test/test.cpp)
-target_link_libraries(test black::black)
