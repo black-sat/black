@@ -43,7 +43,7 @@ namespace black_internal {
     if(assertion())
       return;
     
-    std::fprintf(stderr, "[black]: failed assert at %s:%zd, \"%s\"\n",
+    std::fprintf(stderr, "[black]: failed assert at %s:%zu, \"%s\"\n",
                  filename, line, expression);
     std::abort();
   }
@@ -56,7 +56,7 @@ namespace black_internal {
       return;
     
     std::fprintf(stderr, 
-                 "[black]: unreachable code reached at %s:%zd\n",
+                 "[black]: unreachable code reached at %s:%zu\n",
                  filename, line);
     std::abort();
   }
