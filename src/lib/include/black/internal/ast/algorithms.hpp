@@ -26,6 +26,8 @@
 
 #include <numeric>
 
+#include <black/ast/core>
+
 namespace black::ast {
 
   template<typename F>

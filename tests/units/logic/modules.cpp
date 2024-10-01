@@ -194,4 +194,17 @@ TEST_CASE("modules") {
 
     }
 
+    SECTION("Primed variables") {
+
+        module mod;
+
+        object x = mod.declare("x", types::integer(), role::state);
+        object p = mod.declare("p", types::integer(), role::input);
+
+        term t = x + p;
+
+        REQUIRE(primed(t) == prime(x) + p);
+
+    }
+
 }
