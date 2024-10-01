@@ -21,14 +21,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_PIPES_HPP
-#define BLACK_PIPES_HPP
+#ifndef BLACK_PIPES_DEBUG_HPP
+#define BLACK_PIPES_DEBUG_HPP
 
 #include <black/support>
 #include <black/logic>
 
-#include <black/internal/pipes/pipeline.hpp>
-#include <black/internal/pipes/automaton.hpp>
-#include <black/internal/pipes/debug.hpp>
+namespace black::pipes::internal {
+    class debug_t : public transform::base
+    {
+        public:
+            debug_t(class consumer *next);
 
-#endif // BLACK_PIPES_HPP
+            virtual ~debug_t() override;
+                
+            virtual class consumer *consumer() override;
+
+            virtual std::optional<logic::object> translate(logic::object x) override;
+
+            virtual logic::term undo(logic::term x) override;
+
+        private:
+            struct impl_t;
+            std::unique_ptr<impl_t> _impl;
+    };
+}
+
+namespace black::pipes {
+    inline constexpr auto debug = make_transform<internal::debug_t>;
+}
+
+#endif // BLACK_PIPES_DEBUG_HPP

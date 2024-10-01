@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2024 Nicola Gigante
+// (C) 2024 Nicola Gigante, Alex Della Schiava
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 #include <black/support>
+#include <black/support/private>
 #include <black/logic>
 #include <black/ast/algorithms>
 #include <black/pipes>
@@ -77,14 +78,18 @@ namespace black::pipes::internal {
   }
 
   void  debug_t::impl_t::state(logic::term t, logic::statement s) {
+    std::cout << "Debug -> state";
+    if(s == logic::statement::requirement) {
+      std::cout << " -> requirement" << std::endl;
+    }
     if(s == logic::statement::init) {
-      std::cout << "Debug -> state -> init" << std::endl;
+      std::cout << " -> init" << std::endl;
     }
     if(s == logic::statement::transition) {
-      std::cout << "Debug -> state -> transition" << std::endl;
+      std::cout << " -> transition" << std::endl;
     }
     if(s == logic::statement::final) {
-      std::cout << "Debug -> state -> final" << std::endl;
+      std::cout << " -> final" << std::endl;
     }
 
     std::cout << term_to_string(t) << std::endl << std::endl;
@@ -127,6 +132,7 @@ namespace black::pipes::internal {
         return obj.entity()->name.name().to_string();
       },
       [](variable var) { return var.name().to_string(); },
+      [](any_of<integer, real, boolean> auto c) { return std::to_string(c.value()); },
       [&](prime p)     { return term_to_string(p.object()) + "'"; },
 
       /*
@@ -136,12 +142,16 @@ namespace black::pipes::internal {
       [&](distinct, std::vector<term> arguments)   { return "(" + term_to_string(arguments[0]) + " != " + term_to_string(arguments[1]) + ")"; },
       
       [&](atom, term head, std::vector<term> arguments) {
-        std::string result = term_to_string(head) + "(";
-        for (auto i = arguments.begin(); i != arguments.end(); i ++) {
-          if (i != arguments.begin()) result = result + ", ";
-          result = result + term_to_string(*i);
+        std::string result = term_to_string(head);
+        if(arguments.size() > 0){
+          result = result + "(";
+          for (auto i = arguments.begin(); i != arguments.end(); i ++) {
+            if (i != arguments.begin()) result = result + ", ";
+            result = result + term_to_string(*i);
+          }
+          result = result + ")";
         }
-        return result + ")";
+        return result;
       }, 
 
       [&](exists, std::vector<decl> decls, term body) {
@@ -167,7 +177,7 @@ namespace black::pipes::internal {
       [&](negation, term argument) { return "!(" + term_to_string(argument) + ")"; },
       [&](conjunction, std::vector<term> arguments) { return "(" + term_to_string(arguments[0]) + " && " + term_to_string(arguments[1]) + ")"; },
       [&](disjunction, std::vector<term> arguments) { return "(" + term_to_string(arguments[0]) + " || " + term_to_string(arguments[1]) + ")"; },
-      [&](implication, std::vector<term> arguments) { return "(" + term_to_string(arguments[0]) + " => " + term_to_string(arguments[1]) + ")"; },
+      [&](implication, term left, term right) { return "(" + term_to_string(left) + " => " + term_to_string(right) + ")"; },
 
       /*
         Future LTL operators.

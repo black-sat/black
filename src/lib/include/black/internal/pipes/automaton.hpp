@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2024 Nicola Gigante
+// (C) 2024 Nicola Gigante, Alex Della Schiava
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,14 +21,35 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_PIPES_HPP
-#define BLACK_PIPES_HPP
+#ifndef BLACK_PIPES_ENCODING_HPP
+#define BLACK_PIPES_ENCODING_HPP
 
 #include <black/support>
 #include <black/logic>
 
-#include <black/internal/pipes/pipeline.hpp>
-#include <black/internal/pipes/automaton.hpp>
-#include <black/internal/pipes/debug.hpp>
+namespace black::pipes::internal {
 
-#endif // BLACK_PIPES_HPP
+class automaton_t : public transform::base
+  {
+  public:
+    automaton_t(class consumer *next);
+
+    virtual ~automaton_t() override;
+      
+    virtual class consumer *consumer() override;
+
+    virtual std::optional<logic::object> translate(logic::object x) override;
+
+    virtual logic::term undo(logic::term x) override;
+
+  private:
+    struct impl_t;
+    std::unique_ptr<impl_t> _impl;
+  };
+}
+
+namespace black::pipes {
+  inline constexpr auto automaton = make_transform<internal::automaton_t>;
+}
+
+#endif // BLACK_PIPES_ENCODING_HPP

@@ -145,6 +145,8 @@ set (
   src/logic/type_of.cpp
   src/logic/evaluate.cpp
   src/pipes/map.cpp
+  src/pipes/automaton.cpp
+  src/pipes/debug.cpp
   #src/io/lexing.cpp
 )
 
