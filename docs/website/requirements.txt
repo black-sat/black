@@ -1,0 +1,8 @@
+setuptools
+sphinx
+sphinxcontrib-bibtex
+furo
+jinja-cli
+breathe
+click
+sphinx-autobuild
