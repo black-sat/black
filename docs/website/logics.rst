@@ -80,7 +80,7 @@ following holds:
    there exists :math:`i \le j < |\overline{\sigma}|` such that 
    :math:`\overline{\sigma},j\models \psi_2` and 
    :math:`\overline{\sigma},k\models \psi_1` for all :math:`k` with 
-   :math:`j<k <i`.
+   :math:`i \le k < j`.
 8. :math:`\overline{\sigma},i\models \mathsf{Y}\psi` iff 
    :math:`i > 0` and 
    :math:`\overline{\sigma},i-1\models \psi`
