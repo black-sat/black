@@ -24,6 +24,7 @@
 #ifndef BLACK_PRIVATE_PERSISTENT_HPP
 #define BLACK_PRIVATE_PERSISTENT_HPP
 
+#include <exception>
 #include <immer/vector.hpp>
 #include <immer/map.hpp>
 #include <immer/set.hpp>
