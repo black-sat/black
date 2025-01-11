@@ -472,6 +472,12 @@ namespace black::logic {
         
         return T(decls, resolved(body, pending, mode, ours, deps, hidden));
       },
+      [&]<any_of<box, diamond> T>(T, auto label, term arg) {
+        return T(label, resolved(arg, pending, mode, ours, deps, hidden));
+      },
+      [&](sharper, auto l, auto r) {
+        return sharper(l, r);
+      },
       [&]<typename T>(T, auto const &...args) {
         return T(resolved(args, pending, mode, ours, deps, hidden)...);
       }

@@ -34,6 +34,7 @@
 #include <vector>
 #include <string_view>
 #include <string>
+#include <typeinfo>
 
 namespace black::ast::core::internal
 {
@@ -44,7 +45,7 @@ namespace black::ast::core::internal
 
   template<typename T>
   concept identifiable = 
-    std::equality_comparable<T> && support::hashable<T> && formattable<T>;
+    std::equality_comparable<T> && support::hashable<T>;
 
   //
   // Type-erased hashable, comparable and printable value
@@ -87,20 +88,20 @@ namespace black::ast::core::internal
 
     template<typename T>
     bool is() const {
-      return extract<T>(&_any) != nullptr;
+      return extract<wrap_t<T>>(&_any) != nullptr;
     }
 
     template<typename T>
     std::optional<T> to() const & {
-      if(T const*ptr = extract<T>(&_any); ptr)
-        return std::optional<T>{*ptr};
+      if(wrap_t<T> const*ptr = extract<wrap_t<T>>(&_any); ptr)
+        return std::optional<T>{ptr->value};
       return std::nullopt;
     }
 
     template<typename T>
     std::optional<T> to() && {
-      if(T const*ptr = extract<T>(&_any); ptr)
-        return std::optional<T>{std::move(*ptr)};
+      if(wrap_t<T> const*ptr = extract<wrap_t<T>>(&_any); ptr)
+        return std::optional<T>{std::move(ptr->value)};
       return std::nullopt;
     }
 
@@ -109,6 +110,8 @@ namespace black::ast::core::internal
 
     template<typename T>
     T *get() { return extract<T>(&_any); }
+
+    std::type_info const& type() const { return _any->type(); }
 
   private:
     struct label_t {
@@ -121,25 +124,34 @@ namespace black::ast::core::internal
       virtual ~label_t() = default;
       virtual size_t hash() const = 0;
       virtual std::string to_string() const = 0;
+      virtual std::type_info const& type() const = 0;
     };
 
     template<typename T>
-    support::any<label_t> wrap(T arg) {
-      struct wrap_t : label_t {
-        T _v;
+    struct wrap_t : label_t {
+        T value;
 
         wrap_t() = default;
-        wrap_t(T v) : _v{std::move(v)} { }
+        wrap_t(T v) : value{std::move(v)} { }
 
         bool operator==(wrap_t const&) const = default;
 
-        virtual size_t hash() const override { return support::hash(_v); }
+        virtual size_t hash() const override { return support::hash(value); }
         virtual std::string to_string() const override { 
-          return std::format("{}", _v); 
+          if constexpr(formattable<T>)
+            return std::format("{}", value); 
+          else
+            return std::format("<{}>", support::type_name<T>());
+        }
+
+        virtual std::type_info const& type() const override {
+          return typeid(T);
         }
       }; 
-      
-      return support::any<label_t>{wrap_t{std::move(arg)}};
+
+    template<typename T>
+    support::any<label_t> wrap(T arg) {     
+      return support::any<label_t>{wrap_t<T>{std::move(arg)}};
     }
 
     support::any<label_t> wrap(std::string_view view) {

@@ -40,6 +40,12 @@ namespace black::logic {
   namespace types {
     struct type;
   }
+  
+  namespace sl {
+    struct standpoint;
+    struct sp;
+    struct star;
+  }
 
   using types::type;
 
@@ -86,6 +92,12 @@ namespace black::logic {
       static forall init(decl, term);
     };
   }
+
+  namespace sl::internal {
+    struct sp_custom_ctor {
+      static sp convert(std::string);
+    };
+  }
 }
 
 namespace black::ast::core {
@@ -124,6 +136,10 @@ namespace black::ast::core {
   template<>
   struct ast_node_custom_ctor<logic::forall> 
     : logic::internal::forall_custom_ctor { };
+
+  template<>
+    struct ast_node_custom_ctor<logic::sl::sp> 
+    : logic::sl::internal::sp_custom_ctor { };
 }
 
   //
@@ -418,6 +434,39 @@ namespace black::logic::types {
 
   inline bool operator==(type t1, type t2) {
     return type_equal(t1, t2);
+  }
+
+}
+
+namespace black::logic::sl {
+
+  namespace internal {
+    inline logic::sl::sp sp_custom_ctor::convert(std::string name) {
+      return logic::sl::sp(ast::core::label{name});
+    }
+  }
+
+  inline sharper operator<=(standpoint s1, standpoint s2) {
+    return sharper(s1, s2);
+  }
+
+  inline bool operator==(standpoint s1, standpoint s2) {
+    return support::match(s1)(
+      [&](star) {
+        return support::match(s2)(
+          [](star) { return true; },
+          [](sp) { return false; }
+        );
+      },
+      [&](sp, auto name1) {
+        return support::match(s2)(
+          [](star) { return false; },
+          [&](sp, auto name2) {
+            return name1 == name2;
+          }
+        );
+      }
+    );
   }
 
 }

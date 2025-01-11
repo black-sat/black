@@ -73,6 +73,10 @@ namespace black::support::internal
     #endif
   }
 
+  inline std::string type_name(std::type_info const& t) {
+    return demangle(t.name());
+  }
+
   template<typename T>
   std::string type_name() {
     return demangle(typeid(T).name());

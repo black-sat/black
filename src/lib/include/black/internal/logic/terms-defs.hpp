@@ -147,6 +147,21 @@ declare_ast(logic::types, type)
 
 end_ast(logic::types, type)
 
+declare_ast(logic::sl, standpoint)
+
+  section("Standpoint logic syntax")
+
+    declare_ast_node(logic::sl, standpoint, star, "The universal standpoint")
+    end_ast_node(logic::sl, standpoint, star)
+
+    declare_ast_node(logic::sl, standpoint, sp, "A named standpoint")
+      declare_field(logic::sl, standpoint, sp, name, ast::core::label, "The standpoint's name")
+    end_ast_node(logic::sl, standpoint, sp)  
+  
+  end_section()
+
+end_ast(logic::sl, standpoint)
+
 declare_ast(logic, term)
 
   section("The error term")
@@ -227,6 +242,23 @@ declare_ast(logic, term)
       declare_field(logic, term, implication, left, logic::term, "The antecedent")
       declare_field(logic, term, implication, right, logic::term, "The consequent")
     end_ast_node(logic, term, implication)
+  end_section()
+
+  section("Standpoint Logic")
+    declare_ast_node(logic, term, box, "The box standpoint modality")
+      declare_field(logic, term, box, standpoint, logic::sl::standpoint, "The standpoint of the modality")
+      declare_field(logic, term, box, argument, logic::term, "The term under the modality")
+    end_ast_node(logic, term, box)
+    
+    declare_ast_node(logic, term, diamond, "The diamond standpoint modality")
+      declare_field(logic, term, diamond, standpoint, logic::sl::standpoint, "The standpoint of the modality")
+      declare_field(logic, term, diamond, argument, logic::term, "The term under the modality")
+    end_ast_node(logic, term, diamond)
+
+    declare_ast_node(logic, term, sharper, "Sharpening relation between standpoints")
+      declare_field(logic, term, sharper, left, logic::sl::standpoint, "The standpoint of the modality")
+      declare_field(logic, term, sharper, right, logic::sl::standpoint, "The term under the modality")
+    end_ast_node(logic, term, sharper)
   end_section()
 
   section("Functional constructs")
