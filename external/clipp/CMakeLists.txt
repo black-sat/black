@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.8...3.31)
 project(clipp
   VERSION 1.2.3
   LANGUAGES CXX)

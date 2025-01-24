@@ -129,8 +129,9 @@ TEST_CASE("Match on std::expected") {
     auto r = match(t)(
         [](int x) { return x; }
     );
-
-    REQUIRE(r == 42);
+    
+    REQUIRE(r.has_value());
+    REQUIRE(*r == 42);
 
     t = std::unexpected("Error");
 

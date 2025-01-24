@@ -233,7 +233,7 @@ namespace black::support {
       return std::any_cast<Derived>(&v->_value);
     }
     
-    
+    std::type_info const& type() const { return _value.type(); }
 
   private:
     template<typename U>

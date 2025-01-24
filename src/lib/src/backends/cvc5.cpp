@@ -48,6 +48,8 @@ namespace black::solvers {
     persistent::map<entity const *, CVC5::Term> objects;
     persistent::map<CVC5::Term, entity const *> consts;
     std::unique_ptr<CVC5::Solver> slv = std::make_unique<CVC5::Solver>();
+    std::unique_ptr<CVC5::TermManager> mgr = 
+      std::make_unique<CVC5::TermManager>();
     bool ignore_push = false;
     support::tribool last_answer = false;
 
@@ -73,11 +75,11 @@ namespace black::solvers {
         [&](types::error) {
           return CVC5::Sort();
         },
-        [&](types::integer) { return slv->getIntegerSort(); },
-        [&](types::real) { return slv->getRealSort(); },
-        [&](types::boolean) { return slv->getBooleanSort(); },
+        [&](types::integer) { return mgr->getIntegerSort(); },
+        [&](types::real) { return mgr->getRealSort(); },
+        [&](types::boolean) { return mgr->getBooleanSort(); },
         [&](types::function, auto args, auto range) {
-          return slv->mkFunctionSort(args, range);
+          return mgr->mkFunctionSort(args, range);
         }
       );
     }
@@ -87,15 +89,15 @@ namespace black::solvers {
       term t, persistent::map<variable, CVC5::Term, term_equal_to<>> vars
     ) const {
       return ast::traverse<CVC5::Term>(t)(
-        [&](integer, int64_t v) { return slv->mkInteger(v); },
+        [&](integer, int64_t v) { return mgr->mkInteger(v); },
         [&](real, double v) { 
           double abs = std::abs(v);
           auto [num, den] = support::double_to_fraction(abs);
           if(v >= 0)
-            return slv->mkReal(num, den);
-          return slv->mkReal(-num, den);
+            return mgr->mkReal(num, den);
+          return mgr->mkReal(-num, den);
         },
-        [&](boolean, bool v) { return slv->mkBoolean(v); },
+        [&](boolean, bool v) { return mgr->mkBoolean(v); },
         [&](variable x) {
           CVC5::Term const *var = vars.find(x);
           
@@ -111,19 +113,19 @@ namespace black::solvers {
         },
         [&](equal, auto args) {
           if(args.size() < 2)
-            return slv->mkTrue();
+            return mgr->mkTrue();
 
-          return slv->mkTerm(CVC5::Kind::EQUAL, std::move(args));
+          return mgr->mkTerm(CVC5::Kind::EQUAL, std::move(args));
         },
         [&](distinct, auto args) {
           if(args.size() < 2)
-            return slv->mkFalse();
+            return mgr->mkFalse();
 
-          return slv->mkTerm(CVC5::Kind::DISTINCT, std::move(args));
+          return mgr->mkTerm(CVC5::Kind::DISTINCT, std::move(args));
         },
         [&](atom, auto head, auto args) {
           args.insert(args.begin(), head);
-          return slv->mkTerm(CVC5::Kind::APPLY_UF, std::move(args));
+          return mgr->mkTerm(CVC5::Kind::APPLY_UF, std::move(args));
         },
         [&](any_of<exists,forall,lambda> auto v, auto decls/*, auto body*/) {
           std::vector<CVC5::Term> varlist;
@@ -131,7 +133,7 @@ namespace black::solvers {
           persistent::map<variable, CVC5::Term, term_equal_to<>> newvars = vars;
 
           for(auto [name, type, role] : decls) {
-            CVC5::Term term = slv->mkVar(to_sort(type));
+            CVC5::Term term = mgr->mkVar(to_sort(type));
             varlist.push_back(term);
             newvars.set(name, term);
           }
@@ -142,25 +144,25 @@ namespace black::solvers {
             [](lambda) { return CVC5::Kind::LAMBDA; }
           );
 
-          return slv->mkTerm(kind, { 
-            slv->mkTerm(CVC5::Kind::VARIABLE_LIST, varlist), 
+          return mgr->mkTerm(kind, { 
+            mgr->mkTerm(CVC5::Kind::VARIABLE_LIST, varlist), 
             to_term(v.body(), newvars)
           });
         },
         [&](negation, auto arg) {
-          return slv->mkTerm(CVC5::Kind::NOT, { arg });
+          return mgr->mkTerm(CVC5::Kind::NOT, { arg });
         },
         [&](conjunction, auto args) {
-          return slv->mkTerm(CVC5::Kind::AND, std::move(args));
+          return mgr->mkTerm(CVC5::Kind::AND, std::move(args));
         },
         [&](disjunction, auto args) {
-          return slv->mkTerm(CVC5::Kind::OR, std::move(args));
+          return mgr->mkTerm(CVC5::Kind::OR, std::move(args));
         },
         [&](implication, auto left, auto right) {
-          return slv->mkTerm(CVC5::Kind::IMPLIES, { left, right });
+          return mgr->mkTerm(CVC5::Kind::IMPLIES, { left, right });
         },
         [&](ite, auto guard, auto iftrue, auto iffalse) {
-          return slv->mkTerm(CVC5::Kind::ITE, { guard, iftrue, iffalse });
+          return mgr->mkTerm(CVC5::Kind::ITE, { guard, iftrue, iffalse });
         },
         [&](arithmetic auto v, auto ...args) {
           CVC5::Kind kind = match(v)(
@@ -174,7 +176,7 @@ namespace black::solvers {
               return CVC5::Kind::DIVISION; 
             }
           );
-          return slv->mkTerm(kind, { args... });
+          return mgr->mkTerm(kind, { args... });
         },
         [&](relational auto v, auto left, auto right) {
           CVC5::Kind kind = match(v)(
@@ -183,7 +185,7 @@ namespace black::solvers {
             [](greater_than) { return CVC5::Kind::GT; },
             [](greater_than_eq) { return CVC5::Kind::GEQ; }
           );
-          return slv->mkTerm(kind, { left, right });
+          return mgr->mkTerm(kind, { left, right });
         }
       );
     }
@@ -281,7 +283,7 @@ namespace black::solvers {
           persistent::map<variable, CVC5::Term, term_equal_to<>> varmap;
 
           for(auto [name, type, role] : decls) {
-            CVC5::Term var = slv->mkVar(to_sort(type));
+            CVC5::Term var = mgr->mkVar(to_sort(type));
             vars.push_back(var);
             varmap.set(name, var);
           }
@@ -309,7 +311,7 @@ namespace black::solvers {
     void define(std::vector<entity const *> lookups) {
       std::vector<CVC5::Term> names;
       for(auto e : lookups) {
-        CVC5::Term name = slv->mkConst(to_sort(e->type));
+        CVC5::Term name = mgr->mkConst(to_sort(e->type));
         names.push_back(name);
         objects.insert({e, name});
         consts.insert({name, e});
@@ -326,7 +328,7 @@ namespace black::solvers {
 
           persistent::map<variable, CVC5::Term, term_equal_to<>> boundvars;
           for(decl d : fun.vars()) {
-            CVC5::Term var = slv->mkVar(to_sort(d.type));
+            CVC5::Term var = mgr->mkVar(to_sort(d.type));
             boundvars.insert({d.name, var});
             thesevars.push_back(var);
           }
@@ -345,7 +347,7 @@ namespace black::solvers {
     void declare(entity const *e) {
       black_assert(!e->value);
       
-      CVC5::Term t = slv->mkConst(to_sort(e->type));
+      CVC5::Term t = mgr->mkConst(to_sort(e->type));
       
       objects.insert({e, t});
       consts.insert({t, e});

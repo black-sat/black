@@ -24,8 +24,10 @@
 #ifndef BLACK_LOGIC_OPERATORS_HPP
 #define BLACK_LOGIC_OPERATORS_HPP
 
-namespace black::logic {
+#include <ranges>
+#include <vector>
 
+namespace black::logic {
 
   //
   // boolean connectives
@@ -113,6 +115,32 @@ namespace black::logic {
     return greater_than_eq(term{t1}, term{t2});
   }
 
+  //
+  // Useful shortcuts
+  //
+  template<
+    std::ranges::range T, typename V = std::ranges::range_value_t<T>,
+    std::invocable<V> F
+  >
+    requires term_source<std::invoke_result_t<F, V>>
+  inline conjunction big_and(T rng, F f = [](auto x) { return x; }) {
+    std::vector<term> args;
+    for(auto t : rng)
+      args.push_back(term{f(t)});
+    return conjunction(args);
+  }
+  
+  template<
+    std::ranges::range T, typename V = std::ranges::range_value_t<T>,
+    std::invocable<V> F
+  >
+    requires term_source<std::invoke_result_t<F, V>>
+  inline disjunction big_or(T rng, F f = [](auto x) { return x; }) {
+    std::vector<term> args;
+    for(auto t : rng)
+      args.push_back(term{f(t)});
+    return disjunction(args);
+  }
 }
 
 #endif // BLACK_LOGIC_OPERATORS_HPP
