@@ -1,0 +1,26 @@
+// For format details, see https://aka.ms/devcontainer.json.
+{
+	"name": "Ubuntu 24.04 LTS",
+	"build": {
+		"context": "../..",
+		"dockerfile": "../../docker/Dockerfile.ubuntu",
+		"args": {
+			"VERSION": "24.04",
+			"GCC_VERSION": "13"
+		}
+	},
+	"features": {
+		"ghcr.io/nils-geistmann/devcontainers-features/zsh:0": {
+			"theme": "avit"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools-extension-pack",
+				"mhutchie.git-graph",
+				"ms-azuretools.vscode-docker"
+			]
+		}
+	}
+}

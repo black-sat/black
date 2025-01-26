@@ -1,26 +1,19 @@
-ARG VERSION=22.04
+ARG VERSION=rolling
 FROM ubuntu:$VERSION
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y make cmake gdb
+
+ARG GCC_VERSION=14
+ENV GCC_VERSION=$GCC_VERSION
+ENV CC=gcc-$GCC_VERSION
+ENV CXX=g++-$GCC_VERSION
+
 RUN apt-get update && \
-    apt-get install -y libz-dev libtsl-hopscotch-map-dev \
-                       libfmt-dev libz3-dev libcereal-dev
-RUN apt-get update && apt-get install -y git wget python3 python-is-python3 curl
+    apt-get install -y make cmake gdb && \
+    apt-get install -y pkg-config gcc g++ gcc-$GCC_VERSION g++-$GCC_VERSION && \
+    apt-get install -y git git-lfs python3 python-is-python3
 
-ARG GCC_VERSION=12
-ENV GCC_VERSION $GCC_VERSION
-ENV CC gcc-$GCC_VERSION
-ENV CXX g++-$GCC_VERSION
-
-RUN apt-get update && apt-get install -y gcc-$GCC_VERSION g++-$GCC_VERSION
-
-# install catch2 from source
-RUN git clone https://github.com/catchorg/Catch2.git /catch2
-WORKDIR /catch2
-RUN git checkout v2.13.9
-WORKDIR /catch2/build
-RUN cmake -DBUILD_TESTING=OFF ..
-RUN make install
+RUN apt-get update && \
+    apt-get install -y libfmt-dev libimmer-dev catch2 libz3-dev libcvc5-dev
 
 ENTRYPOINT ["/usr/bin/env", "--"]

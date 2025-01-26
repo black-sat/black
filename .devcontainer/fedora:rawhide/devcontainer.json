@@ -1,0 +1,17 @@
+// For format details, see https://aka.ms/devcontainer.json.
+{
+	"name": "Fedora Rawhide",
+	"build": {
+		"context": "../..",
+		"dockerfile": "../../docker/Dockerfile.fedora"
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools-extension-pack",
+				"mhutchie.git-graph",
+				"ms-azuretools.vscode-docker"
+			]
+		}
+	}
+}

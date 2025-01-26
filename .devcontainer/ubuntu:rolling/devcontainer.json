@@ -1,0 +1,17 @@
+// For format details, see https://aka.ms/devcontainer.json.
+{
+	"name": "Ubuntu Rolling",
+	"build": {
+		"context": "../..",
+		"dockerfile": "../../docker/Dockerfile.ubuntu"
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools-extension-pack",
+				"mhutchie.git-graph",
+				"ms-azuretools.vscode-docker"
+			]
+		}
+	}
+}
