@@ -1,11 +1,11 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-	"name": "Ubuntu Rolling",
+	"name": "Ubuntu LTS",
 	"build": {
 		"context": "../..",
 		"dockerfile": "../../docker/Dockerfile.ubuntu",
 		"args": {
-			"VERSION": "rolling"
+			"VERSION": "latest"
 		}
 	},
 	"features": {

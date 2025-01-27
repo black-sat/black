@@ -1,4 +1,4 @@
-ARG VERSION=rawhide
+ARG VERSION
 FROM fedora:$VERSION
 RUN echo 'fastestmirror=1' >> /etc/dnf/dnf.conf
 RUN dnf update -y

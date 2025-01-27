@@ -3,7 +3,10 @@
 	"name": "Fedora Rawhide",
 	"build": {
 		"context": "../..",
-		"dockerfile": "../../docker/Dockerfile.fedora"
+		"dockerfile": "../../docker/Dockerfile.fedora",
+		"args": {
+			"VERSION": "rawhide"
+		}
 	},
 	"customizations": {
 		"vscode": {

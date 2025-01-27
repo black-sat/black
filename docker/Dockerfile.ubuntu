@@ -1,19 +1,19 @@
-ARG VERSION=rolling
+ARG VERSION
 FROM ubuntu:$VERSION
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-ARG GCC_VERSION=14
-ENV GCC_VERSION=$GCC_VERSION
-ENV CC=gcc-$GCC_VERSION
-ENV CXX=g++-$GCC_VERSION
-
 RUN apt-get update && \
-    apt-get install -y make cmake gdb && \
-    apt-get install -y pkg-config gcc g++ gcc-$GCC_VERSION g++-$GCC_VERSION && \
-    apt-get install -y git git-lfs python3 python-is-python3
+    apt-get install -y make cmake gdb pkg-config git git-lfs
 
 RUN apt-get update && \
     apt-get install -y libfmt-dev libimmer-dev catch2 libz3-dev libcvc5-dev
+
+ARG CC=gcc
+ARG CXX=g++
+ENV CC=$CC
+ENV CXX=$CXX
+
+RUN apt-get install -y $CC $CXX
 
 ENTRYPOINT ["/usr/bin/env", "--"]
