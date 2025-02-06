@@ -67,7 +67,7 @@ set(
 
 # GCC
 set(
-  GNU_WARNINGS -Wall -Wextra -pedantic -Werror
+  GNU_WARNINGS -Wall -Wextra -Werror
   -Wno-pragmas -Wno-unknown-pragmas -Wno-unused-but-set-parameter
   -Wno-sign-conversion
 )
