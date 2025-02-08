@@ -23,34 +23,54 @@
 
 #include <catch.hpp>
 
-#include <black/parsing>
+#include <string>
+#include <black/support>
 
-#include <format>
 #include <print>
 
-using namespace black::parsing;
+inline std::expected<double, std::string> reciprocal_exp(double x) {
+    if(x == 0)
+        co_return std::unexpected("division by zero!");
 
-inline parser<int> test(int n) {
-    int x = co_await succeed(n);
-
-    if(x % 2 == 1)
-        co_await fail("odd number!");
-
-    co_return x;
+    co_return 1.0 / x;
 }
 
-TEST_CASE("Parsing combinators") {
+inline std::expected<double, std::string> test_exp(double x) {
+    co_return co_await reciprocal_exp(x);
+}
 
-    char mandi[] = "mandi";
+TEST_CASE("Coroutines support for std::expected") {
 
-    [[maybe_unused]]
-    parser<int> p = test(43);
+    auto e1 = test_exp(42);
 
-    auto result = p.run(std::ranges::subrange{mandi, mandi + sizeof(mandi)});
+    REQUIRE(e1.has_value());
+    REQUIRE(*e1 == 1.0/42);
 
-    if(result.has_value())
-        std::print("good: {}\n", *result);
-    else
-        std::print("ooh nooo: {}\n", result.error());
+    auto e2 = test_exp(0);
+    REQUIRE(!e2.has_value());
+    REQUIRE(e2.error() == "division by zero!");
+
+}
+
+inline std::optional<double> reciprocal_opt(double x) {
+    if(x == 0)
+        co_return std::nullopt;
+
+    co_return 1.0 / x;
+}
+
+inline std::optional<double> test_opt(double x) {
+    co_return co_await reciprocal_opt(x);
+}
+
+TEST_CASE("Coroutines support for std::optional") {
+
+    auto e1 = test_opt(42);
+
+    REQUIRE(e1.has_value());
+    REQUIRE(*e1 == 1.0/42);
+
+    auto e2 = test_opt(0);
+    REQUIRE(!e2.has_value());
 
 }

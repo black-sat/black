@@ -38,13 +38,13 @@ if(Catch2_FOUND)
     units/support/functional.cpp
     units/support/persistent.cpp
     units/support/memory.cpp
+    units/support/coroutines.cpp
     units/ast/ast.cpp
     units/ast/label.cpp
     units/logic/logic.cpp
     units/logic/modules.cpp
     units/pipes/pipeline.cpp
     units/backends/cvc5.cpp
-    units/parsing/combinators.cpp
   )
 
   if(TARGET Catch2::Catch2WithMain)

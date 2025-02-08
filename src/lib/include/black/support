@@ -36,5 +36,6 @@
 #include <black/internal/support/errors.hpp>
 #include <black/internal/support/memory.hpp>
 #include <black/internal/support/math.hpp>
+#include <black/internal/support/coroutines.hpp>
 
 #endif // BLACK_SUPPORT_HPP
