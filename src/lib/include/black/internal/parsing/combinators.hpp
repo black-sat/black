@@ -33,31 +33,25 @@
 
 namespace black::parsing {
 
+  template<typename P>
+  struct co_deleter_t {
+    using pointer = std::coroutine_handle<P>;
+
+    void operator()(pointer p) const {
+      p.destroy();
+    }
+  };
+
   using input_t = std::ranges::subrange<const char *>;
 
   template<typename Out>
-  struct success {
-    input_t input;
-    Out out;
-  };
-
-  struct failure {
-    std::string error;
-  };
-
-  template<typename Out>
-  using result = std::expected<success<Out>, failure>;
-
-  template<typename Out>
-  using runner_t = std::function< result<Out>(input_t input) >;
+  using result = std::expected<Out, std::string>;
 
   template<typename Out>
   class parser 
   {
   public:
     struct promise_type;
-
-    parser(runner_t<Out> runner) : _runner{std::move(runner)} { }
 
     parser(parser const&) = delete;
     parser(parser &&) = default;
@@ -67,82 +61,59 @@ namespace black::parsing {
     parser &operator=(parser &&) = default;
 
     result<Out> run(input_t input) {
-      return _runner(input);
+      _handle.get().promise()._in = input;
+      _handle.get().resume();
+
+      black_assert(_handle.get().promise()._result.has_value());
+      return *_handle.get().promise()._result;
     }
 
   private:
+    parser(std::coroutine_handle<promise_type> h) : _handle{h} { }
 
-    runner_t<Out> _runner;
+    std::unique_ptr<
+      std::coroutine_handle<promise_type>, co_deleter_t<promise_type>
+    > _handle;
   };
 
   template<typename T>
   parser<T> succeed(T v) {
-    return parser<T>{
-      [&](input_t in) { return success{in, v}; }
-    };
+    co_return v;
   }
+
+  struct failure {
+    std::string error;
+  };
 
   inline failure fail(std::string error) {
     return { error };
   }
 
-  // ugly hack until LLVM's libc++ supports `std::move_only_function`.
-  template<typename F>
-  struct move_only_function 
-  {
-    move_only_function(F f) : _f{std::move(f)} { }
-
-    move_only_function(move_only_function &&) = default;
-    move_only_function &operator=(move_only_function &&) = default;
-
-    move_only_function(move_only_function const& f) : _f{std::move(f._f)} {
-      black_unreachable();
-    }
-
-    move_only_function &operator=(move_only_function const&) {
-      black_unreachable();
-    }
-
-    template<typename ...Args>
-      requires std::invocable<F, Args...>
-    auto operator()(Args&& ...args)  {
-      return _f(std::forward<Args>(args)...);
-    }
-
-    F _f;
-  }; 
-
   template<typename Out>
-  struct awaiter_t 
-  {
+  struct awaiter_t {
     result<Out> _result;
 
-    bool await_ready() { return true; }
-
-    bool await_suspend(std::coroutine_handle<>) {
-      return !_result.has_value();
-    }
-
+    bool await_ready() { return _result.has_value(); }
+    
+    bool await_suspend(std::coroutine_handle<>) { return false; }
+    
     Out await_resume() {
       black_assert(_result.has_value());
-      return _result->out;
+      return std::move(*_result);
     }
-
   };
-  
+
   template<typename Out>
   struct parser<Out>::promise_type 
-  {
-    struct co_runner_t;
-        
+  {        
     parser get_return_object() { 
-      return parser{ co_runner_t { *this } };
+      return parser{ std::coroutine_handle<promise_type>::from_promise(*this) };
     }
     
     std::suspend_always initial_suspend() { return {}; }
     
     void return_value(Out out) {
-      _content = result<Out>{success{_in, std::move(out)}};
+      _result = result<Out>{std::move(out)};
     }
     
     void unhandled_exception() {}
@@ -150,59 +121,17 @@ namespace black::parsing {
     std::suspend_always final_suspend() noexcept { return {}; }
 
     awaiter_t<Out> await_transform(failure f) {
-      _content = result<Out>{ std::unexpected(f) };
-      return awaiter_t<Out>{ *_content };
+      _result = result<Out>{ std::unexpected(f.error) };
+      return awaiter_t<Out>{ *_result };
     }
 
     template<typename U>
     awaiter_t<U> await_transform(parser<U> p) {
-      _content = p.run(_in);
-      return awaiter_t<U>{ *_content };
+      return awaiter_t<U>{ p.run(_in) };
     }
 
     input_t _in;
-    std::optional<result<Out>> _content;
-  };
-
-  
-
-  template<typename Out>
-  struct parser<Out>::promise_type::co_runner_t {
-    struct deleter_t;
-
-    co_runner_t(promise_type &p) 
-      : _handle { std::coroutine_handle<promise_type>::from_promise(p)} { }
-
-    co_runner_t(co_runner_t &&) = default;
-    co_runner_t &operator=(co_runner_t &&) = default;
-
-    // black_unreachable() here is an hack waiting for LLVM libc++ to support
-    // std::move_only_function
-    co_runner_t(co_runner_t const&) {
-      black_unreachable();
-    }
-    co_runner_t &operator=(co_runner_t const&) {
-      black_unreachable();
-    }
-
-    result<Out> operator()(input_t in) const {
-      _handle.get().promise()._in = in;
-      _handle.get().resume();
-
-      black_assert(_handle.get().promise()._content.has_value());
-      return *_handle.get().promise()._content;
-    }
-
-    std::unique_ptr<std::coroutine_handle<promise_type>, deleter_t> _handle;
-  };
-
-  template<typename Out>
-  struct parser<Out>::promise_type::co_runner_t::deleter_t {
-    using pointer = std::coroutine_handle<promise_type>;
-
-    void operator()(pointer p) const {
-      p.destroy();
-    }
+    std::optional<result<Out>> _result;
   };
 
 }

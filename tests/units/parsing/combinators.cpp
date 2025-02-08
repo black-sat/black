@@ -49,8 +49,8 @@ TEST_CASE("Parsing combinators") {
     auto result = p.run(std::ranges::subrange{mandi, mandi + sizeof(mandi)});
 
     if(result.has_value())
-        std::print("good: {}\n", result->out);
+        std::print("good: {}\n", *result);
     else
-        std::print("ooh nooo: {}\n", result.error().error);
+        std::print("ooh nooo: {}\n", result.error());
 
 }
