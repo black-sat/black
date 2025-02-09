@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2024 Nicola Gigante
+// (C) 2025 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,13 +21,42 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_IO_HPP
-#define BLACK_IO_HPP
+#ifndef BLACK_PARSING_COMBINATORS_HPP
+#define BLACK_PARSING_COMBINATORS_HPP
 
-#include <black/support>
-#include <black/logic>
+namespace black::parsing {
 
-#include <black/internal/parsing/parser.hpp>
-#include <black/internal/parsing/combinators.hpp>
 
-#endif // BLACK_IO_HPP
+  //
+  // Primitives
+  //
+  template<typename Out>
+  parser<Out> succeed(Out v) {
+    co_return v;
+  }
+
+  inline eof_t eof() { return { }; }
+
+  inline peek_t peek() { return { }; }
+
+  inline consume_t consume() { return { }; }
+
+  template<typename Out, typename In>
+  optional_t<Out, In> optional(parser<Out, In> p) { return { std::move(p) }; }
+
+  //
+  // Sugar on top of primitives
+  //
+  template<typename In>
+  parser<In, In> consume(In v) {
+    In in = co_await consume();
+    if(v != in)
+      co_return failure();
+    
+    co_return v;
+  }
+
+
+}
+
+#endif // BLACK_PARSING_COMBINATORS_HPP

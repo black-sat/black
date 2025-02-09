@@ -26,26 +26,12 @@
 
 #include <expected>
 #include <coroutine>
-#include <print>
 
-namespace black::support::internal 
+namespace black::support
 {
-  template<typename T>
-  struct return_wrapper_t {
-    std::optional<T> v;
-
-    return_wrapper_t(std::optional<T> **out) {
-      *out = &v;
-    }
-
-    operator T() const {
-      black_assert(v.has_value());
-      return *v;
-    }
-  };
 
   template<typename T>
-  struct awaiter_t {
+  struct return_or_destroy {
     std::optional<T> _value = std::nullopt;
 
     bool await_ready() { return _value.has_value(); }
@@ -55,74 +41,120 @@ namespace black::support::internal
     T await_resume() { return std::move(*_value); }
   };
 
-  template<typename T, typename E>
-  struct expected_promise_t 
-  {
-    std::optional<std::expected<T, E>> *_value;
+  namespace internal {
+    template<typename P>
+    struct coro_handle_deleter_t {
+      struct pointer {
+        std::coroutine_handle<P> _handle;
+
+        pointer() = default;
+        pointer(std::nullptr_t) { }
+
+        pointer(std::coroutine_handle<P> handle) : _handle{handle} { }
+
+        bool operator==(pointer const&) const = default;
+
+        explicit operator bool() const { return (bool)_handle; }
+
+        std::coroutine_handle<P> *operator->() { return &_handle; }
+      };
+
+      void operator()(pointer p) { p._handle.destroy(); }
+    };
+  }
+
+  template<typename P>
+  using coroutine_handle_ptr = 
+    std::unique_ptr<
+      std::coroutine_handle<P>, internal::coro_handle_deleter_t<P>
+    >;
+
+  namespace internal {
     
-    auto get_return_object() { 
-      return return_wrapper_t { &_value }; 
-    }
+    template<typename T>
+    struct return_wrapper_t {
+      std::optional<T> v;
 
-    std::suspend_never initial_suspend() { return {}; }
+      return_wrapper_t(std::optional<T> **out) {
+        *out = &v;
+      }
 
-    void return_value(T v) {
-      _value->emplace(std::move(v));
-    }
+      operator T() const {
+        black_assert(v.has_value());
+        return *v;
+      }
+    };
 
-    template<std::convertible_to<E> E2>
-    void return_value(std::unexpected<E2> e) {
-      _value->emplace(std::unexpected<E>{std::move(e.error())});
-    }
-
-    void unhandled_exception() {}
-    
-    std::suspend_never final_suspend() noexcept { return {}; }
-
-    template<typename U, std::convertible_to<E> E2>
-    auto await_transform(std::expected<U, E2> e) {
-      if(e.has_value())
-        return awaiter_t<U> { std::move(*e) }; 
+    template<typename T, typename E>
+    struct expected_promise_t 
+    {
+      std::optional<std::expected<T, E>> *_value;
       
-      _value->emplace(std::unexpected<E>(std::move(e.error())));
-      return awaiter_t<U> { };
-    }
+      auto get_return_object() { 
+        return return_wrapper_t { &_value }; 
+      }
 
-  };
+      std::suspend_never initial_suspend() { return {}; }
+
+      void return_value(T v) {
+        _value->emplace(std::move(v));
+      }
+
+      template<std::convertible_to<E> E2>
+      void return_value(std::unexpected<E2> e) {
+        _value->emplace(std::unexpected<E>{std::move(e.error())});
+      }
+
+      void unhandled_exception() {}
+      
+      std::suspend_never final_suspend() noexcept { return {}; }
+
+      template<typename U, std::convertible_to<E> E2>
+      auto await_transform(std::expected<U, E2> e) {
+        if(e.has_value())
+          return return_or_destroy<U> { std::move(*e) }; 
+        
+        _value->emplace(std::unexpected<E>(std::move(e.error())));
+        return return_or_destroy<U> { };
+      }
+
+    };
+    
+    template<typename T>
+    struct optional_promise_t 
+    {
+      std::optional<std::optional<T>> *_value;
+      
+      auto get_return_object() { 
+        return return_wrapper_t { &_value }; 
+      }
+
+      std::suspend_never initial_suspend() { return {}; }
+
+      void return_value(T v) {
+        _value->emplace(std::move(v));
+      }
+
+      void return_value(std::nullopt_t) {
+        _value->emplace(std::nullopt);
+      }
+
+      void unhandled_exception() {}
+      
+      std::suspend_never final_suspend() noexcept { return {}; }
+
+      template<typename U>
+      auto await_transform(std::optional<U> opt) {
+        if(opt.has_value())
+          return return_or_destroy<U> { std::move(*opt) }; 
+        
+        _value->emplace(std::nullopt);
+        return return_or_destroy<U> { };
+      }
+
+    };
+  }
   
-  template<typename T>
-  struct optional_promise_t 
-  {
-    std::optional<std::optional<T>> *_value;
-    
-    auto get_return_object() { 
-      return return_wrapper_t { &_value }; 
-    }
-
-    std::suspend_never initial_suspend() { return {}; }
-
-    void return_value(T v) {
-      _value->emplace(std::move(v));
-    }
-
-    void return_value(std::nullopt_t) {
-      _value->emplace(std::nullopt);
-    }
-
-    void unhandled_exception() {}
-    
-    std::suspend_never final_suspend() noexcept { return {}; }
-
-    template<typename U>
-    auto await_transform(std::optional<U> opt) {
-      if(opt.has_value())
-        return awaiter_t<U> { std::move(*opt) }; 
-      
-      _value->emplace(std::nullopt);
-      return awaiter_t<U> { };
-    }
-
-  };
 }
 
 template<typename T, typename E, typename... Args>
