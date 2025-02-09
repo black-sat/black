@@ -30,7 +30,7 @@
 
 using namespace black::parsing;
 
-inline parser<std::string> half() {
+inline parser<std::string> braced() {
     co_await consume('{');
 
     std::string result;
@@ -52,7 +52,7 @@ inline parser<std::string> half() {
 
 TEST_CASE("Basic operations on parsers") 
 {
-    parser<std::string> p = half();
+    parser<std::string> p = braced();
 
     SECTION("Found") {
         std::string hello = "{hello}";
@@ -74,7 +74,7 @@ TEST_CASE("Basic operations on parsers")
 }
 
 inline parser<std::string> opt_test() {
-    auto opt = co_await optional(consume('{'));
+    auto opt = co_await optional(lookahead(consume('{')));
     if(opt)
         co_return "Ok!";
     
@@ -104,5 +104,54 @@ TEST_CASE("Optional") {
             p.run(range<char>{mandi.c_str(), mandi.c_str() + mandi.size()})
         );
     }
+
+}
+
+TEST_CASE("Lookaehad") {
+
+    SECTION("Normal") {
+        parser<std::string> p = braced();
+
+        std::string hello = "{hello";
+        range<char> input{hello.c_str(), hello.c_str() + hello.size()};
+        range<char> saved = input;
+
+        auto result = p.run(input, &input);
+
+        REQUIRE(!result.has_value());
+        REQUIRE(std::begin(input) == std::end(saved));
+    }
+
+    SECTION("Lookahead") {
+        parser<std::string> p = lookahead(braced());
+
+        std::string hello = "{hello";
+        range<char> input{hello.c_str(), hello.c_str() + hello.size()};
+        range<char> saved = input;
+
+        auto result = p.run(input, &input);
+
+        REQUIRE(!result.has_value());
+        REQUIRE(std::begin(input) == std::begin(saved));
+    }
+}
+
+inline parser<char> delim() {
+    return either(
+        lookahead(consume('a')), 
+        lookahead(consume('b')), 
+        lookahead(consume('c'))
+    );
+}
+
+TEST_CASE("either") {
+
+    std::string abcde = "abcde";
+    range<char> input{abcde.c_str(), abcde.c_str() + abcde.size()};
+
+    REQUIRE(delim().run(input, &input).has_value());
+    REQUIRE(delim().run(input, &input).has_value());
+    REQUIRE(delim().run(input, &input).has_value());
+    REQUIRE(!delim().run(input, &input).has_value());
 
 }

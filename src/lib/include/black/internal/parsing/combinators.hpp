@@ -31,9 +31,7 @@ namespace black::parsing {
   // Primitives
   //
   template<typename Out>
-  parser<Out> succeed(Out v) {
-    co_return v;
-  }
+  parser<Out> succeed(Out v) { co_return v; }
 
   inline eof_t eof() { return { }; }
 
@@ -42,10 +40,17 @@ namespace black::parsing {
   inline consume_t consume() { return { }; }
 
   template<typename Out, typename In>
-  optional_t<Out, In> optional(parser<Out, In> p) { return { std::move(p) }; }
+  parser<std::optional<Out>, In> optional(parser<Out, In> p) { 
+    co_return co_await optional_t{ std::move(p) }; 
+  }
+
+  template<typename Out, typename In>
+  parser<Out, In> lookahead(parser<Out, In> p) { 
+    co_return co_await lookahead_t{ std::move(p) }; 
+  }
 
   //
-  // Sugar on top of primitives
+  // Derived combinators
   //
   template<typename In>
   parser<In, In> consume(In v) {
@@ -56,6 +61,19 @@ namespace black::parsing {
     co_return v;
   }
 
+  template<typename Out, typename In>
+  parser<Out, In> either(parser<Out, In> p) {
+    return std::move(p);
+  }
+
+  template<typename Out, typename In, parser_of<Out, In> ...Ps>
+  parser<Out, In> either(parser<Out, In> p, Ps ...ps) {
+    auto v1 = co_await optional(std::move(p));
+    if(v1)
+      co_return *v1;
+    
+    co_return co_await either(std::move(ps)...);
+  }
 
 }
 

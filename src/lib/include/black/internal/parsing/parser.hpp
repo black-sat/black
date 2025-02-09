@@ -62,10 +62,18 @@ namespace black::parsing
   struct consume_t { };
 
   //
-  // lift a parser that can fail into an std::optional
+  // lift to an std::optional a parser that fails without consuming input
   //
   template<typename Out, typename In>
   struct optional_t { 
+    parser<Out, In> inner;
+  };
+
+  //
+  // Parse ahead without consuming input on failure
+  //
+  template<typename Out, typename In>
+  struct lookahead_t {
     parser<Out, In> inner;
   };
 
@@ -111,6 +119,18 @@ namespace black::parsing
     parser(std::coroutine_handle<promise_type> h) : _coroutine{ h } { }
     support::coroutine_handle_ptr<promise_type> _coroutine;
   };
+
+  template<typename P, typename Out, typename In>
+  struct is_parser_of : std::false_type { };
+
+  template<typename Out, typename In>
+  struct is_parser_of<parser<Out, In>, Out, In> : std::true_type { };
+
+  template<typename P, typename Out, typename In>
+  inline constexpr bool is_parser_of_v = is_parser_of<P, Out, In>::value;
+
+  template<typename P, typename Out, typename In = char>
+  concept parser_of = is_parser_of_v<P, Out, In>;
 
   template<typename T>
   struct awaiter_t {
@@ -183,7 +203,24 @@ namespace black::parsing
 
     template<typename U>
     auto await_transform(optional_t<U, In> opt) {
-      return awaiter_t<std::optional<U>>{ opt.inner.run(_input, &_input) };
+      auto saved = _input;
+      auto result = opt.inner.run(_input, &_input);
+      
+      if(!result && std::begin(saved) != std::begin(_input))
+        return awaiter_t<std::optional<U>>{ };
+      
+      return awaiter_t<std::optional<U>>{ std::move(result) };
+    }
+
+    template<typename U>
+    auto await_transform(lookahead_t<U, In> opt) {
+      auto saved = _input;
+      auto result = opt.inner.run(_input, &_input);
+      if(result)
+        return awaiter_t<U>{ *result };
+      
+      _input = saved;
+      return awaiter_t<U>{ };
     }
 
   };
