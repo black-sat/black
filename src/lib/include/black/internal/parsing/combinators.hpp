@@ -87,7 +87,7 @@ namespace black::parsing {
     return peek([=](char c) { return c == v; });
   }
 
-  inline parser<char> consume() {
+  inline parser<char> chr() {
     return [] -> parsed<char> {
       char c = co_await peek();
       
@@ -99,7 +99,7 @@ namespace black::parsing {
 
   parser<char> expect(predicate auto pred) {
     return [=] -> parsed<char> {
-      auto t = co_await consume();
+      auto t = co_await chr();
       if(!pred(t))
         co_await fail();
       co_return t;

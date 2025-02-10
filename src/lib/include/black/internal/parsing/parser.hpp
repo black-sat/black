@@ -222,11 +222,11 @@ namespace black::parsing
   };
   
   struct suspend_if {
-    bool _succeed;
+    bool _fail;
 
-    suspend_if(bool succeed) : _succeed{succeed} { }
+    suspend_if(bool succeed) : _fail{succeed} { }
 
-    bool await_ready() { return _succeed; }
+    bool await_ready() { return !_fail; }
 
     void await_suspend(std::coroutine_handle<>) { }
     
@@ -300,7 +300,7 @@ namespace black::parsing
     }
 
     auto await_transform(parser<void> p) {
-      return suspend_if{ p.run(input, &input).has_value() };
+      return suspend_if{ ! p.run(input, &input).has_value() };
     }
 
     auto await_transform(fail_t) {
@@ -308,7 +308,7 @@ namespace black::parsing
     }
 
     auto await_transform(eof_t) {
-      return suspend_if{ input.empty() };
+      return suspend_if{ ! input.empty() };
     }
 
     auto await_transform(peek_t) {
@@ -320,10 +320,10 @@ namespace black::parsing
 
     auto await_transform(advance_t) {
       if(!input)
-        return suspend_if{ false };
+        return suspend_if{ true };
 
       input.advance(1);
-      return suspend_if{ true };
+      return suspend_if{ false };
     }
 
     template<typename U>
