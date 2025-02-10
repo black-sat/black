@@ -207,12 +207,12 @@ namespace black::parsing
   };
 
   template<typename T>
-  struct awaiter_t {
+  struct suspend_or_return {
     std::optional<T> _value = std::nullopt;
 
-    awaiter_t() = default;
-    awaiter_t(T v) : _value{v} { }
-    awaiter_t(std::optional<T> opt) : _value{opt} { }
+    suspend_or_return() = default;
+    suspend_or_return(T v) : _value{v} { }
+    suspend_or_return(std::optional<T> opt) : _value{opt} { }
 
     bool await_ready() { return _value.has_value(); }
 
@@ -221,10 +221,10 @@ namespace black::parsing
     T await_resume() { return std::move(*_value); }
   };
   
-  struct void_awaiter_t {
+  struct suspend_if {
     bool _succeed;
 
-    void_awaiter_t(bool succeed) : _succeed{succeed} { }
+    suspend_if(bool succeed) : _succeed{succeed} { }
 
     bool await_ready() { return _succeed; }
 
@@ -291,39 +291,39 @@ namespace black::parsing
 
     template<typename U>
     auto await_transform(parser<U> p) {
-      return awaiter_t<U>{ p.run(input, &input) };
+      return suspend_or_return<U>{ p.run(input, &input) };
     }
 
     template<typename U>
     auto await_transform(parser<U[]> p) {
-      return awaiter_t<std::vector<U>>{ p.run(input, &input) };
+      return suspend_or_return<std::vector<U>>{ p.run(input, &input) };
     }
 
     auto await_transform(parser<void> p) {
-      return void_awaiter_t{ p.run(input, &input).has_value() };
+      return suspend_if{ p.run(input, &input).has_value() };
     }
 
     auto await_transform(fail_t) {
-      return void_awaiter_t{ false };
+      return std::suspend_always{};
     }
 
     auto await_transform(eof_t) {
-      return void_awaiter_t{ input.empty() };
+      return suspend_if{ input.empty() };
     }
 
     auto await_transform(peek_t) {
       if(!input)
-        return awaiter_t<char>{ };
+        return suspend_or_return<char>{ };
 
-      return awaiter_t{ *std::begin(input) };
+      return suspend_or_return{ *std::begin(input) };
     }
 
     auto await_transform(advance_t) {
       if(!input)
-        return void_awaiter_t{ false };
+        return suspend_if{ false };
 
       input.advance(1);
-      return void_awaiter_t{ true };
+      return suspend_if{ true };
     }
 
     template<typename U>
@@ -332,9 +332,9 @@ namespace black::parsing
       auto result = opt.inner.run(input, &input);
       
       if(!result && std::begin(saved) != std::begin(input))
-        return awaiter_t<std::optional<U>>{ };
+        return suspend_or_return<std::optional<U>>{ };
       
-      return awaiter_t<std::optional<U>>{ std::move(result) };
+      return suspend_or_return<std::optional<U>>{ std::move(result) };
     }
 
     template<typename U>
@@ -342,10 +342,10 @@ namespace black::parsing
       auto saved = input;
       auto result = opt.inner.run(input, &input);
       if(result)
-        return awaiter_t<U>{ *result };
+        return suspend_or_return<U>{ *result };
       
       input = saved;
-      return awaiter_t<U>{ };
+      return suspend_or_return<U>{ };
     }
 
   };
