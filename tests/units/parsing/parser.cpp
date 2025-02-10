@@ -37,9 +37,6 @@ inline parser<std::string> braced() {
 
     std::optional<char> c;
     while((c = co_await optional(peek(&isalpha)))) {
-        if(c == '}')
-            break;
-
         result.push_back(*c);
         co_await advance();
     }
