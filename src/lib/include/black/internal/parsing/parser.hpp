@@ -31,23 +31,22 @@
 
 namespace black::parsing 
 {
-  template<typename In>
-  using range = std::ranges::subrange<const In *>;
+  using range = std::ranges::subrange<const char *>;
 
-  template<typename Out, typename In = char>
+  template<typename Out>
   class parser;
-
-  //
-  // Type representing the failure of a parser
-  //
-  struct failure { };
 
   //
   // Types representing the primitive actions available to parsers
   //
 
   //
-  // test if we reached EOF
+  // Type to return to cause a parsing failure
+  //
+  struct fail_t { };
+
+  //
+  // Succeed if we are at EOF, fail otherwise
   //
   struct eof_t { };
 
@@ -57,24 +56,24 @@ namespace black::parsing
   struct peek_t { };
 
   //
-  // consume the current token
+  // advance the current position in the input
   //
-  struct consume_t { };
+  struct advance_t { };
 
   //
   // lift to an std::optional a parser that fails without consuming input
   //
-  template<typename Out, typename In>
+  template<typename Out>
   struct optional_t { 
-    parser<Out, In> inner;
+    parser<Out> inner;
   };
 
   //
   // Parse ahead without consuming input on failure
   //
-  template<typename Out, typename In>
-  struct lookahead_t {
-    parser<Out, In> inner;
+  template<typename Out>
+  struct try_t {
+    parser<Out> inner;
   };
 
   //
@@ -90,29 +89,30 @@ namespace black::parsing
   //
   // Main parser type
   //
-  template<typename Out, typename In>
-  class parser 
+  template<typename Out>
+  class [[nodiscard("parsers must be awaited")]] parser 
   {
   public:
     struct promise_type;
 
     parser() = delete;
+
     parser(parser const&) = delete;
     parser(parser &&) = default;
     
     parser &operator=(parser const&) = delete;
     parser &operator=(parser &&) = default;
 
-    std::optional<Out> run(range<In> input, range<In> *tail = nullptr) {
+    auto run(range input, range *tail = nullptr) {
       if(_coroutine->done())
         throw parser_reused();
 
-      _coroutine->promise()._input = input;
+      _coroutine->promise().input = input;
       _coroutine->resume();
       if(tail)
-        *tail = _coroutine->promise()._input;
+        *tail = _coroutine->promise().input;
 
-      return _coroutine->promise()._value;
+      return _coroutine->promise().value;
     }
 
   private:
@@ -120,17 +120,22 @@ namespace black::parsing
     support::coroutine_handle_ptr<promise_type> _coroutine;
   };
 
-  template<typename P, typename Out, typename In>
+  template<typename Pred>
+  concept predicate = requires (Pred p, char c) {
+    { p(c) } -> std::convertible_to<bool>;
+  };
+
+  template<typename P, typename Out>
   struct is_parser_of : std::false_type { };
 
-  template<typename Out, typename In>
-  struct is_parser_of<parser<Out, In>, Out, In> : std::true_type { };
+  template<typename Out>
+  struct is_parser_of<parser<Out>, Out> : std::true_type { };
 
-  template<typename P, typename Out, typename In>
-  inline constexpr bool is_parser_of_v = is_parser_of<P, Out, In>::value;
+  template<typename P, typename Out>
+  inline constexpr bool is_parser_of_v = is_parser_of<P, Out>::value;
 
-  template<typename P, typename Out, typename In = char>
-  concept parser_of = is_parser_of_v<P, Out, In>;
+  template<typename P, typename Out>
+  concept parser_of = is_parser_of_v<P, Out>;
 
   template<typename T>
   struct awaiter_t {
@@ -146,12 +151,45 @@ namespace black::parsing
     
     T await_resume() { return std::move(*_value); }
   };
+  
+  struct void_awaiter_t {
+    bool _succeed;
 
-  template<typename Out, typename In>
-  struct parser<Out, In>::promise_type 
+    void_awaiter_t(bool succeed) : _succeed{succeed} { }
+
+    bool await_ready() { return _succeed; }
+
+    void await_suspend(std::coroutine_handle<>) { }
+    
+    void await_resume() { }
+  };
+
+  template<typename Out>
+  struct promise_value_holder {
+    std::optional<Out> value = std::nullopt;
+
+    promise_value_holder() = default;
+
+    void return_value(Out v) {
+      value = std::move(v);
+    }
+  };
+
+  template<>
+  struct promise_value_holder<void> {
+    std::optional<std::monostate> value = std::nullopt;
+
+    promise_value_holder() = default;
+
+    void return_void() {
+      value = std::monostate{};
+    }
+  };
+
+  template<typename Out>
+  struct parser<Out>::promise_type : promise_value_holder<Out>
   {
-    range<In> _input;
-    std::optional<Out> _value = std::nullopt;
+    range input;
 
     // FIXME: Ask on SO why this is needed both on GCC and Clang
     promise_type() = default;
@@ -164,62 +202,61 @@ namespace black::parsing
 
     auto initial_suspend() { return std::suspend_always{}; }
     
-    void return_value(Out v) {
-      _value = std::move(v);
-    }
-    
-    void return_value(failure) {
-      _value = std::nullopt;
-    }
-    
     void unhandled_exception() {}
     
     auto final_suspend() noexcept { return std::suspend_always{}; }
 
     template<typename U>
     auto await_transform(parser<U> p) {
-      return awaiter_t<U>{ p.run(_input, &_input) };
+      return awaiter_t<U>{ p.run(input, &input) };
+    }
+
+    auto await_transform(parser<void> p) {
+      return void_awaiter_t{ p.run(input, &input).has_value() };
+    }
+
+    auto await_transform(fail_t) {
+      return void_awaiter_t{ false };
     }
 
     auto await_transform(eof_t) {
-      return awaiter_t{ _input.empty() };
+      return void_awaiter_t{ input.empty() };
     }
 
     auto await_transform(peek_t) {
-      if(!_input)
-        return awaiter_t<In>{ };
+      if(!input)
+        return awaiter_t<char>{ };
 
-      return awaiter_t{ *std::begin(_input) };
+      return awaiter_t{ *std::begin(input) };
     }
 
-    auto await_transform(consume_t) {
-      if(!_input)
-        return awaiter_t<In>{ };
+    auto await_transform(advance_t) {
+      if(!input)
+        return void_awaiter_t{ false };
 
-      auto t = *std::begin(_input);
-      _input.advance(1);
-      return awaiter_t<In>{ t };
+      input.advance(1);
+      return void_awaiter_t{ true };
     }
 
     template<typename U>
-    auto await_transform(optional_t<U, In> opt) {
-      auto saved = _input;
-      auto result = opt.inner.run(_input, &_input);
+    auto await_transform(optional_t<U> opt) {
+      auto saved = input;
+      auto result = opt.inner.run(input, &input);
       
-      if(!result && std::begin(saved) != std::begin(_input))
+      if(!result && std::begin(saved) != std::begin(input))
         return awaiter_t<std::optional<U>>{ };
       
       return awaiter_t<std::optional<U>>{ std::move(result) };
     }
 
     template<typename U>
-    auto await_transform(lookahead_t<U, In> opt) {
-      auto saved = _input;
-      auto result = opt.inner.run(_input, &_input);
+    auto await_transform(try_t<U> opt) {
+      auto saved = input;
+      auto result = opt.inner.run(input, &input);
       if(result)
         return awaiter_t<U>{ *result };
       
-      _input = saved;
+      input = saved;
       return awaiter_t<U>{ };
     }
 

@@ -33,46 +33,90 @@ namespace black::parsing {
   template<typename Out>
   parser<Out> succeed(Out v) { co_return v; }
 
-  inline eof_t eof() { return { }; }
+  inline parser<void> fail() {
+    co_return co_await fail_t{ }; 
+  }
 
-  inline peek_t peek() { return { }; }
+  inline parser<void> eof() { 
+    co_return co_await eof_t{ }; 
+  }
 
-  inline consume_t consume() { return { }; }
+  inline parser<char> peek() { 
+    co_return co_await peek_t{ }; 
+  }
 
-  template<typename Out, typename In>
-  parser<std::optional<Out>, In> optional(parser<Out, In> p) { 
+  inline parser<void> advance() { 
+    co_return co_await advance_t{ }; 
+  }
+
+  template<typename Out>
+  parser<std::optional<Out>> optional(parser<Out> p) { 
     co_return co_await optional_t{ std::move(p) }; 
   }
 
-  template<typename Out, typename In>
-  parser<Out, In> lookahead(parser<Out, In> p) { 
-    co_return co_await lookahead_t{ std::move(p) }; 
+  template<typename Out>
+  parser<Out> try_(parser<Out> p) { 
+    co_return co_await try_t{ std::move(p) }; 
   }
 
   //
   // Derived combinators
   //
-  template<typename In>
-  parser<In, In> consume(In v) {
-    In in = co_await consume();
-    if(v != in)
-      co_return failure();
-    
-    co_return v;
+  parser<char> peek(predicate auto pred) {
+    auto t = co_await peek();
+    if(!pred(t))
+      co_await fail();
+    co_return t;
   }
 
-  template<typename Out, typename In>
-  parser<Out, In> either(parser<Out, In> p) {
+  inline parser<char> peek(char v) { 
+    return peek([=](char c) { return c == v; });
+  }
+
+  inline parser<char> consume() {
+    char c = co_await peek();
+    
+    co_await advance();
+    
+    co_return c;
+  }
+
+  parser<char> expect(predicate auto pred) {
+    auto t = co_await consume();
+    if(!pred(t))
+      co_await fail();
+    co_return t;
+  }
+
+  inline parser<char> expect(char v) { 
+    return expect([=](char c) { return c == v; });
+  }
+
+  parser<char> ask(predicate auto pred) {
+    return try_(expect(pred));
+  }
+
+  inline parser<char> ask(char c) {
+    return try_(expect(c));
+  }
+
+  template<typename Out>
+  parser<Out> either(parser<Out> p) {
     return std::move(p);
   }
 
-  template<typename Out, typename In, parser_of<Out, In> ...Ps>
-  parser<Out, In> either(parser<Out, In> p, Ps ...ps) {
-    auto v1 = co_await optional(std::move(p));
-    if(v1)
-      co_return *v1;
+  template<typename Out, parser_of<Out> ...Ps>
+  parser<Out> either(parser<Out> p, Ps ...ps) {
+    auto v = co_await optional(std::move(p));
+    if(v)
+      co_return *v;
     
     co_return co_await either(std::move(ps)...);
+  }
+
+  template<typename Out>
+  parser<Out> operator||(parser<Out> p1, parser<Out> p2) {
+    return either(std::move(p1), std::move(p2));
   }
 
 }

@@ -31,21 +31,20 @@
 using namespace black::parsing;
 
 inline parser<std::string> braced() {
-    co_await consume('{');
+    co_await ask('{');
 
     std::string result;
 
-    while(! co_await eof()) {
-        char c = co_await peek();
-
+    std::optional<char> c;
+    while((c = co_await optional(peek(&isalpha)))) {
         if(c == '}')
             break;
 
-        result.push_back(c);
-        co_await consume();
+        result.push_back(*c);
+        co_await advance();
     }
 
-    co_await consume('}');
+    co_await expect('}');
 
     co_return result;
 }
@@ -57,7 +56,7 @@ TEST_CASE("Basic operations on parsers")
     SECTION("Found") {
         std::string hello = "{hello}";
         auto result = 
-            p.run(range<char>{hello.c_str(), hello.c_str() + hello.size()});
+            p.run(range{hello.c_str(), hello.c_str() + hello.size()});
 
         REQUIRE(result.has_value());
         REQUIRE(*result == "hello");
@@ -66,7 +65,7 @@ TEST_CASE("Basic operations on parsers")
     SECTION("Not found") {
         std::string mandi = "{mandi";
         auto result = 
-            p.run(range<char>{mandi.c_str(), mandi.c_str() + mandi.size()});
+            p.run(range{mandi.c_str(), mandi.c_str() + mandi.size()});
 
         REQUIRE(!result.has_value());
     }
@@ -74,7 +73,7 @@ TEST_CASE("Basic operations on parsers")
 }
 
 inline parser<std::string> opt_test() {
-    auto opt = co_await optional(lookahead(consume('{')));
+    auto opt = co_await optional(ask('{'));
     if(opt)
         co_return "Ok!";
     
@@ -88,7 +87,7 @@ TEST_CASE("Optional") {
     SECTION("Ok") {
         std::string hello = "{hello}";
         auto result = 
-            p.run(range<char>{hello.c_str(), hello.c_str() + hello.size()});
+            p.run(range{hello.c_str(), hello.c_str() + hello.size()});
 
         REQUIRE(result == "Ok!");
     }
@@ -96,12 +95,12 @@ TEST_CASE("Optional") {
     SECTION("Nope") {
         std::string mandi = "[mandi]";
         auto result = 
-            p.run(range<char>{mandi.c_str(), mandi.c_str() + mandi.size()});
+            p.run(range{mandi.c_str(), mandi.c_str() + mandi.size()});
 
         REQUIRE(result == "Nope!");
 
         REQUIRE_THROWS(
-            p.run(range<char>{mandi.c_str(), mandi.c_str() + mandi.size()})
+            p.run(range{mandi.c_str(), mandi.c_str() + mandi.size()})
         );
     }
 
@@ -109,12 +108,25 @@ TEST_CASE("Optional") {
 
 TEST_CASE("Lookaehad") {
 
-    SECTION("Normal") {
+    SECTION("Skip") {
+        parser<std::string> p = braced();
+
+        std::string hello = "[hello]";
+        range input{hello.c_str(), hello.c_str() + hello.size()};
+        range saved = input;
+
+        auto result = p.run(input, &input);
+
+        REQUIRE(!result.has_value());
+        REQUIRE(std::begin(input) == std::begin(saved));
+    }
+    
+    SECTION("Error") {
         parser<std::string> p = braced();
 
         std::string hello = "{hello";
-        range<char> input{hello.c_str(), hello.c_str() + hello.size()};
-        range<char> saved = input;
+        range input{hello.c_str(), hello.c_str() + hello.size()};
+        range saved = input;
 
         auto result = p.run(input, &input);
 
@@ -123,11 +135,11 @@ TEST_CASE("Lookaehad") {
     }
 
     SECTION("Lookahead") {
-        parser<std::string> p = lookahead(braced());
+        parser<std::string> p = try_(braced());
 
         std::string hello = "{hello";
-        range<char> input{hello.c_str(), hello.c_str() + hello.size()};
-        range<char> saved = input;
+        range input{hello.c_str(), hello.c_str() + hello.size()};
+        range saved = input;
 
         auto result = p.run(input, &input);
 
@@ -137,17 +149,13 @@ TEST_CASE("Lookaehad") {
 }
 
 inline parser<char> delim() {
-    return either(
-        lookahead(consume('a')), 
-        lookahead(consume('b')), 
-        lookahead(consume('c'))
-    );
+    return ask('a') || ask('b') || ask('c');
 }
 
 TEST_CASE("either") {
 
     std::string abcde = "abcde";
-    range<char> input{abcde.c_str(), abcde.c_str() + abcde.size()};
+    range input{abcde.c_str(), abcde.c_str() + abcde.size()};
 
     REQUIRE(delim().run(input, &input).has_value());
     REQUIRE(delim().run(input, &input).has_value());
