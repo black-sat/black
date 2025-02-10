@@ -31,10 +31,116 @@
 
 namespace black::parsing 
 {
+  //
+  // Misc types and traits
+  //
+  template<typename T>
+  struct parser;
+  
+  template<typename T>
+  class parsed;
+
   using range = std::ranges::subrange<const char *>;
 
-  template<typename Out>
-  class parser;
+  template<typename P, typename T>
+  struct is_parser_of : std::false_type { };
+
+  template<typename T>
+  struct is_parser_of<parser<T>, T> : std::true_type { };
+
+  template<typename P, typename T>
+  inline constexpr bool is_parser_of_v = is_parser_of<P, T>::value;
+
+  template<typename P, typename T>
+  concept parser_of = is_parser_of_v<P, T>;
+
+  template<typename G, typename T>
+  concept grammar_of = requires(G g) {
+    { g() } -> std::convertible_to<parsed<T>>;
+  };
+
+  //
+  // Core of the parser type
+  //
+  template<typename T>
+  class runner
+  {
+  public:
+    runner(grammar_of<T> auto grammar) : _grammar{std::move(grammar)} { }
+      
+    runner(runner const&) = default;
+    runner(runner &&) = default;
+    
+    runner &operator=(runner const&) = default;
+    runner &operator=(runner &&) = default;
+
+    auto run(range input, range *tail = nullptr)
+    {
+      parsed<T> parsed = _grammar();
+
+      parsed.coroutine()->promise().input = input;
+      parsed.coroutine()->resume();
+      if(tail)
+        *tail = parsed.coroutine()->promise().input;
+
+      return parsed.coroutine()->promise().value;
+    }
+
+  private:
+    std::function<parsed<T>()> _grammar;
+  };
+
+    
+  template<typename T>
+  class runner<T[]>
+  {
+  public:
+    runner(grammar_of<T[]> auto grammar) : _grammar{std::move(grammar)} { }
+      
+    runner(runner const&) = default;
+    runner(runner &&) = default;
+    
+    runner &operator=(runner const&) = default;
+    runner &operator=(runner &&) = default;
+
+    std::optional<std::vector<std::remove_extent_t<T>>> 
+    run(range input, range *tail = nullptr)
+    {
+      parsed<T[]> parsed = _grammar();
+
+      parsed.coroutine()->promise().input = input;
+
+      std::vector<std::remove_extent_t<T>> results;
+
+      do {
+        parsed.coroutine()->resume();
+        auto value = std::move(parsed.coroutine()->promise().value);
+        
+        if(value)
+          results.push_back(std::move(*value));
+        
+        if(!value && !parsed.coroutine()->done())
+          return std::nullopt;
+
+      } while(!parsed.coroutine()->done());
+
+      if(tail)
+        *tail = parsed.coroutine()->promise().input;
+
+      return results;
+    }
+  
+  private:
+    std::function<parsed<T[]>()> _grammar;
+  };
+
+  //
+  // Main parser type
+  // 
+  template<typename T>
+  struct parser : runner<T> {
+    using runner<T>::runner;
+  };
 
   //
   // Types representing the primitive actions available to parsers
@@ -63,79 +169,42 @@ namespace black::parsing
   //
   // lift to an std::optional a parser that fails without consuming input
   //
-  template<typename Out>
+  template<typename T>
   struct optional_t { 
-    parser<Out> inner;
+    parser<T> inner;
   };
 
   //
   // Parse ahead without consuming input on failure
   //
-  template<typename Out>
+  template<typename T>
   struct try_t {
-    parser<Out> inner;
+    parser<T> inner;
   };
 
   //
-  // Exception thrown if a parser is reused
+  // Return type of parsing coroutines
   //
-  class parser_reused : support::exception 
-  {
-  public:
-    parser_reused() : support::exception("parser::run() invoked twice") { }
-    virtual ~parser_reused() override = default;
-  };
-
-  //
-  // Main parser type
-  //
-  template<typename Out>
-  class [[nodiscard("parsers must be awaited")]] parser 
+  template<typename T>
+  class [[nodiscard("parsed values must be awaited")]] parsed 
   {
   public:
     struct promise_type;
 
-    parser() = delete;
+    parsed() = delete;
 
-    parser(parser const&) = delete;
-    parser(parser &&) = default;
+    parsed(parsed const&) = delete;
+    parsed(parsed &&) = default;
     
-    parser &operator=(parser const&) = delete;
-    parser &operator=(parser &&) = default;
+    parsed &operator=(parsed const&) = delete;
+    parsed &operator=(parsed &&) = default;
 
-    auto run(range input, range *tail = nullptr) {
-      if(_coroutine->done())
-        throw parser_reused();
-
-      _coroutine->promise().input = input;
-      _coroutine->resume();
-      if(tail)
-        *tail = _coroutine->promise().input;
-
-      return _coroutine->promise().value;
-    }
+    auto &coroutine() { return _coroutine; }
 
   private:
-    parser(std::coroutine_handle<promise_type> h) : _coroutine{ h } { }
+    parsed(std::coroutine_handle<promise_type> h) : _coroutine{ h } { }
     support::coroutine_handle_ptr<promise_type> _coroutine;
   };
-
-  template<typename Pred>
-  concept predicate = requires (Pred p, char c) {
-    { p(c) } -> std::convertible_to<bool>;
-  };
-
-  template<typename P, typename Out>
-  struct is_parser_of : std::false_type { };
-
-  template<typename Out>
-  struct is_parser_of<parser<Out>, Out> : std::true_type { };
-
-  template<typename P, typename Out>
-  inline constexpr bool is_parser_of_v = is_parser_of<P, Out>::value;
-
-  template<typename P, typename Out>
-  concept parser_of = is_parser_of_v<P, Out>;
 
   template<typename T>
   struct awaiter_t {
@@ -164,14 +233,28 @@ namespace black::parsing
     void await_resume() { }
   };
 
-  template<typename Out>
+  template<typename T>
   struct promise_value_holder {
-    std::optional<Out> value = std::nullopt;
+    std::optional<T> value = std::nullopt;
 
     promise_value_holder() = default;
 
-    void return_value(Out v) {
+    void return_value(T v) {
       value = std::move(v);
+    }
+  };
+
+  template<typename T>
+  struct promise_value_holder<T[]> {
+    std::optional<T> value = std::nullopt;
+
+    promise_value_holder() = default;
+
+    void return_void() { value = std::nullopt; }
+
+    std::suspend_always yield_value(T v) {
+      this->value = std::move(v);
+      return {};
     }
   };
 
@@ -186,8 +269,8 @@ namespace black::parsing
     }
   };
 
-  template<typename Out>
-  struct parser<Out>::promise_type : promise_value_holder<Out>
+  template<typename T>
+  struct parsed<T>::promise_type : promise_value_holder<T>
   {
     range input;
 
@@ -195,7 +278,7 @@ namespace black::parsing
     promise_type() = default;
 
     auto get_return_object() {
-      return parser<Out>{ 
+      return parsed<T>{ 
         std::coroutine_handle<promise_type>::from_promise(*this) 
       }; 
     }
@@ -209,6 +292,11 @@ namespace black::parsing
     template<typename U>
     auto await_transform(parser<U> p) {
       return awaiter_t<U>{ p.run(input, &input) };
+    }
+
+    template<typename U>
+    auto await_transform(parser<U[]> p) {
+      return awaiter_t<std::vector<U>>{ p.run(input, &input) };
     }
 
     auto await_transform(parser<void> p) {
@@ -260,6 +348,14 @@ namespace black::parsing
       return awaiter_t<U>{ };
     }
 
+  };
+
+  //
+  // Parser type
+  //
+  template<typename Pred>
+  concept predicate = requires (Pred p, char c) {
+    { p(c) } -> std::convertible_to<bool>;
   };
 
 }

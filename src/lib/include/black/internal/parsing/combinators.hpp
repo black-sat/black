@@ -30,43 +30,57 @@ namespace black::parsing {
   //
   // Primitives
   //
-  template<typename Out>
-  parser<Out> succeed(Out v) { co_return v; }
+  template<typename T>
+  parser<T> succeed(T v) { co_return v; }
 
   inline parser<void> fail() {
-    co_return co_await fail_t{ }; 
+    return [] -> parsed<void> {
+      co_return co_await fail_t{ };
+    };
   }
 
   inline parser<void> eof() { 
-    co_return co_await eof_t{ }; 
+    return [] -> parsed<void> {
+      co_return co_await eof_t{ };
+    };
   }
 
   inline parser<char> peek() { 
-    co_return co_await peek_t{ }; 
+    return [] -> parsed<char> {
+      co_return co_await peek_t{ };
+    };
   }
 
   inline parser<void> advance() { 
-    co_return co_await advance_t{ }; 
+    return [] -> parsed<void> {
+      co_return co_await advance_t{ };
+    };
   }
 
-  template<typename Out>
-  parser<std::optional<Out>> optional(parser<Out> p) { 
-    co_return co_await optional_t{ std::move(p) }; 
+  template<typename T>
+  parser<std::optional<T>> optional(parser<T> p) { 
+    return [=] -> parsed<std::optional<T>> {
+      co_return co_await optional_t{ p };
+    };
   }
 
-  template<typename Out>
-  parser<Out> try_(parser<Out> p) { 
-    co_return co_await try_t{ std::move(p) }; 
+  template<typename T>
+  parser<T> try_(parser<T> p) { 
+    return [=] -> parsed<T> {
+      co_return co_await try_t{ p };
+    };
   }
 
   //
   // Derived combinators
   //
   parser<char> peek(predicate auto pred) {
-    auto t = co_await peek();
-    if(!pred(t))
-      co_await fail();
-    co_return t;
+    return [=] -> parsed<char> {
+      auto t = co_await peek();
+      if(!pred(t))
+        co_await fail();
+      co_return t;
+    };
   }
 
   inline parser<char> peek(char v) { 
@@ -74,49 +88,87 @@ namespace black::parsing {
   }
 
   inline parser<char> consume() {
-    char c = co_await peek();
-    
-    co_await advance();
-    
-    co_return c;
+    return [] -> parsed<char> {
+      char c = co_await peek();
+      
+      co_await advance();
+      
+      co_return c;
+    };
   }
 
   parser<char> expect(predicate auto pred) {
-    auto t = co_await consume();
-    if(!pred(t))
-      co_await fail();
-    co_return t;
+    return [=] -> parsed<char> {
+      auto t = co_await consume();
+      if(!pred(t))
+        co_await fail();
+      co_return t;
+    };
   }
 
   inline parser<char> expect(char v) { 
     return expect([=](char c) { return c == v; });
   }
 
-  parser<char> ask(predicate auto pred) {
+  parser<char> chr(predicate auto pred) {
     return try_(expect(pred));
   }
 
-  inline parser<char> ask(char c) {
+  inline parser<char> chr(char c) {
     return try_(expect(c));
   }
 
-  template<typename Out>
-  parser<Out> either(parser<Out> p) {
-    return std::move(p);
+  template<typename T>
+  parser<T> either(parser<T> p) {
+    return p;
   }
 
-  template<typename Out, parser_of<Out> ...Ps>
-  parser<Out> either(parser<Out> p, Ps ...ps) {
-    auto v = co_await optional(std::move(p));
-    if(v)
-      co_return *v;
-    
-    co_return co_await either(std::move(ps)...);
+  template<typename T, parser_of<T> ...Ps>
+  parser<T> either(parser<T> p, Ps ...ps) {
+    return [=] -> parsed<T> {
+      if(auto v = co_await optional(p); v)
+        co_return *v;
+      
+      co_return co_await either(ps...);
+    };
   }
 
-  template<typename Out>
-  parser<Out> operator||(parser<Out> p1, parser<Out> p2) {
-    return either(std::move(p1), std::move(p2));
+  template<typename T>
+  parser<T> operator|(parser<T> p1, parser<T> p2) {
+    return either(p1, p2);
+  }
+
+  template<typename T>
+  parser<T[]> many(parser<T> p) {
+    return [=] -> parsed<T[]> {
+      std::optional<T> element;
+      
+      while((element = co_await optional(p))) {
+        co_yield *element;
+      }
+    };
+  }
+  
+  template<typename T>
+  parser<T[]> singleton(parser<T> p) {
+    return [=] -> parsed<T[]> {
+      co_yield co_await p;
+    };
+  }
+
+  template<typename T>
+  parser<T[]> concat(parser<T[]> p1, parser<T[]> p2) {
+    return [=] -> parsed<T[]> {
+      for(auto v : co_await p1)
+        co_yield v;
+      for(auto v : co_await p2)
+        co_yield v;
+    };
+  }
+
+  template<typename T>
+  parser<T[]> some(parser<T> p) {
+    return concat(singleton(p), many(p));
   }
 
 }

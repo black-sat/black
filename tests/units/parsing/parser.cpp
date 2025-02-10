@@ -31,19 +31,21 @@
 using namespace black::parsing;
 
 inline parser<std::string> braced() {
-    co_await ask('{');
+    return [] -> parsed<std::string> {
+        co_await chr('{');
 
-    std::string result;
+        std::string result;
 
-    std::optional<char> c;
-    while((c = co_await optional(peek(&isalpha)))) {
-        result.push_back(*c);
-        co_await advance();
-    }
+        std::optional<char> c;
+        while((c = co_await optional(peek(&isalpha)))) {
+            result.push_back(*c);
+            co_await advance();
+        }
 
-    co_await expect('}');
+        co_await expect('}');
 
-    co_return result;
+        co_return result;
+    };
 }
 
 TEST_CASE("Basic operations on parsers") 
@@ -70,11 +72,13 @@ TEST_CASE("Basic operations on parsers")
 }
 
 inline parser<std::string> opt_test() {
-    auto opt = co_await optional(ask('{'));
-    if(opt)
-        co_return "Ok!";
-    
-    co_return "Nope!";
+    return [] -> parsed<std::string> {
+        auto opt = co_await optional(chr('{'));
+        if(opt)
+            co_return "Ok!";
+        
+        co_return "Nope!";
+    };
 }
 
 TEST_CASE("Optional") {
@@ -95,10 +99,6 @@ TEST_CASE("Optional") {
             p.run(range{mandi.c_str(), mandi.c_str() + mandi.size()});
 
         REQUIRE(result == "Nope!");
-
-        REQUIRE_THROWS(
-            p.run(range{mandi.c_str(), mandi.c_str() + mandi.size()})
-        );
     }
 
 }
@@ -145,8 +145,8 @@ TEST_CASE("Lookaehad") {
     }
 }
 
-inline parser<char> delim() {
-    return ask('a') || ask('b') || ask('c');
+inline parser<char> letters() {
+    return chr('a') | chr('b') | chr('c');
 }
 
 TEST_CASE("either") {
@@ -154,9 +154,26 @@ TEST_CASE("either") {
     std::string abcde = "abcde";
     range input{abcde.c_str(), abcde.c_str() + abcde.size()};
 
-    REQUIRE(delim().run(input, &input).has_value());
-    REQUIRE(delim().run(input, &input).has_value());
-    REQUIRE(delim().run(input, &input).has_value());
-    REQUIRE(!delim().run(input, &input).has_value());
+    parser<char> p = letters();
+
+    REQUIRE(p.run(input, &input).has_value());
+    REQUIRE(p.run(input, &input).has_value());
+    REQUIRE(p.run(input, &input).has_value());
+    REQUIRE(!p.run(input, &input).has_value());
+
+}
+
+TEST_CASE("yielding parsers") {
+    
+    std::string abcde = "abcde4";
+    range input{abcde.c_str(), abcde.c_str() + abcde.size()};
+
+    parser<char[]> p = some(chr(&isalpha));
+
+    std::optional<std::vector<char>> result = p.run(input, &input);
+
+    REQUIRE(result.has_value());
+    REQUIRE(result == std::vector{'a', 'b', 'c', 'd', 'e'});
+    REQUIRE(*std::begin(input) == '4');
 
 }
