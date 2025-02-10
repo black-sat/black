@@ -170,10 +170,23 @@ TEST_CASE("yielding parsers") {
 
     parser<char[]> p = some(chr(&isalpha));
 
-    std::optional<std::vector<char>> result = p.run(input, &input);
+    auto result = p.run(input, &input);
 
     REQUIRE(result.has_value());
     REQUIRE(result == std::vector{'a', 'b', 'c', 'd', 'e'});
     REQUIRE(*std::begin(input) == '4');
+
+}
+
+TEST_CASE("skip many") {
+
+    parser<void> p = skip( chr('{') + skip_many(chr(&isalpha)) + chr('}') );
+
+    std::string hello = "{hello}";
+    range input{hello.c_str(), hello.c_str() + hello.size()};
+
+    auto result = p.run(input);
+
+    REQUIRE(result.has_value());
 
 }

@@ -63,6 +63,12 @@ namespace black::parsing {
       co_return co_await optional_t{ p };
     };
   }
+  
+  inline parser<std::optional<std::monostate>> optional(parser<void> p) { 
+    return [=] -> parsed<std::optional<std::monostate>> {
+      co_return co_await optional_t{ p };
+    };
+  }
 
   template<typename T>
   parser<T> try_(parser<T> p) { 
@@ -119,23 +125,41 @@ namespace black::parsing {
   }
 
   template<typename T>
-  parser<T> either(parser<T> p) {
-    return p;
+  parser<T> either(parser<T> p1, parser<T> p2) {
+    return [=] -> parsed<T> {
+      if(auto v = co_await optional(p1); v)
+        co_return *v;
+      
+      co_return co_await p2;
+    };
   }
 
   template<typename T, parser_of<T> ...Ps>
   parser<T> either(parser<T> p, Ps ...ps) {
-    return [=] -> parsed<T> {
-      if(auto v = co_await optional(p); v)
-        co_return *v;
-      
-      co_return co_await either(ps...);
-    };
+    return either(p, either(ps...));
   }
 
   template<typename T>
   parser<T> operator|(parser<T> p1, parser<T> p2) {
     return either(p1, p2);
+  }
+
+  template<typename T1, typename T2>
+  parser<T2> seq(parser<T1> p1, parser<T2> p2) {
+    return [=] -> parsed<T2> {
+      co_await p1;
+      co_return co_await p2;
+    };
+  }
+
+  template<typename T1, typename ...Ts>
+  auto seq(parser<T1> p1, parser<Ts> ...ps) {
+    return seq(p1, seq(ps...));
+  }
+
+  template<typename T1, typename T2>
+  auto operator+(parser<T1> p1, parser<T2> p2) {
+    return seq(p1, p2);
   }
 
   template<typename T>
@@ -146,6 +170,12 @@ namespace black::parsing {
       while((element = co_await optional(p))) {
         co_yield *element;
       }
+    };
+  }
+
+  inline parser<void> many(parser<void> p) {
+    return [=] -> parsed<void> {
+      while(co_await optional(p)) { }
     };
   }
   
@@ -169,6 +199,23 @@ namespace black::parsing {
   template<typename T>
   parser<T[]> some(parser<T> p) {
     return concat(singleton(p), many(p));
+  }
+
+  template<typename T>
+  parser<void> skip(parser<T> p) {
+    return [=] -> parsed<void> {
+      co_await p;
+    };
+  }
+
+  template<typename T>
+  parser<void> skip_many(parser<T> p) {
+    return many(skip(p));
+  }
+  
+  template<typename T>
+  parser<void> skip_some(parser<T> p) {
+    return some(skip(p));
   }
 
 }

@@ -103,19 +103,22 @@ namespace black::parsing
     runner &operator=(runner const&) = default;
     runner &operator=(runner &&) = default;
 
-    std::optional<std::vector<std::remove_extent_t<T>>> 
+    std::optional<std::vector<T>>
     run(range input, range *tail = nullptr)
     {
       parsed<T[]> parsed = _grammar();
 
       parsed.coroutine()->promise().input = input;
 
-      std::vector<std::remove_extent_t<T>> results;
+      std::vector<T> results;
 
       do {
         parsed.coroutine()->resume();
         auto value = std::move(parsed.coroutine()->promise().value);
         
+        if(tail)
+          *tail = parsed.coroutine()->promise().input;
+
         if(value)
           results.push_back(std::move(*value));
         
@@ -123,9 +126,6 @@ namespace black::parsing
           return std::nullopt;
 
       } while(!parsed.coroutine()->done());
-
-      if(tail)
-        *tail = parsed.coroutine()->promise().input;
 
       return results;
     }
@@ -332,9 +332,9 @@ namespace black::parsing
       auto result = opt.inner.run(input, &input);
       
       if(!result && std::begin(saved) != std::begin(input))
-        return suspend_or_return<std::optional<U>>{ };
+        return suspend_or_return<decltype(result)>{ };
       
-      return suspend_or_return<std::optional<U>>{ std::move(result) };
+      return suspend_or_return<decltype(result)>{ std::move(result) };
     }
 
     template<typename U>
