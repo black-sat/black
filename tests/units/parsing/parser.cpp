@@ -203,21 +203,17 @@ TEST_CASE("skip many") {
 
 }
 
-TEST_CASE("integer and string") {
-
-    std::string num = "answer: 42";
+TEST_CASE("pattern string") {
+    std::string num = "answer";
     range input{num.c_str(), num.c_str() + num.size()};
 
-    parser<size_t> p = 
-        string(&isalpha) + chr(':') + string(&isspace) + integer();
+    parser<std::string> p = string("answer");
     
-    auto number = p.run(input, &input);
+    auto result = p.run(input, &input);
 
-    REQUIRE(number.has_value());
-    REQUIRE(*number == 42);
-    REQUIRE(input.empty());
+    REQUIRE(result.has_value());
+    REQUIRE(*result == "answer");
 }
-
 
 TEST_CASE("Operations on sequences") {
 
@@ -316,10 +312,11 @@ TEST_CASE("Operations on sequences") {
     }
     
     SECTION("sep_many") {
-        std::string s = "1,2,3,4";
+        parser<size_t[]> p = sep_many(token(integer()), token(chr(',')));
+
+        std::string s = "1, 2 , 3, 4";
         input = range{s.c_str(), s.c_str() + s.size()};
 
-        parser<size_t[]> p = sep_many(integer(), chr(','));
         auto result = p.run(input);
 
         REQUIRE(result.has_value());
@@ -330,11 +327,25 @@ TEST_CASE("Operations on sequences") {
         std::string s = "";
         input = range{s.c_str(), s.c_str() + s.size()};
 
-        parser<size_t[]> p = sep_many(integer(), chr(','));
+        parser<size_t[]> p = sep_many(token(integer()), token(chr(',')));
         auto result = p.run(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result->empty());
     }
 
+}
+
+TEST_CASE("integer and string") {
+    std::string num = "answer: 42";
+    range input{num.c_str(), num.c_str() + num.size()};
+
+    parser<size_t> p = 
+        string(&isalpha) + chr(':') + token(integer());
+    
+    auto number = p.run(input, &input);
+
+    REQUIRE(number.has_value());
+    REQUIRE(*number == 42);
+    REQUIRE(input.empty());
 }

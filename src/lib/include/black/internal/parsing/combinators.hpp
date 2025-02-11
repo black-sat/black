@@ -245,24 +245,6 @@ namespace black::parsing {
     return some(skip(p));
   }
 
-  parser<std::string> string(predicate_for<char> auto pred) {
-    return [=] -> parsed<std::string> {
-      auto chars = co_await many(chr(pred));
-      if(chars.empty())
-        co_await fail();
-
-      co_return std::string{std::begin(chars), std::end(chars)};
-    };
-  }
-
-  // parser<std::string> string(std::string_view str) {
-  //   return [=] -> parsed<std::string> {
-      
-  //   }
-  // }
-
-  
-
 }
 
 #endif // BLACK_PARSING_COMBINATORS_HPP

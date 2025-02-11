@@ -26,6 +26,8 @@
 
 namespace black::parsing {
 
+  using namespace std::literals;
+
   inline parser<size_t> integer() {
     return [] -> parsed<size_t> {
       size_t x = 0;
@@ -38,6 +40,22 @@ namespace black::parsing {
       co_return x;
     };
   }
+
+  parser<std::string> string(predicate_for<char> auto pred) {
+    return collect<std::basic_string>(many(chr(pred)));
+  }
+
+  inline parser<std::string> string(std::string_view str) {
+    return collect<std::basic_string>(
+      sequence(transform(yield(str), [](char c) { return chr(c); }))
+    );
+  }
+
+  template<typename T>
+  parser<T> token(parser<T> p) {
+    return string(&isspace) + p;
+  }
+
 }
 
 #endif // BLACK_PARSING_LEX_HPP

@@ -81,6 +81,14 @@ namespace black::parsing {
     };
   }
 
+  template<typename T>
+  parser<T[]> sequence(parser<parser<T>[]> ps) {
+    return [=] -> parsed<T[]> {
+      for(auto p : co_await ps)
+        co_yield co_await p;
+    };
+  }
+
   template<
     typename T,
     std::invocable<T> F, 
@@ -138,6 +146,13 @@ namespace black::parsing {
       for(auto q : all)
         for(auto v : co_await q)
           co_yield std::move(v);
+    };
+  }
+
+  template<template<typename ...> class C = std::vector, typename T>
+  parser<C<T>> collect(parser<T[]> p) {
+    return [=] -> parsed<C<T>> {
+      co_return co_await p | std::ranges::to<C>();
     };
   }
 
