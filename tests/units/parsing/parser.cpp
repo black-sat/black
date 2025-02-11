@@ -336,12 +336,12 @@ TEST_CASE("Operations on sequences") {
 
 }
 
-TEST_CASE("integer and string") {
+TEST_CASE("integers, strings, identifiers") {
     std::string num = "answer: 42";
     range input{num.c_str(), num.c_str() + num.size()};
 
     parser<size_t> p = 
-        string(&isalpha) + chr(':') + token(integer());
+        identifier("answer") + chr(':') + token(integer());
     
     auto number = p.run(input, &input);
 

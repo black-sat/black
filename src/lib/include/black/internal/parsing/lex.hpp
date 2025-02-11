@@ -56,6 +56,18 @@ namespace black::parsing {
     return string(&isspace) + p;
   }
 
+  inline bool is_id_start(char c) {
+    return isalpha(c) || c == '_';
+  }
+
+  inline bool is_id_char(char c) {
+    return is_id_start(c) || isdigit(c);
+  }
+
+  inline parser<std::string> identifier(std::string_view str) {
+    return require(string(&is_id_char), [=](auto&& id) { return id == str; });
+  }
+
 }
 
 #endif // BLACK_PARSING_LEX_HPP

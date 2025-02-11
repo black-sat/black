@@ -118,13 +118,18 @@ namespace black::parsing {
     };
   }
 
-  parser<char> expect(predicate_for<char> auto pred) {
-    return [=] -> parsed<char> {
-      auto t = co_await chr();
-      if(!pred(t))
-        co_await fail();
-      co_return t;
+  template<typename T, predicate_for<T> F>
+  parser<T> require(parser<T> p, F f) {
+    return [=] -> parsed<T> {
+      if(auto v = co_await p; f(v))
+        co_return std::move(v);
+      co_await fail();
+      black_unreachable();
     };
+  }
+
+  parser<char> expect(predicate_for<char> auto pred) {
+    return try_(require(chr(), pred));
   }
 
   inline parser<char> expect(char v) { 
@@ -243,6 +248,14 @@ namespace black::parsing {
   template<typename T>
   parser<void> skip_some(parser<T> p) {
     return some(skip(p));
+  }
+
+  template<typename T>
+  parser<void> operator not(parser<T> p) {
+    return [=] -> parsed<T> {
+      if(co_await optional(try_(p)))
+        co_await fail();
+    };
   }
 
 }
