@@ -38,8 +38,7 @@ namespace black::parsing {
   }
 
   template<typename T>
-    requires (!std::ranges::range<T>)
-  parser<T[]> yield(T v) {
+  parser<T[]> single(T v) {
     return [v = std::move(v)] -> parsed<T[]> {
       co_yield std::move(v);
     };
@@ -54,7 +53,7 @@ namespace black::parsing {
 
   template<typename T>
   parser<T[]> empty() {
-    return yield(std::vector<T>{});
+    return [] -> parsed<T[]> { co_return; };
   }
 
   template<
