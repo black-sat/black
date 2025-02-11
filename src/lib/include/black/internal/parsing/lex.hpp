@@ -1,7 +1,7 @@
 //
 // BLACK - Bounded Ltl sAtisfiability ChecKer
 //
-// (C) 2024 Nicola Gigante
+// (C) 2025 Nicola Gigante
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,15 +21,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BLACK_IO_HPP
-#define BLACK_IO_HPP
+#ifndef BLACK_PARSING_LEX_HPP
+#define BLACK_PARSING_LEX_HPP
 
-#include <black/support>
-#include <black/logic>
+namespace black::parsing {
 
-#include <black/internal/parsing/parser.hpp>
-#include <black/internal/parsing/combinators.hpp>
-#include <black/internal/parsing/functional.hpp>
-#include <black/internal/parsing/lex.hpp>
+  inline parser<size_t> integer() {
+    return [] -> parsed<size_t> {
+      size_t x = 0;
+      int p = 1;
+      for(char c : co_await reversed(some(chr(&isdigit)))) {
+        x += (c - '0') * p;
+        p *= 10; 
+      }
 
-#endif // BLACK_IO_HPP
+      co_return x;
+    };
+  }
+}
+
+#endif // BLACK_PARSING_LEX_HPP
+

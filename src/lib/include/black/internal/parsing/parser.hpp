@@ -330,7 +330,7 @@ namespace black::parsing
     auto await_transform(optional_t<U> opt) {
       auto saved = input;
       auto result = opt.inner.run(input, &input);
-      
+
       if(!result && std::begin(saved) != std::begin(input))
         return suspend_or_return<decltype(result)>{ };
       
@@ -348,14 +348,6 @@ namespace black::parsing
       return suspend_or_return<U>{ };
     }
 
-  };
-
-  //
-  // Parser type
-  //
-  template<typename Pred>
-  concept predicate = requires (Pred p, char c) {
-    { p(c) } -> std::convertible_to<bool>;
   };
 
 }

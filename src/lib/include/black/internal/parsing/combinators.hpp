@@ -26,12 +26,20 @@
 
 namespace black::parsing {
 
+  template<typename Pred, typename T>
+  concept predicate_for = requires (Pred p, T c) {
+    { p(c) } -> std::convertible_to<bool>;
+  };
 
   //
   // Primitives
   //
   template<typename T>
-  parser<T> succeed(T v) { co_return v; }
+  parser<T> value(T v) { 
+    return [v = std::move(v)] -> parsed<T> {
+      co_return v; 
+    };
+  }
 
   inline parser<void> fail() {
     return [] -> parsed<void> {
@@ -63,6 +71,13 @@ namespace black::parsing {
       co_return co_await optional_t{ p };
     };
   }
+
+  template<typename T>
+  parser<std::optional<std::vector<T>>> optional(parser<T[]> p) { 
+    return [=] -> parsed<std::optional<std::vector<T>>> {
+      co_return co_await optional_t{ p };
+    };
+  }
   
   inline parser<std::optional<std::monostate>> optional(parser<void> p) { 
     return [=] -> parsed<std::optional<std::monostate>> {
@@ -80,7 +95,7 @@ namespace black::parsing {
   //
   // Derived combinators
   //
-  parser<char> peek(predicate auto pred) {
+  parser<char> peek(predicate_for<char> auto pred) {
     return [=] -> parsed<char> {
       auto t = co_await peek();
       if(!pred(t))
@@ -103,7 +118,7 @@ namespace black::parsing {
     };
   }
 
-  parser<char> expect(predicate auto pred) {
+  parser<char> expect(predicate_for<char> auto pred) {
     return [=] -> parsed<char> {
       auto t = co_await chr();
       if(!pred(t))
@@ -116,7 +131,7 @@ namespace black::parsing {
     return expect([=](char c) { return c == v; });
   }
 
-  parser<char> chr(predicate auto pred) {
+  parser<char> chr(predicate_for<char> auto pred) {
     return try_(expect(pred));
   }
 
@@ -134,6 +149,18 @@ namespace black::parsing {
     };
   }
 
+  template<typename T>
+  parser<T[]> either(parser<T[]> p1, parser<T[]> p2) {
+    return [=] -> parsed<T[]> {
+      if(auto v = co_await optional(p1); v)
+        for(auto x : *v)
+          co_yield x;
+      
+      for(auto x : co_await p2)
+          co_yield x;
+    };
+  }
+
   template<typename T, parser_of<T> ...Ps>
   parser<T> either(parser<T> p, Ps ...ps) {
     return either(p, either(ps...));
@@ -145,28 +172,35 @@ namespace black::parsing {
   }
 
   template<typename T1, typename T2>
-  parser<T2> seq(parser<T1> p1, parser<T2> p2) {
+  parser<T2> then(parser<T1> p1, parser<T2> p2) {
     return [=] -> parsed<T2> {
       co_await p1;
       co_return co_await p2;
     };
   }
 
-  template<typename T1, typename ...Ts>
-  auto seq(parser<T1> p1, parser<Ts> ...ps) {
-    return seq(p1, seq(ps...));
+  template<typename T>
+  parser<void> then(parser<T> p1, parser<void> p2) {
+    return [=] -> parsed<void> {
+      co_await p1;
+      co_await p2;
+    };
+  }
+
+  template<typename T, typename ...Ts>
+  auto then(parser<T> p, parser<Ts> ...ps) {
+    return then(p, then(ps...));
   }
 
   template<typename T1, typename T2>
   auto operator+(parser<T1> p1, parser<T2> p2) {
-    return seq(p1, p2);
+    return then(p1, p2);
   }
 
   template<typename T>
   parser<T[]> many(parser<T> p) {
     return [=] -> parsed<T[]> {
       std::optional<T> element;
-      
       while((element = co_await optional(p))) {
         co_yield *element;
       }
@@ -178,29 +212,22 @@ namespace black::parsing {
       while(co_await optional(p)) { }
     };
   }
-  
-  template<typename T>
-  parser<T[]> singleton(parser<T> p) {
-    return [=] -> parsed<T[]> {
-      co_yield co_await p;
-    };
-  }
-
-  template<typename T>
-  parser<T[]> concat(parser<T[]> p1, parser<T[]> p2) {
-    return [=] -> parsed<T[]> {
-      for(auto v : co_await p1)
-        co_yield v;
-      for(auto v : co_await p2)
-        co_yield v;
-    };
-  }
 
   template<typename T>
   parser<T[]> some(parser<T> p) {
-    return concat(singleton(p), many(p));
+    return [=] -> parsed<T[]> 
+    {
+      co_yield co_await p;
+
+      for(auto v : co_await many(p))
+        co_yield v;
+    };
   }
 
+  inline parser<void> some(parser<void> p) {
+    return then(p, many(p));
+  }
+  
   template<typename T>
   parser<void> skip(parser<T> p) {
     return [=] -> parsed<void> {
@@ -217,6 +244,24 @@ namespace black::parsing {
   parser<void> skip_some(parser<T> p) {
     return some(skip(p));
   }
+
+  parser<std::string> string(predicate_for<char> auto pred) {
+    return [=] -> parsed<std::string> {
+      auto chars = co_await many(chr(pred));
+      if(chars.empty())
+        co_await fail();
+
+      co_return std::string{std::begin(chars), std::end(chars)};
+    };
+  }
+
+  // parser<std::string> string(std::string_view str) {
+  //   return [=] -> parsed<std::string> {
+      
+  //   }
+  // }
+
+  
 
 }
 

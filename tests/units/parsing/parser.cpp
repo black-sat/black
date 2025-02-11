@@ -178,6 +178,18 @@ TEST_CASE("yielding parsers") {
 
 }
 
+TEST_CASE("many with empty input") {
+    std::string empty = "";
+    range input{empty.c_str(), empty.c_str() + empty.size()};
+
+    parser<size_t[]> p = many(integer());
+
+    auto result = p.run(input, &input);
+
+    REQUIRE(result.has_value());
+    REQUIRE(result->empty());
+}
+
 TEST_CASE("skip many") {
 
     parser<void> p = skip( chr('{') + skip_many(chr(&isalpha)) + chr('}') );
@@ -188,5 +200,141 @@ TEST_CASE("skip many") {
     auto result = p.run(input);
 
     REQUIRE(result.has_value());
+
+}
+
+TEST_CASE("integer and string") {
+
+    std::string num = "answer: 42";
+    range input{num.c_str(), num.c_str() + num.size()};
+
+    parser<size_t> p = 
+        string(&isalpha) + chr(':') + string(&isspace) + integer();
+    
+    auto number = p.run(input, &input);
+
+    REQUIRE(number.has_value());
+    REQUIRE(*number == 42);
+    REQUIRE(input.empty());
+}
+
+
+TEST_CASE("Operations on sequences") {
+
+    std::string any = "42";
+    range input{any.c_str(), any.c_str() + any.size()};
+
+    std::vector<int> v = {1, 2, 3, 4};
+    
+    SECTION("Transform") {
+        parser<int[]> p = transform(yield(v), [](auto i) { return i * 2; });
+        auto result = p.run(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(result == std::vector{2, 4, 6, 8});
+    }
+    
+    SECTION("Filter") {
+        parser<int[]> p = filter(yield(v), [](auto i) { return i % 2 == 0; });
+        auto result = p.run(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(result == std::vector{2, 4});
+    }
+    
+    SECTION("Take") {
+        parser<int[]> p = take(yield(v), 2);
+        auto result = p.run(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(result == std::vector{1, 2});
+    }
+    
+    SECTION("Take while") {
+        parser<int[]> p = take_while(yield(v), [](auto i) { return i <= 2; });
+        auto result = p.run(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(result == std::vector{1, 2});
+    }
+    
+    SECTION("Drop") {
+        parser<int[]> p = drop(yield(v), 2);
+        auto result = p.run(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(result == std::vector{3, 4});
+    }
+    
+    SECTION("Drop while") {
+        parser<int[]> p = drop_while(yield(v), [](auto i) { return i <= 2; });
+        auto result = p.run(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(result == std::vector{3, 4});
+    }
+    
+    SECTION("Concat") {
+        std::vector<int> v1 = { 1, 2 };
+        std::vector<int> v2 = { 3 };
+        std::vector<int> v3 = { 4 };
+
+        parser<int[]> p = concat(yield(v1), yield(v2), yield(v3));
+        auto result = p.run(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(result == v);
+    }
+
+    SECTION("Zip") {
+        std::vector<int> v1 = { 1, 2 };
+        std::vector<int> v2 = { 3, 4 };
+
+        parser<std::tuple<int, int>[]> p = zip(yield(v1), yield(v2));
+        auto result = p.run(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(result == std::vector{std::tuple{1, 3}, std::tuple{2, 4}});
+    }
+    
+    SECTION("Index") {
+        parser<int> p = index<0>(value(std::tuple{1, 2}));
+        auto result = p.run(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(result == 1);
+    }
+    
+    SECTION("Index on sequences") {
+        std::vector<std::tuple<int, int>> v1 = { {1, 2}, {3, 4} };
+
+        parser<int[]> p = index<0>(yield(v1));
+        auto result = p.run(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(result == std::vector{1, 3});
+    }
+    
+    SECTION("sep_many") {
+        std::string s = "1,2,3,4";
+        input = range{s.c_str(), s.c_str() + s.size()};
+
+        parser<size_t[]> p = sep_many(integer(), chr(','));
+        auto result = p.run(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(result == std::vector{1uz, 2uz, 3uz, 4uz});
+    }
+    
+    SECTION("sep_many with empty input") {
+        std::string s = "";
+        input = range{s.c_str(), s.c_str() + s.size()};
+
+        parser<size_t[]> p = sep_many(integer(), chr(','));
+        auto result = p.run(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(result->empty());
+    }
 
 }
