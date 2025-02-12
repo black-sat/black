@@ -34,10 +34,10 @@ namespace black::parsing
   //
   // Misc types and traits
   //
-  template<typename T>
-  struct parser;
+  template<typename T, typename = void>
+  class parser;
   
-  template<typename T>
+  template<typename T, typename = void>
   class parsed;
 
   using range = std::ranges::subrange<const char *>;
@@ -60,86 +60,148 @@ namespace black::parsing
   };
 
   //
-  // Core of the parser type
+  // Reasons for parsing failures
   //
-  template<typename T>
-  class runner
+  enum class failure {
+    eof = -1,
+    error = 1
+  };
+
+
+  //
+  // Main parser type
+  //
+  template<typename T, typename>
+  class parser
   {
   public:
-    runner(grammar_of<T> auto grammar) : _grammar{std::move(grammar)} { }
+    parser(grammar_of<T> auto grammar) : _grammar{std::move(grammar)} { }
       
-    runner(runner const&) = default;
-    runner(runner &&) = default;
+    parser(parser const&) = default;
+    parser(parser &&) = default;
     
-    runner &operator=(runner const&) = default;
-    runner &operator=(runner &&) = default;
+    parser &operator=(parser const&) = default;
+    parser &operator=(parser &&) = default;
 
-    auto run(range input, range *tail = nullptr)
+    std::expected<void, failure>
+    run(range input, std::optional<T> &out, range *tail = nullptr) 
     {
       parsed<T> parsed = _grammar();
 
       parsed.coroutine()->promise().input = input;
       parsed.coroutine()->resume();
+      
       if(tail)
         *tail = parsed.coroutine()->promise().input;
+      
+      auto &value = parsed.coroutine()->promise().value;
+      if(!value)
+        return std::unexpected(value.error());
 
-      return parsed.coroutine()->promise().value;
+      out = std::move(*value);
+      return {};
+    }
+
+    std::expected<T, failure> 
+    run(range input, range *tail = nullptr) {
+      std::optional<T> out;
+      auto result = run(input, out, tail);
+      if(!result)
+        return std::unexpected(result.error());
+      
+      return *out;
     }
 
   private:
     std::function<parsed<T>()> _grammar;
   };
-
-    
-  template<typename T>
-  class runner<T[]>
+  
+  template<typename Dummy>
+  class parser<void, Dummy>
   {
   public:
-    runner(grammar_of<T[]> auto grammar) : _grammar{std::move(grammar)} { }
+    parser(grammar_of<void> auto grammar) : _grammar{std::move(grammar)} { }
       
-    runner(runner const&) = default;
-    runner(runner &&) = default;
+    parser(parser const&) = default;
+    parser(parser &&) = default;
     
-    runner &operator=(runner const&) = default;
-    runner &operator=(runner &&) = default;
+    parser &operator=(parser const&) = default;
+    parser &operator=(parser &&) = default;
 
-    std::optional<std::vector<T>>
+    std::expected<void, failure>
     run(range input, range *tail = nullptr)
+    {
+      parsed<void, Dummy> parsed = _grammar();
+
+      parsed.coroutine()->promise().input = input;
+      parsed.coroutine()->resume();
+      if(tail)
+        *tail = parsed.coroutine()->promise().input;
+      
+      auto &value = parsed.coroutine()->promise().value;
+      if(!value)
+        return std::unexpected(value.error());
+
+      return {};
+    }
+
+  private:
+    std::function<parsed<void, Dummy>()> _grammar;
+  };
+
+  //
+  // Sequential specialization of the parser type 
+  //
+  template<typename T>
+  class parser<T[]>
+  {
+  public:
+    parser(grammar_of<T[]> auto grammar) : _grammar{std::move(grammar)} { }
+      
+    parser(parser const&) = default;
+    parser(parser &&) = default;
+    
+    parser &operator=(parser const&) = default;
+    parser &operator=(parser &&) = default;
+
+    std::expected<void, failure>
+    run(range input, std::output_iterator<T> auto out, range *tail = nullptr)
     {
       parsed<T[]> parsed = _grammar();
 
       parsed.coroutine()->promise().input = input;
 
-      std::vector<T> results;
-
       do {
         parsed.coroutine()->resume();
-        auto value = std::move(parsed.coroutine()->promise().value);
         
         if(tail)
           *tail = parsed.coroutine()->promise().input;
 
+        auto &value = parsed.coroutine()->promise().value;
         if(value)
-          results.push_back(std::move(*value));
+          *out++ = std::move(*value);
         
         if(!value && !parsed.coroutine()->done())
-          return std::nullopt;
+          return std::unexpected(value.error());
 
       } while(!parsed.coroutine()->done());
 
-      return results;
+      return {};
+    }
+
+    template<template<typename ...> class C = std::vector>
+    std::expected<C<T>, failure>
+    run(range input, range *tail = nullptr) {
+      C<T> outs;
+      auto result = run(input, std::back_inserter(outs), tail);
+      if(!result)
+        return std::unexpected(result.error());
+      
+      return outs;
     }
   
   private:
     std::function<parsed<T[]>()> _grammar;
-  };
-
-  //
-  // Main parser type
-  // 
-  template<typename T>
-  struct parser : runner<T> {
-    using runner<T>::runner;
   };
 
   //
@@ -185,7 +247,7 @@ namespace black::parsing
   //
   // Return type of parsing coroutines
   //
-  template<typename T>
+  template<typename T, typename>
   class [[nodiscard("parsed values must be awaited")]] parsed 
   {
   public:
@@ -208,11 +270,11 @@ namespace black::parsing
 
   template<typename T>
   struct suspend_or_return {
-    std::optional<T> _value = std::nullopt;
+    std::expected<T, failure> _value = std::unexpected(failure::error);
 
     suspend_or_return() = default;
     suspend_or_return(T v) : _value{v} { }
-    suspend_or_return(std::optional<T> opt) : _value{opt} { }
+    suspend_or_return(std::expected<T, failure> value) : _value{value} { }
 
     bool await_ready() { return _value.has_value(); }
 
@@ -224,7 +286,7 @@ namespace black::parsing
   struct suspend_if {
     bool _fail;
 
-    suspend_if(bool succeed) : _fail{succeed} { }
+    suspend_if(bool fail) : _fail{fail} { }
 
     bool await_ready() { return !_fail; }
 
@@ -235,7 +297,7 @@ namespace black::parsing
 
   template<typename T>
   struct promise_value_holder {
-    std::optional<T> value = std::nullopt;
+    std::expected<T, failure> value = std::unexpected(failure::error);
 
     promise_value_holder() = default;
 
@@ -244,33 +306,33 @@ namespace black::parsing
     }
   };
 
-  template<typename T>
-  struct promise_value_holder<T[]> {
-    std::optional<T> value = std::nullopt;
-
-    promise_value_holder() = default;
-
-    void return_void() { value = std::nullopt; }
-
-    std::suspend_always yield_value(T v) {
-      this->value = std::move(v);
-      return {};
-    }
-  };
-
   template<>
   struct promise_value_holder<void> {
-    std::optional<std::monostate> value = std::nullopt;
+    std::expected<void, failure> value = std::unexpected(failure::error);
 
     promise_value_holder() = default;
 
     void return_void() {
-      value = std::monostate{};
+      value = {};
     }
   };
 
   template<typename T>
-  struct parsed<T>::promise_type : promise_value_holder<T>
+  struct promise_value_holder<T[]> {
+    std::expected<T, failure> value = std::unexpected(failure::error);
+
+    promise_value_holder() = default;
+
+    void return_void() { value = std::unexpected(failure::error); }
+
+    std::suspend_always yield_value(T v) {
+      value = std::move(v);
+      return {};
+    }
+  };
+
+  template<typename T, typename Dummy>
+  struct parsed<T, Dummy>::promise_type : promise_value_holder<T>
   {
     range input;
 
@@ -328,15 +390,19 @@ namespace black::parsing
 
     template<typename U>
     auto await_transform(optional_t<U> opt) {
+      std::optional<U> out;
       auto saved = input;
-      auto result = opt.inner.run(input, &input);
+      auto result = opt.inner.run(input, out, &input);
 
       if(!result && std::begin(saved) != std::begin(input))
-        return suspend_or_return<decltype(result)>{ };
-      
-      return suspend_or_return<decltype(result)>{ std::move(result) };
-    }
+        return suspend_or_return<std::optional<U>>{ };
 
+      if(result)
+        return suspend_or_return<std::optional<U>>{ std::move(out) };
+
+      return suspend_or_return<std::optional<U>>{ std::optional<U>{} };
+    }
+    
     auto await_transform(optional_t<void> opt) {
       auto saved = input;
       auto result = opt.inner.run(input, &input);
@@ -346,6 +412,24 @@ namespace black::parsing
       
       return suspend_or_return<bool>{ result.has_value() };
     }
+
+    template<typename U>
+    auto await_transform(optional_t<U[]> opt) 
+    {
+      std::vector<U> outs;
+      auto saved = input;
+      auto result = opt.inner.run(input, std::back_inserter(outs), &input);
+
+      using opt_t = std::optional<std::vector<U>>;
+      if(!result && std::begin(saved) != std::begin(input))
+        return suspend_or_return<opt_t>{ };
+
+      if(result)
+        return suspend_or_return<opt_t>{ std::optional{outs} };  
+      
+      return suspend_or_return<opt_t>{ opt_t{} };
+    }
+
 
     template<typename U>
     auto await_transform(try_t<U> opt) {

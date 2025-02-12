@@ -48,6 +48,18 @@ inline parser<std::string> braced() {
     };
 }
 
+TEST_CASE("Very basic") {
+    parser<std::optional<char>> p = optional(peek('c'));
+
+    std::string hello = "d";
+    auto result = 
+        p.run(range{hello.c_str(), hello.c_str() + hello.size()});
+
+    REQUIRE(result.has_value());
+    REQUIRE(!result->has_value());
+    //REQUIRE(result->value() == 'c');
+}
+
 TEST_CASE("Basic operations on parsers") 
 {
     parser<std::string> p = braced();
