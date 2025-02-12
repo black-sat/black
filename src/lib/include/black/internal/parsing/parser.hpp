@@ -337,6 +337,16 @@ namespace black::parsing
       return suspend_or_return<decltype(result)>{ std::move(result) };
     }
 
+    auto await_transform(optional_t<void> opt) {
+      auto saved = input;
+      auto result = opt.inner.run(input, &input);
+
+      if(!result && std::begin(saved) != std::begin(input))
+        return suspend_or_return<bool>{ };
+      
+      return suspend_or_return<bool>{ result.has_value() };
+    }
+
     template<typename U>
     auto await_transform(try_t<U> opt) {
       auto saved = input;

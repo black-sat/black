@@ -79,8 +79,8 @@ namespace black::parsing {
     };
   }
   
-  inline parser<std::optional<std::monostate>> optional(parser<void> p) { 
-    return [=] -> parsed<std::optional<std::monostate>> {
+  inline parser<bool> optional(parser<void> p) { 
+    return [=] -> parsed<bool> {
       co_return co_await optional_t{ p };
     };
   }
