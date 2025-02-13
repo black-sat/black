@@ -35,71 +35,67 @@ namespace black::parsing {
   // Primitives
   //
   template<typename T>
-  parser<T> value(T v) { 
+  parser<T> pass(T v) { 
     return [v = std::move(v)] -> parsed<T> {
       co_return v; 
     };
   }
 
-  inline parser<void> fail() {
+  inline parser<void> reject() {
     return [] -> parsed<void> {
-      co_return co_await fail_t{ };
+      co_await internal::primitives::reject{ };
     };
   }
 
   inline parser<void> eof() { 
     return [] -> parsed<void> {
-      co_return co_await eof_t{ };
+      co_return co_await internal::primitives::eof{ };
     };
   }
 
   inline parser<char> peek() { 
     return [] -> parsed<char> {
-      co_return co_await peek_t{ };
+      co_return co_await internal::primitives::peek{ };
     };
   }
 
   inline parser<void> advance() { 
     return [] -> parsed<void> {
-      co_return co_await advance_t{ };
+      co_return co_await internal::primitives::advance{ };
     };
   }
 
   template<typename T>
-  parser<std::optional<T>> optional(parser<T> p) { 
-    return [=] -> parsed<std::optional<T>> {
-      co_return co_await optional_t{ p };
-    };
-  }
-
-  template<typename T>
-  parser<std::optional<std::vector<T>>> optional(parser<T[]> p) { 
-    return [=] -> parsed<std::optional<std::vector<T>>> {
-      co_return co_await optional_t{ p };
-    };
-  }
-  
-  inline parser<bool> optional(parser<void> p) { 
-    return [=] -> parsed<bool> {
-      co_return co_await optional_t{ p };
-    };
-  }
-
-  template<typename T>
-  parser<T> try_(parser<T> p) { 
+  parser<T> choice(parser<T> p1, parser<T> p2) {
     return [=] -> parsed<T> {
-      co_return co_await try_t{ p };
+      co_return co_await internal::primitives::choice{ p1, p2 };
+    };
+  }
+
+  template<typename T>
+  parser<T[]> choice(parser<T[]> p1, parser<T[]> p2) {
+    return [=] -> parsed<T[]> {
+      for(auto x : co_await internal::primitives::choice{ p1, p2 })
+        co_yield std::move(x);
+    };
+  }
+
+  template<typename T>
+  parser<T> try_(parser<T> p) {
+    return [=] -> parsed<T> {
+      co_return co_await internal::primitives::try_{ p };
     };
   }
 
   //
   // Derived combinators
   //
+  
   parser<char> peek(predicate_for<char> auto pred) {
     return [=] -> parsed<char> {
       auto t = co_await peek();
       if(!pred(t))
-        co_await fail();
+        co_await reject();
       co_return t;
     };
   }
@@ -123,7 +119,7 @@ namespace black::parsing {
     return [=] -> parsed<T> {
       if(auto v = co_await p; f(v))
         co_return std::move(v);
-      co_await fail();
+      co_await reject();
       black_unreachable();
     };
   }
@@ -144,36 +140,14 @@ namespace black::parsing {
     return try_(expect(c));
   }
 
-  template<typename T>
-  parser<T> either(parser<T> p1, parser<T> p2) {
-    return [=] -> parsed<T> {
-      if(auto v = co_await optional(p1); v)
-        co_return *v;
-      
-      co_return co_await p2;
-    };
-  }
-
-  template<typename T>
-  parser<T[]> either(parser<T[]> p1, parser<T[]> p2) {
-    return [=] -> parsed<T[]> {
-      if(auto v = co_await optional(p1); v)
-        for(auto x : *v)
-          co_yield x;
-      
-      for(auto x : co_await p2)
-          co_yield x;
-    };
-  }
-
   template<typename T, parser_of<T> ...Ps>
-  parser<T> either(parser<T> p, Ps ...ps) {
-    return either(p, either(ps...));
+  parser<T> choice(parser<T> p, Ps ...ps) {
+    return choice(p, choice(ps...));
   }
 
   template<typename T>
   parser<T> operator|(parser<T> p1, parser<T> p2) {
-    return either(p1, p2);
+    return choice(p1, p2);
   }
 
   template<typename T1, typename T2>
@@ -200,6 +174,28 @@ namespace black::parsing {
   template<typename T1, typename T2>
   auto operator+(parser<T1> p1, parser<T2> p2) {
     return then(p1, p2);
+  }
+
+  template<typename T, typename ...Args>
+    requires std::is_constructible_v<T, Args...>
+  parser<T> construct(parser<Args> ...args) {
+    return [=] -> parsed<T> {
+      co_return T{ co_await args... };
+    };
+  }
+
+  template<typename T>
+  parser<std::optional<T>> optional(parser<T> p) { 
+    return choice(construct<std::optional<T>>(p), pass(std::optional<T>{}));
+  }
+
+  template<typename T, typename R = std::optional<std::vector<T>>>
+  parser<R> optional(parser<T[]> p) { 
+    return choice(construct<R>(p), pass(R{}));
+  }
+  
+  inline parser<bool> optional(parser<void> p) { 
+    return choice(p + pass(true), pass(false));
   }
 
   template<typename T>
@@ -254,7 +250,7 @@ namespace black::parsing {
   parser<void> operator not(parser<T> p) {
     return [=] -> parsed<T> {
       if(co_await optional(try_(p)))
-        co_await fail();
+        co_await reject();
     };
   }
 

@@ -53,7 +53,7 @@ TEST_CASE("Very basic") {
 
     std::string hello = "d";
     auto result = 
-        p.run(range{hello.c_str(), hello.c_str() + hello.size()});
+        p.parse(range{hello.c_str(), hello.c_str() + hello.size()});
 
     REQUIRE(result.has_value());
     REQUIRE(!result->has_value());
@@ -67,7 +67,7 @@ TEST_CASE("Basic operations on parsers")
     SECTION("Found") {
         std::string hello = "{hello}";
         auto result = 
-            p.run(range{hello.c_str(), hello.c_str() + hello.size()});
+            p.parse(range{hello.c_str(), hello.c_str() + hello.size()});
 
         REQUIRE(result.has_value());
         REQUIRE(*result == "hello");
@@ -76,7 +76,7 @@ TEST_CASE("Basic operations on parsers")
     SECTION("Not found") {
         std::string mandi = "{mandi";
         auto result = 
-            p.run(range{mandi.c_str(), mandi.c_str() + mandi.size()});
+            p.parse(range{mandi.c_str(), mandi.c_str() + mandi.size()});
 
         REQUIRE(!result.has_value());
     }
@@ -100,7 +100,7 @@ TEST_CASE("Optional") {
     SECTION("Ok") {
         std::string hello = "{hello}";
         auto result = 
-            p.run(range{hello.c_str(), hello.c_str() + hello.size()});
+            p.parse(range{hello.c_str(), hello.c_str() + hello.size()});
 
         REQUIRE(result == "Ok!");
     }
@@ -108,7 +108,7 @@ TEST_CASE("Optional") {
     SECTION("Nope") {
         std::string mandi = "[mandi]";
         auto result = 
-            p.run(range{mandi.c_str(), mandi.c_str() + mandi.size()});
+            p.parse(range{mandi.c_str(), mandi.c_str() + mandi.size()});
 
         REQUIRE(result == "Nope!");
     }
@@ -124,7 +124,7 @@ TEST_CASE("Lookaehad") {
         range input{hello.c_str(), hello.c_str() + hello.size()};
         range saved = input;
 
-        auto result = p.run(input, &input);
+        auto result = p.parse(input, &input);
 
         REQUIRE(!result.has_value());
         REQUIRE(std::begin(input) == std::begin(saved));
@@ -137,7 +137,7 @@ TEST_CASE("Lookaehad") {
         range input{hello.c_str(), hello.c_str() + hello.size()};
         range saved = input;
 
-        auto result = p.run(input, &input);
+        auto result = p.parse(input, &input);
 
         REQUIRE(!result.has_value());
         REQUIRE(std::begin(input) == std::end(saved));
@@ -150,7 +150,7 @@ TEST_CASE("Lookaehad") {
         range input{hello.c_str(), hello.c_str() + hello.size()};
         range saved = input;
 
-        auto result = p.run(input, &input);
+        auto result = p.parse(input, &input);
 
         REQUIRE(!result.has_value());
         REQUIRE(std::begin(input) == std::begin(saved));
@@ -168,10 +168,10 @@ TEST_CASE("either") {
 
     parser<char> p = letters();
 
-    REQUIRE(p.run(input, &input).has_value());
-    REQUIRE(p.run(input, &input).has_value());
-    REQUIRE(p.run(input, &input).has_value());
-    REQUIRE(!p.run(input, &input).has_value());
+    REQUIRE(p.parse(input, &input).has_value());
+    REQUIRE(p.parse(input, &input).has_value());
+    REQUIRE(p.parse(input, &input).has_value());
+    REQUIRE(!p.parse(input, &input).has_value());
 
 }
 
@@ -182,7 +182,7 @@ TEST_CASE("yielding parsers") {
 
     parser<char[]> p = some(chr(&isalpha));
 
-    auto result = p.run(input, &input);
+    auto result = p.parse(input, &input);
 
     REQUIRE(result.has_value());
     REQUIRE(result == std::vector{'a', 'b', 'c', 'd', 'e'});
@@ -196,7 +196,7 @@ TEST_CASE("many with empty input") {
 
     parser<size_t[]> p = many(integer());
 
-    auto result = p.run(input, &input);
+    auto result = p.parse(input, &input);
 
     REQUIRE(result.has_value());
     REQUIRE(result->empty());
@@ -209,7 +209,7 @@ TEST_CASE("skip many") {
     std::string hello = "{hello}";
     range input{hello.c_str(), hello.c_str() + hello.size()};
 
-    auto result = p.run(input);
+    auto result = p.parse(input);
 
     REQUIRE(result.has_value());
 
@@ -221,7 +221,7 @@ TEST_CASE("pattern string") {
 
     parser<std::string> p = string("answer");
     
-    auto result = p.run(input, &input);
+    auto result = p.parse(input, &input);
 
     REQUIRE(result.has_value());
     REQUIRE(*result == "answer");
@@ -236,7 +236,7 @@ TEST_CASE("Operations on sequences") {
     
     SECTION("Transform") {
         parser<int[]> p = transform(yield(v), [](auto i) { return i * 2; });
-        auto result = p.run(input);
+        auto result = p.parse(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result == std::vector{2, 4, 6, 8});
@@ -244,7 +244,7 @@ TEST_CASE("Operations on sequences") {
     
     SECTION("Filter") {
         parser<int[]> p = filter(yield(v), [](auto i) { return i % 2 == 0; });
-        auto result = p.run(input);
+        auto result = p.parse(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result == std::vector{2, 4});
@@ -252,7 +252,7 @@ TEST_CASE("Operations on sequences") {
     
     SECTION("Take") {
         parser<int[]> p = take(yield(v), 2);
-        auto result = p.run(input);
+        auto result = p.parse(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result == std::vector{1, 2});
@@ -260,7 +260,7 @@ TEST_CASE("Operations on sequences") {
     
     SECTION("Take while") {
         parser<int[]> p = take_while(yield(v), [](auto i) { return i <= 2; });
-        auto result = p.run(input);
+        auto result = p.parse(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result == std::vector{1, 2});
@@ -268,7 +268,7 @@ TEST_CASE("Operations on sequences") {
     
     SECTION("Drop") {
         parser<int[]> p = drop(yield(v), 2);
-        auto result = p.run(input);
+        auto result = p.parse(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result == std::vector{3, 4});
@@ -276,7 +276,7 @@ TEST_CASE("Operations on sequences") {
     
     SECTION("Drop while") {
         parser<int[]> p = drop_while(yield(v), [](auto i) { return i <= 2; });
-        auto result = p.run(input);
+        auto result = p.parse(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result == std::vector{3, 4});
@@ -288,7 +288,7 @@ TEST_CASE("Operations on sequences") {
         std::vector<int> v3 = { 4 };
 
         parser<int[]> p = concat(yield(v1), yield(v2), yield(v3));
-        auto result = p.run(input);
+        auto result = p.parse(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result == v);
@@ -299,15 +299,15 @@ TEST_CASE("Operations on sequences") {
         std::vector<int> v2 = { 3, 4 };
 
         parser<std::tuple<int, int>[]> p = zip(yield(v1), yield(v2));
-        auto result = p.run(input);
+        auto result = p.parse(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result == std::vector{std::tuple{1, 3}, std::tuple{2, 4}});
     }
     
     SECTION("Index") {
-        parser<int> p = index<0>(value(std::tuple{1, 2}));
-        auto result = p.run(input);
+        parser<int> p = index<0>(pass(std::tuple{1, 2}));
+        auto result = p.parse(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result == 1);
@@ -317,7 +317,7 @@ TEST_CASE("Operations on sequences") {
         std::vector<std::tuple<int, int>> v1 = { {1, 2}, {3, 4} };
 
         parser<int[]> p = index<0>(yield(v1));
-        auto result = p.run(input);
+        auto result = p.parse(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result == std::vector{1, 3});
@@ -329,7 +329,7 @@ TEST_CASE("Operations on sequences") {
         std::string s = "1, 2 , 3, 4";
         input = range{s.c_str(), s.c_str() + s.size()};
 
-        auto result = p.run(input);
+        auto result = p.parse(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result == std::vector{1uz, 2uz, 3uz, 4uz});
@@ -340,7 +340,7 @@ TEST_CASE("Operations on sequences") {
         input = range{s.c_str(), s.c_str() + s.size()};
 
         parser<size_t[]> p = sep_many(token(integer()), token(chr(',')));
-        auto result = p.run(input);
+        auto result = p.parse(input);
 
         REQUIRE(result.has_value());
         REQUIRE(result->empty());
@@ -355,7 +355,7 @@ TEST_CASE("integers, strings, identifiers") {
     parser<size_t> p = 
         identifier("answer") + chr(':') + token(integer());
     
-    auto number = p.run(input, &input);
+    auto number = p.parse(input, &input);
 
     REQUIRE(number.has_value());
     REQUIRE(*number == 42);

@@ -31,6 +31,12 @@
 namespace black::support::internal {
 
   //
+  // Helper for std::visit()
+  //
+  template<class... Ts>
+  struct overload : Ts... { using Ts::operator()...; };
+
+  //
   // unpacking() combinator
   //
   template<typename F, typename Arg, size_t ...I>
@@ -386,6 +392,7 @@ namespace black::support::internal {
 }
 
 namespace black::support {
+  using internal::overload;
   using internal::unpacking;
   using internal::dispatch;
   using internal::dispatching;

@@ -57,6 +57,8 @@ namespace black::support
         explicit operator bool() const { return (bool)_handle; }
 
         std::coroutine_handle<P> *operator->() { return &_handle; }
+
+        operator std::coroutine_handle<P>() const { return _handle; }
       };
 
       void operator()(pointer p) { p._handle.destroy(); }
