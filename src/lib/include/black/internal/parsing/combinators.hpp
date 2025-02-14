@@ -97,18 +97,6 @@ namespace black::parsing {
     return peek([=](char c) { return c == v; });
   }
 
-  inline parser<char> chr() {
-    return [] -> parsed<char> {
-      std::println("Peeking");
-      char c = co_await peek();
-      std::println("Peeked: '{}'", c);
-      std::println("Advancing");
-      co_await advance();
-      
-      std::println("Advanced");
-      co_return c;
-    };
-  }
 
   template<typename T, predicate_for<T> F>
   parser<T> require(parser<T> p, F f) {
@@ -120,20 +108,22 @@ namespace black::parsing {
     };
   }
 
-  parser<char> expect(predicate_for<char> auto pred) {
-    return try_(require(chr(), pred));
-  }
-
-  inline parser<char> expect(char v) { 
-    return expect([=](char c) { return c == v; });
-  }
-
   parser<char> chr(predicate_for<char> auto pred) {
-    return try_(expect(pred));
+    return [=] -> parsed<char> {
+      char c = co_await require(peek(), pred);
+      
+      co_await advance();
+      
+      co_return c;
+    };
+  }
+
+  inline parser<char> chr() {
+    return chr([](char){ return true; });
   }
 
   inline parser<char> chr(char c) {
-    return try_(expect(c));
+    return chr([=](char v) { return c == v; });
   }
 
   template<typename T, parser_of<T> ...Ps>
@@ -153,12 +143,21 @@ namespace black::parsing {
       co_return co_await p2;
     };
   }
-
+  
   template<typename T>
   parser<void> then(parser<T> p1, parser<void> p2) {
     return [=] -> parsed<void> {
       co_await p1;
       co_await p2;
+    };
+  }
+
+  template<typename T1, typename T2>
+  parser<T2[]> then(parser<T1> p1, parser<T2[]> p2) {
+    return [=] -> parsed<T2[]> {
+      co_await p1;
+      for(auto v : co_await p2)
+        co_yield std::move(v);
     };
   }
 

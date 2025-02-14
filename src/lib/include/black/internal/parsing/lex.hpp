@@ -30,16 +30,14 @@ namespace black::parsing {
 
   inline parser<size_t> integer() {
     return [] -> parsed<size_t> {
-      std::println("integer starts, x = 0");
       size_t x = 0;
       int p = 1;
+      
       for(char c : co_await reversed(some(chr(&isdigit)))) {
         x += (c - '0') * p;
-        p *= 10; 
-        std::println("digit: '{}' ({}), x = {}", c, (int)c, x);
+        p *= 10;
       }
       
-      std::println("Return: {}", x);
       co_return x;
     };
   }
@@ -56,7 +54,7 @@ namespace black::parsing {
 
   template<typename T>
   parser<T> token(parser<T> p) {
-    return string(&isspace) + p;
+    return many(chr(&isspace)) + p;
   }
 
   inline bool is_id_start(char c) {

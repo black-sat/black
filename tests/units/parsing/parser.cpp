@@ -41,7 +41,7 @@ inline parser<std::string> braced() {
             co_await advance();
         }
 
-        co_await expect('}');
+        co_await chr('}');
 
         co_return result;
     };
@@ -362,29 +362,40 @@ TEST_CASE("integers, strings, identifiers") {
 }
 
 TEST_CASE("resumability") {
-    parser<size_t> p = [] -> parsed<size_t> {
-        co_await identifier("answer");
-        co_await chr(':');
-        co_return co_await integer();
-    };
+    parser<size_t> p = 
+        identifier("answer") + chr(':') + token(integer());
     context<size_t> c = p.start();
     
     std::string in1 = "answer:";
     range r1{in1.c_str(), in1.c_str() + in1.size()};
 
-    std::string in2 = "42";
+    std::string in2 = " 42";
     range r2{in2.c_str(), in2.c_str() + in2.size()};
     
-    auto number = c.parse(r1, &r1);
+    SECTION("Lazy") {
+        auto number = c.parse(r1, &r1, greed::lazy);
 
-    REQUIRE(!number.has_value());
-    REQUIRE(number.error() == failure::eof);
-    REQUIRE(!r1);
+        REQUIRE(!number.has_value());
+        REQUIRE(number.error() == failure::eof);
+        REQUIRE(!r1);
 
-    std::println("Second parse");
-    number = c.parse(r2, &r2);
+        number = c.parse(r2, &r2);
 
-    REQUIRE(number.has_value());
-    REQUIRE(*number == 42);
-    REQUIRE(!r2);
+        REQUIRE(!number.has_value());
+    }
+    
+    SECTION("Greedy") {
+
+        auto number = c.parse(r1, &r1, greed::greedy);
+
+        REQUIRE(!number.has_value());
+        REQUIRE(number.error() == failure::eof);
+        REQUIRE(!r1);
+
+        number = c.parse(r2, &r2);
+
+        REQUIRE(number.has_value());
+        REQUIRE(number == 42);
+        REQUIRE(!r2);
+    }
 }
