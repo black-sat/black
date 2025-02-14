@@ -33,9 +33,8 @@ using namespace black::parsing;
 inline parser<std::string> braced() {
     return [] -> parsed<std::string> {
         co_await chr('{');
-
+        
         std::string result;
-
         std::optional<char> c;
         while((c = co_await optional(peek(&isalpha)))) {
             result.push_back(*c);
@@ -49,15 +48,15 @@ inline parser<std::string> braced() {
 }
 
 TEST_CASE("Very basic") {
-    parser<std::optional<char>> p = optional(peek('c'));
+    parser<char> p = choice(peek('c'), pass('0'));
 
     std::string hello = "d";
     auto result = 
         p.parse(range{hello.c_str(), hello.c_str() + hello.size()});
 
     REQUIRE(result.has_value());
-    REQUIRE(!result->has_value());
-    //REQUIRE(result->value() == 'c');
+    REQUIRE(result == '0');
+    //REQUIRE(!result->has_value());
 }
 
 TEST_CASE("Basic operations on parsers") 
@@ -360,4 +359,32 @@ TEST_CASE("integers, strings, identifiers") {
     REQUIRE(number.has_value());
     REQUIRE(*number == 42);
     REQUIRE(input.empty());
+}
+
+TEST_CASE("resumability") {
+    parser<size_t> p = [] -> parsed<size_t> {
+        co_await identifier("answer");
+        co_await chr(':');
+        co_return co_await integer();
+    };
+    context<size_t> c = p.start();
+    
+    std::string in1 = "answer:";
+    range r1{in1.c_str(), in1.c_str() + in1.size()};
+
+    std::string in2 = "42";
+    range r2{in2.c_str(), in2.c_str() + in2.size()};
+    
+    auto number = c.parse(r1, &r1);
+
+    REQUIRE(!number.has_value());
+    REQUIRE(number.error() == failure::eof);
+    REQUIRE(!r1);
+
+    std::println("Second parse");
+    number = c.parse(r2, &r2);
+
+    REQUIRE(number.has_value());
+    REQUIRE(*number == 42);
+    REQUIRE(!r2);
 }

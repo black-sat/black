@@ -47,12 +47,6 @@ namespace black::parsing {
     };
   }
 
-  inline parser<void> eof() { 
-    return [] -> parsed<void> {
-      co_return co_await internal::primitives::eof{ };
-    };
-  }
-
   inline parser<char> peek() { 
     return [] -> parsed<char> {
       co_return co_await internal::primitives::peek{ };
@@ -90,7 +84,6 @@ namespace black::parsing {
   //
   // Derived combinators
   //
-  
   parser<char> peek(predicate_for<char> auto pred) {
     return [=] -> parsed<char> {
       auto t = co_await peek();
@@ -106,10 +99,13 @@ namespace black::parsing {
 
   inline parser<char> chr() {
     return [] -> parsed<char> {
+      std::println("Peeking");
       char c = co_await peek();
-      
+      std::println("Peeked: '{}'", c);
+      std::println("Advancing");
       co_await advance();
       
+      std::println("Advanced");
       co_return c;
     };
   }
@@ -197,6 +193,12 @@ namespace black::parsing {
   inline parser<bool> optional(parser<void> p) { 
     return choice(p + pass(true), pass(false));
   }
+
+  // inline parser<void> eof() { 
+  //   return [] -> parsed<void> {
+  //     co_return co_await internal::primitives::eof{ };
+  //   };
+  // }
 
   template<typename T>
   parser<T[]> many(parser<T> p) {

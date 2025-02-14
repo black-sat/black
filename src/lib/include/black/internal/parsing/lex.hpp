@@ -30,13 +30,16 @@ namespace black::parsing {
 
   inline parser<size_t> integer() {
     return [] -> parsed<size_t> {
+      std::println("integer starts, x = 0");
       size_t x = 0;
       int p = 1;
       for(char c : co_await reversed(some(chr(&isdigit)))) {
         x += (c - '0') * p;
         p *= 10; 
+        std::println("digit: '{}' ({}), x = {}", c, (int)c, x);
       }
-
+      
+      std::println("Return: {}", x);
       co_return x;
     };
   }

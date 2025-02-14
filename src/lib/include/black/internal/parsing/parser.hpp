@@ -28,11 +28,13 @@
 
 #include <coroutine>
 #include <ranges>
+#include <exception>
+#include <print>
 
 namespace black::parsing::internal
 {
   //
-  // Misc types and traits
+  // Misc types and utilities
   //
   template<typename T>
   class parser;
@@ -60,6 +62,11 @@ namespace black::parsing::internal
   template<typename T>
   using grammar = std::function<parsed<T>()>;
 
+  template<typename T, typename ...Ts>
+  bool is(std::variant<Ts...> const& v) {
+    return std::holds_alternative<T>(v);
+  }
+
   //
   // Reasons for parsing failures
   //
@@ -78,48 +85,26 @@ namespace black::parsing::internal
   public:
     context() = delete;
     context(grammar<T> g) 
-      : _grammar{std::make_unique<grammar<T>>(std::move(g))}, 
-        _parsed{(*_grammar)()} { }
+      : _grammar{std::make_shared<grammar<T>>(std::move(g))}, 
+        _parsed{std::make_shared<parsed<T>>((*_grammar)())} { }
 
-    context(context const&) = delete;
+    context(context const&) = default;
     context(context &&) = default;
     
-    context &operator=(context const&) = delete;
+    context &operator=(context const&) = default;
     context &operator=(context &&) = default;
 
-    std::expected<T, failure> parse(range input, range *tail = nullptr);
-
-  private:
-    std::unique_ptr<grammar<T>> _grammar;
-    parsed<T> _parsed;
-  };
-  
-  //
-  // Specialization of parsing context for sequential parsers
-  //
-  template<typename T>
-  class context<T[]>
-  {
-  public:
-    context() = delete;
-    context(grammar<T[]> g) 
-      : _grammar{std::make_unique<grammar<T[]>>(std::move(g))}, 
-        _parsed{(*_grammar)()} { }
-
-    context(context const&) = delete;
-    context(context &&) = default;
-    
-    context &operator=(context const&) = delete;
-    context &operator=(context &&) = default;
-
-    std::expected<std::vector<T>, failure>
+    std::expected<typename parser<T>::return_type, failure> 
     parse(range input, range *tail = nullptr);
 
-  private:
-    std::unique_ptr<grammar<T[]>> _grammar;
-    parsed<T[]> _parsed;
-  };
+    auto operator()(range input, range *tail = nullptr) {
+      return parse(input, tail);
+    }
 
+  private:
+    std::shared_ptr<grammar<T>> _grammar;
+    std::shared_ptr<parsed<T>> _parsed;
+  };
     
   //
   // Coroutine type
@@ -154,7 +139,7 @@ namespace black::parsing::internal
   class parser
   {
   public:
-    using output_type =
+    using return_type =
       std::conditional_t<
         std::is_unbounded_array_v<T>,
         std::vector<std::remove_extent_t<T>>,
@@ -173,25 +158,23 @@ namespace black::parsing::internal
 
     context<T> start() { return { _grammar }; }
 
-    std::expected<output_type, failure> 
+    std::expected<return_type, failure> 
     parse(range input, range *tail = nullptr) {
       return start().parse(input, tail);
     }
 
-    template<typename U>
-      requires (!std::is_void_v<T>)
-    operator parser<U>() const {
-      return [p = *this] -> parsed<U> {
-        co_return static_cast<U>(co_await p);
-      };
+    std::expected<return_type, failure> 
+    operator()(range input, range *tail = nullptr) {
+      return parse(input, tail);
     }
 
-    operator parser<std::any>() const requires std::is_void_v<T> {
-      return [p = *this] -> parsed<std::any> {
-        co_await p;
-        co_return std::any{};
-      };
-    }
+    // template<typename U>
+    //   requires (!std::is_void_v<T>)
+    // operator parser<U>() const {
+    //   return [p = *this] -> parsed<U> {
+    //     co_return static_cast<U>(co_await p);
+    //   };
+    // }
 
   private:
     grammar<T> _grammar;
@@ -199,7 +182,6 @@ namespace black::parsing::internal
 
   namespace primitives {
     struct reject { };
-    struct eof { };
     struct peek { };
     struct advance { };
 
@@ -217,40 +199,42 @@ namespace black::parsing::internal
 
   namespace states {
     struct reject { };
-    struct eof { };
-    struct peek { };
-    struct advance { };
-
-    struct choice {
-      context<std::any> first;
-      parser<std::any> second;
-    };
-
-    struct try_ {
-      context<std::any> tried;
-    };
     
+    struct eof { };
+
     struct ready { 
       std::any result;
     };
-    
-    struct awaiting { 
-      context<std::any> awaited;
+
+    struct awaiting {
+      template<typename F>
+      awaiting(F f) 
+        : resumer{ [=](auto ...args) mutable {
+            return f(args...).transform(
+              support::overload {
+                []() { return std::any{ }; },
+                [](auto v) { return std::any(std::move(v)); }
+              }
+            );
+          }} { }
+      
+      std::function<std::expected<std::any, failure>(range, range *)> resumer;
     };
 
     struct completed { };
 
+    struct unwinding { 
+      std::exception_ptr exception;
+    };
+    
     using state = 
       std::variant<
         reject,
         eof,
-        peek,
-        advance,
-        choice,
-        try_,
         ready,
         awaiting,
-        completed
+        completed,
+        unwinding
       >;
   }
 
@@ -268,50 +252,17 @@ namespace black::parsing::internal
       );
     }
 
-    states::state step(states::reject) { return states::reject{}; }
+    states::state step(states::unwinding u) { return u; }
+
+    states::state step(states::reject) {
+      return states::reject{}; 
+    }
 
     states::state step(states::eof) { 
       if(!input)
         return states::eof{};
       
-      return states::ready{};
-    }
-
-    states::state step(states::peek) {
-      if(!input)
-        return states::peek{};
-      
-      return states::ready{ *std::begin(input) };
-    }
-
-    states::state step(states::advance) {
-      if(!input)
-        return states::advance{};
-      
-      input.advance(1);
-      return states::ready{};
-    }
-
-    states::state step(states::choice ch) {
-      range saved = input;
-      auto result = ch.first.parse(input, &input);
-      if(result)
-        return states::ready{ *result };
-      
-      if(std::begin(saved) != std::begin(input))
-          return states::reject{};
-
-      return states::awaiting{ ch.second.start() };
-    }
-
-    states::state step(states::try_ t) {
-      range saved = input;
-      auto result = t.tried.parse(input, &input);
-      if(result)
-        return states::ready{ *result };
-
-      input = saved;
-      return states::reject{ };
+      return states::ready{ };
     }
 
     states::state step(states::ready r) { 
@@ -319,75 +270,128 @@ namespace black::parsing::internal
     }
 
     states::state step(states::awaiting a) {
-      auto result = a.awaited.parse(input, &input);
+      auto result = a.resumer(input, &input);
       if(result)
         return states::ready{ *result };
       
       if(result.error() == failure::reject)
-          return states::reject{};
+        return states::reject{};
       
       return std::move(a);
     }
 
-    states::state step(states::completed) { return states::completed{}; }
+    states::state step(states::completed) { 
+      return states::completed{};
+    }
   };
 
-  template<typename T, typename U>
-  struct awaiter 
+  template<typename T>
+  struct return_or_suspend 
   {
-    parsed<T>::promise_type *promise;
+    using value_type = typename parser<T>::return_type;
+    std::optional<value_type> value;
 
-    bool await_ready() { 
-      promise->machine.step();
-      return std::holds_alternative<states::ready>(promise->machine.state);
-    }
+    return_or_suspend() = default;
+    return_or_suspend(value_type v) : value{ v } { }
+
+    bool await_ready() { return value.has_value(); }
 
     void await_suspend(std::coroutine_handle<>) { }
     
-    typename parser<U>::output_type await_resume() {
-      if constexpr (!std::is_void_v<U>)
-        return std::move(
-          std::any_cast<typename parser<U>::output_type>(
-            std::get<states::ready>(promise->machine.state).result
-          )
-        );
+    value_type await_resume() { return std::move(*value); }
+  };
+
+  struct suspend_if {
+    bool fail;
+
+    suspend_if(bool f) : fail{ f } { }
+
+    bool await_ready() { return !fail; }
+
+    void await_suspend(std::coroutine_handle<>) { }
+    
+    void await_resume() {  }
+  };
+
+  struct peek_or_suspend {
+    machine *machine;
+
+    bool await_ready() { return (bool)machine->input; }
+
+    void await_suspend(std::coroutine_handle<>) { }
+    
+    char await_resume() { return *std::begin(machine->input); }
+  };
+
+  struct advance_or_suspend {
+    machine *machine;
+
+    bool await_ready() { return (bool)machine->input; }
+
+    void await_suspend(std::coroutine_handle<>) { }
+    
+    void await_resume() { /* machine->input.advance(1); */ }
+  };
+
+  template<typename T>
+  struct awaiter {
+    machine *machine;
+
+    bool await_ready() { return is<states::ready>(machine->state); }
+
+    void await_suspend(std::coroutine_handle<>) { }
+    
+    auto await_resume() { 
+      if constexpr(!std::is_void_v<T>) {
+        std::any value = 
+          std::move(std::get<states::ready>(machine->state).result);
+
+        using R = typename parser<T>::return_type;
+        return std::any_cast<R>(value);
+      }
     }
   };
 
   template<typename T, typename = void>
   struct promise_base {
-    std::optional<T> returned;
+    std::optional<T> _result;
+
+    T result() { return std::move(*_result); }
+
+    auto self() { return static_cast<parsed<T>::promise_type *>(this); }
 
     void return_value(T v) {
-      returned = std::move(v);
+      _result = std::move(v);
 
-      auto promise = static_cast<parsed<T>::promise_type *>(this);
-      promise->machine.state = states::completed{ };
+      self()->machine.state = states::completed{ };
     }
   };
 
   template<typename Dummy>
   struct promise_base<void, Dummy> {
+    auto self() { return static_cast<parsed<void>::promise_type *>(this); }
+
     void return_void() {
-      auto promise = static_cast<parsed<void, Dummy>::promise_type *>(this);
-      promise->machine.state = states::completed{ };
+      self()->machine.state = states::completed{ };
     }
   };
   
   template<typename T>
   struct promise_base<T[]> {
-    std::vector<T> yields;
+    std::vector<T> _result;
+
+    std::vector<T> result() { return std::move(_result); }
+
+    auto self() { return static_cast<parsed<T[]>::promise_type *>(this); }
 
     void return_void() {
-      auto promise = static_cast<parsed<T[]>::promise_type *>(this);
-      promise->machine.state = states::completed{ };
+      self()->machine.state = states::completed{ };
     }
 
     std::suspend_always yield_value(T v) {
-      yields.push_back(std::move(v));
+      _result.push_back(std::move(v));
       
-      auto promise = static_cast<parsed<T[]>::promise_type *>(this);
-      promise->machine.state = states::ready{ };
+      self()->machine.state = states::ready{ };
 
       return {};
     }
@@ -406,116 +410,120 @@ namespace black::parsing::internal
         parsed<T>{ std::coroutine_handle<promise_type>::from_promise(*this) }; 
     }
 
-    auto initial_suspend() { return std::suspend_always{}; }
+    std::suspend_always initial_suspend() { return {}; }
     
-    void unhandled_exception() {}
+    void unhandled_exception() {
+      machine.state = states::unwinding{ std::current_exception() };
+    }
     
-    auto final_suspend() noexcept { return std::suspend_always{}; }
+    std::suspend_always final_suspend() noexcept { return {}; }
 
     template<typename U>
-    auto await_transform(parser<U> p) {
-      machine.state = states::awaiting{ parser<std::any>(p).start() };
-      return awaiter<T, U>{ this };
+    awaiter<U> await_transform(parser<U> p) {
+      machine.state = states::awaiting{ p.start() };
+      machine.step();
+      return { &machine };
     }
 
-    auto await_transform(primitives::reject) {
-      machine.state = states::reject{ };
-      return std::suspend_always();
+    std::suspend_always await_transform(primitives::reject) {
+      machine.state = states::reject{};
+      return {};
     }
 
-    auto await_transform(primitives::eof) {
-      machine.state = states::eof{ };
-      return awaiter<T, void>{ this };
+    peek_or_suspend await_transform(primitives::peek) {
+      machine.state = states::eof{};
+      machine.step();
+      return { &machine };
     }
 
-    auto await_transform(primitives::peek) {
-      machine.state = states::peek{ };
-      return awaiter<T, char>{ this };
-    }
+    suspend_if await_transform(primitives::advance) {
+      if(machine.input) {
+        machine.input.advance(1);
+        return false;
+      }
 
-    auto await_transform(primitives::advance) {
-      machine.state = states::advance{ };
-      return awaiter<T, void>{ this };
-    }
-
-    template<typename U>
-    auto await_transform(primitives::choice<U> ch) {
-      machine.state = states::choice{ 
-        parser<std::any>(ch.first).start(), 
-        parser<std::any>(ch.second)
-      };
-      return awaiter<T, U>{ this };
+      machine.state = states::eof{};
+      return true;
     }
 
     template<typename U>
-    auto await_transform(primitives::try_<U> ch) {
-      machine.state = states::try_{ parser<std::any>(ch.tried).start() };
-      return awaiter<T, U>{ this };
+    auto await_transform(primitives::choice<U> ch) 
+    {
+      range saved = machine.input;
+      machine.state = states::awaiting{ ch.first.start() };
+      machine.step();
+      
+      if(is<states::ready>(machine.state))
+        return awaiter<U>{ &machine };
+      
+      if(std::begin(saved) == std::begin(machine.input)) {
+        machine.state = states::awaiting{ ch.second.start() };
+        machine.step();
+      }
+      return awaiter<U>{ &machine };
+    }
+
+    template<typename U>
+    return_or_suspend<U> await_transform(primitives::try_<U> t) {
+      range saved = machine.input;
+      machine.state = states::awaiting{ t.tried.start() };
+      machine.step();
+
+      using R = typename parser<U>::return_type;
+      if(is<states::ready>(machine.state))
+        return std::any_cast<R>(std::get<states::ready>(machine.state).result);
+
+      machine.input = saved;
+
+      return { };
     }
 
   };
 
   template<typename T>
-  std::expected<T, failure> 
+  std::expected<typename parser<T>::return_type, failure> 
   context<T>::parse(range input, range *tail) {
-    auto *promise = &_parsed.coroutine().promise();
-    auto *machine = &promise->machine;
-    machine->input = input;
-    machine->step();
-    
-    if(std::holds_alternative<states::ready>(machine->state))
-      _parsed.coroutine().resume();
-
-    if(tail)
-        *tail = machine->input;
-
-    if(std::holds_alternative<states::reject>(machine->state))
-      return std::unexpected(failure::reject);
-
-    if(std::holds_alternative<states::completed>(machine->state)) {
-      if constexpr(std::is_void_v<T>)
-        return { };
-      else
-        return { *promise->returned };
-    }
-
-    return std::unexpected(failure::eof);
-  }
-
-  template<typename T>
-  std::expected<std::vector<T>, failure> 
-  context<T[]>::parse(range input, range *tail) {
-    auto *promise = &_parsed.coroutine().promise();
+    auto coroutine = _parsed->coroutine();
+    auto *promise = &coroutine.promise();
     auto *machine = &promise->machine;
     
     machine->input = input;
-
-    do {
+    do{ 
       machine->step();
-
-      if(std::holds_alternative<states::ready>(machine->state))
-        _parsed.coroutine().resume();
+      
+      if(is<states::ready>(machine->state))
+        coroutine.resume();
 
       if(tail)
-        *tail = machine->input;
+          *tail = machine->input;
       
-      if(std::holds_alternative<states::reject>(machine->state))
+      if(is<states::reject>(machine->state))
         return std::unexpected(failure::reject);
       
-      if(!std::holds_alternative<states::completed>(machine->state))
-        continue;
+      if(is<states::eof>(machine->state))
+        return std::unexpected(failure::eof);
+      
+      if(is<states::awaiting>(machine->state))
+        return std::unexpected(failure::eof);
 
-      return std::unexpected(failure::eof);
-    
-    } while(true);
+      if(is<states::unwinding>(machine->state))
+        std::rethrow_exception(
+          std::get<states::unwinding>(machine->state).exception
+        );
 
-    return promise->yields;
+    } while(!is<states::completed>(machine->state));
+
+    if constexpr(std::is_void_v<T>)
+      return { };
+    else 
+      return { promise->result() };
   }
 
 }
 
 namespace black::parsing {
   using internal::range;
+  using internal::failure;
   using internal::parser;
   using internal::parsed;
   using internal::context;
