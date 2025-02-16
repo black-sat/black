@@ -52,7 +52,7 @@ TEST_CASE("Very basic") {
 
     std::string hello = "d";
     auto result = 
-        p.parse(range{hello.c_str(), hello.c_str() + hello.size()});
+        p.parse(subrange{hello.c_str(), hello.c_str() + hello.size()});
 
     REQUIRE(result.has_value());
     REQUIRE(result == '0');
@@ -66,7 +66,7 @@ TEST_CASE("Basic operations on parsers")
     SECTION("Found") {
         std::string hello = "{hello}";
         auto result = 
-            p.parse(range{hello.c_str(), hello.c_str() + hello.size()});
+            p.parse(subrange{hello.c_str(), hello.c_str() + hello.size()});
 
         REQUIRE(result.has_value());
         REQUIRE(*result == "hello");
@@ -75,7 +75,7 @@ TEST_CASE("Basic operations on parsers")
     SECTION("Not found") {
         std::string mandi = "{mandi";
         auto result = 
-            p.parse(range{mandi.c_str(), mandi.c_str() + mandi.size()});
+            p.parse(subrange{mandi.c_str(), mandi.c_str() + mandi.size()});
 
         REQUIRE(!result.has_value());
     }
@@ -98,16 +98,14 @@ TEST_CASE("Optional") {
 
     SECTION("Ok") {
         std::string hello = "{hello}";
-        auto result = 
-            p.parse(range{hello.c_str(), hello.c_str() + hello.size()});
+        auto result = p.parse(hello);
 
         REQUIRE(result == "Ok!");
     }
 
     SECTION("Nope") {
         std::string mandi = "[mandi]";
-        auto result = 
-            p.parse(range{mandi.c_str(), mandi.c_str() + mandi.size()});
+        auto result = p.parse(mandi);
 
         REQUIRE(result == "Nope!");
     }
@@ -120,39 +118,39 @@ TEST_CASE("Lookaehad") {
         parser<std::string> p = braced();
 
         std::string hello = "[hello]";
-        range input{hello.c_str(), hello.c_str() + hello.size()};
-        range saved = input;
+        subrange input{hello.c_str(), hello.c_str() + hello.size()};
 
-        auto result = p.parse(input, &input);
+        const char *tail = nullptr;
+        auto result = p.parse(input, &tail);
 
         REQUIRE(!result.has_value());
-        REQUIRE(std::begin(input) == std::begin(saved));
+        REQUIRE(tail == std::begin(input));
     }
     
     SECTION("Error") {
         parser<std::string> p = braced();
 
         std::string hello = "{hello";
-        range input{hello.c_str(), hello.c_str() + hello.size()};
-        range saved = input;
+        subrange input{hello.c_str(), hello.c_str() + hello.size()};
 
-        auto result = p.parse(input, &input);
+        const char *tail = nullptr;
+        auto result = p.parse(input, &tail);
 
         REQUIRE(!result.has_value());
-        REQUIRE(std::begin(input) == std::end(saved));
+        REQUIRE(tail == std::end(input));
     }
 
     SECTION("Lookahead") {
         parser<std::string> p = try_(braced());
 
         std::string hello = "{hello";
-        range input{hello.c_str(), hello.c_str() + hello.size()};
-        range saved = input;
+        subrange input{hello.c_str(), hello.c_str() + hello.size()};
 
-        auto result = p.parse(input, &input);
+        const char *tail = nullptr;
+        auto result = p.parse(input, &tail);
 
         REQUIRE(!result.has_value());
-        REQUIRE(std::begin(input) == std::begin(saved));
+        REQUIRE(tail == std::begin(input));
     }
 }
 
@@ -163,39 +161,42 @@ inline parser<char> letters() {
 TEST_CASE("either") {
 
     std::string abcde = "abcde";
-    range input{abcde.c_str(), abcde.c_str() + abcde.size()};
+    subrange input{abcde.c_str(), abcde.c_str() + abcde.size()};
 
     parser<char> p = letters();
 
-    REQUIRE(p.parse(input, &input).has_value());
-    REQUIRE(p.parse(input, &input).has_value());
-    REQUIRE(p.parse(input, &input).has_value());
-    REQUIRE(!p.parse(input, &input).has_value());
+    const char *end = std::end(input);
+    const char *tail = nullptr;
+    REQUIRE(p.parse(input, &tail).has_value());
+    REQUIRE(p.parse(subrange{tail, end}, &tail).has_value());
+    REQUIRE(p.parse(subrange{tail, end}, &tail).has_value());
+    REQUIRE(!p.parse(subrange{tail, end}, &tail).has_value());
 
 }
 
 TEST_CASE("yielding parsers") {
     
     std::string abcde = "abcde4";
-    range input{abcde.c_str(), abcde.c_str() + abcde.size()};
+    subrange input{abcde.c_str(), abcde.c_str() + abcde.size()};
 
     parser<char[]> p = some(chr(&isalpha));
 
-    auto result = p.parse(input, &input);
+    const char *tail = nullptr;
+    auto result = p.parse(input, &tail);
 
     REQUIRE(result.has_value());
     REQUIRE(result == std::vector{'a', 'b', 'c', 'd', 'e'});
-    REQUIRE(*std::begin(input) == '4');
+    REQUIRE(*tail == '4');
 
 }
 
 TEST_CASE("many with empty input") {
     std::string empty = "";
-    range input{empty.c_str(), empty.c_str() + empty.size()};
+    subrange input{empty.c_str(), empty.c_str() + empty.size()};
 
     parser<size_t[]> p = many(integer());
 
-    auto result = p.parse(input, &input);
+    auto result = p.parse(input);
 
     REQUIRE(result.has_value());
     REQUIRE(result->empty());
@@ -206,7 +207,7 @@ TEST_CASE("skip many") {
     parser<void> p = skip( chr('{') + skip_many(chr(&isalpha)) + chr('}') );
 
     std::string hello = "{hello}";
-    range input{hello.c_str(), hello.c_str() + hello.size()};
+    subrange input{hello.c_str(), hello.c_str() + hello.size()};
 
     auto result = p.parse(input);
 
@@ -216,11 +217,11 @@ TEST_CASE("skip many") {
 
 TEST_CASE("pattern string") {
     std::string num = "answer";
-    range input{num.c_str(), num.c_str() + num.size()};
+    subrange input{num.c_str(), num.c_str() + num.size()};
 
     parser<std::string> p = string("answer");
     
-    auto result = p.parse(input, &input);
+    auto result = p.parse(input);
 
     REQUIRE(result.has_value());
     REQUIRE(*result == "answer");
@@ -229,7 +230,7 @@ TEST_CASE("pattern string") {
 TEST_CASE("Operations on sequences") {
 
     std::string any = "42";
-    range input{any.c_str(), any.c_str() + any.size()};
+    subrange input{any.c_str(), any.c_str() + any.size()};
 
     std::vector<int> v = {1, 2, 3, 4};
     
@@ -326,7 +327,7 @@ TEST_CASE("Operations on sequences") {
         parser<size_t[]> p = sep_many(token(integer()), token(chr(',')));
 
         std::string s = "1, 2 , 3, 4";
-        input = range{s.c_str(), s.c_str() + s.size()};
+        input = subrange{s.c_str(), s.c_str() + s.size()};
 
         auto result = p.parse(input);
 
@@ -336,7 +337,7 @@ TEST_CASE("Operations on sequences") {
     
     SECTION("sep_many with empty input") {
         std::string s = "";
-        input = range{s.c_str(), s.c_str() + s.size()};
+        input = subrange{s.c_str(), s.c_str() + s.size()};
 
         parser<size_t[]> p = sep_many(token(integer()), token(chr(',')));
         auto result = p.parse(input);
@@ -349,16 +350,17 @@ TEST_CASE("Operations on sequences") {
 
 TEST_CASE("integers, strings, identifiers") {
     std::string num = "answer: 42";
-    range input{num.c_str(), num.c_str() + num.size()};
+    subrange input{num.c_str(), num.c_str() + num.size()};
 
     parser<size_t> p = 
         identifier("answer") + chr(':') + token(integer());
     
-    auto number = p.parse(input, &input);
+    const char *tail = nullptr;
+    auto number = p.parse(input, &tail);
 
     REQUIRE(number.has_value());
     REQUIRE(*number == 42);
-    REQUIRE(input.empty());
+    REQUIRE(tail == std::end(input));
 }
 
 TEST_CASE("resumability") {
@@ -367,35 +369,50 @@ TEST_CASE("resumability") {
     context<size_t> c = p.start();
     
     std::string in1 = "answer:";
-    range r1{in1.c_str(), in1.c_str() + in1.size()};
-
     std::string in2 = " 42";
-    range r2{in2.c_str(), in2.c_str() + in2.size()};
     
     SECTION("Lazy") {
-        auto number = c.parse(r1, &r1, greed::lazy);
+        auto number = c.parse(in1, nullptr, greed::lazy);
 
         REQUIRE(!number.has_value());
         REQUIRE(number.error() == failure::eof);
-        REQUIRE(!r1);
 
-        number = c.parse(r2, &r2);
+        number = c.parse(in2);
 
         REQUIRE(!number.has_value());
     }
     
     SECTION("Greedy") {
-
-        auto number = c.parse(r1, &r1, greed::greedy);
+        auto number = c.parse(in1, nullptr, greed::greedy);
 
         REQUIRE(!number.has_value());
         REQUIRE(number.error() == failure::eof);
-        REQUIRE(!r1);
 
-        number = c.parse(r2, &r2);
+        number = c.parse(in2);
 
         REQUIRE(number.has_value());
         REQUIRE(number == 42);
-        REQUIRE(!r2);
     }
+}
+
+TEST_CASE("Conversions between parser types") {
+
+    parser<int> p = integer();
+
+    parser<float> f = p;
+
+    auto result = f.parse("42");
+
+    REQUIRE(result.has_value());
+    REQUIRE(result == 42.0);
+
+    STATIC_REQUIRE(!std::convertible_to<parser<int>, parser<std::vector<int>>>);
+
+    parser<std::vector<int>> v = parser<std::vector<int>>{p};
+
+    auto result2 = v.parse("42");
+
+    REQUIRE(result2.has_value());
+    REQUIRE(result2->size() == 42);
+
 }

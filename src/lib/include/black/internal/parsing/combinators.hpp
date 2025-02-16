@@ -97,14 +97,19 @@ namespace black::parsing {
     return peek([=](char c) { return c == v; });
   }
 
+  inline parser<void> require(bool b) {
+    return [=] -> parsed<void> {
+      if(!b)
+        co_await reject();
+    };
+  }
 
   template<typename T, predicate_for<T> F>
   parser<T> require(parser<T> p, F f) {
     return [=] -> parsed<T> {
-      if(auto v = co_await p; f(v))
-        co_return std::move(v);
-      co_await reject();
-      black_unreachable();
+      auto v = co_await p;
+      co_await require(f(v));
+      co_return std::move(v);
     };
   }
 

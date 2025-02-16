@@ -45,7 +45,7 @@ namespace black::parsing::internal
   template<typename T, typename = void>
   class parsed;
 
-  using range = std::ranges::subrange<const char *>;
+  using subrange = std::ranges::subrange<const char *>;
 
   template<typename P, typename T>
   struct is_parser_of : std::false_type { };
@@ -103,10 +103,26 @@ namespace black::parsing::internal
     context &operator=(context &&) = default;
 
     std::expected<typename parser<T>::return_type, failure> 
-    parse(range input, range *tail = nullptr, greed g = greed::lazy);
+    parse(subrange input, const char **tail = nullptr, greed g = greed::lazy);
 
-    auto operator()(range input, range *tail = nullptr, greed g = greed::lazy) {
+    auto operator()(
+      subrange input, const char **tail = nullptr, greed g = greed::lazy
+    ) {
       return parse(input, tail, g);
+    }
+
+    std::expected<typename parser<T>::return_type, failure> 
+    parse(
+      std::string_view input, const char **tail = nullptr, 
+      greed g = greed::lazy
+    ) {
+      return parse(
+        subrange{
+          std::to_address(std::begin(input)), 
+          std::to_address(std::end(input))
+        }, 
+        tail, g
+      );
     }
 
   private:
@@ -166,23 +182,35 @@ namespace black::parsing::internal
 
     context<T> start() { return { _grammar }; }
 
+    template<typename ...Args>
+      requires requires(context<T> c, Args ...args) { { c.parse(args...) }; }
     std::expected<return_type, failure> 
-    parse(range input, range *tail = nullptr) {
-      return start().parse(input, tail);
+    parse(Args ...args) {
+      return start().parse(args...);
     }
 
+    template<typename ...Args>
+      requires requires(context<T> c, Args ...args) { { c.parse(args...) }; }
     std::expected<return_type, failure> 
-    operator()(range input, range *tail = nullptr) {
-      return parse(input, tail);
+    operator()(Args ...args) {
+      return start().parse(args...);
     }
 
-    // template<typename U>
-    //   requires (!std::is_void_v<T>)
-    // operator parser<U>() const {
-    //   return [p = *this] -> parsed<U> {
-    //     co_return static_cast<U>(co_await p);
-    //   };
-    // }
+    template<typename U>
+      requires std::convertible_to<T, U>
+    operator parser<U>() const {
+      return [p = *this] -> parsed<U> {
+        co_return static_cast<U>(co_await p);
+      };
+    }
+
+    template<typename U>
+      requires (!std::convertible_to<T, U> && std::is_constructible_v<U, T>)
+    explicit operator parser<U>() const {
+      return [p = *this] -> parsed<U> {
+        co_return U(co_await p);
+      };
+    }
 
   private:
     grammar<T> _grammar;
@@ -207,7 +235,9 @@ namespace black::parsing::internal
 
   namespace states {
     using resumer_t = 
-      std::function<std::expected<std::any, failure>(range, range *, greed)>;
+      std::function<
+        std::expected<std::any, failure>(subrange, const char **, greed)
+      >;
 
     template<typename F>
     auto erase(F f) {
@@ -265,7 +295,8 @@ namespace black::parsing::internal
   struct machine 
   {
     states::state state = states::ready{};
-    range input;
+    const char *input;
+    const char *end;
     enum greed mode = greed::lazy;
 
     machine() = default;
@@ -284,7 +315,7 @@ namespace black::parsing::internal
     }
 
     states::state step(states::eof) { 
-      if(!input)
+      if(input == end)
         return states::eof{};
       
       return states::ready{ };
@@ -295,7 +326,7 @@ namespace black::parsing::internal
     }
 
     states::state step(states::awaiting a) {
-      auto result = a.resumer(input, &input, mode);
+      auto result = a.resumer({input, end}, &input, mode);
       if(result)
         return states::ready{ *result };
       
@@ -306,19 +337,16 @@ namespace black::parsing::internal
     }
 
     states::state step(states::choice ch) {
-      range saved = input;
-      auto result = ch.first(input, &input, mode);
-      if(result) {
+      const char *saved = input;
+      auto result = ch.first({input, end}, &input, mode);
+      if(result)
         return states::ready{ *result };
-      }
 
-      if(result.error() == failure::eof && mode == greed::greedy) {
+      if(result.error() == failure::eof && mode == greed::greedy)
         return ch;
-      }
 
-      if(std::begin(saved) == std::begin(input)) {
+      if(saved == input)
         return step(states::awaiting{ ch.second });
-      }
 
       return states::reject{ };
     }
@@ -359,11 +387,11 @@ namespace black::parsing::internal
   struct peek_or_suspend {
     machine *machine;
 
-    bool await_ready() { return (bool)machine->input; }
+    bool await_ready() { return machine->input != machine->end; }
 
     void await_suspend(std::coroutine_handle<>) { }
     
-    char await_resume() { return *std::begin(machine->input); }
+    char await_resume() { return *machine->input; }
   };
 
   struct advance_or_suspend {
@@ -481,7 +509,7 @@ namespace black::parsing::internal
 
     suspend_if await_transform(primitives::advance) {
       if(machine.input) {
-        machine.input.advance(1);
+        machine.input++;
         return false;
       }
 
@@ -490,16 +518,16 @@ namespace black::parsing::internal
     }
 
     template<typename U>
-    auto await_transform(primitives::choice<U> ch) 
+    awaiter<U> await_transform(primitives::choice<U> ch) 
     {
       machine.state = states::choice{ ch.first.start(), ch.second.start() };
       machine.step();
-      return awaiter<U>{ &machine };
+      return { &machine };
     }
 
     template<typename U>
     return_or_suspend<U> await_transform(primitives::try_<U> t) {
-      range saved = machine.input;
+      const char *saved = machine.input;
       machine.state = states::awaiting{ t.tried.start() };
       machine.step();
 
@@ -516,13 +544,14 @@ namespace black::parsing::internal
 
   template<typename T>
   std::expected<typename parser<T>::return_type, failure> 
-  context<T>::parse(range input, range *tail, greed g) {
+  context<T>::parse(subrange input, const char **tail, greed g) {
     auto coroutine = _parsed->coroutine();
     auto *promise = &coroutine.promise();
     auto *machine = &promise->machine;
     
     machine->mode = g;
-    machine->input = input;
+    machine->input = std::begin(input);
+    machine->end = std::end(input);
     do{ 
       machine->step();
       
@@ -560,7 +589,7 @@ namespace black::parsing::internal
 }
 
 namespace black::parsing {
-  using internal::range;
+  using internal::subrange;
   using internal::failure;
   using internal::greed;
   using internal::parser;
