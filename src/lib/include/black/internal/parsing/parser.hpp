@@ -28,7 +28,9 @@
 
 #include <coroutine>
 #include <ranges>
+#include <algorithm>
 #include <exception>
+#include <generator>
 #include <print>
 
 namespace black::parsing::internal
@@ -333,7 +335,7 @@ namespace black::parsing::internal
       if(result.error() == failure::reject)
         return states::reject{};
       
-      return std::move(a);
+      return a;
     }
 
     states::state step(states::choice ch) {
@@ -385,7 +387,7 @@ namespace black::parsing::internal
   };
 
   struct peek_or_suspend {
-    machine *machine;
+    struct machine *machine;
 
     bool await_ready() { return machine->input != machine->end; }
 
@@ -395,7 +397,7 @@ namespace black::parsing::internal
   };
 
   struct advance_or_suspend {
-    machine *machine;
+    struct machine *machine;
 
     bool await_ready() { return (bool)machine->input; }
 
@@ -406,7 +408,7 @@ namespace black::parsing::internal
 
   template<typename T>
   struct awaiter {
-    machine *machine;
+    struct machine *machine;
 
     bool await_ready() { return is<states::ready>(machine->state); }
 
@@ -459,19 +461,31 @@ namespace black::parsing::internal
       self()->machine.state = states::completed{ };
     }
 
-    std::suspend_always yield_value(T v) {
+    std::suspend_never yield_value(T v) {
       _result.push_back(std::move(v));
       
       self()->machine.state = states::ready{ };
 
-      return {};
+      return { };
+    }
+
+    template<std::ranges::range R>
+      requires std::convertible_to<std::ranges::range_value_t<R>, T>
+    std::suspend_never yield_value(std::ranges::elements_of<R> e) {
+      std::ranges::move(
+        std::begin(e.range),
+        std::end(e.range),
+        std::back_inserter(_result)
+      );
+
+      return { };
     }
   };
 
   template<typename T, typename Dummy>
   struct parsed<T, Dummy>::promise_type : promise_base<T, Dummy>
   {
-    machine machine;
+    struct machine machine;
 
     // FIXME: Ask on SO why this is needed both on GCC and Clang
     promise_type() = default;
@@ -596,6 +610,7 @@ namespace black::parsing {
   using internal::parsed;
   using internal::context;
   using internal::parser_of;
+  using std::ranges::elements_of;
 }
 
 #endif // BLACK_PARSING_PARSER_HPP

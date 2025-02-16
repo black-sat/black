@@ -69,8 +69,7 @@ namespace black::parsing {
   template<typename T>
   parser<T[]> choice(parser<T[]> p1, parser<T[]> p2) {
     return [=] -> parsed<T[]> {
-      for(auto x : co_await internal::primitives::choice{ p1, p2 })
-        co_yield std::move(x);
+      co_yield elements_of(co_await internal::primitives::choice{ p1, p2 });
     };
   }
 
@@ -150,7 +149,15 @@ namespace black::parsing {
   }
   
   template<typename T>
-  parser<void> then(parser<T> p1, parser<void> p2) {
+  parser<T> then(parser<T> p1, parser<void> p2) {
+    return [=] -> parsed<T> {
+      auto x = co_await p1;
+      co_await p2;
+      co_return std::move(x);
+    };
+  }
+  
+  inline parser<void> then(parser<void> p1, parser<void> p2) {
     return [=] -> parsed<void> {
       co_await p1;
       co_await p2;
@@ -161,8 +168,7 @@ namespace black::parsing {
   parser<T2[]> then(parser<T1> p1, parser<T2[]> p2) {
     return [=] -> parsed<T2[]> {
       co_await p1;
-      for(auto v : co_await p2)
-        co_yield std::move(v);
+      co_yield elemens_of(co_await p2);
     };
   }
 
@@ -198,12 +204,6 @@ namespace black::parsing {
     return choice(p + pass(true), pass(false));
   }
 
-  // inline parser<void> eof() { 
-  //   return [] -> parsed<void> {
-  //     co_return co_await internal::primitives::eof{ };
-  //   };
-  // }
-
   template<typename T>
   parser<T[]> many(parser<T> p) {
     return [=] -> parsed<T[]> {
@@ -225,9 +225,7 @@ namespace black::parsing {
     return [=] -> parsed<T[]> 
     {
       co_yield co_await p;
-
-      for(auto v : co_await many(p))
-        co_yield v;
+      co_yield elements_of(co_await many(p));
     };
   }
 
@@ -254,10 +252,14 @@ namespace black::parsing {
 
   template<typename T>
   parser<void> operator not(parser<T> p) {
-    return [=] -> parsed<T> {
+    return [=] -> parsed<void> {
       if(co_await optional(try_(p)))
         co_await reject();
     };
+  }
+
+  inline parser<void> eof() { 
+    return not(peek());
   }
 
 }

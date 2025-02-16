@@ -226,13 +226,28 @@ namespace ranges {
 
 template <typename _Rng, typename _Allocator = use_allocator_arg>
 struct elements_of {
+    
+    explicit constexpr elements_of(_Rng const&__rng) noexcept
+    requires std::is_default_constructible_v<_Allocator>
+    : range(__rng)
+    {}
+    
     explicit constexpr elements_of(_Rng&& __rng) noexcept
     requires std::is_default_constructible_v<_Allocator>
-    : __range(static_cast<_Rng&&>(__rng))
+    : range(std::move(__rng))
     {}
 
     constexpr elements_of(_Rng&& __rng, _Allocator&& __alloc) noexcept
-    : __range((_Rng&&)__rng), __alloc((_Allocator&&)__alloc) {}
+    : range(std::move(__rng)), allocator(std::move(__alloc)) {}
+
+    constexpr elements_of(_Rng const& __rng, _Allocator&& __alloc) noexcept
+    : range(__rng), allocator(std::move(__alloc)) {}
+
+    constexpr elements_of(_Rng&& __rng, _Allocator const& __alloc) noexcept
+    : range(std::move(__rng)), allocator(__alloc) {}
+
+    constexpr elements_of(_Rng const& __rng, _Allocator const& __alloc) noexcept
+    : range(__rng), allocator(__alloc) {}
 
     constexpr elements_of(elements_of&&) noexcept = default;
 
@@ -240,24 +255,9 @@ struct elements_of {
     constexpr elements_of &operator=(const elements_of &) = delete;
     constexpr elements_of &operator=(elements_of &&) = delete;
 
-    constexpr _Rng&& get() noexcept {
-        return static_cast<_Rng&&>(__range);
-    }
-
-    constexpr _Allocator get_allocator() const noexcept {
-        return __alloc;
-    }
-
-private:
-    [[no_unique_address]] _Allocator __alloc; // \expos
-    _Rng && __range; // \expos
+    [[no_unique_address]] _Allocator allocator;
+    [[no_unique_address]] _Rng range;
 };
-
-template <typename _Rng>
-elements_of(_Rng &&) -> elements_of<_Rng>;
-
-template <typename _Rng, typename Allocator>
-elements_of(_Rng &&, Allocator&&) -> elements_of<_Rng, Allocator>;
 
 } // namespace ranges
 
@@ -465,7 +465,7 @@ struct __generator_promise_base
     template <typename _OValue, typename _OAlloc>
     __yield_sequence_awaiter<generator<_Ref, _OValue, _OAlloc>>
     yield_value(std::ranges::elements_of<generator<_Ref, _OValue, _OAlloc>> __g) noexcept {
-        return std::move(__g).get();
+        return std::move(__g.range);
     }
 
     template <std::ranges::range _Rng, typename _Allocator>
@@ -474,7 +474,7 @@ struct __generator_promise_base
         return [](allocator_arg_t, _Allocator alloc, auto && __rng) -> generator<_Ref, std::remove_cvref_t<_Ref>, _Allocator> {
             for(auto && e: __rng)
                 co_yield static_cast<decltype(e)>(e);
-        }(std::allocator_arg, __x.get_allocator(), std::forward<_Rng>(__x.get()));
+        }(std::allocator_arg, __x.get_allocator(), std::forward<_Rng>(__x.range));
     }
 
     void resume() {
@@ -513,7 +513,7 @@ struct __generator_promise<generator<_Ref, _Value, _Alloc>, _ByteAllocator, _Exp
         return [](auto && __rng) -> generator<_Ref, _Value, _Alloc> {
             for(auto && e: __rng)
                 co_yield static_cast<decltype(e)>(e);
-        }(std::forward<_Rng>(__x.get()));
+        }(std::forward<_Rng>(__x.range));
     }
 };
 

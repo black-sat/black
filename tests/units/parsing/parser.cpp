@@ -26,6 +26,7 @@
 #include <black/parsing>
 
 #include <print>
+#include <generator>
 #include <cctype>
 
 using namespace black::parsing;
@@ -361,6 +362,16 @@ TEST_CASE("integers, strings, identifiers") {
     REQUIRE(number.has_value());
     REQUIRE(*number == 42);
     REQUIRE(tail == std::end(input));
+}
+
+TEST_CASE("Eof") {
+    std::string number = "42 ";
+
+    parser<size_t> p = integer() + eof();
+
+    auto result = p.parse(number);
+
+    REQUIRE(!result.has_value());
 }
 
 TEST_CASE("resumability") {
