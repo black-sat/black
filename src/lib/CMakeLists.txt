@@ -210,7 +210,6 @@ set (
   include/black/internal/debug/random_formula.hpp
   include/black/internal/logic/core.hpp
   include/black/internal/logic/declare_fragment.hpp
-  include/black/internal/logic/fragments.hpp
   include/black/internal/logic/generation.hpp
   include/black/internal/logic/hierarchy.hpp
   include/black/internal/logic/interface-fwd.hpp

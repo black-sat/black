@@ -30,10 +30,8 @@ namespace black_internal::logic {
 
   class var_decl;
   
-  template<fragment>
   class application;
   
-  template<fragment>
   class atom;
 
   //

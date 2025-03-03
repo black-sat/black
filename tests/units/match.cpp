@@ -36,36 +36,36 @@ TEST_CASE("Pattern matching") {
 
   SECTION("Matching on formulas") {
     boolean b = sigma.boolean(true);
-    formula<propositional> n = negation<propositional>(b);
+    formula n = negation<propositional>(b);
 
     std::string s = n.match(
       [](boolean) { return "boolean"s; },
       [](proposition) { return "proposition"s; },
-      [](unary<propositional>, formula<propositional> arg) { 
-        return "unary<propositional>("s + 
+      [](unary, formula arg) { 
+        return "unary("s + 
           arg.match(
             [](boolean) { return "boolean"; },
             [](proposition) { return "proposition"; },
-            [](unary<propositional>) { return "unary<propositional>"; },
-            [](binary<propositional>) { return "binary<propositional>"; } 
+            [](unary) { return "unary"; },
+            [](binary) { return "binary"; } 
           ) + ")"; 
       },
-      [](binary<propositional>) { return "binary<propositional>"s; }
+      [](binary) { return "binary"s; }
     );
 
-    REQUIRE(s == "unary<propositional>(boolean)");
+    REQUIRE(s == "unary(boolean)");
   }
 
   SECTION("Matching on storage kinds") {
     boolean b = sigma.boolean(true);
-    unary<LTL> n = negation<LTL>(b);
+    unary n = negation(b);
 
     std::string s = n.match(
-      [](negation<LTL>) { return "negation"; },
-      [](tomorrow<LTL>) { return "tomorrow"; },
-      [](w_tomorrow<LTL>) { return "w_tomorrow"; },
-      [](always<LTL>) { return "always"; },
-      [](eventually<LTL>) { return "eventually"; }
+      [](negation) { return "negation"; },
+      [](tomorrow) { return "tomorrow"; },
+      [](w_tomorrow) { return "w_tomorrow"; },
+      [](always) { return "always"; },
+      [](eventually) { return "eventually"; }
     );
 
     REQUIRE(s == "negation");
@@ -73,35 +73,35 @@ TEST_CASE("Pattern matching") {
 
   SECTION("Matching with different syntaxes") {
     boolean b = sigma.boolean(true);
-    formula<LTL> n = negation<LTL>(b);
+    formula n = negation(b);
 
     std::string s = n.match(
       [](boolean) { return "boolean"; },
       [](proposition) { return "proposition"; },
-      [](unary<LTLP>) { return "unary<LTLP>"; },
-      [](binary<LTLFO>) { return "binary<LTLFO>"; }
+      [](unary) { return "unary"; },
+      [](binary) { return "binary"; }
     );
 
-    REQUIRE(s == "unary<LTLP>");
+    REQUIRE(s == "unary");
   }
 
   SECTION("Matching with restricted syntax") {
     boolean b = sigma.boolean(true);
     proposition p = sigma.proposition("p");
 
-    formula<LTLP> f = (b && Y(p));
+    formula f = (b && Y(p));
 
     std::string s = f.match(
-      [](yesterday<LTLP>) { return "yesterday"; },
+      [](yesterday) { return "yesterday"; },
       [](only<propositional, LTLP> o) {
         return o.match(
           [](boolean) { return "boolean"; },
           [](proposition) { return "proposition"; },
-          [](negation<LTLP>) { return "negation"; },
-          [](disjunction<LTLP>) { return "disjunction"; },
-          [](conjunction<LTLP>) { return "conjunction"; },
-          [](implication<LTLP>) { return "implication"; },
-          [](iff<LTLP>) { return "iff"; }
+          [](negation) { return "negation"; },
+          [](disjunction) { return "disjunction"; },
+          [](conjunction) { return "conjunction"; },
+          [](implication) { return "implication"; },
+          [](iff) { return "iff"; }
         );
       },
       [](otherwise) { return "otherwise"; }
@@ -111,7 +111,7 @@ TEST_CASE("Pattern matching") {
   }
 
   SECTION("Otherwise") { 
-    formula<LTL> f = sigma.boolean(true);
+    formula f = sigma.boolean(true);
 
     bool ok = f.match(
       [](boolean) { return true; },
@@ -133,16 +133,16 @@ TEST_CASE("Pattern matching") {
       boolean b = sigma.boolean(true);
       proposition p = sigma.proposition("p");
 
-      conjunction<LTLP> c = (b && Y(p));
+      conjunction c = (b && Y(p));
 
       auto [l, r] = c;
 
       REQUIRE(l == b);
       REQUIRE(r == Y(p));
 
-      formula<LTLP> f = c;
+      formula f = c;
       f.match(
-        [&](conjunction<LTLP> conj, formula<LTLP> left, formula<LTLP> right) {
+        [&](conjunction conj, formula left, formula right) {
           REQUIRE(conj.left() == left);
           REQUIRE(conj.right() == right);
 
@@ -157,15 +157,15 @@ TEST_CASE("Pattern matching") {
     
     SECTION("Children vector") {
       relation r = sigma.relation("r");
-      std::vector<term<LTLFO>> vars = {
+      std::vector<term> vars = {
         sigma.variable("x"), sigma.variable("y")
       };
       
-      atom<LTLFO> a = r(vars);
+      atom a = r(vars);
 
-      formula<LTLFO> f = a;
+      formula f = a;
       f.match(
-        [&](atom<LTLFO> at, relation rel, auto const& terms) { 
+        [&](atom at, relation rel, auto const& terms) { 
           REQUIRE(at.rel() == rel);
           REQUIRE(at.terms() == terms);
           REQUIRE(terms == vars);
@@ -194,40 +194,40 @@ TEST_CASE("Pattern matching") {
     using namespace black_internal;
 
     proposition p = sigma.proposition("p");
-    unary<LTL> u = !p;
+    unary u = !p;
 
-    unary<LTLP>::type t = u.node_type();
+    unary::type t = u.node_type();
 
-    REQUIRE(t == unary<LTL>::type::negation{});
+    REQUIRE(t == unary::type::negation{});
 
-    REQUIRE(u.node_type() == unary<LTL>::type::negation{});
+    REQUIRE(u.node_type() == unary::type::negation{});
 
-    auto tn = u.node_type().to<unary<LTL>::type::negation>();
+    auto tn = u.node_type().to<unary::type::negation>();
     REQUIRE(tn.has_value());
 
-    REQUIRE(u.node_type().is<unary<LTL>::type::negation>());
+    REQUIRE(u.node_type().is<unary::type::negation>());
 
     u = F(p);
 
-    unary<LTL>::type result = u.node_type().match(
-      [](unary<LTL>::type::negation) {
-        return unary<LTL>::type::negation{};
+    unary::type result = u.node_type().match(
+      [](unary::type::negation) {
+        return unary::type::negation{};
       },
-      [](unary<LTL>::type::always) {
-        return unary<LTL>::type::eventually{};
+      [](unary::type::always) {
+        return unary::type::eventually{};
       },
-      [](unary<LTL>::type::eventually) {
-        return unary<LTL>::type::always{};
+      [](unary::type::eventually) {
+        return unary::type::always{};
       },
-      [](unary<LTL>::type::tomorrow) {
-        return unary<LTL>::type::w_tomorrow{};
+      [](unary::type::tomorrow) {
+        return unary::type::w_tomorrow{};
       },
-      [](unary<LTL>::type::w_tomorrow) {
-        return unary<LTL>::type::tomorrow{};
+      [](unary::type::w_tomorrow) {
+        return unary::type::tomorrow{};
       }
     );
 
-    REQUIRE(result == unary<LTL>::type::always{});
+    REQUIRE(result == unary::type::always{});
   }
 
   SECTION("Common type") {
@@ -244,28 +244,28 @@ TEST_CASE("Pattern matching") {
 
     boolean b = sigma.boolean("b");
     proposition p = sigma.proposition("p");
-    unary<LTL> u = !b;
-    conjunction<LTL> c = b && p;
-    disjunction<LTL> d = b || p;
-    binary<LTLP> bin = c;
-    formula<LTL> f = u;
+    unary u = !b;
+    conjunction c = b && p;
+    disjunction d = b || p;
+    binary bin = c;
+    formula f = u;
 
     using F = make_combined_fragment_t<
       make_singleton_fragment_t<syntax_element::proposition>, 
       make_singleton_fragment_t<syntax_element::boolean>
     >;
 
-    REQUIRE_CT(b, p, formula<F>);
+    REQUIRE_CT(b, p, formula);
 
-    REQUIRE_CT(u, b, formula<LTL>);
-    REQUIRE_CT(bin, u, formula<LTLP>);
-    REQUIRE_CT(f, u, formula<LTL>);
-    REQUIRE_CT(f, bin, formula<LTLP>);
-    REQUIRE_CT(c, d, binary<LTL>);
-    REQUIRE_CT(c, bin, binary<LTLP>);
-    REQUIRE_CT(b, c, formula<LTL>);
+    REQUIRE_CT(u, b, formula);
+    REQUIRE_CT(bin, u, formula);
+    REQUIRE_CT(f, u, formula);
+    REQUIRE_CT(f, bin, formula);
+    REQUIRE_CT(c, d, binary);
+    REQUIRE_CT(c, bin, binary);
+    REQUIRE_CT(b, c, formula);
     REQUIRE_CT(p, p, proposition);
-    REQUIRE_CT(u, u, unary<LTL>);
-    REQUIRE_CT(f, f, formula<LTL>);
+    REQUIRE_CT(u, u, unary);
+    REQUIRE_CT(f, f, formula);
   }
 }

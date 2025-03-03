@@ -33,16 +33,16 @@ namespace black_internal::logic
 {
   
   BLACK_EXPORT
-  std::string to_string(formula<LTLPFO> f);
+  std::string to_string(formula f);
   
   BLACK_EXPORT
-  std::string to_string(term<LTLPFO> t);
+  std::string to_string(term t);
   
   BLACK_EXPORT
-  std::string to_string(symbol<LTLPFO> t);
+  std::string to_string(symbol t);
   
   BLACK_EXPORT
-  std::string to_string(number<LTLPFO> t);
+  std::string to_string(number t);
   
   BLACK_EXPORT
   std::string to_string(declaration t);
@@ -51,7 +51,7 @@ namespace black_internal::logic
   std::string to_string(sort s);
 
   BLACK_EXPORT
-  std::string to_smtlib2(formula<FO> f, scope const& xi);
+  std::string to_smtlib2(formula f, scope const& xi);
 
 }
 

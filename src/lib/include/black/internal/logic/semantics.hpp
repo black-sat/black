@@ -160,9 +160,9 @@ namespace black_internal::logic {
     class domain const*domain(class sort) const;
     
     std::optional<class sort>
-    type_check(term<LTLPFO> t, std::function<void(std::string)> err);
+    type_check(term t, std::function<void(std::string)> err);
 
-    bool type_check(formula<LTLPFO> f, std::function<void(std::string)> err);
+    bool type_check(formula f, std::function<void(std::string)> err);
 
     bool is_rigid(variable) const;
     bool is_rigid(relation) const;

@@ -318,8 +318,8 @@ namespace black_internal::logic {
 
     bool type_check_rel_func(hierarchy auto h, auto terms);
 
-    std::optional<sort> type_check(term<LTLPFO> t);
-    bool type_check(formula<LTLPFO> f);
+    std::optional<sort> type_check(term t);
+    bool type_check(formula f);
 
     scope &global;
     scope xi;
@@ -327,14 +327,14 @@ namespace black_internal::logic {
   };
 
   std::optional<class sort>
-  scope::type_check(term<LTLPFO> t, std::function<void(std::string)> err) {
+  scope::type_check(term t, std::function<void(std::string)> err) {
     type_checker checker{*this, err};
 
     return checker.type_check(t);
   }
 
   bool 
-  scope::type_check(formula<LTLPFO> f, std::function<void(std::string)> err) {
+  scope::type_check(formula f, std::function<void(std::string)> err) {
     type_checker checker{*this, err};
 
     return checker.type_check(f);
@@ -385,11 +385,11 @@ namespace black_internal::logic {
   }
 
   std::optional<sort> 
-  type_checker::type_check(term<LTLPFO> t) {
+  type_checker::type_check(term t) {
     using S = std::optional<class sort>;
 
     return t.match(
-      [&](constant<LTLPFO>, auto value) -> S {
+      [&](constant, auto value) -> S {
         return value.match(
           [&](integer) { return t.sigma()->integer_sort(); },
           [&](real)    { return t.sigma()->real_sort(); }
@@ -402,13 +402,13 @@ namespace black_internal::logic {
         err("Use of undeclared variable '" + to_string(x) + "'");
         return {};
       },
-      [&](application<LTLPFO>, auto func, auto terms) -> S {
+      [&](application, auto func, auto terms) -> S {
         if(!type_check_rel_func(func, terms))
           return {};
 
         return xi.sort(func);
       },
-      [&](to_integer<LTLPFO>, auto arg) -> S {
+      [&](to_integer, auto arg) -> S {
         std::optional<class sort> argsort = type_check(arg);
         if(!argsort)
           return {};
@@ -419,7 +419,7 @@ namespace black_internal::logic {
           
         return t.sigma()->integer_sort();
       },
-      [&](to_real<LTLPFO>, auto arg) -> S {
+      [&](to_real, auto arg) -> S {
         std::optional<class sort> argsort = type_check(arg);
         if(!argsort)
           return {};
@@ -430,10 +430,10 @@ namespace black_internal::logic {
           
         return t.sigma()->real_sort();
       },
-      [&](unary_term<LTLPFO>, auto arg) { 
+      [&](unary_term, auto arg) { 
         return type_check(arg);
       },
-      [&](int_division<LTLPFO>, auto left, auto right) -> S {
+      [&](int_division, auto left, auto right) -> S {
         auto leftsort = type_check(left);
         if(!leftsort.has_value())
           return {};
@@ -451,7 +451,7 @@ namespace black_internal::logic {
 
         return t.sigma()->integer_sort();
       },
-      [&](division<LTLPFO>, auto left, auto right) -> S {
+      [&](division, auto left, auto right) -> S {
         std::optional<class sort> leftsort = type_check(left);
         if(!leftsort.has_value())
           return {};
@@ -469,7 +469,7 @@ namespace black_internal::logic {
 
         return t.sigma()->real_sort();
       },
-      [&](binary_term<LTLPFO>, auto left, auto right) -> S {
+      [&](binary_term, auto left, auto right) -> S {
         std::optional<class sort> leftsort = type_check(left);
         if(!leftsort.has_value())
           return {};
@@ -492,14 +492,14 @@ namespace black_internal::logic {
     );
   }
 
-  bool type_checker::type_check(formula<LTLPFO> f) {
+  bool type_checker::type_check(formula f) {
     return f.match(
       [](boolean) { return true; },
       [](proposition) { return true; },
-      [&](atom<LTLPFO>, auto rel, auto terms) {
+      [&](atom, auto rel, auto terms) {
         return type_check_rel_func(rel, terms);
       },
-      [&](equality<LTLPFO>, auto terms) {
+      [&](equality, auto terms) {
         std::vector<sort> sorts;
         for(auto t : terms) {
           auto ts = type_check(t);
@@ -519,7 +519,7 @@ namespace black_internal::logic {
         }
         return true;
       },
-      [&](comparison<LTLPFO>, auto left, auto right) {
+      [&](comparison, auto left, auto right) {
         std::optional<class sort> leftsort = type_check(left);
         std::optional<class sort> rightsort = type_check(right);
 
@@ -545,7 +545,7 @@ namespace black_internal::logic {
         }
         return true;
       },
-      [&](quantifier<LTLPFO> q) {
+      [&](quantifier q) {
         nest_scope_t nest{xi};
 
         for(auto d : q.variables())
@@ -553,10 +553,10 @@ namespace black_internal::logic {
         
         return type_check(q.matrix());
       },
-      [&](unary<LTLPFO>, auto arg) {
+      [&](unary, auto arg) {
         return type_check(arg);
       },
-      [&](binary<LTLPFO>, auto left, auto right) {
+      [&](binary, auto left, auto right) {
         return type_check(left) && type_check(right);
       }
     );

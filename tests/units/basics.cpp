@@ -33,19 +33,19 @@ using namespace std::literals;
 using namespace black::logic;
 using black_internal::identifier;
 
-static_assert(black::logic::hierarchy<formula<LTL>>);
+static_assert(black::logic::hierarchy<formula>);
 static_assert(black::logic::hierarchy<proposition>);
-static_assert(black::logic::hierarchy<unary<LTL>>);
-static_assert(black::logic::hierarchy<conjunction<LTL>>);
-static_assert(black::logic::hierarchy<equal<FO>>);
+static_assert(black::logic::hierarchy<unary>);
+static_assert(black::logic::hierarchy<conjunction>);
+static_assert(black::logic::hierarchy<equal>);
 static_assert(black::logic::storage_kind<proposition>);
-static_assert(black::logic::storage_kind<unary<LTL>>);
-static_assert(black::logic::storage_kind<conjunction<LTL>>);
-static_assert(black::logic::hierarchy_element<conjunction<LTL>>);
-static_assert(black::logic::hierarchy_element<equal<FO>>);
+static_assert(black::logic::storage_kind<unary>);
+static_assert(black::logic::storage_kind<conjunction>);
+static_assert(black::logic::hierarchy_element<conjunction>);
+static_assert(black::logic::hierarchy_element<equal>);
 
 static_assert(
-  std::is_same_v<black::logic::make_combined_fragment_t<LTL>, LTL>
+  std::is_same_v<black::logic::make_combined_fragment_t, LTL>
 );
 
 
@@ -58,15 +58,15 @@ TEST_CASE("New API") {
 
     REQUIRE(sigma.proposition("p") == sigma.proposition("p"));
 
-    formula<LTL> c = conjunction<LTL>(sigma.boolean(true), sigma.boolean(true));
-    formula<LTL> d = conjunction<LTL>(sigma.boolean(true), sigma.boolean(true));
+    formula c = conjunction(sigma.boolean(true), sigma.boolean(true));
+    formula d = conjunction(sigma.boolean(true), sigma.boolean(true));
 
     REQUIRE(c == d);
   }
 
   SECTION("Leaf storage kinds") {
-    static_assert(!std::is_constructible_v<formula<LTL>, variable>);
-    static_assert(!std::is_assignable_v<formula<LTL>, variable>);
+    static_assert(!std::is_constructible_v<formula, variable>);
+    static_assert(!std::is_assignable_v<formula, variable>);
 
     boolean b = sigma.boolean(true);
     REQUIRE(b.value() == true);
@@ -77,7 +77,7 @@ TEST_CASE("New API") {
     variable x = sigma.variable("x");
     REQUIRE(x.name() == "x");
 
-    formula<LTL> f = p;
+    formula f = p;
 
     REQUIRE(f.is<proposition>());
     REQUIRE(!f.is<boolean>());
@@ -91,27 +91,27 @@ TEST_CASE("New API") {
   SECTION("Storage kinds") {
     boolean b = sigma.boolean(true);
 
-    unary<LTL> u = unary<LTL>(unary<LTL>::type::eventually{}, b);
+    unary u = unary(unary::type::eventually{}, b);
 
     REQUIRE(u.argument() == b);
 
     REQUIRE(u.argument().is<boolean>());
     REQUIRE(u.argument().to<boolean>()->value() == true);
 
-    REQUIRE(u.is<eventually<LTL>>());
-    REQUIRE(u.to<eventually<LTL>>()->argument() == b);
-    REQUIRE(u.to<eventually<LTL>>()->argument().is<boolean>());
-    REQUIRE(u.to<eventually<LTL>>()->argument().to<boolean>()->value() == true);
+    REQUIRE(u.is<eventually>());
+    REQUIRE(u.to<eventually>()->argument() == b);
+    REQUIRE(u.to<eventually>()->argument().is<boolean>());
+    REQUIRE(u.to<eventually>()->argument().to<boolean>()->value() == true);
   }
 
   SECTION("Hierarchy elements") {
-    static_assert(!std::is_constructible_v<unary<LTL>, conjunction<LTL>>);
-    static_assert(!std::is_assignable_v<unary<LTL>, conjunction<LTL>>);
+    static_assert(!std::is_constructible_v<unary, conjunction>);
+    static_assert(!std::is_assignable_v<unary, conjunction>);
 
     boolean b = sigma.boolean(true);
 
-    negation<LTL> n = negation<LTL>(b);
-    always<LTL> a = always<LTL>(b);
+    negation n = negation(b);
+    always a = always(b);
 
     REQUIRE(n.argument() == b);
     REQUIRE(n.argument().is<boolean>());
@@ -121,7 +121,7 @@ TEST_CASE("New API") {
     REQUIRE(a.argument().is<boolean>());
     REQUIRE(a.argument().to<boolean>()->value() == true);
 
-    unary<LTL> u = n;
+    unary u = n;
     REQUIRE(u == n);
 
     u = a;
@@ -129,32 +129,32 @@ TEST_CASE("New API") {
   }
 
   SECTION("Use of fragment type enums values") {
-    unary<LTL>::type t1 = unary<LTL>::type::always{};
-    unary<LTL>::type t2 = unary<LTL>::type::negation{};
+    unary::type t1 = unary::type::always{};
+    unary::type t2 = unary::type::negation{};
 
     REQUIRE(t1 != t2);
 
-    std::vector<unary<LTL>::type> v = {
-      unary<LTL>::type::always{}, unary<LTL>::type::negation{}, 
-      unary<LTL>::type::eventually{}
+    std::vector<unary::type> v = {
+      unary::type::always{}, unary::type::negation{}, 
+      unary::type::eventually{}
     };
 
     REQUIRE(v[0] == t1);
   }
 
   SECTION("Conversions between different syntaxes") {
-    static_assert(!std::is_constructible_v<unary<FO>, until<LTL>>);
-    static_assert(!std::is_assignable_v<unary<FO>, until<LTL>>);
-    static_assert(!std::is_constructible_v<unary<LTL>, conjunction<LTLP>>);
-    static_assert(!std::is_assignable_v<unary<LTL>, conjunction<LTLP>>);
+    static_assert(!std::is_constructible_v<unary, until>);
+    static_assert(!std::is_assignable_v<unary, until>);
+    static_assert(!std::is_constructible_v<unary, conjunction>);
+    static_assert(!std::is_assignable_v<unary, conjunction>);
 
     boolean b = sigma.boolean(true);
     
     SECTION("Storage kinds") {
-      unary<LTL> n = unary<LTL>(unary<LTL>::type::negation{}, b);
-      unary<LTL> a = unary<LTL>(unary<LTL>::type::always{}, b);
+      unary n = unary(unary::type::negation{}, b);
+      unary a = unary(unary::type::always{}, b);
     
-      formula<LTLP> f = n;
+      formula f = n;
       REQUIRE(f == n);
 
       f = a;
@@ -162,10 +162,10 @@ TEST_CASE("New API") {
     }
 
     SECTION("Hierarchy elements") {
-      negation<LTL> n = negation<LTL>(b);
-      always<LTLP> a = always<LTL>(b);
+      negation n = negation(b);
+      always a = always(b);
 
-      formula<LTLP> f = a;
+      formula f = a;
       REQUIRE(f == a);
 
       f = n;
@@ -173,10 +173,10 @@ TEST_CASE("New API") {
     }
 
     SECTION("Storage kinds and hierarchy elements") {
-      negation<LTL> n = negation<propositional>(b);
-      always<LTLP> a = always<LTL>(b);
+      negation n = negation<propositional>(b);
+      always a = always(b);
 
-      unary<LTLP> u = n;
+      unary u = n;
       REQUIRE(u == n);
 
       u = a;
@@ -184,38 +184,38 @@ TEST_CASE("New API") {
     }
 
     SECTION("is<>, to<> and from<>") {
-      negation<LTL> n = negation<LTL>(sigma.boolean(true));
+      negation n = negation(sigma.boolean(true));
 
-      REQUIRE(n.is<negation<LTL>>());
-      REQUIRE(n.is<negation<LTLP>>());
+      REQUIRE(n.is<negation>());
+      REQUIRE(n.is<negation>());
       REQUIRE(n.is<negation<propositional>>());
-      REQUIRE(!n.is<unary_term<FO>>());
+      REQUIRE(!n.is<unary_term>());
 
       proposition p = sigma.proposition("p");
-      formula<LTLP> u1 = G(p);
-      formula<LTLP> u2 = Y(sigma.proposition("p"));
-      formula<LTLP> u3 = G(Y(sigma.proposition("p")));
+      formula u1 = G(p);
+      formula u2 = Y(sigma.proposition("p"));
+      formula u3 = G(Y(sigma.proposition("p")));
 
       auto x = sigma.variable("x");
       auto y = sigma.variable("y");
       auto z = sigma.variable("z");
 
       std::vector<variable> vars = {x, y, z};
-      std::vector<term<FO>> sums = {x + x, y + y, z + z};
+      std::vector<term> sums = {x + x, y + y, z + z};
 
       auto e1 = equal(vars);
       auto e2 = equal(sums);
 
       using vars_fragment = decltype(e1)::syntax;
 
-      REQUIRE(u1.to<formula<LTL>>().has_value());
-      REQUIRE(!u2.to<formula<LTL>>().has_value());
-      REQUIRE(!u3.to<formula<LTL>>().has_value());
+      REQUIRE(u1.to<formula>().has_value());
+      REQUIRE(!u2.to<formula>().has_value());
+      REQUIRE(!u3.to<formula>().has_value());
       
       REQUIRE(!e2.to<equal<vars_fragment>>().has_value());
 
-      REQUIRE(u1.node_type().to<formula<LTL>::type>().has_value());
-      REQUIRE(!u2.node_type().to<formula<LTL>::type>().has_value()); 
+      REQUIRE(u1.node_type().to<formula::type>().has_value());
+      REQUIRE(!u2.node_type().to<formula::type>().has_value()); 
     }
   }
 
@@ -243,34 +243,34 @@ TEST_CASE("New API") {
 
     variable x = sigma.variable("x");
     variable y = sigma.variable("y");
-    std::vector<term<FO>> variables = {x,y};
+    std::vector<term> variables = {x,y};
 
-    application<FO> app = application<FO>(f, variables);
+    application app = application(f, variables);
     REQUIRE(app.func() == f);
     REQUIRE(variables == app.terms());
 
-    application<FO> app2 = f(x,y);
+    application app2 = f(x,y);
 
     REQUIRE(app.func() == f);
-    REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
+    REQUIRE(app.terms() == std::vector<term>{x,y});
 
-    application<FO> app3 = f(std::vector{x, y});
+    application app3 = f(std::vector{x, y});
 
     REQUIRE(app.func() == f);
-    REQUIRE(app.terms() == std::vector<term<FO>>{x,y});
+    REQUIRE(app.terms() == std::vector<term>{x,y});
 
     sort s = sigma.integer_sort();
-    application<FO> app4 = f(x[s], y[s]);
+    application app4 = f(x[s], y[s]);
 
     std::vector<var_decl> decls = {x[s], y[s]};
-    application<FO> app5 = f(decls);
+    application app5 = f(decls);
 
     REQUIRE(bool(app == app2));
     REQUIRE(bool(app == app3));
     REQUIRE(bool(app == app4));
     REQUIRE(bool(app == app5));
 
-    application<FO> app6 = f(1, 2, 3);
+    application app6 = f(1, 2, 3);
 
     REQUIRE(app6.terms()[0] == 1);
     REQUIRE(app6.terms()[1] == 2);
@@ -280,10 +280,10 @@ TEST_CASE("New API") {
   SECTION("Quantifiers") {
     variable x = sigma.variable("x");
     sort s = sigma.integer_sort();
-    comparison<FO> e = 
-      comparison<FO>(comparison<FO>::type::greater_than{}, x, x);
-    quantifier<FO> f = 
-      quantifier<FO>(quantifier<FO>::type::forall{}, {x[s]}, e);
+    comparison e = 
+      comparison(comparison::type::greater_than{}, x, x);
+    quantifier f = 
+      quantifier(quantifier::type::forall{}, {x[s]}, e);
 
     REQUIRE(e.left() == x);
     REQUIRE(e.right() == x);
@@ -299,7 +299,7 @@ TEST_CASE("New API") {
     unary u = unary<propositional>(unary<propositional>::type::negation{}, b);
     conjunction c = conjunction(p, b);
     binary c2 = conjunction(u, b);
-    equal eq = equal(std::vector<term<FO>>{x, x});
+    equal eq = equal(std::vector<term>{x, x});
 
     static_assert(std::is_same_v<decltype(c2), binary<propositional>>);
 
@@ -308,7 +308,7 @@ TEST_CASE("New API") {
     REQUIRE(u.is<negation<propositional>>());
     REQUIRE(c.is<conjunction<propositional>>());
     REQUIRE(c2.is<conjunction<propositional>>());
-    REQUIRE(eq.is<equal<FO>>());
+    REQUIRE(eq.is<equal>());
   }
 
   SECTION("Sugar for formulas") {
@@ -325,15 +325,15 @@ TEST_CASE("New API") {
     once o = O(b);
     historically h = H(b);
 
-    REQUIRE(n.is<negation<LTLP>>());
-    REQUIRE(x.is<tomorrow<LTLP>>());
-    REQUIRE(wx.is<w_tomorrow<LTLP>>());
-    REQUIRE(y.is<yesterday<LTLP>>());
-    REQUIRE(z.is<w_yesterday<LTLP>>());
-    REQUIRE(g.is<always<LTLP>>());
-    REQUIRE(f.is<eventually<LTLP>>());
-    REQUIRE(o.is<once<LTLP>>());
-    REQUIRE(h.is<historically<LTLP>>());
+    REQUIRE(n.is<negation>());
+    REQUIRE(x.is<tomorrow>());
+    REQUIRE(wx.is<w_tomorrow>());
+    REQUIRE(y.is<yesterday>());
+    REQUIRE(z.is<w_yesterday>());
+    REQUIRE(g.is<always>());
+    REQUIRE(f.is<eventually>());
+    REQUIRE(o.is<once>());
+    REQUIRE(h.is<historically>());
 
     conjunction c = b && p;
     disjunction d = b || p;
@@ -345,15 +345,15 @@ TEST_CASE("New API") {
     since s = S(b, p);
     triggered t = T(b, p);
 
-    REQUIRE(c.is<conjunction<LTLP>>());
-    REQUIRE(d.is<disjunction<LTLP>>());
-    REQUIRE(i.is<implication<LTLP>>());
-    REQUIRE(u.is<until<LTLP>>());
-    REQUIRE(r.is<release<LTLP>>());
-    REQUIRE(wu.is<w_until<LTLP>>());
-    REQUIRE(sr.is<s_release<LTLP>>());
-    REQUIRE(s.is<since<LTLP>>());
-    REQUIRE(t.is<triggered<LTLP>>());
+    REQUIRE(c.is<conjunction>());
+    REQUIRE(d.is<disjunction>());
+    REQUIRE(i.is<implication>());
+    REQUIRE(u.is<until>());
+    REQUIRE(r.is<release>());
+    REQUIRE(wu.is<w_until>());
+    REQUIRE(sr.is<s_release>());
+    REQUIRE(s.is<since>());
+    REQUIRE(t.is<triggered>());
   }
 
   SECTION("Sugar for terms") {
@@ -401,46 +401,46 @@ TEST_CASE("New API") {
     formula feq0fp = 0.0 == x;
     formula fne0fp = 0.0 != x;
 
-    REQUIRE(lt.is<comparison<FO>>());
-    REQUIRE(le.is<comparison<FO>>());
-    REQUIRE(gt.is<comparison<FO>>());
-    REQUIRE(ge.is<comparison<FO>>());
-    REQUIRE(eq.is<equality<FO>>());
-    REQUIRE(ne.is<equality<FO>>());
-    REQUIRE(feq.is<equality<FO>>());
-    REQUIRE(fne.is<equality<FO>>());
-    REQUIRE(lt0.is<comparison<FO>>());
-    REQUIRE(le0.is<comparison<FO>>());
-    REQUIRE(gt0.is<comparison<FO>>());
-    REQUIRE(ge0.is<comparison<FO>>());
-    REQUIRE(eq0.is<equality<FO>>());
-    REQUIRE(ne0.is<equality<FO>>());
-    REQUIRE(feq0.is<equality<FO>>());
-    REQUIRE(fne0.is<equality<FO>>());
-    REQUIRE(lt0p.is<comparison<FO>>());
-    REQUIRE(le0p.is<comparison<FO>>());
-    REQUIRE(gt0p.is<comparison<FO>>());
-    REQUIRE(ge0p.is<comparison<FO>>());
-    REQUIRE(eq0p.is<equality<FO>>());
-    REQUIRE(ne0p.is<equality<FO>>());
-    REQUIRE(feq0p.is<equality<FO>>());
-    REQUIRE(fne0p.is<equality<FO>>());
-    REQUIRE(lt0f.is<comparison<FO>>());
-    REQUIRE(le0f.is<comparison<FO>>());
-    REQUIRE(gt0f.is<comparison<FO>>());
-    REQUIRE(ge0f.is<comparison<FO>>());
-    REQUIRE(eq0f.is<equality<FO>>());
-    REQUIRE(ne0f.is<equality<FO>>());
-    REQUIRE(feq0f.is<equality<FO>>());
-    REQUIRE(fne0f.is<equality<FO>>());
-    REQUIRE(lt0fp.is<comparison<FO>>());
-    REQUIRE(le0fp.is<comparison<FO>>());
-    REQUIRE(gt0fp.is<comparison<FO>>());
-    REQUIRE(ge0fp.is<comparison<FO>>());
-    REQUIRE(eq0fp.is<equality<FO>>());
-    REQUIRE(ne0fp.is<equality<FO>>());
-    REQUIRE(feq0fp.is<equality<FO>>());
-    REQUIRE(fne0fp.is<equality<FO>>());
+    REQUIRE(lt.is<comparison>());
+    REQUIRE(le.is<comparison>());
+    REQUIRE(gt.is<comparison>());
+    REQUIRE(ge.is<comparison>());
+    REQUIRE(eq.is<equality>());
+    REQUIRE(ne.is<equality>());
+    REQUIRE(feq.is<equality>());
+    REQUIRE(fne.is<equality>());
+    REQUIRE(lt0.is<comparison>());
+    REQUIRE(le0.is<comparison>());
+    REQUIRE(gt0.is<comparison>());
+    REQUIRE(ge0.is<comparison>());
+    REQUIRE(eq0.is<equality>());
+    REQUIRE(ne0.is<equality>());
+    REQUIRE(feq0.is<equality>());
+    REQUIRE(fne0.is<equality>());
+    REQUIRE(lt0p.is<comparison>());
+    REQUIRE(le0p.is<comparison>());
+    REQUIRE(gt0p.is<comparison>());
+    REQUIRE(ge0p.is<comparison>());
+    REQUIRE(eq0p.is<equality>());
+    REQUIRE(ne0p.is<equality>());
+    REQUIRE(feq0p.is<equality>());
+    REQUIRE(fne0p.is<equality>());
+    REQUIRE(lt0f.is<comparison>());
+    REQUIRE(le0f.is<comparison>());
+    REQUIRE(gt0f.is<comparison>());
+    REQUIRE(ge0f.is<comparison>());
+    REQUIRE(eq0f.is<equality>());
+    REQUIRE(ne0f.is<equality>());
+    REQUIRE(feq0f.is<equality>());
+    REQUIRE(fne0f.is<equality>());
+    REQUIRE(lt0fp.is<comparison>());
+    REQUIRE(le0fp.is<comparison>());
+    REQUIRE(gt0fp.is<comparison>());
+    REQUIRE(ge0fp.is<comparison>());
+    REQUIRE(eq0fp.is<equality>());
+    REQUIRE(ne0fp.is<equality>());
+    REQUIRE(feq0fp.is<equality>());
+    REQUIRE(fne0fp.is<equality>());
 
     REQUIRE((x == x && true) == true);
     REQUIRE((true && x == x) == true);
@@ -470,27 +470,27 @@ TEST_CASE("New API") {
     binary_term mult0fp = 0.0 * x;
     binary_term div0fp = 0.0 / x;
 
-    REQUIRE(plus.is<binary_term<FO>>());
-    REQUIRE(minus.is<binary_term<FO>>());
-    REQUIRE(neg.is<unary_term<FO>>());
-    REQUIRE(mult.is<binary_term<FO>>());
-    REQUIRE(div.is<binary_term<FO>>());
-    REQUIRE(plus0.is<binary_term<FO>>());
-    REQUIRE(minus0.is<binary_term<FO>>());
-    REQUIRE(mult0.is<binary_term<FO>>());
-    REQUIRE(div0.is<binary_term<FO>>());
-    REQUIRE(plus0p.is<binary_term<FO>>());
-    REQUIRE(minus0p.is<binary_term<FO>>());
-    REQUIRE(mult0p.is<binary_term<FO>>());
-    REQUIRE(div0p.is<binary_term<FO>>());
-    REQUIRE(plus0f.is<binary_term<FO>>());
-    REQUIRE(minus0f.is<binary_term<FO>>());
-    REQUIRE(mult0f.is<binary_term<FO>>());
-    REQUIRE(div0f.is<binary_term<FO>>());
-    REQUIRE(plus0fp.is<binary_term<FO>>());
-    REQUIRE(minus0fp.is<binary_term<FO>>());
-    REQUIRE(mult0fp.is<binary_term<FO>>());
-    REQUIRE(div0fp.is<binary_term<FO>>());
+    REQUIRE(plus.is<binary_term>());
+    REQUIRE(minus.is<binary_term>());
+    REQUIRE(neg.is<unary_term>());
+    REQUIRE(mult.is<binary_term>());
+    REQUIRE(div.is<binary_term>());
+    REQUIRE(plus0.is<binary_term>());
+    REQUIRE(minus0.is<binary_term>());
+    REQUIRE(mult0.is<binary_term>());
+    REQUIRE(div0.is<binary_term>());
+    REQUIRE(plus0p.is<binary_term>());
+    REQUIRE(minus0p.is<binary_term>());
+    REQUIRE(mult0p.is<binary_term>());
+    REQUIRE(div0p.is<binary_term>());
+    REQUIRE(plus0f.is<binary_term>());
+    REQUIRE(minus0f.is<binary_term>());
+    REQUIRE(mult0f.is<binary_term>());
+    REQUIRE(div0f.is<binary_term>());
+    REQUIRE(plus0fp.is<binary_term>());
+    REQUIRE(minus0fp.is<binary_term>());
+    REQUIRE(mult0fp.is<binary_term>());
+    REQUIRE(div0fp.is<binary_term>());
     
   }
 
@@ -500,7 +500,7 @@ TEST_CASE("New API") {
 
     formula complex = (x == 0 && G(wnext(x) == f(x) + 1) && F(x == 42));
 
-    REQUIRE(complex.is<conjunction<LTLFO>>());
+    REQUIRE(complex.is<conjunction>());
   }
   
   SECTION("Iteration over associative operators") {
@@ -511,8 +511,8 @@ TEST_CASE("New API") {
     variable x = sigma.variable("x");
     variable y = sigma.variable("y");
 
-    conjunction<LTL> c = b && ((p && (b && p)) && b);
-    addition<FO> sum = x + ((y + (x + y)) + x);
+    conjunction c = b && ((p && (b && p)) && b);
+    addition sum = x + ((y + (x + y)) + x);
 
     using view_t = decltype(c.operands());
     STATIC_REQUIRE(std::input_or_output_iterator<view_t::const_iterator>);
@@ -522,16 +522,16 @@ TEST_CASE("New API") {
     STATIC_REQUIRE(std::ranges::view<view_t>);
     STATIC_REQUIRE(std::ranges::viewable_range<view_t>);
 
-    std::vector<formula<LTL>> v1 = {b, p, b, p, b};
-    std::vector<formula<LTL>> v2;
+    std::vector<formula> v1 = {b, p, b, p, b};
+    std::vector<formula> v2;
 
     for(auto f : c.operands())
       v2.push_back(f);
 
     REQUIRE(v1 == v2);
     
-    std::vector<term<FO>> tv1 = {x, y, x, y, x};
-    std::vector<term<FO>> tv2;
+    std::vector<term> tv1 = {x, y, x, y, x};
+    std::vector<term> tv2;
 
     for(auto f : sum.operands())
       tv2.push_back(f);
@@ -551,7 +551,7 @@ TEST_CASE("New API") {
 
     REQUIRE(has_any_element_of(
       p && !p && x > x && exists({x[s]}, x > x) && F(F(top)),
-      syntax_element::boolean, quantifier<FO>::type::forall{}
+      syntax_element::boolean, quantifier::type::forall{}
     ));
   }
 

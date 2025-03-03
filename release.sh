@@ -179,47 +179,6 @@ end
 END
 }
 
-python-build-one() {
-  python=/usr/bin/python$1
-
-  rm -rf "$SRC_DIR/build"
-  mkdir "$SRC_DIR/build"
-  ubuntu 24.04 cmake \
-    -DENABLE_CMSAT=NO -DENABLE_CVC5=NO \
-    -DPython3_EXECUTABLE=$python -DPYTHON_EXECUTABLE=$python .. || die
-  ubuntu 24.04 make -j $(cat /proc/cpuinfo | grep processor | wc -l) || die
-  ubuntu 24.04 root \
-    bash -c "make install && $python python/setup.py bdist_wheel" || die
-  ubuntu 24.04 root chown -R $(id -u):$(id -u) /black/build || die
-  
-  wheel=$(echo "$SRC_DIR"/build/dist/*.whl)
-  manylinux=$(echo $wheel | sed 's/linux/manylinux1/g')
-  mv $wheel $manylinux
-  
-  mkdir -p "$SRC_DIR/packages/$VERSION"
-  cp "$manylinux" "$SRC_DIR/packages/$VERSION" || die
-}
-
-python-build() {
-  # python-build-one 3.8
-  python-build-one 3.9
-  python-build-one 3.10
-  python-build-one 3.11
-  python-build-one 3.12
-}
-
-python-upload() {
-  PASSWORD_FILE=~/.pypi-password.txt
-  if [ ! -f $PASSWORD_FILE ]; then
-    die "Missing $PASSWORD_FILE file"
-  fi
-
-  export TWINE_PASSWORD=$(cat $PASSWORD_FILE)
-  for whl in "$SRC_DIR"/packages/$VERSION/*.whl; do
-    twine upload -u gignico $whl
-  done
-}
-
 main () { 
   dependencies
   setup
@@ -238,13 +197,6 @@ main () {
     upload-only)
       release
       homebrew
-    ;;
-    python)
-      python-build
-      python-upload
-    ;;
-    python-upload)
-      python-upload
     ;;
     all)
       build ubuntu 24.04
