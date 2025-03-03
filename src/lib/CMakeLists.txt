@@ -145,7 +145,7 @@ set (
   src/logic/type_of.cpp
   src/logic/evaluate.cpp
   src/pipes/map.cpp
-  #src/io/lexing.cpp
+  src/plugins/plugin.cpp
 )
 
 # if(Z3_FOUND)
