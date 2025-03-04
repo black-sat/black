@@ -399,10 +399,8 @@ namespace black_internal::logic {
     typename T = std::ranges::range_value_t<Range>, 
     hierarchy R = std::invoke_result_t<F, T>
   >
-  auto fold_op(alphabet &sigma, Range const& r, F&& f)
+  auto fold_op(Range const& r, R id, F&& f)
   {
-    auto id = element_type_of_t<Op>::identity(&sigma);
-    
     using H = hierarchy_type_of_t<R::hierarchy>;
 
     H acc = id;
@@ -427,14 +425,14 @@ namespace black_internal::logic {
   template<std::ranges::range Range, typename F>
   auto big_and(alphabet &sigma, Range const& r, F&& f) {
     return fold_op<syntax_element::conjunction>(
-      sigma, r, std::forward<F>(f)
+      r, sigma.boolean(true), std::forward<F>(f)
     );
   }
   
   template<std::ranges::range Range, typename F>
   auto big_or(alphabet &sigma, Range const& r, F&& f) {
     return fold_op<syntax_element::disjunction>(
-      sigma, r, std::forward<F>(f)
+      r, sigma.boolean(false), std::forward<F>(f)
     );
   }
   
@@ -575,6 +573,14 @@ namespace black_internal::logic {
   
   inline auto operands(disjunction c) { 
     return associative_op_view<disjunction>{c};
+  }
+  
+  inline auto operands(addition c) { 
+    return associative_op_view<addition>{c};
+  }
+  
+  inline auto operands(multiplication c) { 
+    return associative_op_view<multiplication>{c};
   }
 
   //

@@ -265,7 +265,7 @@ namespace black_internal::mathsat
       [this](conjunction c) { // LCOV_EXCL_LINE
         msat_term acc = msat_make_true(env);
 
-        for(formula op : c.operands())
+        for(formula op : operands(c))
           acc = msat_make_and(env, acc, to_mathsat(op));
 
         return acc;
@@ -273,7 +273,7 @@ namespace black_internal::mathsat
       [this](disjunction c) { // LCOV_EXCL_LINE
         msat_term acc = msat_make_false(env);
 
-        for(formula op : c.operands())
+        for(formula op : operands(c))
           acc = msat_make_or(env, acc, to_mathsat(op));
 
         return acc;

@@ -28,7 +28,7 @@
 
 namespace black_internal::z3
 {
-  using namespace black::logic::fragments::FO;
+  using namespace black::logic;
 
   class BLACK_EXPORT z3 : public ::black::sat::solver
   {

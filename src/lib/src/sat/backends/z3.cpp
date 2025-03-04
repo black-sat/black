@@ -484,7 +484,7 @@ namespace black_internal::z3
         );
       },
       [&](quantifier q) {
-        bool forall = q.node_type() == quantifier::type::forall{};
+        bool forall = q.node_type() == quantifier::type::forall;
         if(forall)
           upgrade_solver();
         
@@ -524,7 +524,7 @@ namespace black_internal::z3
       },
       [&](conjunction c) {
         std::vector<Z3_ast> args;
-        for(formula op : c.operands())
+        for(formula op : operands(c))
           args.push_back(to_z3(op));
         
         black_assert(args.size() <= std::numeric_limits<unsigned int>::max());
@@ -534,7 +534,7 @@ namespace black_internal::z3
       }, // LCOV_EXCL_LINE
       [&](disjunction c) {
         std::vector<Z3_ast> args;
-        for(formula op : c.operands())
+        for(formula op : operands(c))
           args.push_back(to_z3(op));
         
         black_assert(args.size() <= std::numeric_limits<unsigned int>::max());
@@ -620,7 +620,7 @@ namespace black_internal::z3
           },
           [&](addition a) {
             std::vector<Z3_ast> z3_terms;
-            for(auto child : a.operands()) {
+            for(auto child : operands(a)) {
               z3_terms.push_back(to_z3(child));
             }
             return Z3_mk_add(
@@ -629,7 +629,7 @@ namespace black_internal::z3
           },
           [&](multiplication m) {
             std::vector<Z3_ast> z3_terms;
-            for(auto child : m.operands()) {
+            for(auto child : operands(m)) {
               z3_terms.push_back(to_z3(child));
             }
             return Z3_mk_mul(

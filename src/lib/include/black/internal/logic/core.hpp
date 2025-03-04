@@ -1492,7 +1492,7 @@ namespace black_internal::logic {
   template<hierarchy H, typename ...Args>
     requires (std::is_constructible_v<syntax_element, Args> && ...)
   bool has_any_element_of(H h, Args ...args) {
-    if(((h.node_type() == args) || ...))
+    if(((h.node()->type == args) || ...))
       return true;
     
     bool has = false;

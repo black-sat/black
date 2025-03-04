@@ -832,8 +832,10 @@ namespace black_internal::logic
 
 namespace black::logic {
 
-  using black_internal::logic::alphabet;
+  using black_internal::logic::hierarchy;
   using black_internal::logic::syntax_element;
+  using black_internal::logic::alphabet;
+  using black_internal::logic::otherwise;
 
   #define declare_hierarchy(Base) \
     using black_internal::logic::Base;

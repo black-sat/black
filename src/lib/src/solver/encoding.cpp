@@ -34,7 +34,7 @@ using namespace std::literals;
 namespace black_internal::encoder
 {
   // Generates the PRUNE encoding
-  formula<FO> encoder::prune(size_t k)
+  formula encoder::prune(size_t k)
   {
     if(_finite)
       return big_or(*_sigma, range(0, k), [&](size_t l) {
@@ -51,10 +51,10 @@ namespace black_internal::encoder
 
 
   // Generates the _lPRUNE_j^k encoding
-  formula<FO> encoder::l_j_k_prune(size_t l, size_t j, size_t k) {
-    return big_and(*_sigma, _requests, [&](req_t req) -> formula<FO> 
+  formula encoder::l_j_k_prune(size_t l, size_t j, size_t k) {
+    return big_and(*_sigma, _requests, [&](req_t req) -> formula 
     {
-      std::optional<formula<LTLPFO>> ev = _get_ev(req.target); 
+      std::optional<formula> ev = _get_ev(req.target); 
       if(!ev)
         return _sigma->top();
 
@@ -76,8 +76,8 @@ namespace black_internal::encoder
 
 
   // Generates the encoding for EMPTY_k
-  formula<FO> encoder::k_empty(size_t k) {
-    return big_and(*_sigma, _requests, [&,this](req_t req) -> formula<FO> {
+  formula encoder::k_empty(size_t k) {
+    return big_and(*_sigma, _requests, [&,this](req_t req) -> formula {
       if(req.type == req_t::future) {
         if(!_finite || req.strength == req_t::strong)
           return forall(req.signature, !ground(req, k));
@@ -89,10 +89,10 @@ namespace black_internal::encoder
   }
 
   // extract the requested formula from an eventuality
-  std::optional<formula<LTLPFO>> encoder::_get_ev(formula<LTLPFO> f) {
+  std::optional<formula> encoder::_get_ev(formula f) {
     return f.match(
-      [](eventually<LTLPFO> e) { return std::optional{e.argument()}; },
-      [](until<LTLPFO> u) { return std::optional{u.right()}; },
+      [](eventually e) { return std::optional{e.argument()}; },
+      [](until u) { return std::optional{u.right()}; },
       [](otherwise) { return std::nullopt; }
     );
   }
@@ -104,7 +104,7 @@ namespace black_internal::encoder
   // Generates the encoding for LOOP_k
   // This is modified to allow the extraction of the loop index when printing
   // the model of the formula
-  formula<FO> encoder::k_loop(size_t k) {
+  formula encoder::k_loop(size_t k) {
     if(_finite)
       return _sigma->bottom();
 
@@ -121,16 +121,16 @@ namespace black_internal::encoder
   }
 
   // Generates the encoding for _lP_k
-  formula<FO> encoder::l_to_k_period(size_t l, size_t k) {
+  formula encoder::l_to_k_period(size_t l, size_t k) {
 
-    return big_and(*_sigma, _requests, [&](req_t req) -> formula<FO> {
-      std::optional<formula<LTLPFO>> ev = _get_ev(req.target);
+    return big_and(*_sigma, _requests, [&](req_t req) -> formula {
+      std::optional<formula> ev = _get_ev(req.target);
       if(!ev)
         return _sigma->top();
       
       // Creating the encoding
-      formula<FO> proposition_phi_k = ground(req, k);
-      formula<FO> body_impl = 
+      formula proposition_phi_k = ground(req, k);
+      formula body_impl = 
         big_or(*_sigma, range(l + 1, k + 1), [&](size_t i) {
           return to_ground_snf(*ev, i, req.signature);
         });
@@ -141,9 +141,9 @@ namespace black_internal::encoder
 
 
   // Generates the encoding for _lR_k
-  formula<FO> encoder::l_to_k_loop(size_t l, size_t k, bool close_yesterdays) {
+  formula encoder::l_to_k_loop(size_t l, size_t k, bool close_yesterdays) {
     return big_and(*_sigma, _requests, [&](req_t req) {
-      formula<FO> f = forall(req.signature,
+      formula f = forall(req.signature,
         iff( ground(req, l), ground(req, k) )
       );
       if(req.type == req_t::past && close_yesterdays)
@@ -157,9 +157,9 @@ namespace black_internal::encoder
 
 
   // Generates the k-unraveling step for the given k.
-  formula<FO> encoder::k_unraveling(size_t k) {
+  formula encoder::k_unraveling(size_t k) {
     if (k == 0) {
-      auto init = big_and(*_sigma, _requests, [&](req_t req) -> formula<FO> {
+      auto init = big_and(*_sigma, _requests, [&](req_t req) -> formula {
         if(req.type == req_t::past) {
           switch(req.strength) {
             case req_t::strong:
@@ -208,21 +208,21 @@ namespace black_internal::encoder
   
   // Turns the current formula into Stepped Normal Form
   // Note: this has to be run *after* the transformation to NNF (to_nnf() below)
-  formula<FO> encoder::to_ground_snf(
-    formula<LTLPFO> f, size_t k, std::vector<var_decl> env
+  formula encoder::to_ground_snf(
+    formula f, size_t k, std::vector<var_decl> env
   ) {
     return f.match( // LCOV_EXCL_LINE
       [&](boolean b)      { return b; },
-      [&](atom<LTLPFO> a) -> formula<FO> {
+      [&](atom a) -> formula {
         return wrapped(a, k);
       }, // LCOV_EXCL_LINE
-      [&](equality<LTLPFO> e) -> formula<FO> {
+      [&](equality e) -> formula {
         return wrapped(e, k);
       },
-      [&](comparison<LTLPFO> c) -> formula<FO> {
+      [&](comparison c) -> formula {
         return wrapped(c, k);
       },
-      [&](quantifier<LTLPFO> q) {
+      [&](quantifier q) {
         nest_scope_t nest{_xi};
         
         for(auto decl : q.variables())
@@ -230,183 +230,170 @@ namespace black_internal::encoder
 
         env.insert(env.end(), q.variables().begin(), q.variables().end());
 
-        auto result = quantifier<FO>(
+        auto result = quantifier(
           q.node_type(), q.variables(), to_ground_snf(q.matrix(), k, env)
         );
 
         return result;
       }, // LCOV_EXCL_LINE
       [&](proposition p)  { return stepped(p, k); },
-      [&](negation<LTLPFO> n) { 
+      [&](negation n) { 
         return !to_ground_snf(n.argument(),k, env); 
       },
-      [&](tomorrow<LTLPFO> t) -> formula<FO> { 
+      [&](tomorrow t) -> formula { 
         return ground(mk_req(t, env), k);
       },
-      [&](w_tomorrow<LTLPFO> t) -> formula<FO> { 
+      [&](w_tomorrow t) -> formula { 
         return ground(mk_req(t, env), k);
       },
-      [&](yesterday<LTLPFO> y) -> formula<FO> { 
+      [&](yesterday y) -> formula { 
         return ground(mk_req(y, env), k);
       },
-      [&](w_yesterday<LTLPFO> y) -> formula<FO> { 
+      [&](w_yesterday y) -> formula { 
         return ground(mk_req(y, env), k);
       },
-      [&](conjunction<LTLPFO> c) {
-        return big_and(*f.sigma(), c.operands(), [&](auto op) {
+      [&](conjunction c) {
+        return big_and(*f.sigma(), operands(c), [&](auto op) {
           return to_ground_snf(op, k, env);
         });
       },
-      [&](disjunction<LTLPFO> c) {
-        return big_or(*f.sigma(), c.operands(), [&](auto op) {
+      [&](disjunction c) {
+        return big_or(*f.sigma(), operands(c), [&](auto op) {
           return to_ground_snf(op, k, env);
         });
       },
-      [&](until<LTLPFO> u, auto left, auto right) {
+      [&](until u, auto left, auto right) {
         return to_ground_snf(right || (left && X(u)), k, env);
       },
-      [&](w_until<LTLPFO> w, auto left, auto right) {
+      [&](w_until w, auto left, auto right) {
         return to_ground_snf(right || (left && wX(w)), k, env);
       },
-      [&](eventually<LTLPFO> e, auto op) {
+      [&](eventually e, auto op) {
         return to_ground_snf(op || X(e), k, env);
       },
-      [&](always<LTLPFO> a, auto op) {
+      [&](always a, auto op) {
         return to_ground_snf(op && wX(a), k, env);
       },
-      [&](release<LTLPFO> r, auto left, auto right) {
+      [&](release r, auto left, auto right) {
         return to_ground_snf((left && right) || (right && wX(r)), k, env);
       },
-      [&](s_release<LTLPFO> r, auto left, auto right) {
+      [&](s_release r, auto left, auto right) {
         return to_ground_snf((left && right) || (right && X(r)), k, env);
       },
-      [&](since<LTLPFO> s, auto left, auto right) {
+      [&](since s, auto left, auto right) {
         return to_ground_snf(right || (left && Y(s)), k, env);
       },
-      [&](triggered<LTLPFO> t, auto left, auto right) {
+      [&](triggered t, auto left, auto right) {
         return to_ground_snf((left && right) || (right && Z(t)), k, env);
       },
-      [&](once<LTLPFO> o, auto op) {
+      [&](once o, auto op) {
         return to_ground_snf(op || Y(o), k, env);
       },
-      [&](historically<LTLPFO> h, auto op) {
+      [&](historically h, auto op) {
         return to_ground_snf(op && Z(h), k, env);
       },
-      [&](implication<LTLPFO>) -> formula<FO> { // LCOV_EXCL_LINE 
+      [&](implication) -> formula { // LCOV_EXCL_LINE 
         black_unreachable(); // LCOV_EXCL_LINE 
       },
-      [&](iff<LTLPFO>) -> formula<FO> { // LCOV_EXCL_LINE 
+      [&](iff) -> formula { // LCOV_EXCL_LINE 
         black_unreachable(); // LCOV_EXCL_LINE
       }
     );
   }
 
   // Duals for temporal operators used in to_nnf()
-  static unary<LTLPFO>::type dual(unary<LTLPFO>::type t) {
-    return t.match(
-      [&](unary<LTLPFO>::type::negation) { // LCOV_EXCL_LINE
-        return unary<LTLPFO>::type::negation{}; // LCOV_EXCL_LINE
-      },
-      [&](unary<LTLPFO>::type::tomorrow) {
-        return unary<LTLPFO>::type::w_tomorrow{};
-      },
-      [&](unary<LTLPFO>::type::w_tomorrow) {
-        return unary<LTLPFO>::type::tomorrow{};
-      },
-      [&](unary<LTLPFO>::type::yesterday) {
-        return unary<LTLPFO>::type::w_yesterday{};
-      },
-      [&](unary<LTLPFO>::type::w_yesterday) {
-        return unary<LTLPFO>::type::yesterday{};
-      },
-      [&](unary<LTLPFO>::type::always) {
-        return unary<LTLPFO>::type::eventually{};
-      },
-      [&](unary<LTLPFO>::type::eventually) {
-        return unary<LTLPFO>::type::always{};
-      },
-      [&](unary<LTLPFO>::type::once) {
-        return unary<LTLPFO>::type::historically{};
-      },
-      [&](unary<LTLPFO>::type::historically) {
-        return unary<LTLPFO>::type::once{};
-      }
-    );
+  static unary::type dual(unary::type t) {
+    switch(t) {
+      case unary::type::negation:
+        return unary::type::negation;
+      case unary::type::tomorrow:
+        return unary::type::w_tomorrow;
+      case unary::type::w_tomorrow:
+        return unary::type::tomorrow;
+      case unary::type::yesterday:
+        return unary::type::w_yesterday;
+      case unary::type::w_yesterday:
+        return unary::type::yesterday;
+      case unary::type::always:
+        return unary::type::eventually;
+      case unary::type::eventually:
+        return unary::type::always;
+      case unary::type::once:
+        return unary::type::historically;
+      case unary::type::historically:
+        return unary::type::once;
+    }
   }
 
-  static binary<LTLPFO>::type dual(binary<LTLPFO>::type t)
+  static binary::type dual(binary::type t)
   {
-    return t.match(
-      [](binary<LTLPFO>::type::until) {
-        return binary<LTLPFO>::type::release{};
-      },
-      [](binary<LTLPFO>::type::release) {
-        return binary<LTLPFO>::type::until{};
-      },
-      [](binary<LTLPFO>::type::w_until) {
-        return binary<LTLPFO>::type::s_release{};
-      },
-      [](binary<LTLPFO>::type::s_release) {
-        return binary<LTLPFO>::type::w_until{};
-      },
-      [](binary<LTLPFO>::type::since) {
-        return binary<LTLPFO>::type::triggered{};
-      },
-      [](binary<LTLPFO>::type::triggered) {
-        return binary<LTLPFO>::type::since{};
-      },
-      [](otherwise) -> binary<LTLPFO>::type { // LCOV_EXCL_LINE
+    switch(t) {
+      case binary::type::until:
+        return binary::type::release;
+      case binary::type::release:
+        return binary::type::until;
+      case binary::type::w_until:
+        return binary::type::s_release;
+      case binary::type::s_release:
+        return binary::type::w_until;
+      case binary::type::since:
+        return binary::type::triggered;
+      case binary::type::triggered:
+        return binary::type::since;
+      case binary::type::conjunction:
+      case binary::type::disjunction:
+      case binary::type::implication:
+      case binary::type::iff:
         black_unreachable(); // LCOV_EXCL_LINE
-      }
-    );
+    }
   }
 
-  term<FO>
-  encoder::stepped(term<LTLPFO> t, size_t k) 
+  term
+  encoder::stepped(term t, size_t k) 
   {
     return t.match( // LCOV_EXCL_LINE
-      [](constant<LTLPFO> c) { return *c.to<constant<FO>>(); },
+      [](constant c) { return *c.to<constant>(); },
       [&](variable x) {
         return stepped(x, k);
       },
-      [&](application<LTLPFO> a) {
-        std::vector<term<FO>> terms;
+      [&](application a) {
+        std::vector<term> terms;
         for(term ti : a.terms())
           terms.push_back(stepped(ti, k));
         
-        return application<FO>(stepped(a.func(), k), terms);
+        return application(stepped(a.func(), k), terms);
       }, // LCOV_EXCL_LINE
-      [&](to_integer<LTLPFO>, auto arg) {
+      [&](to_integer, auto arg) {
         return to_integer(stepped(arg, k));
       },
-      [&](to_real<LTLPFO>, auto arg) {
+      [&](to_real, auto arg) {
         return to_real(stepped(arg, k));
       },
-      [&](next<LTLPFO>, term<LTLPFO> arg) {
+      [&](next, term arg) {
         return ground(lookahead_t{
           *arg.to<variable>(), req_t::future, req_t::strong
         }, k);
       },
-      [&](wnext<LTLPFO>, term<LTLPFO> arg) {
+      [&](wnext, term arg) {
         return ground(lookahead_t{
           *arg.to<variable>(), req_t::future, req_t::weak
         }, k);
       },
-      [&](prev<LTLPFO>, term<LTLPFO> arg) {
+      [&](prev, term arg) {
         return ground(lookahead_t{
           *arg.to<variable>(), req_t::past, req_t::strong
         }, k);
       },
-      [&](wprev<LTLPFO>, term<LTLPFO> arg) {
+      [&](wprev, term arg) {
         return ground(lookahead_t{
           *arg.to<variable>(), req_t::past, req_t::weak
         }, k);
       },
-      [&](negative<LTLPFO>, auto arg) {
-        return negative<FO>(stepped(arg, k));
+      [&](negative, auto arg) {
+        return negative(stepped(arg, k));
       },
-      [&](binary_term<LTLPFO> b, auto left, auto right) {
-        return binary_term<FO>(
+      [&](binary_term b, auto left, auto right) {
+        return binary_term(
           b.node_type(), stepped(left, k), stepped(right, k)
         );
       }
@@ -451,33 +438,33 @@ namespace black_internal::encoder
     return sf;
   }
 
-  atom<FO> encoder::stepped(atom<LTLPFO> a, size_t k) {
-    std::vector<term<FO>> terms;
-    for(term<LTLPFO> t : a.terms())
+  atom encoder::stepped(atom a, size_t k) {
+    std::vector<term> terms;
+    for(term t : a.terms())
       terms.push_back(stepped(t, k));
 
     relation stepped_rel = stepped(a.rel(), k);
-    return atom<FO>(stepped_rel, terms);
+    return atom(stepped_rel, terms);
   }
 
-  equality<FO> encoder::stepped(equality<LTLPFO> e, size_t k) {
-    std::vector<term<FO>> stepterms;
+  equality encoder::stepped(equality e, size_t k) {
+    std::vector<term> stepterms;
     for(auto t : e.terms())
       stepterms.push_back(stepped(t, k));
     
-    return equality<FO>(e.node_type(), stepterms);
+    return equality(e.node_type(), stepterms);
   }
 
-  comparison<FO> encoder::stepped(comparison<LTLPFO> c, size_t k) {
-    term<FO> stepleft = stepped(c.left(), k);
-    term<FO> stepright = stepped(c.right(), k);
+  comparison encoder::stepped(comparison c, size_t k) {
+    term stepleft = stepped(c.left(), k);
+    term stepright = stepped(c.right(), k);
 
-    return comparison<FO>(c.node_type(), stepleft, stepright);
+    return comparison(c.node_type(), stepleft, stepright);
   }
 
 
   proposition encoder::stepped(proposition p, size_t k) {
-    return p.sigma()->proposition(std::pair{formula<LTLPFO>{p}, k});
+    return p.sigma()->proposition(std::pair{formula{p}, k});
   }
 
   proposition encoder::not_last_prop(size_t k) {
@@ -488,13 +475,13 @@ namespace black_internal::encoder
     return stepped(_sigma->proposition("__not_first"sv), k);
   }
 
-  formula<FO> encoder::wrapped(formula<LTLPFO> f, size_t k) {
+  formula encoder::wrapped(formula f, size_t k) {
 
     auto s = f.match(
-      [&](atom<LTLPFO> a) { return stepped(a, k); },
-      [&](equality<LTLPFO> e) { return stepped(e, k); },
-      [&](comparison<LTLPFO> c) { return stepped(c, k); },
-      [](otherwise) -> formula<FO> { black_unreachable(); }
+      [&](atom a) { return stepped(a, k); },
+      [&](equality e) { return stepped(e, k); },
+      [&](comparison c) { return stepped(c, k); },
+      [](otherwise) -> formula { black_unreachable(); }
     );
 
     auto [future, past] = strength(f);
@@ -525,7 +512,7 @@ namespace black_internal::encoder
     return g;
   }
 
-  formula<FO> encoder::ground(req_t req, size_t k) {
+  formula encoder::ground(req_t req, size_t k) {
     if(req.signature.empty())
       return req.target.sigma()->proposition(std::pair{req, k});
     
@@ -536,7 +523,7 @@ namespace black_internal::encoder
     return rel(req.signature);
   }
 
-  formula<FO> encoder::forall(std::vector<var_decl> env, formula<FO> f) {
+  formula encoder::forall(std::vector<var_decl> env, formula f) {
     if(env.empty())
       return f;
     
@@ -544,60 +531,60 @@ namespace black_internal::encoder
   }
 
   // Transformation in NNF
-  formula<LTLPFO> encoder::to_nnf(formula<LTLPFO> f) {
+  formula encoder::to_nnf(formula f) {
     if(auto it = _nnf_cache.find(f); it != _nnf_cache.end())
       return it->second;     
 
     formula nnf = f.match( // LCOV_EXCL_LINE
       [](boolean b) { return b; },
       [](proposition p) { return p; },
-      [](atom<LTLPFO> a) { return a; },
-      [](equality<LTLPFO> e) { return e; },
-      [](comparison<LTLPFO> c) { return c; },
-      [&](quantifier<LTLPFO> q) {
-        return quantifier<LTLPFO>(
+      [](atom a) { return a; },
+      [](equality e) { return e; },
+      [](comparison c) { return c; },
+      [&](quantifier q) {
+        return quantifier(
           q.node_type(), q.variables(), to_nnf(q.matrix())
         );
       },
       // Push the negation down to literals
-      [&](negation<LTLPFO> n) {
+      [&](negation n) {
         return n.argument().match(
           [&](boolean)             { return n; },
           [&](proposition)         { return n; },
-          [&](atom<LTLPFO>)        { return n; },
-          [&](equality<LTLPFO>)    { return n; },
-          [&](comparison<LTLPFO>)  { return n; },
-          [&](quantifier<LTLPFO> q) {
-            quantifier<LTLPFO>::type dual = quantifier<LTLPFO>::type::exists{};
-            if(q.node_type() == quantifier<LTLPFO>::type::exists{})
-              dual = quantifier<LTLPFO>::type::forall{};
+          [&](atom)        { return n; },
+          [&](equality)    { return n; },
+          [&](comparison)  { return n; },
+          [&](quantifier q) {
+            quantifier::type dual = quantifier::type::exists;
+            if(q.node_type() == quantifier::type::exists)
+              dual = quantifier::type::forall;
 
-            return quantifier<LTLPFO>(dual, q.variables(), to_nnf(!q.matrix()));
+            return quantifier(dual, q.variables(), to_nnf(!q.matrix()));
           },
-          [&](negation<LTLPFO>, auto op) { // special case for double negation
+          [&](negation, auto op) { // special case for double negation
             return to_nnf(op);
           },
-          [&](unary<LTLPFO> u) {
-            return unary<LTLPFO>(dual(u.node_type()), to_nnf(!u.argument()));
+          [&](unary u) {
+            return unary(dual(u.node_type()), to_nnf(!u.argument()));
           },
-          [&](implication<LTLPFO>, auto left, auto right) {
+          [&](implication, auto left, auto right) {
             return to_nnf(left) && to_nnf(!right);
           },
-          [&](iff<LTLPFO>, auto left, auto right) {
+          [&](iff, auto left, auto right) {
             return to_nnf(!implies(left,right)) || to_nnf(!implies(right,left));
           },
-          [&](conjunction<LTLPFO> c) {
-            return big_or(*f.sigma(), c.operands(), [&](auto op) {
+          [&](conjunction c) {
+            return big_or(*f.sigma(), operands(c), [&](auto op) {
               return to_nnf(!op);
             });
           },
-          [&](disjunction<LTLPFO> c) {
-            return big_and(*f.sigma(), c.operands(), [&](auto op) {
+          [&](disjunction c) {
+            return big_and(*f.sigma(), operands(c), [&](auto op) {
               return to_nnf(!op);
             });
           },
-          [&](binary<LTLPFO> b, auto left, auto right) {
-            return binary<LTLPFO>(
+          [&](binary b, auto left, auto right) {
+            return binary(
                 dual(b.node_type()),
                 to_nnf(!left), to_nnf(!right)
             );
@@ -605,27 +592,27 @@ namespace black_internal::encoder
         );
       },
       // other cases: just recurse down the formula
-      [&](unary<LTLPFO> u) {
-        return unary<LTLPFO>(u.node_type(), to_nnf(u.argument()));
+      [&](unary u) {
+        return unary(u.node_type(), to_nnf(u.argument()));
       },
-      [&](implication<LTLPFO>, auto left, auto right) {
+      [&](implication, auto left, auto right) {
         return to_nnf(!left) || to_nnf(right);
       },
-      [&](iff<LTLPFO>, auto left, auto right) {
+      [&](iff, auto left, auto right) {
 	      return to_nnf(implies(left, right)) && to_nnf(implies(right, left));
       },
-      [&](conjunction<LTLPFO> c) {
-        return big_and(*f.sigma(), c.operands(), [&](auto op) {
+      [&](conjunction c) {
+        return big_and(*f.sigma(), operands(c), [&](auto op) {
           return to_nnf(op);
         });
       },
-      [&](disjunction<LTLPFO> c) {
-        return big_or(*f.sigma(), c.operands(), [&](auto op) {
+      [&](disjunction c) {
+        return big_or(*f.sigma(), operands(c), [&](auto op) {
           return to_nnf(op);
         });
       },
-      [&](binary<LTLPFO> b) {
-        return binary<LTLPFO>(
+      [&](binary b) {
+        return binary(
           b.node_type(), to_nnf(b.left()), to_nnf(b.right())
         );
       }
@@ -635,7 +622,7 @@ namespace black_internal::encoder
     return nnf;
   }
 
-  encoder::formula_strength_t encoder::strength(formula<LTLPFO> f) {
+  encoder::formula_strength_t encoder::strength(formula f) {
     std::optional<req_t::strength_t> future;
     std::optional<req_t::strength_t> past;
 
@@ -652,23 +639,23 @@ namespace black_internal::encoder
     return {future, past};
   }
 
-  req_t encoder::mk_req(tomorrow<LTLPFO> f, std::vector<var_decl> env) {
+  req_t encoder::mk_req(tomorrow f, std::vector<var_decl> env) {
     return req_t{f.argument(), env, req_t::future, req_t::strong};
   }
 
-  req_t encoder::mk_req(w_tomorrow<LTLPFO> f, std::vector<var_decl> env) {
+  req_t encoder::mk_req(w_tomorrow f, std::vector<var_decl> env) {
     return req_t{f.argument(), env, req_t::future, req_t::weak};
   }
 
-  req_t encoder::mk_req(yesterday<LTLPFO> f, std::vector<var_decl> env) {
+  req_t encoder::mk_req(yesterday f, std::vector<var_decl> env) {
     return req_t{f.argument(), env, req_t::past, req_t::strong};
   }
 
-  req_t encoder::mk_req(w_yesterday<LTLPFO> f, std::vector<var_decl> env) {
+  req_t encoder::mk_req(w_yesterday f, std::vector<var_decl> env) {
     return req_t{f.argument(), env, req_t::past, req_t::weak};
   }
 
-  formula<LTLPFO> to_formula(req_t req) {
+  formula to_formula(req_t req) {
     switch(req.type) {
       case req_t::future:
         if(req.strength == req_t::strong)
@@ -682,33 +669,33 @@ namespace black_internal::encoder
     black_unreachable();
   }
 
-  void encoder::_collect_requests(formula<LTLPFO> f, std::vector<var_decl> env)
+  void encoder::_collect_requests(formula f, std::vector<var_decl> env)
   { 
     std::optional<req_t> req;
     f.match(
-      [&](tomorrow<LTLPFO> t)      { req = mk_req(t, env);     },
-      [&](w_tomorrow<LTLPFO> t)    { req = mk_req(t, env);     },
-      [&](yesterday<LTLPFO> y)     { req = mk_req(y, env);     },
-      [&](w_yesterday<LTLPFO> y)   { req = mk_req(y, env);     },
-      [&](until<LTLPFO> u)         { req = mk_req(X(u), env);  },
-      [&](release<LTLPFO> r)       { req = mk_req(wX(r), env); },
-      [&](w_until<LTLPFO> r)       { req = mk_req(wX(r), env); },
-      [&](s_release<LTLPFO> r)     { req = mk_req(X(r), env);  },
-      [&](always<LTLPFO> a)        { req = mk_req(wX(a), env); },
-      [&](eventually<LTLPFO> e)    { req = mk_req(X(e), env);  },
-      [&](since<LTLPFO> s)         { req = mk_req(Y(s), env);  },
-      [&](once<LTLPFO> o)          { req = mk_req(Y(o), env);  },
-      [&](triggered<LTLPFO> t)     { req = mk_req(Z(t), env);  },
-      [&](historically<LTLPFO> h)  { req = mk_req(Z(h), env);  },
-      [&](atom<LTLPFO>, auto terms) {
+      [&](tomorrow t)      { req = mk_req(t, env);     },
+      [&](w_tomorrow t)    { req = mk_req(t, env);     },
+      [&](yesterday y)     { req = mk_req(y, env);     },
+      [&](w_yesterday y)   { req = mk_req(y, env);     },
+      [&](until u)         { req = mk_req(X(u), env);  },
+      [&](release r)       { req = mk_req(wX(r), env); },
+      [&](w_until r)       { req = mk_req(wX(r), env); },
+      [&](s_release r)     { req = mk_req(X(r), env);  },
+      [&](always a)        { req = mk_req(wX(a), env); },
+      [&](eventually e)    { req = mk_req(X(e), env);  },
+      [&](since s)         { req = mk_req(Y(s), env);  },
+      [&](once o)          { req = mk_req(Y(o), env);  },
+      [&](triggered t)     { req = mk_req(Z(t), env);  },
+      [&](historically h)  { req = mk_req(Z(h), env);  },
+      [&](atom, auto terms) {
         for(auto t : terms) 
           _collect_lookaheads(t);
       },
-      [&](equality<LTLPFO>, auto terms) {
+      [&](equality, auto terms) {
         for(auto t : terms) 
           _collect_lookaheads(t);
       },
-      [&](comparison<LTLPFO>, auto left, auto right) {
+      [&](comparison, auto left, auto right) {
         _collect_lookaheads(left);
         _collect_lookaheads(right);
       },
@@ -719,22 +706,22 @@ namespace black_internal::encoder
       _requests.push_back(*req);
 
     f.match(
-      [&](quantifier<LTLPFO>, auto vars, auto matrix) { 
+      [&](quantifier, auto vars, auto matrix) { 
         env.insert(env.end(), vars.begin(), vars.end());
         _collect_requests(matrix, env);
       },
-      [&](unary<LTLPFO>, auto op) {
+      [&](unary, auto op) {
         _collect_requests(op, env);
       },
-      [&](conjunction<LTLPFO> c) {
-        for(auto op : c.operands())
+      [&](conjunction c) {
+        for(auto op : operands(c))
           _collect_requests(op, env);
       },
-      [&](disjunction<LTLPFO> c) {
-        for(auto op : c.operands())
+      [&](disjunction c) {
+        for(auto op : operands(c))
           _collect_requests(op, env);
       },
-      [&](binary<LTLPFO>, auto left, auto right) {
+      [&](binary, auto left, auto right) {
         _collect_requests(left, env);
         _collect_requests(right, env);
       },
@@ -742,20 +729,20 @@ namespace black_internal::encoder
     );
   }
 
-  void encoder::_collect_lookaheads(term<LTLPFO> t) {
+  void encoder::_collect_lookaheads(term t) {
     
     std::optional<lookahead_t> lh;
     t.match(
-      [&](next<LTLPFO>, term<LTLPFO> arg) { 
+      [&](next, term arg) { 
         lh = lookahead_t{*arg.to<variable>(), req_t::future, req_t::strong}; 
       },
-      [&](wnext<LTLPFO>, term<LTLPFO> arg) { 
+      [&](wnext, term arg) { 
         lh = lookahead_t{*arg.to<variable>(), req_t::future, req_t::weak}; 
       },
-      [&](prev<LTLPFO>, term<LTLPFO> arg) { 
+      [&](prev, term arg) { 
         lh = lookahead_t{*arg.to<variable>(), req_t::past, req_t::strong}; 
       },
-      [&](wprev<LTLPFO>, term<LTLPFO> arg) { 
+      [&](wprev, term arg) { 
         lh = lookahead_t{*arg.to<variable>(), req_t::past, req_t::weak}; 
       },
       [](otherwise) { }
@@ -766,7 +753,7 @@ namespace black_internal::encoder
 
     for_each_child(t, [&](auto child) {
       child.match(
-        [&](term<LTLPFO> c) {
+        [&](term c) {
           _collect_lookaheads(c);
         },
         [](otherwise) { }

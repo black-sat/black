@@ -219,4 +219,9 @@ namespace black_internal::logic {
   };
 }
 
+namespace black::logic {
+  using black_internal::logic::scope;
+  using black_internal::logic::nest_scope_t;
+}
+
 #endif
