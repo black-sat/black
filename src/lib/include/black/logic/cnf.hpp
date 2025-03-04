@@ -58,24 +58,24 @@ namespace black_internal::cnf
 
   // Removal of booleans from a formula. Internal use, exposed here for testing.
   BLACK_EXPORT
-  logic::formula<logic::propositional> 
-  remove_booleans(logic::formula<logic::propositional> f);
+  logic::formula 
+  remove_booleans(logic::formula f);
 
   // Tseitin conversion to CNF
   BLACK_EXPORT
-  cnf to_cnf(logic::formula<logic::propositional> f);
+  cnf to_cnf(logic::formula f);
 
   // Conversion of literals, clauses and cnfs to formulas
   BLACK_EXPORT
-  logic::formula<logic::propositional> to_formula(literal lit);
+  logic::formula to_formula(literal lit);
 
   BLACK_EXPORT
-  logic::formula<logic::propositional> to_formula(
+  logic::formula to_formula(
     logic::alphabet &sigma, clause c
   );
 
   BLACK_EXPORT
-  logic::formula<logic::propositional> to_formula(
+  logic::formula to_formula(
     logic::alphabet &sigma, cnf c
   );
 }

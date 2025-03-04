@@ -84,6 +84,24 @@ namespace black_internal::logic {
   inline constexpr size_t syntax_element_max_size = 64;
 
   //
+  // traits exposing a restriction of the syntax_element enum limited to a
+  // specific storage type or a specific hierarchy type. This is later exposed
+  // as T::type.
+  //
+  template<hierarchy_type Hierarchy>
+  struct elements_for_hierarchy { };
+  
+  template<hierarchy_type Hierarchy>
+  using elements_for_hierarchy_t = 
+    typename elements_for_hierarchy<Hierarchy>::type;
+  
+  template<storage_type Storage>
+  struct elements_for_storage { };
+  
+  template<storage_type Storage>
+  using elements_for_storage_t = typename elements_for_storage<Storage>::type;
+
+  //
   // For introspection it is useful to be able to print the values of the above
   // enumerations. Implemented later in the preprocessed code.
   //
@@ -184,7 +202,7 @@ namespace black_internal::logic {
       std::convertible_to<hierarchy_unique_id_t<T::hierarchy>>;
     { t.sigma() } -> std::convertible_to<alphabet *>;
     { t.hash() } -> std::convertible_to<size_t>;
-    { t.node_type() } -> std::same_as<syntax_element>;
+    { t.node_type() };
 
     // we should constrain the return type of `node()`, but then checking this
     // concept would force the instantiation of `hierarchy_node<>`, which is
@@ -445,8 +463,9 @@ namespace black_internal::logic {
   class hierarchy_base 
   {
   public:
-    // member required by the `hierarchy` concept
     static constexpr auto hierarchy = Hierarchy;
+    
+    using type = elements_for_hierarchy_t<Hierarchy>;
 
     // hierarchy types are not default constructible but are
     // copy/move/constructible/assignable
@@ -508,8 +527,8 @@ namespace black_internal::logic {
       return std::hash<hierarchy_node const*>{}(_node);
     }
 
-    syntax_element node_type() const {
-      return _node->type;
+    type node_type() const {
+      return static_cast<type>(_node->type);
     }
     
     // we make `sigma()` a function template because `alphabet` is still
@@ -659,6 +678,11 @@ namespace black_internal::logic {
 
   public:
     static constexpr storage_type storage = Storage;
+    using type = elements_for_storage_t<Storage>;
+
+    type node_type() const {
+      return static_cast<type>(this->node()->type);
+    }
 
     // the wrapping constructor delegates to the base's one
     storage_ctor_base(alphabet_base *sigma, hierarchy_node const*node) 
@@ -669,10 +693,15 @@ namespace black_internal::logic {
 
     template<typename = void>
       requires (storage_has_hierarchy_elements_v<Storage>)
-    explicit storage_ctor_base(syntax_element t, Args ...args) 
+    explicit storage_ctor_base(type t, Args ...args) 
       : storage_ctor_base{ 
         get_sigma(args...),
-        get_sigma(args...)->unique(storage_node<Storage>{t, std::move(args)...})
+        get_sigma(args...)->unique(
+          storage_node<Storage>{
+            static_cast<syntax_element>(t), 
+            std::move(args)...
+        }
+        )
       } { }
 
     template<typename = void>
@@ -686,11 +715,6 @@ namespace black_internal::logic {
           }
         )
       } { }
-
-    // we override `node_type()` from `hierarchy_base` to use our `type`.
-    syntax_element node_type() const {
-      return base_t::node()->type;
-    }
   };
 
   // `storage_ctor_base` needs to be passed a tuple with the arguments that the
@@ -753,7 +777,7 @@ namespace black_internal::logic {
       if constexpr(F::hierarchy != Derived::hierarchy)
         return {};
 
-      if(storage_of_element(f.node_type()) != Storage)
+      if(storage_of_element(f.node()->type) != Storage)
         return {};
 
       return Derived{f.sigma(), f.node()};
@@ -796,11 +820,6 @@ namespace black_internal::logic {
           )
         )
       } { }
-
-      // we override `type()` from `hierarchy_base` to use our `type`.
-      syntax_element node_type() const {
-        return this->node()->type;
-      }
   };
 
   //
@@ -842,7 +861,7 @@ namespace black_internal::logic {
         if constexpr(F::hierarchy != Derived::hierarchy)
           return {};
   
-        if(f.node_type() != Element)
+        if(f.node()->type != Element)
           return {};
   
         return Derived{f.sigma(), f.node()};

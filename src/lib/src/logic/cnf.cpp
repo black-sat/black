@@ -28,7 +28,7 @@
 
 namespace black_internal::cnf
 { 
-  using namespace black::logic::fragments::propositional;
+  using namespace black::logic;
 
   static
   formula remove_booleans(negation, formula op) 
@@ -115,6 +115,10 @@ namespace black_internal::cnf
       return br->value() ? l : !l;
 
     return sigma.boolean(bl->value() == br->value());
+  }
+
+  formula remove_booleans(auto, auto ...) {
+    black_unreachable();
   }
 
   formula remove_booleans(formula f) {

@@ -32,52 +32,52 @@ namespace black_internal::remove_past {
 
   // Label data type for substituting past propositional letters
   static
-  proposition past_label(formula<LTLP> f) {
+  proposition past_label(formula f) {
     using namespace std::literals;
     return f.sigma()->proposition(std::tuple{"_past_label"sv, f});
   }
 
   // Obtain semantics for yesterday propositional letter
   static
-  formula<LTL> yesterday_semantics(proposition a, formula<LTL> f) {
+  formula yesterday_semantics(proposition a, formula f) {
     return !a && G(implies(X(a), f) && implies(f, wX(a)));
   }
 
   // Obtain semantics for weak-yesterday propositional letter
   static
-  formula<LTL> w_yesterday_semantics(proposition a, formula<LTL> f) {
+  formula w_yesterday_semantics(proposition a, formula f) {
     return a && G(implies(X(a), f) && implies(f, wX(a)));
   }
 
   // Obtain semantics for since propositional letter
   static
-  formula<LTL> since_semantics(
-    proposition since, formula<LTL> l, formula<LTL> r, proposition y
+  formula since_semantics(
+    proposition since, formula l, formula r, proposition y
   ) {
     return G(iff(since, r || (l && y))) && yesterday_semantics(y, since);
   }
 
   static
-  formula<LTL> sub_past(formula<LTLP> f, std::vector<formula<LTL>> &sem) {
+  formula sub_past(formula f, std::vector<formula> &sem) {
     return f.match( // LCOV_EXCL_LINE
         [&](boolean b) { return b; },
         [&](proposition p) { return p; },
         
-        [&](yesterday<LTLP>, auto op) {
+        [&](yesterday, auto op) {
           auto sub = sub_past(op, sem);
           auto prop = past_label(Y(sub));
           sem.push_back(yesterday_semantics(prop, sub));
 
           return prop;
         },
-        [&](w_yesterday<LTLP>, auto op) {
+        [&](w_yesterday, auto op) {
           auto sub = sub_past(op, sem);
           auto prop = past_label(Z(op));
           sem.push_back(w_yesterday_semantics(prop, sub));
 
           return prop;
         },
-        [&](since<LTLP>, auto left, auto right) {
+        [&](since, auto left, auto right) {
           auto lsub = sub_past(left, sem);
           auto rsub = sub_past(right, sem);
           auto prop = past_label(S(lsub, rsub));
@@ -87,33 +87,30 @@ namespace black_internal::remove_past {
 
           return prop;
         },
-        [&](triggered<LTLP>, auto left, auto right) {
+        [&](triggered, auto left, auto right) {
           return sub_past(!S(!left, !right), sem);
         },
-        [&](once<LTLP> p, auto op) { 
+        [&](once p, auto op) { 
           return sub_past(S(p.sigma()->top(), op), sem); 
         },
-        [&](historically<LTLP>, auto op) { 
+        [&](historically, auto op) { 
           return sub_past(!O(!op), sem); 
         },
-        [&](unary<LTLP> u, auto arg) {
-          return unary<LTL>(
-            *u.node_type().to<unary<LTL>::type>(), sub_past(arg, sem)
-          );
+        [&](unary u, auto arg) {
+          return unary(u.node_type(), sub_past(arg, sem));
         },
-        [&](binary<LTLP> b, auto left, auto right) {
-          return binary<LTL>(
-            *b.node_type().to<binary<LTL>::type>(),
-            sub_past(left, sem), sub_past(right, sem)
+        [&](binary b, auto left, auto right) {
+          return binary(
+            b.node_type(), sub_past(left, sem), sub_past(right, sem)
           );
         }
     );
   }
 
-  formula<LTL> remove_past(formula<LTLP> f) {
+  formula remove_past(formula f) {
     
-    std::vector<formula<LTL>> semantics;
-    formula<LTL> ltl = sub_past(f, semantics);
+    std::vector<formula> semantics;
+    formula ltl = sub_past(f, semantics);
 
     // Conjoin the ltl formula with its semantics formulas
     return // LCOV_EXCL_LINE

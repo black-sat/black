@@ -34,18 +34,18 @@ namespace black_internal::logic
 {
 
   static
-  bool does_need_parens(formula<LTLPFO> parent, formula<LTLPFO> arg) {
+  bool does_need_parens(formula parent, formula arg) {
     bool parens = false;
     arg.match(
-      [&](binary<LTLPFO>) {
+      [&](binary) {
         parens = 
-        (!parent.is<conjunction<LTLPFO>>() && !parent.is<disjunction<LTLPFO>>())
+        (!parent.is<conjunction>() && !parent.is<disjunction>())
           || (parent.node_type() != arg.node_type());
       },
-      [&](comparison<LTLPFO>) {
+      [&](comparison) {
         parens = true;
       },
-      [&](quantifier<LTLPFO>) {
+      [&](quantifier) {
         parens = true;
       },
       [&](otherwise) { }
@@ -55,57 +55,77 @@ namespace black_internal::logic
   }
 
   static
-  std::string to_string(unary<LTLPFO>::type t) {
-    return t.match(
-      [](unary<LTLPFO>::type::negation)     { return "!"; },
-      [](unary<LTLPFO>::type::tomorrow)     { return "X"; },
-      [](unary<LTLPFO>::type::w_tomorrow)   { return "wX"; },
-      [](unary<LTLPFO>::type::yesterday)    { return "Y"; },
-      [](unary<LTLPFO>::type::w_yesterday)  { return "Z"; },
-      [](unary<LTLPFO>::type::always)       { return "G"; },
-      [](unary<LTLPFO>::type::eventually)   { return "F"; },
-      [](unary<LTLPFO>::type::once)         { return "O"; },
-      [](unary<LTLPFO>::type::historically) { return "H"; }
-    );
+  std::string to_string(unary::type t) {
+    switch(t) {
+      case unary::type::negation:
+        return "!";
+      case unary::type::tomorrow:
+        return "X";
+      case unary::type::w_tomorrow:
+        return "wX";
+      case unary::type::yesterday:
+        return "Y";
+      case unary::type::w_yesterday:
+        return "Z";
+      case unary::type::always:
+        return "G";
+      case unary::type::eventually:
+        return "F";
+      case unary::type::once:
+        return "O";
+      case unary::type::historically:
+        return "H";
+    }
   }
 
   static
-  std::string to_string(binary<LTLPFO>::type t) {
-    return t.match(
-      [](binary<LTLPFO>::type::conjunction) { return "&"; },
-      [](binary<LTLPFO>::type::disjunction) { return "|"; },
-      [](binary<LTLPFO>::type::implication) { return "->"; },
-      [](binary<LTLPFO>::type::iff)         { return "<->"; },
-      [](binary<LTLPFO>::type::until)       { return "U"; },
-      [](binary<LTLPFO>::type::release)     { return "R"; },
-      [](binary<LTLPFO>::type::w_until)     { return "W"; },
-      [](binary<LTLPFO>::type::s_release)   { return "M"; },
-      [](binary<LTLPFO>::type::since)       { return "S"; },
-      [](binary<LTLPFO>::type::triggered)   { return "T"; }
-    );
+  std::string to_string(binary::type t) {
+    switch(t) {
+      case binary::type::conjunction:
+        return "&";
+      case binary::type::disjunction:
+        return "|";
+      case binary::type::implication:
+        return "->";
+      case binary::type::iff:        
+        return "<->";
+      case binary::type::until:      
+        return "U";
+      case binary::type::release:    
+        return "R";
+      case binary::type::w_until:    
+        return "W";
+      case binary::type::s_release:  
+        return "M";
+      case binary::type::since:      
+        return "S";
+      case binary::type::triggered:  
+        return "T";
+    }
   }
 
   static
-  std::string to_string(equality<LTLPFO>::type t, bool binary) {
-    if(binary)
-      return t.match(
-        [](equality<LTLPFO>::type::equal)    { return "="; },
-        [](equality<LTLPFO>::type::distinct) { return "!="; }
-      );
-    return t.match(
-      [](equality<LTLPFO>::type::equal)    { return "equal"; },
-      [](equality<LTLPFO>::type::distinct) { return "distinct"; }
-    );
+  std::string to_string(equality::type t, bool binary) {
+    switch(t) {
+      case equality::type::equal:
+        return binary ? "=" : "equal";
+      case equality::type::distinct:
+        return binary ? "!=" : "distinct";
+    }
   }
 
   static
-  std::string to_string(comparison<LTLPFO>::type t) {
-    return t.match(
-      [](comparison<LTLPFO>::type::less_than)          { return "<"; },
-      [](comparison<LTLPFO>::type::less_than_equal)    { return "<="; },
-      [](comparison<LTLPFO>::type::greater_than)       { return ">"; },
-      [](comparison<LTLPFO>::type::greater_than_equal) { return ">="; }
-    );
+  std::string to_string(comparison::type t) {
+    switch(t) {
+      case comparison::type::less_than:
+        return "<";
+      case comparison::type::less_than_equal:
+        return "<=";
+      case comparison::type::greater_than:
+        return ">";
+      case comparison::type::greater_than_equal:
+        return ">=";
+    }
   }
 
   template<typename T>
@@ -148,12 +168,12 @@ namespace black_internal::logic
   }
 
   static
-  std::string term_parens(term<LTLPFO> t) {
+  std::string term_parens(term t) {
     return t.match(
       [&](variable) {
         return to_string(t);
       },
-      [&](constant<LTLPFO>) {
+      [&](constant) {
         return to_string(t);
       },
       [&](otherwise) {
@@ -162,19 +182,19 @@ namespace black_internal::logic
     );
   }
 
-  std::string to_string(term<LTLPFO> t)
+  std::string to_string(term t)
   {
     using namespace std::literals;
     using namespace black_internal;
 
     return t.match(
-      [&](constant<LTLPFO> c) {
+      [&](constant c) {
         return to_string(c.value());
       },
       [&](variable x) {
         return escape(to_string(x.name()));
       },
-      [&](application<LTLPFO> a) {
+      [&](application a) {
         std::string result = 
           escape(to_string(a.func().name())) + "(" + to_string(a.terms()[0]);
         for(size_t i = 1; i < a.terms().size(); ++i) {
@@ -184,46 +204,46 @@ namespace black_internal::logic
 
         return result;
       }, // LCOV_EXCL_LINE
-      [&](negative<LTLPFO>, auto arg) {
+      [&](negative, auto arg) {
         return fmt::format("-({})", to_string(arg));
       },
-      [&](to_integer<LTLPFO>, auto arg) {
+      [&](to_integer, auto arg) {
         return fmt::format("to_int({})", to_string(arg));
       },
-      [&](to_real<LTLPFO>, auto arg) {
+      [&](to_real, auto arg) {
         return fmt::format("to_real({})", to_string(arg));
       },
-      [&](next<LTLPFO>, auto arg) {
+      [&](next, auto arg) {
         return fmt::format("next({})", to_string(arg));
       },
-      [&](wnext<LTLPFO>, auto arg) {
+      [&](wnext, auto arg) {
         return fmt::format("wnext({})", to_string(arg));
       },
-      [&](prev<LTLPFO>, auto arg) {
+      [&](prev, auto arg) {
         return fmt::format("prev({})", to_string(arg));
       },
-      [&](wprev<LTLPFO>, auto arg) {
+      [&](wprev, auto arg) {
         return fmt::format("wprev({})", to_string(arg));
       },
-      [&](addition<LTLPFO>, auto left, auto right) {
+      [&](addition, auto left, auto right) {
         return fmt::format("{} + {}", term_parens(left), term_parens(right));
       },
-      [&](subtraction<LTLPFO>, auto left, auto right) {
+      [&](subtraction, auto left, auto right) {
         return fmt::format("{} - {}", term_parens(left), term_parens(right));
       },
-      [&](multiplication<LTLPFO>, auto left, auto right) {
+      [&](multiplication, auto left, auto right) {
         return fmt::format("{} * {}", term_parens(left), term_parens(right));
       },
-      [&](division<LTLPFO>, auto left, auto right) {
+      [&](division, auto left, auto right) {
         return fmt::format("{} / {}", term_parens(left), term_parens(right));
       },
-      [&](int_division<LTLPFO>, auto left, auto right) {
+      [&](int_division, auto left, auto right) {
         return fmt::format("{} div {}", term_parens(left), term_parens(right));
       }
     );
   }
 
-  std::string to_string(formula<LTLPFO> f)
+  std::string to_string(formula f)
   {
     using namespace std::literals;
     using namespace ::black_internal;
@@ -232,7 +252,7 @@ namespace black_internal::logic
       [&](proposition p) {
         return escape(to_string(p.name()));
       },
-      [&](atom<LTLPFO> a) {
+      [&](atom a) {
         std::string result = 
           escape(to_string(a.rel().name())) + "(" + to_string(a.terms()[0]);
         for(size_t i = 1; i < a.terms().size(); ++i) {
@@ -242,7 +262,7 @@ namespace black_internal::logic
 
         return result;
       }, // LCOV_EXCL_LINE
-      [](equality<LTLPFO> e, auto terms) {
+      [](equality e, auto terms) {
         black_assert(terms.size() > 0);
 
         if(terms.size() == 2) 
@@ -259,17 +279,17 @@ namespace black_internal::logic
         
         return fmt::format("{}({})", to_string(e.node_type(), false), args);
       },
-      [](comparison<LTLPFO> c, auto left, auto right) {
+      [](comparison c, auto left, auto right) {
         return fmt::format(
           "{} {} {}", 
           to_string(left), to_string(c.node_type()), to_string(right)
         );
       },
-      [](quantifier<LTLPFO> q) {
-        std::string qs = q.node_type() == quantifier<LTLPFO>::type::exists{} ?
+      [](quantifier q) {
+        std::string qs = q.node_type() == quantifier::type::exists ?
           "exists " : "forall ";
 
-        bool parens = q.matrix().is<binary<LTLPFO>>();
+        bool parens = q.matrix().is<binary>();
 
         for(var_decl d : q.variables()) {
           qs += 
@@ -281,21 +301,21 @@ namespace black_internal::logic
       [](boolean, bool b) {
         return b ? "True" : "False";
       },
-      [](negation<LTLPFO> n, auto arg) {
+      [](negation n, auto arg) {
         bool needs_parens = does_need_parens(n, arg);
         return fmt::format("{}{}", 
-          to_string(unary<LTLPFO>::type::negation{}), 
+          to_string(unary::type::negation), 
           parens_if_needed(arg, needs_parens)
         );
       },
-      [](unary<LTLPFO> u, auto arg) {
+      [](unary u, auto arg) {
         bool needs_parens = does_need_parens(u, arg);
         return fmt::format("{}{}{}",
                             to_string(u.node_type()),
                             needs_parens ? "" : " ",
                             parens_if_needed(arg, needs_parens));
       },
-      [](binary<LTLPFO> b, auto left, auto right) {
+      [](binary b, auto left, auto right) {
         return
           fmt::format("{} {} {}",
                       parens_if_needed(left, does_need_parens(b, left)),
@@ -305,7 +325,7 @@ namespace black_internal::logic
     );
   }
 
-  std::string to_string(symbol<LTLPFO> s) {
+  std::string to_string(symbol s) {
     return s.match(
       [](relation r) {
         return to_string(r.name());
@@ -316,7 +336,7 @@ namespace black_internal::logic
     );
   }
 
-  std::string to_string(number<LTLPFO> n) {
+  std::string to_string(number n) {
     return n.match(
       [](integer, int64_t value) {
         return fmt::format("{}", value);
@@ -374,10 +394,10 @@ namespace black_internal::logic
     return "|" + std::to_string(n) + "|";
   }
   
-  static inline std::string to_smtlib2_inner(term<FO> t) {
+  static inline std::string to_smtlib2_inner(term t) {
     using namespace std::literals;
     return t.match(
-      [](constant<FO>, auto c) {
+      [](constant, auto c) {
         return c.match(
           [](integer, auto v) {
             return std::to_string(v);
@@ -390,7 +410,7 @@ namespace black_internal::logic
       [](variable x) {
         return to_smtlib2(to_underlying(x.unique_id()));
       },
-      [](application<FO> a) {
+      [](application a) {
         std::string s = "(" + to_smtlib2(to_underlying(a.func().unique_id()));
 
         for(auto arg : a.terms()) {
@@ -400,36 +420,36 @@ namespace black_internal::logic
         s += ")";
         return s;
       }, // LCOV_EXCL_LINE
-      [](negative<FO>, auto arg) {
+      [](negative, auto arg) {
         return fmt::format("(- {})", to_smtlib2_inner(arg));
       },
-      [](to_integer<FO>, auto arg) {
+      [](to_integer, auto arg) {
         return fmt::format("(to_int {})", to_smtlib2_inner(arg));
       },
-      [](to_real<FO>, auto arg) {
+      [](to_real, auto arg) {
         return fmt::format("(to_real {})", to_smtlib2_inner(arg));
       },
-      [](addition<FO>, auto left, auto right) {
+      [](addition, auto left, auto right) {
         return fmt::format(
           "(+ {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
         );
       },
-      [](subtraction<FO>, auto left, auto right) {
+      [](subtraction, auto left, auto right) {
         return fmt::format(
           "(- {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
         );
       },
-      [](multiplication<FO>, auto left, auto right) {
+      [](multiplication, auto left, auto right) {
         return fmt::format(
           "(* {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
         );
       },
-      [](division<FO>, auto left, auto right) {
+      [](division, auto left, auto right) {
         return fmt::format(
           "(/ {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
         ); // LCOV_EXCL_LINE
       },
-      [](int_division<FO>, auto left, auto right) {
+      [](int_division, auto left, auto right) {
         return fmt::format(
           "(div {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right)
         ); // LCOV_EXCL_LINE
@@ -437,7 +457,7 @@ namespace black_internal::logic
     );
   }
 
-  static inline std::string to_smtlib2_inner(formula<FO> f) {
+  static inline std::string to_smtlib2_inner(formula f) {
     return f.match(
       [](boolean, bool b) {
         return b ? "true" : "false";
@@ -445,7 +465,7 @@ namespace black_internal::logic
       [](proposition p) {
         return to_smtlib2(to_underlying(p.unique_id()));
       },
-      [](atom<FO> a) {
+      [](atom a) {
         std::string s = "(" + to_smtlib2(to_underlying(a.rel().unique_id()));
 
         for(auto t : a.terms()) {
@@ -455,7 +475,7 @@ namespace black_internal::logic
         s += ")";
         return s;
       }, // LCOV_EXCL_LINE
-      [](equality<FO> e, auto terms) {
+      [](equality e, auto terms) {
         black_assert(terms.size() > 0);
 
         std::string args = to_smtlib2_inner(terms[0]);
@@ -463,34 +483,34 @@ namespace black_internal::logic
           args = " " + to_smtlib2_inner(terms[i]);
 
         return fmt::format(
-          "({} {})", e.is<equal<FO>>() ? "=" : "distinct", args
+          "({} {})", e.is<equal>() ? "=" : "distinct", args
         );
       },
-      [](less_than<FO> cmp) {
+      [](less_than cmp) {
         return fmt::format(
           "(< {} {})", 
           to_smtlib2_inner(cmp.left()), to_smtlib2_inner(cmp.right())
         );
       },
-      [](less_than_equal<FO> cmp) {
+      [](less_than_equal cmp) {
         return fmt::format(
           "(<= {} {})", 
           to_smtlib2_inner(cmp.left()), to_smtlib2_inner(cmp.right())
         );
       },
-      [](greater_than<FO> cmp) {
+      [](greater_than cmp) {
         return fmt::format(
           "(> {} {})", 
           to_smtlib2_inner(cmp.left()), to_smtlib2_inner(cmp.right())
         );
       },
-      [](greater_than_equal<FO> cmp) {
+      [](greater_than_equal cmp) {
         return fmt::format(
           "(>= {} {})", 
           to_smtlib2_inner(cmp.left()), to_smtlib2_inner(cmp.right())
         );
       },
-      [&](quantifier<FO> q) {
+      [&](quantifier q) {
         std::string vars;
         for(auto d : q.variables()) {
           vars += fmt::format(
@@ -503,24 +523,24 @@ namespace black_internal::logic
 
         return fmt::format(
           "({} ({}) {})", 
-          q.is<exists<FO>>() ? "exists" : "forall",
+          q.is<exists>() ? "exists" : "forall",
           vars, to_smtlib2_inner(q.matrix())
         );
       },
-      [](negation<FO>, auto op) {
+      [](negation, auto op) {
         return fmt::format("(not {})", to_smtlib2_inner(op));
       },
-      [](conjunction<FO> c) {
+      [](conjunction c) {
         std::string ops;
-        for(auto op : c.operands())
+        for(auto op : operands(c))
           ops += " " + to_smtlib2_inner(op);
         ops.erase(ops.begin());
 
         return fmt::format("(and {})", ops);        
       },
-      [](disjunction<FO> c) {
+      [](disjunction c) {
         std::string ops;
-        for(auto op : c.operands())
+        for(auto op : operands(c))
           ops += " " + to_smtlib2_inner(op);
         ops.erase(ops.begin());
 
@@ -531,12 +551,12 @@ namespace black_internal::logic
       // only usually called on the encoding formulas which never contain 
       // implications or double implications
       //
-      [](implication<FO>, auto left, auto right) { // LCOV_EXCL_LINE
+      [](implication, auto left, auto right) { // LCOV_EXCL_LINE
         return fmt::format( // LCOV_EXCL_LINE
           "(=> {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right) // LCOV_EXCL_LINE
         ); // LCOV_EXCL_LINE
       }, // LCOV_EXCL_LINE
-      [](iff<FO>, auto left, auto right) { // LCOV_EXCL_LINE
+      [](iff, auto left, auto right) { // LCOV_EXCL_LINE
         return fmt::format( // LCOV_EXCL_LINE
           "(= {} {})", to_smtlib2_inner(left), to_smtlib2_inner(right) // LCOV_EXCL_LINE
         ); // LCOV_EXCL_LINE
@@ -544,7 +564,7 @@ namespace black_internal::logic
     );
   }
 
-  std::string to_smtlib2(formula<FO> f, scope const& xi) {
+  std::string to_smtlib2(formula f, scope const& xi) {
     tsl::hopscotch_set<proposition> props;
     tsl::hopscotch_set<variable> vars;
     tsl::hopscotch_set<relation> rels;
@@ -558,10 +578,10 @@ namespace black_internal::logic
         [&](variable x) {
           vars.insert(x);
         },
-        [&](atom<FO> a) {
+        [&](atom a) {
           rels.insert(a.rel());
         },
-        [&](application<FO> a) {
+        [&](application a) {
           funs.insert(a.func());
         },
         [](otherwise) { }
@@ -632,8 +652,8 @@ namespace black_internal::logic
     smtlib += "\n";
 
     f.match(
-      [&](conjunction<FO> c) {
-        for(auto op : c.operands()) {
+      [&](conjunction c) {
+        for(auto op : operands(c)) {
           smtlib += fmt::format("(assert {})\n\n", to_smtlib2_inner(op));
         }
       },

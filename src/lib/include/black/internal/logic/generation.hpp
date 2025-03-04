@@ -97,6 +97,45 @@ namespace black_internal::logic
   //
   static_assert(syntax_element_enum_size() <= syntax_element_max_size);
 
+  //
+  // Specialization of elements_for_hierarchy
+  //
+  #define declare_hierarchy(Base) \
+    template<> \
+    struct elements_for_hierarchy<hierarchy_type::Base> { \
+      enum class type : uint8_t { \
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+        Storage = static_cast<uint8_t>(syntax_element::Storage),
+
+  #define has_no_hierarchy_elements(Base, Storage) \
+        Storage = static_cast<uint8_t>(syntax_element::Storage),
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+        Element = static_cast<uint8_t>(syntax_element::Element),
+
+  #define end_hierarchy(Base) \
+      }; \
+    };
+
+  #include <black/internal/logic/hierarchy.hpp>
+  
+  //
+  // Specialization of elements_for_storage
+  //
+  #define declare_storage_kind(Base, Storage) \
+    template<> \
+    struct elements_for_storage<storage_type::Storage> { \
+      enum class type : uint8_t { \
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+        Element = static_cast<uint8_t>(syntax_element::Element),
+
+  #define end_storage_kind(Base, Storage) \
+      }; \
+    };
+
+  #include <black/internal/logic/hierarchy.hpp>
 
   //
   // Printing of the above enumerations, for debugging and introspection.
@@ -786,6 +825,24 @@ namespace black_internal::logic
       >, \
       storage_type::Storage \
     > : std::true_type { };
+
+  #include <black/internal/logic/hierarchy.hpp>
+
+}
+
+namespace black::logic {
+
+  using black_internal::logic::alphabet;
+  using black_internal::logic::syntax_element;
+
+  #define declare_hierarchy(Base) \
+    using black_internal::logic::Base;
+
+  #define declare_storage_kind(Base, Storage) \
+    using black_internal::logic::Storage;
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    using black_internal::logic::Element;
 
   #include <black/internal/logic/hierarchy.hpp>
 

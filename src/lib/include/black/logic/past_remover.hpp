@@ -36,7 +36,7 @@ namespace black_internal::remove_past {
 
   // Exposed procedure which puts together everything
   BLACK_EXPORT
-  logic::formula<logic::LTL> remove_past(logic::formula<logic::LTLP>);
+  logic::formula remove_past(logic::formula);
 
 } // end namespace black_internal
 
