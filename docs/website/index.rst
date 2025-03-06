@@ -18,15 +18,6 @@ verification* and *artificial intelligence*. In these fields, it is important to
 be able to understand whether a given specification is satisfiable,
 unsatisfiable, or vacuously true. BLACK helps with this task.
 
-BLACK consists of two components:
-
-1. ``libblack``, a C++ library with a well-defined API that can be linked by  
-any client application; and
-
-2. ``black``, a command-line tool that interfaces the library with the user.
-
-This website documents the usage of both.
-
 BLACK is open-source and released under the MIT license. For its source code,
 look at its `GitHub repository <https://github.com/black-sat/black>`_. 
 
@@ -38,5 +29,4 @@ look at its `GitHub repository <https://github.com/black-sat/black>`_.
    logics
    cli
    syntax
-   api
    publications

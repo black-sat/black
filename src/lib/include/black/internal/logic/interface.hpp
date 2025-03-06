@@ -29,6 +29,7 @@
 #include <memory>
 #include <ranges>
 #include <stack>
+#include <algorithm>
 
 //
 // This file contains helper classes and functions that integrate the interface
@@ -111,14 +112,8 @@ namespace black_internal::logic {
     using common_t = std::common_type_t<
       call_op_arg_t<Arg>, call_op_arg_t<Args>...
     >;
-
-    using syntax = make_combined_fragment_t<
-      make_singleton_fragment_t<element_of_storage_v<S>>,
-      make_singleton_fragment_t<element_of_storage_v<call_op_return_v<S>>>,
-      typename common_t::syntax
-    >;
     
-    using return_t = storage_type_of_t<syntax, call_op_return_v<S>>;
+    using return_t = storage_type_of_t<call_op_return_v<S>>;
 
     Derived const&self = static_cast<Derived const&>(*this);
 
@@ -136,12 +131,7 @@ namespace black_internal::logic {
       !std::is_same_v<std::ranges::range_value_t<R>, var_decl>
     )
   auto call_op_interface<S, Derived>::operator()(R const& v) const {
-    using syntax = make_combined_fragment_t<
-      make_singleton_fragment_t<element_of_storage_v<S>>,
-      make_singleton_fragment_t<element_of_storage_v<call_op_return_v<S>>>,
-      typename std::ranges::range_value_t<R>::syntax
-    >;
-    using return_t = storage_type_of_t<syntax, call_op_return_v<S>>;
+    using return_t = storage_type_of_t<call_op_return_v<S>>;
 
     return return_t{static_cast<Derived const&>(*this), v};
   }
@@ -150,14 +140,7 @@ namespace black_internal::logic {
   template<std::ranges::range R>
     requires std::is_same_v<std::ranges::range_value_t<R>, var_decl>
   auto call_op_interface<S, Derived>::operator()(R const& v) const {
-    using syntax = make_fragment_t<
-      syntax_list<
-        element_of_storage_v<S>,
-        element_of_storage_v<call_op_return_v<S>>,
-        syntax_element::variable
-      >
-    >;
-    using return_t = storage_type_of_t<syntax, call_op_return_v<S>>;
+    using return_t = storage_type_of_t<call_op_return_v<S>>;
 
     std::vector<variable> vars;
     for(auto decl : v)
@@ -195,27 +178,13 @@ namespace black_internal::logic {
   template<is_term T>
   T wrap_term_op_arg(alphabet *, T t) { return t; }
 
-  using wrapped_int = make_fragment_t< 
-    syntax_list<
-      syntax_element::constant,
-      syntax_element::integer
-    >
-  >;
-  
-  using wrapped_real = make_fragment_t< 
-    syntax_list<
-      syntax_element::constant,
-      syntax_element::real
-    >
-  >;
-
   template<std::integral T>
-  constant<wrapped_int> wrap_term_op_arg(alphabet *sigma, T t) {
+  constant wrap_term_op_arg(alphabet *sigma, T t) {
     return constant{sigma->integer(int64_t{t})};
   }
 
   template<std::floating_point T>
-  constant<wrapped_real> wrap_term_op_arg(alphabet *sigma, T t) { 
+  constant wrap_term_op_arg(alphabet *sigma, T t) { 
     return constant{sigma->real(double{t})};
   }
 
@@ -279,9 +248,9 @@ namespace black_internal::logic {
   // formulas. In other words, `f && true` is a formula (a `conjunction<>`)for
   // any formula `f`, but `x == y && true` is a `bool`.
   //
-  template<typename Syntax, syntax_element Element>
-  struct term_equality_wrapper : element_type_of_t<Syntax, Element> {
-    using base_t = element_type_of_t<Syntax, Element>;
+  template<syntax_element Element>
+  struct term_equality_wrapper : element_type_of_t<Element> {
+    using base_t = element_type_of_t<Element>;
     bool _eq;
 
     term_equality_wrapper(bool eq, base_t b) : base_t{b}, _eq{eq} { }
@@ -296,20 +265,16 @@ namespace black_internal::logic {
   //
   template<is_term T1, is_term T2>
   auto operator==(T1 t1, T2 t2) {
-    using S = deduce_fragment_for_storage_t<syntax_element::equal, T1, T2>;
-
-    return term_equality_wrapper<S, syntax_element::equal>{
-      t1.unique_id() == t2.unique_id(), equal<S>(std::vector<term<S>>{t1, t2})
+    return term_equality_wrapper<syntax_element::equal>{
+      t1.unique_id() == t2.unique_id(), equal(std::vector<term>{t1, t2})
     };
   }
 
   template<is_term T1, is_term T2>
   auto operator!=(T1 t1, T2 t2) {
-    using S = deduce_fragment_for_storage_t<syntax_element::distinct, T1, T2>;
-
-    return term_equality_wrapper<S, syntax_element::distinct>{
+    return term_equality_wrapper<syntax_element::distinct>{
       t1.unique_id() != t2.unique_id(), 
-      distinct<S>(std::vector<term<S>>{t1, t2})
+      distinct(std::vector<term>{t1, t2})
     };
   }
 
@@ -392,12 +357,12 @@ namespace black_internal::logic {
   template<typename T, typename U>
   struct no_bool_equality_wrapper : std::true_type { };
 
-  template<typename S, syntax_element E>
-  struct no_bool_equality_wrapper<bool, term_equality_wrapper<S, E>>
+  template<syntax_element E>
+  struct no_bool_equality_wrapper<bool, term_equality_wrapper<E>>
     : std::false_type { };
 
-  template<typename S, syntax_element E>
-  struct no_bool_equality_wrapper<term_equality_wrapper<S, E>, bool>
+  template<syntax_element E>
+  struct no_bool_equality_wrapper<term_equality_wrapper<E>, bool>
     : std::false_type { };
 
   template<typename T, typename U>
@@ -426,46 +391,6 @@ namespace black_internal::logic {
     );
   }
 
-
-  //
-  // Here we add an `identity()` static member function to some operators such
-  // as conjunctions and additions. This is not terribly useful by itself but
-  // comes handy in a generic context. The `operands()` function is another
-  // addition to the interface of those elements, see below.
-  //
-  template<typename Derived>
-  struct hierarchy_element_custom_members<syntax_element::conjunction, Derived>
-  {
-    auto operands() const;
-
-    static auto identity(alphabet *sigma) {
-      return sigma->boolean(true);
-    }
-  };
-  
-  template<typename Derived>
-  struct hierarchy_element_custom_members<syntax_element::disjunction, Derived>
-  { 
-    auto operands() const;
-
-    static auto identity(alphabet *sigma) {
-      return sigma->boolean(false);
-    }
-  };
-  
-  template<typename Derived>
-  struct hierarchy_element_custom_members<syntax_element::addition, Derived>
-  { 
-    auto operands() const;
-  };
-  
-  template<typename Derived>
-  struct hierarchy_element_custom_members<
-    syntax_element::multiplication, Derived
-  > { 
-    auto operands() const;
-  };
-
   //
   // The following is the generic version of the `big_and`, `big_or`, `sum` and
   // `product` functions defined below.
@@ -475,17 +400,9 @@ namespace black_internal::logic {
     typename T = std::ranges::range_value_t<Range>, 
     hierarchy R = std::invoke_result_t<F, T>
   >
-  auto fold_op(alphabet &sigma, Range const& r, F&& f)
+  auto fold_op(Range const& r, R id, F&& f)
   {
-    auto id = element_type_of_t<typename R::syntax, Op>::identity(&sigma);
-    
-    using H = hierarchy_type_of_t<
-      make_combined_fragment_t<
-        typename R::syntax, make_singleton_fragment_t<Op>, 
-        typename decltype(id)::syntax
-      >,
-      R::hierarchy
-    >;
+    using H = hierarchy_type_of_t<R::hierarchy>;
 
     H acc = id;
     for(auto x : r) {
@@ -495,24 +412,11 @@ namespace black_internal::logic {
       else if(acc == id)
         acc = elem;
       else
-        acc = element_type_of_t<typename H::syntax, Op>(acc, elem);
+        acc = element_type_of_t<Op>(acc, elem);
     }
 
     return acc;
   }
-
-  //
-  // Here we declare an ad-hoc deduction guide to help invoke `exists` and
-  // `forall` constructors with an initializer list argument, without specifying
-  // the fragment
-  //
-  template<hierarchy H>
-  exists(std::initializer_list<var_decl>, H) 
-    -> exists<deduce_fragment_for_storage_t<syntax_element::exists, H>>;
-  
-  template<hierarchy H>
-  forall(std::initializer_list<var_decl>, H) 
-    -> forall<deduce_fragment_for_storage_t<syntax_element::forall, H>>;
 
   //
   // The following are instances of `fold_op`, useful functions to create long
@@ -522,14 +426,14 @@ namespace black_internal::logic {
   template<std::ranges::range Range, typename F>
   auto big_and(alphabet &sigma, Range const& r, F&& f) {
     return fold_op<syntax_element::conjunction>(
-      sigma, r, std::forward<F>(f)
+      r, sigma.boolean(true), std::forward<F>(f)
     );
   }
   
   template<std::ranges::range Range, typename F>
   auto big_or(alphabet &sigma, Range const& r, F&& f) {
     return fold_op<syntax_element::disjunction>(
-      sigma, r, std::forward<F>(f)
+      r, sigma.boolean(false), std::forward<F>(f)
     );
   }
   
@@ -585,9 +489,7 @@ namespace black_internal::logic {
   public:
     using difference_type = ssize_t;
     using value_type = 
-      hierarchy_type_of_t<typename E::syntax, 
-        hierarchy_of_storage(storage_of_element(E::element))
-      >;
+      hierarchy_type_of_t<hierarchy_of_storage(storage_of_element(E::element))>;
 
     const_iterator() = default;
     const_iterator(const_iterator const&) = default;
@@ -666,32 +568,20 @@ namespace black_internal::logic {
   // the above view. These were already declared above so we just define them
   // out-of-line.
   //
-  template<typename Derived> 
-  auto 
-  hierarchy_element_custom_members<syntax_element::conjunction, Derived>::
-  operands() const { 
-    return associative_op_view<Derived>{static_cast<Derived const&>(*this)};
+  inline auto operands(conjunction c) { 
+    return associative_op_view<conjunction>{c};
   }
   
-  template<typename Derived> 
-  auto 
-  hierarchy_element_custom_members<syntax_element::disjunction, Derived>::
-  operands() const { 
-    return associative_op_view<Derived>{static_cast<Derived const&>(*this)};
+  inline auto operands(disjunction c) { 
+    return associative_op_view<disjunction>{c};
   }
   
-  template<typename Derived> 
-  auto 
-  hierarchy_element_custom_members<syntax_element::addition, Derived>::
-  operands() const { 
-    return associative_op_view<Derived>{static_cast<Derived const&>(*this)};
+  inline auto operands(addition c) { 
+    return associative_op_view<addition>{c};
   }
   
-  template<typename Derived> 
-  auto 
-  hierarchy_element_custom_members<syntax_element::multiplication, Derived>::
-  operands() const { 
-    return associative_op_view<Derived>{static_cast<Derived const&>(*this)};
+  inline auto operands(multiplication c) { 
+    return associative_op_view<multiplication>{c};
   }
 
   //
@@ -700,60 +590,45 @@ namespace black_internal::logic {
   // easily to stack overflow. So here we specialize `for_each_child` to account
   // for this issue for the types that support `operands()`.
   //
-  template<fragment Syntax, typename F>
-  void for_each_child(conjunction<Syntax> c, F f) {
-    for(auto child : c.operands())
+  template<typename F>
+  void for_each_child(conjunction c, F f) {
+    for(auto child : operands(c))
       f(child);
   }
   
-  template<fragment Syntax, typename F>
-  void for_each_child(disjunction<Syntax> c, F f) {
-    for(auto child : c.operands())
-      f(child);
-  }
-  
-  template<fragment Syntax, typename F>
-  void for_each_child(addition<Syntax> c, F f) {
-    for(auto child : c.operands())
-      f(child);
-  }
-  
-  template<fragment Syntax, typename F>
-  void for_each_child(multiplication<Syntax> c, F f) {
-    for(auto child : c.operands())
+  template<typename F>
+  void for_each_child(disjunction c, F f) {
+    for(auto child : operands(c))
       f(child);
   }
 
   //
   // Utility function to replace some subterms of a term with some replacement
   //
-  template<fragment Syntax>
-  term<Syntax> replace(
-    term<Syntax> src, 
-    std::vector<term<Syntax>> patterns,
-    std::vector<term<Syntax>> replacements
+  inline term replace(
+    term src, std::vector<term> patterns, std::vector<term> replacements
   ) {
     black_assert(patterns.size() == replacements.size());
     auto it = std::find(patterns.begin(), patterns.end(), src);
     if(it != patterns.end())
-      return replacements[it - patterns.begin()];
+      return replacements[(size_t)std::distance(patterns.begin(), it)];
 
     return src.match(
-      [&](application<Syntax>, auto func, auto terms) {
-        std::vector<term<Syntax>> newterms;
+      [&](application, auto func, auto terms) {
+        std::vector<term> newterms;
         for(auto t : terms)
           newterms.push_back(replace(t, patterns, replacements));
         return func(newterms);
       },
-      [&](unary_term<Syntax> t, auto arg) {
+      [&](unary_term t, auto arg) {
         return 
-          unary_term<Syntax>(
+          unary_term(
             t.node_type(), replace(arg, patterns, replacements)
           );
       },
-      [&](binary_term<Syntax> t, auto left, auto right) {
+      [&](binary_term t, auto left, auto right) {
         return
-          binary_term<Syntax>(
+          binary_term(
             t.node_type(), 
             replace(left, patterns, replacements),
             replace(right, patterns, replacements)
@@ -769,41 +644,40 @@ namespace black_internal::logic {
   // Utility function to replace some term inside a formula with some
   // replacement
   //
-  template<fragment Syntax>
-  formula<Syntax> replace(
-    formula<Syntax> src, 
-    std::vector<term<Syntax>> patterns,
-    std::vector<term<Syntax>> replacements
+  inline formula replace(
+    formula src, 
+    std::vector<term> patterns,
+    std::vector<term> replacements
   ) {
     return src.match(
-      [&](atom<Syntax>, auto rel, auto terms) {
-        std::vector<term<Syntax>> newterms;
+      [&](atom, auto rel, auto terms) {
+        std::vector<term> newterms;
         for(auto t : terms)
           newterms.push_back(replace(t, patterns, replacements));
         return rel(newterms);
       },
-      [&](equality<Syntax> e, auto terms) {
-        std::vector<term<Syntax>> newterms;
+      [&](equality e, auto terms) {
+        std::vector<term> newterms;
         for(auto t : terms)
           newterms.push_back(replace(t, patterns, replacements));
-        return equality<Syntax>(e.node_type(), newterms);
+        return equality(e.node_type(), newterms);
       },
-      [&](comparison<Syntax> c, auto left, auto right) {
+      [&](comparison c, auto left, auto right) {
         return
-          comparison<Syntax>(
+          comparison(
             c.node_type(), 
             replace(left, patterns, replacements),
             replace(right, patterns, replacements)
           );
       },
-      [&](unary<Syntax> u, auto op) {
-        return unary<Syntax>(
+      [&](unary u, auto op) {
+        return unary(
           u.node_type(), replace(op, patterns, replacements)
         );
       },
-      [&](binary<Syntax> b, auto left, auto right) {
+      [&](binary b, auto left, auto right) {
         return
-          binary<Syntax>(
+          binary(
             b.node_type(), 
             replace(left, patterns, replacements),
             replace(right, patterns, replacements)

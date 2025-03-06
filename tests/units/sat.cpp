@@ -28,7 +28,7 @@
 TEST_CASE("SAT backends") {
 
   std::vector<std::string> backends = {
-    "z3", "mathsat", "cmsat", "minisat", "cvc5"
+    "z3", "mathsat", "cmsat", "cvc5"
   };
 
   black::alphabet sigma;

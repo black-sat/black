@@ -84,6 +84,24 @@ namespace black_internal::logic {
   inline constexpr size_t syntax_element_max_size = 64;
 
   //
+  // traits exposing a restriction of the syntax_element enum limited to a
+  // specific storage type or a specific hierarchy type. This is later exposed
+  // as T::type.
+  //
+  template<hierarchy_type Hierarchy>
+  struct elements_for_hierarchy { };
+  
+  template<hierarchy_type Hierarchy>
+  using elements_for_hierarchy_t = 
+    typename elements_for_hierarchy<Hierarchy>::type;
+  
+  template<storage_type Storage>
+  struct elements_for_storage { };
+  
+  template<storage_type Storage>
+  using elements_for_storage_t = typename elements_for_storage<Storage>::type;
+
+  //
   // For introspection it is useful to be able to print the values of the above
   // enumerations. Implemented later in the preprocessed code.
   //
@@ -121,602 +139,6 @@ namespace black_internal::logic {
   template<storage_type Storage>
   inline constexpr auto element_of_storage_v = 
     element_of_storage<Storage>::value;
-
-  //
-  // Here we start to define things related to the definition of the syntax of
-  // logical fragments. The first thing is a plain compile-time list of values
-  // of type `syntax_element`.
-  //
-  template<syntax_element ...Elements>
-  struct syntax_list { };
-
-  //
-  // `is_syntax_list<T>` is a boolean trait that checks whether `T` is a
-  // `syntax_list`.
-  //
-  template<typename T>
-  struct is_syntax_list : std::false_type { };
-
-  template<syntax_element ...Elements>
-  struct is_syntax_list<syntax_list<Elements...>> : std::true_type { };
-
-  template<typename T>
-  inline constexpr bool is_syntax_list_v = is_syntax_list<T>::value;
-
-  //
-  // Trait to extract the first element from a `syntax_list`
-  //
-  template<typename List>
-  struct syntax_list_head;
-
-  template<syntax_element Element, syntax_element ...Elements>
-  struct syntax_list_head<syntax_list<Element, Elements...>> {
-    static constexpr auto value = Element;
-  };
-
-  template<typename List>
-  inline constexpr auto syntax_list_head_v = syntax_list_head<List>::value;
-
-  //
-  // Trait to tell the length of a `syntax_list`
-  //
-  template<typename List>
-  struct syntax_list_length;
-
-  template<syntax_element ...Elements>
-  struct syntax_list_length<syntax_list<Elements...>>
-    : std::integral_constant<size_t, sizeof...(Elements)> { };
-
-  template<typename List>
-  inline constexpr auto syntax_list_length_v = syntax_list_length<List>::value;
-
-  //
-  // Trait to concatenate two syntax lists
-  //
-  template<typename T, typename U>
-  struct syntax_list_concat;
-
-  template<syntax_element ...E1, syntax_element ...E2>
-  struct syntax_list_concat<syntax_list<E1...>, syntax_list<E2...>> {
-    using type = syntax_list<E1..., E2...>;
-  };
-
-  template<typename T, typename U>
-  using syntax_list_concat_t = typename syntax_list_concat<T,U>::type;
-
-  //
-  // Trait to remove duplicates from a `syntax_list`. This is useful later when
-  // merging two fragments to obtain a combined fragment.
-  //
-  template <typename T, typename List>
-  struct syntax_list_unique_ { 
-    using type = T;
-  };
-
-  template <syntax_element... E1, syntax_element E, syntax_element... E2>
-  struct syntax_list_unique_<syntax_list<E1...>, syntax_list<E, E2...>>
-    : std::conditional_t<
-        ((E == E1) || ...),
-        syntax_list_unique_<syntax_list<E1...>, syntax_list<E2...>>,
-        syntax_list_unique_<syntax_list<E1..., E>, syntax_list<E2...>>
-    > { };
-
-  template<typename List>
-  struct syntax_list_unique : syntax_list_unique_<syntax_list<>, List> { };
-
-  template <typename List>
-  using syntax_list_unique_t = typename syntax_list_unique<List>::type;
-
-  //
-  // Trait to check whether a `syntax_list` contains a given `syntax_element`.
-  //
-  template<typename List, syntax_element Element>
-  struct syntax_list_contains : std::false_type { };
-
-  template<syntax_element ...Elements, syntax_element Element>
-  struct syntax_list_contains<syntax_list<Element, Elements...>, Element> 
-    : std::true_type { };
-
-  template<
-    syntax_element ...Elements, syntax_element Element1, syntax_element Element2
-  >
-  struct syntax_list_contains<syntax_list<Element1, Elements...>, Element2> 
-    : syntax_list_contains<syntax_list<Elements...>, Element2> { };
-
-  template<typename List, syntax_element Element>
-  inline constexpr bool syntax_list_contains_v = 
-    syntax_list_contains<List, Element>::value;
-
-  //
-  // Trait to compute the intersection of two syntax lists.
-  //
-  template<typename List1, typename List2>
-  struct syntax_list_intersect;
-
-  template<typename List1, typename List2>
-  using syntax_list_intersect_t = 
-    typename syntax_list_intersect<List1, List2>::type;
-
-  template<typename List2>
-  struct syntax_list_intersect<syntax_list<>, List2> 
-    : std::type_identity<syntax_list<>> { };
-
-  template<syntax_element E, syntax_element ...E1, typename List2>
-  struct syntax_list_intersect<
-    syntax_list<E, E1...>, List2
-  > : syntax_list_unique<
-        std::conditional_t<
-          syntax_list_contains_v<List2, E>,
-          syntax_list_concat_t<
-            syntax_list<E>, 
-            syntax_list_intersect_t<syntax_list<E1...>, List2>
-          >,
-          syntax_list_intersect_t<syntax_list<E1...>, List2>
-        > 
-      >{ };
-
-
-  //
-  // Trait to check whether a syntax list in included in another
-  //
-  template<typename List, typename SubList>
-  struct syntax_list_includes;
-
-  template<typename List, syntax_element ...Elements>
-  struct syntax_list_includes<List, syntax_list<Elements...>> 
-    : std::bool_constant<(syntax_list_contains_v<List, Elements> && ...)> { };
-
-  template<typename List, typename Sublist>
-  inline constexpr bool syntax_list_includes_v = 
-    syntax_list_includes<List, Sublist>::value;
-
-  //
-  // We represent fragments as `syntax_list`s and, at the same time, as bitsets.
-  // The bitset representation is useful to blend compile- and run-time
-  // computation on fragments, while the `syntax_list` representation is easy to
-  // manipulate at the type level.
-  //
-  using syntax_mask_t = black::bitset<syntax_element_max_size>;
-
-  //
-  // The `syntax_mask` concept models types used to define, either a
-  // compile-time or at runtime, whether a given `syntax_element` is allowed in
-  // a given fragment or by a given storage kind. These types define a
-  // `syntax_mask_t` constexpr static member `value` that that represents
-  // the accepted syntax elements. These are usually accessed by an
-  // `::mask` member type `fragment` types.
-  //
-  template<typename T>
-  concept syntax_mask = requires {
-    { T::value } -> std::convertible_to<syntax_mask_t>;
-  };
-
-  //
-  // This is the standard way to create a syntax filter from a set of
-  // `syntax_element`s. Since this template will be used from code generated by
-  // the preprocessor, we provide also a version with a first dummy parameter in
-  // order to avoid to deal with trailing commas.
-  //
-  template<typename List>
-  struct make_syntax_mask { };
-
-  template<syntax_element ...Elements>
-  struct make_syntax_mask<syntax_list<Elements...>> {
-    static constexpr syntax_mask_t value = { 
-      static_cast<size_t>(Elements)...
-    };
-  };
-
-  template<typename List>
-  inline constexpr auto make_syntax_mask_v = make_syntax_mask<List>::value;
-
-  template<int dummy, syntax_element ...Elements>
-  using make_syntax_mask_cpp = make_syntax_mask<syntax_list<Elements...>>;
-
-  //
-  // The following traits, specialized in the preprocessed code, return a syntax
-  // filter for the given `hierarchy` or `storage_type`
-  //
-  template<hierarchy_type Hierarchy>
-  struct hierarchy_syntax_mask;
-  
-  template<hierarchy_type Hierarchy>
-  inline constexpr auto hierarchy_syntax_mask_v = 
-    hierarchy_syntax_mask<Hierarchy>::value;
-
-  template<storage_type Storage>
-  struct storage_syntax_mask;
-  
-  template<storage_type Storage>
-  inline constexpr auto storage_syntax_mask_v = 
-    storage_syntax_mask<Storage>::value;
-
-  //
-  // Trait to filter a `syntax_list` by intersecting it with a `syntax_mask`
-  //
-  template<typename List, syntax_mask Mask>
-  struct syntax_list_filter;
-
-  template<typename List, syntax_mask Mask>
-  using syntax_list_filter_t = 
-    typename syntax_list_filter<List, Mask>::type;
-
-  template<syntax_mask Mask>
-  struct syntax_list_filter<syntax_list<>, Mask>
-    : std::type_identity<syntax_list<>> { };
-
-  template<
-    syntax_mask Mask, 
-    syntax_element Element, syntax_element ...Elements
-  >
-  struct syntax_list_filter<syntax_list<Element, Elements...>, Mask>
-    : std::conditional<
-        Mask::value.contains(Element), 
-        syntax_list_concat_t<
-          syntax_list<Element>, 
-          syntax_list_filter_t<syntax_list<Elements...>, Mask>
-        >,
-        syntax_list_filter_t<syntax_list<Elements...>, Mask>
-      >
-    { };
-
-  // this empty class is used as a base class of `fragment_type` later, to mark
-  // fragment types in the following concept definition.
-  struct fragment_type_marker_base { };
-
-  //
-  // `fragment_enum` models types used as pseudo-enum types for enumerating
-  // hierarchy elements of storage kinds, e.g. `unary<LTL>::type`. We can only
-  // just model the fact that the type holds a value of type `syntax_element`,
-  // and that it derives from `fragment_type_marker_base`. It tries to mimic
-  // being an actual enum class by being explicitly convertible to its underlyng
-  // type.
-  //
-  template<typename T>
-  concept fragment_enum = requires(T t) {
-    requires std::derived_from<T, fragment_type_marker_base>;
-    { t.element() } -> std::convertible_to<syntax_element>;
-  };
-
-  //
-  // Dummy `syntax_mask` instance used in the following concept.
-  //
-  struct false_syntax_mask {
-    static constexpr syntax_mask_t value{};
-  };
-
-  //
-  // Concept modeling the types representing logical fragments. These types
-  // provide two member types:
-  // 1. a `syntax_list` called `list`, providing the list of `syntax_element`s
-  //    allowed in this fragment.
-  // 2. a template accepting an `syntax_mask` type that, when
-  //    instantiated, will give a `fragment_enum`.
-  //
-  template<typename T>
-  concept fragment = requires {
-    requires is_syntax_list_v<typename T::list>;
-    { T::mask } -> std::convertible_to<syntax_mask_t>;
-  };
-
-  //
-  // Now we define how to create fragments from syntax lists.
-  //
-  template<typename List>
-  struct make_fragment_t {
-    using list = syntax_list_unique_t<List>;
-    
-    static constexpr auto mask = make_syntax_mask_v<list>;
-  };
-
-  template<typename List>
-  struct make_fragment {
-    using type = make_fragment_t<List>;
-  };
-
-  //
-  // Helper trait to use `make_fragment` in the preprocessed code and handle
-  // trailing commas properly.
-  //
-  template<int Dummy, syntax_element ...Elements>
-  struct make_fragment_cpp : make_fragment<syntax_list<Elements...>> { };
-
-  template<int Dummy, syntax_element ...Elements>
-  using make_fragment_cpp_t = make_fragment_t<syntax_list<Elements...>>;
-
-  //
-  // Helper trait to make singleton fragments
-  //
-  template<syntax_element Element>
-  struct make_singleton_fragment : make_fragment<syntax_list<Element>> { };
-  
-  template<syntax_element Element>
-  using make_singleton_fragment_t = 
-    typename make_singleton_fragment<Element>::type;
-
-  //
-  // Trait to tell whether a fragment is subsumed by another. This trait is used
-  // in every place where a conversion between different syntaxes is requested,
-  // e.g. from formula<propositional> to formula<LTL>.
-  //
-  template<fragment Fragment, fragment Allowed>
-  struct is_subfragment_of : syntax_list_includes<
-    typename Allowed::list,
-    typename Fragment::list
-  > { };
-  
-  template<fragment Fragment, fragment Allowed>
-  inline constexpr bool is_subfragment_of_v = 
-    is_subfragment_of<Fragment, Allowed>::value;
-
-  //
-  // Fragments can also be created by combining other fragments. This is a bit
-  // complex because we want to avoid creating bigger and bigger types (in terms
-  // of instantiation depth) when we compose `make_combined_fragment_t` multiple
-  // times, and we also want to short-circuit common cases like combining a
-  // fragment with a proper subfragment of itself.
-  //
-  // For example, `make_combined_fragment_t<propositional, LTL>` should be
-  // exactly `LTL`, not some more complex type leading to an equivalent
-  // fragment.
-  //
-  // So first we declare the type doing the actual combination of two fragments.
-  //
-  template<fragment Fragment1, fragment Fragment2>
-  struct make_combined_fragment_impl : 
-    make_fragment<
-      syntax_list_unique_t<
-        syntax_list_concat_t<typename Fragment1::list, typename Fragment2::list>
-      >
-    > { };
-
-  //
-  // Now we implement a trait on top of that to simplify common scenarios.
-  //
-  template<fragment Fragment1, fragment Fragment2>
-  struct make_combined_fragment_simplified 
-    : make_combined_fragment_impl<Fragment1, Fragment2> { };
-
-  template<fragment Fragment1, fragment Fragment2>
-    requires is_subfragment_of_v<Fragment1, Fragment2>
-  struct make_combined_fragment_simplified<Fragment1, Fragment2> { 
-    using type = Fragment2;
-  };
-  
-  template<fragment Fragment1, fragment Fragment2>
-    requires (!is_subfragment_of_v<Fragment1, Fragment2> &&
-              is_subfragment_of_v<Fragment2, Fragment1>)
-  struct make_combined_fragment_simplified<Fragment1, Fragment2> { 
-    using type = Fragment1;
-  };
-
-  //
-  // And then the final vararg version that puts everything together
-  //
-  template<fragment ...Fragments>
-  struct make_combined_fragment;
-
-  template<>
-  struct make_combined_fragment<> : make_fragment<syntax_list<>> { };
-
-  template<fragment Fragment, fragment ...Fragments>
-  struct make_combined_fragment<Fragment, Fragments...> 
-    : make_combined_fragment_simplified<
-        Fragment, typename make_combined_fragment<Fragments...>::type
-      > { };
-
-  template<fragment ...Fragments>
-  using make_combined_fragment_t = 
-    typename make_combined_fragment<Fragments...>::type;
-
-  //
-  // We can obtain a fragment also by filtering it with a mask
-  //
-  template<fragment Syntax, syntax_mask Mask>
-  struct fragment_filter 
-    : make_fragment<syntax_list_filter_t<typename Syntax::list, Mask>> { };
-  
-  template<fragment Syntax, syntax_mask Mask>
-  using fragment_filter_t = typename fragment_filter<Syntax, Mask>::type;
-
-  //
-  // Interesecting two fragments is also often useful 
-  //
-  template<fragment S1, fragment S2>
-  struct fragment_intersect 
-    : make_fragment<
-        syntax_list_intersect_t<
-          typename S1::list, typename S2::list
-        >
-      > { };
-
-  template<fragment S1, fragment S2>
-  using fragment_intersect_t = typename fragment_intersect<S1, S2>::type;
-
-  //
-  // Union of fragments is useful as well
-  //
-  template<fragment S1, fragment S2>
-  struct fragment_union
-    : make_fragment<
-        syntax_list_unique_t<
-          syntax_list_concat_t<
-            typename S1::list, typename S2::list
-          >
-        >
-      > { };
-
-  template<fragment S1, fragment S2>
-  using fragment_union_t = typename fragment_union<S1, S2>::type;
-
-  //
-  // This type, defined later, gives us the fragment made of all the
-  // `syntax_element`s of all the hierarchies. It is used as the catch-all
-  // fragment for `simple` hierarchy types such as `sort`.
-  //
-  struct universal_fragment_t;
-
-  //
-  // The `fragment_type` class will provide the concrete instances of the
-  // `fragment_enum` concept. For a given `syntax_mask` `P` and a
-  // `syntax_list` `S`, `fragment_type<P, S>` will have one constexpr member
-  // named exactly `Element` for each syntax element from `S` allowed by `P`.
-  // For example, `unary<LTL>::type` has members `unary<LTL>::type::negation`,
-  // `unary<LTL>::type::always`, etc... The concrete names will be injected by
-  // the preprocessor later. Here, we define the needed types.
-  //
-  // We first declare a struct whose only purpose is to encapsulate a statically
-  // known `syntax_element`.
-  template<syntax_element Element>
-  struct fragment_enum_value {
-    static constexpr syntax_element value = Element;
-
-    explicit operator syntax_element() const { return Element; }
-  };
-
-  //
-  // Because `fragment_enum_value` is supposed to be used in pattern matching expressions
-  // against `fragment_type` objects (see below), we need to define the
-  // Tuple-like interface. In this case, only `tuple_size` since there is no
-  // field to unpack.
-  //
-  } namespace std {
-    template<black_internal::logic::syntax_element Element>
-    struct tuple_size<black_internal::logic::fragment_enum_value<Element>> 
-      : integral_constant<size_t, 0> { };
-  } namespace black_internal::logic {
-
-  //
-  // Then, an incomplete template class that will be specialized by the
-  // preprocessor with the concrete names of the pseudo-enum values, e.g. we
-  // will have:
-  //
-  // template<> 
-  // struct fragment_enum_element<syntax_element::conjunction> {
-  //   using conjunction = fragment_enum_value<syntax_element::conjunction>;
-  // };
-  template<syntax_element Element>
-  struct fragment_enum_element;
-
-  //
-  // Then, a class that derives from all the `fragment_enum_element`s of a given
-  // syntax list, used as a base class for `fragment_type`. It also derives from
-  // a particular empty base class used in the definition of the `fragment_enum`
-  // concept.
-  //
-  template<typename List>
-  struct fragment_type_base;
-
-  template<syntax_element ...Elements>
-  struct fragment_type_base<syntax_list<Elements...>>
-    : fragment_type_marker_base, fragment_enum_element<Elements>... { };
-
-  //
-  // Now we can define `fragment_type`, which derives from `fragment_type_base`
-  // after filtering the list by the given filter.
-  //
-  // The type itself is simple, and it only carries over the currently assigned
-  // `syntax_element`. Publicly, it can be only constructed by
-  // `fragment_enum_value`s corresponding to syntax elements included in its
-  // list. A private constructor constructs from `syntax_element` directly, and
-  // is accessible only by the type `Owner` specified by the template parameter.
-  //
-  // Since this is not a real enum, it is not usable in common `switch()`
-  // statements. However, we can expose the `match()` function, similar to the
-  // one exposed by hierarchy types. Here, we only have to expose a `to<>()`
-  // member function template for downcasting to `fragment_enum_value`s. The
-  // `match()` function is implemented later, after the machinery for the
-  // pattern matching functionality.
-  //
-  template<typename Owner, fragment Syntax>
-  class fragment_type : public fragment_type_base<typename Syntax::list> 
-  {
-  public:
-    using syntax = Syntax;
-
-    fragment_type() = delete;
-
-    fragment_type(fragment_type const&) = default;
-    fragment_type(fragment_type &&) = default;
-
-    fragment_type &operator=(fragment_type const&) = default;
-    fragment_type &operator=(fragment_type &&) = default;
-
-    template<syntax_element Element>
-      requires (Syntax::mask.contains(Element))
-    fragment_type(fragment_enum_value<Element>) : _element{Element} { }
-
-    template<typename O, fragment S2>
-      requires is_subfragment_of_v<S2, Syntax>
-    fragment_type(fragment_type<O, S2> const&t) 
-      : _element{t.element()} { }
-
-    template<typename O, fragment S2>
-    bool operator==(fragment_type<O, S2> const& t) const {
-      return _element == t.element();
-    }
-    
-    template<typename T>
-      requires fragment_enum<T>
-    std::optional<T> to() const {
-      if(T::syntax::mask.contains(_element))
-        return {T{_element}};
-      else
-        return {};
-    }
-    
-    template<typename T>
-      requires requires { { T::value } -> std::convertible_to<syntax_element>; }
-    std::optional<T> to() const {
-      if(_element == T::value)
-        return {T{}};
-      else
-        return {};
-    }
-
-    template<typename T>
-    bool is() const { 
-      return to<T>().has_value();
-    }
-
-    template<typename ...Handlers>
-    auto match(Handlers ...) const;
-
-    syntax_element element() const { return _element; }
-
-  private:
-    friend Owner;
-
-    template<typename O, fragment S>
-    friend class fragment_type;
-
-    explicit fragment_type(syntax_element e) : _element{e} { 
-      black_assert(Syntax::mask.contains(e));
-    }
-
-  private:
-    syntax_element _element;
-  };
-
-  template<typename O, fragment S2, syntax_element E>
-  bool operator==(fragment_type<O, S2> const& t, fragment_enum_value<E>) {
-    return t.element() == E;
-  }
-  
-  template<typename O, fragment S2, syntax_element E>
-  bool operator==(fragment_enum_value<E>, fragment_type<O, S2> const& t) {
-    return E == t.element();
-  }
-
-  template<typename O, fragment S2>
-  bool operator==(fragment_type<O, S2> const& t, syntax_element E) {
-    return t.element() == E;
-  }
-  
-  template<typename O, fragment S2>
-  bool operator==(syntax_element E, fragment_type<O, S2> const& t) {
-    return E == t.element();
-  }
 
   //
   // We start to prepare for the declaration of actual hierarchy types such as
@@ -774,16 +196,13 @@ namespace black_internal::logic {
   //
   template<typename T>
   concept hierarchy = requires(T t) {
-    requires fragment<typename T::syntax>;
-    requires fragment<typename T::node_syntax>;
-    requires fragment_enum<typename T::type>;
     { T::hierarchy } -> std::convertible_to<hierarchy_type>;
 
     { t.unique_id() } -> 
       std::convertible_to<hierarchy_unique_id_t<T::hierarchy>>;
     { t.sigma() } -> std::convertible_to<alphabet *>;
     { t.hash() } -> std::convertible_to<size_t>;
-    { t.node_type() } -> std::convertible_to<typename T::type>;
+    { t.node_type() };
 
     // we should constrain the return type of `node()`, but then checking this
     // concept would force the instantiation of `hierarchy_node<>`, which is
@@ -948,49 +367,21 @@ namespace black_internal::logic {
   }
 
   //
-  // The `storage_node` type defined below holds the fields and children of the
-  // hierarchy object depending on its storage kind. Depending on the presence
-  // of children, it also has to store the runtime fragment of the object. This
-  // auxiliary base class holds the fragment of the nodes
-  //
-  struct fragment_holder_base : hierarchy_node
-  {
-    fragment_holder_base(syntax_element element, syntax_mask_t f)
-      : hierarchy_node{element}, _fragment{f} { }
-    
-    syntax_mask_t _fragment;
-  };
-
-  //
-  // The following function gets the runtime fragment from a node. Only nodes
-  // that have a `syntax_element` of a storage kind with children will inherit
-  // from `fragment_holder_base`, so we cast the node only in that case.
-  //
-  inline syntax_mask_t fragment_of(hierarchy_node const *child) {
-    storage_type storage = storage_of_element(child->type);
-    if(storage_has_children(storage))
-      return 
-        static_cast<fragment_holder_base const*>(child)->_fragment;
-    
-    return syntax_mask_t{static_cast<size_t>(child->type)};
-  }
-
-  //
   // `child_arg` and `children_arg` are the types used to wrap child and
   // children arguments in the construction of storage kinds. Here we only need
   // to forward declare them, and setup a trait to recognize if a type is an
   // instance of `children_arg`. See below for their use and implementation.
   //
-  template<hierarchy_type H, fragment Syntax>
+  template<hierarchy_type H>
   struct child_arg;
-  template<hierarchy_type H, fragment Syntax>
+  template<hierarchy_type H>
   struct children_arg;
 
   template<typename T>
   struct is_children_arg : std::false_type { };
 
-  template<hierarchy_type H, fragment Syntax>
-  struct is_children_arg<children_arg<H, Syntax>>
+  template<hierarchy_type H>
+  struct is_children_arg<children_arg<H>>
     : std:: true_type { };
 
   template<typename T>
@@ -998,80 +389,16 @@ namespace black_internal::logic {
     is_children_arg<T>::value;
 
   //
-  // The following are wrappers over `fragment_of` to get or compute the runtime
-  // fragment from the arguments given to the constructor of `storage_node_base`
-  // below.
-  //
-  template<typename T>
-  syntax_mask_t get_fragment(T&&) {
-    return syntax_mask_t{};
-  }
-
-  template<hierarchy_type H, fragment Syntax>
-  syntax_mask_t get_fragment(child_arg<H, Syntax> child) {
-    return fragment_of(child.child);
-  }
-
-  template<typename T>
-    requires (is_children_arg_v<std::remove_cvref_t<T>>)
-  syntax_mask_t get_fragment(T&& children)
-  {
-    syntax_mask_t result;
-    for(auto child : children.children)
-      result = result | fragment_of(child);
-
-    return result;
-  }
-  
-  template<typename ...Args>
-  syntax_mask_t get_fragment(syntax_element element, Args&& ...args) {
-    syntax_mask_t f{static_cast<size_t>(element)};
-
-    return f | (get_fragment(std::forward<Args>(args)) | ...);
-  }
-
-  //
-  // With this further auxiliary base class we choose whether to inherit from
-  // `fragment_holder_base` or not depending on whether the storage kind has
-  // children.
-  //
-  template<storage_type Storage>
-  struct storage_node_base : hierarchy_node
-  {
-    template<typename ...Args>
-    storage_node_base(syntax_element element, Args&& ...)
-      : hierarchy_node{element} { }
-
-    syntax_mask_t fragment() const { 
-      return syntax_mask_t{ static_cast<size_t>(this->type) };
-    }
-  };
-
-  template<storage_type Storage>
-    requires (storage_has_children(Storage))
-  struct storage_node_base<Storage> : fragment_holder_base
-  {
-    template<typename ...Args>
-    storage_node_base(syntax_element element, Args&& ...args)
-      : fragment_holder_base{
-          element, get_fragment(element, std::forward<Args>(args)...)
-        } { }
-
-    syntax_mask_t fragment() const { return this->_fragment; }
-  };
-
-  //
   // Now we can finally declare the actual `storage_node` type, which inherits
   // from `hierarchy_node` through `storage_node_base` and wraps the
   // corresponding `storage_data_t`.
   //
   template<storage_type Storage>
-  struct storage_node : storage_node_base<Storage>
+  struct storage_node : hierarchy_node
   { 
     template<typename ...Args>
     storage_node(syntax_element element, Args&& ...args)
-      : storage_node_base<Storage>{element, std::forward<Args>(args)...}, 
-        data{std::forward<Args>(args)...} { }
+      : hierarchy_node{element}, data{std::forward<Args>(args)...} { }
 
     storage_data_t<Storage> data;
 
@@ -1132,17 +459,13 @@ namespace black_internal::logic {
   //
   // This is a CRTP base class.
   //
-  template<hierarchy_type Hierarchy, fragment Syntax, typename Derived>
+  template<hierarchy_type Hierarchy, typename Derived>
   class hierarchy_base 
   {
   public:
-    // members required by the `hierarchy` concept
-    using syntax = Syntax;
-    using node_syntax = fragment_filter_t<
-      Syntax, hierarchy_syntax_mask<Hierarchy>
-    >;
-    using type = fragment_type<hierarchy_base, node_syntax>;
     static constexpr auto hierarchy = Hierarchy;
+    
+    using type = elements_for_hierarchy_t<Hierarchy>;
 
     // hierarchy types are not default constructible but are
     // copy/move/constructible/assignable
@@ -1156,16 +479,13 @@ namespace black_internal::logic {
     // this constructor is for internal use but has to be public (for now)
     hierarchy_base(alphabet_base *sigma, hierarchy_node const*node)
       : _sigma{sigma}, _node{node} 
-    { 
-      black_assert(Syntax::mask.contains(fragment_of(node)));
-    }
+    { }
 
     // converting constructor from other hierarchy types
     // the conversion only happen for the same kind of hierarchy (e.g. formulas)
     // and only if the argument's syntax is a subfragment of our syntax
     template<::black_internal::logic::hierarchy H>
-      requires (H::hierarchy == Hierarchy && 
-                is_subfragment_of_v<typename H::syntax, syntax>)
+      requires (H::hierarchy == Hierarchy)
     hierarchy_base(H h) : hierarchy_base{h.sigma(), h.node()} { }
 
     //
@@ -1187,19 +507,10 @@ namespace black_internal::logic {
     // converted.
     template<logic::hierarchy F>
     static std::optional<Derived> from(F f) {
-      using derived_node_syntax = typename Derived::node_syntax;
-      using derived_syntax = typename Derived::syntax;
-
       if constexpr(F::hierarchy != Derived::hierarchy)
         return {};
-
-      if(derived_node_syntax::mask.contains(f.node()->type) &&
-         derived_syntax::mask.contains(fragment_of(f.node())))
-      {
-        return std::optional<Derived>{Derived{f.sigma(), f.node()}};
-      }
-
-      return {};
+      else
+        return Derived{f.sigma(), f.node()};
     }
 
     // implemented later
@@ -1217,7 +528,7 @@ namespace black_internal::logic {
     }
 
     type node_type() const {
-      return type{_node->type};
+      return static_cast<type>(_node->type);
     }
     
     // we make `sigma()` a function template because `alphabet` is still
@@ -1236,12 +547,11 @@ namespace black_internal::logic {
   // We can obtain the hierarchy type from the `hierarchy_type` value with the
   // following trait, which will be specialized in the preprocessing code.
   //
-  template<fragment Syntax, hierarchy_type H>
+  template<hierarchy_type H>
   struct hierarchy_type_of;
 
-  template<fragment Syntax, hierarchy_type H>
-  using hierarchy_type_of_t = 
-    typename hierarchy_type_of<Syntax, H>::type;
+  template<hierarchy_type H>
+  using hierarchy_type_of_t = typename hierarchy_type_of<H>::type;
 
   //
   // In general, hierarchy types are equality comparable in a standard way, but
@@ -1279,7 +589,7 @@ namespace black_internal::logic {
   // We start working for declaring `storage_base` below. We need to first
   // forward-declare it.
   //
-  template<storage_type Storage, fragment Syntax, typename Derived>
+  template<storage_type Storage, typename Derived>
   class storage_base;
 
   //
@@ -1287,12 +597,11 @@ namespace black_internal::logic {
   // of a `storage_type` with this trait, specialized later. Note that the
   // `Syntax` parameter will be ignored if a leaf storage kind is requested.
   //
-  template<fragment Syntax, storage_type H>
+  template<storage_type H>
   struct storage_type_of;
 
-  template<fragment Syntax, storage_type H>
-  using storage_type_of_t = 
-    typename storage_type_of<Syntax, H>::type;
+  template<storage_type H>
+  using storage_type_of_t = typename storage_type_of<H>::type;
 
   //
   // This small trait tells us whether a storage kind has hierarchy elements.
@@ -1314,7 +623,7 @@ namespace black_internal::logic {
   template<storage_type Storage, typename Derived>
   struct storage_fields_base { };
 
-  template<storage_type Storage, fragment Syntax, typename Derived>
+  template<storage_type Storage, typename Derived>
   struct storage_children_base { };
 
   //
@@ -1355,33 +664,31 @@ namespace black_internal::logic {
   // suitable arguments.
   //
   template<
-    storage_type Storage, fragment Syntax, typename Derived, typename Tuple
+    storage_type Storage, typename Derived, typename Tuple
   >
   class storage_ctor_base;
 
   template<
-    storage_type Storage, fragment Syntax, typename Derived, typename ...Args
+    storage_type Storage, typename Derived, typename ...Args
   >
-  class storage_ctor_base<Storage, Syntax, Derived, std::tuple<Args...>> : 
-    public hierarchy_base<hierarchy_of_storage(Storage), Syntax, Derived>
+  class storage_ctor_base<Storage, Derived, std::tuple<Args...>> : 
+    public hierarchy_base<hierarchy_of_storage(Storage), Derived>
   {
-    using base_t = 
-      hierarchy_base<hierarchy_of_storage(Storage), Syntax, Derived>;
+    using base_t = hierarchy_base<hierarchy_of_storage(Storage), Derived>;
 
   public:
-    // these three members have to be specialized w.r.t. `hierarchy_base`
-    using node_syntax = fragment_filter_t<
-      typename base_t::node_syntax,
-      storage_syntax_mask<Storage>
-    >;
-    using type = fragment_type<storage_ctor_base, node_syntax>;
     static constexpr storage_type storage = Storage;
+    using type = elements_for_storage_t<Storage>;
+
+    type node_type() const {
+      return static_cast<type>(this->node()->type);
+    }
 
     // the wrapping constructor delegates to the base's one
     storage_ctor_base(alphabet_base *sigma, hierarchy_node const*node) 
       : base_t{sigma, node} 
     { 
-      black_assert(Syntax::mask.contains(fragment_of(node)));
+      black_assert(storage == storage_of_element(node->type));
     }
 
     template<typename = void>
@@ -1390,7 +697,10 @@ namespace black_internal::logic {
       : storage_ctor_base{ 
         get_sigma(args...),
         get_sigma(args...)->unique(
-          storage_node<Storage>{t.element(), std::move(args)...}
+          storage_node<Storage>{
+            static_cast<syntax_element>(t), 
+            std::move(args)...
+        }
         )
       } { }
 
@@ -1405,22 +715,16 @@ namespace black_internal::logic {
           }
         )
       } { }
-
-    // we override `node_type()` from `hierarchy_base` to use our `type`.
-    type node_type() const {
-      return type{base_t::node()->type};
-    }
   };
 
   // `storage_ctor_base` needs to be passed a tuple with the arguments that the
   // storage kind expects for the allocation. To know them, we declare a
   // specializable trait, specialized in the preprocessed code.
-  template<fragment Syntax, storage_type Storage>
+  template<storage_type Storage>
   struct storage_alloc_args { };
 
-  template<fragment Syntax, storage_type Storage>
-  using storage_alloc_args_t = 
-    typename storage_alloc_args<Syntax, Storage>::type;
+  template<storage_type Storage>
+  using storage_alloc_args_t = typename storage_alloc_args<Storage>::type;
 
   //
   // To declare specializations of `storage_alloc_args` in the preprocessed code
@@ -1442,21 +746,17 @@ namespace black_internal::logic {
   // elements and thus inherit from `hierarchy_element_base` declared below.
   // Differently from `hierarchy_base`, this is a CRTP base class.
   //
-  template<storage_type Storage, fragment Syntax, typename Derived>
+  template<storage_type Storage, typename Derived>
   class storage_base 
-    : public storage_ctor_base<
-        Storage, Syntax, Derived, storage_alloc_args_t<Syntax, Storage>
-      >,
+    : public storage_ctor_base<Storage, Derived, storage_alloc_args_t<Storage>>,
       public storage_fields_base<Storage, Derived>,
-      public storage_children_base<Storage, Syntax, Derived>,
+      public storage_children_base<Storage, Derived>,
       public storage_custom_members<Storage, Derived>
   {
     using base_t = storage_ctor_base<
-      Storage, Syntax, Derived, storage_alloc_args_t<Syntax, Storage>
+      Storage, Derived, storage_alloc_args_t<Storage>
     >;
   public:
-    static constexpr auto storage = Storage;
-
     storage_base() = default;
     storage_base(storage_base const&) = default;
     storage_base(storage_base &&) = default;
@@ -1469,127 +769,44 @@ namespace black_internal::logic {
 
     // converting constructors from other storages of the same kind. 
     template<storage_kind S>
-      requires (
-        S::storage == Storage && 
-        is_subfragment_of_v<
-          typename S::syntax, typename base_t::syntax
-        >
-      )
+      requires (S::storage == Storage)
     storage_base(S s) : base_t{s.sigma(), s.node()} { }
+
+    template<logic::hierarchy F>
+    static std::optional<Derived> from(F f) {
+      if constexpr(F::hierarchy != Derived::hierarchy)
+        return {};
+
+      if(storage_of_element(f.node()->type) != Storage)
+        return {};
+
+      return Derived{f.sigma(), f.node()};
+    }
   };
-
-  //
-  // Concrete storage types without hierarchy elements (e.g. `atom<>`) have
-  // deduction guides that help avoid to specify the fragment each time. The
-  // deduction guide has to sum up all the fragments of the children into a
-  // combined fragment. We take the fragments from the arguments, if available.
-  // We can get the fragment from an argument of hierarcy type or from a vector
-  // of hierarchy types.
-  //
-  // The following is a concept that tells us whether an argument is one of
-  // those two cases.
-  //
-  template<typename T>
-  concept can_get_fragment = hierarchy<T> || 
-    (std::ranges::range<T> && hierarchy<std::ranges::range_value_t<T>>);
-
-  //
-  // This trait actually extracts the fragment from the argument.
-  //
-  template<typename Arg, typename = void>
-  struct get_fragment_from_arg { };
-
-  template<hierarchy Arg>
-  struct get_fragment_from_arg<Arg> { 
-    using type = typename Arg::syntax;
-  };
-  
-  template<std::ranges::range Arg>
-    requires hierarchy<std::ranges::range_value_t<Arg>>
-  struct get_fragment_from_arg<Arg> {
-    using type = typename std::ranges::range_value_t<Arg>::syntax;
-  };
-
-  template<typename Arg>
-  using get_fragment_from_arg_t = typename get_fragment_from_arg<Arg>::type;
-  
-  //
-  // Then, this trait combines the found fragments into one.
-  //
-  template<typename ...Args>
-  struct combined_fragment_from_args;
-
-  template<typename ...Args>
-  using combined_fragment_from_args_t = 
-    typename combined_fragment_from_args<Args...>::type;
-
-  template<>
-  struct combined_fragment_from_args<> : make_fragment<syntax_list<>> { };
-
-  template<can_get_fragment Arg>
-  struct combined_fragment_from_args<Arg> : get_fragment_from_arg<Arg> { };
-
-  template<can_get_fragment Arg, typename ...Args>
-  struct combined_fragment_from_args<Arg, Args...> 
-    : make_combined_fragment<
-        get_fragment_from_arg_t<Arg>,
-        combined_fragment_from_args_t<Args...>
-      > { };
-  
-  template<typename Arg, typename ...Args>
-  struct combined_fragment_from_args<Arg, Args...>
-    : combined_fragment_from_args<Args...> { };
-
-  //
-  // We sum up everything here, ready for use in the deduction guide
-  //
-  template<syntax_element Element, typename ...Args>
-  struct deduce_fragment_for_storage :
-    make_combined_fragment< \
-      make_singleton_fragment_t<Element>, \
-      combined_fragment_from_args_t<Args...> \
-    > { };
-
-  template<syntax_element Element, typename ...Args>
-  using deduce_fragment_for_storage_t = 
-    typename deduce_fragment_for_storage<Element, Args...>::type;
-
-  //
-  // Similar to `hierarchy_custom_members`, we declare a little empty CRTP class
-  // to let anybody add custom members to `hierarchy_element_base`.
-  //
-  template<syntax_element Element, typename Derived>
-  struct hierarchy_element_custom_members { };
 
   //
   // To declare the constructor(s) for `hierarchy_element_base` we need an
   // auxiliary base class similar to `storage_ctor_base`.
   // `hierarchy_element_base` will inherit from `storage_base` through this one.
   //
-  template<
-    syntax_element Element, fragment Syntax, typename D, typename Tuple
-  >
+  template<syntax_element Element, typename D, typename Tuple>
   class hierarchy_element_ctor_base;
 
-  template<
-    syntax_element Element, fragment Syntax, typename D, typename ...Args
-  >
-  class hierarchy_element_ctor_base<Element, Syntax, D, std::tuple<Args...>> 
-    : public storage_base<storage_of_element(Element), Syntax, D>
+  template<syntax_element Element, typename D, typename ...Args>
+  class hierarchy_element_ctor_base<Element, D, std::tuple<Args...>> 
+    : public storage_base<storage_of_element(Element), D>
   {
-    using base_t = storage_base<storage_of_element(Element), Syntax, D>;
+    using base_t = storage_base<storage_of_element(Element), D>;
 
   public:
     // these members from the base have to be overriden and specialized
-    using node_syntax = make_fragment_t<syntax_list<Element>>;
-    using type = fragment_type<hierarchy_element_ctor_base, node_syntax>;
     static constexpr syntax_element element = Element;
 
     // the wrapping constructor delegates to the base's one
     hierarchy_element_ctor_base(
       alphabet_base *sigma, hierarchy_node const*node
     ) : base_t{sigma, node} {
-      black_assert(node_syntax::mask.contains(node->type));
+      black_assert(element == node->type);
     }
 
     template<typename = void>
@@ -1603,11 +820,6 @@ namespace black_internal::logic {
           )
         )
       } { }
-
-      // we override `type()` from `hierarchy_base` to use our `type`.
-      type node_type() const {
-        return type{this->node()->type};
-      }
   };
 
   //
@@ -1616,18 +828,15 @@ namespace black_internal::logic {
   // associated to a single `syntax_element` with no more uncertainty. This is a
   // CRTP class as well.
   //
-  template<syntax_element Element, fragment Syntax, typename Derived>
+  template<syntax_element Element, typename Derived>
   class hierarchy_element_base
     : public hierarchy_element_ctor_base<
-        Element, Syntax, Derived, 
-        storage_alloc_args_t<Syntax, storage_of_element(Element)>
-      >,
-      public hierarchy_element_custom_members<Element, Derived>
+        Element, Derived, storage_alloc_args_t<storage_of_element(Element)>
+      >
   {
     using base_t = 
       hierarchy_element_ctor_base<
-        Element, Syntax, Derived, 
-        storage_alloc_args_t<Syntax, storage_of_element(Element)>
+        Element, Derived, storage_alloc_args_t<storage_of_element(Element)>
       >;
 
   public:
@@ -1643,12 +852,20 @@ namespace black_internal::logic {
     // converting constructor only from other equal elements with compatible
     // syntax.
     template<hierarchy_element E>
-      requires (E::element == Element &&
-                is_subfragment_of_v<
-                  typename E::syntax, typename base_t::syntax
-                >)
+      requires (E::element == Element)
     hierarchy_element_base(E e) 
       : hierarchy_element_base{e.sigma(), e.node()} { }
+
+      template<logic::hierarchy F>
+      static std::optional<Derived> from(F f) {
+        if constexpr(F::hierarchy != Derived::hierarchy)
+          return {};
+  
+        if(f.node()->type != Element)
+          return {};
+  
+        return Derived{f.sigma(), f.node()};
+      }
   };
 
   //
@@ -1659,12 +876,11 @@ namespace black_internal::logic {
   // `hierarchy_element_base` but only a `storage_base`, in the case of leaf
   // storage kinds or storage kinds with no hierarchy element.
   //
-  template<fragment Syntax, syntax_element E>
+  template<syntax_element E>
   struct element_type_of;
 
-  template<fragment Syntax, syntax_element E>
-  using element_type_of_t = 
-    typename element_type_of<Syntax, E>::type;
+  template<syntax_element E>
+  using element_type_of_t = typename element_type_of<E>::type;
 
   //
   // Similarly to `hierarchy_ctor_base`, we declare factory functions to be
@@ -1676,7 +892,7 @@ namespace black_internal::logic {
   template<syntax_element Element, typename Derived, typename ...Args>
   struct alphabet_ctor_base_aux<Element, Derived, std::tuple<Args...>>
   {
-    using type = element_type_of_t<make_singleton_fragment_t<Element>, Element>;
+    using type = element_type_of_t<Element>;
     
     type construct(Args ...args) {
       return type{
@@ -1684,7 +900,7 @@ namespace black_internal::logic {
         static_cast<Derived *>(this)->unique(
           storage_node<storage_of_element(Element)>{
             Element, std::move(args)...
-          }
+        }
         )
       };
     }
@@ -1693,10 +909,7 @@ namespace black_internal::logic {
   template<syntax_element Element, typename Derived>
   struct alphabet_ctor_base 
     : alphabet_ctor_base_aux<
-        Element, Derived, 
-        storage_alloc_args_t<
-          make_singleton_fragment_t<Element>, storage_of_element(Element)
-        >
+        Element, Derived, storage_alloc_args_t<storage_of_element(Element)>
       > { };
 
   //
@@ -1707,7 +920,7 @@ namespace black_internal::logic {
   // these cases, we declare here small wrapper types that will convert to the
   // appropriate type later.
   //
-  template<hierarchy_type Hierarchy, fragment Syntax>
+  template<hierarchy_type Hierarchy>
   struct child_arg 
   {
     template<hierarchy H>
@@ -1722,15 +935,14 @@ namespace black_internal::logic {
     alphabet *sigma;
   };
 
-  template<hierarchy_type H, fragment Syntax>
+  template<hierarchy_type H>
   struct children_arg
   {
     template<std::ranges::range R>
     using value_t = std::ranges::range_value_t<R>;
 
     template<std::ranges::range R>
-      requires (value_t<R>::hierarchy == H && 
-                is_subfragment_of_v<typename value_t<R>::syntax, Syntax>)
+      requires (value_t<R>::hierarchy == H)
     children_arg(R v) {
       black_assert(!empty(v));
       sigma = begin(v)->sigma();
@@ -1753,8 +965,8 @@ namespace black_internal::logic {
   // argument exists it means the hierarchy is a leaf and an instance has to be
   // requested directly to the alphabet (e.g. sigma.proposition("p")).
   //
-  template<hierarchy_type H, fragment Syntax, typename ...Args>
-  alphabet *get_sigma(child_arg<H, Syntax> child, Args ...) {
+  template<hierarchy_type H, typename ...Args>
+  alphabet *get_sigma(child_arg<H> child, Args ...) {
     return child.sigma;
   }
   template<typename T, typename ...Args>
@@ -1835,12 +1047,10 @@ namespace black_internal::logic {
     );
   }
 
-  template<size_t I, fragment Syntax, storage_kind H>
+  template<size_t I, storage_kind H>
   auto get_child(H h) {
     using ChildH = 
-      hierarchy_type_of_t<
-        Syntax, hierarchy_of_storage_child_v<I, H::storage>
-      >;
+      hierarchy_type_of_t<hierarchy_of_storage_child_v<I, H::storage>>;
     return ChildH{
       h.sigma(), 
       std::get<I>(
@@ -1849,12 +1059,10 @@ namespace black_internal::logic {
     };
   }
 
-  template<size_t I, fragment Syntax, storage_kind H>
+  template<size_t I, storage_kind H>
   auto get_children(H h) {
     using ChildH = 
-      hierarchy_type_of_t<
-        Syntax, hierarchy_of_storage_child_v<I, H::storage>
-      >;
+      hierarchy_type_of_t<hierarchy_of_storage_child_v<I, H::storage>>;
     alphabet *sigma = h.sigma();
     auto children = std::get<I>(
       static_cast<storage_node<H::storage> const *>(h.node())->data.values
@@ -1899,9 +1107,9 @@ namespace black_internal::logic {
     if constexpr(storage_ith_data_is_field_v<I, S::storage>)
       return get_field<I>(s);
     else if constexpr(storage_ith_data_is_child_v<I, S::storage>)
-      return get_child<I, typename S::syntax>(s);
+      return get_child<I>(s);
     else 
-      return get_children<I, typename S::syntax>(s);
+      return get_children<I>(s);
   }
 
   //
@@ -1975,18 +1183,12 @@ namespace black_internal::logic {
   template<hierarchy T, hierarchy U>
     requires (T::hierarchy == U::hierarchy && !have_same_storage_v<T, U>)
   struct common_type_helper<T, U> 
-    : hierarchy_type_of<
-        make_combined_fragment_t<typename T::syntax, typename U::syntax>,
-        T::hierarchy
-      > { };
+    : hierarchy_type_of<T::hierarchy> { };
   
   template<storage_kind T, storage_kind U>
     requires (T::storage == U::storage)
   struct common_type_helper<T, U> 
-    : storage_type_of<
-        make_combined_fragment_t<typename T::syntax, typename U::syntax>,
-        T::storage
-      > { };
+    : storage_type_of<T::storage> { };
 
   //
   // The actual specialization
@@ -1998,72 +1200,6 @@ namespace black_internal::logic {
       black_internal::logic::hierarchy U
     > struct common_type<T, U>
       : black_internal::logic::common_type_helper<T, U> { };
-
-  } namespace black_internal::logic {
-
-  //
-  // Since `fragment_type` is designed as well to be used in pattern matching,
-  // we need to implement `common_type` for it and for `fragment_enum_value` as well, so
-  // to ease their use in pattern matching structures.
-  //
-  struct dummy_owner_t { }; 
-
-  } namespace std {
-
-    template<
-      black_internal::logic::syntax_element E1, 
-      black_internal::logic::syntax_element E2
-    >
-    struct common_type<
-      black_internal::logic::fragment_enum_value<E1>, 
-      black_internal::logic::fragment_enum_value<E2>
-    > {
-      using type = black_internal::logic::fragment_type<
-        black_internal::logic::dummy_owner_t,
-        black_internal::logic::make_fragment_t<
-          black_internal::logic::syntax_list<E1, E2>
-        >
-      >;
-    };
-
-    template<
-      typename O, typename Syntax, black_internal::logic::syntax_element E
-    >
-    struct common_type<
-      black_internal::logic::fragment_type<O, Syntax>,
-      black_internal::logic::fragment_enum_value<E>
-    > {
-      using type = black_internal::logic::fragment_type<O, 
-        black_internal::logic::fragment_union_t<
-          Syntax, black_internal::logic::make_singleton_fragment_t<E>
-        >
-      >;
-    };
-
-    template<
-      typename O, typename Syntax, black_internal::logic::syntax_element E
-    >
-    struct common_type<
-      black_internal::logic::fragment_enum_value<E>,
-      black_internal::logic::fragment_type<O, Syntax>
-    > {
-      using type = black_internal::logic::fragment_type<O, 
-        black_internal::logic::fragment_union_t<
-          Syntax, black_internal::logic::make_singleton_fragment_t<E>
-        >
-      >;
-    };
-
-    template<typename O1, typename S1,typename O2, typename S2>
-    struct common_type<
-      black_internal::logic::fragment_type<O1, S1>,
-      black_internal::logic::fragment_type<O2, S2>
-    > {
-      using type = black_internal::logic::fragment_type<
-        black_internal::logic::dummy_owner_t,
-        black_internal::logic::fragment_union_t<S1, S2>
-      >;
-    };
 
   } namespace black_internal::logic {
 
@@ -2114,6 +1250,30 @@ namespace black_internal::logic {
     unpack(std::declval<Handler>(), std::declval<H>()); 
   };
 
+  struct unexhaustive_pattern_t {
+    template<typename T>
+    [[noreturn]] explicit operator T() { black_unreachable(); }
+  };
+
+} namespace std {
+
+  template<typename T>
+  struct common_type<T, black_internal::logic::unexhaustive_pattern_t>
+    : std::type_identity<T> { };
+
+  template<typename T>
+  struct common_type<black_internal::logic::unexhaustive_pattern_t, T>
+    : std::type_identity<T> { };
+  
+  template<>
+  struct common_type<
+    black_internal::logic::unexhaustive_pattern_t,
+    black_internal::logic::unexhaustive_pattern_t
+  >
+    : std::type_identity<black_internal::logic::unexhaustive_pattern_t> { };
+
+} namespace black_internal::logic {
+
   //
   // The `dispatch()` function takes a hierarchy object and the list of handlers
   // and calls the first handler that can be called either directly or by
@@ -2132,6 +1292,11 @@ namespace black_internal::logic {
       return dispatch(obj, std::forward<Handlers>(handlers)...);
   }
 
+  template<typename T>
+  auto dispatch(T) {
+    return unexhaustive_pattern_t{};
+  }
+
   //
   // Finally, the `matcher` class, which calls the machinery above to do the
   // trick. This is generic and works not only for hierarchy types but for any
@@ -2146,22 +1311,13 @@ namespace black_internal::logic {
   };
 
   //
-  // Then, this utility trait is useful in the usage of the `matcher` class in
-  // the common case of hierarchy types: it transform a `syntax_list` and a
-  // fragment into a tuple of concrete hierarchy element types to pass to the
-  // `matcher` class.
+  // To be defined later
   //
-  template<fragment Syntax, typename List>
-  struct element_types_of_syntax_list;
+  template<typename>
+  struct every_syntax_element;
   
-  template<fragment Syntax, syntax_element ...Elements>
-  struct element_types_of_syntax_list<Syntax, syntax_list<Elements...>> {
-    using type = std::tuple<element_type_of_t<Syntax, Elements>...>;
-  };
-
-  template<fragment Syntax, typename List>
-  using element_types_of_syntax_list_t = 
-    typename element_types_of_syntax_list<Syntax, List>::type;
+  template<typename Dummy>
+  using every_syntax_element_t = typename every_syntax_element<Dummy>::type;
 
   //
   // Now the matcher class itself. The `H` paremeter is the main class from
@@ -2170,42 +1326,42 @@ namespace black_internal::logic {
   // for `Cases` is the correct one to use in the common case of `H` being a
   // hierarchy type.
   //
-  template<
-    typename H,
-    typename Cases = element_types_of_syntax_list_t<
-      typename H::syntax,
-      typename H::node_syntax::list
-    >
-  >
+  template<typename H, typename Cases = every_syntax_element_t<H>>
   struct matcher;
 
   template<typename H, typename Case, typename ...Cases>
     //requires can_cast_to<H, Case>
   struct matcher<H, std::tuple<Case, Cases...>>
   {
+    template<typename ...Handlers>
+    using return_type = std::common_type_t<
+      decltype(dispatch(
+        *std::declval<H>().template to<Case>(), std::declval<Handlers>()...
+      )),
+      decltype(matcher<H, std::tuple<Cases...>>::match(
+        std::declval<H>(), std::declval<Handlers>()...
+      ))
+    >;
+
     //
     // The return type of `match()` is computed with `std::common_type`, which
     // has been specialized for hierarchies above. Again, it is cumbersome to
     // repeat the body twice but there's no other way.
     //
-    template<typename ...Handlers>
-    static auto match(H h, Handlers&& ...handlers) 
-      -> std::common_type_t<
-        decltype(dispatch(
-          *h.template to<Case>(), std::forward<Handlers>(handlers)...
-        )),
-        decltype(matcher<H, std::tuple<Cases...>>::match(
-          h, std::forward<Handlers>(handlers)...
-        ))
-      >
+    template<typename ...Handlers, typename R = return_type<Handlers...>>
+    static R match(H h, Handlers&& ...handlers)
     {
       if(h.template is<Case>())
-        return dispatch(
-          *h.template to<Case>(), std::forward<Handlers>(handlers)...
+        return static_cast<R>(
+          dispatch(
+            *h.template to<Case>(), std::forward<Handlers>(handlers)...
+          )
         );
       
-      return matcher<H, std::tuple<Cases...>>::match(
-        h, std::forward<Handlers>(handlers)...
+      return static_cast<R>(
+        matcher<H, std::tuple<Cases...>>::match(
+          h, std::forward<Handlers>(handlers)...
+        )
       );
     }
   };
@@ -2235,35 +1391,11 @@ namespace black_internal::logic {
   };
 
   //
-  // Now we can implement the various `match()` functions declared until now.
-  //
-  // The first is for `fragment_type`.
-  template<typename Elements>
-  struct fragment_enum_values_of_elements;
-
-  template<syntax_element ...Elements>
-  struct fragment_enum_values_of_elements<syntax_list<Elements...>> {
-    using type = std::tuple<fragment_enum_value<Elements>...>;
-  };
-
-  template<typename Elements>
-  using fragment_enum_values_of_elements_t =
-    typename fragment_enum_values_of_elements<Elements>::type;
-
-  template<typename Owner, fragment Syntax>
-  template<typename ...Handlers>
-  auto fragment_type<Owner, Syntax>::match(Handlers ...hs) const {
-    return matcher<fragment_type,
-      fragment_enum_values_of_elements_t<typename Syntax::list>
-    >{}.match(*this, hs...);
-  }
-
-  //
   // Then for hierarchy types
   //
-  template<hierarchy_type H, fragment Syntax, typename Derived>
+  template<hierarchy_type H, typename Derived>
   template<typename ...Handlers>
-  auto hierarchy_base<H, Syntax, Derived>::match(Handlers ...handlers) const {
+  auto hierarchy_base<H, Derived>::match(Handlers ...handlers) const {
     return matcher<Derived>{}.match(
       static_cast<Derived const&>(*this), handlers...
     );
@@ -2275,115 +1407,6 @@ namespace black_internal::logic {
   struct otherwise {
     template<typename T>
     otherwise(T const&) { }
-  };
-
-  //
-  // A useful addition to the pattern matching infrastructure is the `only<>`
-  // class. It allows the user to match only a selected list of syntax elements
-  // independently of their storage kind etc...
-  //
-  // First we define a trait to tell whether a fragment has only syntax elements
-  // of the same hierarchy. The first template argument of `only<>` is of this
-  // type.
-  //
-  template<typename List>
-  struct are_uniform_elements : std::false_type { };
-
-  template<syntax_element Element, syntax_element ...Elements>
-  struct are_uniform_elements<syntax_list<Element, Elements...>>
-    : std::bool_constant<
-        ((hierarchy_of_storage(storage_of_element(Element)) == 
-          hierarchy_of_storage(storage_of_element(Elements))) && ...)> { };
-
-  template<typename List>
-  inline constexpr bool are_uniform_elements_v =
-    are_uniform_elements<List>::value;
-
-  template<typename Syntax>
-  concept uniform_fragment = 
-    fragment<Syntax> && are_uniform_elements_v<typename Syntax::list>;
-  //
-  // The following is the base hierarchy type that will be derived by `only`,
-  // i.e. the hierarchy type that corresponds to the syntax elemnts in the
-  // `TopLevel` fragment
-  //
-  template<uniform_fragment TopLevel, fragment Syntax>
-  struct only_base 
-    : hierarchy_type_of<Syntax, 
-        hierarchy_of_storage(
-          storage_of_element(
-            syntax_list_head_v<typename TopLevel::list>
-          )
-        )
-      > { };
-
-  template<uniform_fragment TopLevel, fragment Syntax>
-  using only_base_t = typename only_base<TopLevel, Syntax>::type;
-
-  //
-  // Then, the `only<>` class. The first argument is the fragment to which
-  // `only<>` will restrict its matching. `Syntax` is the general fragment we
-  // are considering, i.e. that of the children of the matched object.
-  //
-  // For example, `only<future, formula<LTLP>` matches all the formulas of LTLP
-  // which happens to have a future operator as the top level operator.
-  // 
-  template<uniform_fragment TopLevel, fragment Syntax>
-  struct only : only_base_t<TopLevel, Syntax>
-  {
-    using base_t = only_base_t<TopLevel, Syntax>;
-
-    only() = delete;
-    only(only const&) = default;
-    only(only &&) = default;
-
-    only &operator=(only const&) = default;
-    only &operator=(only &&) = default;
-
-    //
-    // Converting constructor. Remember that this will be called in the
-    // `dispatch()` function above with an already-converted `hierarchy_element`
-    // H. Hence, `H::accepted_elements` is a singleton, e.g.
-    // `syntax_element::conjunction`, and we can know if the conversion is
-    // successful at compile-time. Then, we also check the general fragment to
-    // tell whether we are compatible.
-    //
-    template<hierarchy H>
-      requires (H::hierarchy == base_t::hierarchy && 
-        syntax_list_includes_v<
-          typename TopLevel::list,
-          typename H::node_syntax::list
-        > && is_subfragment_of_v<typename H::syntax, Syntax>)
-    only(H h) : base_t{h} { }
-
-
-    //
-    // Here we have some members to model the `hierarchy` concept
-    //
-    using syntax = Syntax;
-    using node_syntax = 
-      fragment_filter_t<
-        Syntax,
-        make_syntax_mask<typename TopLevel::list>
-      >;
-    using type = fragment_type<only, node_syntax>;
-
-    type node_type() {
-      return type{this->node()->type};
-    }
-
-    //
-    // We did all of this to come to this point: we call the `matcher` class but
-    // passing only `TopLevel::list` as the list of syntax elements, so the
-    // pattern matching is limited to those.
-    //
-    template<typename ...Handlers>
-    auto match(Handlers ...handlers) const {
-      return 
-        matcher<base_t, 
-          element_types_of_syntax_list_t<Syntax, typename TopLevel::list>
-        >{}.match(*this, handlers...);
-    }
   };
 
   //
@@ -2469,7 +1492,7 @@ namespace black_internal::logic {
   template<hierarchy H, typename ...Args>
     requires (std::is_constructible_v<syntax_element, Args> && ...)
   bool has_any_element_of(H h, Args ...args) {
-    if(((h.node_type() == args) || ...))
+    if(((h.node()->type == args) || ...))
       return true;
     
     bool has = false;

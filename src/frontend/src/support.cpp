@@ -132,33 +132,68 @@ namespace black::frontend
                (uint8_t)feature_t::quantifiers |
                formula_features(q.matrix());
       },
-      [](only<temporal> t) -> uint8_t {
-        return (uint8_t)feature_t::temporal |
-          t.match(
-            [](only<past>) -> uint8_t { return (int8_t)feature_t::past; },
-            [](otherwise) -> uint8_t { return 0; }
-          ) | t.match(
-            [](unary, formula arg) -> uint8_t {
-              return formula_features(arg);
-            },
-            [](binary, formula left, formula right) -> uint8_t {
-              return formula_features(left) | formula_features(right);
-            }
-          );
+      [](tomorrow, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (formula_features(args) | ...);
+      },
+      [](w_tomorrow, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (formula_features(args) | ...);
+      },
+      [](yesterday, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (uint8_t)feature_t::past |
+               (formula_features(args) | ...);
+      },
+      [](w_yesterday, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (uint8_t)feature_t::past |
+               (formula_features(args) | ...);
+      },
+      [](always, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (formula_features(args) | ...);
+      },
+      [](eventually, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (formula_features(args) | ...);
+      },
+      [](once, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (uint8_t)feature_t::past |
+               (formula_features(args) | ...);
+      },
+      [](historically, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (uint8_t)feature_t::past |
+               (formula_features(args) | ...);
+      },
+      [](until, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (formula_features(args) | ...);
+      },
+      [](release, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (formula_features(args) | ...);
+      },
+      [](w_until, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (uint8_t)feature_t::past |
+               (formula_features(args) | ...);
+      },
+      [](s_release, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (formula_features(args) | ...);
+      },
+      [](since, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (uint8_t)feature_t::past |
+               (formula_features(args) | ...);
+      },
+      [](triggered, auto ...args) -> uint8_t {
+        return (uint8_t)feature_t::temporal | (uint8_t)feature_t::past |
+               (formula_features(args) | ...);
       },
       [](unary, formula arg) -> uint8_t { 
         return formula_features(arg);
       },
       [](disjunction d) {
         uint8_t features = 0;
-        for(formula op : d.operands())
+        for(formula op : operands(d))
           features = features | formula_features(op);
         
         return features;
       },
       [](conjunction d) {
         uint8_t features = 0;
-        for(formula op : d.operands())
+        for(formula op : operands(d))
           features = features | formula_features(op);
         
         return features;

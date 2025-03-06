@@ -47,7 +47,7 @@ namespace black_internal
     
     ~parser();
 
-    std::optional<logic::formula<logic::LTLPFO>> parse();
+    std::optional<logic::formula> parse();
 
   private:
     struct _parser_t;
@@ -56,25 +56,25 @@ namespace black_internal
 
   // Easy entry-point for parsing formulas
   BLACK_EXPORT
-  std::optional<logic::formula<logic::LTLPFO>>
+  std::optional<logic::formula>
   parse_formula(
     logic::alphabet &sigma, std::string const&s, parser::error_handler error
   );
 
   BLACK_EXPORT
-  std::optional<logic::formula<logic::LTLPFO>>
+  std::optional<logic::formula>
   parse_formula(
     logic::alphabet &sigma, std::istream &s, parser::error_handler error
   );
 
   BLACK_EXPORT
-  inline std::optional<logic::formula<logic::LTLPFO>>
+  inline std::optional<logic::formula>
   parse_formula(logic::alphabet &sigma, std::string const&s) {
     return parse_formula(sigma, s, [](auto){});
   }
 
   BLACK_EXPORT
-  inline std::optional<logic::formula<logic::LTLPFO>>
+  inline std::optional<logic::formula>
   parse_formula(logic::alphabet &sigma, std::istream &s) {
     return parse_formula(sigma, s, [](auto){});
   }

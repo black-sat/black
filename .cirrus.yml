@@ -2,11 +2,11 @@ task:
   environment:
     CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
   matrix:
-    - name: Fedora 40 (g++ 14)
+    - name: Fedora 41 (g++ 14)
       container:
         dockerfile: docker/Dockerfile.fedora
         docker_arguments:
-          VERSION: 40
+          VERSION: 41
     - name: Ubuntu 24.04 (g++ 12)
       container:
         dockerfile: docker/Dockerfile.ubuntu
@@ -44,17 +44,17 @@ task:
 
 
 task:
-  name: macOS (LLVM latest)
+  name: macOS (Sonoma devtools)
   osx_instance:
     image: ghcr.io/cirruslabs/macos-sonoma-xcode:latest
   download_dependencies_script:
     - brew update
-    - brew install llvm cmake fmt catch2 z3 cryptominisat nlohmann-json
+    - brew install cmake fmt catch2 z3 cryptominisat nlohmann-json
     - brew install black-sat/black/hopscotch-map
     - ./download-mathsat.sh
   release_build_script:
     - mkdir -p build && cd build
-    - ../config-brew-llvm.sh -DCMAKE_BUILD_TYPE=Release ..
+    - cmake -DCMAKE_BUILD_TYPE=Release ..
     - make
   test_script:
     - cd build 
@@ -81,19 +81,19 @@ task:
 
 task:
   matrix:
-    - name: Fedora 40 (with CryptoMiniSAT backend)
+    - name: Fedora 41 (with CryptoMiniSAT backend)
       environment:
         BACKEND: cmsat
-    - name: Fedora 40 (with MathSAT backend)
+    - name: Fedora 41 (with MathSAT backend)
       environment:
         BACKEND: mathsat
-    - name: Fedora 40 (with CVC5 backend)
+    - name: Fedora 41 (with CVC5 backend)
       environment:
         BACKEND: cvc5
   container:
     dockerfile: docker/Dockerfile.fedora
     docker_arguments:
-      VERSION: 40
+      VERSION: 41
   environment:
     CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
   download_mathsat_script:

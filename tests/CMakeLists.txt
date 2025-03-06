@@ -77,7 +77,6 @@ if(Catch2_FOUND)
     units/basics.cpp
     units/bitset.cpp
     units/match.cpp
-    units/namespaces.cpp
     units/parser.cpp
     units/past_remover.cpp
     units/solver.cpp

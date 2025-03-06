@@ -25,10 +25,10 @@ the packages should work but do not, please open a GitHub `issue
 <https://github.com/black-sat/black/issues>`_.
 
 
-.. |Ubuntu24.04Badge| image:: https://badgen.net/badge/Download%20v0.10.8/.deb/green
-.. _Ubuntu24.04Badge: https://github.com/black-sat/black/releases/download/v0.10.8/black-sat-0.10.8.ubuntu24.04.x86_64.deb
-.. |Fedora40Badge| image:: https://badgen.net/badge/Download%20v0.10.8/.rpm/green
-.. _Fedora40Badge: https://github.com/black-sat/black/releases/download/v0.10.8/black-sat-0.10.8.fedora40.x86_64.rpm
+.. |Ubuntu24.04Badge| image:: https://badgen.net/badge/Download%20v2025.03.06/.deb/green
+.. _Ubuntu24.04Badge: https://github.com/black-sat/black/releases/download/v2025.03.06/black-sat-2025.03.06.ubuntu24.04.x86_64.deb
+.. |Fedora40Badge| image:: https://badgen.net/badge/Download%20v2025.03.06/.rpm/green
+.. _Fedora40Badge: https://github.com/black-sat/black/releases/download/v2025.03.06/black-sat-2025.03.06.fedora40.x86_64.rpm
 
 Compilation from source
 ------------------------
@@ -70,10 +70,6 @@ For Z3::
 For CryptoMiniSAT::
 
    $ sudo apt install libcryptominisat5-dev
-
-For MiniSAT::
-
-   $ sudo apt install minisat
 
 Currently, there are no packages for cvc5 and MathSAT. To install cvc5, binary
 packages are available or it can be built from source. Refer to their website
@@ -121,10 +117,6 @@ For Z3::
 For CryptoMiniSAT::
 
    $ sudo dnf install cryptominisat-devel
-
-For MiniSAT::
-
-   $ sudo dnf install minisat2-devel
 
 Currently, there are no ``rpm`` packages for cvc5 and MathSAT. To install cvc5,
 stand-alone binary packages are available or it can be built from source. Refer

@@ -61,7 +61,7 @@ namespace black::sat
   }
 
   std::unique_ptr<solver> solver::get_solver(
-    std::string_view name, logic::scope const& xi
+    std::string_view name, scope const& xi
   ) {
     using namespace black::sat::internal;
     auto it = _backends->find(name); 

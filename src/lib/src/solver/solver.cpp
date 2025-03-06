@@ -70,12 +70,11 @@ namespace black_internal::solver
     std::function<void(trace_t)> tracer = [](trace_t){};
 
     void trace(size_t k);
-    void trace(trace_t::type_t, scope const&, logic::formula<logic::LTLPFO>);
-    void trace(trace_t::type_t, scope const&, logic::formula<logic::FO>);
+    void trace(trace_t::type_t, scope const&, logic::formula);
 
     // Main algorithm
     tribool solve(
-      scope const& xi, logic::formula<logic::LTLPFO> f, 
+      scope const& xi, logic::formula f, 
       bool finite, size_t k_max, std::optional<std::chrono::seconds> timeout, 
       bool semi_decision
     );
@@ -90,7 +89,7 @@ namespace black_internal::solver
   solver &solver::operator=(solver &&) = default;
 
   tribool solver::solve(
-    scope const& xi, logic::formula<logic::LTLPFO> f, 
+    scope const& xi, logic::formula f, 
     bool finite, size_t k_max, std::optional<std::chrono::seconds> timeout,
     bool semi_decision
   ) {
@@ -99,7 +98,7 @@ namespace black_internal::solver
 
   
   tribool solver::is_valid(
-    scope const& xi, logic::formula<logic::LTLPFO> f, 
+    scope const& xi, logic::formula f, 
     bool finite, size_t k_max, std::optional<std::chrono::seconds> timeout,
     bool semi_decision
   ) {
@@ -170,7 +169,7 @@ namespace black_internal::solver
     if(!_solver._data->enc.has_value())
       return tribool::undef;
 
-    logic::atom<logic::FO> u = _solver._data->enc->stepped(a, t);
+    logic::atom u = _solver._data->enc->stepped(a, t);
 
     return _solver._data->sat->value(u);
   }
@@ -179,7 +178,7 @@ namespace black_internal::solver
     if(!_solver._data->enc.has_value())
       return tribool::undef;
 
-    logic::equality<logic::FO> u = _solver._data->enc->stepped(e, t);
+    logic::equality u = _solver._data->enc->stepped(e, t);
 
     return _solver._data->sat->value(u);
   }
@@ -188,7 +187,7 @@ namespace black_internal::solver
     if(!_solver._data->enc.has_value())
       return tribool::undef;
 
-    logic::comparison<logic::FO> u = _solver._data->enc->stepped(c, t);
+    logic::comparison u = _solver._data->enc->stepped(c, t);
 
     return _solver._data->sat->value(u);
   }
@@ -198,13 +197,7 @@ namespace black_internal::solver
   }
 
   void solver::_solver_t::trace(
-    trace_t::type_t type, scope const& xi, logic::formula<logic::LTLPFO> f
-  ){
-    tracer({&xi, type, {f}});
-  }
-  
-  void solver::_solver_t::trace(
-    trace_t::type_t type, scope const& xi, logic::formula<logic::FO> f
+    trace_t::type_t type, scope const& xi, logic::formula f
   ){
     tracer({&xi, type, {f}});
   }
@@ -214,7 +207,7 @@ namespace black_internal::solver
    * If semi_decision = true, we disable the PRUNE rule.
    */
   tribool solver::_solver_t::solve(
-    scope const& s, logic::formula<logic::LTLPFO> f, bool finite, 
+    scope const& s, logic::formula f, bool finite, 
     size_t k_max, std::optional<std::chrono::seconds> timeout, 
     bool semi_decision
   ) {
@@ -305,14 +298,29 @@ namespace black_internal::solver
         [](w_tomorrow) { },
         [](yesterday) { },
         [](w_yesterday) { },
-        [&](only<temporal>) {
-          if(quantified)
+        [&](otherwise) { 
+          if(!quantified)
+            return;
+          
+          bool temporal = child.match(
+            [](always) { return true; },
+            [](eventually) { return true; },
+            [](once) { return true; },
+            [](historically) { return true; },
+            [](until) { return true; },
+            [](release) { return true; },
+            [](w_until) { return true; },
+            [](s_release) { return true; },
+            [](since) { return true; },
+            [](triggered) { return true; },
+            [](otherwise) { return false; }
+          );
+          if(temporal)
             err(
               "Temporal operators (excepting X/wX/Y/Z) cannot appear "
               "inside quantifiers"
             );
-        },
-        [](otherwise) { }
+        }
       );
       _check_syntax(child, quantified, err);
     });

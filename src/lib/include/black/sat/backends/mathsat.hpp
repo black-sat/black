@@ -31,7 +31,7 @@
 
 namespace black_internal::mathsat
 {
-  using namespace black::logic::fragments::FO;
+  using namespace black;
 
   class BLACK_EXPORT mathsat : public ::black::sat::solver
   {

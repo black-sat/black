@@ -53,7 +53,7 @@ namespace black::sat
     static bool backend_exists(std::string_view name);
     static bool backend_has_feature(std::string_view name, feature f);
     static std::unique_ptr<solver> get_solver(
-      std::string_view name, logic::scope const& xi
+      std::string_view name, scope const& xi
     );
 
     // solver is a polymorphic, non-copyable type
@@ -63,14 +63,14 @@ namespace black::sat
     virtual ~solver() = default;
 
     // assert a formula, adding it to the current context
-    virtual void assert_formula(logic::formula<logic::FO> f) = 0;
+    virtual void assert_formula(formula f) = 0;
 
     // tell if the current set of assertions is satisfiable
     virtual tribool is_sat() = 0;
     
     // tell if the current set of assertions is satisfiable, 
     // under the given assumption
-    virtual tribool is_sat_with(logic::formula<logic::FO> assumption) = 0;
+    virtual tribool is_sat_with(formula assumption) = 0;
     
     // gets the value of a proposition from the solver.
     // The result is tribool::undef if the variable has not been decided
@@ -82,19 +82,19 @@ namespace black::sat
     // The result is tribool::undef if the value has not been decided
     // e.g. before the first call to is_sat()
     // or if it is a don't care
-    virtual tribool value(logic::atom<logic::FO> a) const = 0;
+    virtual tribool value(atom a) const = 0;
 
     // gets the value of a term equality comparison from the solver.
     // The result is tribool::undef if the value has not been decided
     // e.g. before the first call to is_sat()
     // or if it is a don't care
-    virtual tribool value(logic::equality<logic::FO> a) const = 0;
+    virtual tribool value(equality a) const = 0;
 
     // gets the value of a term comparison from the solver.
     // The result is tribool::undef if the value has not been decided
     // e.g. before the first call to is_sat()
     // or if it is a don't care
-    virtual tribool value(logic::comparison<logic::FO> a) const = 0;
+    virtual tribool value(comparison a) const = 0;
 
     // clear the current context completely
     virtual void clear() = 0;
@@ -110,7 +110,7 @@ namespace black::sat
   namespace internal {
     struct backend_init_hook {
       using backend_ctor = 
-        std::unique_ptr<solver> (*)(black::logic::scope const&);
+        std::unique_ptr<solver> (*)(black::scope const&);
       backend_init_hook(
         std::string_view, backend_ctor, std::vector<black::sat::feature>
       );
@@ -120,7 +120,7 @@ namespace black::sat
       static const black::sat::internal::backend_init_hook \
         Backend##_init_hook_{ \
           #Backend, \
-          [](::black::logic::scope const& xi) -> \
+          [](::black::scope const& xi) -> \
             std::unique_ptr<::black::sat::solver> \
           { \
             return std::make_unique<::black::sat::backends::Backend>(xi); \

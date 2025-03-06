@@ -21,11 +21,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.25)
 
 project(
   black 
-  VERSION 0.10.8
+  VERSION 2025.03.06
   LANGUAGES C CXX
   DESCRIPTION "BLACK (Bounded Lᴛʟ sAtisfiability ChecKer)"
 )
@@ -103,9 +103,6 @@ endif()
 # Black library and frontend
 add_subdirectory(src/lib)
 add_subdirectory(src/frontend)
-
-# Python bindings
-add_subdirectory(python)
 
 # Tests
 

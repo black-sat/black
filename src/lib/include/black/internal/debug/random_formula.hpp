@@ -33,17 +33,17 @@ namespace black_internal::random {
   using namespace logic;
 
   BLACK_EXPORT
-  formula<LTL> random_ltl_formula(
+  formula random_ltl_formula(
       std::mt19937& gen, alphabet& sigma, int n,
       std::vector<std::string> const& symbols);
 
   BLACK_EXPORT
-  formula<LTLP> random_ltlp_formula(
+  formula random_ltlp_formula(
       std::mt19937& gen, alphabet& sigma, int n,
       std::vector<std::string> const& symbols);
 
   BLACK_EXPORT
-  formula<propositional> random_boolean_formula(
+  formula random_boolean_formula(
       std::mt19937& gen, alphabet& sigma, int n,
       std::vector<std::string> const& symbols);
 

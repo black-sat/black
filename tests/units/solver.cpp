@@ -44,7 +44,7 @@ TEST_CASE("Solver")
   SECTION("Propositional formulas") {
 
     std::vector<std::string> backends = {
-      "z3", "mathsat", "cmsat", "minisat", "cvc5"
+      "z3", "mathsat", "cmsat", "cvc5"
     };
 
     for(auto backend : backends) {

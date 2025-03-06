@@ -17,14 +17,6 @@ RUN apt-get update && apt-get install -y gcc-$GCC_VERSION g++-$GCC_VERSION
 RUN apt-get update && apt-get install -y software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa
 
-RUN apt-get update && \
-    apt-get install -y \
-    pybind11-dev \
-    python3-pip python-is-python3 \
-    python3.9-dev python3.9-distutils \
-    python3.10-dev python3.10-distutils \
-    python3.11-dev python3.11-distutils
-
 # install catch2 from source
 RUN git clone https://github.com/catchorg/Catch2.git /catch2
 WORKDIR /catch2

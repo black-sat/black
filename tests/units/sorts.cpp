@@ -28,7 +28,7 @@
 
 #include <catch.hpp>
 
-using namespace black::logic::fragments::LTLPFO;
+using namespace black;
 
 TEST_CASE("Sorts and domains") {
   alphabet sigma;

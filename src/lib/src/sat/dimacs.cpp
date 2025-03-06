@@ -53,12 +53,10 @@ namespace black_internal::dimacs
 
   solver::~solver() = default;
 
-  void solver::assert_formula(formula<FO> f) 
+  void solver::assert_formula(formula f) 
   {
-    auto pf = f.to<formula<propositional>>();
-    black_assert(pf.has_value());
     // conversion of the formula to CNF
-    cnf::cnf c = cnf::to_cnf(*pf);
+    cnf::cnf c = cnf::to_cnf(f);
 
     // census of new variables
     size_t old_size = _data->vars.size();
@@ -86,7 +84,7 @@ namespace black_internal::dimacs
   }
 
   // TODO: optimize corner cases (e.g. if assumption is already a literal)
-  tribool solver::is_sat_with(logic::formula<logic::FO> assumption) 
+  tribool solver::is_sat_with(logic::formula assumption) 
   { 
     proposition fresh = assumption.sigma()->proposition(assumption);
 
@@ -105,15 +103,15 @@ namespace black_internal::dimacs
     return this->value(prop);
   }
 
-  tribool solver::value(logic::atom<logic::FO>) const { // LCOV_EXCL_LINE
+  tribool solver::value(logic::atom) const { // LCOV_EXCL_LINE
     return tribool::undef; // LCOV_EXCL_LINE
   }
 
-  tribool solver::value(logic::equality<logic::FO>) const { // LCOV_EXCL_LINE
+  tribool solver::value(logic::equality) const { // LCOV_EXCL_LINE
     return tribool::undef; // LCOV_EXCL_LINE
   }
 
-  tribool solver::value(logic::comparison<logic::FO>) const { // LCOV_EXCL_LINE
+  tribool solver::value(logic::comparison) const { // LCOV_EXCL_LINE
     return tribool::undef; // LCOV_EXCL_LINE
   }
 

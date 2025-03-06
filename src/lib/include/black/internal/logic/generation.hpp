@@ -97,6 +97,45 @@ namespace black_internal::logic
   //
   static_assert(syntax_element_enum_size() <= syntax_element_max_size);
 
+  //
+  // Specialization of elements_for_hierarchy
+  //
+  #define declare_hierarchy(Base) \
+    template<> \
+    struct elements_for_hierarchy<hierarchy_type::Base> { \
+      enum class type : uint8_t { \
+
+  #define declare_leaf_storage_kind(Base, Storage) \
+        Storage = static_cast<uint8_t>(syntax_element::Storage),
+
+  #define has_no_hierarchy_elements(Base, Storage) \
+        Storage = static_cast<uint8_t>(syntax_element::Storage),
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+        Element = static_cast<uint8_t>(syntax_element::Element),
+
+  #define end_hierarchy(Base) \
+      }; \
+    };
+
+  #include <black/internal/logic/hierarchy.hpp>
+  
+  //
+  // Specialization of elements_for_storage
+  //
+  #define declare_storage_kind(Base, Storage) \
+    template<> \
+    struct elements_for_storage<storage_type::Storage> { \
+      enum class type : uint8_t { \
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+        Element = static_cast<uint8_t>(syntax_element::Element),
+
+  #define end_storage_kind(Base, Storage) \
+      }; \
+    };
+
+  #include <black/internal/logic/hierarchy.hpp>
 
   //
   // Printing of the above enumerations, for debugging and introspection.
@@ -219,102 +258,16 @@ namespace black_internal::logic
   #include <black/internal/logic/hierarchy.hpp>
 
   //
-  // Custom syntax filters for each hierarchy type, enumerating all its syntax
-  // elements.
-  //
-  #define declare_hierarchy(Base) \
-    template<> \
-    struct hierarchy_syntax_mask<hierarchy_type::Base> \
-      : make_syntax_mask_cpp<0 \
-
-  #define declare_leaf_storage_kind(Base, Storage) \
-          , syntax_element::Storage
-  #define has_no_hierarchy_elements(Base, Storage) \
-          , syntax_element::Storage
-  #define declare_hierarchy_element(Base, Storage, Element) \
-          , syntax_element::Element
-    
-  #define end_hierarchy(Base) \
-        > { };
-
-  #include <black/internal/logic/hierarchy.hpp>
-
-  //
-  // Same thing for the syntax predicate associated with storage kinds.
-  //
-  #define declare_storage_kind(Base, Storage) \
-    template<> \
-    struct storage_syntax_mask<storage_type::Storage> \
-      : make_syntax_mask_cpp<0
-      
-  #define has_no_hierarchy_elements(Base, Storage) \
-          , syntax_element::Storage
-
-  #define declare_hierarchy_element(Base, Storage, Element) \
-          , syntax_element::Element
-    
-  #define end_storage_kind(Base, Storage) \
-          > { };
-
-  #define declare_leaf_storage_kind(Base, Storage) \
-    template<> \
-    struct storage_syntax_mask<storage_type::Storage> \
-      : make_syntax_mask<syntax_list<syntax_element::Storage>> { };
-
-  #define end_leaf_storage_kind(Base, Storage)
-  
-  #include <black/internal/logic/hierarchy.hpp>
-
-  //
-  // Specialization of `fragment_enum_element` for each `syntax_element`. Each
-  // specialization provides a static member of type
-  // `fragment_enum_value<Element>` named exactly `Element`. The result is that,
-  // e.g. `unary<LTL>::type` has members such as `unary<LTL>::type::always` and
-  // `unary<LTL>::type::eventually`.
-  //
-  #define declare_enum_element(Element) \
-    template<> \
-    struct fragment_enum_element<syntax_element::Element> { \
-      using Element = fragment_enum_value<syntax_element::Element>; \
-    };
-
-  #define declare_leaf_storage_kind(Base, Storage) declare_enum_element(Storage)
-  #define has_no_hierarchy_elements(Base, Storage) declare_enum_element(Storage)
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    declare_enum_element(Element)
-
-  #include <black/internal/logic/hierarchy.hpp>
-
-  #undef declare_enum_element
-
-  //
-  // Declaration of `universal_fragment_t`, one fragment to rule them all.
-  //
-  struct universal_fragment_t \
-    : make_fragment_cpp_t<0  
-
-  #define declare_leaf_storage_kind(Base, Storage) , syntax_element::Storage
-  #define has_no_hierarchy_elements(Base, Storage) , syntax_element::Storage
-  #define declare_hierarchy_element(Base, Storage, Element) \
-    , syntax_element::Element
-  #include <black/internal/logic/hierarchy.hpp>
-
-    > { };
-
-  //
   // Now we need to forward declare the storage and hierarchy element types that
   // will be declared later. We need the forward declarations now because
   // `storage_data` below may refer to a specific type (e.g. the field of type
   // `variable` of `quantifier`).
   //
   #define declare_hierarchy(Base) \
-    template<fragment Syntax> \
     class Base;
   #define declare_hierarchy_element(Base, Storage, Element) \
-    template<fragment Syntax> \
     class Element;
   #define declare_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
     class Storage;
   #define declare_simple_hierarchy(Base) \
     class Base;
@@ -326,6 +279,22 @@ namespace black_internal::logic
     class Element;
 
   #include <black/internal/logic/hierarchy.hpp>
+
+  template<typename Dummy, typename ...Args>
+  struct make_tuple_cpp : std::type_identity<std::tuple<Args...>> { };
+
+  //
+  // Declaration of `every_syntax_element`
+  //
+  template<typename T>
+  struct every_syntax_element : make_tuple_cpp<T
+
+  #define declare_leaf_storage_kind(Base, Storage) , Storage
+  #define has_no_hierarchy_elements(Base, Storage) , Storage
+  #define declare_hierarchy_element(Base, Storage, Element) , Element
+  #include <black/internal/logic/hierarchy.hpp>
+
+    > { };
 
   //
   // Specializations of `storage_data`. Here we define the internal layout of
@@ -360,29 +329,20 @@ namespace black_internal::logic
   // parameters, and the concept `is_<hierarchy>`.
   //
   #define declare_hierarchy(Base) \
-    template<fragment Syntax> \
     class Base \
-      : public hierarchy_base<hierarchy_type::Base, Syntax, Base<Syntax>>, \
-        public hierarchy_custom_members<hierarchy_type::Base, Base<Syntax>> \
+      : public hierarchy_base<hierarchy_type::Base, Base> \
     { \
-      using hierarchy_base<hierarchy_type::Base, Syntax, Base>::hierarchy_base;\
+      using hierarchy_base<hierarchy_type::Base, Base>::hierarchy_base;\
     }; \
-    \
-    template<typename H> \
-    Base(H const&) -> Base<typename H::syntax>; \
     \
     template<typename T> \
     concept is_##Base = hierarchy<T> && T::hierarchy == hierarchy_type::Base;
 
   #define declare_simple_hierarchy(Base) \
     class Base \
-      : public \
-          hierarchy_base<hierarchy_type::Base, universal_fragment_t, Base>, \
-        public hierarchy_custom_members<hierarchy_type::Base, Base> \
+      : public hierarchy_base<hierarchy_type::Base, Base> \
     { \
-      using hierarchy_base< \
-        hierarchy_type::Base, universal_fragment_t, Base \
-      >::hierarchy_base; \
+      using hierarchy_base<hierarchy_type::Base, Base>::hierarchy_base; \
     }; \
     \
     template<typename T> \
@@ -396,14 +356,14 @@ namespace black_internal::logic
   // fragment.
   //
   #define declare_hierarchy(Base) \
-    template<fragment Syntax> \
-    struct hierarchy_type_of<Syntax, hierarchy_type::Base> { \
-      using type = Base<Syntax>; \
+    template<> \
+    struct hierarchy_type_of<hierarchy_type::Base> { \
+      using type = Base; \
     };
   
   #define declare_simple_hierarchy(Base) \
-    template<fragment Syntax> \
-    struct hierarchy_type_of<Syntax, hierarchy_type::Base> { \
+    template<> \
+    struct hierarchy_type_of<hierarchy_type::Base> { \
       using type = Base; \
     };
 
@@ -463,11 +423,11 @@ namespace black_internal::logic
   // accessor functions, which are defined later.
   //
   #define declare_storage_kind(Base, Storage) \
-    template<typename Derived, fragment Syntax> \
-    struct storage_children_base<storage_type::Storage, Syntax, Derived> {
+    template<typename Derived> \
+    struct storage_children_base<storage_type::Storage, Derived> {
 
     #define declare_child(Base, Storage, Hierarchy, Child) \
-      Hierarchy<Syntax> Child() const;
+      Hierarchy Child() const;
 
     #define declare_children(Base, Storage, Hierarchy, Children) \
       auto Children() const;
@@ -493,20 +453,20 @@ namespace black_internal::logic
   // type for a given `storage_type` and a given fragment.
   //
   #define declare_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    struct storage_type_of<Syntax, storage_type::Storage> { \
-      using type = Storage<Syntax>; \
+    template<> \
+    struct storage_type_of<storage_type::Storage> { \
+      using type = Storage; \
     };
   
   #define declare_simple_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    struct storage_type_of<Syntax, storage_type::Storage> { \
+    template<> \
+    struct storage_type_of<storage_type::Storage> { \
       using type = Storage; \
     };
 
   #define declare_leaf_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    struct storage_type_of<Syntax, storage_type::Storage> { \
+    template<> \
+    struct storage_type_of<storage_type::Storage> { \
       using type = Storage; \
     };
 
@@ -520,8 +480,8 @@ namespace black_internal::logic
   // argument becomes `hierarchy_node_t<hierarchy_type::formula> const*`).
   //
   #define declare_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
-    struct storage_alloc_args<Syntax, storage_type::Storage> \
+    template<> \
+    struct storage_alloc_args<storage_type::Storage> \
       : storage_alloc_args_cpp<0 \
   
   #define declare_field(Base, Storage, Type, Field) , Type
@@ -530,10 +490,10 @@ namespace black_internal::logic
     , std::vector<Type>
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
-    , child_arg<hierarchy_type::Hierarchy, Syntax>
+    , child_arg<hierarchy_type::Hierarchy>
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
-    , children_arg<hierarchy_type::Hierarchy, Syntax>
+    , children_arg<hierarchy_type::Hierarchy>
 
   #define end_storage_kind(Base, Storage) \
       > { };
@@ -551,43 +511,22 @@ namespace black_internal::logic
   // deduction guide for the converting constructor.
   //
   #define declare_storage_kind(Base, Storage) \
-    template<fragment Syntax> \
     class Storage : \
-      public \
-        storage_base<storage_type::Storage, Syntax, Storage<Syntax>> \
+      public storage_base<storage_type::Storage, Storage> \
     { \
-      using base_t = \
-        storage_base<storage_type::Storage, Syntax, Storage<Syntax>>; \
-    public: \
-      using base_t::base_t; \
-    }; \
-    \
-    template<storage_kind S> \
-      requires (S::storage == storage_type::Storage) \
-    Storage(S const&) -> Storage<typename S::syntax>;
-  
-  #define declare_simple_storage_kind(Base, Storage) \
-    class Storage : \
-      public \
-        storage_base<storage_type::Storage, universal_fragment_t, Storage> \
-    { \
-      using base_t = \
-        storage_base<storage_type::Storage, universal_fragment_t, Storage>; \
+      using base_t = storage_base<storage_type::Storage, Storage>; \
     public: \
       using base_t::base_t; \
     };
-
-  //
-  // This is a deduction guide for use with the allocating constructor. This is
-  // only declared for storage kinds without hierarchy elements (e.g. `atom<>`)
-  // since in case of hierarchy elements, in order to pass the `type` parameter
-  // one would need to spell the fragment anyway (e.g.
-  // `unary<LTL>(unary<LTL>::type::always, p, q)`).
-  //
-  #define has_no_hierarchy_elements(Base, Storage) \
-    template<typename ...Args> \
-    Storage(Args ...args) -> \
-      Storage<deduce_fragment_for_storage_t<syntax_element::Storage, Args...>>;
+  
+  #define declare_simple_storage_kind(Base, Storage) \
+    class Storage : \
+      public storage_base<storage_type::Storage, Storage> \
+    { \
+      using base_t = storage_base<storage_type::Storage, Storage>; \
+    public: \
+      using base_t::base_t; \
+    };
 
   //
   // Here we declare the concrete type for leaf storage kinds. This is easier
@@ -598,17 +537,11 @@ namespace black_internal::logic
   //
   #define declare_leaf_storage_kind(Base, Storage) \
     class Storage : \
-      public hierarchy_element_base< \
-        syntax_element::Storage,  \
-        make_singleton_fragment_t<syntax_element::Storage>, \
-        Storage \
-      > \
+      public hierarchy_element_base<syntax_element::Storage, Storage> \
     { \
     public: \
       using hierarchy_element_base< \
-        syntax_element::Storage, \
-        make_singleton_fragment_t<syntax_element::Storage>, \
-        Storage \
+        syntax_element::Storage, Storage \
       >::hierarchy_element_base; \
     };
 
@@ -621,21 +554,14 @@ namespace black_internal::logic
   // kinds, defined later as well. We also declare the usual deduction guide.
   //
   #define declare_hierarchy_element(Base, Storage, Element) \
-    template<fragment Syntax> \
     class Element : \
-      public hierarchy_element_base< \
-        syntax_element::Element, Syntax, Element<Syntax> \
-      > \
+      public hierarchy_element_base<syntax_element::Element, Element> \
     { \
     public: \
       using hierarchy_element_base< \
-        syntax_element::Element, Syntax, Element<Syntax> \
+        syntax_element::Element, Element \
       >::hierarchy_element_base; \
-    }; \
-    \
-    template<typename ...Args> \
-    explicit Element(Args ...args) -> \
-      Element<deduce_fragment_for_storage_t<syntax_element::Element, Args...>>;
+    };
   
   //
   // Concrete type for leaf hierarchy elements. This is just a very thin class
@@ -643,17 +569,11 @@ namespace black_internal::logic
   //
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
     class Element : \
-      public hierarchy_element_base< \
-        syntax_element::Element, \
-        make_singleton_fragment_t<syntax_element::Element>, \
-        Element \
-      > \
+      public hierarchy_element_base<syntax_element::Element, Element> \
     { \
     public: \
       using hierarchy_element_base< \
-        syntax_element::Element, \
-        make_singleton_fragment_t<syntax_element::Element>, \
-        Element \
+        syntax_element::Element, Element \
       >::hierarchy_element_base; \
     };
 
@@ -665,13 +585,13 @@ namespace black_internal::logic
   // without hierarchy elements, which all have their specific `syntax_element`.
   //
   #define declare_hierarchy_element(Base, Storage, Element) \
-    template<fragment Syntax> \
-    struct element_type_of<Syntax, syntax_element::Element> { \
-      using type = Element<Syntax>; \
+    template<> \
+    struct element_type_of<syntax_element::Element> { \
+      using type = Element; \
     };
   #define declare_leaf_hierarchy_element(Base, Storage, Element) \
-    template<fragment Syntax> \
-    struct element_type_of<Syntax, syntax_element::Element> { \
+    template<> \
+    struct element_type_of<syntax_element::Element> { \
       using type = Element; \
     };
   
@@ -731,10 +651,10 @@ namespace black_internal::logic
 
     #include <black/internal/logic/hierarchy.hpp>
 
-    template<storage_type, fragment, typename, typename>
+    template<storage_type, typename, typename>
     friend class storage_ctor_base;
     
-    template<syntax_element, fragment, typename, typename>
+    template<syntax_element, typename, typename>
     friend class hierarchy_element_ctor_base;
 
     template<syntax_element, typename, typename>
@@ -852,25 +772,25 @@ namespace black_internal::logic
     }
 
   #define declare_child(Base, Storage, Hierarchy, Child) \
-    template<typename H, fragment Syntax> \
-    Hierarchy<Syntax> \
-    storage_children_base<storage_type::Storage, Syntax, H>::Child() const { \
+    template<typename H> \
+    Hierarchy \
+    storage_children_base<storage_type::Storage, H>::Child() const { \
       constexpr size_t I = \
         index_of_field_v< \
           storage_fields_v<storage_type::Storage>, Storage##_##Child##_field \
         >;\
-      return get_child<I, Syntax>(static_cast<H const&>(*this)); \
+      return get_child<I>(static_cast<H const&>(*this)); \
     }
 
   #define declare_children(Base, Storage, Hierarchy, Children) \
-    template<typename H, fragment Syntax> \
+    template<typename H> \
     auto \
-    storage_children_base<storage_type::Storage, Syntax, H>::Children() const {\
+    storage_children_base<storage_type::Storage, H>::Children() const {\
       constexpr size_t I = \
         index_of_field_v< \
           storage_fields_v<storage_type::Storage>, Storage##_##Children##_field \
         >;\
-      return get_children<I, Syntax>(static_cast<H const&>(*this)); \
+      return get_children<I>(static_cast<H const&>(*this)); \
     }
 
   #include <black/internal/logic/hierarchy.hpp>
@@ -905,6 +825,28 @@ namespace black_internal::logic
       >, \
       storage_type::Storage \
     > : std::true_type { };
+
+  #include <black/internal/logic/hierarchy.hpp>
+
+}
+
+namespace black {
+
+  using black_internal::logic::hierarchy;
+  using black_internal::logic::storage_kind;
+  using black_internal::logic::hierarchy_element;
+  using black_internal::logic::syntax_element;
+  using black_internal::logic::alphabet;
+  using black_internal::logic::otherwise;
+
+  #define declare_hierarchy(Base) \
+    using black_internal::logic::Base;
+
+  #define declare_storage_kind(Base, Storage) \
+    using black_internal::logic::Storage;
+
+  #define declare_hierarchy_element(Base, Storage, Element) \
+    using black_internal::logic::Element;
 
   #include <black/internal/logic/hierarchy.hpp>
 

@@ -30,7 +30,7 @@
 #include <black/logic/cnf.hpp>
 #include <black/internal/debug/random_formula.hpp>
 
-using namespace black::logic;
+using namespace black;
 
 
 TEST_CASE("CNF Translation")
@@ -92,7 +92,7 @@ TEST_CASE("CNF Translation")
     proposition p = sigma.proposition("p");
     proposition q = sigma.proposition("q");
 
-    std::vector<formula<propositional>> tests = {
+    std::vector<formula> tests = {
       p && q, p || q, implies(p, q), iff(p, q),
       !p, !(p && q), !(p || q), !implies(p, q), !iff(p, q)
     };
@@ -102,7 +102,7 @@ TEST_CASE("CNF Translation")
     for(formula f : tests) 
     { 
       DYNAMIC_SECTION("Formula: " << to_string(f)) {
-        formula<propositional> fc = to_formula(sigma, black::to_cnf(f));
+        formula fc = to_formula(sigma, black::to_cnf(f));
         
         INFO("CNF: " << to_string(fc));
         

@@ -40,7 +40,7 @@
 
 namespace black_internal::solver {
 
-  using namespace black::logic::fragments::LTLPFO;
+  using namespace black;
 
   // main solver class
   class BLACK_EXPORT solver 
@@ -126,11 +126,7 @@ namespace black_internal::solver {
 
         scope const *xi;
         type_t type;
-        std::variant<
-          size_t, 
-          logic::formula<logic::LTLPFO>,
-          logic::formula<logic::FO>
-        > data;
+        std::variant<size_t, logic::formula> data;
       };
 
       // set the debug trace callback

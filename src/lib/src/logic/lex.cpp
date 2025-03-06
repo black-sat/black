@@ -32,95 +32,144 @@
 
 namespace black_internal::lexer_details
 {
-  using namespace black::logic::fragments::LTLPFO;
+  using namespace black;
 
   static
   std::string to_string(quantifier::type t) {
-    return t.match(
-      [](quantifier::type::exists) { return "exists"; },
-      [](quantifier::type::forall) { return "forall"; }
-    );
+    switch(t) {
+      case quantifier::type::exists:
+        return "exists";
+      case quantifier::type::forall:
+        return "forall";
+    }
+    black_unreachable();
   }
   
   static
   std::string to_string(token::equality_t t) {
-    return t.first.match(
-      [&](equality::type::equal)    { return t.second ? "=" : "equal";  },
-      [&](equality::type::distinct) { return t.second ? "!=" : "distinct"; }
-    );
+    switch(t.first) {
+      case equality::type::equal:   
+        return t.second ? "=" : "equal";  
+      case equality::type::distinct:
+        return t.second ? "!=" : "distinct";
+    }
+    black_unreachable();
   }
 
   static
   std::string to_string(comparison::type t) {
-    return t.match(
-      [](comparison::type::less_than)          { return "<";  },
-      [](comparison::type::less_than_equal)    { return "<="; },
-      [](comparison::type::greater_than)       { return ">="; },
-      [](comparison::type::greater_than_equal) { return ">="; }
-    );
+    switch(t) {
+      case comparison::type::less_than:         
+        return "<";  
+      case comparison::type::less_than_equal:   
+        return "<="; 
+      case comparison::type::greater_than:      
+        return ">="; 
+      case comparison::type::greater_than_equal:
+        return ">=";
+    }
+    black_unreachable();
   }
   
   static
   std::string to_string(arithmetic_sort::type t) {
-    return t.match(
-      [](arithmetic_sort::type::integer_sort) { return "Int";  },
-      [](arithmetic_sort::type::real_sort)    { return "Real"; }
-    );
+    switch(t) {
+      case arithmetic_sort::type::integer_sort:
+        return "Int";  
+      case arithmetic_sort::type::real_sort:   
+        return "Real";
+    }
+    black_unreachable();
   }
   
   static
   std::string to_string(unary_term::type t) {
-    return t.match(
-      [](unary_term::type::negative)   { return "-";       }, // LCOV_EXCL_LINE
-      [](unary_term::type::to_integer) { return "to_int";  }, // LCOV_EXCL_LINE
-      [](unary_term::type::to_real)    { return "to_real"; }, // LCOV_EXCL_LINE
-      [](unary_term::type::next)       { return "next";    },
-      [](unary_term::type::wnext)      { return "wnext";   },
-      [](unary_term::type::prev)       { return "prev";    },
-      [](unary_term::type::wprev)      { return "wprev";   }
-    );
+    switch(t) {
+      case unary_term::type::negative:  
+        return "-";
+      case unary_term::type::to_integer:
+        return "to_int";
+      case unary_term::type::to_real:   
+        return "to_real";
+      case unary_term::type::next:      
+        return "next";  
+      case unary_term::type::wnext:     
+        return "wnext"; 
+      case unary_term::type::prev:      
+        return "prev";  
+      case unary_term::type::wprev:     
+        return "wprev";
+    }
+    black_unreachable();
   }
   
   static
   std::string to_string(binary_term::type t) {
-    return t.match(
-      [](binary_term::type::addition)       { return "+"; },
-      [](binary_term::type::subtraction)    { return "-"; },
-      [](binary_term::type::multiplication) { return "*"; },
-      [](binary_term::type::division)       { return "/"; },
-      [](binary_term::type::int_division)   { return "div"; }
-    );
+    switch(t) {
+      case binary_term::type::addition:      
+        return "+"; 
+      case binary_term::type::subtraction:   
+        return "-"; 
+      case binary_term::type::multiplication:
+        return "*"; 
+      case binary_term::type::division:      
+        return "/"; 
+      case binary_term::type::int_division:  
+        return "div";
+    }
+    black_unreachable();
   }
   
   static
   std::string to_string(unary::type t) {
-    return t.match(
-      [](unary::type::negation)     { return "!";  },
-      [](unary::type::tomorrow)     { return "X";  },
-      [](unary::type::w_tomorrow)   { return "wX"; },
-      [](unary::type::yesterday)    { return "Y";  },
-      [](unary::type::w_yesterday)  { return "Z";  },
-      [](unary::type::always)       { return "G";  },
-      [](unary::type::eventually)   { return "F";  },
-      [](unary::type::once)         { return "O";  },
-      [](unary::type::historically) { return "H";  }
-    );
+    switch(t) {
+      case unary::type::negation:    
+        return "!"; 
+      case unary::type::tomorrow:    
+        return "X"; 
+      case unary::type::w_tomorrow:  
+        return "wX";
+      case unary::type::yesterday:   
+        return "Y"; 
+      case unary::type::w_yesterday: 
+        return "Z"; 
+      case unary::type::always:      
+        return "G"; 
+      case unary::type::eventually:  
+        return "F"; 
+      case unary::type::once:        
+        return "O"; 
+      case unary::type::historically:
+        return "H";
+    }
+    black_unreachable();
   }
   
   static
   std::string to_string(binary::type t) {
-    return t.match(
-      [](binary::type::conjunction) { return "&&";  },
-      [](binary::type::disjunction) { return "||";  },
-      [](binary::type::implication) { return "->";  },
-      [](binary::type::iff)         { return "<->"; },
-      [](binary::type::until)       { return "U";   },
-      [](binary::type::release)     { return "R";   },
-      [](binary::type::w_until)     { return "W";   },
-      [](binary::type::s_release)   { return "M";   },
-      [](binary::type::since)       { return "S";   },
-      [](binary::type::triggered)   { return "T";   }
-    );
+    switch(t) {
+      case binary::type::conjunction:
+        return "&&"; 
+      case binary::type::disjunction:
+        return "||"; 
+      case binary::type::implication:
+        return "->"; 
+      case binary::type::iff:        
+        return "<->";
+      case binary::type::until:      
+        return "U";  
+      case binary::type::release:    
+        return "R";  
+      case binary::type::w_until:    
+        return "W";  
+      case binary::type::s_release:  
+        return "M";  
+      case binary::type::since:      
+        return "S";  
+      case binary::type::triggered:  
+        return "T"; 
+    }
+    black_unreachable();
   }
   
   std::string to_string(token::punctuation p) {
@@ -238,49 +287,49 @@ namespace black_internal::lexer_details
           s.get();
           if(s.peek() == '=') {
             s.get();
-            return token{{equality::type::distinct{}, true}};
+            return token{{equality::type::distinct, true}};
           }
-          return token{unary::type::negation{}};
+          return token{unary::type::negation};
         case '~':
           s.get();
-          return token{unary::type::negation{}};
+          return token{unary::type::negation};
         // '&' or '&&'
         case '&':
           s.get();
           if (s.peek() == '&')
             s.get();
-          return token{binary::type::conjunction{}};
+          return token{binary::type::conjunction};
 
         // '|' or '||'
         case '|':
           s.get();
           if (s.peek() == '|')
             s.get();
-          return token{binary::type::disjunction{}};
+          return token{binary::type::disjunction};
 
         // '->' and '=>'
         case '-':
           s.get();
           if (s.peek() == '>') {
             s.get();
-            return token{binary::type::implication{}};
+            return token{binary::type::implication};
           }
-          return token{binary_term::type::subtraction{}};
+          return token{binary_term::type::subtraction};
         case '=':
           s.get();
           if (s.peek() == '>') {
             s.get();
-            return token{binary::type::implication{}};
+            return token{binary::type::implication};
           }
-          return token{{equality::type::equal{}, true}};
+          return token{{equality::type::equal, true}};
         
         case '>':
           s.get();
           if(s.peek() == '=') {
             s.get();
-            return token{comparison::type::greater_than_equal{}};
+            return token{comparison::type::greater_than_equal};
           }
-          return token{comparison::type::greater_than{}};
+          return token{comparison::type::greater_than};
 
         // '<->' or '<=>' or '<>'
         case '<':
@@ -288,23 +337,23 @@ namespace black_internal::lexer_details
           if (s.peek() == '-' || s.peek() == '=')
             s.get();
           else
-            return token{comparison::type::less_than{}};
+            return token{comparison::type::less_than};
 
           if (s.peek() == '>') {
             s.get();
-            return token{binary::type::iff{}};
+            return token{binary::type::iff};
           }
-          return token{comparison::type::less_than_equal{}};
+          return token{comparison::type::less_than_equal};
 
         case '+':
           s.get();
-          return token{binary_term::type::addition{}};
+          return token{binary_term::type::addition};
         case '*':
           s.get();
-          return token{binary_term::type::multiplication{}};
+          return token{binary_term::type::multiplication};
         case '/':
           s.get();
-          return token{binary_term::type::division{}};
+          return token{binary_term::type::division};
       }
 
       // TODO: garantire che se restituiamo nullopt, lo stream non è avanzato
@@ -323,39 +372,39 @@ namespace black_internal::lexer_details
   std::pair<std::string_view, token> lexer::_keywords[35] = {
     {"True",     token{true}},
     {"False",    token{false}},
-    {"Int",      token{arithmetic_sort::type::integer_sort{}}},
-    {"Real",     token{arithmetic_sort::type::real_sort{}}},
-    {"to_int",   token{unary_term::type::to_integer{}}},
-    {"to_real",  token{unary_term::type::to_real{}}},
-    {"next",     token{unary_term::type::next{}}},
-    {"wnext",    token{unary_term::type::wnext{}}},
-    {"prev",     token{unary_term::type::prev{}}},
-    {"wprev",    token{unary_term::type::wprev{}}},
-    {"div",      token{binary_term::type::int_division{}}},
-    {"exists",   token{quantifier::type::exists{}}},
-    {"forall",   token{quantifier::type::forall{}}},
-    {"equal",    token{{equality::type::equal{}, false}}},
-    {"distinct", token{{equality::type::distinct{}, false}}},
-    {"NOT",      token{unary::type::negation{}}},
-    {"X",        token{unary::type::tomorrow{}}},
-    {"wX",       token{unary::type::w_tomorrow{}}},
-    {"Y",        token{unary::type::yesterday{}}},
-    {"Z",        token{unary::type::w_yesterday{}}},
-    {"F",        token{unary::type::eventually{}}},
-    {"G",        token{unary::type::always{}}},
-    {"O",        token{unary::type::once{}}},
-    {"H",        token{unary::type::historically{}}},
-    {"AND",      token{binary::type::conjunction{}}},
-    {"OR",       token{binary::type::disjunction{}}},
-    {"THEN",     token{binary::type::implication{}}},
-    {"IFF",      token{binary::type::iff{}}},
-    {"U",        token{binary::type::until{}}},
-    {"R",        token{binary::type::release{}}},
-    {"V",        token{binary::type::release{}}},
-    {"W",        token{binary::type::w_until{}}},
-    {"M",        token{binary::type::s_release{}}},
-    {"S",        token{binary::type::since{}}},
-    {"T",        token{binary::type::triggered{}}}
+    {"Int",      token{arithmetic_sort::type::integer_sort}},
+    {"Real",     token{arithmetic_sort::type::real_sort}},
+    {"to_int",   token{unary_term::type::to_integer}},
+    {"to_real",  token{unary_term::type::to_real}},
+    {"next",     token{unary_term::type::next}},
+    {"wnext",    token{unary_term::type::wnext}},
+    {"prev",     token{unary_term::type::prev}},
+    {"wprev",    token{unary_term::type::wprev}},
+    {"div",      token{binary_term::type::int_division}},
+    {"exists",   token{quantifier::type::exists}},
+    {"forall",   token{quantifier::type::forall}},
+    {"equal",    token{{equality::type::equal, false}}},
+    {"distinct", token{{equality::type::distinct, false}}},
+    {"NOT",      token{unary::type::negation}},
+    {"X",        token{unary::type::tomorrow}},
+    {"wX",       token{unary::type::w_tomorrow}},
+    {"Y",        token{unary::type::yesterday}},
+    {"Z",        token{unary::type::w_yesterday}},
+    {"F",        token{unary::type::eventually}},
+    {"G",        token{unary::type::always}},
+    {"O",        token{unary::type::once}},
+    {"H",        token{unary::type::historically}},
+    {"AND",      token{binary::type::conjunction}},
+    {"OR",       token{binary::type::disjunction}},
+    {"THEN",     token{binary::type::implication}},
+    {"IFF",      token{binary::type::iff}},
+    {"U",        token{binary::type::until}},
+    {"R",        token{binary::type::release}},
+    {"V",        token{binary::type::release}},
+    {"W",        token{binary::type::w_until}},
+    {"M",        token{binary::type::s_release}},
+    {"S",        token{binary::type::since}},
+    {"T",        token{binary::type::triggered}}
   };
 
   bool lexer::is_keyword(std::string_view s) {

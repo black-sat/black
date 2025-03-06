@@ -33,7 +33,7 @@
 
 namespace black_internal
 {
-  using namespace black::logic::fragments::LTLPFO;
+  using namespace black;
 
   // Easy entry-point for parsing formulas
   std::optional<formula>
@@ -206,18 +206,29 @@ namespace black_internal
     if(!tok.data<binary::type>())
       return {};
     
-    return tok.data<binary::type>()->match(
-      [](binary::type::conjunction) { return 30; },
-      [](binary::type::disjunction) { return 20; },
-      [](binary::type::implication) { return 40; },
-      [](binary::type::iff)         { return 40; },
-      [](binary::type::until)       { return 50; },
-      [](binary::type::release)     { return 50; },
-      [](binary::type::w_until)     { return 50; },
-      [](binary::type::s_release)   { return 50; },
-      [](binary::type::since)       { return 50; },
-      [](binary::type::triggered)   { return 50; }
-    );
+    switch(*tok.data<binary::type>()) {
+      case binary::type::conjunction:
+        return 30;
+      case binary::type::disjunction:
+        return 20;
+      case binary::type::implication:
+        return 40;
+      case binary::type::iff:        
+        return 40;
+      case binary::type::until:      
+        return 50;
+      case binary::type::release:    
+        return 50;
+      case binary::type::w_until:    
+        return 50;
+      case binary::type::s_release:  
+        return 50;
+      case binary::type::since:      
+        return 50;
+      case binary::type::triggered:  
+        return 50;
+    }
+    black_unreachable();
   }
 
   std::optional<formula> 
@@ -327,9 +338,9 @@ namespace black_internal
     black_assert(peek());
     black_assert(peek()->data<quantifier::type>());
 
-    quantifier::type q = quantifier::type::forall{};
-    if(consume()->data<quantifier::type>() == quantifier::type::exists{}) 
-      q = quantifier::type::exists{};
+    quantifier::type q = quantifier::type::forall;
+    if(consume()->data<quantifier::type>() == quantifier::type::exists) 
+      q = quantifier::type::exists;
 
     std::vector<var_decl> vars;
     while(
@@ -396,7 +407,7 @@ namespace black_internal
     if(!matrix)
       return {};
 
-    if(q == quantifier::type::exists{})
+    if(q == quantifier::type::exists)
       return exists(vars, *matrix);
 
     return forall(vars, *matrix);
@@ -444,17 +455,17 @@ namespace black_internal
       return parse_boolean();
     if(peek()->token_type() == token::type::integer ||
        peek()->token_type() == token::type::real ||
-       peek()->data<binary_term::type>() == binary_term::type::subtraction{} ||
+       peek()->data<binary_term::type>() == binary_term::type::subtraction ||
        peek()->token_type() == token::type::identifier ||
-       peek()->data<unary_term::type>() == unary_term::type::to_integer{} ||
-       peek()->data<unary_term::type>() == unary_term::type::to_real{} ||
-       peek()->data<unary_term::type>() == unary_term::type::next{} ||
-       peek()->data<unary_term::type>() == unary_term::type::wnext{} ||
-       peek()->data<unary_term::type>() == unary_term::type::prev{} ||
-       peek()->data<unary_term::type>() == unary_term::type::wprev{})
+       peek()->data<unary_term::type>() == unary_term::type::to_integer ||
+       peek()->data<unary_term::type>() == unary_term::type::to_real ||
+       peek()->data<unary_term::type>() == unary_term::type::next ||
+       peek()->data<unary_term::type>() == unary_term::type::wnext ||
+       peek()->data<unary_term::type>() == unary_term::type::prev ||
+       peek()->data<unary_term::type>() == unary_term::type::wprev)
       return parse_atom();
-    if(peek()->data<quantifier::type>() == quantifier::type::exists{} ||
-       peek()->data<quantifier::type>() == quantifier::type::forall{})
+    if(peek()->data<quantifier::type>() == quantifier::type::exists ||
+       peek()->data<quantifier::type>() == quantifier::type::forall)
       return parse_quantifier();
     if(peek()->is<unary::type>())
       return parse_unary();
@@ -472,11 +483,11 @@ namespace black_internal
       return error("Expected sort, found end of input");
 
     if(tok->data<arithmetic_sort::type>() == 
-       arithmetic_sort::type::integer_sort{})
+       arithmetic_sort::type::integer_sort)
       return _alphabet.integer_sort();
 
     if(tok->data<arithmetic_sort::type>() == 
-       arithmetic_sort::type::real_sort{})
+       arithmetic_sort::type::real_sort)
       return _alphabet.real_sort();
 
     if(tok->token_type() == token::type::identifier)
@@ -504,15 +515,15 @@ namespace black_internal
        peek()->token_type() == token::type::real)
       return parse_term_constant();
 
-    if(peek()->data<binary_term::type>() == binary_term::type::subtraction{})
+    if(peek()->data<binary_term::type>() == binary_term::type::subtraction)
       return parse_term_unary_minus();
 
-    if(peek()->data<unary_term::type>() == unary_term::type::to_integer{} ||
-       peek()->data<unary_term::type>() == unary_term::type::to_real{} ||
-       peek()->data<unary_term::type>() == unary_term::type::next{} ||
-       peek()->data<unary_term::type>() == unary_term::type::wnext{} ||
-       peek()->data<unary_term::type>() == unary_term::type::prev{} ||
-       peek()->data<unary_term::type>() == unary_term::type::wprev{})
+    if(peek()->data<unary_term::type>() == unary_term::type::to_integer ||
+       peek()->data<unary_term::type>() == unary_term::type::to_real ||
+       peek()->data<unary_term::type>() == unary_term::type::next ||
+       peek()->data<unary_term::type>() == unary_term::type::wnext ||
+       peek()->data<unary_term::type>() == unary_term::type::prev ||
+       peek()->data<unary_term::type>() == unary_term::type::wprev)
        return parse_term_ctor();
 
     if(peek()->token_type() == token::type::identifier)
@@ -529,13 +540,19 @@ namespace black_internal
     if(!tok.data<binary_term::type>())
       return {};
 
-    return tok.data<binary_term::type>()->match(
-      [](binary_term::type::addition)       { return 20; },
-      [](binary_term::type::subtraction)    { return 20; },
-      [](binary_term::type::multiplication) { return 30; },
-      [](binary_term::type::division)       { return 30; },
-      [](binary_term::type::int_division)   { return 30; }
-    );
+    switch(*tok.data<binary_term::type>()) {
+      case binary_term::type::addition:      
+        return 20;
+      case binary_term::type::subtraction:   
+        return 20;
+      case binary_term::type::multiplication:
+        return 30;
+      case binary_term::type::division:      
+        return 30;
+      case binary_term::type::int_division:  
+        return 30;
+    }
+    black_unreachable();
   }
 
   std::optional<term> 
@@ -585,7 +602,7 @@ namespace black_internal
   std::optional<term> parser::_parser_t::parse_term_unary_minus() {
     black_assert(peek());
     black_assert(
-      peek()->data<binary_term::type>() == binary_term::type::subtraction{}
+      peek()->data<binary_term::type>() == binary_term::type::subtraction
     );
 
     consume();
@@ -597,12 +614,12 @@ namespace black_internal
 
   std::optional<term> parser::_parser_t::parse_term_ctor() {
     black_assert(
-      peek()->data<unary_term::type>() == unary_term::type::to_integer{} ||
-      peek()->data<unary_term::type>() == unary_term::type::to_real{} ||
-      peek()->data<unary_term::type>() == unary_term::type::next{} ||
-      peek()->data<unary_term::type>() == unary_term::type::wnext{} ||
-      peek()->data<unary_term::type>() == unary_term::type::prev{} ||
-      peek()->data<unary_term::type>() == unary_term::type::wprev{}
+      peek()->data<unary_term::type>() == unary_term::type::to_integer ||
+      peek()->data<unary_term::type>() == unary_term::type::to_real ||
+      peek()->data<unary_term::type>() == unary_term::type::next ||
+      peek()->data<unary_term::type>() == unary_term::type::wnext ||
+      peek()->data<unary_term::type>() == unary_term::type::prev ||
+      peek()->data<unary_term::type>() == unary_term::type::wprev
     );
 
     token op = *consume();

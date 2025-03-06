@@ -58,13 +58,13 @@ namespace black_internal::encoder {
 
     bool operator==(req_t const&) const = default;
 
-    formula<LTLPFO> target;
+    formula target;
     std::vector<var_decl> signature;
     type_t type;
     strength_t strength;
   };
 
-  formula<LTLPFO> to_formula(req_t req);
+  formula to_formula(req_t req);
 
   inline std::string to_string(req_t req) {
     return "{" + to_string(to_formula(req)) + "}"; 
@@ -84,7 +84,7 @@ namespace black_internal::encoder {
   //
   struct encoder 
   {
-    encoder(formula<LTLPFO> f, scope &xi, bool finite) 
+    encoder(formula f, scope &xi, bool finite) 
       : _frm{f}, _sigma{_frm.sigma()}, 
         _global_xi{&xi}, _xi{chain(xi)}, 
         _finite{finite}
@@ -99,7 +99,7 @@ namespace black_internal::encoder {
     encoder &operator=(encoder const&) = delete;
     encoder &operator=(encoder &&) = default;
 
-    formula<LTLPFO> get_formula() const { return _frm; }
+    formula get_formula() const { return _frm; }
 
     // Return the loop var for the loop from l to k
     static proposition loop_prop(alphabet *sigma, size_t l, size_t k);
@@ -108,7 +108,7 @@ namespace black_internal::encoder {
     static proposition stepped(proposition p, size_t k);
 
     // Make the stepped version of a term, t_G^k
-    term<FO> stepped(term<LTLPFO> t, size_t k);
+    term stepped(term t, size_t k);
 
     // Make the stepped version of a variable
     variable stepped(variable x, size_t k);
@@ -120,50 +120,50 @@ namespace black_internal::encoder {
     function stepped(function r, size_t k);
 
     // Make the stepped version of an atom
-    atom<FO> stepped(atom<LTLPFO> a, size_t k);
+    atom stepped(atom a, size_t k);
     
     // Make the stepped version of an equality
-    equality<FO> stepped(equality<LTLPFO> a, size_t k);
+    equality stepped(equality a, size_t k);
     
     // Make the stepped version of a comparison
-    comparison<FO> stepped(comparison<LTLPFO> a, size_t k);
+    comparison stepped(comparison a, size_t k);
 
     // Make the last-state-wrapped version of a formula
     // (only atoms, equalities and comparisons)
-    formula<FO> wrapped(formula<LTLPFO> a, size_t k);
+    formula wrapped(formula a, size_t k);
 
     // Put a formula in negated normal form
-    formula<LTLPFO> to_nnf(formula<LTLPFO> f);
+    formula to_nnf(formula f);
 
     // Put a formula in Stepped Normal Form
-    formula<FO> to_ground_snf(
-      formula<LTLPFO> f, size_t k, std::vector<var_decl> env
+    formula to_ground_snf(
+      formula f, size_t k, std::vector<var_decl> env
     );
 
     // Generates the PRUNE encoding
-    formula<FO> prune(size_t k);
+    formula prune(size_t k);
 
     // Generates the _lPRUNE_j^k encoding
-    formula<FO> l_j_k_prune(size_t l, size_t j, size_t k);
+    formula l_j_k_prune(size_t l, size_t j, size_t k);
 
     // Generates the encoding for EMPTY_k
-    formula<FO> k_empty(size_t k);
+    formula k_empty(size_t k);
 
     // Generates the encoding for LOOP_k
-    formula<FO> k_loop(size_t k);
+    formula k_loop(size_t k);
 
     // Generates the encoding for _lP_k
-    formula<FO> l_to_k_period(size_t l, size_t k);
+    formula l_to_k_period(size_t l, size_t k);
 
     // Generates the encoding for _lL_k
-    formula<FO> l_to_k_loop(size_t l, size_t k, bool close_yesterdays);
+    formula l_to_k_loop(size_t l, size_t k, bool close_yesterdays);
 
     // Generates the k-unraveling for the given k
-    formula<FO> k_unraveling(size_t k);
+    formula k_unraveling(size_t k);
 
   private:
     // the formula to encode
-    formula<LTLPFO> _frm;
+    formula _frm;
 
     // the alphabet of frm
     alphabet *_sigma = nullptr;
@@ -183,32 +183,32 @@ namespace black_internal::encoder {
     std::vector<lookahead_t> _lookaheads;
 
     // cache to memoize to_nnf() calls
-    tsl::hopscotch_map<formula<LTLPFO>, formula<LTLPFO>> _nnf_cache;
+    tsl::hopscotch_map<formula, formula> _nnf_cache;
 
     proposition not_last_prop(size_t);
     proposition not_first_prop(size_t);
     variable ground(lookahead_t lh, size_t k);
-    formula<FO> ground(req_t, size_t);
-    formula<FO> forall(std::vector<var_decl> env, formula<FO> f);
+    formula ground(req_t, size_t);
+    formula forall(std::vector<var_decl> env, formula f);
 
-    void _collect_requests(formula<LTLPFO> f, std::vector<var_decl> env = {});
-    void _collect_lookaheads(term<LTLPFO> t);
-    req_t mk_req(tomorrow<LTLPFO>, std::vector<var_decl>);
-    req_t mk_req(w_tomorrow<LTLPFO>, std::vector<var_decl>);
-    req_t mk_req(yesterday<LTLPFO>, std::vector<var_decl>);
-    req_t mk_req(w_yesterday<LTLPFO>, std::vector<var_decl>);
+    void _collect_requests(formula f, std::vector<var_decl> env = {});
+    void _collect_lookaheads(term t);
+    req_t mk_req(tomorrow, std::vector<var_decl>);
+    req_t mk_req(w_tomorrow, std::vector<var_decl>);
+    req_t mk_req(yesterday, std::vector<var_decl>);
+    req_t mk_req(w_yesterday, std::vector<var_decl>);
     
     struct formula_strength_t {
       std::optional<req_t::strength_t> future;
       std::optional<req_t::strength_t> past;
     };
     
-    formula_strength_t strength(formula<LTLPFO> f);
+    formula_strength_t strength(formula f);
     
     void error(std::string const&msg);
 
     // Extract the x-eventuality from an x-request
-    static std::optional<formula<LTLPFO>> _get_ev(formula<LTLPFO> f);
+    static std::optional<formula> _get_ev(formula f);
   };
 
 }
@@ -220,7 +220,7 @@ namespace std {
       using black_internal::encoder::req_t;
       using namespace black_internal;
       
-      size_t h = std::hash<logic::formula<logic::LTLPFO>>{}(r.target);
+      size_t h = std::hash<logic::formula>{}(r.target);
       h = hash_combine(h, std::hash<req_t::type_t>{}(r.type));
       h = hash_combine(h, std::hash<req_t::strength_t>{}(r.strength));
       
