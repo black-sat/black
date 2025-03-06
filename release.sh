@@ -13,7 +13,6 @@ dependencies() {
   which curl  || die "Missing curl"
   which jq    || die "Missing jq"
   which gh    || die "Missing gh"
-  which twine || die "Missing twine"
 }
 
 setup() {
@@ -28,7 +27,7 @@ images() {
     -f docker/Dockerfile.ubuntu -t black:ubuntu24.04 \
     --build-arg VERSION=24.04 --build-arg GCC_VERSION=14
   docker build docker \
-    -f docker/Dockerfile.fedora -t black:fedora40 --build-arg VERSION=40
+    -f docker/Dockerfile.fedora -t black:fedora41 --build-arg VERSION=41
 }
 
 launch() {
@@ -153,7 +152,6 @@ class BlackSat < Formula
   url "https://github.com/black-sat/black/archive/v$VERSION.tar.gz"
   sha256 "$sum"
 
-  depends_on "llvm" => :build
   depends_on "cmake" => :build
   depends_on "hopscotch-map" => :build
   depends_on "catch2" => :build
@@ -163,11 +161,7 @@ class BlackSat < Formula
   depends_on "cryptominisat" => :recommended
 
   def install
-    ENV["CC"]=Formula["llvm"].opt_bin/"clang"
-    ENV["CXX"]=Formula["llvm"].opt_bin/"clang++"
-    ENV["LDFLAGS"]="-L#{Formula["llvm"].opt_lib} -Wl,-rpath,#{Formula["llvm"].opt_lib}"
-    ENV["CXXFLAGS"]="-I#{Formula["llvm"].opt_include}"
-    system "cmake", ".", "-DENABLE_MINISAT=NO", *std_cmake_args
+    system "cmake", ".", *std_cmake_args
     system "make"
     system "make", "install"
   end
@@ -190,8 +184,8 @@ main () {
     build-only)
       build ubuntu 24.04
       test_pkg ubuntu 24.04
-      build fedora 40
-      test_pkg fedora 40
+      build fedora 41
+      test_pkg fedora 41
       appveyor
     ;;
     upload-only)
@@ -201,8 +195,8 @@ main () {
     all)
       build ubuntu 24.04
       test_pkg ubuntu 24.04
-      build fedora 40
-      test_pkg fedora 40
+      build fedora 41
+      test_pkg fedora 41
       appveyor
       release
       homebrew
