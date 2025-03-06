@@ -323,6 +323,7 @@ namespace black_internal::encoder
       case unary::type::historically:
         return unary::type::once;
     }
+    black_unreachable();
   }
 
   static binary::type dual(binary::type t)
@@ -346,6 +347,7 @@ namespace black_internal::encoder
       case binary::type::iff:
         black_unreachable(); // LCOV_EXCL_LINE
     }
+    black_unreachable();
   }
 
   term

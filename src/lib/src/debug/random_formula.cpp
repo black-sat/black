@@ -111,6 +111,7 @@ namespace black_internal::random {
             unary::type::historically
           };
       }
+      black_unreachable();
     }
 
     std::vector<binary::type> binary_ops(fragment frag) {
@@ -147,6 +148,7 @@ namespace black_internal::random {
             binary::type::triggered
           };
       }
+      black_unreachable();
     }
 
   }; // class rand_formula_gen

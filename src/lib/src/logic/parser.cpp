@@ -228,6 +228,7 @@ namespace black_internal
       case binary::type::triggered:  
         return 50;
     }
+    black_unreachable();
   }
 
   std::optional<formula> 
@@ -551,6 +552,7 @@ namespace black_internal
       case binary_term::type::int_division:  
         return 30;
     }
+    black_unreachable();
   }
 
   std::optional<term> 

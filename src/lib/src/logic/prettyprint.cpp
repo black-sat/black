@@ -76,6 +76,7 @@ namespace black_internal::logic
       case unary::type::historically:
         return "H";
     }
+    black_unreachable();
   }
 
   static
@@ -102,6 +103,7 @@ namespace black_internal::logic
       case binary::type::triggered:  
         return "T";
     }
+    black_unreachable();
   }
 
   static
@@ -126,6 +128,7 @@ namespace black_internal::logic
       case comparison::type::greater_than_equal:
         return ">=";
     }
+    black_unreachable();
   }
 
   template<typename T>

@@ -42,6 +42,7 @@ namespace black_internal::lexer_details
       case quantifier::type::forall:
         return "forall";
     }
+    black_unreachable();
   }
   
   static
@@ -52,6 +53,7 @@ namespace black_internal::lexer_details
       case equality::type::distinct:
         return t.second ? "!=" : "distinct";
     }
+    black_unreachable();
   }
 
   static
@@ -66,6 +68,7 @@ namespace black_internal::lexer_details
       case comparison::type::greater_than_equal:
         return ">=";
     }
+    black_unreachable();
   }
   
   static
@@ -76,6 +79,7 @@ namespace black_internal::lexer_details
       case arithmetic_sort::type::real_sort:   
         return "Real";
     }
+    black_unreachable();
   }
   
   static
@@ -96,6 +100,7 @@ namespace black_internal::lexer_details
       case unary_term::type::wprev:     
         return "wprev";
     }
+    black_unreachable();
   }
   
   static
@@ -112,6 +117,7 @@ namespace black_internal::lexer_details
       case binary_term::type::int_division:  
         return "div";
     }
+    black_unreachable();
   }
   
   static
@@ -136,6 +142,7 @@ namespace black_internal::lexer_details
       case unary::type::historically:
         return "H";
     }
+    black_unreachable();
   }
   
   static
@@ -162,6 +169,7 @@ namespace black_internal::lexer_details
       case binary::type::triggered:  
         return "T"; 
     }
+    black_unreachable();
   }
   
   std::string to_string(token::punctuation p) {
