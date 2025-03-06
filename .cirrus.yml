@@ -81,13 +81,13 @@ task:
 
 task:
   matrix:
-    - name: Fedora 40 (with CryptoMiniSAT backend)
+    - name: Fedora 41 (with CryptoMiniSAT backend)
       environment:
         BACKEND: cmsat
-    - name: Fedora 40 (with MathSAT backend)
+    - name: Fedora 41 (with MathSAT backend)
       environment:
         BACKEND: mathsat
-    - name: Fedora 40 (with CVC5 backend)
+    - name: Fedora 41 (with CVC5 backend)
       environment:
         BACKEND: cvc5
   container:

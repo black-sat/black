@@ -32,7 +32,7 @@
 
 namespace black_internal::lexer_details
 {
-  using namespace black::logic;
+  using namespace black;
 
   static
   std::string to_string(quantifier::type t) {

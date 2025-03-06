@@ -40,7 +40,7 @@
 
 namespace black_internal::solver {
 
-  using namespace black::logic;
+  using namespace black;
 
   // main solver class
   class BLACK_EXPORT solver 

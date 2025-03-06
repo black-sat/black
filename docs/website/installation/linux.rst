@@ -71,10 +71,6 @@ For CryptoMiniSAT::
 
    $ sudo apt install libcryptominisat5-dev
 
-For MiniSAT::
-
-   $ sudo apt install minisat
-
 Currently, there are no packages for cvc5 and MathSAT. To install cvc5, binary
 packages are available or it can be built from source. Refer to their website
 for more information. For MathSAT, we provide a script to download the binary
@@ -121,10 +117,6 @@ For Z3::
 For CryptoMiniSAT::
 
    $ sudo dnf install cryptominisat-devel
-
-For MiniSAT::
-
-   $ sudo dnf install minisat2-devel
 
 Currently, there are no ``rpm`` packages for cvc5 and MathSAT. To install cvc5,
 stand-alone binary packages are available or it can be built from source. Refer

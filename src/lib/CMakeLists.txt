@@ -30,13 +30,12 @@ option(ENABLE_MINISAT "Enable the MiniSAT backend, if found" ON)
 
 set(
   BLACK_DEFAULT_BACKEND "z3"
-  CACHE STRING "Default backend called when no -B option is given. Possible values: z3, mathsat, minisat, cmsat"
+  CACHE STRING "Default backend called when no -B option is given. Possible values: z3, mathsat, cmsat"
 )
 
 if(
   NOT (BLACK_DEFAULT_BACKEND STREQUAL "z3") AND
   NOT (BLACK_DEFAULT_BACKEND STREQUAL "mathsat") AND
-  NOT (BLACK_DEFAULT_BACKEND STREQUAL "minisat") AND
   NOT (BLACK_DEFAULT_BACKEND STREQUAL "cmsat") AND
   NOT (BLACK_DEFAULT_BACKEND STREQUAL "cvc5")
 )
@@ -84,18 +83,6 @@ else()
   message(STATUS "MathSAT backend disabled.")
 endif()
 
-if(ENABLE_MINISAT)
-  find_package(MiniSAT)
-
-  if(MiniSAT_FOUND)
-    message(STATUS "MiniSAT solver found! Enabling the MiniSAT backend...")
-  else()
-    message(STATUS "MiniSAT solver not found. Disabling the MiniSAT backend...")
-  endif()
-else()
-  message(STATUS "MiniSAT backend disabled.")
-endif()
-
 if(ENABLE_CMSAT)
   find_package(CryptoMiniSAT)
 
@@ -131,13 +118,6 @@ if(NOT MathSAT_FOUND AND BLACK_DEFAULT_BACKEND STREQUAL "mathsat")
     "Please install MathSAT or set BLACK_DEFAULT_BACKEND differently.")
 endif()
 
-if(NOT MiniSAT_FOUND AND BLACK_DEFAULT_BACKEND STREQUAL "minisat")
-  message(
-    FATAL_ERROR 
-    "MiniSAT set as default backend but not found or disabled.\n"
-    "Please install MiniSAT or set BLACK_DEFAULT_BACKEND differently.")
-endif()
-
 if(NOT CryptoMiniSAT_FOUND AND BLACK_DEFAULT_BACKEND STREQUAL "cmsat")
   message(
     FATAL_ERROR 
@@ -149,7 +129,6 @@ if(
   (NOT Z3_FOUND) AND 
   (NOT CVC5_FOUND) AND 
   (NOT MathSAT_FOUND) AND 
-  (NOT MiniSAT_FOUND) AND
   (NOT CryptoMiniSAT_FOUND) 
 )
   message(
@@ -193,14 +172,6 @@ if(MathSAT_FOUND)
   set(LIB_SRC ${LIB_SRC} src/sat/backends/mathsat.cpp)
 endif()
 
-if(MiniSAT_FOUND)
-  set(LIB_SRC ${LIB_SRC} src/sat/backends/minisat.cpp)
-  set_source_files_properties(
-    src/sat/backends/minisat.cpp 
-    PROPERTIES COMPILE_FLAGS -fpermissive
-  )
-endif()
-
 if(CryptoMiniSAT_FOUND)
   set(LIB_SRC ${LIB_SRC} src/sat/backends/cmsat.cpp)
 endif()
@@ -223,7 +194,6 @@ set (
   include/black/sat/backends/cmsat.hpp
   include/black/sat/backends/cvc5.hpp
   include/black/sat/backends/mathsat.hpp
-  include/black/sat/backends/minisat.hpp
   include/black/sat/backends/z3.hpp
   include/black/sat/dimacs.hpp
   include/black/sat/solver.hpp

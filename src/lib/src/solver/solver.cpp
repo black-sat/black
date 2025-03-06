@@ -312,7 +312,8 @@ namespace black_internal::solver
             [](w_until) { return true; },
             [](s_release) { return true; },
             [](since) { return true; },
-            [](triggered) { return true; }
+            [](triggered) { return true; },
+            [](otherwise) { return false; }
           );
           if(temporal)
             err(

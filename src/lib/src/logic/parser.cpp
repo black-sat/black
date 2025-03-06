@@ -33,7 +33,7 @@
 
 namespace black_internal
 {
-  using namespace black::logic;
+  using namespace black;
 
   // Easy entry-point for parsing formulas
   std::optional<formula>

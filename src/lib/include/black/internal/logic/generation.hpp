@@ -830,9 +830,11 @@ namespace black_internal::logic
 
 }
 
-namespace black::logic {
+namespace black {
 
   using black_internal::logic::hierarchy;
+  using black_internal::logic::storage_kind;
+  using black_internal::logic::hierarchy_element;
   using black_internal::logic::syntax_element;
   using black_internal::logic::alphabet;
   using black_internal::logic::otherwise;

@@ -214,7 +214,7 @@ namespace black::frontend {
   {
     using namespace black;
 
-    logic::for_each_child(f, overloaded {
+    for_each_child(f, overloaded {
       [&](formula child) { 
         child.match(
           [&](proposition p) { props.insert(p); },
@@ -401,7 +401,7 @@ namespace black::frontend {
       io::println(
         "{}: debug: parsed formula in NNF: {}",
         cli::command_name, 
-        to_string(std::get<logic::formula>(data.data))
+        to_string(std::get<formula>(data.data))
       );
     }
 
@@ -438,7 +438,7 @@ namespace black::frontend {
 
       black_assert(data.xi);
 
-      file << to_smtlib2(std::get<logic::formula>(data.data), *data.xi) << "\n";
+      file << to_smtlib2(std::get<formula>(data.data), *data.xi) << "\n";
     }
 
     if(cli::debug != "trace-full")
@@ -451,25 +451,25 @@ namespace black::frontend {
       case black::solver::trace_t::unrav:
         io::errorln(
           "  - {}-unrav: {}", k,
-          to_string(std::get<logic::formula>(data.data))
+          to_string(std::get<formula>(data.data))
         );
         break;
       case black::solver::trace_t::empty:
         io::errorln(
           "  - {}-empty: {}", k,
-            to_string(std::get<logic::formula>(data.data))
+            to_string(std::get<formula>(data.data))
         );
         break;
       case black::solver::trace_t::loop:
         io::errorln(
           "  - {}-loop: {}", k, 
-          to_string(std::get<logic::formula>(data.data))
+          to_string(std::get<formula>(data.data))
         );
         break;
       case black::solver::trace_t::prune:
         io::errorln(
           "  - {}-prune: {}", k,
-          to_string(std::get<logic::formula>(data.data))
+          to_string(std::get<formula>(data.data))
         );
         break;
     }

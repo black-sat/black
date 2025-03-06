@@ -27,7 +27,7 @@ found)
 
 6. | ``BLACK_DEFAULT_BACKEND=<backend>``: default backend (default: ``z3``, if 
      found).
-   | Accepted values: ``mathsat``, ``cmsat``, ``z3``, ``cvc5``, ``minisat``
+   | Accepted values: ``mathsat``, ``cmsat``, ``z3``, ``cvc5``
 
 7. ``ENABLE_FORMULAS_TESTS=YES/NO``: whether to enable the formulas test suite (default YES)
 

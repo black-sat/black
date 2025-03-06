@@ -29,14 +29,14 @@
 
 using namespace std::literals;
 
-using namespace black::logic;
+using namespace black;
 
 TEST_CASE("Pattern matching") {
-  black::logic::alphabet sigma;
+  black::alphabet sigma;
 
   SECTION("Matching on formulas") {
     boolean b = sigma.boolean(true);
-    formula n = negation<propositional>(b);
+    formula n = negation(b);
 
     std::string s = n.match(
       [](boolean) { return "boolean"s; },
@@ -83,31 +83,6 @@ TEST_CASE("Pattern matching") {
     );
 
     REQUIRE(s == "unary");
-  }
-
-  SECTION("Matching with restricted syntax") {
-    boolean b = sigma.boolean(true);
-    proposition p = sigma.proposition("p");
-
-    formula f = (b && Y(p));
-
-    std::string s = f.match(
-      [](yesterday) { return "yesterday"; },
-      [](only<propositional, LTLP> o) {
-        return o.match(
-          [](boolean) { return "boolean"; },
-          [](proposition) { return "proposition"; },
-          [](negation) { return "negation"; },
-          [](disjunction) { return "disjunction"; },
-          [](conjunction) { return "conjunction"; },
-          [](implication) { return "implication"; },
-          [](iff) { return "iff"; }
-        );
-      },
-      [](otherwise) { return "otherwise"; }
-    );
-
-    REQUIRE(s == "conjunction");
   }
 
   SECTION("Otherwise") { 
@@ -181,53 +156,13 @@ TEST_CASE("Pattern matching") {
     formula f = sigma.top() && sigma.bottom();
 
     f.match(
-      [](conjunction<propositional>, auto ...args) {
+      [](conjunction, auto ...args) {
         REQUIRE(sizeof...(args) == 2);
       },
       [](otherwise) {
         REQUIRE(false);
       }
     );
-  }
-
-  SECTION("Matching on `fragment_type`") {
-    using namespace black_internal;
-
-    proposition p = sigma.proposition("p");
-    unary u = !p;
-
-    unary::type t = u.node_type();
-
-    REQUIRE(t == unary::type::negation{});
-
-    REQUIRE(u.node_type() == unary::type::negation{});
-
-    auto tn = u.node_type().to<unary::type::negation>();
-    REQUIRE(tn.has_value());
-
-    REQUIRE(u.node_type().is<unary::type::negation>());
-
-    u = F(p);
-
-    unary::type result = u.node_type().match(
-      [](unary::type::negation) {
-        return unary::type::negation{};
-      },
-      [](unary::type::always) {
-        return unary::type::eventually{};
-      },
-      [](unary::type::eventually) {
-        return unary::type::always{};
-      },
-      [](unary::type::tomorrow) {
-        return unary::type::w_tomorrow{};
-      },
-      [](unary::type::w_tomorrow) {
-        return unary::type::tomorrow{};
-      }
-    );
-
-    REQUIRE(result == unary::type::always{});
   }
 
   SECTION("Common type") {
@@ -249,11 +184,6 @@ TEST_CASE("Pattern matching") {
     disjunction d = b || p;
     binary bin = c;
     formula f = u;
-
-    using F = make_combined_fragment_t<
-      make_singleton_fragment_t<syntax_element::proposition>, 
-      make_singleton_fragment_t<syntax_element::boolean>
-    >;
 
     REQUIRE_CT(b, p, formula);
 

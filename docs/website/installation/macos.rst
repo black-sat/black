@@ -59,10 +59,6 @@ For CryptoMiniSAT::
 
    $ brew install cryptominisat
 
-For MiniSAT::
-
-   $ brew install minisat
-
 Currently, there are no Homebrew packages for *cvc5* and *MathSAT*. To install
 *cvc5*, stand-alone binary packages are available or it can be built from
 source. Refer to their website for more information. To install *MathSAT*, we

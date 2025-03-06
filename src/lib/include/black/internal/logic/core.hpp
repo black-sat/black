@@ -509,8 +509,8 @@ namespace black_internal::logic {
     static std::optional<Derived> from(F f) {
       if constexpr(F::hierarchy != Derived::hierarchy)
         return {};
-
-      return f;
+      else
+        return Derived{f.sigma(), f.node()};
     }
 
     // implemented later

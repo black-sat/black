@@ -28,7 +28,7 @@
 
 namespace black_internal::cnf
 { 
-  using namespace black::logic;
+  using namespace black;
 
   static
   formula remove_booleans(negation, formula op) 

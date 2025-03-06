@@ -31,7 +31,7 @@
 
 #include <string_view>
 
-using namespace black::logic::fragments::LTLP;
+using namespace black;
 using black::remove_past;
 
 struct test {

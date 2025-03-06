@@ -31,7 +31,7 @@
 
 namespace black_internal::core {
   
-  using namespace black::logic;
+  using namespace black;
 
   BLACK_EXPORT
   formula unsat_core(scope const& xi, formula f, bool finite);
@@ -61,7 +61,7 @@ namespace std {
   struct hash<::black::core_placeholder_t> {
     size_t operator()(::black::core_placeholder_t const& p) const {
       using namespace black_internal;
-      using namespace black::logic;
+      using namespace black;
 
       size_t h1 = std::hash<size_t>{}(p.n);
       size_t h2 = std::hash<formula>{}(p.f);

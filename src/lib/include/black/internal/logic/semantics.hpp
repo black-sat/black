@@ -219,9 +219,10 @@ namespace black_internal::logic {
   };
 }
 
-namespace black::logic {
+namespace black {
   using black_internal::logic::scope;
   using black_internal::logic::nest_scope_t;
+  using black_internal::logic::make_domain;
 }
 
 #endif

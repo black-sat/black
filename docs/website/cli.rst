@@ -144,7 +144,6 @@ with the ``--sat-backends`` option::
    - cmsat 
    - cvc5
    - mathsat
-   - minisat
 
 The one marked with ``*`` is the default used when no explicit choice is made.
 To choose the backend, use the ``-B`` option::

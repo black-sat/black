@@ -28,7 +28,7 @@
 
 namespace black_internal::cvc5
 {
-  using namespace black::logic::fragments::FO;
+  using namespace black;
 
   class BLACK_EXPORT cvc5 : public ::black::sat::solver
   {

@@ -30,28 +30,23 @@
 #include <ranges>
 
 using namespace std::literals;
-using namespace black::logic;
+using namespace black;
 using black_internal::identifier;
 
-static_assert(black::logic::hierarchy<formula>);
-static_assert(black::logic::hierarchy<proposition>);
-static_assert(black::logic::hierarchy<unary>);
-static_assert(black::logic::hierarchy<conjunction>);
-static_assert(black::logic::hierarchy<equal>);
-static_assert(black::logic::storage_kind<proposition>);
-static_assert(black::logic::storage_kind<unary>);
-static_assert(black::logic::storage_kind<conjunction>);
-static_assert(black::logic::hierarchy_element<conjunction>);
-static_assert(black::logic::hierarchy_element<equal>);
-
-static_assert(
-  std::is_same_v<black::logic::make_combined_fragment_t, LTL>
-);
-
+static_assert(black::hierarchy<formula>);
+static_assert(black::hierarchy<proposition>);
+static_assert(black::hierarchy<unary>);
+static_assert(black::hierarchy<conjunction>);
+static_assert(black::hierarchy<equal>);
+static_assert(black::storage_kind<proposition>);
+static_assert(black::storage_kind<unary>);
+static_assert(black::storage_kind<conjunction>);
+static_assert(black::hierarchy_element<conjunction>);
+static_assert(black::hierarchy_element<equal>);
 
 TEST_CASE("New API") {
 
-  black::logic::alphabet sigma;
+  black::alphabet sigma;
 
   SECTION("Formula deduplication") {
     REQUIRE(sigma.boolean(true) == sigma.boolean(true));
@@ -91,7 +86,7 @@ TEST_CASE("New API") {
   SECTION("Storage kinds") {
     boolean b = sigma.boolean(true);
 
-    unary u = unary(unary::type::eventually{}, b);
+    unary u = unary(unary::type::eventually, b);
 
     REQUIRE(u.argument() == b);
 
@@ -129,14 +124,14 @@ TEST_CASE("New API") {
   }
 
   SECTION("Use of fragment type enums values") {
-    unary::type t1 = unary::type::always{};
-    unary::type t2 = unary::type::negation{};
+    unary::type t1 = unary::type::always;
+    unary::type t2 = unary::type::negation;
 
     REQUIRE(t1 != t2);
 
     std::vector<unary::type> v = {
-      unary::type::always{}, unary::type::negation{}, 
-      unary::type::eventually{}
+      unary::type::always, unary::type::negation, 
+      unary::type::eventually
     };
 
     REQUIRE(v[0] == t1);
@@ -151,8 +146,8 @@ TEST_CASE("New API") {
     boolean b = sigma.boolean(true);
     
     SECTION("Storage kinds") {
-      unary n = unary(unary::type::negation{}, b);
-      unary a = unary(unary::type::always{}, b);
+      unary n = unary(unary::type::negation, b);
+      unary a = unary(unary::type::always, b);
     
       formula f = n;
       REQUIRE(f == n);
@@ -173,7 +168,7 @@ TEST_CASE("New API") {
     }
 
     SECTION("Storage kinds and hierarchy elements") {
-      negation n = negation<propositional>(b);
+      negation n = negation(b);
       always a = always(b);
 
       unary u = n;
@@ -188,34 +183,17 @@ TEST_CASE("New API") {
 
       REQUIRE(n.is<negation>());
       REQUIRE(n.is<negation>());
-      REQUIRE(n.is<negation<propositional>>());
+      REQUIRE(n.is<negation>());
       REQUIRE(!n.is<unary_term>());
 
       proposition p = sigma.proposition("p");
       formula u1 = G(p);
       formula u2 = Y(sigma.proposition("p"));
-      formula u3 = G(Y(sigma.proposition("p")));
+      formula u3 = F(Y(sigma.proposition("p")));
 
-      auto x = sigma.variable("x");
-      auto y = sigma.variable("y");
-      auto z = sigma.variable("z");
-
-      std::vector<variable> vars = {x, y, z};
-      std::vector<term> sums = {x + x, y + y, z + z};
-
-      auto e1 = equal(vars);
-      auto e2 = equal(sums);
-
-      using vars_fragment = decltype(e1)::syntax;
-
-      REQUIRE(u1.to<formula>().has_value());
-      REQUIRE(!u2.to<formula>().has_value());
-      REQUIRE(!u3.to<formula>().has_value());
-      
-      REQUIRE(!e2.to<equal<vars_fragment>>().has_value());
-
-      REQUIRE(u1.node_type().to<formula::type>().has_value());
-      REQUIRE(!u2.node_type().to<formula::type>().has_value()); 
+      REQUIRE(u1.to<always>().has_value());
+      REQUIRE(u2.to<yesterday>().has_value());
+      REQUIRE(u3.to<eventually>().has_value());
     }
   }
 
@@ -281,9 +259,9 @@ TEST_CASE("New API") {
     variable x = sigma.variable("x");
     sort s = sigma.integer_sort();
     comparison e = 
-      comparison(comparison::type::greater_than{}, x, x);
+      comparison(comparison::type::greater_than, x, x);
     quantifier f = 
-      quantifier(quantifier::type::forall{}, {x[s]}, e);
+      quantifier(quantifier::type::forall, {x[s]}, e);
 
     REQUIRE(e.left() == x);
     REQUIRE(e.right() == x);
@@ -296,18 +274,18 @@ TEST_CASE("New API") {
     formula b = sigma.boolean(true);
     formula p = sigma.proposition("p");
     variable x = sigma.variable("x");
-    unary u = unary<propositional>(unary<propositional>::type::negation{}, b);
+    unary u = unary(unary::type::negation, b);
     conjunction c = conjunction(p, b);
     binary c2 = conjunction(u, b);
     equal eq = equal(std::vector<term>{x, x});
 
-    static_assert(std::is_same_v<decltype(c2), binary<propositional>>);
+    static_assert(std::is_same_v<decltype(c2), binary>);
 
     REQUIRE(b.is<boolean>());
     REQUIRE(p.is<proposition>());
-    REQUIRE(u.is<negation<propositional>>());
-    REQUIRE(c.is<conjunction<propositional>>());
-    REQUIRE(c2.is<conjunction<propositional>>());
+    REQUIRE(u.is<negation>());
+    REQUIRE(c.is<conjunction>());
+    REQUIRE(c2.is<conjunction>());
     REQUIRE(eq.is<equal>());
   }
 
@@ -514,7 +492,7 @@ TEST_CASE("New API") {
     conjunction c = b && ((p && (b && p)) && b);
     addition sum = x + ((y + (x + y)) + x);
 
-    using view_t = decltype(c.operands());
+    using view_t = decltype(operands(c));
     STATIC_REQUIRE(std::input_or_output_iterator<view_t::const_iterator>);
     STATIC_REQUIRE(std::input_iterator<view_t::const_iterator>);
     STATIC_REQUIRE(std::forward_iterator<view_t::const_iterator>);
@@ -525,7 +503,7 @@ TEST_CASE("New API") {
     std::vector<formula> v1 = {b, p, b, p, b};
     std::vector<formula> v2;
 
-    for(auto f : c.operands())
+    for(auto f : operands(c))
       v2.push_back(f);
 
     REQUIRE(v1 == v2);
@@ -533,7 +511,7 @@ TEST_CASE("New API") {
     std::vector<term> tv1 = {x, y, x, y, x};
     std::vector<term> tv2;
 
-    for(auto f : sum.operands())
+    for(auto f : operands(sum))
       tv2.push_back(f);
 
     REQUIRE(tv1 == tv2);
@@ -541,7 +519,7 @@ TEST_CASE("New API") {
 
   SECTION("has_any_element_of()")
   {
-    using namespace black::logic;
+    using namespace black;
 
     proposition p = sigma.proposition("p");
     variable x = sigma.variable("x");
@@ -551,12 +529,12 @@ TEST_CASE("New API") {
 
     REQUIRE(has_any_element_of(
       p && !p && x > x && exists({x[s]}, x > x) && F(F(top)),
-      syntax_element::boolean, quantifier::type::forall{}
+      syntax_element::boolean, syntax_element::forall
     ));
   }
 
   SECTION("big_and, big_or, etc...") {
-    using namespace black::logic;
+    using namespace black;
 
     auto p1 = sigma.proposition("p1");
     auto p2 = sigma.proposition("p2");

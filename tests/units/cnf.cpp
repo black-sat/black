@@ -30,7 +30,7 @@
 #include <black/logic/cnf.hpp>
 #include <black/internal/debug/random_formula.hpp>
 
-using namespace black::logic;
+using namespace black;
 
 
 TEST_CASE("CNF Translation")
