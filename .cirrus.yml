@@ -44,17 +44,17 @@ task:
 
 
 task:
-  name: macOS (LLVM latest)
+  name: macOS (Sonoma devtools)
   osx_instance:
     image: ghcr.io/cirruslabs/macos-sonoma-xcode:latest
   download_dependencies_script:
     - brew update
-    - brew install llvm cmake fmt catch2 z3 cryptominisat nlohmann-json
+    - brew install cmake fmt catch2 z3 cryptominisat nlohmann-json
     - brew install black-sat/black/hopscotch-map
     - ./download-mathsat.sh
   release_build_script:
     - mkdir -p build && cd build
-    - ../config-brew-llvm.sh -DCMAKE_BUILD_TYPE=Release ..
+    - cmake -DCMAKE_BUILD_TYPE=Release ..
     - make
   test_script:
     - cd build 
