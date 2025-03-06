@@ -1258,15 +1258,15 @@ namespace black_internal::logic {
 } namespace std {
 
   template<typename T>
-  struct std::common_type<T, black_internal::logic::unexhaustive_pattern_t>
+  struct common_type<T, black_internal::logic::unexhaustive_pattern_t>
     : std::type_identity<T> { };
 
   template<typename T>
-  struct std::common_type<black_internal::logic::unexhaustive_pattern_t, T>
+  struct common_type<black_internal::logic::unexhaustive_pattern_t, T>
     : std::type_identity<T> { };
   
   template<>
-  struct std::common_type<
+  struct common_type<
     black_internal::logic::unexhaustive_pattern_t,
     black_internal::logic::unexhaustive_pattern_t
   >
