@@ -114,6 +114,7 @@ namespace black_internal::logic
       case equality::type::distinct:
         return binary ? "!=" : "distinct";
     }
+    black_unreachable();
   }
 
   static

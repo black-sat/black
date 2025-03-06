@@ -29,6 +29,7 @@
 #include <memory>
 #include <ranges>
 #include <stack>
+#include <algorithm>
 
 //
 // This file contains helper classes and functions that integrate the interface
