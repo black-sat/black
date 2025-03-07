@@ -3,8 +3,6 @@
 set -eu -o pipefail
 shopt -s failglob
 
-export DOCKER_DEFAULT_PLATFORM=linux/amd64
-
 die() {
   echo "$@"
   exit 1
@@ -28,10 +26,11 @@ setup() {
 
 images() {
   docker build docker \
-    -f docker/Dockerfile.ubuntu -t black:ubuntu24.04 \
+    -f docker/Dockerfile.ubuntu --platform linux/amd64 -t black:ubuntu24.04 \
     --build-arg VERSION=24.04 --build-arg GCC_VERSION=14
   docker build docker \
-    -f docker/Dockerfile.fedora -t black:fedora41 --build-arg VERSION=41
+    -f docker/Dockerfile.fedora --platform linux/amd64 -t black:fedora41 \
+    --build-arg VERSION=41
 }
 
 launch() {
@@ -46,7 +45,8 @@ launch() {
     user="-u $(id -u)"
   fi
 
-  docker run -it --rm -v $SRC_DIR:/black -w /black/build $user $image$ver "$@"
+  docker run --platform linux/amd64 -it --rm \
+             -v $SRC_DIR:/black -w /black/build $user $image$ver "$@"
 }
 
 ubuntu() {
@@ -81,7 +81,7 @@ build() {
 
   mkdir -p "$SRC_DIR/packages/$VERSION"
   mv "$SRC_DIR/build/black-sat-$VERSION-Linux.$ext" \
-     "$SRC_DIR/packages/$VERSION/black-sat-$VERSION.$distro$ver.$(uname -m).$ext" 
+     "$SRC_DIR/packages/$VERSION/black-sat-$VERSION.$distro$ver.x86_64.$ext" 
 }
 
 test_pkg() {
@@ -90,10 +90,10 @@ test_pkg() {
 
   case $distro in
     ubuntu)
-      cmd="apt update && apt install /black/packages/$VERSION/black-sat-$VERSION.$distro$ver.$(uname -m).deb && black --help"
+      cmd="apt update && apt install /black/packages/$VERSION/black-sat-$VERSION.$distro$ver.x86_64.deb && black --help"
     ;;
     fedora)
-      cmd="yum -y install /black/packages/$VERSION/black-sat-$VERSION.$distro$ver.$(uname -m).rpm && black --help"
+      cmd="yum -y install /black/packages/$VERSION/black-sat-$VERSION.$distro$ver.x86_64.rpm && black --help"
     ;;
   esac
 
