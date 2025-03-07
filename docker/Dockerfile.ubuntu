@@ -8,9 +8,9 @@ RUN apt-get update && \
 RUN apt-get update && apt-get install -y git wget curl
 
 ARG GCC_VERSION=14
-ENV GCC_VERSION $GCC_VERSION
-ENV CC gcc-$GCC_VERSION
-ENV CXX g++-$GCC_VERSION
+ENV GCC_VERSION=$GCC_VERSION
+ENV CC=gcc-$GCC_VERSION
+ENV CXX=g++-$GCC_VERSION
 
 RUN apt-get update && apt-get install -y gcc-$GCC_VERSION g++-$GCC_VERSION
 

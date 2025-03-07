@@ -3,16 +3,20 @@
 set -eu -o pipefail
 shopt -s failglob
 
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+
 die() {
   echo "$@"
   exit 1
 }
 
 dependencies() {
-  which wget  || die "Missing wget"
-  which curl  || die "Missing curl"
-  which jq    || die "Missing jq"
-  which gh    || die "Missing gh"
+  which wget >/dev/null || die "Missing wget"
+  which curl >/dev/null || die "Missing curl"
+  which jq   >/dev/null || die "Missing jq"
+  which gh   >/dev/null || die "Missing gh"
+
+  test -f ~/.appveyor.token || die "Missing ~/.appveyor.token"
 }
 
 setup() {
@@ -126,14 +130,14 @@ appveyor() {
 }
 
 release() {
-  cat ~/.github.token | gh auth login -p ssh --with-token
+  gh auth login -p ssh --web
   temp=$(mktemp)
   vim $temp
   if [ -z "$(cat $temp)" ]; then 
     echo "Empty release notes. Quitting..."
     exit 0
   fi
-  gh release create --notes-file $temp -p -t v$VERSION --target master v$VERSION
+  gh release create --notes-file $temp -t v$VERSION --target master v$VERSION
 
   for file in packages/$VERSION/*.{rpm,deb,zip}; do
     gh release upload v$VERSION $file
