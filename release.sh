@@ -156,6 +156,8 @@ class BlackSat < Formula
   url "https://github.com/black-sat/black/archive/v$VERSION.tar.gz"
   sha256 "$sum"
 
+  version_scheme 1
+
   depends_on "cmake" => :build
   depends_on "hopscotch-map" => :build
   depends_on "catch2" => :build
