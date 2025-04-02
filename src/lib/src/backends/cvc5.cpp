@@ -151,9 +151,17 @@ namespace black::solvers {
           return slv->mkTerm(CVC5::Kind::NOT, { arg });
         },
         [&](conjunction, auto args) {
+          if(std::empty(args))
+            return slv->mkBoolean(true);
+          if(std::size(args) == 1)
+            return *std::begin(args);
           return slv->mkTerm(CVC5::Kind::AND, std::move(args));
         },
         [&](disjunction, auto args) {
+          if(std::empty(args))
+            return slv->mkBoolean(false);
+          if(std::size(args) == 1)
+            return *std::begin(args);
           return slv->mkTerm(CVC5::Kind::OR, std::move(args));
         },
         [&](implication, auto left, auto right) {
