@@ -395,6 +395,9 @@ namespace black_internal::logic {
           [&](real)    { return t.sigma()->real_sort(); }
         );
       },
+      [&](star) -> S {
+        return t.sigma()->standpoint_sort();
+      },
       [&](variable x) -> S { 
         if(auto s = xi.sort(x); s.has_value())
           return *s;
@@ -544,6 +547,18 @@ namespace black_internal::logic {
           return false;
         }
         return true;
+      },
+      [&](modality, term sp, formula argument) {
+        auto srt = type_check(sp);
+        if(!srt.has_value())
+          return false;
+        
+        if(srt != f.sigma()->standpoint_sort()) {
+          err("Standpoint modalities can only be parameterized by standpoints");
+          return false;
+        }
+
+        return type_check(argument);
       },
       [&](quantifier q) {
         nest_scope_t nest{xi};

@@ -61,13 +61,13 @@ namespace black_internal::encoder
       // Creating the encoding
       formula inner_impl = 
         big_or(*_sigma, range(j + 1, k + 1), [&](size_t i) {
-          return to_ground_snf(*ev, i, req.signature);
+          return to_ground_snf(*ev, i, req.sp_witness, req.signature);
         });
 
       formula first_conj = ground(req, k) && inner_impl;
       formula second_conj = 
         big_or(*_sigma, range(l + 1, j + 1), [&](size_t i) {
-          return to_ground_snf(*ev, i, req.signature);
+          return to_ground_snf(*ev, i, req.sp_witness, req.signature);
         });
 
       return forall(req.signature, implies(first_conj, second_conj));
@@ -132,7 +132,7 @@ namespace black_internal::encoder
       formula proposition_phi_k = ground(req, k);
       formula body_impl = 
         big_or(*_sigma, range(l + 1, k + 1), [&](size_t i) {
-          return to_ground_snf(*ev, i, req.signature);
+          return to_ground_snf(*ev, i, req.sp_witness, req.signature);
         });
 
       return forall(req.signature, implies(proposition_phi_k, body_impl));
@@ -148,7 +148,10 @@ namespace black_internal::encoder
       );
       if(req.type == req_t::past && close_yesterdays)
         f = f && forall(req.signature,
-          iff( ground(req, l+1), to_ground_snf(req.target, k, req.signature) )
+          iff( 
+            ground(req, l+1), 
+            to_ground_snf(req.target, k, req.sp_witness, req.signature)
+          )
         );
 
       return f;
@@ -171,7 +174,8 @@ namespace black_internal::encoder
         return _sigma->top();
       });
 
-      return to_ground_snf(_frm, k, {}) && !not_first_prop(0) && init;
+      sp_witness_t starwp = { _sigma->star(), std::nullopt };
+      return to_ground_snf(_frm, k, starwp, {}) && !not_first_prop(0) && init;
     }
 
     auto reqs = big_and(*_sigma, _requests, [&](req_t req) {
@@ -183,11 +187,17 @@ namespace black_internal::encoder
       switch(req.type) {
         case req_t::future:
           return forall(req.signature,
-            iff(ground(req, k - 1), to_ground_snf(req.target, k, req.signature))
+            iff(
+              ground(req, k - 1), 
+              to_ground_snf(req.target, k, req.sp_witness, req.signature)
+            )
           );
         case req_t::past:
           return forall(req.signature,
-            iff(ground(req, k), to_ground_snf(req.target, k - 1, req.signature))
+            iff(
+              ground(req, k), 
+              to_ground_snf(req.target, k - 1, req.sp_witness, req.signature)
+            )
           );
       }
       black_unreachable();
@@ -209,7 +219,9 @@ namespace black_internal::encoder
   // Turns the current formula into Stepped Normal Form
   // Note: this has to be run *after* the transformation to NNF (to_nnf() below)
   formula encoder::to_ground_snf(
-    formula f, size_t k, std::vector<var_decl> env
+    formula f, size_t k, 
+    std::optional<sp_witness_t> sw, 
+    std::vector<var_decl> env
   ) {
     return f.match( // LCOV_EXCL_LINE
       [&](boolean b)      { return b; },
@@ -231,66 +243,70 @@ namespace black_internal::encoder
         env.insert(env.end(), q.variables().begin(), q.variables().end());
 
         auto result = quantifier(
-          q.node_type(), q.variables(), to_ground_snf(q.matrix(), k, env)
+          q.node_type(), q.variables(), 
+          to_ground_snf(q.matrix(), k, sw, env)
         );
 
         return result;
       }, // LCOV_EXCL_LINE
-      [&](proposition p)  { return stepped(p, k); },
+      [&](proposition p)  { return stepped(p, k, sw); },
       [&](negation n) { 
-        return !to_ground_snf(n.argument(),k, env); 
+        return !to_ground_snf(n.argument(), k, sw, env); 
       },
       [&](tomorrow t) -> formula { 
-        return ground(mk_req(t, env), k);
+        return ground(mk_req(t, sw, env), k);
       },
       [&](w_tomorrow t) -> formula { 
-        return ground(mk_req(t, env), k);
+        return ground(mk_req(t, sw, env), k);
       },
       [&](yesterday y) -> formula { 
-        return ground(mk_req(y, env), k);
+        return ground(mk_req(y, sw, env), k);
       },
       [&](w_yesterday y) -> formula { 
-        return ground(mk_req(y, env), k);
+        return ground(mk_req(y, sw, env), k);
+      },
+      [&](diamond, auto sp, auto argument) {
+        return to_ground_snf(argument, k, sp_witness_t{ sp, argument }, env);
       },
       [&](conjunction c) {
         return big_and(*f.sigma(), operands(c), [&](auto op) {
-          return to_ground_snf(op, k, env);
+          return to_ground_snf(op, k, sw, env);
         });
       },
       [&](disjunction c) {
         return big_or(*f.sigma(), operands(c), [&](auto op) {
-          return to_ground_snf(op, k, env);
+          return to_ground_snf(op, k, sw, env);
         });
       },
       [&](until u, auto left, auto right) {
-        return to_ground_snf(right || (left && X(u)), k, env);
+        return to_ground_snf(right || (left && X(u)), k, sw, env);
       },
       [&](w_until w, auto left, auto right) {
-        return to_ground_snf(right || (left && wX(w)), k, env);
+        return to_ground_snf(right || (left && wX(w)), k, sw, env);
       },
       [&](eventually e, auto op) {
-        return to_ground_snf(op || X(e), k, env);
+        return to_ground_snf(op || X(e), k, sw, env);
       },
       [&](always a, auto op) {
-        return to_ground_snf(op && wX(a), k, env);
+        return to_ground_snf(op && wX(a), k, sw, env);
       },
       [&](release r, auto left, auto right) {
-        return to_ground_snf((left && right) || (right && wX(r)), k, env);
+        return to_ground_snf((left && right) || (right && wX(r)), k, sw, env);
       },
       [&](s_release r, auto left, auto right) {
-        return to_ground_snf((left && right) || (right && X(r)), k, env);
+        return to_ground_snf((left && right) || (right && X(r)), k, sw, env);
       },
       [&](since s, auto left, auto right) {
-        return to_ground_snf(right || (left && Y(s)), k, env);
+        return to_ground_snf(right || (left && Y(s)), k, sw, env);
       },
       [&](triggered t, auto left, auto right) {
-        return to_ground_snf((left && right) || (right && Z(t)), k, env);
+        return to_ground_snf((left && right) || (right && Z(t)), k, sw, env);
       },
       [&](once o, auto op) {
-        return to_ground_snf(op || Y(o), k, env);
+        return to_ground_snf(op || Y(o), k, sw, env);
       },
       [&](historically h, auto op) {
-        return to_ground_snf(op && Z(h), k, env);
+        return to_ground_snf(op && Z(h), k, sw, env);
       },
       [&](implication) -> formula { // LCOV_EXCL_LINE 
         black_unreachable(); // LCOV_EXCL_LINE 
@@ -465,8 +481,10 @@ namespace black_internal::encoder
   }
 
 
-  proposition encoder::stepped(proposition p, size_t k) {
-    return p.sigma()->proposition(std::pair{formula{p}, k});
+  proposition encoder::stepped(
+    proposition p, size_t k, std::optional<sp_witness_t> sw
+  ) {
+    return p.sigma()->proposition(std::tuple{formula{p}, k, sw});
   }
 
   proposition encoder::not_last_prop(size_t k) {
@@ -543,6 +561,9 @@ namespace black_internal::encoder
       [](atom a) { return a; },
       [](equality e) { return e; },
       [](comparison c) { return c; },
+      [&](modality m) {
+        return modality(m.node_type(), m.standpoint(), to_nnf(m.argument()));
+      },
       [&](quantifier q) {
         return quantifier(
           q.node_type(), q.variables(), to_nnf(q.matrix())
@@ -562,6 +583,13 @@ namespace black_internal::encoder
               dual = quantifier::type::forall;
 
             return quantifier(dual, q.variables(), to_nnf(!q.matrix()));
+          },
+          [&](modality m) {
+            modality::type dual = modality::type::diamond;
+            if(m.node_type() == modality::type::diamond)
+              dual = modality::type::box;
+
+            return modality(dual, m.standpoint(), to_nnf(!m.argument()));
           },
           [&](negation, auto op) { // special case for double negation
             return to_nnf(op);
@@ -641,20 +669,28 @@ namespace black_internal::encoder
     return {future, past};
   }
 
-  req_t encoder::mk_req(tomorrow f, std::vector<var_decl> env) {
-    return req_t{f.argument(), env, req_t::future, req_t::strong};
+  req_t encoder::mk_req(
+    tomorrow f, std::optional<sp_witness_t> sw, std::vector<var_decl> env
+  ) {
+    return req_t{f.argument(), env, req_t::future, req_t::strong, sw };
   }
 
-  req_t encoder::mk_req(w_tomorrow f, std::vector<var_decl> env) {
-    return req_t{f.argument(), env, req_t::future, req_t::weak};
+  req_t encoder::mk_req(
+    w_tomorrow f, std::optional<sp_witness_t> sw, std::vector<var_decl> env
+  ) {
+    return req_t{f.argument(), env, req_t::future, req_t::weak, sw };
   }
 
-  req_t encoder::mk_req(yesterday f, std::vector<var_decl> env) {
-    return req_t{f.argument(), env, req_t::past, req_t::strong};
+  req_t encoder::mk_req(
+    yesterday f, std::optional<sp_witness_t> sw, std::vector<var_decl> env
+  ) {
+    return req_t{f.argument(), env, req_t::past, req_t::strong, sw };
   }
 
-  req_t encoder::mk_req(w_yesterday f, std::vector<var_decl> env) {
-    return req_t{f.argument(), env, req_t::past, req_t::weak};
+  req_t encoder::mk_req(
+    w_yesterday f, std::optional<sp_witness_t> sw, std::vector<var_decl> env
+  ) {
+    return req_t{f.argument(), env, req_t::past, req_t::weak, sw };
   }
 
   formula to_formula(req_t req) {
@@ -671,35 +707,39 @@ namespace black_internal::encoder
     black_unreachable();
   }
 
-  void encoder::_collect_requests(formula f, std::vector<var_decl> env)
-  { 
+  void encoder::_collect_requests(
+    formula f, std::optional<sp_witness_t> sw, std::vector<var_decl> env
+  ) { 
     std::optional<req_t> req;
     f.match(
-      [&](tomorrow t)      { req = mk_req(t, env);     },
-      [&](w_tomorrow t)    { req = mk_req(t, env);     },
-      [&](yesterday y)     { req = mk_req(y, env);     },
-      [&](w_yesterday y)   { req = mk_req(y, env);     },
-      [&](until u)         { req = mk_req(X(u), env);  },
-      [&](release r)       { req = mk_req(wX(r), env); },
-      [&](w_until r)       { req = mk_req(wX(r), env); },
-      [&](s_release r)     { req = mk_req(X(r), env);  },
-      [&](always a)        { req = mk_req(wX(a), env); },
-      [&](eventually e)    { req = mk_req(X(e), env);  },
-      [&](since s)         { req = mk_req(Y(s), env);  },
-      [&](once o)          { req = mk_req(Y(o), env);  },
-      [&](triggered t)     { req = mk_req(Z(t), env);  },
-      [&](historically h)  { req = mk_req(Z(h), env);  },
+      [&](tomorrow t)      { req = mk_req(t, sw, env);     },
+      [&](w_tomorrow t)    { req = mk_req(t, sw, env);     },
+      [&](yesterday y)     { req = mk_req(y, sw, env);     },
+      [&](w_yesterday y)   { req = mk_req(y, sw, env);     },
+      [&](until u)         { req = mk_req(X(u), sw, env);  },
+      [&](release r)       { req = mk_req(wX(r), sw, env); },
+      [&](w_until r)       { req = mk_req(wX(r), sw, env); },
+      [&](s_release r)     { req = mk_req(X(r), sw, env);  },
+      [&](always a)        { req = mk_req(wX(a), sw, env); },
+      [&](eventually e)    { req = mk_req(X(e), sw, env);  },
+      [&](since s)         { req = mk_req(Y(s), sw, env);  },
+      [&](once o)          { req = mk_req(Y(o), sw, env);  },
+      [&](triggered t)     { req = mk_req(Z(t), sw, env);  },
+      [&](historically h)  { req = mk_req(Z(h), sw, env);  },
+      [&](diamond, auto sp, auto arg) {
+        _sp_witnesses.push_back(sp_witness_t{ sp, arg });
+      },
       [&](atom, auto terms) {
         for(auto t : terms) 
-          _collect_lookaheads(t);
+          _collect_term_features(t);
       },
       [&](equality, auto terms) {
         for(auto t : terms) 
-          _collect_lookaheads(t);
+          _collect_term_features(t);
       },
       [&](comparison, auto left, auto right) {
-        _collect_lookaheads(left);
-        _collect_lookaheads(right);
+        _collect_term_features(left);
+        _collect_term_features(right);
       },
       [](otherwise) { }
     );
@@ -710,31 +750,39 @@ namespace black_internal::encoder
     f.match(
       [&](quantifier, auto vars, auto matrix) { 
         env.insert(env.end(), vars.begin(), vars.end());
-        _collect_requests(matrix, env);
+        _collect_requests(matrix, sw, env);
       },
       [&](unary, auto op) {
-        _collect_requests(op, env);
+        _collect_requests(op, sw, env);
       },
       [&](conjunction c) {
         for(auto op : operands(c))
-          _collect_requests(op, env);
+          _collect_requests(op, sw, env);
       },
       [&](disjunction c) {
         for(auto op : operands(c))
-          _collect_requests(op, env);
+          _collect_requests(op, sw, env);
       },
       [&](binary, auto left, auto right) {
-        _collect_requests(left, env);
-        _collect_requests(right, env);
+        _collect_requests(left, sw, env);
+        _collect_requests(right, sw, env);
+      },
+      [&](diamond, auto sp, auto arg) {
+        _collect_requests(arg, sp_witness_t{ sp, arg }, env);
       },
       [](otherwise) { }
     );
   }
 
-  void encoder::_collect_lookaheads(term t) {
+  void encoder::_collect_term_features(term t) {
     
     std::optional<lookahead_t> lh;
+    std::optional<sp_witness_t> spw;
     t.match(
+      [&](variable x) {
+        if(_xi.sort(x) == _sigma->standpoint_sort())
+          spw = sp_witness_t{ x, std::nullopt };
+      },
       [&](next, term arg) { 
         lh = lookahead_t{*arg.to<variable>(), req_t::future, req_t::strong}; 
       },
@@ -753,10 +801,13 @@ namespace black_internal::encoder
     if(lh)
       _lookaheads.push_back(*lh);
 
+    if(spw)
+      _sp_witnesses.push_back(*spw);
+
     for_each_child(t, [&](auto child) {
       child.match(
         [&](term c) {
-          _collect_lookaheads(c);
+          _collect_term_features(c);
         },
         [](otherwise) { }
       );

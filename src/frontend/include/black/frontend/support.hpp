@@ -58,7 +58,8 @@ namespace black::frontend
     past = 2,
     first_order = 4,
     quantifiers = 8,
-    nextvar = 16
+    nextvar = 16,
+    standpoints = 32
   };
 
   // this function is executed multiple times but gcov doesn't get it

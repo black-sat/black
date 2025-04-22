@@ -83,6 +83,7 @@ namespace black_internal
     std::optional<formula> parse_atom();
     std::optional<formula> parse_quantifier();
     std::optional<formula> parse_unary();
+    std::optional<formula> parse_modality();
     std::optional<formula> parse_parens();
     std::optional<formula> parse_primary();
 
@@ -425,6 +426,57 @@ namespace black_internal
     return unary(*op->data<unary::type>(), *formula);
   }
 
+  std::optional<formula> parser::_parser_t::parse_modality()
+  {
+    std::optional<token> op = consume(); // consume '<' or '['
+    
+    std::optional<term> standpoint;
+
+    if(peek()->data<binary_term::type>() == binary_term::type::multiplication)
+      standpoint = _alphabet.star();
+    
+    if(peek()->token_type() == token::type::identifier)
+      standpoint = _alphabet.variable(*peek()->data<std::string>());
+
+    if(!standpoint)
+      return 
+        error(
+          "Expected standpoint (either '*' or named), found '" + 
+          to_string(*peek()) + 
+          "'"
+        );
+    consume();
+
+    bool is_box = true;
+    if(op->data<comparison::type>() == comparison::type::less_than) {
+      is_box = false;
+      
+      if(!peek()) 
+        return error("Expected '>', found end of input");
+
+      if(peek()->data<comparison::type>() != comparison::type::greater_than)
+        return error("Expected '>', found'" + to_string(*peek()) + "'");
+    }
+    
+    if(op->data<token::punctuation>() == token::punctuation::left_bracket) {
+      if(!peek()) 
+        return error("Expected ']', found end of input");
+
+      if(peek()->data<token::punctuation>()!= token::punctuation::right_bracket)
+        return error("Expected ']', found'" + to_string(*peek()) + "'");
+    }
+
+    consume();
+
+    std::optional<formula> formula = parse_primary();
+    if(!formula)
+      return {};
+
+    if(is_box)
+      return box(*standpoint, *formula);
+    return diamond(*standpoint, *formula);
+  }
+
   std::optional<formula> parser::_parser_t::parse_parens() {
     black_assert(peek());
     black_assert(
@@ -469,6 +521,9 @@ namespace black_internal
       return parse_quantifier();
     if(peek()->is<unary::type>())
       return parse_unary();
+    if(peek()->data<comparison::type>() == comparison::type::less_than ||
+       peek()->data<token::punctuation>() == token::punctuation::left_bracket)
+      return parse_modality();
     if(peek()->data<token::punctuation>() == token::punctuation::left_paren)
        return parse_parens();
 

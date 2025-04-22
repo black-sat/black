@@ -245,6 +245,13 @@
 //     - Arguments:
 //       - `Base` is the name of the parent hierarchy
 //       - `Storage` is the name of the parent storage kind 
+//
+// - has_no_fields(Base, Storage)
+//    States that a leaf storage has no fields. 
+//    - Parent macro: `declare_leaf_storage_kind`
+//     - Arguments:
+//       - `Base` is the name of the parent hierarchy
+//       - `Storage` is the name of the parent storage kind 
 
 #ifndef declare_hierarchy
   #define declare_hierarchy(Base)
@@ -282,11 +289,17 @@
 #ifndef has_no_hierarchy_elements
   #define has_no_hierarchy_elements(Base, Storage)
 #endif
+#ifndef has_no_fields
+  #define has_no_fields(Base, Storage)
+#endif
 #ifndef declare_hierarchy_element
   #define declare_hierarchy_element(Base, Storage, Element)
 #endif
 #ifndef declare_leaf_hierarchy_element
   #define declare_leaf_hierarchy_element declare_hierarchy_element
+#endif
+#ifndef has_no_fields
+  #define has_no_fields(Base, Storage)
 #endif
 #ifndef has_no_children
   #define has_no_children(Base, Storage)
@@ -333,6 +346,10 @@ declare_hierarchy(term)
     declare_child(term, constant, number, value)
     has_no_hierarchy_elements(term, constant)
   end_storage_kind(term, constant)
+  
+  declare_leaf_storage_kind(term, star)
+    has_no_fields(term, star)
+  end_storage_kind(term, star)
 
   declare_leaf_storage_kind(term, variable)
     declare_storage_custom_members(term, variable, variable_decl_op)
@@ -397,6 +414,13 @@ declare_hierarchy(formula)
     declare_hierarchy_element(formula, comparison, greater_than)
     declare_hierarchy_element(formula, comparison, greater_than_equal)
   end_storage_kind(formula, comparison)
+  
+  declare_storage_kind(formula, modality)
+    declare_child(formula, modality, term, standpoint)
+    declare_child(formula, modality, formula, argument)
+    declare_hierarchy_element(formula, modality, diamond)
+    declare_hierarchy_element(formula, modality, box)
+  end_storage_kind(formula, modality)
 
   declare_storage_kind(formula, quantifier)
     declare_fields(formula, quantifier, var_decl, variables)
@@ -438,6 +462,9 @@ end_hierarchy(formula)
 declare_simple_hierarchy(sort)
   declare_leaf_storage_kind(sort, named_sort)
     declare_field(sort, named_sort, identifier, name)
+  end_leaf_storage_kind(sort, named_sort)
+  declare_leaf_storage_kind(sort, standpoint_sort)
+    has_no_fields(sort, standpoint_sort)
   end_leaf_storage_kind(sort, named_sort)
   declare_simple_storage_kind(sort, arithmetic_sort)
     has_no_children(sort, arithmetic_sort)
@@ -481,6 +508,7 @@ end_simple_hierarchy(declaration)
 #undef has_no_hierarchy_elements
 #undef declare_leaf_hierarchy_element
 #undef declare_hierarchy_element
+#undef has_no_fields
 #undef has_no_children
 #undef end_storage_kind
 #undef end_simple_storage_kind

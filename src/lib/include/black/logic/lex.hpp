@@ -61,6 +61,8 @@ namespace black_internal::lexer_details
       // non-logical tokens
       left_paren,
       right_paren,
+      left_bracket,
+      right_bracket,
       comma,
       dot,
       colon

@@ -174,11 +174,13 @@ namespace black_internal::lexer_details
   
   std::string to_string(token::punctuation p) {
     switch(p) {
-      case token::punctuation::left_paren:  return "(";
-      case token::punctuation::right_paren: return ")";
-      case token::punctuation::comma:       return ",";
-      case token::punctuation::dot:         return ".";
-      case token::punctuation::colon:       return ":";
+      case token::punctuation::left_paren:    return "(";
+      case token::punctuation::right_paren:   return ")";
+      case token::punctuation::comma:         return ",";
+      case token::punctuation::dot:           return ".";
+      case token::punctuation::colon:         return ":";
+      case token::punctuation::left_bracket:  return "[";
+      case token::punctuation::right_bracket: return "]";
     }
     black_unreachable(); // LCOV_EXCL_LINE
   }
@@ -274,6 +276,12 @@ namespace black_internal::lexer_details
         case ')':
           s.get();
           return token{token::punctuation::right_paren};
+        case '[':
+          s.get();
+          return token{token::punctuation::left_bracket};
+        case ']':
+          s.get();
+          return token{token::punctuation::right_bracket};
         case ',':
           s.get();
           return token{token::punctuation::comma};

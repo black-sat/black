@@ -716,6 +716,9 @@ namespace black_internal::logic
 
   #define has_no_children(Base, Storage) \
     "__THIS_SHOULD_NOT_SHOW_UP_ANYWHERE__",
+  
+  #define has_no_fields(Base, Storage) \
+    "__THIS_SHOULD_NOT_SHOW_UP_ANYWHERE__",
 
   #define end_storage_kind(Base, Storage) \
       }; \

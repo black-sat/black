@@ -37,6 +37,13 @@ namespace black_internal::encoder {
   
   using namespace black_internal::logic;
 
+  struct sp_witness_t {
+    term standpoint;
+    std::optional<formula> argument;
+
+    bool operator==(sp_witness_t const&) const = default;
+  };
+
   struct req_t {
     enum type_t : uint8_t {
       future,
@@ -62,12 +69,27 @@ namespace black_internal::encoder {
     std::vector<var_decl> signature;
     type_t type;
     strength_t strength;
+    std::optional<sp_witness_t> sp_witness;
   };
 
   formula to_formula(req_t req);
 
   inline std::string to_string(req_t req) {
     return "{" + to_string(to_formula(req)) + "}"; 
+  }
+  
+  inline std::string to_string(sp_witness_t sw) {
+    if(sw.argument)
+      return
+        "{" + to_string(sw.standpoint) + ", " + to_string(*sw.argument) + "}"; 
+    else
+      return "{" + to_string(sw.standpoint) + "}"; 
+  }
+  
+  inline std::string to_string(std::optional<sp_witness_t> optsw) {
+    if(optsw)
+      return to_string(*optsw);
+    else return "{}"; 
   }
 
   struct lookahead_t {
@@ -79,8 +101,7 @@ namespace black_internal::encoder {
   };
 
   //
-  // Functions that implement the SAT encoding. 
-  // Refer to the TABLEAUX 2019 and TIME 2021 papers for details.
+  // Functions that implement the SMT encoding.
   //
   struct encoder 
   {
@@ -105,7 +126,10 @@ namespace black_internal::encoder {
     static proposition loop_prop(alphabet *sigma, size_t l, size_t k);
 
     // Make the stepped ground version of a proposition
-    static proposition stepped(proposition p, size_t k);
+    static proposition stepped(
+      proposition p, size_t k,
+      std::optional<sp_witness_t> sw = std::nullopt
+    );
 
     // Make the stepped version of a term, t_G^k
     term stepped(term t, size_t k);
@@ -137,7 +161,8 @@ namespace black_internal::encoder {
 
     // Put a formula in Stepped Normal Form
     formula to_ground_snf(
-      formula f, size_t k, std::vector<var_decl> env
+      formula f, size_t k, std::optional<sp_witness_t> witness, 
+      std::vector<var_decl> env
     );
 
     // Generates the PRUNE encoding
@@ -182,6 +207,9 @@ namespace black_internal::encoder {
     // state variables for lookaheads
     std::vector<lookahead_t> _lookaheads;
 
+    // standpoint names mentioned in the formula
+    std::vector<sp_witness_t> _sp_witnesses;
+
     // cache to memoize to_nnf() calls
     tsl::hopscotch_map<formula, formula> _nnf_cache;
 
@@ -191,12 +219,23 @@ namespace black_internal::encoder {
     formula ground(req_t, size_t);
     formula forall(std::vector<var_decl> env, formula f);
 
-    void _collect_requests(formula f, std::vector<var_decl> env = {});
-    void _collect_lookaheads(term t);
-    req_t mk_req(tomorrow, std::vector<var_decl>);
-    req_t mk_req(w_tomorrow, std::vector<var_decl>);
-    req_t mk_req(yesterday, std::vector<var_decl>);
-    req_t mk_req(w_yesterday, std::vector<var_decl>);
+    void _collect_requests(
+      formula f, std::optional<sp_witness_t> sw = std::nullopt,
+      std::vector<var_decl> env = {}
+    );
+    void _collect_term_features(term t);
+    req_t mk_req(
+      tomorrow, std::optional<sp_witness_t>, std::vector<var_decl>
+    );
+    req_t mk_req(
+      w_tomorrow, std::optional<sp_witness_t>, std::vector<var_decl>
+    );
+    req_t mk_req(
+      yesterday, std::optional<sp_witness_t>, std::vector<var_decl>
+    );
+    req_t mk_req(
+      w_yesterday, std::optional<sp_witness_t>, std::vector<var_decl>
+    );
     
     struct formula_strength_t {
       std::optional<req_t::strength_t> future;
@@ -227,6 +266,21 @@ namespace std {
       for(auto d : r.signature)
         h = hash_combine(h, d.hash());
       
+      return h;
+    }
+  };
+  
+  template<>
+  struct hash<black_internal::encoder::sp_witness_t> {
+    size_t operator()(black_internal::encoder::sp_witness_t sp) const {
+      using black_internal::encoder::sp_witness_t;
+      using namespace black_internal;
+      
+      size_t h = std::hash<logic::term>{}(sp.standpoint);
+      h = hash_combine(
+        h, std::hash<std::optional<logic::formula>>{}(sp.argument)
+      );
+
       return h;
     }
   };

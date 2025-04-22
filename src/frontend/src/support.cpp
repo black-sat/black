@@ -122,6 +122,9 @@ namespace black::frontend
 
         return (uint8_t)feature_t::first_order;
       },
+      [](modality, term, formula argument) -> uint8_t {
+        return (uint8_t)feature_t::standpoints | formula_features(argument);
+      },
       [](comparison, term left, term right) -> uint8_t {
         if(has_next(left) || has_next(right))
           return (uint8_t)feature_t::nextvar | (uint8_t)feature_t::first_order;

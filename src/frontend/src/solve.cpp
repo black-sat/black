@@ -89,6 +89,8 @@ namespace black::frontend {
         "{}: debug: parsed formula: {}", cli::command_name, to_string(*f)
       );
 
+    uint8_t features = formula_features(*f);
+
     black::scope xi{sigma};
 
     xi.set_default_sort(sigma.named_sort("default"));
@@ -97,6 +99,10 @@ namespace black::frontend {
       xi.set_default_sort(sigma.integer_sort());
     else if(cli::default_sort == "Real")
       xi.set_default_sort(sigma.real_sort());
+    else if(
+      cli::default_sort == "Standpoint" || features & feature_t::standpoints
+    )
+      xi.set_default_sort(sigma.standpoint_sort());
     
     [[maybe_unused]]
     bool ok = xi.type_check(*f, formula_syntax_error_handler(path));
@@ -104,8 +110,6 @@ namespace black::frontend {
 
     ok = black::solver::check_syntax(*f, formula_syntax_error_handler(path));
     black_assert(ok);    
-
-    uint8_t features = formula_features(*f);
 
     std::string backend = BLACK_DEFAULT_BACKEND;
 

@@ -289,6 +289,19 @@ namespace black_internal::logic
           to_string(left), to_string(c.node_type()), to_string(right)
         );
       },
+      [](modality m, term standpoint, formula argument) {
+        char open = m.node_type() == modality::type::box ? '[' : '<';
+        char close = m.node_type() == modality::type::box ? ']' : '>';
+
+        std::string spname = standpoint.match(
+          [](star) { return "*"; },
+          [](variable, auto name) { return to_string(name); }
+        );
+
+        return fmt::format(
+          "{}{}{}{}", open, spname, close, to_string(argument)
+        );
+      },
       [](quantifier q) {
         std::string qs = q.node_type() == quantifier::type::exists ?
           "exists " : "forall ";
