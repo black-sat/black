@@ -32,6 +32,7 @@
 #include <vector>
 
 #include <tsl/hopscotch_map.h>
+#include <tsl/hopscotch_set.h>
 
 namespace black_internal::encoder {
   
@@ -207,12 +208,16 @@ namespace black_internal::encoder {
     // state variables for lookaheads
     std::vector<lookahead_t> _lookaheads;
 
-    // standpoint names mentioned in the formula
-    std::vector<sp_witness_t> _sp_witnesses;
-
     // cache to memoize to_nnf() calls
     tsl::hopscotch_map<formula, formula> _nnf_cache;
 
+    // all standpoint diamonds appearing in the formula
+    tsl::hopscotch_set<formula> _diamonds;
+
+    // the transitive closure of top-level sharpening formulas
+    tsl::hopscotch_map<term, tsl::hopscotch_set<term>> _sharpenings;
+
+    tsl::hopscotch_set<term> &enc(term st);
     proposition not_last_prop(size_t);
     proposition not_first_prop(size_t);
     variable ground(lookahead_t lh, size_t k);
@@ -223,7 +228,9 @@ namespace black_internal::encoder {
       formula f, std::optional<sp_witness_t> sw = std::nullopt,
       std::vector<var_decl> env = {}
     );
-    void _collect_term_features(term t);
+    void _collect_lookaheads(term t);
+    void _collect_sharpening(term lhs, term rhs);
+
     req_t mk_req(
       tomorrow, std::optional<sp_witness_t>, std::vector<var_decl>
     );

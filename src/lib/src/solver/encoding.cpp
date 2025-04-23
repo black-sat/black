@@ -268,6 +268,15 @@ namespace black_internal::encoder
       [&](diamond, auto sp, auto argument) {
         return to_ground_snf(argument, k, sp_witness_t{ sp, argument }, env);
       },
+      [&](box, auto sp, auto arg) {
+        return big_and(*f.sigma(), enc(sp), [&](auto st) {
+          return to_ground_snf(arg, k, sp_witness_t{st, {}}, env) && 
+                 big_and(*f.sigma(), _diamonds, [&](formula d) {
+                  return 
+                    to_ground_snf(arg, k, sp_witness_t{st, d}, env);
+                });
+        });
+      },
       [&](conjunction c) {
         return big_and(*f.sigma(), operands(c), [&](auto op) {
           return to_ground_snf(op, k, sw, env);
@@ -726,20 +735,21 @@ namespace black_internal::encoder
       [&](once o)          { req = mk_req(Y(o), sw, env);  },
       [&](triggered t)     { req = mk_req(Z(t), sw, env);  },
       [&](historically h)  { req = mk_req(Z(h), sw, env);  },
-      [&](diamond, auto sp, auto arg) {
-        _sp_witnesses.push_back(sp_witness_t{ sp, arg });
+      [&](diamond, auto, auto argument) {
+        _diamonds.insert(argument);
       },
       [&](atom, auto terms) {
         for(auto t : terms) 
-          _collect_term_features(t);
+          _collect_lookaheads(t);
       },
       [&](equality, auto terms) {
         for(auto t : terms) 
-          _collect_term_features(t);
+          _collect_lookaheads(t);
       },
       [&](comparison, auto left, auto right) {
-        _collect_term_features(left);
-        _collect_term_features(right);
+        _collect_lookaheads(left);
+        _collect_lookaheads(right);
+        _collect_sharpening(left, right);
       },
       [](otherwise) { }
     );
@@ -774,15 +784,31 @@ namespace black_internal::encoder
     );
   }
 
-  void encoder::_collect_term_features(term t) {
+  tsl::hopscotch_set<term> &encoder::enc(term st) {
+    if(!_sharpenings.contains(st))
+      _sharpenings[st] = { _sigma->star(), st };
+       
+    return _sharpenings[st];
+  }
+
+  void encoder::_collect_sharpening(term lhs, term rhs) {
+    if(_xi.type_check(lhs, [](auto){}) != _sigma->standpoint_sort())
+      return;
+    if(_xi.type_check(rhs, [](auto){}) != _sigma->standpoint_sort())
+      return;
+
+    if(enc(lhs).contains(rhs)) 
+      return;
+    
+    enc(lhs).insert(rhs);
+    for(auto st : _sharpenings[rhs])
+      _collect_sharpening(lhs, st);
+  }
+
+  void encoder::_collect_lookaheads(term t) {
     
     std::optional<lookahead_t> lh;
-    std::optional<sp_witness_t> spw;
     t.match(
-      [&](variable x) {
-        if(_xi.sort(x) == _sigma->standpoint_sort())
-          spw = sp_witness_t{ x, std::nullopt };
-      },
       [&](next, term arg) { 
         lh = lookahead_t{*arg.to<variable>(), req_t::future, req_t::strong}; 
       },
@@ -801,13 +827,10 @@ namespace black_internal::encoder
     if(lh)
       _lookaheads.push_back(*lh);
 
-    if(spw)
-      _sp_witnesses.push_back(*spw);
-
     for_each_child(t, [&](auto child) {
       child.match(
         [&](term c) {
-          _collect_term_features(c);
+          _collect_lookaheads(c);
         },
         [](otherwise) { }
       );
