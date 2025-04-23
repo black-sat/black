@@ -219,9 +219,7 @@ namespace black_internal::encoder
   // Turns the current formula into Stepped Normal Form
   // Note: this has to be run *after* the transformation to NNF (to_nnf() below)
   formula encoder::to_ground_snf(
-    formula f, size_t k, 
-    std::optional<sp_witness_t> sw, 
-    std::vector<var_decl> env
+    formula f, size_t k, sp_witness_t sw, std::vector<var_decl> env
   ) {
     return f.match( // LCOV_EXCL_LINE
       [&](boolean b)      { return b; },
@@ -232,6 +230,8 @@ namespace black_internal::encoder
         return wrapped(e, k);
       },
       [&](comparison c) -> formula {
+        if(_xi.type_check(c.left(), [](auto){}) == _sigma->standpoint_sort())
+          return _sigma->top();
         return wrapped(c, k);
       },
       [&](quantifier q) {
@@ -489,11 +489,14 @@ namespace black_internal::encoder
     return comparison(c.node_type(), stepleft, stepright);
   }
 
-
   proposition encoder::stepped(
-    proposition p, size_t k, std::optional<sp_witness_t> sw
+    proposition p, size_t k, sp_witness_t sw
   ) {
     return p.sigma()->proposition(std::tuple{formula{p}, k, sw});
+  }
+
+  proposition encoder::stepped(proposition p, size_t k) {
+    return stepped(p, k, sp_witness_t{p.sigma()->star(), {}});
   }
 
   proposition encoder::not_last_prop(size_t k) {
@@ -679,27 +682,27 @@ namespace black_internal::encoder
   }
 
   req_t encoder::mk_req(
-    tomorrow f, std::optional<sp_witness_t> sw, std::vector<var_decl> env
+    tomorrow f, sp_witness_t sw, std::vector<var_decl> env
   ) {
-    return req_t{f.argument(), env, req_t::future, req_t::strong, sw };
+    return req_t{ f.argument(), env, req_t::future, req_t::strong, sw };
   }
 
   req_t encoder::mk_req(
-    w_tomorrow f, std::optional<sp_witness_t> sw, std::vector<var_decl> env
+    w_tomorrow f, sp_witness_t sw, std::vector<var_decl> env
   ) {
-    return req_t{f.argument(), env, req_t::future, req_t::weak, sw };
+    return req_t{ f.argument(), env, req_t::future, req_t::weak, sw };
   }
 
   req_t encoder::mk_req(
-    yesterday f, std::optional<sp_witness_t> sw, std::vector<var_decl> env
+    yesterday f, sp_witness_t sw, std::vector<var_decl> env
   ) {
-    return req_t{f.argument(), env, req_t::past, req_t::strong, sw };
+    return req_t{ f.argument(), env, req_t::past, req_t::strong, sw };
   }
 
   req_t encoder::mk_req(
-    w_yesterday f, std::optional<sp_witness_t> sw, std::vector<var_decl> env
+    w_yesterday f, sp_witness_t sw, std::vector<var_decl> env
   ) {
-    return req_t{f.argument(), env, req_t::past, req_t::weak, sw };
+    return req_t{ f.argument(), env, req_t::past, req_t::weak, sw };
   }
 
   formula to_formula(req_t req) {
@@ -717,7 +720,7 @@ namespace black_internal::encoder
   }
 
   void encoder::_collect_requests(
-    formula f, std::optional<sp_witness_t> sw, std::vector<var_decl> env
+    formula f, sp_witness_t sw, std::vector<var_decl> env
   ) { 
     std::optional<req_t> req;
     f.match(
@@ -746,10 +749,18 @@ namespace black_internal::encoder
         for(auto t : terms) 
           _collect_lookaheads(t);
       },
-      [&](comparison, auto left, auto right) {
+      [&](comparison c, auto left, auto right) {
         _collect_lookaheads(left);
         _collect_lookaheads(right);
-        _collect_sharpening(left, right);
+
+        c.match(
+          [&](less_than_equal) {
+            _collect_sharpening(left, right);
+          },
+          [&](greater_than_equal) {
+            _collect_sharpening(right, left);
+          }
+        );
       },
       [](otherwise) { }
     );

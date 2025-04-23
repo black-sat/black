@@ -70,7 +70,7 @@ namespace black_internal::encoder {
     std::vector<var_decl> signature;
     type_t type;
     strength_t strength;
-    std::optional<sp_witness_t> sp_witness;
+    sp_witness_t sp_witness;
   };
 
   formula to_formula(req_t req);
@@ -82,17 +82,11 @@ namespace black_internal::encoder {
   inline std::string to_string(sp_witness_t sw) {
     if(sw.argument)
       return
-        "{" + to_string(sw.standpoint) + ", " + to_string(*sw.argument) + "}"; 
+        "<" + to_string(sw.standpoint) + ">" + to_string(*sw.argument) + ""; 
     else
-      return "{" + to_string(sw.standpoint) + "}"; 
+      return to_string(sw.standpoint); 
   }
   
-  inline std::string to_string(std::optional<sp_witness_t> optsw) {
-    if(optsw)
-      return to_string(*optsw);
-    else return "{}"; 
-  }
-
   struct lookahead_t {
     bool operator==(lookahead_t const&) const = default;
 
@@ -112,7 +106,7 @@ namespace black_internal::encoder {
         _finite{finite}
     {
       _frm = to_nnf(_frm);
-      _collect_requests(_frm);
+      _collect_requests(_frm, sp_witness_t{_sigma->star(), {}});
     }
 
     encoder(encoder const&) = delete;
@@ -128,9 +122,11 @@ namespace black_internal::encoder {
 
     // Make the stepped ground version of a proposition
     static proposition stepped(
-      proposition p, size_t k,
-      std::optional<sp_witness_t> sw = std::nullopt
+      proposition p, size_t k, sp_witness_t sw
     );
+    
+    // overload with a default star standpoint witness label
+    static proposition stepped(proposition p, size_t k);
 
     // Make the stepped version of a term, t_G^k
     term stepped(term t, size_t k);
@@ -162,7 +158,7 @@ namespace black_internal::encoder {
 
     // Put a formula in Stepped Normal Form
     formula to_ground_snf(
-      formula f, size_t k, std::optional<sp_witness_t> witness, 
+      formula f, size_t k, sp_witness_t witness, 
       std::vector<var_decl> env
     );
 
@@ -225,24 +221,15 @@ namespace black_internal::encoder {
     formula forall(std::vector<var_decl> env, formula f);
 
     void _collect_requests(
-      formula f, std::optional<sp_witness_t> sw = std::nullopt,
-      std::vector<var_decl> env = {}
+      formula f, sp_witness_t sw, std::vector<var_decl> env = {}
     );
     void _collect_lookaheads(term t);
     void _collect_sharpening(term lhs, term rhs);
 
-    req_t mk_req(
-      tomorrow, std::optional<sp_witness_t>, std::vector<var_decl>
-    );
-    req_t mk_req(
-      w_tomorrow, std::optional<sp_witness_t>, std::vector<var_decl>
-    );
-    req_t mk_req(
-      yesterday, std::optional<sp_witness_t>, std::vector<var_decl>
-    );
-    req_t mk_req(
-      w_yesterday, std::optional<sp_witness_t>, std::vector<var_decl>
-    );
+    req_t mk_req(tomorrow, sp_witness_t, std::vector<var_decl>);
+    req_t mk_req(w_tomorrow, sp_witness_t, std::vector<var_decl>);
+    req_t mk_req(yesterday, sp_witness_t, std::vector<var_decl>);
+    req_t mk_req(w_yesterday, sp_witness_t, std::vector<var_decl>);
     
     struct formula_strength_t {
       std::optional<req_t::strength_t> future;

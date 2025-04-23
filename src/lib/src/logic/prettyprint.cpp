@@ -30,6 +30,8 @@
 
 #include <fmt/format.h>
 
+#include <iostream>
+
 namespace black_internal::logic
 {
 
@@ -197,6 +199,9 @@ namespace black_internal::logic
       },
       [&](variable x) {
         return escape(to_string(x.name()));
+      },
+      [&](star) {
+        return "*";
       },
       [&](application a) {
         std::string result = 

@@ -529,6 +529,9 @@ namespace black_internal::logic {
         if(!leftsort || !rightsort)
           return false;
 
+        if(leftsort->is<standpoint_sort>() && rightsort->is<standpoint_sort>())
+          return true;
+
         if(!leftsort->is<arithmetic_sort>() ||
            !rightsort->is<arithmetic_sort>()) 
         {
