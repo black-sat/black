@@ -95,6 +95,44 @@ namespace black_internal::encoder {
     req_t::strength_t strength;
   };
 
+}
+
+namespace std {
+  template<>
+  struct hash<black_internal::encoder::req_t> {
+    size_t operator()(black_internal::encoder::req_t r) const {
+      using black_internal::encoder::req_t;
+      using namespace black_internal;
+      
+      size_t h = std::hash<logic::formula>{}(r.target);
+      h = hash_combine(h, std::hash<req_t::type_t>{}(r.type));
+      h = hash_combine(h, std::hash<req_t::strength_t>{}(r.strength));
+      
+      for(auto d : r.signature)
+        h = hash_combine(h, d.hash());
+      
+      return h;
+    }
+  };
+  
+  template<>
+  struct hash<black_internal::encoder::sp_witness_t> {
+    size_t operator()(black_internal::encoder::sp_witness_t sp) const {
+      using black_internal::encoder::sp_witness_t;
+      using namespace black_internal;
+      
+      size_t h = std::hash<logic::term>{}(sp.standpoint);
+      h = hash_combine(
+        h, std::hash<std::optional<logic::formula>>{}(sp.argument)
+      );
+
+      return h;
+    }
+  };
+}
+
+namespace black_internal::encoder {
+
   //
   // Functions that implement the SMT encoding.
   //
@@ -106,6 +144,7 @@ namespace black_internal::encoder {
         _finite{finite}
     {
       _frm = to_nnf(_frm);
+      _standpoints.insert(_sigma->star());
       _collect_requests(_frm, sp_witness_t{_sigma->star(), {}});
     }
 
@@ -199,7 +238,7 @@ namespace black_internal::encoder {
     bool _finite = false;
 
     // X/Y/Z-requests from the formula's closure
-    std::vector<req_t> _requests;
+    tsl::hopscotch_set<req_t> _requests;
 
     // state variables for lookaheads
     std::vector<lookahead_t> _lookaheads;
@@ -207,13 +246,18 @@ namespace black_internal::encoder {
     // cache to memoize to_nnf() calls
     tsl::hopscotch_map<formula, formula> _nnf_cache;
 
+    // all standpoints named in the formula
+    tsl::hopscotch_set<term> _standpoints;
+
     // all standpoint diamonds appearing in the formula
     tsl::hopscotch_set<formula> _diamonds;
 
     // the transitive closure of top-level sharpening formulas
-    tsl::hopscotch_map<term, tsl::hopscotch_set<term>> _sharpenings;
+    tsl::hopscotch_map<term, tsl::hopscotch_set<term>> _sharp_downwards;
+    tsl::hopscotch_map<term, tsl::hopscotch_set<term>> _sharp_upwards;
 
-    tsl::hopscotch_set<term> &enc(term st);
+    tsl::hopscotch_set<term> &upwards(term st);
+    tsl::hopscotch_set<term> &downwards(term st);
     proposition not_last_prop(size_t);
     proposition not_first_prop(size_t);
     variable ground(lookahead_t lh, size_t k);
@@ -244,40 +288,6 @@ namespace black_internal::encoder {
     static std::optional<formula> _get_ev(formula f);
   };
 
-}
-
-namespace std {
-  template<>
-  struct hash<black_internal::encoder::req_t> {
-    size_t operator()(black_internal::encoder::req_t r) const {
-      using black_internal::encoder::req_t;
-      using namespace black_internal;
-      
-      size_t h = std::hash<logic::formula>{}(r.target);
-      h = hash_combine(h, std::hash<req_t::type_t>{}(r.type));
-      h = hash_combine(h, std::hash<req_t::strength_t>{}(r.strength));
-      
-      for(auto d : r.signature)
-        h = hash_combine(h, d.hash());
-      
-      return h;
-    }
-  };
-  
-  template<>
-  struct hash<black_internal::encoder::sp_witness_t> {
-    size_t operator()(black_internal::encoder::sp_witness_t sp) const {
-      using black_internal::encoder::sp_witness_t;
-      using namespace black_internal;
-      
-      size_t h = std::hash<logic::term>{}(sp.standpoint);
-      h = hash_combine(
-        h, std::hash<std::optional<logic::formula>>{}(sp.argument)
-      );
-
-      return h;
-    }
-  };
 }
 
 #endif

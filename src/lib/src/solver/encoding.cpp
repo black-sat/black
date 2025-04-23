@@ -269,12 +269,13 @@ namespace black_internal::encoder
         return to_ground_snf(argument, k, sp_witness_t{ sp, argument }, env);
       },
       [&](box, auto sp, auto arg) {
-        return big_and(*f.sigma(), enc(sp), [&](auto st) {
-          return to_ground_snf(arg, k, sp_witness_t{st, {}}, env) && 
-                 big_and(*f.sigma(), _diamonds, [&](formula d) {
-                  return 
-                    to_ground_snf(arg, k, sp_witness_t{st, d}, env);
-                });
+        return big_and(*f.sigma(), downwards(sp), [&](auto st) {
+          return to_ground_snf(arg, k, sp_witness_t{st, {}}, env);
+        }) && big_and(*f.sigma(), downwards(sp), [&](auto st) {
+          return big_and(*f.sigma(), _diamonds, [&](formula d) {
+            return 
+              to_ground_snf(arg, k, sp_witness_t{st, d}, env);
+          });
         });
       },
       [&](conjunction c) {
@@ -738,8 +739,12 @@ namespace black_internal::encoder
       [&](once o)          { req = mk_req(Y(o), sw, env);  },
       [&](triggered t)     { req = mk_req(Z(t), sw, env);  },
       [&](historically h)  { req = mk_req(Z(h), sw, env);  },
-      [&](diamond, auto, auto argument) {
+      [&](diamond, auto sp, auto argument) {
+        _standpoints.insert(sp);
         _diamonds.insert(argument);
+      },
+      [&](box, auto sp, auto) {
+        _standpoints.insert(sp);
       },
       [&](atom, auto terms) {
         for(auto t : terms) 
@@ -766,7 +771,7 @@ namespace black_internal::encoder
     );
 
     if(req)
-      _requests.push_back(*req);
+      _requests.insert(*req);
 
     f.match(
       [&](quantifier, auto vars, auto matrix) { 
@@ -791,15 +796,28 @@ namespace black_internal::encoder
       [&](diamond, auto sp, auto arg) {
         _collect_requests(arg, sp_witness_t{ sp, arg }, env);
       },
+      [&](box, auto sp, auto arg) {
+        _collect_requests(arg, sp_witness_t{ sp, {} }, env);
+      },
       [](otherwise) { }
     );
   }
 
-  tsl::hopscotch_set<term> &encoder::enc(term st) {
-    if(!_sharpenings.contains(st))
-      _sharpenings[st] = { _sigma->star(), st };
+  tsl::hopscotch_set<term> &encoder::upwards(term st) {
+    if(!_sharp_upwards.contains(st))
+      _sharp_upwards[st] = { _sigma->star(), st };
        
-    return _sharpenings[st];
+    return _sharp_upwards[st];
+  }
+  
+  tsl::hopscotch_set<term> &encoder::downwards(term st) {
+    if(st.is<star>())
+      return _standpoints;
+
+    if(!_sharp_downwards.contains(st))
+      _sharp_downwards[st] = { st };
+       
+    return _sharp_downwards[st];
   }
 
   void encoder::_collect_sharpening(term lhs, term rhs) {
@@ -808,12 +826,24 @@ namespace black_internal::encoder
     if(_xi.type_check(rhs, [](auto){}) != _sigma->standpoint_sort())
       return;
 
-    if(enc(lhs).contains(rhs)) 
+    _standpoints.insert(lhs);
+    _standpoints.insert(rhs);
+
+    // close upwards
+    if(upwards(lhs).contains(rhs)) 
       return;
     
-    enc(lhs).insert(rhs);
-    for(auto st : _sharpenings[rhs])
+    upwards(lhs).insert(rhs);
+    for(auto st : upwards(rhs))
       _collect_sharpening(lhs, st);
+    
+    // close downwards
+    if(downwards(rhs).contains(lhs)) 
+      return;
+    
+    downwards(rhs).insert(lhs);
+    for(auto st : downwards(lhs))
+      _collect_sharpening(st, rhs);
   }
 
   void encoder::_collect_lookaheads(term t) {
