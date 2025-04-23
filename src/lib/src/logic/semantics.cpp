@@ -319,7 +319,7 @@ namespace black_internal::logic {
     bool type_check_rel_func(hierarchy auto h, auto terms);
 
     std::optional<sort> type_check(term t);
-    bool type_check(formula f);
+    bool type_check(formula f, size_t depth);
 
     scope &global;
     scope xi;
@@ -337,7 +337,7 @@ namespace black_internal::logic {
   scope::type_check(formula f, std::function<void(std::string)> err) {
     type_checker checker{*this, err};
 
-    return checker.type_check(f);
+    return checker.type_check(f, 0);
   }
 
   bool type_checker::type_check_rel_func(hierarchy auto h, auto terms) {
@@ -495,7 +495,7 @@ namespace black_internal::logic {
     );
   }
 
-  bool type_checker::type_check(formula f) {
+  bool type_checker::type_check(formula f, size_t depth) {
     return f.match(
       [](boolean) { return true; },
       [](proposition) { return true; },
@@ -529,8 +529,16 @@ namespace black_internal::logic {
         if(!leftsort || !rightsort)
           return false;
 
-        if(leftsort->is<standpoint_sort>() && rightsort->is<standpoint_sort>())
+        if(leftsort->is<standpoint_sort>() && rightsort->is<standpoint_sort>()){
+          if(depth > 0) {
+            err(
+              "Standpoint sharpening comparisons can only appear in a "
+              "top-level conjunction"
+            );
+            return false;
+          }
           return true;
+        }
 
         if(!leftsort->is<arithmetic_sort>() ||
            !rightsort->is<arithmetic_sort>()) 
@@ -561,7 +569,7 @@ namespace black_internal::logic {
           return false;
         }
 
-        return type_check(argument);
+        return type_check(argument, depth + 1);
       },
       [&](quantifier q) {
         nest_scope_t nest{xi};
@@ -569,13 +577,17 @@ namespace black_internal::logic {
         for(auto d : q.variables())
           xi.declare(d, scope::rigid);
         
-        return type_check(q.matrix());
+        return type_check(q.matrix(), depth + 1);
       },
       [&](unary, auto arg) {
-        return type_check(arg);
+        return type_check(arg, depth + 1);
+      },
+      [&](conjunction, auto left, auto right) {
+        size_t d = depth == 0 ? 0 : depth + 1;
+        return type_check(left, d) && type_check(right, d);
       },
       [&](binary, auto left, auto right) {
-        return type_check(left) && type_check(right);
+        return type_check(left, depth + 1) && type_check(right, depth + 1);
       }
     );
   }
