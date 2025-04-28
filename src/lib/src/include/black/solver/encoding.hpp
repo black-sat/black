@@ -64,6 +64,12 @@ namespace black_internal::encoder {
       return s == req_t::weak ? req_t::strong : req_t::weak;
     }
 
+    req_t with_witness(sp_witness_t ws) const {
+      req_t req = *this;
+      req.sp_witness = ws;
+      return req;
+    }
+
     bool operator==(req_t const&) const = default;
 
     formula target;
@@ -145,6 +151,9 @@ namespace black_internal::encoder {
     {
       _frm = to_nnf(_frm);
       _standpoints.insert(_sigma->star());
+      
+      sp_witness_t starws = { _sigma->star(), std::nullopt };
+      _requests[starws] = {};
       _collect_requests(_frm, sp_witness_t{_sigma->star(), {}});
     }
 
@@ -157,7 +166,9 @@ namespace black_internal::encoder {
     formula get_formula() const { return _frm; }
 
     // Return the loop var for the loop from l to k
-    static proposition loop_prop(alphabet *sigma, size_t l, size_t k);
+    static proposition loop_prop(
+      alphabet *sigma, size_t l, size_t k, sp_witness_t ws, sp_witness_t ws1
+    );
 
     // Make the stepped ground version of a proposition
     static proposition stepped(
@@ -205,7 +216,10 @@ namespace black_internal::encoder {
     formula prune(size_t k);
 
     // Generates the _lPRUNE_j^k encoding
-    formula l_j_k_prune(size_t l, size_t j, size_t k);
+    formula l_j_k_prune(
+      size_t l, size_t j, size_t k, 
+      sp_witness_t ws, sp_witness_t ws1, sp_witness_t ws2
+    );
 
     // Generates the encoding for EMPTY_k
     formula k_empty(size_t k);
@@ -214,10 +228,15 @@ namespace black_internal::encoder {
     formula k_loop(size_t k);
 
     // Generates the encoding for _lP_k
-    formula l_to_k_period(size_t l, size_t k);
+    formula l_to_k_period(
+      size_t l, size_t k, sp_witness_t ws, sp_witness_t ws1
+    );
 
     // Generates the encoding for _lL_k
-    formula l_to_k_loop(size_t l, size_t k, bool close_yesterdays);
+    formula l_to_k_loop(
+      size_t l, size_t k, sp_witness_t ws, sp_witness_t ws1, 
+      bool close_yesterdays
+    );
 
     // Generates the k-unraveling for the given k
     formula k_unraveling(size_t k);
@@ -238,7 +257,7 @@ namespace black_internal::encoder {
     bool _finite = false;
 
     // X/Y/Z-requests from the formula's closure
-    tsl::hopscotch_set<req_t> _requests;
+    tsl::hopscotch_map<sp_witness_t, tsl::hopscotch_set<req_t>> _requests;
 
     // state variables for lookaheads
     std::vector<lookahead_t> _lookaheads;
@@ -258,6 +277,8 @@ namespace black_internal::encoder {
 
     tsl::hopscotch_set<term> &upwards(term st);
     tsl::hopscotch_set<term> &downwards(term st);
+    std::vector<sp_witness_t> labels();
+    std::vector<sp_witness_t> labels(term sp);
     proposition not_last_prop(size_t);
     proposition not_first_prop(size_t);
     variable ground(lookahead_t lh, size_t k);
