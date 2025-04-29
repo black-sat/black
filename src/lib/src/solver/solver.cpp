@@ -250,8 +250,14 @@ namespace black_internal::solver
       auto empty = enc->k_empty(k);
       auto loop = enc->k_loop(k);
       trace(trace_t::empty, xi, empty);
+      if(sat->is_sat_with(empty)) {
+        model_size = k + 1;
+        model = true;
+        
+        return true;
+      }
       trace(trace_t::loop, xi, loop);
-      if(sat->is_sat_with(empty || loop)) {
+      if(sat->is_sat_with(loop)) {
         model_size = k + 1;
         model = true;
         

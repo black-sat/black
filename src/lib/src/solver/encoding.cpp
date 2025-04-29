@@ -38,8 +38,8 @@ namespace black_internal::encoder
   {
     if(_finite)
       return big_or(*_sigma, range(0, k), [&](size_t l) {
-        return big_and(*_sigma, labels(), [&](auto ws) {
-          return big_or(*_sigma, labels(ws.standpoint), [&](auto ws1) {
+        return big_and(*_sigma, _labels, [&](auto ws) {
+          return big_or(*_sigma, _labels_by_sp[ws.standpoint], [&](auto ws1) {
             return l_to_k_loop(l, k, ws, ws1, false);
           });
         });
@@ -47,9 +47,9 @@ namespace black_internal::encoder
 
     return big_or(*_sigma, range(0, k), [&](size_t l) {
       return big_or(*_sigma, range(l + 1, k), [&](size_t j) {
-        return big_and(*_sigma, labels(), [&](auto ws) {
-          return big_or(*_sigma, labels(ws.standpoint), [&](auto ws1) {
-            return big_or(*_sigma, labels(ws.standpoint), [&](auto ws2) {
+        return big_and(*_sigma, _labels, [&](auto ws) {
+          return big_or(*_sigma, _labels_by_sp[ws.standpoint], [&](auto ws1) {
+            return big_or(*_sigma, _labels_by_sp[ws.standpoint], [&](auto ws2) {
               return l_to_k_loop(l,j,ws1,ws2,false) && 
                      l_to_k_loop(j,k,ws2,ws,false) && 
                      l_j_k_prune(l,j,k,ws,ws1,ws2);
@@ -66,9 +66,7 @@ namespace black_internal::encoder
     size_t l, size_t j, size_t k, 
     sp_witness_t ws, sp_witness_t ws1, sp_witness_t ws2
   ) {
-    black_assert(_requests.find(ws) != _requests.end());
-
-    return big_and(*_sigma, _requests[ws], [&](req_t req) -> formula 
+    return big_and(*_sigma, _requests, [&](req_t req) -> formula 
     {
       std::optional<formula> ev = _get_ev(req.target); 
       if(!ev)
@@ -80,7 +78,7 @@ namespace black_internal::encoder
           return to_ground_snf(*ev, i, ws1, req.signature);
         });
 
-      formula first_conj = ground(req, k) && inner_impl;
+      formula first_conj = ground(req, ws, k) && inner_impl;
       formula second_conj = 
         big_or(*_sigma, range(l + 1, j + 1), [&](size_t i) {
           return to_ground_snf(*ev, i, ws2, req.signature);
@@ -93,15 +91,13 @@ namespace black_internal::encoder
 
   // Generates the encoding for EMPTY_k
   formula encoder::k_empty(size_t k) {
-    return big_and(*_sigma, labels(), [&](auto ws) {
-      black_assert(_requests.find(ws) != _requests.end());
-
-      return big_and(*_sigma, _requests[ws], [&](req_t req) -> formula {
+    return big_and(*_sigma, _labels, [&](auto ws) {
+      return big_and(*_sigma, _requests, [&](req_t req) -> formula {
         if(req.type == req_t::future) {
           if(!_finite || req.strength == req_t::strong)
-            return forall(req.signature, !ground(req, k));
+            return forall(req.signature, !ground(req, ws, k));
           else if(req.strength == req_t::weak)
-            return forall(req.signature, ground(req, k));
+            return forall(req.signature, ground(req, ws, k));
         }
         return _sigma->top();
       }) && !not_last_prop(k);
@@ -131,8 +127,8 @@ namespace black_internal::encoder
       return _sigma->bottom();
 
     formula axioms = big_and(*_sigma, range(0,k), [&](size_t l) {
-      return big_and(*_sigma, labels(), [&](auto ws) {
-        return big_or(*_sigma, labels(ws.standpoint), [&](auto ws1) {
+      return big_and(*_sigma, _labels, [&](auto ws) {
+        return big_and(*_sigma, _labels_by_sp[ws.standpoint], [&](auto ws1) {
           proposition lp = loop_prop(_sigma, l, k, ws, ws1);
           return iff(
             lp, 
@@ -144,8 +140,8 @@ namespace black_internal::encoder
     
     return axioms && 
       big_or(*_sigma, range(0, k), [&](size_t l) {
-        return big_and(*_sigma, labels(), [&](auto ws) {
-          return big_or(*_sigma, labels(ws.standpoint), [&](auto ws1) {
+        return big_and(*_sigma, _labels, [&](auto ws) {
+          return big_or(*_sigma, _labels_by_sp[ws.standpoint], [&](auto ws1) {
             return loop_prop(_sigma, l, k, ws, ws1);
           });
         });
@@ -156,15 +152,13 @@ namespace black_internal::encoder
   formula encoder::l_to_k_period(
     size_t l, size_t k, sp_witness_t ws, sp_witness_t ws1
   ) {
-    black_assert(_requests.find(ws) != _requests.end());
-
-    return big_and(*_sigma, _requests[ws], [&](req_t req) -> formula {
+    return big_and(*_sigma, _requests, [&](req_t req) -> formula {
       std::optional<formula> ev = _get_ev(req.target);
       if(!ev)
         return _sigma->top();
       
       // Creating the encoding
-      formula proposition_phi_k = ground(req, k);
+      formula proposition_phi_k = ground(req, ws, k);
       formula body_impl = 
         big_or(*_sigma, range(l + 1, k + 1), [&](size_t i) {
           return to_ground_snf(*ev, i, ws1, req.signature);
@@ -180,18 +174,16 @@ namespace black_internal::encoder
     size_t l, size_t k, sp_witness_t ws, sp_witness_t ws1, 
     bool close_yesterdays
   ) {
-    black_assert(_requests.find(ws) != _requests.end());
-
-    return big_and(*_sigma, _requests[ws], [&](req_t req) {
+    return big_and(*_sigma, _requests, [&](req_t req) {
       
       formula f = forall(req.signature,
-        iff( ground(req.with_witness(ws1), l), ground(req, k) )
+        iff( ground(req, ws1, l), ground(req, ws, k) )
       );
       if(req.type == req_t::past && close_yesterdays)
         f = f && forall(req.signature,
           iff( 
-            ground(req, l+1), 
-            to_ground_snf(req.target, k, req.sp_witness, req.signature)
+            ground(req, ws, l+1), 
+            to_ground_snf(req.target, k, ws, req.signature)
           )
         );
 
@@ -203,16 +195,14 @@ namespace black_internal::encoder
   // Generates the k-unraveling step for the given k.
   formula encoder::k_unraveling(size_t k) {
     if (k == 0) {
-      auto init = big_and(*_sigma, labels(), [&](auto ws) {
-        black_assert(_requests.find(ws) != _requests.end());
-
-        return big_and(*_sigma, _requests[ws], [&](req_t req) -> formula {
+      auto init = big_and(*_sigma, _labels, [&](auto ws) {
+        return big_and(*_sigma, _requests, [&](req_t req) -> formula {
           if(req.type == req_t::past) {
             switch(req.strength) {
               case req_t::strong:
-                return forall(req.signature, !ground(req, k));
+                return forall(req.signature, !ground(req, ws, k));
               case req_t::weak:
-                return forall(req.signature, ground(req, k));
+                return forall(req.signature, ground(req, ws, k));
             }
           }
           return _sigma->top();
@@ -223,10 +213,8 @@ namespace black_internal::encoder
       return to_ground_snf(_frm, k, starwp, {}) && !not_first_prop(0) && init;
     }
 
-    auto reqs = big_and(*_sigma, labels(), [&](auto ws) {
-      black_assert(_requests.find(ws) != _requests.end());
-
-      return big_and(*_sigma, _requests[ws], [&](req_t req) {
+    auto reqs = big_and(*_sigma, _labels, [&](auto ws) {
+      return big_and(*_sigma, _requests, [&](req_t req) {
         nest_scope_t next{_xi};
 
         for(auto d : req.signature)
@@ -236,15 +224,15 @@ namespace black_internal::encoder
           case req_t::future:
             return forall(req.signature,
               iff(
-                ground(req, k - 1), 
-                to_ground_snf(req.target, k, req.sp_witness, req.signature)
+                ground(req, ws, k - 1), 
+                to_ground_snf(req.target, k, ws, req.signature)
               )
             );
           case req_t::past:
             return forall(req.signature,
               iff(
-                ground(req, k), 
-                to_ground_snf(req.target, k - 1, req.sp_witness, req.signature)
+                ground(req, ws, k), 
+                to_ground_snf(req.target, k - 1, ws, req.signature)
               )
             );
         }
@@ -303,16 +291,16 @@ namespace black_internal::encoder
         return !to_ground_snf(n.argument(), k, sw, env); 
       },
       [&](tomorrow t) -> formula { 
-        return ground(mk_req(t, sw, env), k);
+        return ground(mk_req(t, env), sw, k);
       },
       [&](w_tomorrow t) -> formula { 
-        return ground(mk_req(t, sw, env), k);
+        return ground(mk_req(t, env), sw, k);
       },
       [&](yesterday y) -> formula { 
-        return ground(mk_req(y, sw, env), k);
+        return ground(mk_req(y, env), sw, k);
       },
       [&](w_yesterday y) -> formula { 
-        return ground(mk_req(y, sw, env), k);
+        return ground(mk_req(y, env), sw, k);
       },
       [&](diamond, auto sp, auto argument) {
         return to_ground_snf(argument, k, sp_witness_t{ sp, argument }, env);
@@ -594,11 +582,11 @@ namespace black_internal::encoder
     return g;
   }
 
-  formula encoder::ground(req_t req, size_t k) {
+  formula encoder::ground(req_t req, sp_witness_t ws, size_t k) {
     if(req.signature.empty())
-      return req.target.sigma()->proposition(std::pair{req, k});
+      return req.target.sigma()->proposition(std::tuple{req, ws, k});
     
-    auto rel = req.target.sigma()->relation(std::pair{req, k});
+    auto rel = req.target.sigma()->relation(std::tuple{req, ws, k});
     if(!_xi.signature(rel))
       _global_xi->declare(rel, req.signature, scope::rigid);
     
@@ -731,28 +719,20 @@ namespace black_internal::encoder
     return {future, past};
   }
 
-  req_t encoder::mk_req(
-    tomorrow f, sp_witness_t sw, std::vector<var_decl> env
-  ) {
-    return req_t{ f.argument(), env, req_t::future, req_t::strong, sw };
+  req_t encoder::mk_req(tomorrow f, std::vector<var_decl> env) {
+    return req_t{ f.argument(), env, req_t::future, req_t::strong };
   }
 
-  req_t encoder::mk_req(
-    w_tomorrow f, sp_witness_t sw, std::vector<var_decl> env
-  ) {
-    return req_t{ f.argument(), env, req_t::future, req_t::weak, sw };
+  req_t encoder::mk_req(w_tomorrow f, std::vector<var_decl> env) {
+    return req_t{ f.argument(), env, req_t::future, req_t::weak };
   }
 
-  req_t encoder::mk_req(
-    yesterday f, sp_witness_t sw, std::vector<var_decl> env
-  ) {
-    return req_t{ f.argument(), env, req_t::past, req_t::strong, sw };
+  req_t encoder::mk_req(yesterday f, std::vector<var_decl> env) {
+    return req_t{ f.argument(), env, req_t::past, req_t::strong };
   }
 
-  req_t encoder::mk_req(
-    w_yesterday f, sp_witness_t sw, std::vector<var_decl> env
-  ) {
-    return req_t{ f.argument(), env, req_t::past, req_t::weak, sw };
+  req_t encoder::mk_req(w_yesterday f, std::vector<var_decl> env) {
+    return req_t{ f.argument(), env, req_t::past, req_t::weak };
   }
 
   formula to_formula(req_t req) {
@@ -774,20 +754,20 @@ namespace black_internal::encoder
   ) { 
     std::optional<req_t> req;
     f.match(
-      [&](tomorrow t)      { req = mk_req(t, sw, env);     },
-      [&](w_tomorrow t)    { req = mk_req(t, sw, env);     },
-      [&](yesterday y)     { req = mk_req(y, sw, env);     },
-      [&](w_yesterday y)   { req = mk_req(y, sw, env);     },
-      [&](until u)         { req = mk_req(X(u), sw, env);  },
-      [&](release r)       { req = mk_req(wX(r), sw, env); },
-      [&](w_until r)       { req = mk_req(wX(r), sw, env); },
-      [&](s_release r)     { req = mk_req(X(r), sw, env);  },
-      [&](always a)        { req = mk_req(wX(a), sw, env); },
-      [&](eventually e)    { req = mk_req(X(e), sw, env);  },
-      [&](since s)         { req = mk_req(Y(s), sw, env);  },
-      [&](once o)          { req = mk_req(Y(o), sw, env);  },
-      [&](triggered t)     { req = mk_req(Z(t), sw, env);  },
-      [&](historically h)  { req = mk_req(Z(h), sw, env);  },
+      [&](tomorrow t)      { req = mk_req(t, env);     },
+      [&](w_tomorrow t)    { req = mk_req(t, env);     },
+      [&](yesterday y)     { req = mk_req(y, env);     },
+      [&](w_yesterday y)   { req = mk_req(y, env);     },
+      [&](until u)         { req = mk_req(X(u), env);  },
+      [&](release r)       { req = mk_req(wX(r), env); },
+      [&](w_until r)       { req = mk_req(wX(r), env); },
+      [&](s_release r)     { req = mk_req(X(r), env);  },
+      [&](always a)        { req = mk_req(wX(a), env); },
+      [&](eventually e)    { req = mk_req(X(e), env);  },
+      [&](since s)         { req = mk_req(Y(s), env);  },
+      [&](once o)          { req = mk_req(Y(o), env);  },
+      [&](triggered t)     { req = mk_req(Z(t), env);  },
+      [&](historically h)  { req = mk_req(Z(h), env);  },
       [&](diamond, auto sp, auto argument) {
         _standpoints.insert(sp);
         _diamonds.insert(argument);
@@ -820,7 +800,7 @@ namespace black_internal::encoder
     );
 
     if(req)
-      _requests[req->sp_witness].insert(*req);
+      _requests.insert(*req);
 
     f.match(
       [&](quantifier, auto vars, auto matrix) { 
@@ -852,6 +832,17 @@ namespace black_internal::encoder
     );
   }
 
+  void encoder::_collect_labels() {
+    for(term sp : _standpoints) {
+      _labels.insert(sp_witness_t{ sp, std::nullopt });
+      _labels_by_sp[sp].insert(sp_witness_t{ sp, std::nullopt });
+      for(formula d : _diamonds) {
+        _labels.insert(sp_witness_t{ sp, d });
+        _labels_by_sp[sp].insert(sp_witness_t{ sp, d });
+      }
+    }
+  }
+
   tsl::hopscotch_set<term> &encoder::upwards(term st) {
     if(!_sharp_upwards.contains(st))
       _sharp_upwards[st] = { _sigma->star(), st };
@@ -867,26 +858,6 @@ namespace black_internal::encoder
       _sharp_downwards[st] = { st };
        
     return _sharp_downwards[st];
-  }
-
-  std::vector<sp_witness_t> encoder::labels() {
-    std::vector<sp_witness_t> vec = { 
-      sp_witness_t{ _sigma->star(), std::nullopt}
-    };
-
-    for(auto [ws,_] : _requests)
-      vec.push_back(ws);
-
-    return vec;
-  }
-
-  std::vector<sp_witness_t> encoder::labels(term sp) {
-    std::vector<sp_witness_t> vec = { sp_witness_t { sp, std::nullopt } };
-    for(auto d : _diamonds) {
-      vec.push_back(sp_witness_t{ sp, d });
-    }
-
-    return vec;
   }
 
   void encoder::_collect_sharpening(term lhs, term rhs) {

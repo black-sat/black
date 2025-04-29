@@ -64,26 +64,15 @@ namespace black_internal::encoder {
       return s == req_t::weak ? req_t::strong : req_t::weak;
     }
 
-    req_t with_witness(sp_witness_t ws) const {
-      req_t req = *this;
-      req.sp_witness = ws;
-      return req;
-    }
-
     bool operator==(req_t const&) const = default;
 
     formula target;
     std::vector<var_decl> signature;
     type_t type;
     strength_t strength;
-    sp_witness_t sp_witness;
   };
 
   formula to_formula(req_t req);
-
-  inline std::string to_string(req_t req) {
-    return "{" + to_string(to_formula(req)) + "}"; 
-  }
   
   inline std::string to_string(sp_witness_t sw) {
     if(sw.argument)
@@ -91,6 +80,10 @@ namespace black_internal::encoder {
         "<" + to_string(sw.standpoint) + ">" + to_string(*sw.argument) + ""; 
     else
       return to_string(sw.standpoint); 
+  }
+
+  inline std::string to_string(req_t req) {
+    return to_string(to_formula(req));
   }
   
   struct lookahead_t {
@@ -151,10 +144,8 @@ namespace black_internal::encoder {
     {
       _frm = to_nnf(_frm);
       _standpoints.insert(_sigma->star());
-      
-      sp_witness_t starws = { _sigma->star(), std::nullopt };
-      _requests[starws] = {};
       _collect_requests(_frm, sp_witness_t{_sigma->star(), {}});
+      _collect_labels();
     }
 
     encoder(encoder const&) = delete;
@@ -257,7 +248,7 @@ namespace black_internal::encoder {
     bool _finite = false;
 
     // X/Y/Z-requests from the formula's closure
-    tsl::hopscotch_map<sp_witness_t, tsl::hopscotch_set<req_t>> _requests;
+    tsl::hopscotch_set<req_t> _requests;
 
     // state variables for lookaheads
     std::vector<lookahead_t> _lookaheads;
@@ -271,30 +262,35 @@ namespace black_internal::encoder {
     // all standpoint diamonds appearing in the formula
     tsl::hopscotch_set<formula> _diamonds;
 
+    // all witness labels
+    tsl::hopscotch_set<sp_witness_t> _labels;
+
+    // all witness labels for a given standpoint
+    tsl::hopscotch_map<term, tsl::hopscotch_set<sp_witness_t>> _labels_by_sp;
+
     // the transitive closure of top-level sharpening formulas
     tsl::hopscotch_map<term, tsl::hopscotch_set<term>> _sharp_downwards;
     tsl::hopscotch_map<term, tsl::hopscotch_set<term>> _sharp_upwards;
 
     tsl::hopscotch_set<term> &upwards(term st);
     tsl::hopscotch_set<term> &downwards(term st);
-    std::vector<sp_witness_t> labels();
-    std::vector<sp_witness_t> labels(term sp);
     proposition not_last_prop(size_t);
     proposition not_first_prop(size_t);
     variable ground(lookahead_t lh, size_t k);
-    formula ground(req_t, size_t);
+    formula ground(req_t, sp_witness_t, size_t);
     formula forall(std::vector<var_decl> env, formula f);
 
     void _collect_requests(
       formula f, sp_witness_t sw, std::vector<var_decl> env = {}
     );
+    void _collect_labels();
     void _collect_lookaheads(term t);
     void _collect_sharpening(term lhs, term rhs);
 
-    req_t mk_req(tomorrow, sp_witness_t, std::vector<var_decl>);
-    req_t mk_req(w_tomorrow, sp_witness_t, std::vector<var_decl>);
-    req_t mk_req(yesterday, sp_witness_t, std::vector<var_decl>);
-    req_t mk_req(w_yesterday, sp_witness_t, std::vector<var_decl>);
+    req_t mk_req(tomorrow, std::vector<var_decl>);
+    req_t mk_req(w_tomorrow, std::vector<var_decl>);
+    req_t mk_req(yesterday, std::vector<var_decl>);
+    req_t mk_req(w_yesterday, std::vector<var_decl>);
     
     struct formula_strength_t {
       std::optional<req_t::strength_t> future;
