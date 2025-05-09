@@ -149,9 +149,7 @@ namespace black_internal::solver
     
     size_t k = size() - 1;
     for(size_t l = 0; l < k; ++l) {
-      sp_witness_t starws = { 
-        _solver._data->sigma->star(), std::nullopt 
-      };
+      sp_witness_t starws = { _solver._data->sigma->star(), std::nullopt, l };
       proposition loop_prop = 
         encoder::loop_prop(_solver._data->sigma, l, k, starws, starws);
       tribool value = _solver._data->sat->value(loop_prop);
@@ -237,6 +235,7 @@ namespace black_internal::solver
     for(size_t k = 0; !interrupt_flag && k <= k_max; last_bound = k++)
     {
       trace(k);
+      enc->init_step(k);
       // Generating the k-unraveling.
       // If it is UNSAT, then stop with UNSAT
       auto unrav = enc->k_unraveling(k);

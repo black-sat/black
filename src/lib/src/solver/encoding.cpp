@@ -33,28 +33,38 @@ using namespace std::literals;
 
 namespace black_internal::encoder
 {
+  void encoder::init_step(size_t k) {
+    _collect_labels(k);
+  }
+
   // Generates the PRUNE encoding
   formula encoder::prune(size_t k)
   {
     if(_finite)
       return big_or(*_sigma, range(0, k), [&](size_t l) {
-        return big_and(*_sigma, _labels, [&](auto ws) {
-          return big_or(*_sigma, _labels_by_sp[ws.standpoint], [&](auto ws1) {
-            return l_to_k_loop(l, k, ws, ws1, false);
-          });
+        return big_and(*_sigma, _labels[k], [&](auto ws) {
+          return big_or(*_sigma, _labels_by_sp[k][ws.standpoint], 
+            [&](auto ws1) {
+              return l_to_k_loop(l, k, ws, ws1, false);
+            }
+          );
         });
       });
 
     return big_or(*_sigma, range(0, k), [&](size_t l) {
       return big_or(*_sigma, range(l + 1, k), [&](size_t j) {
-        return big_and(*_sigma, _labels, [&](auto ws) {
-          return big_or(*_sigma, _labels_by_sp[ws.standpoint], [&](auto ws1) {
-            return big_or(*_sigma, _labels_by_sp[ws.standpoint], [&](auto ws2) {
-              return l_to_k_loop(l,j,ws1,ws2,false) && 
-                     l_to_k_loop(j,k,ws2,ws,false) && 
-                     l_j_k_prune(l,j,k,ws,ws1,ws2);
-            });
-          });
+        return big_and(*_sigma, _labels[k], [&](auto ws) {
+          return big_or(*_sigma, _labels_by_sp[k][ws.standpoint], 
+            [&](auto ws1) {
+              return big_or(*_sigma, _labels_by_sp[k][ws.standpoint], 
+                [&](auto ws2) {
+                  return l_to_k_loop(l,j,ws1,ws2,false) && 
+                        l_to_k_loop(j,k,ws2,ws,false) && 
+                        l_j_k_prune(l,j,k,ws,ws1,ws2);
+                }
+              );
+            }
+          );
         });
       });
     });
@@ -91,7 +101,10 @@ namespace black_internal::encoder
 
   // Generates the encoding for EMPTY_k
   formula encoder::k_empty(size_t k) {
-    return big_and(*_sigma, _labels, [&](auto ws) {
+    return big_and(*_sigma, _labels[k], [&](auto ws) -> formula {
+      if(ws.k != k)
+        return _sigma->top();
+
       return big_and(*_sigma, _requests, [&](req_t req) -> formula {
         if(req.type == req_t::future) {
           if(!_finite || req.strength == req_t::strong)
@@ -127,23 +140,27 @@ namespace black_internal::encoder
       return _sigma->bottom();
 
     formula axioms = big_and(*_sigma, range(0,k), [&](size_t l) {
-      return big_and(*_sigma, _labels, [&](auto ws) {
-        return big_and(*_sigma, _labels_by_sp[ws.standpoint], [&](auto ws1) {
-          proposition lp = loop_prop(_sigma, l, k, ws, ws1);
-          return iff(
-            lp, 
-            l_to_k_loop(l, k, ws, ws1, true) && l_to_k_period(l, k, ws, ws1)
-          );
-        });
+      return big_and(*_sigma, _labels[k], [&](auto ws) {
+        return big_and(*_sigma, _labels_by_sp[l][ws.standpoint], 
+          [&](auto ws1) {
+            proposition lp = loop_prop(_sigma, l, k, ws, ws1);
+            return iff(
+              lp, 
+              l_to_k_loop(l, k, ws, ws1, true) && l_to_k_period(l, k, ws, ws1)
+            );
+          }
+        );
       });
     });
     
     return axioms && 
       big_or(*_sigma, range(0, k), [&](size_t l) {
-        return big_and(*_sigma, _labels, [&](auto ws) {
-          return big_or(*_sigma, _labels_by_sp[ws.standpoint], [&](auto ws1) {
-            return loop_prop(_sigma, l, k, ws, ws1);
-          });
+        return big_and(*_sigma, _labels[k], [&](auto ws) {
+          return big_or(*_sigma, _labels_by_sp[l][ws.standpoint], 
+            [&](auto ws1) {
+              return loop_prop(_sigma, l, k, ws, ws1);
+            }
+          );
         });
       });
   }
@@ -195,7 +212,7 @@ namespace black_internal::encoder
   // Generates the k-unraveling step for the given k.
   formula encoder::k_unraveling(size_t k) {
     if (k == 0) {
-      auto init = big_and(*_sigma, _labels, [&](auto ws) {
+      auto init = big_and(*_sigma, _labels[k], [&](auto ws) {
         return big_and(*_sigma, _requests, [&](req_t req) -> formula {
           if(req.type == req_t::past) {
             switch(req.strength) {
@@ -209,11 +226,11 @@ namespace black_internal::encoder
         });
       });
 
-      sp_witness_t starwp = { _sigma->star(), std::nullopt };
-      return to_ground_snf(_frm, k, starwp, {}) && !not_first_prop(0) && init;
+      sp_witness_t starwp = { _sigma->star(), std::nullopt, 0 };
+      return to_ground_snf(_frm, 0, starwp, {}) && !not_first_prop(0) && init;
     }
 
-    auto reqs = big_and(*_sigma, _labels, [&](auto ws) {
+    auto reqs = big_and(*_sigma, _labels[k], [&](auto ws) {
       return big_and(*_sigma, _requests, [&](req_t req) {
         nest_scope_t next{_xi};
 
@@ -303,15 +320,12 @@ namespace black_internal::encoder
         return ground(mk_req(y, env), sw, k);
       },
       [&](diamond, auto sp, auto argument) {
-        return to_ground_snf(argument, k, sp_witness_t{ sp, argument }, env);
+        return to_ground_snf(argument, k, sp_witness_t{ sp, argument, k }, env);
       },
       [&](box, auto sp, auto arg) {
-        return big_and(*f.sigma(), downwards(sp), [&](auto st) {
-          return to_ground_snf(arg, k, sp_witness_t{st, {}}, env);
-        }) && big_and(*f.sigma(), downwards(sp), [&](auto st) {
-          return big_and(*f.sigma(), _diamonds, [&](formula d) {
-            return 
-              to_ground_snf(arg, k, sp_witness_t{st, d}, env);
+        return big_and(*f.sigma(), downwards(sp), [&](auto st) { 
+          return big_and(*f.sigma(), _labels_by_sp[k][st], [&](auto ws) {
+            return to_ground_snf(arg, k, ws, env);
           });
         });
       },
@@ -534,7 +548,7 @@ namespace black_internal::encoder
   }
 
   proposition encoder::stepped(proposition p, size_t k) {
-    return stepped(p, k, sp_witness_t{p.sigma()->star(), {}});
+    return stepped(p, k, sp_witness_t{p.sigma()->star(), {}, k});
   }
 
   proposition encoder::not_last_prop(size_t k) {
@@ -749,9 +763,7 @@ namespace black_internal::encoder
     black_unreachable();
   }
 
-  void encoder::_collect_requests(
-    formula f, sp_witness_t sw, std::vector<var_decl> env
-  ) { 
+  void encoder::_collect_requests(formula f, std::vector<var_decl> env) { 
     std::optional<req_t> req;
     f.match(
       [&](tomorrow t)      { req = mk_req(t, env);     },
@@ -805,40 +817,47 @@ namespace black_internal::encoder
     f.match(
       [&](quantifier, auto vars, auto matrix) { 
         env.insert(env.end(), vars.begin(), vars.end());
-        _collect_requests(matrix, sw, env);
+        _collect_requests(matrix, env);
       },
       [&](unary, auto op) {
-        _collect_requests(op, sw, env);
+        _collect_requests(op, env);
       },
       [&](conjunction c) {
         for(auto op : operands(c))
-          _collect_requests(op, sw, env);
+          _collect_requests(op, env);
       },
       [&](disjunction c) {
         for(auto op : operands(c))
-          _collect_requests(op, sw, env);
+          _collect_requests(op, env);
       },
       [&](binary, auto left, auto right) {
-        _collect_requests(left, sw, env);
-        _collect_requests(right, sw, env);
+        _collect_requests(left, env);
+        _collect_requests(right, env);
       },
-      [&](diamond, auto sp, auto arg) {
-        _collect_requests(arg, sp_witness_t{ sp, arg }, env);
+      [&](diamond, auto, auto arg) {
+        _collect_requests(arg, env);
       },
-      [&](box, auto sp, auto arg) {
-        _collect_requests(arg, sp_witness_t{ sp, {} }, env);
+      [&](box, auto, auto arg) {
+        _collect_requests(arg, env);
       },
       [](otherwise) { }
     );
   }
 
-  void encoder::_collect_labels() {
+  void encoder::_collect_labels(size_t k) {
+    if(k > 0) {
+      _labels[k].insert(std::begin(_labels[k-1]), std::end(_labels[k-1]));
+      _labels_by_sp[k].insert(
+        std::begin(_labels_by_sp[k-1]), std::end(_labels_by_sp[k-1])
+      );
+    }
+
     for(term sp : _standpoints) {
-      _labels.insert(sp_witness_t{ sp, std::nullopt });
-      _labels_by_sp[sp].insert(sp_witness_t{ sp, std::nullopt });
+      _labels[k].insert(sp_witness_t{ sp, std::nullopt, k });
+      _labels_by_sp[k][sp].insert(sp_witness_t{ sp, std::nullopt, k });
       for(formula d : _diamonds) {
-        _labels.insert(sp_witness_t{ sp, d });
-        _labels_by_sp[sp].insert(sp_witness_t{ sp, d });
+        _labels[k].insert(sp_witness_t{ sp, d, k });
+        _labels_by_sp[k][sp].insert(sp_witness_t{ sp, d, k });
       }
     }
   }

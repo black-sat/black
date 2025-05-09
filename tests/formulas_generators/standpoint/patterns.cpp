@@ -38,8 +38,7 @@ enum class pattern {
     C2,
     C3,
     C4,
-    C5,
-    counter
+    C5
 };
 
 formula pattern_D(alphabet &sigma, size_t n);
@@ -49,7 +48,6 @@ formula pattern_C2(alphabet &sigma, size_t n);
 formula pattern_C3(alphabet &sigma, size_t n);
 formula pattern_C4(alphabet &sigma, size_t n);
 formula pattern_C5(alphabet &sigma, size_t n);
-formula counter(alphabet &sigma, size_t n);
 
 int main(int argc, char **argv) {
     
@@ -76,8 +74,6 @@ int main(int argc, char **argv) {
         p = pattern::C4;
     else if(pstr == "C5")
         p = pattern::C5;
-    else if(pstr == "counter")
-        p = pattern::counter;
     else {
         std::cerr << "Invalid pattern name: " << pstr << "\n";
         return 1;
@@ -119,9 +115,6 @@ int main(int argc, char **argv) {
             break;
         case pattern::C5:
             std::cout << to_string(pattern_C5(sigma, n)) << "\n";
-            break;
-        case pattern::counter:
-            std::cout << to_string(counter(sigma, n)) << "\n";
             break;
     }
 
@@ -223,49 +216,4 @@ formula pattern_C5(alphabet &sigma, size_t n) {
     formula pattern = pattern_C5(sigma, n, sharps);
 
     return pattern && sharps;
-}
-
-inline formula counter_sub1(alphabet &sigma, size_t n) {
-    return G(
-        implies(
-            big_and(sigma, range(0,n), [&](size_t i) { 
-                return sigma.proposition(name("p", i));
-            }),
-            X(big_and(sigma, range(0,n), [&](size_t i) { 
-                return !sigma.proposition(name("p", i));
-            }))
-        )
-    );
-}
-
-inline formula counter_sub2(alphabet &sigma, size_t n) {
-    auto p = [&](size_t i) { return sigma.proposition(name("p", i)); };
-    
-    return big_and(sigma, range(0,n), [&](size_t i) {
-        return G(
-            implies(
-                !p(i) &&
-                big_and(sigma, range(0,n), [&](size_t j) {
-                    return p(j);
-                }),
-                big_and(sigma, range(0,n), [&](size_t j) {
-                    return X(!p(j));
-                }) && X(p(i)) && 
-                big_and(sigma, range(0,n), [&](size_t j) {
-                    return iff(p(j), X(p(j)));
-                })
-            )
-        );
-    });
-}
-
-inline formula counter_sub(alphabet &sigma, size_t n) {
-    return counter_sub1(sigma, n) && counter_sub2(sigma, n) && 
-        big_and(sigma, range(0, n), [&](size_t i) {
-            return !sigma.proposition(name("p", i));
-        });
-}
-
-formula counter(alphabet &sigma, size_t n) {
-    return G(diamond(sigma.star(), counter_sub(sigma, n)));
 }

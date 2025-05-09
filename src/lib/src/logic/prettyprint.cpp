@@ -303,8 +303,10 @@ namespace black_internal::logic
           [](variable, auto name) { return to_string(name); }
         );
 
+        bool parens = does_need_parens(m, argument);
+
         return fmt::format(
-          "{}{}{}{}", open, spname, close, to_string(argument)
+          "{}{}{}{}", open, spname, close, parens_if_needed(argument, parens)
         );
       },
       [](quantifier q) {

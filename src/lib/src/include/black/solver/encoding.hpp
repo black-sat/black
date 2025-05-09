@@ -41,6 +41,7 @@ namespace black_internal::encoder {
   struct sp_witness_t {
     term standpoint;
     std::optional<formula> argument;
+    size_t k;
 
     bool operator==(sp_witness_t const&) const = default;
   };
@@ -77,7 +78,8 @@ namespace black_internal::encoder {
   inline std::string to_string(sp_witness_t sw) {
     if(sw.argument)
       return
-        "<" + to_string(sw.standpoint) + ">" + to_string(*sw.argument) + ""; 
+        "[<" + to_string(sw.standpoint) + ">(" + to_string(*sw.argument) + 
+        ")," + std::to_string(sw.k) + "]"; 
     else
       return to_string(sw.standpoint); 
   }
@@ -124,6 +126,7 @@ namespace std {
       h = hash_combine(
         h, std::hash<std::optional<logic::formula>>{}(sp.argument)
       );
+      h = hash_combine(h, std::hash<size_t>{}(sp.k));
 
       return h;
     }
@@ -144,8 +147,7 @@ namespace black_internal::encoder {
     {
       _frm = to_nnf(_frm);
       _standpoints.insert(_sigma->star());
-      _collect_requests(_frm, sp_witness_t{_sigma->star(), {}});
-      _collect_labels();
+      _collect_requests(_frm);
     }
 
     encoder(encoder const&) = delete;
@@ -168,6 +170,9 @@ namespace black_internal::encoder {
     
     // overload with a default star standpoint witness label
     static proposition stepped(proposition p, size_t k);
+
+    // initialize internal structures for a new step in the algorithm
+    void init_step(size_t k);
 
     // Make the stepped version of a term, t_G^k
     term stepped(term t, size_t k);
@@ -263,10 +268,14 @@ namespace black_internal::encoder {
     tsl::hopscotch_set<formula> _diamonds;
 
     // all witness labels
-    tsl::hopscotch_set<sp_witness_t> _labels;
+    tsl::hopscotch_map<size_t, tsl::hopscotch_set<sp_witness_t>> _labels;
 
     // all witness labels for a given standpoint
-    tsl::hopscotch_map<term, tsl::hopscotch_set<sp_witness_t>> _labels_by_sp;
+    tsl::hopscotch_map<size_t, 
+      tsl::hopscotch_map<term,
+        tsl::hopscotch_set<sp_witness_t>
+      >
+    > _labels_by_sp;
 
     // the transitive closure of top-level sharpening formulas
     tsl::hopscotch_map<term, tsl::hopscotch_set<term>> _sharp_downwards;
@@ -280,10 +289,8 @@ namespace black_internal::encoder {
     formula ground(req_t, sp_witness_t, size_t);
     formula forall(std::vector<var_decl> env, formula f);
 
-    void _collect_requests(
-      formula f, sp_witness_t sw, std::vector<var_decl> env = {}
-    );
-    void _collect_labels();
+    void _collect_requests(formula f, std::vector<var_decl> env = {});
+    void _collect_labels(size_t k);
     void _collect_lookaheads(term t);
     void _collect_sharpening(term lhs, term rhs);
 
