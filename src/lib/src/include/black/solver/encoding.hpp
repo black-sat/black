@@ -38,10 +38,16 @@ namespace black_internal::encoder {
   
   using namespace black_internal::logic;
 
+  struct sp_witness_diamond_t {
+    formula argument;
+    size_t k;
+
+    bool operator==(sp_witness_diamond_t const&) const = default;
+  };
+
   struct sp_witness_t {
     term standpoint;
-    std::optional<formula> argument;
-    size_t k;
+    std::optional<sp_witness_diamond_t> diamond;
 
     bool operator==(sp_witness_t const&) const = default;
   };
@@ -76,10 +82,11 @@ namespace black_internal::encoder {
   formula to_formula(req_t req);
   
   inline std::string to_string(sp_witness_t sw) {
-    if(sw.argument)
+    if(sw.diamond)
       return
-        "[<" + to_string(sw.standpoint) + ">(" + to_string(*sw.argument) + 
-        ")," + std::to_string(sw.k) + "]"; 
+        "[<" + to_string(sw.standpoint) + ">(" + 
+               to_string(sw.diamond->argument) + 
+        ")," + std::to_string(sw.diamond->k) + "]"; 
     else
       return to_string(sw.standpoint); 
   }
@@ -123,10 +130,11 @@ namespace std {
       using namespace black_internal;
       
       size_t h = std::hash<logic::term>{}(sp.standpoint);
-      h = hash_combine(
-        h, std::hash<std::optional<logic::formula>>{}(sp.argument)
-      );
-      h = hash_combine(h, std::hash<size_t>{}(sp.k));
+      h = hash_combine(h, std::hash<bool>{}(sp.diamond.has_value()));
+      if(sp.diamond.has_value()) {
+        h = hash_combine(h, std::hash<logic::formula>{}(sp.diamond->argument));
+        h = hash_combine(h, std::hash<size_t>{}(sp.diamond->k));
+      }
 
       return h;
     }

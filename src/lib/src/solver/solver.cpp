@@ -149,7 +149,7 @@ namespace black_internal::solver
     
     size_t k = size() - 1;
     for(size_t l = 0; l < k; ++l) {
-      sp_witness_t starws = { _solver._data->sigma->star(), std::nullopt, l };
+      sp_witness_t starws = { _solver._data->sigma->star(), {} };
       proposition loop_prop = 
         encoder::loop_prop(_solver._data->sigma, l, k, starws, starws);
       tribool value = _solver._data->sat->value(loop_prop);
