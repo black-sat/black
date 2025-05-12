@@ -1,0 +1,1 @@
+[*](F X(p2 W p1) <-> <*>(wX p3 U True)) -> [*]((p1 -> False) W F True)

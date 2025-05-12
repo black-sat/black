@@ -1,0 +1,1 @@
+wX(F True -> ((wX(p4 & True) U wX !(p3 <-> F p2)) | F F G p3))

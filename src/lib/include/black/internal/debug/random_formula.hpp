@@ -41,6 +41,11 @@ namespace black_internal::random {
   formula random_ltlp_formula(
       std::mt19937& gen, alphabet& sigma, int n,
       std::vector<std::string> const& symbols);
+  
+  BLACK_EXPORT
+  formula random_sltl_formula(
+      std::mt19937& gen, alphabet& sigma, int n,
+      std::vector<std::string> const& symbols);
 
   BLACK_EXPORT
   formula random_boolean_formula(
@@ -52,6 +57,7 @@ namespace black_internal::random {
 namespace black {
   using black_internal::random::random_ltl_formula;
   using black_internal::random::random_ltlp_formula;
+  using black_internal::random::random_sltl_formula;
   using black_internal::random::random_boolean_formula;
 }
 

@@ -1,0 +1,1 @@
+[*]X(p1 W p2) & (<*>((G p4 -> G False) -> p4) W X G(p3 M p2))

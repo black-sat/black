@@ -1,0 +1,1 @@
+G((((p5 R True) M <*>([*]<*>F p5 | X G p2)) <-> (((p3 & p4) M <*><*><*>G [*][*]!(p1 U p3)) | !True)) W (p3 | !G(p4 R p5))) U ([*]((False M False) | G False) <-> p2)

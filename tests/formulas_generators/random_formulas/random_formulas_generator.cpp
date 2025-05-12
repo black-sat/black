@@ -33,7 +33,7 @@
 
 using namespace black;
 
-enum class logic_t { ltl, ltlp };
+enum class logic_t { ltl, ltlp, sltl };
 
 const int DIM_MIN = 10;
 const int DIM_MAX = 100;
@@ -128,6 +128,8 @@ int main(int argc, char **argv) {
       ap_set = true;
     } else if (std::strcmp(argv[i], "--ltl") == 0) {
       logic = logic_t::ltl;
+    } else if (std::strcmp(argv[i], "--sltl") == 0) {
+      logic = logic_t::sltl;
     } else {
       std::cerr << "Unknown argument: " << argv[i] << "\n";
       help();
@@ -151,11 +153,19 @@ int main(int argc, char **argv) {
 
   // Generate <num> random formulas
   for (int j=0; j<num; j++) {
-    formula f = logic == 
-      logic_t::ltl ? 
-        black::random_ltl_formula(gen, sigma, dim, ap) :
-        black::random_ltlp_formula(gen, sigma, dim, ap);
-    std::cout << to_string(f) << "\n";
+    std::optional<formula> f;
+    switch(logic) {
+      case logic_t::ltl:
+        f = black::random_ltl_formula(gen, sigma, dim, ap);
+        break;
+      case logic_t::ltlp:
+        f = black::random_ltlp_formula(gen, sigma, dim, ap);
+        break;
+      case logic_t::sltl:
+        f = black::random_sltl_formula(gen, sigma, dim, ap);
+        break;
+    }
+    std::cout << to_string(*f) << "\n";  
   }
 
   return 0;

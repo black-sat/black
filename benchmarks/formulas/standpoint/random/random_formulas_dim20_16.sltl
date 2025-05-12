@@ -1,0 +1,1 @@
+!True & (<*>F p4 | (F p4 -> ([*]G p2 | X False)) | F !False)

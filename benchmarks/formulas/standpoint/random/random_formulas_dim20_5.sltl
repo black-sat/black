@@ -1,0 +1,1 @@
+<*>(X p1 | (!(True M !p3) U <*>[*](False | (<*>!False <-> wX p1))))

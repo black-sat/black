@@ -46,7 +46,8 @@ namespace black_internal::random {
     enum fragment {
       boolean,
       LTL,
-      LTLP
+      LTLP,
+      SLTL
     };
 
     rand_formula_gen(
@@ -91,6 +92,7 @@ namespace black_internal::random {
         case fragment::boolean:
           return { unary::type::negation };
         case fragment::LTL:
+        case fragment::SLTL:
           return {
             unary::type::negation,
             unary::type::tomorrow,
@@ -124,6 +126,7 @@ namespace black_internal::random {
             binary::type::iff
           };
         case fragment::LTL:
+        case fragment::SLTL:
           return {
             binary::type::conjunction,
             binary::type::disjunction,
@@ -164,7 +167,17 @@ namespace black_internal::random {
         bool is_unary = dist(_gen);
         
         if (is_unary) {
-          return unary(random_unary_operator(), random_formula(n-1));
+          bool is_standpoint = dist(_gen);
+          bool box = dist(_gen);
+          if(is_standpoint) {
+            return modality(
+              box ? modality::type::box : modality::type::diamond,
+              _sigma.star(),
+              random_formula(n-1)
+            );
+          } else {
+            return unary(random_unary_operator(), random_formula(n-1));
+          }
         } else {
           std::uniform_int_distribution<> bindist(1, n-2);
           int x = bindist(_gen);
@@ -194,6 +207,13 @@ namespace black_internal::random {
       std::mt19937& gen, alphabet& sigma, int n,
       std::vector<std::string> const& symbols) {
     return rand_formula_gen{gen, sigma, rand_formula_gen::LTLP, symbols}
+      .random_formula(n);
+  }
+
+  formula random_sltl_formula(
+      std::mt19937& gen, alphabet& sigma, int n,
+      std::vector<std::string> const& symbols) {
+    return rand_formula_gen{gen, sigma, rand_formula_gen::SLTL, symbols}
       .random_formula(n);
   }
 

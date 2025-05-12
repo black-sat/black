@@ -1,0 +1,1 @@
+F F((G True M (!p1 & wX p1)) | !<*>((p2 | p4 | X False) <-> <*>(p1 M X p2))) | (wX p5 W ((!p1 -> p1) <-> <*>(!(p3 W p1) U ((X p2 U p2) <-> wX(True W X p3)))))

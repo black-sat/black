@@ -1,0 +1,1 @@
+!((([*](X False | X p4) W wX p4) U p4) U (True | <*>[*](p2 M True)))

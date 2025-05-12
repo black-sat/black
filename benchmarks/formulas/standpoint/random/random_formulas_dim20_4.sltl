@@ -1,0 +1,1 @@
+(p3 <-> p1) R ((G False M True) -> <*>((X !p1 <-> [*]<*>G True) <-> p4))

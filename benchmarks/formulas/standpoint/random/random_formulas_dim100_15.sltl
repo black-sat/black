@@ -1,0 +1,1 @@
+<*>!(<*>!<*>wX((X p3 U False) & p5 & <*>(((wX wX((!wX wX p4 U p1) | !False) <-> [*]!(p6 U True)) -> (F False -> ((p5 R p4) M (F F p1 M wX p5)))) -> X(X [*]((p2 W (p4 & p5)) -> (False <-> p1)) <-> (<*>(p4 | !(p6 -> <*>F p1) | [*]X(X p6 | True)) | ![*](True & False & p1))))) & (wX p5 R wX p6)) R (F(<*>(p1 -> p5) M p3) M !p2)

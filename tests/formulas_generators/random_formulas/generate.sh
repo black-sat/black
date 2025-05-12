@@ -29,6 +29,8 @@ Options:
                     not override already generated formulas. Default is 1.
 
   --ltl             To exclude past operators.
+  
+  --sltl            To generate Standpoint LTL formulas
 
   -h | --help       Print this help.
 HELP
@@ -43,6 +45,7 @@ OUT_DIR=.
 LTL=""
 EXEC=random_formulas_generator
 I_MIN=1
+EXT=pltl
 
 # Optional parameters
 POSITIONAL=()
@@ -67,6 +70,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     --ltl)
       LTL="--ltl"
+      shift
+      ;;
+    --sltl)
+      LTL="--sltl"
+      EXT="sltl"
       shift
       ;;
     -h|--help)
@@ -105,7 +113,7 @@ formulas=$($EXEC --num "$NUM" --dim "$DIM" $LTL)
 
 i=$I_MIN
 while IFS= read -r line; do
-  echo "$line" > "$OUT_DIR/random_formulas_dim$DIM""_$i.pltl"
+  echo "$line" > "$OUT_DIR/random_formulas_dim$DIM""_$i.$EXT"
   i=$((i+1))
 done <<< "$formulas"
 
