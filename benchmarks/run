@@ -412,8 +412,13 @@ bench_all()
 
   export indexfile
 
+  JOBSOPT=
+  if [ ! -z "$NJOBS" ]; then
+    JOBSOPT=-j$NJOBS
+  fi
+
   # heavy lifting
-  cat $indexfile | parallel ./run bench_formula {} {%} >> $output
+  cat $indexfile | parallel $JOBSOPT ./run bench_formula {} {%} >> $output
 }
 
 help() {
