@@ -25,10 +25,10 @@ the packages should work but do not, please open a GitHub `issue
 <https://github.com/black-sat/black/issues>`_.
 
 
-.. |Ubuntu24.04Badge| image:: https://badgen.net/badge/Download%20v25.03.0/.deb/green
-.. _Ubuntu24.04Badge: https://github.com/black-sat/black/releases/download/v25.03.0/black-sat-25.03.0.ubuntu24.04.x86_64.deb
-.. |Fedora41Badge| image:: https://badgen.net/badge/Download%20v25.03.0/.rpm/green
-.. _Fedora41Badge: https://github.com/black-sat/black/releases/download/v25.03.0/black-sat-25.03.0.fedora41.x86_64.rpm
+.. |Ubuntu24.04Badge| image:: https://badgen.net/badge/Download%20v25.06.0/.deb/green
+.. _Ubuntu24.04Badge: https://github.com/black-sat/black/releases/download/v25.06.0/black-sat-25.06.0.ubuntu24.04.x86_64.deb
+.. |Fedora41Badge| image:: https://badgen.net/badge/Download%20v25.06.0/.rpm/green
+.. _Fedora41Badge: https://github.com/black-sat/black/releases/download/v25.06.0/black-sat-25.06.0.fedora41.x86_64.rpm
 
 Compilation from source
 ------------------------

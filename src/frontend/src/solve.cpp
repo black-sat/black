@@ -341,11 +341,10 @@ namespace black::frontend {
     io::println("    \"k\": {}{}", 
       solver.last_bound(),
       (cli::print_model && model_exists == true) || 
-      (cli::unsat_core && model_exists == false) ? "," : ""
+      (cli::unsat_core && model_exists == false && muc.has_value()) ? "," : ""
     );
 
-    if(model_exists == false && cli::unsat_core) {
-      black_assert(muc.has_value());
+    if(model_exists == false && cli::unsat_core && muc.has_value()) {
       io::println("    \"muc\": \"{}\"", to_string(*muc));
     }
 
