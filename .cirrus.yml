@@ -44,9 +44,9 @@ task:
 
 
 task:
-  name: macOS (Sonoma devtools)
+  name: macOS (Sequoia devtools)
   osx_instance:
-    image: ghcr.io/cirruslabs/macos-sonoma-xcode:latest
+    image: ghcr.io/cirruslabs/macos-sequoia-xcode:latest
   download_dependencies_script:
     - brew update
     - brew install cmake fmt catch2 z3 cryptominisat nlohmann-json
