@@ -25,7 +25,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(BlackExample LANGUAGES CXX)
 
-find_package(BLACK)
+find_package(black)
 
 add_executable(example src/main.cpp)
 
