@@ -470,7 +470,7 @@ namespace black::frontend
       quit(status_code::command_line_error);
     }
 
-    if(*cli::filename == "-" && cli::trace == "-") {
+    if(cli::filename == "-" && cli::trace == "-") {
       command_line_error(
         "cannot read from stdin both the formula file and the trace file"
       );
@@ -487,7 +487,7 @@ namespace black::frontend
       return trace_check(std::nullopt, str, cli::trace, tracefile);
     }
 
-    if(*cli::filename == "-") {
+    if(cli::filename == "-") {
       std::ifstream tracefile = open_file(cli::trace);
       return trace_check(std::nullopt, std::cin, cli::trace, tracefile);
     }
