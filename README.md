@@ -20,7 +20,7 @@ See the [Documentation page][Doc] for further information on BLACK's installatio
 
 ### Linux
 
-| Ubuntu ≥ 24.04             | Fedora 41 |
+| Ubuntu ≥ 24.04             | Fedora 42 |
 |----------------------------|------------------------------|
 | [![Download](https://badgen.net/badge/Download%20v25.09.0/.deb/green)][pkg.deb] | [![Download](https://badgen.net/badge/Download%20v25.09.0/.rpm/green)][pkg.rpm]   |
 | `sudo apt install ⟨file⟩` | `sudo dnf install ⟨file⟩` |

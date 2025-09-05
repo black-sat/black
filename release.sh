@@ -29,8 +29,8 @@ images() {
     -f docker/Dockerfile.ubuntu --platform linux/amd64 -t black:ubuntu24.04 \
     --build-arg VERSION=24.04 --build-arg GCC_VERSION=14
   docker build docker \
-    -f docker/Dockerfile.fedora --platform linux/amd64 -t black:fedora41 \
-    --build-arg VERSION=41
+    -f docker/Dockerfile.fedora --platform linux/amd64 -t black:fedora42 \
+    --build-arg VERSION=42
 }
 
 launch() {
@@ -190,8 +190,8 @@ main () {
     build-only)
       build ubuntu 24.04
       test_pkg ubuntu 24.04
-      build fedora 41
-      test_pkg fedora 41
+      build fedora 42
+      test_pkg fedora 42
       appveyor
     ;;
     upload-only)
@@ -201,8 +201,8 @@ main () {
     all)
       build ubuntu 24.04
       test_pkg ubuntu 24.04
-      build fedora 41
-      test_pkg fedora 41
+      build fedora 42
+      test_pkg fedora 42
       appveyor
       release
       homebrew

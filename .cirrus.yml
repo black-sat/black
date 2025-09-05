@@ -81,19 +81,19 @@ task:
 
 task:
   matrix:
-    - name: Fedora 41 (with CryptoMiniSAT backend)
+    - name: Fedora 42 (with CryptoMiniSAT backend)
       environment:
         BACKEND: cmsat
-    - name: Fedora 41 (with MathSAT backend)
+    - name: Fedora 42 (with MathSAT backend)
       environment:
         BACKEND: mathsat
-    - name: Fedora 41 (with CVC5 backend)
+    - name: Fedora 42 (with CVC5 backend)
       environment:
         BACKEND: cvc5
   container:
     dockerfile: docker/Dockerfile.fedora
     docker_arguments:
-      VERSION: 41
+      VERSION: 42
   environment:
     CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
   download_mathsat_script:

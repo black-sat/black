@@ -12,9 +12,9 @@ We provide binary packages for **Ubuntu 24.04**, (the latest LTS) and **Fedora 
    :header-rows: 1
 
    * - Ubuntu 24.04
-     - Fedora 41
+     - Fedora 42
    * - |Ubuntu24.04Badge|_
-     - |Fedora41Badge|_
+     - |Fedora42Badge|_
    * - ``sudo apt install ⟨file⟩``
      - ``sudo dnf install ⟨file⟩``
 
@@ -25,10 +25,10 @@ the packages should work but do not, please open a GitHub `issue
 <https://github.com/black-sat/black/issues>`_.
 
 
-.. |Ubuntu24.04Badge| image:: https://badgen.net/badge/Download%20v25.06.0/.deb/green
-.. _Ubuntu24.04Badge: https://github.com/black-sat/black/releases/download/v25.06.0/black-sat-25.06.0.ubuntu24.04.x86_64.deb
-.. |Fedora41Badge| image:: https://badgen.net/badge/Download%20v25.06.0/.rpm/green
-.. _Fedora41Badge: https://github.com/black-sat/black/releases/download/v25.06.0/black-sat-25.06.0.fedora41.x86_64.rpm
+.. |Ubuntu24.04Badge| image:: https://badgen.net/badge/Download%20v25.09.0/.deb/green
+.. _Ubuntu24.04Badge: https://github.com/black-sat/black/releases/download/v25.09.0/black-sat-25.09.0.ubuntu24.04.x86_64.deb
+.. |Fedora42Badge| image:: https://badgen.net/badge/Download%20v25.09.0/.rpm/green
+.. _Fedora42Badge: https://github.com/black-sat/black/releases/download/v25.09.0/black-sat-25.09.0.fedora42.x86_64.rpm
 
 Compilation from source
 ------------------------
