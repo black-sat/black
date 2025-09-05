@@ -2,11 +2,11 @@ task:
   environment:
     CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
   matrix:
-    - name: Fedora 41 (g++ 14)
+    - name: Fedora 42 (g++ 15)
       container:
         dockerfile: docker/Dockerfile.fedora
         docker_arguments:
-          VERSION: 41
+          VERSION: 42
     - name: Ubuntu 24.04 (g++ 12)
       container:
         dockerfile: docker/Dockerfile.ubuntu
@@ -46,7 +46,7 @@ task:
 task:
   name: macOS (Sequoia devtools)
   osx_instance:
-    image: ghcr.io/cirruslabs/macos-sequoia-xcode:latest
+    image: ghcr.io/cirruslabs/macos-runner:sequoia
   download_dependencies_script:
     - brew update
     - brew install cmake fmt catch2 z3 cryptominisat nlohmann-json

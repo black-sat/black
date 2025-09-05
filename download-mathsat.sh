@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# MATHSAT_VERSION=5.5.4
-MATHSAT_VERSION=5.6.7
+set -o pipefail
+
+MATHSAT_VERSION=5.6.11
 
 die() {
   echo $1 >&2
@@ -20,12 +21,23 @@ detect_downloader() {
 }
 
 detect_system() {
-  [ "$(uname -m)" == "x86_64" -o "$(uname -m)" == "arm64" ] || \
-    die "MathSAT 5 is available for download only for 64bit systems."
+  [ \
+    "$(uname -m)" == "x86_64" \
+    -o "$(uname -m)" == "arm64" \
+    -o "$(uname -m)" == "aarch64" \
+  ] || \
+    die "MathSAT 5 is available for download only for x86 and ARM 64bit systems."
 
   SYSTEM="$(uname -s)-$(uname -m)"
   if [ "$(uname -s)" == "Linux" ]; then
-    MATHSAT_DIR=mathsat-$MATHSAT_VERSION-linux-x86_64
+    if [ "$(uname -m)" == "x86_64" ]; then
+      MATHSAT_DIR=mathsat-$MATHSAT_VERSION-linux-x86_64
+    elif 
+      [ "$(uname -m)" == "aarch64" ]; then
+      MATHSAT_DIR=mathsat-$MATHSAT_VERSION-linux-aarch64-reentrant
+    else
+      die "There is no MathSAT 5 pre-compiled distribution for your platform."
+    fi  
   elif [ "$(uname -s)" == "Darwin" ]; then
     MATHSAT_DIR=mathsat-$MATHSAT_VERSION-osx
   else
@@ -43,7 +55,7 @@ main()
   cd "$(git rev-parse --show-toplevel)/external" || \
     die "Please run the script from inside BLACK's sources"
 
-  MATHSAT_URL=http://mathsat.fbk.eu/download.php?file=$MATHSAT_DIR.tar.gz
+  MATHSAT_URL=https://mathsat.fbk.eu/release/$MATHSAT_DIR.tar.gz
   MATHSAT_DEST=mathsat5-$SYSTEM
 
   [ -d "$MATHSAT_DEST" ] && \
