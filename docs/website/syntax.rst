@@ -29,7 +29,7 @@ followed by a list of variables, a dot (``.``) and the formula. Example:
 
 .. code-block:: c
 
-   forall x y . exists z . (x < z & z < y)
+   forall x : Int y : Int . exists z : Int . (x < z & z < y)
 
 Parenthesis are needed because quantifiers bind very tightly to formulas.
 
@@ -73,7 +73,9 @@ Formal grammar for formulas:
    proposition: `symbol`
    atom: `symbol` '(' `term` (, `term`)* ')'
    rel: = | != | < | <= | > | >=
-   quantification: `quantifier` `variable`+ . `formula`
+   type: 'Int' | 'Real'
+   decl: `variable` ':' `type`
+   quantification: `quantifier` `decl`+ '.' `formula`
    quantifier: exists | forall
    unary: ! | X | wX | Y | Z | F | G | O | H
    binary: && | || | -> | <-> | U | R | S | T
