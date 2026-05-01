@@ -2,29 +2,17 @@ task:
   environment:
     CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
   matrix:
-    - name: Fedora 42 (g++ 15)
+    - name: Fedora 44 (g++ 15)
       container:
         dockerfile: docker/Dockerfile.fedora
         docker_arguments:
-          VERSION: 42
-    - name: Ubuntu 24.04 (g++ 12)
+          VERSION: 44
+    - name: Ubuntu 26.04 (g++ 15)
       container:
         dockerfile: docker/Dockerfile.ubuntu
         docker_arguments:
-          VERSION: 24.04
-          GCC_VERSION: 12
-    - name: Ubuntu 24.04 (g++ 13)
-      container:
-        dockerfile: docker/Dockerfile.ubuntu
-        docker_arguments:
-          VERSION: 24.04
-          GCC_VERSION: 13
-    - name: Ubuntu 24.04 (g++ 14)
-      container:
-        dockerfile: docker/Dockerfile.ubuntu
-        docker_arguments:
-          VERSION: 24.04
-          GCC_VERSION: 14
+          VERSION: 26.04
+          GCC_VERSION: 15
   debug_build_script:
     - mkdir build && cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ..
@@ -44,9 +32,9 @@ task:
 
 
 task:
-  name: macOS (Sequoia devtools)
+  name: macOS (Tahoe devtools)
   osx_instance:
-    image: ghcr.io/cirruslabs/macos-runner:sequoia
+    image: ghcr.io/cirruslabs/macos-runner:tahoe
   download_dependencies_script:
     - brew update
     - brew install cmake fmt catch2 z3 cryptominisat nlohmann-json
@@ -81,19 +69,19 @@ task:
 
 task:
   matrix:
-    - name: Fedora 42 (with CryptoMiniSAT backend)
+    - name: Fedora 44 (with CryptoMiniSAT backend)
       environment:
         BACKEND: cmsat
-    - name: Fedora 42 (with MathSAT backend)
+    - name: Fedora 44 (with MathSAT backend)
       environment:
         BACKEND: mathsat
-    - name: Fedora 42 (with CVC5 backend)
+    - name: Fedora 44 (with CVC5 backend)
       environment:
         BACKEND: cvc5
   container:
     dockerfile: docker/Dockerfile.fedora
     docker_arguments:
-      VERSION: 42
+      VERSION: 44
   environment:
     CODECOV_TOKEN: ENCRYPTED[f6131f3947378ac741bd50e49a83f7e619100d91f4c4ff79180a508e39c93f07e2a90c17174261dbafebd70c2f150d45]
   download_mathsat_script:

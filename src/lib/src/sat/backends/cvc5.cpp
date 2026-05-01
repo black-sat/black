@@ -42,14 +42,14 @@ namespace black_internal::cvc5
 
   namespace cvc = ::cvc5;
   struct cvc5::_cvc5_t {
-    class scope global_xi;
-    class scope xi;
-
+    
     _cvc5_t(logic::scope const& _xi) 
-      : global_xi{chain(_xi)}, xi{chain(global_xi)}, solver{mgr} { }
+      : solver{mgr}, global_xi{chain(_xi)}, xi{chain(global_xi)} { }
 
     cvc::TermManager mgr;
     cvc::Solver solver;
+    class scope global_xi;
+    class scope xi;
     bool sat_response = false;
 
     tsl::hopscotch_map<proposition, cvc::Term> props;
