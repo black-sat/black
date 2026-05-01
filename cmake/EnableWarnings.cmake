@@ -56,6 +56,7 @@ set(
   -Wno-zero-as-null-pointer-constant
   -Wno-unsafe-buffer-usage
   -Wno-switch-default
+  -Wno-nrvo
 )
 
 # GCC
