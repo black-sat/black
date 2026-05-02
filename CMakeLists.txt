@@ -25,7 +25,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(
   black 
-  VERSION 25.09.0
+  VERSION 26.05.0
   LANGUAGES C CXX
   DESCRIPTION "BLACK (Bounded Lᴛʟ sAtisfiability ChecKer)"
 )
