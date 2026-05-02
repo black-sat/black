@@ -1269,7 +1269,6 @@ future_only/rozier/pattern/C1formula/C1formula12.pltl;SAT
 future_only/rozier/pattern/C1formula/C1formula13.pltl;SAT
 future_only/rozier/pattern/C1formula/C1formula2.pltl;SAT
 future_only/rozier/pattern/C1formula/C1formula20.pltl;SAT
-future_only/rozier/pattern/C1formula/C1formula200.pltl;SAT
 future_only/rozier/pattern/C1formula/C1formula3.pltl;SAT
 future_only/rozier/pattern/C1formula/C1formula30.pltl;SAT
 future_only/rozier/pattern/C1formula/C1formula4.pltl;SAT
@@ -1292,7 +1291,6 @@ future_only/rozier/pattern/Eformula/Eformula12.pltl;SAT
 future_only/rozier/pattern/Eformula/Eformula13.pltl;SAT
 future_only/rozier/pattern/Eformula/Eformula2.pltl;SAT
 future_only/rozier/pattern/Eformula/Eformula20.pltl;SAT
-future_only/rozier/pattern/Eformula/Eformula200.pltl;SAT
 future_only/rozier/pattern/Eformula/Eformula3.pltl;SAT
 future_only/rozier/pattern/Eformula/Eformula30.pltl;SAT
 future_only/rozier/pattern/Eformula/Eformula4.pltl;SAT
@@ -1315,7 +1313,6 @@ future_only/rozier/pattern/C2formula/C2formula12.pltl;SAT
 future_only/rozier/pattern/C2formula/C2formula13.pltl;SAT
 future_only/rozier/pattern/C2formula/C2formula2.pltl;SAT
 future_only/rozier/pattern/C2formula/C2formula20.pltl;SAT
-future_only/rozier/pattern/C2formula/C2formula200.pltl;SAT
 future_only/rozier/pattern/C2formula/C2formula3.pltl;SAT
 future_only/rozier/pattern/C2formula/C2formula30.pltl;SAT
 future_only/rozier/pattern/C2formula/C2formula4.pltl;SAT
@@ -1337,7 +1334,6 @@ future_only/rozier/pattern/Rformula/Rformula12.pltl;SAT
 future_only/rozier/pattern/Rformula/Rformula13.pltl;SAT
 future_only/rozier/pattern/Rformula/Rformula2.pltl;SAT
 future_only/rozier/pattern/Rformula/Rformula20.pltl;SAT
-future_only/rozier/pattern/Rformula/Rformula200.pltl;SAT
 future_only/rozier/pattern/Rformula/Rformula3.pltl;SAT
 future_only/rozier/pattern/Rformula/Rformula30.pltl;SAT
 future_only/rozier/pattern/Rformula/Rformula4.pltl;SAT
@@ -1359,7 +1355,6 @@ future_only/rozier/pattern/Qformula/Qformula12.pltl;SAT
 future_only/rozier/pattern/Qformula/Qformula13.pltl;SAT
 future_only/rozier/pattern/Qformula/Qformula2.pltl;SAT
 future_only/rozier/pattern/Qformula/Qformula20.pltl;SAT
-future_only/rozier/pattern/Qformula/Qformula200.pltl;SAT
 future_only/rozier/pattern/Qformula/Qformula3.pltl;SAT
 future_only/rozier/pattern/Qformula/Qformula30.pltl;SAT
 future_only/rozier/pattern/Qformula/Qformula4.pltl;SAT
@@ -1375,7 +1370,6 @@ future_only/rozier/pattern/Qformula/Qformula80.pltl;SAT
 future_only/rozier/pattern/Qformula/Qformula9.pltl;SAT
 future_only/rozier/pattern/Qformula/Qformula90.pltl;SAT
 future_only/rozier/pattern/U2formula/U2formula10.pltl;SAT
-future_only/rozier/pattern/U2formula/U2formula100.pltl;SAT
 future_only/rozier/pattern/U2formula/U2formula11.pltl;SAT
 future_only/rozier/pattern/U2formula/U2formula12.pltl;SAT
 future_only/rozier/pattern/U2formula/U2formula13.pltl;SAT
@@ -1392,9 +1386,7 @@ future_only/rozier/pattern/U2formula/U2formula60.pltl;SAT
 future_only/rozier/pattern/U2formula/U2formula7.pltl;SAT
 future_only/rozier/pattern/U2formula/U2formula70.pltl;SAT
 future_only/rozier/pattern/U2formula/U2formula8.pltl;SAT
-future_only/rozier/pattern/U2formula/U2formula80.pltl;SAT
 future_only/rozier/pattern/U2formula/U2formula9.pltl;SAT
-future_only/rozier/pattern/U2formula/U2formula90.pltl;SAT
 future_only/rozier/pattern/Sformula/Sformula1.pltl;SAT
 future_only/rozier/pattern/Sformula/Sformula10.pltl;SAT
 future_only/rozier/pattern/Sformula/Sformula100.pltl;SAT
@@ -1403,7 +1395,6 @@ future_only/rozier/pattern/Sformula/Sformula12.pltl;SAT
 future_only/rozier/pattern/Sformula/Sformula13.pltl;SAT
 future_only/rozier/pattern/Sformula/Sformula2.pltl;SAT
 future_only/rozier/pattern/Sformula/Sformula20.pltl;SAT
-future_only/rozier/pattern/Sformula/Sformula200.pltl;SAT
 future_only/rozier/pattern/Sformula/Sformula3.pltl;SAT
 future_only/rozier/pattern/Sformula/Sformula30.pltl;SAT
 future_only/rozier/pattern/Sformula/Sformula4.pltl;SAT
@@ -1431,11 +1422,8 @@ future_only/rozier/pattern/Uformula/Uformula40.pltl;SAT
 future_only/rozier/pattern/Uformula/Uformula5.pltl;SAT
 future_only/rozier/pattern/Uformula/Uformula50.pltl;SAT
 future_only/rozier/pattern/Uformula/Uformula6.pltl;SAT
-future_only/rozier/pattern/Uformula/Uformula60.pltl;SAT
 future_only/rozier/pattern/Uformula/Uformula7.pltl;SAT
-future_only/rozier/pattern/Uformula/Uformula70.pltl;SAT
 future_only/rozier/pattern/Uformula/Uformula8.pltl;SAT
-future_only/rozier/pattern/Uformula/Uformula80.pltl;SAT
 future_only/rozier/pattern/Uformula/Uformula9.pltl;SAT
 future_only/schuppan/O2formula/O2formula2.pltl;UNSAT
 future_only/schuppan/O2formula/O2formula3.pltl;UNSAT
@@ -2186,13 +2174,6 @@ future_only/alaska/szymanski/zp2.pltl;SAT
 future_only/alaska/szymanski/zp3.pltl;SAT
 future_only/anzu/amba/amba_c/spec_c_10.pltl;SAT
 future_only/anzu/amba/amba_c/spec_c_11.pltl;SAT
-future_only/anzu/amba/amba_c/spec_c_12.pltl;SAT
-future_only/anzu/amba/amba_c/spec_c_13.pltl;SAT
-future_only/anzu/amba/amba_c/spec_c_14.pltl;SAT
-future_only/anzu/amba/amba_c/spec_c_15.pltl;SAT
-future_only/anzu/amba/amba_c/spec_c_16.pltl;SAT
-future_only/anzu/amba/amba_c/spec_c_17.pltl;SAT
-future_only/anzu/amba/amba_c/spec_c_18.pltl;SAT
 future_only/anzu/amba/amba_c/spec_c_2.pltl;SAT
 future_only/anzu/amba/amba_c/spec_c_3.pltl;SAT
 future_only/anzu/amba/amba_c/spec_c_4.pltl;SAT
@@ -2223,11 +2204,6 @@ future_only/anzu/amba/amba_cl/spec_cl_3.pltl;SAT
 future_only/anzu/genbuf/genbuf_c/spec_c_1.pltl;SAT
 future_only/anzu/genbuf/genbuf_c/spec_c_10.pltl;SAT
 future_only/anzu/genbuf/genbuf_c/spec_c_11.pltl;SAT
-future_only/anzu/genbuf/genbuf_c/spec_c_12.pltl;SAT
-future_only/anzu/genbuf/genbuf_c/spec_c_13.pltl;SAT
-future_only/anzu/genbuf/genbuf_c/spec_c_14.pltl;SAT
-future_only/anzu/genbuf/genbuf_c/spec_c_15.pltl;SAT
-future_only/anzu/genbuf/genbuf_c/spec_c_16.pltl;SAT
 future_only/anzu/genbuf/genbuf_c/spec_c_2.pltl;SAT
 future_only/anzu/genbuf/genbuf_c/spec_c_3.pltl;SAT
 future_only/anzu/genbuf/genbuf_c/spec_c_4.pltl;SAT
@@ -2245,10 +2221,7 @@ future_only/anzu/genbuf/genbuf/spec14.pltl;SAT
 future_only/anzu/genbuf/genbuf/spec15.pltl;SAT
 future_only/anzu/genbuf/genbuf/spec16.pltl;SAT
 future_only/anzu/genbuf/genbuf/spec17.pltl;SAT
-future_only/anzu/genbuf/genbuf/spec18.pltl;SAT
-future_only/anzu/genbuf/genbuf/spec19.pltl;SAT
 future_only/anzu/genbuf/genbuf/spec2.pltl;SAT
-future_only/anzu/genbuf/genbuf/spec20.pltl;SAT
 future_only/anzu/genbuf/genbuf/spec3.pltl;SAT
 future_only/anzu/genbuf/genbuf/spec4.pltl;SAT
 future_only/anzu/genbuf/genbuf/spec5.pltl;SAT
