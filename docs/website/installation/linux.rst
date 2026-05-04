@@ -26,7 +26,7 @@ the packages should work but do not, please open a GitHub `issue
 
 
 .. |Ubuntu26.04Badge| image:: https://badgen.net/badge/Download%20v26.05.0/.deb/green
-.. _Ubuntu24.04Badge: https://github.com/black-sat/black/releases/download/v26.05.0/black-sat-26.05.0.ubuntu24.04.x86_64.deb
+.. _Ubuntu26.04Badge: https://github.com/black-sat/black/releases/download/v26.05.0/black-sat-26.05.0.ubuntu24.04.x86_64.deb
 .. |Fedora44Badge| image:: https://badgen.net/badge/Download%20v26.05.0/.rpm/green
 .. _Fedora44Badge: https://github.com/black-sat/black/releases/download/v26.05.0/black-sat-26.05.0.fedora42.x86_64.rpm
 
