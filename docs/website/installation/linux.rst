@@ -6,7 +6,7 @@ Installation on Linux
 Binary packages
 ----------------
 
-We provide binary packages for **Ubuntu 24.04**, (the latest LTS) and **Fedora 41**.
+We provide binary packages for **Ubuntu 26.04**, (the latest LTS) and **Fedora 44**.
 
 .. list-table::
    :header-rows: 1
