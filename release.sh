@@ -26,11 +26,11 @@ setup() {
 
 images() {
   docker build docker \
-    -f docker/Dockerfile.ubuntu --platform linux/amd64 -t black:ubuntu24.04 \
-    --build-arg VERSION=24.04 --build-arg GCC_VERSION=14
+    -f docker/Dockerfile.ubuntu --platform linux/amd64 -t black:ubuntu26.04 \
+    --build-arg VERSION=26.04 --build-arg GCC_VERSION=15
   docker build docker \
-    -f docker/Dockerfile.fedora --platform linux/amd64 -t black:fedora42 \
-    --build-arg VERSION=42
+    -f docker/Dockerfile.fedora --platform linux/amd64 -t black:fedora44 \
+    --build-arg VERSION=44
 }
 
 launch() {
@@ -188,10 +188,10 @@ main () {
 
   case "$1" in
     build-only)
-      build ubuntu 24.04
-      test_pkg ubuntu 24.04
-      build fedora 42
-      test_pkg fedora 42
+      build ubuntu 26.04
+      test_pkg ubuntu 26.04
+      build fedora 44
+      test_pkg fedora 44
       appveyor
     ;;
     upload-only)
@@ -199,10 +199,10 @@ main () {
       homebrew
     ;;
     all)
-      build ubuntu 24.04
-      test_pkg ubuntu 24.04
-      build fedora 42
-      test_pkg fedora 42
+      build ubuntu 26.04
+      test_pkg ubuntu 26.04
+      build fedora 44
+      test_pkg fedora 44
       appveyor
       release
       homebrew
