@@ -93,6 +93,7 @@ namespace black_internal::encoder
     return f.match(
       [](eventually e) { return std::optional{e.argument()}; },
       [](until u) { return std::optional{u.right()}; },
+      [](s_release r) { return std::optional{r.left()}; },
       [](otherwise) { return std::nullopt; }
     );
   }
