@@ -88,6 +88,16 @@ endif()
 find_package(tsl-hopscotch-map REQUIRED)
 find_package(fmt REQUIRED)
 
+# Boost.Unordered provides the concurrent hash table backing alphabets created
+# in `concurrent` mode. It is header-only, so this is a build-time dependency
+# only, and it is used only inside `src/lib/src/logic/logic.cpp`: it does not
+# leak into BLACK's public headers.
+find_package(Boost 1.83 REQUIRED CONFIG)
+
+# Concurrent alphabets need a mutex, hence a threading library.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 add_subdirectory(external/clipp EXCLUDE_FROM_ALL)
 
 # mark the depenencies to ignore warnings from their interface headers
