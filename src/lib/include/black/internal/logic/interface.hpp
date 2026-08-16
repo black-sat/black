@@ -47,7 +47,11 @@ namespace black_internal::logic {
   class alphabet : public alphabet_base
   {
   public:
-    alphabet() = default;
+    // `mode` tells whether this alphabet can be shared among threads. See the
+    // comments on `alphabet_mode` in `generation.hpp`.
+    explicit alphabet(alphabet_mode mode = alphabet_mode::sequential)
+      : alphabet_base{mode} { }
+
     alphabet(alphabet const&) = delete;
     alphabet(alphabet &&) = default;
 

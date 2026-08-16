@@ -4,6 +4,7 @@ To compile BLACK you need the following packages:
 2. `libfmt`_ 7.x or above
 3. `Hopscotch-map`_ 2.x
 4. `nlohmann-json`_ 3.5 or above
+5. `Boost`_ 1.83 or above (only the header-only `Boost.Unordered`_ library)
 
 Possible backends (of which at least one must be present):
 
@@ -24,6 +25,8 @@ support *quantified* first-order formulas.
 .. _libfmt: https://github.com/fmtlib/fmt
 .. _Hopscotch-map: https://github.com/Tessil/hopscotch-map
 .. _nlohmann-json: https://github.com/nlohmann/json
+.. _Boost: https://www.boost.org
+.. _Boost.Unordered: https://www.boost.org/doc/libs/release/libs/unordered/
 .. _CryptoMiniSAT: https://github.com/msoos/cryptominisat
 .. _Z3: https://github.com/Z3Prover/z3
 .. _cvc5: https://cvc5.github.io

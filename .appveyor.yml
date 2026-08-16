@@ -57,6 +57,7 @@ install:
   - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies -DJSON_BuildTests=OFF ..
   - cmake --build .
   - cmake --build . --target install
+  - vcpkg install boost-unordered:x64-windows
   - cd C:\Projects
   - curl -fsSL -o z3.zip https://github.com/Z3Prover/z3/releases/download/z3-4.8.10/z3-4.8.10-x64-win.zip
   - 7z x z3.zip
@@ -79,6 +80,7 @@ build_script:
   - set CC=cl
   - set CXX=cl
   - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=C:\Projects\dependencies \
+    -DCMAKE_TOOLCHAIN_FILE=C:\Tools\vcpkg\scripts\buildsystems\vcpkg.cmake \
     -DCMAKE_BUILD_TYPE=Release -DENABLE_FORMULAS_TESTS=NO \
     -DZ3_LIBRARY=C:\Projects\z3\bin\libz3.lib \
     -DZ3_INCLUDE_DIR=C:\Projects\z3\include ..

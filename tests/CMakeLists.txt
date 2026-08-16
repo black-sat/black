@@ -74,6 +74,7 @@ if(Catch2_FOUND)
   set(
     UNIT_TESTS
     units/support.cpp
+    units/alphabet.cpp
     units/basics.cpp
     units/bitset.cpp
     units/match.cpp
@@ -94,7 +95,7 @@ if(Catch2_FOUND)
 
   add_executable(unit_tests ${UNIT_TESTS})
   target_include_directories(unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/units)
-  target_link_libraries(unit_tests PRIVATE black ${CATCH_TARGET})
+  target_link_libraries(unit_tests PRIVATE black ${CATCH_TARGET} Threads::Threads)
   target_enable_warnings(unit_tests)
   target_code_coverage(unit_tests)
   add_sanitizers(unit_tests)

@@ -604,6 +604,31 @@ namespace black_internal::logic
   #include <black/internal/logic/hierarchy.hpp>
 
   //
+  // Alphabets come in two flavours, chosen at construction time. The
+  // difference is entirely in how the hash table used to unique the nodes
+  // (see `logic.cpp`) is implemented.
+  //
+  // In `sequential` mode, which is the default, the table is a plain
+  // sequential hash table with no synchronization at all, so a given alphabet
+  // (and any hierarchy object built from it, since building one interns nodes
+  // into it) must be used by one thread at a time. This is what BLACK has
+  // always done, and it is the fastest option.
+  //
+  // In `concurrent` mode the table is a concurrent hash table instead, so any
+  // number of threads can build formulas from the same alphabet at once. This
+  // is opt-in so that the price of the synchronization, whatever it turns out
+  // to be on a given platform, is paid only by who asks for it.
+  //
+  // Note that either way an alphabet must outlive all the formulas built from
+  // it, and that neither mode makes the *other* data structures of BLACK
+  // (solvers, in particular) thread-safe: each thread still needs its own.
+  //
+  enum class alphabet_mode {
+    sequential,
+    concurrent
+  };
+
+  //
   // Here it finally comes the `alphabet_base` class, which `alphabet` will
   // inherit without adding too much (see `interface.hpp`). The class is default
   // constructible and movable, but not copyable. 
@@ -628,7 +653,7 @@ namespace black_internal::logic
     template<syntax_element E>
     using base_t = alphabet_ctor_base<E, alphabet_base>;
   public:
-    alphabet_base();
+    explicit alphabet_base(alphabet_mode mode = alphabet_mode::sequential);
     ~alphabet_base();
 
     alphabet_base(alphabet_base const&) = delete;
@@ -650,6 +675,9 @@ namespace black_internal::logic
       }
 
     #include <black/internal/logic/hierarchy.hpp>
+
+    // The mode this alphabet was created with.
+    alphabet_mode mode() const;
 
     template<storage_type, typename, typename>
     friend class storage_ctor_base;
@@ -674,6 +702,8 @@ namespace black_internal::logic
     struct alphabet_impl;
     
     alphabet_impl *impl();
+
+    alphabet_mode _mode;
 
     // pimpl pointer to `alphabet_impl`, defined in `logic.cpp`.
     std::unique_ptr<alphabet_impl> _impl;
@@ -837,6 +867,7 @@ namespace black {
   using black_internal::logic::hierarchy_element;
   using black_internal::logic::syntax_element;
   using black_internal::logic::alphabet;
+  using black_internal::logic::alphabet_mode;
   using black_internal::logic::otherwise;
 
   #define declare_hierarchy(Base) \
