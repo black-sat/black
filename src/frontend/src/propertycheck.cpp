@@ -47,7 +47,7 @@ using json = nlohmann::json;
 namespace black::frontend 
 {
 
-  bool is_pure_past(formula f, int i);
+  bool is_pure_past(formula f);
   bool form_check(formula f, int neg);
 
 
@@ -61,9 +61,9 @@ namespace black::frontend
           command_line_error("detected a formula of the form !G(...) with the --safety option. Try --cosafety");
           quit(status_code::command_line_error);
         } else if (cli::check_safety){
-          return is_pure_past(op1, 0);
+          return is_pure_past(op1);
         } else if (cli::check_cosafety && neg == 1){
-          return is_pure_past(op1, 0);
+          return is_pure_past(op1);
         } else { //(cli::check_cosafety && neg == 0)
           command_line_error("detected a formula of the form G(...) with the --cosafety option. Try --safety");
           quit(status_code::command_line_error);
@@ -71,7 +71,7 @@ namespace black::frontend
       },
       [&](eventually, formula op1){
         if (cli::check_safety && neg == 1){
-          return is_pure_past(op1, 0);
+          return is_pure_past(op1);
         } else if (cli::check_safety){
           command_line_error("detected a formula of the form F(...) with the --safety option. Try --cosafety");
           quit(status_code::command_line_error);
@@ -79,7 +79,7 @@ namespace black::frontend
           command_line_error("detected a formula of the form !F(...) with the --cosafety option. Try --safety");
           quit(status_code::command_line_error);
         } else { //(cli::check_cosafety && neg == 0)
-          return is_pure_past(op1, 0);
+          return is_pure_past(op1);
         }
       },
       [&](otherwise) {
@@ -89,7 +89,42 @@ namespace black::frontend
 
   }
 
-  bool is_pure_past(formula f, int i) { 
+  bool is_term_pure_past(term term){
+    return term.match(
+      [](next) { return false; },
+      [](wnext) { return false; },
+      [&](addition, auto l, auto r){
+        bool l_value = is_term_pure_past(l);
+        bool r_value = is_term_pure_past(r);  
+        return l_value && r_value;
+      },
+      [&](subtraction, auto l, auto r){
+        bool l_value = is_term_pure_past(l);
+        bool r_value = is_term_pure_past(r);  
+        return l_value && r_value;
+      },
+      [&](multiplication, auto l, auto r){
+        bool l_value = is_term_pure_past(l);
+        bool r_value = is_term_pure_past(r);  
+        return l_value && r_value;
+      },
+      [&](division, auto l, auto r){
+        bool l_value = is_term_pure_past(l);
+        bool r_value = is_term_pure_past(r);  
+        return l_value && r_value;
+      },
+      [&](int_division, auto l, auto r){
+        bool l_value = is_term_pure_past(l);
+        bool r_value = is_term_pure_past(r);  
+        return l_value && r_value;
+      },
+      [](otherwise) {
+        return true;
+      }
+    );
+  }
+
+  bool is_pure_past(formula f) { 
     return f.match(
       [](boolean) { return true; },
       [&](proposition) { return true; },
@@ -99,27 +134,36 @@ namespace black::frontend
       [&](quantifier) -> bool { 
         command_line_error("the --safety and --cosafety options do not accept quantifiers)");
         quit(status_code::command_line_error); },
-      [&](equality) { return true; },
-      [&](comparison) -> bool { return true; },
+      [&](equality, auto terms) { 
+        int terms_size = terms.size();
+        bool result = true;
+
+        for(int i = 0; i< terms_size; i++ ){
+          if (!is_term_pure_past(terms[i]))
+            result = false;    
+        }
+        return result;
+      },
+      [&](comparison, term l, term r) { return is_term_pure_past(l) && is_term_pure_past(r); },
       [&](tomorrow, formula) { return false; },
       [&](w_tomorrow, formula) { return false; },
-      [&](yesterday, formula op) { return is_pure_past(op, i+1); },
-      [&](w_yesterday, formula op) { return is_pure_past(op, i+1); },
+      [&](yesterday, formula op) { return is_pure_past(op); },
+      [&](w_yesterday, formula op) { return is_pure_past(op); },
       [&](until) { return false; },
       [&](w_until) { return false; },
-      [&](since, formula l, formula r) { return is_pure_past(l, i+1) && is_pure_past(r, i+1); },
-      [&](negation, formula op) { return is_pure_past(op, i); }, 
-      [&](conjunction, formula l, formula r) { return is_pure_past(l, i+1) && is_pure_past(r, i+1); },
-      [&](disjunction, formula l, formula r) { return is_pure_past(l, i+1) && is_pure_past(r, i+1); },
-      [&](implication, formula l, formula r) { return is_pure_past(l, i+1) && is_pure_past(r, i+1); },
-      [&](iff, formula l, formula r) { return is_pure_past(l, i+1) && is_pure_past(r, i+1); },
-      [&](eventually, formula op) { return (i==0 && is_pure_past(op, i+1)); }, 
-      [&](always, formula op) { return i==0 && is_pure_past(op, i+1); },
+      [&](since, formula l, formula r) { return is_pure_past(l) && is_pure_past(r); },
+      [&](negation, formula op) { return is_pure_past(op); }, 
+      [&](conjunction, formula l, formula r) { return is_pure_past(l) && is_pure_past(r); },
+      [&](disjunction, formula l, formula r) { return is_pure_past(l) && is_pure_past(r); },
+      [&](implication, formula l, formula r) { return is_pure_past(l) && is_pure_past(r); },
+      [&](iff, formula l, formula r) { return is_pure_past(l) && is_pure_past(r); },
+      [&](eventually) { return false; }, 
+      [&](always) { return false; },
       [&](release, formula, formula) { return false; },
       [&](s_release, formula, formula) { return false; },
-      [&](once, formula op) { return is_pure_past(op, i+1); },
-      [&](historically, formula op) { return is_pure_past(op, i+1); },
-      [&](triggered, formula l, formula r) { return is_pure_past(l, i+1) && is_pure_past(r, i+1); }
+      [&](once, formula op) { return is_pure_past(op); },
+      [&](historically, formula op) { return is_pure_past(op); },
+      [&](triggered, formula l, formula r) { return is_pure_past(l) && is_pure_past(r); }
     );
   }
 
@@ -230,7 +274,14 @@ namespace black::frontend
         double term_value = check_term_value(trace, n, t);  
         return -term_value;
       },
-      //[&](unary_term ){ },
+      [&](prev, auto n){ 
+        double term_value = check_term_value(trace, n, t-1); 
+        return term_value;
+      },
+      [&](wprev, auto n){ 
+        double term_value = check_term_value(trace, n, t-1);  
+        return term_value;
+      },
       [&](addition, auto l, auto r){
         double l_value = check_term_value(trace, l, t);
         double r_value = check_term_value(trace, r, t);  
@@ -262,6 +313,23 @@ namespace black::frontend
     
   }
 
+  int check_previous(term term){
+    return term.match(
+      [](prev) { return 1; },
+      [](wprev) { return 2; },
+      [](binary_term, auto l, auto r) {
+        int result = 5;
+        if (check_previous(l) == 1 || check_previous(l) == 2){
+          result = check_previous(l);
+        } else if (check_previous(r) == 1 || check_previous(r) == 2){
+          result = check_previous(r);
+        }
+        return result; 
+      },
+      [](otherwise) {return 5;}
+    );
+  }
+
 
   bool check_equality(trace_t trace, equality e, size_t t){
   
@@ -271,6 +339,14 @@ namespace black::frontend
         double first_value = 0;
 
         for(int i = 0; i< terms_size; i++ ){
+          if(t==0){ // if it's the first trace instant, check wether there is a previous (1) or weak previous (2)
+            if(check_previous(terms[i]) == 1){
+              return false;
+            } else if (check_previous(terms[i]) == 2){
+              return true;
+            }
+          }
+
           double value = check_term_value(trace, terms[i], t);
 
           if(i == 0){
@@ -396,10 +472,10 @@ namespace black::frontend
 
 
   static int check(trace_t trace, formula f) {
-     // size_t initial_state = 0;
+    //size_t initial_state = 0;
     size_t final_state = trace.states.size() - 1; 
-    //if(cli::initial_state)
-    //   initial_state = *cli::initial_state;
+    if(cli::initial_state)
+      final_state = *cli::initial_state;
 
     bool result = check(trace, f, final_state);
     if(result)
