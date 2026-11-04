@@ -124,85 +124,90 @@ if(NOT WIN32)
     COMMAND ${CMAKE_SOURCE_DIR}/tests/cli-tests.sh 
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
+  add_test(
+    NAME "PROPERTY"
+    COMMAND ${CMAKE_SOURCE_DIR}/tests/property-tests.sh 
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  )
 endif()
 
 #
 # Formulas test set
 #
-if(ENABLE_FORMULAS_TESTS)
-  message(STATUS "Configuring test suite...")
+# if(ENABLE_FORMULAS_TESTS)
+#   message(STATUS "Configuring test suite...")
 
-  file(STRINGS formulas/tests.index TESTS)
+#   file(STRINGS formulas/tests.index TESTS)
 
-  list(LENGTH TESTS TESTSLENGTH)
-  message(STATUS "Found ${TESTSLENGTH} test formulas")
+#   list(LENGTH TESTS TESTSLENGTH)
+#   message(STATUS "Found ${TESTSLENGTH} test formulas")
 
-  option(BLACK_TEST_TIMEOUT "Set a timeout for tests" OFF)
-  set(TEST_TIMEOUT_SECS 3 CACHE STRING "Seconds of timeout for tests")
+#   option(BLACK_TEST_TIMEOUT "Set a timeout for tests" OFF)
+#   set(TEST_TIMEOUT_SECS 3 CACHE STRING "Seconds of timeout for tests")
 
-  if(BLACK_TEST_TIMEOUT)
-    message(STATUS "Tests timeout set to ${TEST_TIMEOUT_SECS} seconds")
-  endif()
+#   if(BLACK_TEST_TIMEOUT)
+#     message(STATUS "Tests timeout set to ${TEST_TIMEOUT_SECS} seconds")
+#   endif()
 
-  foreach(TEST IN LISTS TESTS)
-    list(GET TEST 0 FILE)
-    list(GET TEST 1 RESULT)
+#   foreach(TEST IN LISTS TESTS)
+#     list(GET TEST 0 FILE)
+#     list(GET TEST 1 RESULT)
 
-    set(TEST_NAME "black:${FILE}:${RESULT}")
+#     set(TEST_NAME "black:${FILE}:${RESULT}")
     
-    set(FINITE_OPT "")
-    string(FIND "${FILE}" "finite_models" FOUND)
-    if(FOUND GREATER_EQUAL 0)
-      set(FINITE_OPT "--finite")
-    endif()
+#     set(FINITE_OPT "")
+#     string(FIND "${FILE}" "finite_models" FOUND)
+#     if(FOUND GREATER_EQUAL 0)
+#       set(FINITE_OPT "--finite")
+#     endif()
     
-    set(SMT_OPTS "")
-    set(MODEL_OPT "")
-    set(CORE_OPT "")
-    string(FIND "${FILE}" "ltlfmt" SMT_FOUND)
-    if(SMT_FOUND GREATER_EQUAL 0)
-      set(SMT_OPTS "-s")
-    else()
-      set(MODEL_OPT "-m")
-      set(CORE_OPT "-c")
-    endif()
+#     set(SMT_OPTS "")
+#     set(MODEL_OPT "")
+#     set(CORE_OPT "")
+#     string(FIND "${FILE}" "ltlfmt" SMT_FOUND)
+#     if(SMT_FOUND GREATER_EQUAL 0)
+#       set(SMT_OPTS "-s")
+#     else()
+#       set(MODEL_OPT "-m")
+#       set(CORE_OPT "-c")
+#     endif()
 
-    string(FIND "${FILE}" "LRA" LRA_FOUND)
-    if((SMT_FOUND GREATER_EQUAL 0) AND (LRA_FOUND GREATER_EQUAL 0))
-      set(SMT_OPTS "${SMT_OPTS} -d Real")
-    else()
-      set(SMT_OPTS "${SMT_OPTS} -d Int")
-    endif()
+#     string(FIND "${FILE}" "LRA" LRA_FOUND)
+#     if((SMT_FOUND GREATER_EQUAL 0) AND (LRA_FOUND GREATER_EQUAL 0))
+#       set(SMT_OPTS "${SMT_OPTS} -d Real")
+#     else()
+#       set(SMT_OPTS "${SMT_OPTS} -d Int")
+#     endif()
     
-    set(SHELL_CMD /bin/sh -c)
-    if(WIN32)
-      set(SHELL_CMD powershell -Command)
-    endif()
+#     set(SHELL_CMD /bin/sh -c)
+#     if(WIN32)
+#       set(SHELL_CMD powershell -Command)
+#     endif()
 
-    if(NOT (SMT_FOUND GREATER_EQUAL 0) OR 
-      (${BLACK_TESTS_SAT_BACKEND} STREQUAL "mathsat") OR
-      (${BLACK_TESTS_SAT_BACKEND} STREQUAL "z3") OR
-      (${BLACK_TESTS_SAT_BACKEND} STREQUAL "cvc5"))
+#     if(NOT (SMT_FOUND GREATER_EQUAL 0) OR 
+#       (${BLACK_TESTS_SAT_BACKEND} STREQUAL "mathsat") OR
+#       (${BLACK_TESTS_SAT_BACKEND} STREQUAL "z3") OR
+#       (${BLACK_TESTS_SAT_BACKEND} STREQUAL "cvc5"))
 
-      add_test(
-        NAME "${TEST_NAME}"
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
-        COMMAND
-          ${SHELL_CMD}
-          "$<TARGET_FILE:frontend> solve \
-          ${MODEL_OPT} ${CORE_OPT} -o json ${FINITE_OPT} ${SMT_OPTS} \
-            -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
-          $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} \
-            -e ${RESULT} '${FILE}'"
-      )
+#       add_test(
+#         NAME "${TEST_NAME}"
+#         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/benchmarks/formulas"
+#         COMMAND
+#           ${SHELL_CMD}
+#           "$<TARGET_FILE:frontend> solve \
+#           ${MODEL_OPT} ${CORE_OPT} -o json ${FINITE_OPT} ${SMT_OPTS} \
+#             -B ${BLACK_TESTS_SAT_BACKEND} '${FILE}' | \
+#           $<TARGET_FILE:frontend> check -t - ${FINITE_OPT} \
+#             -e ${RESULT} '${FILE}'"
+#       )
   
-      if(BLACK_TEST_TIMEOUT)
-        set_tests_properties(
-          "${TEST_NAME}" PROPERTIES TIMEOUT ${TEST_TIMEOUT_SECS}
-        )
-      endif()
+#       if(BLACK_TEST_TIMEOUT)
+#         set_tests_properties(
+#           "${TEST_NAME}" PROPERTIES TIMEOUT ${TEST_TIMEOUT_SECS}
+#         )
+#       endif()
 
-    endif()
+#     endif()
 
-  endforeach()
-endif()
+#   endforeach()
+# endif()

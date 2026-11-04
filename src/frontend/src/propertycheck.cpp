@@ -191,28 +191,23 @@ namespace black::frontend
           "unable to find a numerical value of the requested variable"
         ); 
       }
-
     }catch(std::exception& e) {
       try{
-        if(get<int>(value)){
-          int int_value = get<int>(value);
-          return int_value;
-        }
+        int int_value = get<int>(value);
+        return int_value;
       } catch(std::exception& e){
         try{
-          if(get<double>(value)){
-            double double_value = get<double>(value);
-            return double_value;
-          }
+          double double_value = get<double>(value);
+          return double_value;
         } catch(std::exception& e){
           io::fatal(
             status_code::syntax_error, 
             "invalid proposition value"
           );
         }
-
       }
     }
+    
     io::fatal(
       status_code::syntax_error, 
       "unrecognized proposition value"
@@ -363,7 +358,16 @@ namespace black::frontend
         int terms_size = terms.size();
         auto first_value = 0;
 
-        for(int i = 0; i< terms_size; i++ ){
+        for(int i = 0; i < terms_size; i++ ){
+          
+          if(t==0){ // if it's the first trace instant, check wether there is a previous (1) or weak previous (2)
+            if(check_previous(terms[i]) == 1){
+              return false;
+            } else if (check_previous(terms[i]) == 2){
+              return true;
+            }
+          }
+
           auto value = check_term_value(trace, terms[i], t);
 
           if(i == 0){
@@ -384,6 +388,13 @@ namespace black::frontend
   bool check_comparison(trace_t trace, comparison c, size_t t){
     return c.match(
       [&](less_than, term l, term r) { 
+        if(t==0){ // if it's the first trace instant, check wether there is a previous (1) or weak previous (2)
+          if(check_previous(l) == 1 || check_previous(r) == 1){
+            return false;
+          } else if (check_previous(l) == 2 || check_previous(r) == 2){
+            return true;
+          }
+        }
         auto l_value = check_term_value(trace, l, t);
         auto r_value = check_term_value(trace, r, t);
         return l_value < r_value; 
@@ -394,11 +405,25 @@ namespace black::frontend
         return l_value <= r_value; 
       },
       [&](greater_than, term l, term r) {
+        if(t==0){ // if it's the first trace instant, check wether there is a previous (1) or weak previous (2)
+          if(check_previous(l) == 1 || check_previous(r) == 1){
+            return false;
+          } else if (check_previous(l) == 2 || check_previous(r) == 2){
+            return true;
+          }
+        }
         auto l_value = check_term_value(trace, l, t);
         auto r_value = check_term_value(trace, r, t);
         return l_value > r_value; 
       },
       [&](greater_than_equal, term l, term r) {
+        if(t==0){ // if it's the first trace instant, check wether there is a previous (1) or weak previous (2)
+          if(check_previous(l) == 1 || check_previous(r) == 1){
+            return false;
+          } else if (check_previous(l) == 2 || check_previous(r) == 2){
+            return true;
+          }
+        }
         auto l_value = check_term_value(trace, l, t);
         auto r_value = check_term_value(trace, r, t);
         return l_value >= r_value;
