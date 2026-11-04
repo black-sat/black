@@ -212,9 +212,9 @@ namespace black_internal
       case binary::type::disjunction:
         return 20;
       case binary::type::implication:
-        return 40;
+        return 15;
       case binary::type::iff:        
-        return 40;
+        return 10;
       case binary::type::until:      
         return 50;
       case binary::type::release:    
@@ -231,6 +231,12 @@ namespace black_internal
     black_unreachable();
   }
 
+  static bool is_right_associative(token const&tok)
+  {
+    binary::type t = *tok.data<binary::type>();
+    return t != binary::type::conjunction && t != binary::type::disjunction;
+  }
+
   std::optional<formula> 
   parser::_parser_t::parse_binary_rhs(int prec, formula lhs) {
     while(1) {
@@ -240,6 +246,8 @@ namespace black_internal
       token op = *consume();
 
       std::optional<formula> rhs = parse_primary();
+      if(rhs && is_right_associative(op))
+        rhs = parse_binary_rhs(*precedence(op), *rhs);
       if(!rhs)
         return error("Expected right operand to binary operator");
 
