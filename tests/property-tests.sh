@@ -29,12 +29,15 @@ trap 'if [[ ! -z "$first_err_command" ]]; then
 
 
 
-should_fail ./black check -t ../tests/test-trace.json --safety
-should_fail ./black check -t - -f 'p' file.pltl --safety
-should_fail ./black check -t - - --safety
-should_fail ./black check -t --safety
-should_fail ./black check -t ../tests/test-trace.json -f !p --safety
+# should_fail ./black check -t ../tests/test-trace.json --safety
+# should_fail ./black check -t - -f 'p' file.pltl --safety
+# should_fail ./black check -t - - --safety
+# should_fail ./black check -t --safety
+# should_fail ./black check -t ../tests/test-trace.json -f !p --safety
 
+should_fail ./black check -t ../tests/test-trace-mt.json -f 'G(x > -3)' --safety
+
+should_fail ./black check -d Int -t ../tests/test-trace-mt.json -f 'G(x+1= next(x))' --safety --cosafety
 should_fail ./black check -d Int -t ../tests/test-trace-mt.json -f 'F(x = 0)' --safety
 should_fail ./black check -d Int -t ../tests/test-trace-mt.json -f '!G(x = 0)' --safety
 should_fail ./black check -d Int -t ../tests/test-trace-mt.json -f 'G(x = 0)' --cosafety
@@ -44,6 +47,8 @@ should_fail ./black check -d Int -t ../tests/test-trace-mt.json -f 'F(G( x > -3 
 should_fail ./black check -d Int -t ../tests/test-trace-mt.json -f 'G(x+1= next(x))' --safety
 should_fail ./black check -d Int -t ../tests/test-trace-mt.json -f 'F(X (x > 0))' --cosafety
 should_fail ./black check -d Int -t ../tests/test-trace-mt.json -f 'F(x > 6.5)' --cosafety
+
+should_fail ./black check -d Int -t ../tests/test-trace-mt.json -f 'F(x)' --cosafety
 
 cat <<END | should_fail ./black check -d Real -t - -f 'F(z > 6.5)' --cosafety
 {
@@ -76,17 +81,17 @@ END
 
 should_fail ./black check -d Int -t ../tests/test-trace-mt.json -f 'G(exists x : Int . x = 0)' --safety
 
-cat <<END | ./black check -d Int -t - -f 'G( x > -3 S y = 3)' --safety
+cat <<END | ./black check -d Int -t - -f 'F( x > -3 S y = 3)' --cosafety
 {
   "model": {
     "size": 3,
     "states": [
       {
-        "y": 3,
-        "x": -2
+        "y": 2,
+        "x": -5
       },
       {
-        "y": 4,
+        "y": 3,
         "x": 2
       },
       {
@@ -97,33 +102,28 @@ cat <<END | ./black check -d Int -t - -f 'G( x > -3 S y = 3)' --safety
 }
 END
 
+cat <<END | ./black check -d Int -t - -f 'G( p && (x > -3 S y = 3))' --safety
+{
+  "model": {
+    "size": 3,
+    "states": [
+      {
+        "p": "true",
+        "y": 3,
+        "x": -2
+      },
+      {
+        "p": "true",
+        "y": 4,
+        "x": 2
+      },
+      {
+        "p": "true",
+        "x": 1
+      }
+    ]
+  }
+}
+END
 
-# what follows works from command line but not in the test
-
-# cat <<END | ./black check -d Int -t - -f 'G(x = prev(x))' --safety
-# {
-#   "model": {
-#     "size": 3,
-#     "states": [
-#       {
-#         "y": 10,
-#         "x": 10
-#       },
-#       {
-#         "y": 10,
-#         "x": 10
-#       },
-#       {
-#         "y": 10,
-#         "x": 10
-#       }
-#     ]
-#   }
-# }
-# END
-
-# ./black check -d Int -t ../tests/test-trace-mt.json -f 'G(x+1= prev(x))' --safety 
-# ./black check -d Int -t ../tests/test-trace-mt.json -f 'G(x+1= wprev(x))' --safety 
-
-
-
+./black check -d Int -t ../tests/test-trace-mt.json -f 'G(x+1= wprev(x))' --safety

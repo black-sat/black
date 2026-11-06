@@ -132,7 +132,7 @@ namespace black::frontend
         command_line_error("atoms are not supported by the LIA and the LRA quantifier-free theories");
         quit(status_code::command_line_error); },
       [&](quantifier) -> bool { 
-        command_line_error("the --safety and --cosafety options do not accept quantifiers)");
+        command_line_error("the --safety and --cosafety options do not accept quantifiers");
         quit(status_code::command_line_error); },
       [&](equality, auto terms) { 
         int terms_size = terms.size();
@@ -689,6 +689,11 @@ namespace black::frontend
   int property_check() {
     if(cli::check_safety && cli::check_cosafety){
       command_line_error("please choose only one between the --safety and --cosafety options");
+      quit(status_code::command_line_error);
+    }
+
+    if(!cli::default_sort){
+      command_line_error("please select the sort to use for variables");
       quit(status_code::command_line_error);
     }
 
