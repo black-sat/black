@@ -244,7 +244,7 @@ namespace black_internal
         return error("Expected right operand to binary operator");
 
       if(!peek() || precedence(op) < precedence(*peek())) {
-        rhs = parse_binary_rhs(prec + 1, *rhs);
+        rhs = parse_binary_rhs(*precedence(op) + 1, *rhs);
         if(!rhs)
           return error("Expected right operand to binary operator");
       }
@@ -568,7 +568,7 @@ namespace black_internal
         return error("Expected right operand to binary function symbol");
 
       if(!peek() || func_precedence(op) < func_precedence(*peek())) {
-        rhs = parse_term_binary_rhs(prec + 1, *rhs);
+        rhs = parse_term_binary_rhs(*func_precedence(op) + 1, *rhs);
         if(!rhs)
           return error("Expected right operand to binary function symbol");
       }
@@ -606,9 +606,9 @@ namespace black_internal
     );
 
     consume();
-    std::optional<term> t = parse_term();
+    std::optional<term> t = parse_term_primary();
     if(!t)
-      return {};
+      return error("Expected operand to unary minus");
     return negative(*t);
   }
 

@@ -41,7 +41,7 @@ TEST_CASE("Syntax errors") {
     "exists . p", "exists x y z +", "exists x . (x =)", "p(x",
     "x + y * = x", "F(-)", "next x", "next(x x", "wnext x", "wnext(x x",
     "prev x", "wprev(x x", "next(next(x +)) = x", "wnext(next(x +)) = x", 
-    "p 42", "p 0.1", ",", ".", "x +", "x *", "x -", "x /",
+    "p 42", "p 0.1", ",", ".", "x +", "x *", "x -", "x /", "x = -",
     "x = 0.0000000000000000000000000000000000000000000000000000000000000000"
     "0000000000000000000000000000000000000000000000000000000000000000000000"
     "0000000000000000000000000000000000000000000000000000000000000000000000"
@@ -115,3 +115,43 @@ TEST_CASE("Roundtrip of parser and pretty-printer")
   }
 }
     
+
+TEST_CASE("Operator precedence")
+{
+  alphabet sigma;
+
+  proposition p = sigma.proposition("p");
+  proposition q = sigma.proposition("q");
+  proposition r = sigma.proposition("r");
+  proposition s = sigma.proposition("s");
+  variable x = sigma.variable("x");
+  variable y = sigma.variable("y");
+  variable z = sigma.variable("z");
+  variable w = sigma.variable("w");
+
+  std::vector<std::pair<std::string, formula>> tests = {
+    {"p & q U r | s", (p && U(q, r)) || s},
+    {"p | q & r U s | p", (p || (q && U(r, s))) || p},
+    {"p -> q & s", implies(p, q) && s},
+    {"p -> q U r & s", implies(p, U(q, r)) && s},
+    {"x - y * z + w = x", x - y * z + w == x},
+    {"x * y - z / w + x = x", x * y - z / w + x == x},
+    {"-x + y = x", -x + y == x},
+    {"-x * y = x", -x * y == x}
+  };
+
+  for(auto [text, f] : tests) {
+    DYNAMIC_SECTION("Precedence for formula: " << text) {
+      auto result = parse_formula(sigma, text, [](auto error){
+        INFO("parsing error: " << error);
+        REQUIRE(false);
+      });
+
+      REQUIRE(result.has_value());
+
+      INFO("parsed: " << to_string(*result));
+
+      CHECK(*result == f);
+    }
+  }
+}
