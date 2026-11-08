@@ -31,6 +31,8 @@
 # Clang
 set(
   CLANG_WARNINGS -Weverything -pedantic -Werror
+  -Wlifetime-safety
+  -Wno-lifetime-safety-suggestions
   -Wno-c++98-compat -Wno-c++98-compat-pedantic
   -Wno-c++98-c++11-c++14-compat
   -Wno-padded 

@@ -27,6 +27,7 @@
 #define BLACK_SOLVER_ENCODING_HPP
 
 #include <black/logic/logic.hpp>
+#include <black/logic/nnf.hpp>
 #include <black/logic/prettyprint.hpp>
 
 #include <vector>
@@ -89,7 +90,7 @@ namespace black_internal::encoder {
         _global_xi{&xi}, _xi{chain(xi)}, 
         _finite{finite}
     {
-      _frm = to_nnf(_frm);
+      _frm = to_nnf_cached(_frm, _nnf_cache);
       _collect_requests(_frm);
     }
 
@@ -131,9 +132,6 @@ namespace black_internal::encoder {
     // Make the last-state-wrapped version of a formula
     // (only atoms, equalities and comparisons)
     formula wrapped(formula a, size_t k);
-
-    // Put a formula in negated normal form
-    formula to_nnf(formula f);
 
     // Put a formula in Stepped Normal Form
     formula to_ground_snf(

@@ -690,4 +690,11 @@ namespace black_internal::logic {
   }
 }
 
+namespace black::logic {
+  using black_internal::logic::big_and;
+  using black_internal::logic::big_or;
+  using black_internal::logic::fold_op;
+  using black_internal::logic::replace;
+}
+
 #endif // BLACK_LOGIC_SUGAR_HPP_
