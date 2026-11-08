@@ -173,8 +173,8 @@ TEST_CASE("Operator precedence")
   std::vector<std::pair<std::string, formula>> tests = {
     {"p & q U r | s", (p && U(q, r)) || s},
     {"p | q & r U s | p", (p || (q && U(r, s))) || p},
-    {"p -> q & s", implies(p, q) && s},
-    {"p -> q U r & s", implies(p, U(q, r)) && s},
+    {"p -> q & s", implies(p, q && s)},
+    {"p -> q U r & s", implies(p, U(q, r) && s)},
     {"x - y * z + w = x", x - y * z + w == x},
     {"x * y - z / w + x = x", x * y - z / w + x == x},
     {"-x + y = x", -x + y == x},
