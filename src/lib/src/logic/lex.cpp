@@ -407,10 +407,23 @@ namespace black_internal::lexer_details
     {"T",        token{binary::type::triggered}}
   };
 
+  // `True` and `False` are case-insensitive, as in Spot
+  static std::string_view canonical_keyword(std::string_view s) {
+    auto iequals = [&](std::string_view k) {
+      return std::equal(s.begin(), s.end(), k.begin(), k.end(),
+        [](char a, char b) { return tolower(a) == tolower(b); });
+    };
+    if(iequals("true"))
+      return "True";
+    if(iequals("false"))
+      return "False";
+    return s;
+  }
+
   bool lexer::is_keyword(std::string_view s) {
     return
       std::find_if(std::begin(_keywords), std::end(_keywords), [&](auto p) {
-        return p.first == s;
+        return p.first == canonical_keyword(s);
       }) != std::end(_keywords);
   }
 
@@ -437,7 +450,7 @@ namespace black_internal::lexer_details
 
     auto it = 
       std::find_if(std::begin(_keywords), std::end(_keywords), [&](auto p) {
-        return p.first == id;
+        return p.first == canonical_keyword(id);
       });
 
     if(it != std::end(_keywords))

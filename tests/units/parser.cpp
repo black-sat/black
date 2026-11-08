@@ -65,6 +65,47 @@ TEST_CASE("Syntax errors") {
 
 }
 
+TEST_CASE("Associativity, precedence and constants as in Spot")
+{
+  alphabet sigma;
+
+  proposition a = sigma.proposition("a");
+  proposition b = sigma.proposition("b");
+  proposition c = sigma.proposition("c");
+
+  std::vector<std::pair<std::string, formula>> tests = {
+    {"a -> b -> c", implies(a, implies(b, c))},
+    {"a <-> b <-> c", iff(a, iff(b, c))},
+    {"a U b U c", U(a, U(b, c))},
+    {"a R b R c", R(a, R(b, c))},
+    {"a W b W c", W(a, W(b, c))},
+    {"a M b M c", M(a, M(b, c))},
+    {"a S b S c", S(a, S(b, c))},
+    {"a T b T c", T(a, T(b, c))},
+    {"a -> b & c", implies(a, b && c)},
+    {"a | b -> c", implies(a || b, c)},
+    {"a <-> b -> c", iff(a, implies(b, c))},
+    {"a -> b <-> c", iff(implies(a, b), c)},
+    {"!true", !sigma.top()},
+    {"FaLsE | TRUE", sigma.bottom() || sigma.top()},
+    {"{true}", sigma.proposition("true")}
+  };
+
+  for(auto [text, f] : tests) {
+    DYNAMIC_SECTION("Parsing formula: " << text) {
+      auto result = parse_formula(sigma, text, [](auto error){
+        INFO("parsing error: " << error);
+        REQUIRE(false);
+      });
+
+      REQUIRE(result.has_value());
+      INFO("parsed: " << to_string(*result));
+      CHECK(*result == f);
+      CHECK(*parse_formula(sigma, to_string(f), [](auto){}) == f);
+    }
+  }
+}
+
 TEST_CASE("Roundtrip of parser and pretty-printer")
 {
   alphabet sigma;

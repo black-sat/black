@@ -69,7 +69,7 @@ Formal grammar for formulas:
    formula: `boolean` | `proposition` | `atom` | `term` `rel` `term` |
          : `unary` `formula` | `formula` `binary` `formula` | 
          : `quantification` | '(' `formula` ')'
-   boolean: True | False
+   boolean: True | False (case-insensitive)
    proposition: `symbol`
    atom: `symbol` '(' `term` (, `term`)* ')'
    rel: = | != | < | <= | > | >=
@@ -124,20 +124,29 @@ syntaxes of each operator.
 +----------------+---------------------------+------------+
 | Triggered      | ``T``                     | 50         |
 +----------------+---------------------------+------------+
-| Implication    | ``THEN``, ``->``, ``=>``  | 40         |
+| Weak until     | ``W``                     | 50         |
 +----------------+---------------------------+------------+
-| If and only if | ``IFF``, ``<->``, ``<=>`` | 40         |
+| Strong release | ``M``                     | 50         |
 +----------------+---------------------------+------------+
 | Conjunction    | ``AND``, ``&&``, ``&``    | 30         |
 +----------------+---------------------------+------------+
 | Disjunction    | ``OR``, ``||``, ``|``     | 20         |
 +----------------+---------------------------+------------+
+| Implication    | ``THEN``, ``->``, ``=>``  | 15         |
++----------------+---------------------------+------------+
+| If and only if | ``IFF``, ``<->``, ``<=>`` | 10         |
++----------------+---------------------------+------------+
 
 
 The above precedence values means that, for example, ``p && q || r`` is parsed
-as ``(p && q) || r`` as expected, and ``p & q <-> r`` is parsed as ``p & (q <->
-r)``. Unary operators and connectives have the higher precedence, so ``F p &&
+as ``(p && q) || r`` as expected, and ``p & q -> r`` is parsed as ``(p & q) ->
+r``. Unary operators and connectives have the higher precedence, so ``F p &&
 q`` is parsed as ``(F p) && q``.
+
+Implication, double implication, and the binary temporal operators are
+right-associative, so ``p -> q -> r`` is parsed as ``p -> (q -> r)`` and ``p U
+q U r`` as ``p U (q U r)``. Precedence and associativity of the connectives
+follow Spot.
 
 Similarly, we give the precedence table for terms:
 
