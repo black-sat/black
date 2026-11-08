@@ -60,3 +60,38 @@ TEST_CASE("SAT backends") {
   }
   
 }
+
+TEST_CASE("Repeated satisfiable checks with assumptions") {
+
+  std::vector<std::string> backends = {
+    "z3", "mathsat", "cmsat", "cvc5"
+  };
+
+  black::alphabet sigma;
+  black::scope xi{sigma};
+
+  auto p = sigma.proposition("p");
+  auto q = sigma.proposition("q");
+
+  for(auto backend : backends) {
+    DYNAMIC_SECTION("SAT backend: " << backend) {
+      if(black::sat::solver::backend_exists(backend)) {
+        auto slv = black::sat::solver::get_solver(backend, xi);
+
+        slv->assert_formula(p || q);
+
+        for(int i = 0; i < 10; ++i) {
+          REQUIRE(slv->is_sat_with(p));
+          REQUIRE(slv->value(p) == true);
+
+          REQUIRE(slv->is_sat_with(!p));
+          REQUIRE(slv->value(p) == false);
+          REQUIRE(slv->value(q) == true);
+
+          REQUIRE(slv->is_sat());
+        }
+      }
+    }
+  }
+
+}

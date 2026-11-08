@@ -177,6 +177,7 @@ namespace black_internal::z3
         Z3_model_dec_ref(_data->context, *_data->model);
       
       _data->model = Z3_solver_get_model(_data->context, _data->solver);
+      Z3_model_inc_ref(_data->context, *_data->model);
     }
 
     return res == Z3_L_TRUE ? tribool{true} :
