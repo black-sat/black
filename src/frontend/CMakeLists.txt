@@ -32,6 +32,7 @@ set(
   src/cli.cpp
   src/solve.cpp
   src/tracecheck.cpp
+  src/propertycheck.cpp
   src/support.cpp
 )
 

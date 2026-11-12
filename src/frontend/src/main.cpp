@@ -23,6 +23,7 @@
 
 #include <black/frontend/cli.hpp>
 #include <black/frontend/solve.hpp>
+#include <black/frontend/propertycheck.hpp>
 #include <black/frontend/tracecheck.hpp>
 
 using namespace black::frontend;
@@ -30,9 +31,15 @@ using namespace black::frontend;
 int main(int argc, char **argv)
 {
   parse_command_line(argc, argv);
-  
-  if(cli::trace_checking)
+ 
+  if(cli::trace_checking){
+    
+    if(cli::check_safety || cli::check_cosafety){
+      return property_check();
+    }
+    
     return trace_check();
+  }
   
   return solve();
 }

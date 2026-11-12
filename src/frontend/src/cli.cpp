@@ -188,6 +188,10 @@ namespace black::frontend
           "Used for checking the MUC.\n",
       (option("--verbose").set(cli::verbose))
         % "output a verbose log",
+      (option ("--safety").set(cli::check_safety)) 
+        % "check for safety of a ppLTL-MT formula of the form G(ppLTL-MT)",
+      (option ("--cosafety").set(cli::check_cosafety))
+        % "check for cosafety of a ppLTL-MT formula of the form F(ppLTL-MT)",
       (option("-f", "--formula") & value("formula", cli::formula))
         % "formula against which to check the trace",
       value("file", cli::filename).required(false)

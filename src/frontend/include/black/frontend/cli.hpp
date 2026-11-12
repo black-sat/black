@@ -117,6 +117,12 @@ namespace black::frontend
 
     // debug options
     inline std::string debug;
+
+    // wether to check if the formula is safety
+    inline bool check_safety = false;
+
+    // wether to check if the formula is cosafety
+    inline bool check_cosafety = false;
   }
 
   // parse the command-line arguments, filling the variables declared above.
